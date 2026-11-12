@@ -6,9 +6,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target, TargetVersion
-from evals.cve_environments import Launch, LaunchShape
-from evals.cve_places import HOLDOUT_PLACES, Places, load_places
-from evals.cve_planting import PlantingSpec
+from evals.cve.environments import Launch, LaunchShape
+from evals.cve.places import DETECTION_PLACES, Places, load_places
+from evals.cve.planting import PlantingSpec
 from mcp_auditor.adapters.docker import DockerRuntime
 from tests.integration.support.detection_fake_targets import (
     Builder,
@@ -210,8 +210,8 @@ def the_git_target() -> Target:
     return next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == GIT_CVE_ID)
 
 
-def the_holdout_places() -> Places:
-    return load_places(HOLDOUT_PLACES)
+def the_detection_places() -> Places:
+    return load_places(DETECTION_PLACES)
 
 
 def missing_docker() -> str | None:

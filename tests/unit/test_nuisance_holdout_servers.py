@@ -2,10 +2,10 @@
 
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
+from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.walk import NuisanceServer, ServerMark
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 
 
 def test_each_standing_exit_keeps_its_server_outside_the_figure():

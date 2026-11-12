@@ -1,15 +1,15 @@
 # Build manifest only, never `compose up`. Build all nine images with:
 #   docker compose -f evals/docker/compose.yml build
-# The benchmark runner launches each server with `docker run -i`, not compose.
-# Nine images cover the four targets (five CVEs) on both versions: filesystem serves
+# The detection suite launches each server with `docker run -i`, not compose.
+# Nine images cover the four acceptance targets (five flaws) on both versions: filesystem serves
 # CVE-2025-53109 + 53110 (one merged target) and git serves CVE-2025-68143 (one target),
-# each with its patched twin, plus kubernetes, fetch and the sentinel sidecar. The sentinel
-# has no patched twin: it is not a server image.
+# each with its patched image, plus kubernetes, fetch and the sentinel sidecar. The sentinel
+# has no patched image: it is not a server image.
 # Each service carries the label org.mcp-auditor.dockerfile-fingerprint, the SHA-256 of its
 # Dockerfile's instructions (comments and blank lines left out), so a tag holding another build
 # is told apart and rebuilt. After a Dockerfile edit, tests/unit/test_cve_compose_labels.py
 # prints the value to paste.
-# The holdout server images are appended after the sentinel, two per transplanted target
+# The images of the holdout targets are appended after the sentinel, two per transplanted target
 # (vulnerable and patched), named holdout-<year>-<num>-<service>; the same build command builds
 # them. SSRF holdout targets reuse the shared sentinel above, adding no sentinel of their own.
 # The nuisance block closes the file: one patched image per admitted server, tagged
@@ -93,16 +93,16 @@ services:
     image: mcp-auditor-cve-sentinel:local
 
   # The public-service stand-in, shared by every fixture that declares one (see
-  # evals/public_stand_ins.py). Outside the nuisance profile, so the bare build builds it.
+  # evals/cve/public_stand_ins.py). Outside the nuisance profile, so the bare build builds it.
   stand-in:
     build:
       context: .
       dockerfile: Dockerfile.stand-in
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "811e65dd2cd9f7e9965e3cbaf6e46e501b100a1c10cd66238ed9a9242e1e8e5e"
+        org.mcp-auditor.dockerfile-fingerprint: "617f58a4cde41e1a0337bfdfb2d740d99425fe1dfb9fe5adfe777190c831d25d"
     image: mcp-auditor-cve-stand-in:local
 
-  # Holdout targets (transplanted; see evals/holdout_targets.py).
+  # Holdout targets (transplanted; see evals/cve/detection/holdout_targets.py).
   holdout-2026-4270-aws-api-mcp:
     build:
       context: .
@@ -410,7 +410,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-46514-frogman
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "f9be8ea4ebe9106e3c20470e514c82e9059a0cf769824b06d12d82f0aee67b03"
+        org.mcp-auditor.dockerfile-fingerprint: "cdaece29b2d7aaa63dc2285be088f7d62b3eb90499d77e24986a0a6f085f510a"
     image: mcp-auditor-cve-holdout-2026-46514-frogman:local
 
   holdout-2026-46514-frogman-patched:
@@ -418,7 +418,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-46514-frogman-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a5bfed1c77f6841912a0fd094d20224da8d996c302f0270064b2142637b65ab7"
+        org.mcp-auditor.dockerfile-fingerprint: "66f8f1867b474eab8674b8082fa91af559f43655b5ac2a07ef85432b10313384"
     image: mcp-auditor-cve-holdout-2026-46514-frogman-patched:local
 
   # Internal-fetch target: mcp-neo4j-cypher's read-only guard is a keyword regex, so a CALL of

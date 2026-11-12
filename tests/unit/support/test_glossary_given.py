@@ -492,7 +492,7 @@ RETIRED_WORDS = (
     ),
     RetiredWord(
         "holdout-calibration",
-        r"(?<!detection_)holdout_calibration|\bholdout calibration\b(?! copy)",
+        r"(?<!detection_)holdout_calibration(?!_cop)|\bholdout calibration\b(?! copy)",
         re.IGNORECASE,
         "5",
     ),

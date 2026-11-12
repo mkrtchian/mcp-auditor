@@ -2,7 +2,7 @@ import json
 
 import tests.unit.support.test_detection_route_check_golden_given as given
 from evals.cve.detection.route_check import RouteObservations, has_route, minimal_calls
-from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
+from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
 from mcp_auditor.domain.models import ToolDefinition
 
 
@@ -94,11 +94,11 @@ def test_a_null_filter_exposes_every_tool():
     assert [name for name, _ in calls] == ["read_file", "git_init"]
 
 
-def _layout_place(anchor: LayoutAnchor, relpath: str, kind: PlantKind) -> Place:
+def _layout_place(anchor: LayoutAnchor, relpath: str, kind: PlaceKind) -> Place:
     return Place(
         id="layout",
         family="deployment layout",
-        reachable_by=frozenset({"arbitrary_read"}),
+        reaches=frozenset({"arbitrary_read"}),
         kind=kind,
         coordinates=Coordinates(kind, anchor=anchor, relpath=relpath),
     )
@@ -118,12 +118,12 @@ def _git_scope_naming_no_bare() -> RouteObservations:
 
 
 def test_the_derivation_does_not_invent_the_bare_for_a_git_target_that_names_no_bare_path():
-    bare = _layout_place(LayoutAnchor.PROJECT_BARE, "config", PlantKind.GIT_REMOTE_URL)
+    bare = _layout_place(LayoutAnchor.PROJECT_BARE, "config", PlaceKind.GIT_REMOTE_URL)
 
     assert has_route(bare, _git_scope_naming_no_bare()) is False
 
 
 def test_the_dotenv_parent_is_admitted_by_the_dotenv_kind_not_by_a_generic_parent_rule():
-    dotenv = _layout_place(LayoutAnchor.WORKSPACE, ".env", PlantKind.DOTENV)
+    dotenv = _layout_place(LayoutAnchor.WORKSPACE, ".env", PlaceKind.DOTENV)
 
     assert has_route(dotenv, _git_scope_naming_no_bare()) is True

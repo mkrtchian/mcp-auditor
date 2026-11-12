@@ -22,14 +22,14 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape, image_tag
 from evals.cve.nuisance.fix_checks.excel_witness_workbook import workbook_holding
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser, confinement_args
-from evals.cve_planting_base import no_network_args, unprivileged_user_args
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser, confinement_args
+from evals.cve.planting_base import no_network_args, unprivileged_user_args
 
 WITNESS_ID = "outside_workbook"
 WITNESS_PATH = "/outside/witness.xlsx"
@@ -42,9 +42,9 @@ AIM = re.compile(re.escape(WITNESS_PATH))
 WITNESS = Place(
     id=WITNESS_ID,
     family="workbook_path_traversal",
-    reachable_by=frozenset({"arbitrary_read"}),
-    kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path=WITNESS_PATH),
+    reaches=frozenset({"arbitrary_read"}),
+    kind=PlaceKind.FILE,
+    coordinates=Coordinates(PlaceKind.FILE, path=WITNESS_PATH),
 )
 HOST = PlantingHost(user=SymbolicUser.UNPRIVILEGED, working_directory="/", has_network=False)
 
@@ -304,7 +304,7 @@ BENIGN_CALLS = (
 def _target(flaw: str, vulnerable_service: str) -> FixCheckFixture:
     return FixCheckFixture(
         flaw=flaw,
-        effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+        effect_class=FlawClass.READ_OUTSIDE_SCOPE,
         aim=AIM,
         witness=WITNESS,
         planting_host=HOST,

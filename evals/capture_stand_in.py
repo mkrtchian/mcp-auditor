@@ -11,15 +11,15 @@ A URL prefixed `POST ` and followed by a form body of one field (one argument,
 the body staying in `command`.
 Each is fetched once with no redirect following and no content
 coding, and its status, every response header (in the order received, duplicates kept, names in
-the host's case) and its body are recorded whatever the status, so a 401 or a 404 is replayed as
+the host's case) and its body are recorded whatever the status, so a 401 or a 404 is served as
 the real service gave it. An answer that carries a content coding anyway is refused, since the
-body is stored decoded and its replayed headers would label it coded. A `--header` is sent and
+body is stored decoded and its served headers would label it coded. A `--header` is sent and
 recorded verbatim, name and value, in `request_headers` and in `command`: it carries only the
 dummy credential the fixture's server itself sends, so nothing here reads the environment. Each
 capture also records, on both schemes, the host's answer to a generated path that does not
 exist (`/` and 16 random hex digits, fetched with GET and the same headers) and, from a second
 probe of that path followed by percent-encoded `<x>"'`, the form in which its body quotes the
-path (`path_form`, decoded or raw). The stand-in replays that answer for any request its routes
+path (`path_form`, decoded or raw). The stand-in serves that answer for any request its routes
 lack, quoting the request where the host quoted the probed path; an answer quoting it in another
 header than `Location`, in a body that is neither HTML nor JSON, or in an escaping the stand-in
 does not reproduce, is refused. A capture is written whole, never appended, so one file carries
@@ -41,7 +41,7 @@ from typing import Any, Literal
 
 import httpx
 
-from evals.public_stand_ins import QUOTING_MEDIA_TYPES, StandInDefault, body_quoting, media_type
+from evals.cve.public_stand_ins import QUOTING_MEDIA_TYPES, StandInDefault, body_quoting, media_type
 
 _COMMAND = "uv run python -m evals.capture_stand_in"
 FORM_SUFFIX = "%3Cx%3E%22%27"
@@ -68,7 +68,7 @@ class CaptureRequest:
 class CapturedResponse:
     scheme: str
     method: str
-    target: str
+    request_target: str
     status: int
     headers: tuple[tuple[str, str], ...]
     body: bytes
@@ -102,7 +102,7 @@ def _route(response: CapturedResponse) -> dict[str, Any]:
     route: dict[str, Any] = {
         "scheme": response.scheme,
         "method": response.method,
-        "target": response.target,
+        "request_target": response.request_target,
         "status": response.status,
         "headers": [list(header) for header in response.headers],
         "body": _text(response),
@@ -116,7 +116,7 @@ def _default(probe: ProbedDefault) -> dict[str, Any]:
     plain = probe.plain
     record = {
         "scheme": plain.scheme,
-        "probed_target": plain.target,
+        "probed_request_target": plain.request_target,
         "status": plain.status,
         "headers": [list(header) for header in plain.headers],
         "body": _text(plain),
@@ -128,22 +128,22 @@ def _default(probe: ProbedDefault) -> dict[str, Any]:
 
 def path_form(probe: ProbedDefault) -> Literal["decoded", "raw"] | None:
     plain, form = probe.plain, probe.form
-    quotes = _text(plain).count(plain.target)
+    quotes = _text(plain).count(plain.request_target)
     form_body = _text(form)
-    digits = form_body.count(plain.target[1:])
+    digits = form_body.count(plain.request_target[1:])
     if quotes == 0 and digits == 0:
         return None
     media = _same_answer(probe)
-    decoded = form_body.count(body_quoting(urllib.parse.unquote(form.target), media))
-    raw = form_body.count(body_quoting(form.target, media))
+    decoded = form_body.count(body_quoting(urllib.parse.unquote(form.request_target), media))
+    raw = form_body.count(body_quoting(form.request_target, media))
     if (decoded, raw, digits) == (quotes, 0, quotes):
         return "decoded"
     if (decoded, raw, digits) == (0, quotes, quotes):
         return "raw"
     raise ValueError(
-        f"{plain.scheme}: the form probe quotes its target {decoded} times decoded and {raw}"
-        f" times raw, its path {digits} times in all, where the plain probe quotes it {quotes}"
-        " times"
+        f"{plain.scheme}: the form probe quotes its request target {decoded} times decoded and"
+        f" {raw} times raw, its path {digits} times in all, where the plain probe quotes it"
+        f" {quotes} times"
     )
 
 
@@ -172,22 +172,22 @@ def _text(response: CapturedResponse) -> str:
     for name, value in response.headers:
         if name.lower() == "content-encoding" and value.strip().lower() != "identity":
             raise ValueError(
-                f"{response.scheme} {response.target}: the answer carries Content-Encoding"
+                f"{response.scheme} {response.request_target}: the answer carries Content-Encoding"
                 f" {value}, and the capture stores the body decoded"
             )
     try:
         return response.body.decode("utf-8")
     except UnicodeDecodeError as error:
         raise ValueError(
-            f"{response.scheme} {response.target}: the body is not UTF-8 text"
+            f"{response.scheme} {response.request_target}: the body is not UTF-8 text"
         ) from error
 
 
-def default_requests(host: str, probed_target: str) -> list[CaptureRequest]:
-    targets = (probed_target, probed_target + FORM_SUFFIX)
+def default_requests(host: str, probed_request_target: str) -> list[CaptureRequest]:
+    request_targets = (probed_request_target, probed_request_target + FORM_SUFFIX)
     return [
-        CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{target}"))
-        for target in targets
+        CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{request_target}"))
+        for request_target in request_targets
         for scheme in ("http", "https")
     ]
 
@@ -227,8 +227,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SystemExit(f"every URL must share one host, got {sorted(hosts)}")
     headers = tuple(_header(text) for text in parsed.header)
     provenance = _provenance(hosts.pop(), arguments, headers)
-    probed_target = f"/{secrets.token_hex(8)}"
-    fetched = _fetch_all([*requests, *default_requests(provenance.host, probed_target)], headers)
+    probed_request_target = f"/{secrets.token_hex(8)}"
+    fetched = _fetch_all(
+        [*requests, *default_requests(provenance.host, probed_request_target)], headers
+    )
     plain, form = fetched[len(requests) : -2], fetched[-2:]
     defaults = [ProbedDefault(*pair) for pair in zip(plain, form, strict=True)]
     record = capture_record(provenance, fetched[: len(requests)], defaults)
@@ -282,7 +284,7 @@ def _fetch(client: httpx.Client, request: CaptureRequest) -> CapturedResponse:
     return CapturedResponse(
         scheme=url.scheme,
         method=request.method,
-        target=url.raw_path.decode("ascii"),
+        request_target=url.raw_path.decode("ascii"),
         status=response.status_code,
         headers=tuple(
             (name.decode("latin-1"), value.decode("latin-1"))

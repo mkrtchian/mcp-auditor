@@ -21,13 +21,13 @@ layout read-only.
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.holdout_environments import mysql_db_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import PublicNames
-from evals.cve_planting_spec import resolve_container_path
-from evals.holdout_environments import mysql_db_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import PublicNames
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-85788-mysql"
@@ -81,7 +81,7 @@ KEPT_PLACES: tuple[str, ...] = (
 
 
 def _read_targets(place: Place) -> list[str]:
-    if place.kind is PlantKind.FILE:
+    if place.kind is PlaceKind.FILE:
         coords = place.coordinates
         if coords.paths is not None:
             raws = coords.paths
@@ -89,9 +89,9 @@ def _read_targets(place: Place) -> list[str]:
             assert coords.path is not None
             raws = (coords.path,)
         return [resolve_container_path(raw, WORKING_DIRECTORY) for raw in raws]
-    if place.kind is PlantKind.ENV:
+    if place.kind is PlaceKind.ENV:
         return ["/proc/self/environ"]  # the planted env var lives in the mysqld process environ
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return ["/etc/hostname"]  # docker writes the --hostname nonce here
     raise ValueError(f"{place.id}: unexpected kind {place.kind} for the arbitrary_read reach")
 
@@ -118,7 +118,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-85788",
     severity="CVSS 6.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,

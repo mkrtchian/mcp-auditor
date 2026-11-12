@@ -5,19 +5,19 @@ from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_detection_holdout_targets_given as given
-from evals import doris_backend, n8n_instance_backend
+from evals.cve.backends import doris, n8n_instance
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
-from evals.cve_layout import PROJECT, WORK
-from evals.cve_places import (
-    HOLDOUT_PLACES,
-    REACHABLE_BY,
-    PlantKind,
+from evals.cve.layout import PROJECT, WORK
+from evals.cve.places import (
+    DETECTION_PLACES,
+    REACHES,
+    PlaceKind,
     kept_records,
     load_places,
 )
-from evals.cve_planting import planting_spec
-from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
+from evals.cve.planting import planting_spec
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 
 # These modules are the paths a holdout target must never travel: the detection gate
 # (session_model's _BENCHMARKED = ACCEPTANCE_TARGETS), the preflight, the judge fixture draw
@@ -108,15 +108,15 @@ def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
 
 
 def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
-    doris = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-66335")
+    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-66335")
 
-    assert Path(doris_backend.__file__) in doris.backend_sources
+    assert Path(doris.__file__) in target.backend_sources
 
 
 def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
-    n8n = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "GHSA-8g7g-hmwm-6rv2")
+    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "GHSA-8g7g-hmwm-6rv2")
 
-    assert Path(n8n_instance_backend.__file__) in n8n.backend_sources
+    assert Path(n8n_instance.__file__) in target.backend_sources
 
 
 # The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration
@@ -167,39 +167,39 @@ def _imports_holdout_targets(path: Path) -> bool:
 
 
 # The per-target structural guards below mirror test_cve_places.py over HOLDOUT_TARGETS: every
-# kept id is in holdout_places.json within its target's reach, every reach token is in the closed
+# kept id is in detection_places.json within its target's reach, every reach token is in the closed
 # vocabulary, no kept place is unplaceable, and the kept list plants together. They are trivially
 # satisfied while the tuple is empty; they are the guard for the module once the draw fills it.
 
 
 def test_every_holdout_target_reaches_only_the_closed_vocabulary():
     for target in HOLDOUT_TARGETS:
-        assert target.reaches <= REACHABLE_BY, (
+        assert target.reaches <= REACHES, (
             f"{target.flaw_id}: reaches holds a token outside the closed vocabulary"
         )
 
 
 def test_every_holdout_kept_place_is_offered_within_its_reach():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in HOLDOUT_TARGETS:
         for place_id in target.kept_places:
             assert place_id in places, f"{target.flaw_id}: keeps {place_id}, absent from the file"
-            assert places[place_id].reachable_by & target.reaches, (
+            assert places[place_id].reaches & target.reaches, (
                 f"{target.flaw_id}: keeps {place_id}, reachable by none of its reach"
             )
 
 
 def test_no_holdout_target_keeps_an_unplaceable_place():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in HOLDOUT_TARGETS:
         for record in kept_records(target.kept_places, places):
-            assert record.kind is not PlantKind.UNPLACEABLE, (
+            assert record.kind is not PlaceKind.UNPLACEABLE, (
                 f"{target.flaw_id}: keeps {record.id}, an unplaceable place"
             )
 
 
 def test_every_holdout_kept_list_plants_together():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in HOLDOUT_TARGETS:
         planting_spec(
             kept_records(target.kept_places, places),

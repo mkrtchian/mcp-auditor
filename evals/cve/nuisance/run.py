@@ -13,15 +13,17 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
+from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import grammar_fingerprint, image_ids
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance import images as nuisance_images
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.assembly import assemble_server
 from evals.cve.nuisance.audit import (
     DroppedRun,
@@ -30,6 +32,7 @@ from evals.cve.nuisance.audit import (
     audit_once,
     nuisance_audit,
 )
+from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import (
@@ -56,12 +59,9 @@ from evals.cve.run_images import (
     running_containers,
 )
 from evals.cve.run_interruption import sibling_runs
-from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_counter import counter_fingerprint
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 

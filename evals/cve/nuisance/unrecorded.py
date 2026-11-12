@@ -8,10 +8,10 @@ never read. The run and the gate refuse while one is missing; the vet only count
 
 from collections.abc import Sequence
 
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.benign_call import benign_calls
+from evals.cve.nuisance.counting import counted_flaws, counted_tools
 from evals.eval_session import Refused
-from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.nuisance_counting import counted_flaws, counted_tools
 
 
 def unrecorded_fields(servers: Sequence[AdmittedServer]) -> list[str]:
@@ -70,7 +70,7 @@ def _undeclared_tools(server: AdmittedServer) -> set[str | None]:
 
 def _unfingerprinted_copy(flaw: FlawRecord) -> bool:
     check = flaw.fix_check
-    return check.source == "holdout_calibration" and check.holdout_fingerprint is None
+    return check.source == "detection_holdout_calibration" and check.holdout_fingerprint is None
 
 
 def _unrecorded_provenance(server: AdmittedServer) -> list[str]:

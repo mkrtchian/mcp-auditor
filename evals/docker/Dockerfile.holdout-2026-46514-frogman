@@ -1484,7 +1484,7 @@ RUN set -e; mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld; \
 #    undaemonized under the launch account, so its run, lock and log directories, and the snakeoil
 #    key default-ssl reads, are made account-accessible (repairs the confinement forces, not FreePBX
 #    changes: the account is not root and cannot read a 640 root key or write a root-owned dir).
-#    The launch runs the server under that account (the planting layer emits its --user when the
+#    The launch runs the server under that account (the planting code emits its --user when the
 #    place is kept), and the uid resolves to the planted account name through the passwd the launch
 #    mounts. runuser stays commented so asterisk keeps the launch account instead of dropping privilege.
 #    The build-time stack logs are then removed and the runtime tree is made world-accessible: the
@@ -1516,6 +1516,9 @@ mariadbd --datadir=/var/lib/mysql --socket=/run/mysqld/mysqld.sock --skip-grant-
 for i in $(seq 1 40); do [ -S /run/mysqld/mysqld.sock ] && break; sleep 1; done
 asterisk -f >/tmp/ast.log 2>&1 &
 for i in $(seq 1 60); do asterisk -rx "core show version" >/dev/null 2>&1 && break; sleep 1; done
+# core show version answers as soon as the CLI is up, before module autoload finishes; the dialplan
+# hint exploit needs func_shell.so, so block until Asterisk reports every module loaded.
+asterisk -rx "core waitfullybooted" >/dev/null 2>&1
 (. /etc/apache2/envvars; mkdir -p "$APACHE_RUN_DIR" "$APACHE_LOCK_DIR"; exec apache2 -D FOREGROUND) >/tmp/apache.log 2>&1 &
 for i in $(seq 1 30); do curl -s "http://127.0.0.1/admin/ajax.php?module=frogman&command=catalog" 2>/dev/null | grep -q success && break; sleep 1; done
 exec php /var/www/html/admin/modules/frogman/mcp-server.php

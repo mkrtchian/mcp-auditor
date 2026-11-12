@@ -14,11 +14,11 @@ redirect.
 
 import re
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.nuisance.fix_checks.n8n_redirect_stand_in import HOST, http_place, ssrf_redirect_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 _WORKFLOW_ID = "9i3iDZf5MpjlJ2sh"
 
@@ -55,7 +55,7 @@ async def _benign(places: Places, client: KitClient) -> None:
 FIXTURES: tuple[FixCheckFixture, ...] = (
     FixCheckFixture(
         flaw="GHSA-8g7g-hmwm-6rv2",
-        effect_class=MechanismClass.INTERNAL_FETCH,
+        effect_class=FlawClass.INTERNAL_FETCH,
         aim=re.compile(r"127\.0\.0\.1"),
         witness=http_place("n8n-ghsa8g7g"),
         planting_host=HOST,

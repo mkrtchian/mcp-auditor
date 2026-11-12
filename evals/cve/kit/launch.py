@@ -1,29 +1,30 @@
-"""A trimmed copy of evals/cve_environments.py's launch logic, free of mcp_auditor.
+"""A trimmed copy of evals/cve/environments.py's launch logic, free of mcp_auditor.
 
-Parity note: it mirrors evals/cve_environments.py. This module copies the four acceptance
-per-target environment builders and their helpers, plus `arcadedb_env`, the copy of
+Parity note: it mirrors evals/cve/environments.py. This module copies the four acceptance per-target
+environment builders and their helpers, plus `arcadedb_env`, the copy of
 `holdout_environments.arcadedb_mcp_env`, dropping only the `connect` coroutine that wraps the
-auditor's StdioMCPClient; the kit connects through client.py instead. It adds
-`image_tag` and `build_images`. `image_tag` uses the `mcp-auditor-kit-` prefix, not the acceptance
-`mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean
-planting and layout layers are reused by in-repo import (cve_planting, cve_layout, cve_places),
-never copied, because moving them would move every acceptance fixture fingerprint
+auditor's StdioMCPClient; the kit connects through client.py instead. It adds `image_tag` and
+`build_images`. `image_tag` uses the `mcp-auditor-kit-` prefix, not the acceptance
+`mcp-auditor-cve-` one, so a kit build never overwrites an acceptance image. The clean planting and
+layout modules are reused by in-repo import (evals.cve.planting, evals.cve.layout,
+evals.cve.places), never copied, because moving them would move every acceptance fixture fingerprint
 (evals/cve/detection/baseline.ENVIRONMENT_PATHS) and redden the gate.
 
 Landmine flags (CLAUDE.md), each named against the failure it guards:
 - The `--user` mapping and the layout's owner. The tree is owned by the unprivileged account,
-  65534:65534, handed over by `cve_layout.owned_layout` once built and removed by a container
+  65534:65534, handed over by `layout.owned_layout` once built and removed by a container
   after the launch, so a server under that account owns the checkout git runs in and writes to
   the layout only where the target's host declares a read-write layout (`layout_mount`, read
-  through `cve_layout.layout_mount_args`). The `--user` is emitted by
-  cve_planting.unprivileged_user_args (or the planted account's) through PlantedArgs.run_args(),
+  through `layout.layout_mount_args`). The `--user` is emitted by
+  planting.unprivileged_user_args (or the planted account's) through PlantedArgs.run_args(),
   exactly as the acceptance launch emits it, so it is reused here rather than rewritten; the
   `/work` tmpfs comes the same way. `driver.check_target` reports a launch running as any
   other account, so a builder that sets its own `--user` is caught.
 - `--tmpfs /home/audit:exec,uid=,gid=` and `--memory-swap` are the auditor's OWN confined-run
   container flags (mcp_auditor.adapters.server_launch.container_argv), not this declared-container
-  launch. The CVE/kit launch sets HOME=/tmp and no memory bound (cve_planting.confinement_args), so
-  these two are deliberately absent here, matching cve_environments.
+  launch. The detection suite's and the kit's launch set HOME=/tmp and no memory bound
+  (planting.confinement_args), so these two are deliberately absent here, matching
+  evals.cve.environments.
 """
 
 import os
@@ -34,22 +35,22 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from evals.cve_layout import (
+from evals.cve.layout import (
     ANCHOR_PATHS,
     build_empty_layout,
     build_layout,
     layout_mount_args,
     owned_layout,
 )
-from evals.cve_places import LayoutAnchor
-from evals.cve_planting import (
+from evals.cve.places import LayoutAnchor
+from evals.cve.planting import (
     PlantedArgs,
     PlantingDocker,
     PlantingSpec,
     confinement_args,
     planted,
 )
-from evals.cve_planting_docker import DOCKER_PLANTING
+from evals.cve.planting_docker import DOCKER_PLANTING
 
 
 def image_tag(name: str) -> str:

@@ -12,13 +12,13 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from evals.cve.environments import Launch
 from evals.cve.nuisance.images import image_tag
-from evals.cve_environments import Launch
-from evals.cve_planting_base import LABEL
+from evals.cve.planting_base import LABEL
 
 if TYPE_CHECKING:
-    from evals.backend_lifecycle import BackendLifecycle
-    from evals.nuisance_admission import AdmittedServer
+    from evals.cve.backends.lifecycle import BackendLifecycle
+    from evals.cve.nuisance.admission import AdmittedServer
 
 type BackendProvisioner = Callable[[AdmittedServer], AbstractContextManager[Launch]]
 

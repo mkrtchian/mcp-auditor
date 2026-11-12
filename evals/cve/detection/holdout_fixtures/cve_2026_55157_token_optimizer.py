@@ -18,11 +18,11 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-55157-token-optimizer"
@@ -116,7 +116,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-55157",
     severity="CVSS 8.4 (v3.1, GHSA-49mq-fc6q-3h46)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION, FlawClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"command_execution", "arbitrary_read"}),
     kept_places=KEPT_PLACES,

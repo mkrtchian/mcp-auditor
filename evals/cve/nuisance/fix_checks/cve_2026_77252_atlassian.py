@@ -19,7 +19,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from evals.atlassian_backend import (
+from evals.cve.backends.atlassian import (
     ATLASSIAN_BRIDGE,
     ATLASSIAN_LAUNCH_LOCK,
     ATLASSIAN_RESPONDER_IMAGE,
@@ -28,26 +28,26 @@ from evals.atlassian_backend import (
     atlassian_rm,
     ensure_atlassian_responder,
 )
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import (
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import LABEL, own_network_args
+from evals.cve.planting_base import LABEL, own_network_args
 
 WITNESS = Place(
     id="atlassian-77252-secret",
     family="fix_check",
-    reachable_by=frozenset({"arbitrary_read"}),
-    kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path="/secret"),
+    reaches=frozenset({"arbitrary_read"}),
+    kind=PlaceKind.FILE,
+    coordinates=Coordinates(PlaceKind.FILE, path="/secret"),
 )
 # An exploit is aimed when its arguments name the out-of-allowlist scope; the benign calls name
 # only PROJ and TEAM, and the nonce is in the response, never in the arguments.
@@ -162,7 +162,7 @@ async def _benign_jira_get_sprint_issues(places: Places, client: KitClient) -> N
 
 FIXTURE = FixCheckFixture(
     flaw="CVE-2026-77252",
-    effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+    effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,

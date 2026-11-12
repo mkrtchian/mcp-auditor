@@ -3,7 +3,7 @@
 # suite. Real pinned software from npm, runs the MCP server over stdio. In the run the hosts it
 # fetches from, docs.apify.com and api.apify.com, are served under their real names by the holder
 # from captures (the server's admission records them in host.public_names.stand_ins); the fix
-# check reaches them through evals/apify_backend.py. APIFY_TOKEN, without which the server refuses
+# check reaches them through evals/cve/backends/apify.py. APIFY_TOKEN, without which the server refuses
 # to start with its default Actor tools, is the placeholder the server's README gives.
 # No COPY/ADD: the fingerprint hashes instructions only.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0

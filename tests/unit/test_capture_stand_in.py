@@ -12,8 +12,8 @@ from evals.capture_stand_in import (
     parse_request,
     path_form,
 )
-from evals.public_stand_ins import StandInCapture
-from tests.unit.support.test_public_stand_ins_given import PROBED_TARGET
+from evals.cve.public_stand_ins import StandInCapture
+from tests.unit.support.test_cve_public_stand_ins_given import PROBED_TARGET
 
 _HTML = ("Content-Type", "text/html; charset=utf-8")
 _JSON = ("Content-Type", "application/json")
@@ -26,7 +26,7 @@ def test_a_route_keeps_its_status_headers_and_body_verbatim():
         {
             "scheme": "https",
             "method": "GET",
-            "target": "/robots.txt?a=1",
+            "request_target": "/robots.txt?a=1",
             "status": 200,
             "headers": [["Content-Type", "text/html; charset=UTF-8"], ["Alt-Svc", 'h3=":443"']],
             "body": "<html>hi</html>",
@@ -170,7 +170,7 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
     assert record["defaults"] == [
         {
             "scheme": "http",
-            "probed_target": PROBED_TARGET,
+            "probed_request_target": PROBED_TARGET,
             "status": 301,
             "headers": [list(location), ["Server", "cloudflare"]],
             "body": "",
@@ -178,7 +178,7 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
         },
         {
             "scheme": "https",
-            "probed_target": PROBED_TARGET,
+            "probed_request_target": PROBED_TARGET,
             "status": 404,
             "headers": [list(_HTML)],
             "body": given.AN_HTML_PROBE.plain.body.decode(),

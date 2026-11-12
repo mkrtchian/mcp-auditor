@@ -1,12 +1,12 @@
 import threading
 from dataclasses import replace
 
-from evals.backend_lifecycle import BackendLifecycle
+from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.nuisance.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.metrics import SessionThrottles
-from evals.nuisance_admission import AdmittedServer, BackendFixture
 from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
 from tests.unit.support import test_cve_grammar_given as grammar
 from tests.unit.support import test_cve_launch_audit_given as launch_given

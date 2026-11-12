@@ -182,8 +182,8 @@ def _format_single_step_summary(cases: list[TestCase]) -> str:
             parts.append(f"  Response: {snippet}")
         if case.error is not None:
             parts.append(f"  Error: {case.error}")
-        if case.eval_result is not None:
-            parts.append(f"  Verdict: {case.eval_result.verdict}")
+        if case.judge_result is not None:
+            parts.append(f"  Verdict: {case.judge_result.verdict}")
         lines.append("\n".join(parts))
     return "\n".join(lines)
 

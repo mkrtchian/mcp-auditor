@@ -1,10 +1,10 @@
 # Run image of mcp-neo4j-cypher 0.6.0 (CVE-2026-35402 fixed: read_neo4j_cypher classifies the query
 # with EXPLAIN and rejects any query_type holding 'w'). The real Neo4j runs in this container, as in
-# the holdout twin (Dockerfile.holdout-2026-35402-neo4j-cypher-patched), at the release the server's
-# README Docker Compose example names (image neo4j:5.26.1, NEO4J_AUTH=neo4j/password,
-# NEO4J_PLUGINS=["apoc"]). The server runs at its documented defaults (NEO4J_URI
-# bolt://localhost:7687, NEO4J_USERNAME neo4j, NEO4J_PASSWORD password, NEO4J_DATABASE neo4j), so
-# no server variable is set here; --read-only comes from the launch.
+# the patched image of its holdout target (Dockerfile.holdout-2026-35402-neo4j-cypher-patched), at
+# the release the server's README Docker Compose example names (image neo4j:5.26.1,
+# NEO4J_AUTH=neo4j/password, NEO4J_PLUGINS=["apoc"]). The server runs at its documented defaults
+# (NEO4J_URI bolt://localhost:7687, NEO4J_USERNAME neo4j, NEO4J_PASSWORD password, NEO4J_DATABASE
+# neo4j), so no server variable is set here; --read-only comes from the launch.
 FROM neo4j:5.26.1@sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5
 
 # uv runs the README's install (uvx mcp-neo4j-cypher@0.6.0) and brings the CPython the base lacks.

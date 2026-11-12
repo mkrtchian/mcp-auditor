@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel
 
 from evals.cve.fixture_provenance import software_release_problems, stand_in_problems
-from evals.nuisance_counting import counted_flaws
+from evals.cve.nuisance.counting import counted_flaws
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer, BenignCall
+    from evals.cve.nuisance.admission import AdmittedServer, BenignCall
 
 
 class RealSoftwareRecord(BaseModel):

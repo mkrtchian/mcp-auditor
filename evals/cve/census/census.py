@@ -15,7 +15,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, computed_field
 
-from evals import cve_places
+from evals.cve import places
 from evals.cve.census.classification import Classification, is_consistent
 from evals.cve.census.figures import CensusFigures, Share, compute_figures
 from evals.cve.census.grouping import (
@@ -151,7 +151,7 @@ def load_census(path: Path) -> Census:
         problems += _grouping_problems(census) + _derived_problems(census)
     if census.draw is not None:
         order = draw_order_flaws(census.classifications, draw_candidates(census.flaws))
-        place_ids = set(cve_places.load_places(cve_places.HOLDOUT_PLACES))
+        place_ids = set(places.load_places(places.DETECTION_PLACES))
         disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
         problems += draw_problems(census.draw, order, disclosure_dates, place_ids, census.agents)
     if problems:

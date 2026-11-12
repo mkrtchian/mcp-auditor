@@ -8,7 +8,7 @@ import tests.unit.support.test_eval_display_given as display_given
 from evals.cve.detection import console as detection_console
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
 from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedStatus
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from evals.gate_outcome import GateOutcome
 
 DETECTED_CVE = "CVE-2025-53109"
@@ -21,7 +21,7 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> Str
 
 def a_gated_report(**update: object) -> DetectionReport:
     report = oracle_given.a_benchmark_report(
-        [oracle_given.a_cve_result(DETECTED_CVE, CVEStatus.DETECTED, detected_runs=3)]
+        [oracle_given.a_cve_result(DETECTED_CVE, TargetStatus.DETECTED, detected_runs=3)]
     )
     return report.model_copy(update={"gate": oracle_given.a_red_gate(), **update})
 

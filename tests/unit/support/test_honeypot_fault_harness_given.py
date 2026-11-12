@@ -15,8 +15,8 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainGoal,
     ChainPlanBatch,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     Judgment,
     MissCause,
     MissedModelCall,
@@ -155,17 +155,17 @@ def a_report_per_honeypot() -> HoneypotReports:
 
 
 def _a_report(tool: str, verdict: EvalVerdict, usage: ProviderUsage) -> AuditReport:
-    result = EvalResult(
+    result = JudgeResult(
         tool_name=tool,
         category=AuditCategory.INFO_LEAKAGE,
-        payload={},
+        arguments={},
         verdict=verdict,
         justification="judged",
         severity=Severity.LOW,
     )
     tool_report = ToolReport(
         tool=ToolDefinition(name=tool, input_schema={"type": "object"}),
-        cases=[TestCase(payload=_a_payload(AuditCategory.INFO_LEAKAGE), eval_result=result)],
+        cases=[TestCase(payload=_a_payload(AuditCategory.INFO_LEAKAGE), judge_result=result)],
     )
     return AuditReport(server_command=tool, tool_reports=[tool_report], provider_usage=usage)
 

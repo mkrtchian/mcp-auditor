@@ -1,7 +1,12 @@
 from collections.abc import Callable
 
+from evals.cve.nuisance.admission import (
+    AdmittedServer,
+    BackendFixture,
+    FlawRecord,
+    NuisanceAdmission,
+)
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.nuisance_admission import AdmittedServer, BackendFixture, FlawRecord, NuisanceAdmission
 
 
 def with_the_server(

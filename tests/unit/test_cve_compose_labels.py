@@ -5,6 +5,7 @@ import pytest
 import yaml
 
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.fixture_sources import unsourced_copies
 from evals.cve.images import (
     COMPOSE_FILE,
@@ -13,8 +14,7 @@ from evals.cve.images import (
     dockerfile_instructions,
     unpinned_bases,
 )
-from evals.cve_planting_base import SENTINEL_SERVICE
-from evals.docker_paths import DOCKER_DIRECTORY
+from evals.cve.planting_base import SENTINEL_SERVICE
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
 

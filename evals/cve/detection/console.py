@@ -70,14 +70,14 @@ def _print_lines(lines: list[str]) -> None:
 def _results_table(results: list[TargetResult]) -> Table:
     table = Table(box=None, header_style="bold")
     table.add_column("Flaw", no_wrap=True)
-    for column in ("Status", "Detected", "Miss class", "Aimed", "FAIL without proof"):
+    for column in ("Status", "Detected", "Miss kind", "Aimed", "FAIL without proof"):
         table.add_column(column)
     for result in results:
         cells = (
             result.flaw_id,
             result.status.value,
             run_fraction(result.detected_runs, result.runs),
-            result.miss_class or "-",
+            result.miss_kind or "-",
             run_fraction(result.aimed_runs, result.runs),
             run_fraction(result.fail_without_proof_runs, result.runs),
         )

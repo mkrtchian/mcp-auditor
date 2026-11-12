@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 from evals.cve.detection.route_check import RouteObservations, has_route
-from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
+from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
 
 GOLDEN_PATH = Path(__file__).parent / "detection_route_check_golden.json"
 
@@ -38,11 +38,11 @@ _NO_SCOPE = RouteObservations(
 )
 
 
-def _layout_place(place_id: str, anchor: LayoutAnchor, relpath: str, kind: PlantKind) -> Place:
+def _layout_place(place_id: str, anchor: LayoutAnchor, relpath: str, kind: PlaceKind) -> Place:
     return Place(
         id=place_id,
         family="deployment layout",
-        reachable_by=frozenset({"arbitrary_read"}),
+        reaches=frozenset({"arbitrary_read"}),
         kind=kind,
         coordinates=Coordinates(kind, anchor=anchor, relpath=relpath),
     )
@@ -52,20 +52,20 @@ def _catalogue_place() -> Place:
     return Place(
         id="etc-shadow",
         family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path="/etc/shadow"),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path="/etc/shadow"),
     )
 
 
 def _cases() -> dict[str, tuple[Place, RouteObservations]]:
     bare_url = _layout_place(
-        "bare-remote-url", LayoutAnchor.PROJECT_BARE, "config", PlantKind.GIT_REMOTE_URL
+        "bare-remote-url", LayoutAnchor.PROJECT_BARE, "config", PlaceKind.GIT_REMOTE_URL
     )
     history = _layout_place(
-        "bare-history-env", LayoutAnchor.PROJECT_BARE, ".env", PlantKind.GIT_HISTORY
+        "bare-history-env", LayoutAnchor.PROJECT_BARE, ".env", PlaceKind.GIT_HISTORY
     )
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, ".env", PlantKind.DOTENV)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, ".env", PlaceKind.DOTENV)
     return {
         "bare_url_revealed_by_origin_record": (bare_url, _SCOPED),
         "history_env_revealed_by_origin_record": (history, _SCOPED),

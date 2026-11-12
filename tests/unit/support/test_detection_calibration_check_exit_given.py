@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.targets import Target
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 
 def deps_with(

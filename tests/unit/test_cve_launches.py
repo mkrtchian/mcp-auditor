@@ -11,19 +11,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_cve_launches_given as given
-from evals.cve.kit import launch as kit_launch
-from evals.cve_environments import (
-    Launch,
-    LaunchShape,
-    command_injection_env,
-    filesystem_env,
-    git_init_traversal_env,
-    ssrf_env,
-)
-from evals.cve_layout import NEUTRAL_TOKEN
-from evals.cve_planting import PlantingFailed
-from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
-from evals.holdout_environments import (
+from evals.cve.detection.holdout_environments import (
     arcadedb_mcp_env,
     command_injection_checkout_env,
     filesystem_scope_env,
@@ -31,6 +19,18 @@ from evals.holdout_environments import (
     mysql_db_env,
     ssrf_redirect_env,
 )
+from evals.cve.environments import (
+    Launch,
+    LaunchShape,
+    command_injection_env,
+    filesystem_env,
+    git_init_traversal_env,
+    ssrf_env,
+)
+from evals.cve.kit import launch as kit_launch
+from evals.cve.layout import NEUTRAL_TOKEN
+from evals.cve.planting import PlantingFailed
+from evals.cve.planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker

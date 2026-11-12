@@ -3,7 +3,7 @@
 # now maxRedirects: 0; GHSA-8g7g was already fixed in 2.50.1). The real package is installed from
 # npm, unmodified, and runs over stdio at its documented defaults.
 #
-# The image bakes no backend environment: the lifecycle (evals/n8n_backend.py) passes N8N_API_URL,
+# The image bakes no backend environment: the lifecycle (evals/cve/backends/n8n.py) passes N8N_API_URL,
 # the address of the real n8n instance on the closed bridge, and N8N_API_KEY, the key that
 # instance issued at its first start, as `docker run -e` options of the server's launch.
 # No COPY/ADD: the fingerprint hashes instructions only.

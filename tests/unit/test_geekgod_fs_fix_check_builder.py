@@ -3,7 +3,7 @@ from typing import Any
 
 from evals.cve.kit.client import KitClient
 from evals.cve.nuisance.fix_checks import cve_2026_7400_geekgod_fs as geekgod_fs
-from evals.cve_places import Places
+from evals.cve.places import Places
 from tests.fakes import FakeKitClient
 
 DECLARED_SCOPE = "/tmp"

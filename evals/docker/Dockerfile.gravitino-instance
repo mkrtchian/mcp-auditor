@@ -2,6 +2,6 @@
 # CVE-2026-41041 in its MCP server, by the index digest of the `1.2.1-rc2` tag that became the
 # voted 1.2.1 release (Docker Hub carries no plain `1.2.1` tag; its /api/version answers 1.2.1).
 # It runs at its defaults (the embedded entity store, the REST API on 8090) as the image's root,
-# which needs no capability to bind 8090. The lifecycle (evals/gravitino_backend.py) seeds it
+# which needs no capability to bind 8090. The lifecycle (evals/cve/backends/gravitino.py) seeds it
 # through that REST API at each stand-up.
 FROM apache/gravitino@sha256:a7daab5fd18a8fd2d38f51c293abbba8393e2e00ac45d5423e1411d6ff7578f6

@@ -42,7 +42,7 @@ def test_the_closure_is_copied_at_its_relative_paths(tmp_path: Path):
 def test_the_closure_of_a_kit_root_holds_its_packages_and_the_shared_modules(tmp_path: Path):
     copy_closure(tmp_path, ["evals.cve.kit.driver"])
 
-    for relative in ("evals/cve/__init__.py", "evals/cve/kit/__init__.py", "evals/cve_places.py"):
+    for relative in ("evals/cve/__init__.py", "evals/cve/kit/__init__.py", "evals/cve/places.py"):
         assert (tmp_path / relative).is_file(), relative
 
 

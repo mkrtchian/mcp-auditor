@@ -1,8 +1,8 @@
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_cve_strike_given as given
-from evals.cve_grammar import CreditCheck, CVEStatus, grade_run
-from evals.cve_proofs import GradedRun, UnitPlace, struck_by_replay
-from evals.cve_report_units import units_of
+from evals.cve.grammar import CreditCheck, TargetStatus, grade_run
+from evals.cve.proofs import GradedRun, UnitPlace, struck_by_replay
+from evals.cve.report_units import units_of
 
 AIMED = {"path": grammar.AIMED_PATH}
 
@@ -20,8 +20,8 @@ def test_the_same_unit_place_struck_regrades_to_the_next_rung():
     detected = grade_run(target, units)
     struck = grade_run(target, units, CreditCheck(frozenset({UnitPlace(0, given.PLACE_A)}), False))
 
-    assert detected.status == CVEStatus.DETECTED
-    assert struck.status == CVEStatus.REACHED_BUT_JUDGED_PASS
+    assert detected.status == TargetStatus.DETECTED
+    assert struck.status == TargetStatus.REACHED_BUT_JUDGED_PASS
 
 
 def test_a_pair_struck_in_one_unit_leaves_the_same_place_credit_in_another_unit():
@@ -37,7 +37,7 @@ def test_a_pair_struck_in_one_unit_leaves_the_same_place_credit_in_another_unit(
         target, units_of(report), CreditCheck(frozenset({UnitPlace(0, given.PLACE_A)}), False)
     )
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
 
 
 def test_a_nonce_from_a_different_location_is_not_struck():
@@ -48,7 +48,7 @@ def test_a_nonce_from_a_different_location_is_not_struck():
         target, units_of(report), CreditCheck(frozenset({UnitPlace(0, given.PLACE_B)}), False)
     )
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
 
 
 def test_a_run_with_two_locations_keeps_detection_when_only_one_is_struck():
@@ -61,7 +61,7 @@ def test_a_run_with_two_locations_keeps_detection_when_only_one_is_struck():
         CreditCheck(frozenset({UnitPlace(0, given.PLACE_A)}), False),
     )
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
 
 
 def test_an_unchecked_check_keeps_the_status_and_records_the_missed_status():
@@ -72,8 +72,8 @@ def test_an_unchecked_check_keeps_the_status_and_records_the_missed_status():
         target, units_of(grammar.a_report(cases=[case])), CreditCheck(frozenset(), unchecked=True)
     )
 
-    assert grade.status == CVEStatus.DETECTED
-    assert grade.status_if_unchecked_missed == CVEStatus.MISSED
+    assert grade.status == TargetStatus.DETECTED
+    assert grade.status_if_unchecked_missed == TargetStatus.MISSED
     assert grade.unchecked_places == frozenset({given.PLACE_A})
 
 
@@ -102,7 +102,7 @@ def test_a_nonce_in_a_pass_judged_unit_is_still_reported_unchecked():
 
 def test_a_target_with_no_class_counts_every_category_in_fail_without_proof():
     case = grammar.a_case(response="denied", arguments=AIMED, category=grammar.RESOURCE_ABUSE)
-    target = given.a_target({given.PLACE_A: given.NONCE_A}, mechanisms=frozenset())
+    target = given.a_target({given.PLACE_A: given.NONCE_A}, classes=frozenset())
 
     grade = grade_run(target, units_of(grammar.a_report(cases=[case])))
 

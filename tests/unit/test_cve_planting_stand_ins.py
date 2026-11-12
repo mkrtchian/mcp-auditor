@@ -4,8 +4,8 @@ import pytest
 
 import tests.unit.support.test_cve_planting_stand_ins_given as given
 import tests.unit.support.test_cve_planting_stand_ins_then as then
-from evals.cve_planting import PlantingFailed, planted
-from evals.cve_planting_base import STAND_IN_IMAGE, own_network_args
+from evals.cve.planting import PlantingFailed, planted
+from evals.cve.planting_base import STAND_IN_IMAGE, own_network_args
 from tests.unit.support.test_cve_planting_then import nothing_left_alive, resolver_options_in
 
 

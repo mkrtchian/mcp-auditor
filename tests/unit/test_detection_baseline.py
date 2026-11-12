@@ -15,12 +15,12 @@ from evals.cve.detection.baseline import (
 )
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_grammar import CVEStatus
-from evals.cve_places import LayoutAnchor
-from evals.cve_planting_base import STAND_IN_SERVICE, PlantingHost, SymbolicUser
+from evals.cve.grammar import TargetStatus
+from evals.cve.places import LayoutAnchor
+from evals.cve.planting_base import STAND_IN_SERVICE, PlantingHost, SymbolicUser
 
-DETECTED = CVEStatus.DETECTED
-MISSED = CVEStatus.MISSED
+DETECTED = TargetStatus.DETECTED
+MISSED = TargetStatus.MISSED
 
 
 @pytest.mark.parametrize(

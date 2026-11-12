@@ -8,7 +8,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api?timeout=32s",
+      "request_target": "/api?timeout=32s",
       "status": 200,
       "headers": [
         [
@@ -21,7 +21,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/apis?timeout=32s",
+      "request_target": "/apis?timeout=32s",
       "status": 200,
       "headers": [
         [
@@ -34,7 +34,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api/v1?timeout=32s",
+      "request_target": "/api/v1?timeout=32s",
       "status": 200,
       "headers": [
         [
@@ -47,7 +47,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api/v1/namespaces/default/pods?limit=500",
+      "request_target": "/api/v1/namespaces/default/pods?limit=500",
       "status": 200,
       "headers": [
         [
@@ -61,7 +61,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [
@@ -74,7 +74,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [

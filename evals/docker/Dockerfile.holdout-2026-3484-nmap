@@ -31,7 +31,7 @@ RUN curl -fsSL https://nmap.org/dist/nmap-7.993.tar.bz2 -o /tmp/nmap.tar.bz2 \
     && rm -rf /tmp/nmapsrc /tmp/nmap.tar.bz2
 
 WORKDIR /app
-# Real install of the pinned vulnerable source (never a reimplementation or stub).
+# Real install of the pinned vulnerable source (never a reimplementation or stand-in).
 RUN git clone https://github.com/PhialsBasement/nmap-mcp-server.git . \
     && git checkout bee6d23547d57ae02460022f7c78ac0893092e38
 # Pin zod-to-json-schema to the disclosure-era version (the package.json floor): later 3.25.x

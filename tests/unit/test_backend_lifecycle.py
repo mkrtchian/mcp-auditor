@@ -3,20 +3,14 @@ import pytest
 import tests.unit.support.test_backend_lifecycle_given as given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import (
-    ckan_backend,
-    doris_backend,
-    gravitino_backend,
-    jenkins_backend,
-    mcp_ssh_sshd_backend,
-)
+from evals.cve.backends import ckan, doris, gravitino, jenkins, mcp_ssh_sshd
+from evals.cve.backends.responder import Responder
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.confinement import MEMORY_BOUND, memory_bound_args
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
-from evals.cve_planting_base import LABEL, resolver_args
-from evals.nuisance_confinement import MEMORY_BOUND, memory_bound_args
-from evals.responder_backend import Responder
+from evals.cve.planting_base import LABEL, resolver_args
 from tests.unit.support.docker_argv import carries, count, value_after
 from tests.unit.support.recorded_subprocess import recorded_commands
 
@@ -147,16 +141,16 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
 @pytest.mark.parametrize(
     "args",
     [
-        doris_backend.doris_cluster_run_args(),
-        *(part.run_args() for part in ckan_backend.CKAN_PARTS),
-        *(part.run_args() for part in gravitino_backend.GRAVITINO_PARTS),
-        mcp_ssh_sshd_backend.singleton_run_args(),
-        jenkins_backend.singleton_run_args(),
+        doris.doris_cluster_run_args(),
+        *(part.run_args() for part in ckan.CKAN_PARTS),
+        *(part.run_args() for part in gravitino.GRAVITINO_PARTS),
+        mcp_ssh_sshd.singleton_run_args(),
+        jenkins.singleton_run_args(),
     ],
     ids=[
         "doris cluster",
-        *(part.container for part in ckan_backend.CKAN_PARTS),
-        *(part.container for part in gravitino_backend.GRAVITINO_PARTS),
+        *(part.container for part in ckan.CKAN_PARTS),
+        *(part.container for part in gravitino.GRAVITINO_PARTS),
         "mcp-ssh sshd",
         "jenkins controller",
     ],
@@ -169,14 +163,12 @@ def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_res
 
 
 def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():
-    assert carries(
-        doris_backend.doris_cluster_run_args(), ["-e", "BE_CONFIG_EXTRA=public_host = doris"]
-    )
+    assert carries(doris.doris_cluster_run_args(), ["-e", "BE_CONFIG_EXTRA=public_host = doris"])
 
 
 def test_the_doris_cluster_answers_on_its_alias():
-    assert carries(doris_backend.doris_cluster_run_args(), ["--network-alias", "doris"])
+    assert carries(doris.doris_cluster_run_args(), ["--network-alias", "doris"])
 
 
 def test_the_doris_cluster_is_named_after_its_alias():
-    assert carries(doris_backend.doris_cluster_run_args(), ["--hostname", "doris"])
+    assert carries(doris.doris_cluster_run_args(), ["--hostname", "doris"])

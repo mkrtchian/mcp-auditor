@@ -1,6 +1,6 @@
 import pytest
 
-from evals.cve_planting_spec import request_target, served_file
+from evals.cve.planting_spec import request_target, served_file
 
 
 @pytest.mark.parametrize(

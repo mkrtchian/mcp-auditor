@@ -8,8 +8,8 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
     CoverageGap,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     MissCause,
     MissedModelCall,
     ModelCallKind,
@@ -44,11 +44,11 @@ def a_fail_result(
     category: AuditCategory,
     severity: Severity,
     justification: str,
-) -> EvalResult:
-    return EvalResult(
+) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool_name,
         category=category,
-        payload={},
+        arguments={},
         verdict=EvalVerdict.FAIL,
         justification=justification,
         severity=severity,
@@ -186,10 +186,10 @@ def _a_test_case(
             description="test",
             arguments={},
         ),
-        eval_result=EvalResult(
+        judge_result=JudgeResult(
             tool_name=tool_name,
             category=category,
-            payload={},
+            arguments={},
             verdict=verdict,
             justification=justification,
             severity=severity,

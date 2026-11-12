@@ -22,7 +22,7 @@
     {
       "scheme": "https",
       "method": "POST",
-      "target": "/html/",
+      "request_target": "/html/",
       "status": 200,
       "headers": [
         [
@@ -101,7 +101,7 @@
   "defaults": [
     {
       "scheme": "https",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 400,
       "headers": [
         [
@@ -142,7 +142,7 @@
     },
     {
       "scheme": "http",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 400,
       "headers": [
         [

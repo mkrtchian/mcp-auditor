@@ -8,9 +8,9 @@ from pathlib import Path
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
 from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.grammar import RunGrade
+from evals.cve.places import Places
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
-from evals.cve_grammar import RunGrade
-from evals.cve_places import Places
 from evals.eval_session import TreeState
 from mcp_auditor.domain.models import AuditReport
 

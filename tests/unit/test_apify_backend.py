@@ -1,6 +1,6 @@
 import ipaddress
 
-from evals.apify_backend import (
+from evals.cve.backends.apify import (
     API_HOST,
     APIFY_BENIGN_HOST,
     APIFY_SUBNET,

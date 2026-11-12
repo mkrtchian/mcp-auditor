@@ -11,7 +11,7 @@ from mcp_auditor.domain.models import (
     AuditReport,
     BlockedPayload,
     CoverageGap,
-    EvalResult,
+    JudgeResult,
     Judgment,
     MissedModelCall,
     ModelCallKind,
@@ -179,15 +179,15 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         if isinstance(answer, Missed):
             return {"processed_cases": [case], "current_case": None, **answer.state_update()}
         judgment, usage = answer
-        eval_result = EvalResult(
+        judge_result = JudgeResult(
             tool_name=tool.name,
             category=case.payload.category,
-            payload=case.payload.arguments,
+            arguments=case.payload.arguments,
             verdict=judgment.verdict,
             justification=judgment.justification,
             severity=judgment.severity,
         )
-        judged_case = case.model_copy(update={"eval_result": eval_result})
+        judged_case = case.model_copy(update={"judge_result": judge_result})
         return {
             "processed_cases": [judged_case],
             "current_case": None,

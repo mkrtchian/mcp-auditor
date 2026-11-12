@@ -5,8 +5,8 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainGoal,
     ChainStep,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     ProviderUsage,
     Severity,
     TestCase,
@@ -29,10 +29,10 @@ def a_judged_case(
         ),
         response="some response",
         error=None,
-        eval_result=EvalResult(
+        judge_result=JudgeResult(
             tool_name="get_user",
             category=category,
-            payload={"id": 1},
+            arguments={"id": 1},
             verdict=verdict,
             justification="because",
             severity=Severity.HIGH,
@@ -73,10 +73,10 @@ def a_chain_with_leakage_verdict() -> AttackChain:
         steps=[
             ChainStep(payload=payload, response="['proj_001']", observation="found ids"),
         ],
-        eval_result=EvalResult(
+        judge_result=JudgeResult(
             tool_name="get_user",
             category=AuditCategory.INFO_LEAKAGE,
-            payload={"action": "list"},
+            arguments={"action": "list"},
             verdict=EvalVerdict.FAIL,
             justification="leaked internal data",
             severity=Severity.HIGH,

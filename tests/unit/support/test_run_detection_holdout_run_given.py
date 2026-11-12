@@ -12,7 +12,7 @@ from evals.cve.detection.holdout_results import HoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps
 
 # The report's no-proof guarantee, held by the result file too.
-PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
+PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
 RETIRED_KEYS = {"cve_id", "mechanism_labels", "miss_causes", "primary_number"}
 
 

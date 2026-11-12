@@ -3,18 +3,18 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_cve_grammar_given as given
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, grade_run, resolve
-from evals.cve_proofs import is_aimed, proofs_in
-from evals.cve_report_units import units_of
-from evals.cve_units import unit_of_exchanges
+from evals.cve.grammar import FlawClass, MissKind, TargetStatus, grade_run, resolve
+from evals.cve.proofs import is_aimed, proofs_in
+from evals.cve.report_units import units_of
+from evals.cve.units import unit_of_exchanges
 from mcp_auditor.domain.models import AuditCategory, TestCase
 
 SENTINEL = given.SENTINEL
 PLACE = given.PLACE
 AIMED = {"path": given.AIMED_PATH}
-COMMAND_EXECUTION = MechanismClass.COMMAND_EXECUTION
-READ_OUTSIDE_SCOPE = MechanismClass.READ_OUTSIDE_SCOPE
-INTERNAL_FETCH = MechanismClass.INTERNAL_FETCH
+COMMAND_EXECUTION = FlawClass.COMMAND_EXECUTION
+READ_OUTSIDE_SCOPE = FlawClass.READ_OUTSIDE_SCOPE
+INTERNAL_FETCH = FlawClass.INTERNAL_FETCH
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,7 @@ INTERNAL_FETCH = MechanismClass.INTERNAL_FETCH
 def test_nonce_in_a_fail_case_output_is_detected(case: TestCase):
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
     assert grade.evidence is not None and SENTINEL in grade.evidence
     assert grade.category == given.INFO_LEAKAGE
 
@@ -39,7 +39,7 @@ def test_nonce_echoed_from_the_case_arguments_is_not_a_proof():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
-    assert grade.status == CVEStatus.MISSED
+    assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_carried_by_an_earlier_chain_step_is_not_a_proof():
@@ -52,7 +52,7 @@ def test_nonce_carried_by_an_earlier_chain_step_is_not_a_proof():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
-    assert grade.status == CVEStatus.MISSED
+    assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
@@ -66,7 +66,7 @@ def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
 
 
 def test_nonce_only_in_the_server_command_is_not_a_proof():
@@ -76,7 +76,7 @@ def test_nonce_only_in_the_server_command_is_not_a_proof():
 
     grade = grade_run(given.a_read_target(), units_of(report))
 
-    assert grade.status == CVEStatus.MISSED
+    assert grade.status == TargetStatus.MISSED
     assert not grade.surfaced
 
 
@@ -85,7 +85,7 @@ def test_nonce_only_in_a_step_observation_is_not_a_proof():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
-    assert grade.status == CVEStatus.MISSED
+    assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_under_pass_is_reached_but_judged_pass():
@@ -93,7 +93,7 @@ def test_nonce_under_pass_is_reached_but_judged_pass():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
-    assert grade.status == CVEStatus.REACHED_BUT_JUDGED_PASS
+    assert grade.status == TargetStatus.REACHED_BUT_JUDGED_PASS
     assert grade.surfaced
 
 
@@ -103,7 +103,7 @@ def test_proof_and_fail_on_different_cases_is_not_detected():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[proof, fail])))
 
-    assert grade.status == CVEStatus.REACHED_BUT_JUDGED_PASS
+    assert grade.status == TargetStatus.REACHED_BUT_JUDGED_PASS
 
 
 def test_nonce_under_fail_in_any_category_is_detected():
@@ -111,30 +111,28 @@ def test_nonce_under_fail_in_any_category_is_detected():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
     assert grade.category == given.RESOURCE_ABUSE
 
 
 @pytest.mark.parametrize(
-    ("cases", "miss_class"),
+    ("cases", "miss_kind"),
     [
-        ([given.a_case(response="nothing")], MissClass.NOT_AIMED),
-        ([given.a_blocked_case(AIMED)], MissClass.AIMED_BLOCKED),
-        ([given.a_case(response="nothing", arguments=AIMED)], MissClass.AIMED_NO_PROOF),
+        ([given.a_case(response="nothing")], MissKind.NOT_AIMED),
+        ([given.a_blocked_case(AIMED)], MissKind.AIMED_BLOCKED),
+        ([given.a_case(response="nothing", arguments=AIMED)], MissKind.AIMED_NO_PROOF),
         (
             [given.a_blocked_case(AIMED), given.a_case(response="nothing", arguments=AIMED)],
-            MissClass.AIMED_NO_PROOF,
+            MissKind.AIMED_NO_PROOF,
         ),
     ],
     ids=["not_aimed", "aimed_blocked", "aimed_no_proof", "blocked_and_unblocked"],
 )
-def test_a_missed_run_is_classed_by_its_best_aimed_unit(
-    cases: list[TestCase], miss_class: MissClass
-):
+def test_a_missed_run_is_classed_by_its_best_aimed_unit(cases: list[TestCase], miss_kind: MissKind):
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=cases)))
 
-    assert grade.status == CVEStatus.MISSED
-    assert grade.miss_class == miss_class
+    assert grade.status == TargetStatus.MISSED
+    assert grade.miss_kind == miss_kind
 
 
 @pytest.mark.parametrize(
@@ -153,7 +151,7 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
 
 
 @pytest.mark.parametrize(
-    ("mechanisms", "category", "expected"),
+    ("classes", "category", "expected"),
     [
         ((COMMAND_EXECUTION, READ_OUTSIDE_SCOPE), given.INFO_LEAKAGE, True),
         ((COMMAND_EXECUTION,), given.INFO_LEAKAGE, False),
@@ -174,11 +172,11 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
     ],
 )
 def test_fail_without_proof_counts_a_category_any_class_of_the_set_admits(
-    mechanisms: tuple[MechanismClass, ...], category: AuditCategory, expected: bool
+    classes: tuple[FlawClass, ...], category: AuditCategory, expected: bool
 ):
     case = given.a_case(response="denied", arguments=AIMED, category=category)
 
-    grade = grade_run(given.a_target_under(*mechanisms), units_of(given.a_report(cases=[case])))
+    grade = grade_run(given.a_target_under(*classes), units_of(given.a_report(cases=[case])))
 
     assert grade.fail_without_proof is expected
 
@@ -219,8 +217,8 @@ def test_chain_blocked_at_its_first_step_is_aimed_blocked():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
-    assert grade.status == CVEStatus.MISSED
-    assert grade.miss_class == MissClass.AIMED_BLOCKED
+    assert grade.status == TargetStatus.MISSED
+    assert grade.miss_kind == MissKind.AIMED_BLOCKED
 
 
 def test_chain_blocked_after_a_leaking_first_step_is_detected():
@@ -230,7 +228,7 @@ def test_chain_blocked_after_a_leaking_first_step_is_detected():
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
-    assert grade.status == CVEStatus.DETECTED
+    assert grade.status == TargetStatus.DETECTED
 
 
 def test_chain_blocked_after_its_first_step_is_a_blocked_judged_unit():
@@ -244,11 +242,11 @@ def test_chain_blocked_after_its_first_step_is_a_blocked_judged_unit():
 
 def test_resolve_keeps_the_highest_rung_over_runs():
     resolution = resolve(
-        [given.a_missed_run(MissClass.NOT_AIMED), given.a_reached_run(), given.a_detected_run()]
+        [given.a_missed_run(MissKind.NOT_AIMED), given.a_reached_run(), given.a_detected_run()]
     )
 
-    assert resolution.status == CVEStatus.DETECTED
-    assert resolution.miss_class is None
+    assert resolution.status == TargetStatus.DETECTED
+    assert resolution.miss_kind is None
     assert resolution.evidence == f"leaked {SENTINEL}"
     assert resolution.category == given.INFO_LEAKAGE
 
@@ -256,14 +254,14 @@ def test_resolve_keeps_the_highest_rung_over_runs():
 def test_resolve_keeps_the_best_miss_class_over_missed_runs():
     resolution = resolve(
         [
-            given.a_missed_run(MissClass.NOT_AIMED, aimed=False),
-            given.a_missed_run(MissClass.AIMED_NO_PROOF),
-            given.a_missed_run(MissClass.AIMED_BLOCKED),
+            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            given.a_missed_run(MissKind.AIMED_NO_PROOF),
+            given.a_missed_run(MissKind.AIMED_BLOCKED),
         ]
     )
 
-    assert resolution.status == CVEStatus.MISSED
-    assert resolution.miss_class == MissClass.AIMED_NO_PROOF
+    assert resolution.status == TargetStatus.MISSED
+    assert resolution.miss_kind == MissKind.AIMED_NO_PROOF
 
 
 def test_resolve_counts_each_condition_per_run():
@@ -271,8 +269,8 @@ def test_resolve_counts_each_condition_per_run():
         [
             given.a_detected_run(),
             given.a_reached_run(),
-            given.a_missed_run(MissClass.AIMED_NO_PROOF, fail_without_proof=True),
-            given.a_missed_run(MissClass.NOT_AIMED, aimed=False),
+            given.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
+            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
         ]
     )
 

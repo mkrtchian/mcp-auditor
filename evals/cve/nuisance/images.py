@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from evals.cve.detection import calibration_dossier
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import NuisanceAdmission
+    from evals.cve.nuisance.admission import NuisanceAdmission
 
 
 def image_tag(service: str) -> str:

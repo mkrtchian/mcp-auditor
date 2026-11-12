@@ -205,7 +205,7 @@ async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
     result = await given.invoke_graph(graph, state)
 
     report = then.tool_report_at(result, 0)
-    assert [case.eval_result is None for case in report.cases] == [True, False]
+    assert [case.judge_result is None for case in report.cases] == [True, False]
     then.audit_report_misses_one_call(result, "get_user", ModelCallKind.JUDGMENT, cause)
     assert result["audit_report"].provider_usage == fake_llm.total_usage
     assert result["audit_report"].judge_usage == failure.usage.add(FAKE_USAGE)

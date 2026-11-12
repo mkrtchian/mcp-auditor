@@ -10,8 +10,8 @@ from evals.cve.detection.replay import (
     replayed_units,
 )
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_grammar import CreditCheck, MechanismClass, PlantedTarget
-from evals.cve_report_units import units_of
+from evals.cve.grammar import CreditCheck, FlawClass, PlantedTarget
+from evals.cve.report_units import units_of
 from mcp_auditor.domain.models import AuditReport
 
 AIM = re.compile(r"^/outside/")
@@ -57,7 +57,7 @@ async def test_an_argument_mismatch_makes_the_run_unchecked_without_launching():
     run = RunToCheck(
         target=ACCEPTANCE_TARGETS[0],
         run_target=PlantedTarget(
-            frozenset({MechanismClass.READ_OUTSIDE_SCOPE}), AIM, {"planted": "nonce"}
+            frozenset({FlawClass.READ_OUTSIDE_SCOPE}), AIM, {"planted": "nonce"}
         ),
         report=given.a_case_report(),
         recorded_calls=given.calls("/outside/wrong"),

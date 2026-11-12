@@ -1,6 +1,6 @@
 import tests.unit.support.test_committed_stand_ins_given as given
 import tests.unit.support.test_committed_stand_ins_then as then
-from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in
+from evals.cve.public_stand_ins import STAND_INS_DIRECTORY, stand_in
 
 
 def test_every_committed_capture_loads_with_its_leaf():

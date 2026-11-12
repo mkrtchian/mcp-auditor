@@ -21,11 +21,11 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Coordinates, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKDIR = "/srv/app"
@@ -68,19 +68,19 @@ def _injection(read_cmd: str) -> str:
 
 
 def _read_cmd(coord: Coordinates) -> str:
-    if coord.kind is PlantKind.FILE:
+    if coord.kind is PlaceKind.FILE:
         paths = coord.paths if coord.paths is not None else (coord.path,)
         container_paths = [resolve_container_path(p, WORKDIR) for p in paths if p is not None]
         redir = " 2>/dev/null" if len(container_paths) > 1 else ""
         return "cat " + " ".join(container_paths) + redir
-    if coord.kind is PlantKind.ENV:
+    if coord.kind is PlaceKind.ENV:
         # /proc/self/environ carries every exported variable, the planted nonce among them.
         return "cat /proc/self/environ"
-    if coord.kind is PlantKind.ACCOUNT:
+    if coord.kind is PlaceKind.ACCOUNT:
         return "id -un"
-    if coord.kind is PlantKind.HOSTNAME:
+    if coord.kind is PlaceKind.HOSTNAME:
         return "cat /etc/hostname"
-    if coord.kind is PlantKind.HTTP_ENDPOINT:
+    if coord.kind is PlaceKind.HTTP_ENDPOINT:
         return f"curl -s http://{coord.host}{coord.path}"
     raise ValueError(f"no command-execution read for kind {coord.kind}")
 
@@ -100,7 +100,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-19978",
     severity="CVSS 8.8 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

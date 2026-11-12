@@ -1,5 +1,5 @@
 import tests.unit.support.test_nuisance_run_given as run_given
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 from tests.unit.support.test_nuisance_admission_given import an_admission
 
 

@@ -4,7 +4,7 @@ The counterpart of `calibration_dossier.write_kit` for the nuisance admission: t
 develop a fix-check fixture from the advisories, the fixture format and the grammar, with no
 access to the auditor's code, so the exported tree imports nothing from `mcp_auditor`. Where the
 calibration kit ships the frozen list and the deployment layout, the admission dossier ships the
-fix-check driver (`evals/cve/kit/fix_check.py`) and no `holdout_places.json`: the fix check
+fix-check driver (`evals/cve/kit/fix_check.py`) and no `detection_places.json`: the fix check
 plants the flaw's own witness at its own coordinate, free of any catalogue place.
 
 The dossier is rebuilt from the committed census (`CensusFlaw` fields alone), one advisory per
@@ -27,11 +27,11 @@ from evals.cve.detection.calibration_dossier import (
 )
 from evals.cve.nuisance import holdout_target_reference
 from evals.cve.nuisance import walk as nuisance_walk
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.re_admission_docs import admission_confinement_text
 from evals.cve.nuisance.walk_record import WalkInputs, normalized_package
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.run_census import GRAMMAR_CLASS_DEFINITIONS
 
 # Kept here, not read from the backend registry, so the dossier stays free of the
@@ -125,10 +125,10 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
 ## FixCheckFixture fields
 
 - `flaw`: the census identifier the fixture reproduces.
-- `effect_class`: the grammar `MechanismClass`, or `None`.
+- `effect_class`: the grammar `FlawClass`, or `None`.
 - `aim`: a compiled `re.Pattern` the exploit's call arguments must match, so a witness that
   surfaces by accident (an exploit not aimed at it) does not count.
-- `witness`: the `Place` the exploit surfaces (an id of its own, a `PlantKind` and
+- `witness`: the `Place` the exploit surfaces (an id of its own, a `PlaceKind` and
   `Coordinates`). The fix check plants it at the flaw's own coordinate, with no catalogue list.
 - `planting_host`: the `PlantingHost` the witness plants into.
 - `builder`: a context manager yielding a `launch.Launch` (`evals/cve/kit/launch.py`).
@@ -221,8 +221,8 @@ admission.
   holdout target copies the list of that target's card.
 
 `FixCheckRecord.holdout_fingerprint` is not the agents' to fill: the maintainer records it at the
-merge, on a record whose `source` is `holdout_calibration`, as the fixture fingerprint of the
-holdout target it copies.
+merge, on a record whose `source` is `detection_holdout_calibration`, as the fixture fingerprint of
+the holdout target it copies.
 
 ## FlawRecord JSON schema
 

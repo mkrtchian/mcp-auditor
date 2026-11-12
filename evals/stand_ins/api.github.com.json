@@ -8,7 +8,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "IssueList",
    "status": 200,
    "headers": [
@@ -38,7 +38,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "IssueRepositoryInfo",
    "status": 200,
    "headers": [
@@ -68,7 +68,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "IssueCreate",
    "status": 200,
    "headers": [
@@ -98,7 +98,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "IssueByNumber",
    "status": 200,
    "headers": [
@@ -128,7 +128,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "IssueUpdate",
    "status": 200,
    "headers": [
@@ -158,7 +158,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/graphql",
+   "request_target": "/graphql",
    "action": "CommentCreate",
    "status": 200,
    "headers": [
@@ -189,7 +189,7 @@
  "defaults": [
   {
    "scheme": "http",
-   "probed_target": "/0123456789abcdef",
+   "probed_request_target": "/0123456789abcdef",
    "status": 301,
    "headers": [
     [
@@ -206,7 +206,7 @@
   },
   {
    "scheme": "https",
-   "probed_target": "/0123456789abcdef",
+   "probed_request_target": "/0123456789abcdef",
    "status": 404,
    "headers": [
     [

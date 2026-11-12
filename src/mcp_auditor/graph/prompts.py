@@ -159,9 +159,9 @@ def _format_cases_for_extraction(tool_report: ToolReport) -> str:
             lines.append(f"  Response: {response_text}")
         if case.error is not None:
             lines.append(f"  Error: {case.error}")
-        if case.eval_result is not None:
-            lines.append(f"  Verdict: {case.eval_result.verdict}")
-            lines.append(f"  Justification: {case.eval_result.justification}")
+        if case.judge_result is not None:
+            lines.append(f"  Verdict: {case.judge_result.verdict}")
+            lines.append(f"  Justification: {case.judge_result.justification}")
         parts.append("\n".join(lines))
     return "\n\n".join(parts)
 

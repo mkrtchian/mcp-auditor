@@ -1,7 +1,7 @@
 import tests.unit.support.test_kit_fix_check_given as given
 from evals.cve.kit.client import KitResponse
 from evals.cve.kit.fix_check import benign_transcript, fix_check_result
-from evals.nuisance_admission import FixCheckRecord
+from evals.cve.nuisance.admission import FixCheckRecord
 
 
 def test_surfaces_on_vulnerable_and_is_fixed_on_the_patched_version():

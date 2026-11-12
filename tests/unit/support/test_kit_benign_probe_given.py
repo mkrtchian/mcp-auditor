@@ -7,12 +7,12 @@ from typing import Any
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals.backend_lifecycle import BackendLifecycle
+from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.kit import benign_probe
 from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.cve.kit.client import KitResponse, KitTool
-from evals.cve_planting_base import PlantingHost
-from evals.nuisance_admission import AdmittedServer, BackendFixture
+from evals.cve.nuisance.admission import AdmittedServer, BackendFixture
+from evals.cve.planting_base import PlantingHost
 from tests.fakes import FakeKitClient
 
 

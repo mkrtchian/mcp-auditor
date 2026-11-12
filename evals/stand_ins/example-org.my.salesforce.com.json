@@ -17,7 +17,7 @@
     {
       "scheme": "https",
       "method": "POST",
-      "target": "/services/oauth2/token",
+      "request_target": "/services/oauth2/token",
       "status": 200,
       "headers": [
         [
@@ -30,7 +30,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/services/data",
+      "request_target": "/services/data",
       "status": 200,
       "headers": [
         [
@@ -43,7 +43,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/services/data/v68.0",
+      "request_target": "/services/data/v68.0",
       "status": 200,
       "headers": [
         [
@@ -56,7 +56,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account",
+      "request_target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account",
       "status": 200,
       "headers": [
         [
@@ -69,7 +69,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account&columns=true",
+      "request_target": "/services/data/v68.0/query?q=SELECT%20Id%2CName%20FROM%20Account&columns=true",
       "status": 200,
       "headers": [
         [
@@ -82,7 +82,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/services/data/v68.0/query?q=SELECT%20Name%2C%20InstanceName%2C%20IsSandbox%2C%20TrialExpirationDate%2C%20NamespacePrefix%2C%20OrganizationType%20FROM%20Organization",
+      "request_target": "/services/data/v68.0/query?q=SELECT%20Name%2C%20InstanceName%2C%20IsSandbox%2C%20TrialExpirationDate%2C%20NamespacePrefix%2C%20OrganizationType%20FROM%20Organization",
       "status": 200,
       "headers": [
         [
@@ -96,7 +96,7 @@
   "defaults": [
     {
       "scheme": "https",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [
@@ -109,7 +109,7 @@
     },
     {
       "scheme": "http",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [

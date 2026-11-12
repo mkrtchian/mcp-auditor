@@ -18,12 +18,12 @@ The exploits name each file by its absolute path, so the launch plants no in-sco
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.holdout_environments import filesystem_scope_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
-from evals.holdout_environments import filesystem_scope_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKING_DIRECTORY = "/srv/app"  # the declared scope the launch passes as the final argument
@@ -59,9 +59,9 @@ KEPT_PLACES: tuple[str, ...] = (
 
 def _readable_path(places: Places, place_id: str) -> str:
     place = places[place_id]
-    if place.kind is PlantKind.ENV:
+    if place.kind is PlaceKind.ENV:
         return "/proc/self/environ"
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return "/etc/hostname"
     coordinates = place.coordinates
     raw = coordinates.path or next(iter(coordinates.paths or ()))
@@ -79,7 +79,7 @@ def _read_command(path: str, *, bool_field: bool) -> str:
 
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
-        bool_field = places[place_id].kind is PlantKind.ENV
+        bool_field = places[place_id].kind is PlaceKind.ENV
         command = _read_command(_readable_path(places, place_id), bool_field=bool_field)
         await client.call_tool("call_aws", {"cli_command": command})
 
@@ -94,7 +94,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-4270",
     severity="CVSS 6.8 (v4.0, kit card)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,

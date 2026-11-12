@@ -52,7 +52,7 @@ CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 INCOMPLETE_EXIT = 1
 REFUSED_EXIT = 3
 
-# Written from the docstring of evals/cve_grammar.py, which stays untouched.
+# Written from the docstring of evals/cve/grammar.py, which stays untouched.
 GRAMMAR_CLASS_DEFINITIONS = """\
 - `read_outside_scope`: the server reads data outside the scope it declares, such as a file
   outside the directories it allows, and returns it.

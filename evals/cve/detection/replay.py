@@ -34,14 +34,14 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from evals.cve.detection.targets import Target, TargetVersion
+from evals.cve.environments import TOOL_CALL_TIMEOUT, connect
 from evals.cve.exchange_log import Exchange
+from evals.cve.grammar import CreditCheck, PlantedTarget
+from evals.cve.places import Place
+from evals.cve.proofs import GradedRun, UnitPlace, struck_by_replay
+from evals.cve.report_units import units_of
 from evals.cve.server_health import lost_connection
-from evals.cve_environments import TOOL_CALL_TIMEOUT, connect
-from evals.cve_grammar import CreditCheck, PlantedTarget
-from evals.cve_places import Place
-from evals.cve_proofs import GradedRun, UnitPlace, struck_by_replay
-from evals.cve_report_units import units_of
-from evals.cve_units import Step, Unit
+from evals.cve.units import Step, Unit
 from mcp_auditor.domain.models import AuditReport
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -127,7 +127,7 @@ def _decides(replayed: Sequence[ReplayedRun]) -> bool:
 def _struck(
     run_target: PlantedTarget, units: Sequence[Unit], replayed: ReplayedRun
 ) -> frozenset[UnitPlace]:
-    replay_target = PlantedTarget(run_target.mechanisms, run_target.aim, replayed.nonces)
+    replay_target = PlantedTarget(run_target.classes, run_target.aim, replayed.nonces)
     return struck_by_replay(
         GradedRun(run_target, units),
         GradedRun(replay_target, replayed_units(units, replayed.outputs)),

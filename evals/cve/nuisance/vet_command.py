@@ -11,9 +11,11 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.closed_network import check_closed_network_support
+from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -41,9 +43,7 @@ from evals.cve.run_images import (
     remove_containers,
     running_containers,
 )
-from evals.cve_environments import TOOL_CALL_TIMEOUT
 from evals.eval_session import Refused
-from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 
 _REFUSAL = "nuisance vet refused"
 

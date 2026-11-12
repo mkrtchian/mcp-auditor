@@ -7,8 +7,8 @@ from evals.cve.detection.holdout_audit import IncompleteRun
 from evals.cve.detection.holdout_results import HoldoutRunStatus, HoldoutTargetResult
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.holdout_conditions import HoldoutConditions
-from evals.cve_grammar import DETECTION_RUNGS, RunGrade
 from evals.probe.analysis import call_cost
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
@@ -31,7 +31,7 @@ def assemble_target(
     return HoldoutTargetResult(
         flaw_id=target.flaw_id,
         disclosure_date=disclosure_date,
-        class_labels=tuple(sorted(m.value for m in target.mechanisms)),
+        class_labels=tuple(sorted(m.value for m in target.classes)),
         tools_count=len(reports[0].tool_reports),
         ran_in_fallback=target.launch_mode is LaunchMode.FALLBACK,
         statuses=tuple(_run_status(outcome) for outcome in outcomes),

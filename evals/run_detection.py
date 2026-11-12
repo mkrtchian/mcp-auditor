@@ -51,8 +51,8 @@ from evals.cve.detection.targets import (
     image_tag,
 )
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, sweep_containers, target_services
-from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.detection_preflight import preflight_ok
 from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
@@ -105,7 +105,7 @@ async def _run(
     # The calibration check and the survey run under the same crash handler as the graded path, so
     # a configuration error out of either exits 4, not Python's exit 1, which reads as a target out
     # of calibration.
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     tags = [image_tag(service) for service in target_services(graded)]
     try:
         if args.survey:

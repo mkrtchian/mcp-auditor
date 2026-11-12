@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api/mqa/cache/datasets/my_dataset_name",
+      "request_target": "/api/mqa/cache/datasets/my_dataset_name",
       "status": 200,
       "headers": [
         [
@@ -74,7 +74,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api/hub/repo/datasets/my_dataset_name/metrics",
+      "request_target": "/api/hub/repo/datasets/my_dataset_name/metrics",
       "status": 200,
       "headers": [
         [
@@ -140,7 +140,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/db97627f773d6c16",
+      "probed_request_target": "/db97627f773d6c16",
       "status": 301,
       "headers": [
         [
@@ -189,7 +189,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/db97627f773d6c16",
+      "probed_request_target": "/db97627f773d6c16",
       "status": 404,
       "headers": [
         [

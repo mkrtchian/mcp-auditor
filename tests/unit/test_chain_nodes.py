@@ -146,7 +146,7 @@ class TestMakeExecuteStep:
         [chain] = result["completed_chains"]
         assert chain.blocked_reason is not None
         assert chain.steps == []
-        assert chain.eval_result is None
+        assert chain.judge_result is None
         assert client.calls == []
 
     async def test_mid_chain_block_judges_the_executed_prefix(self):
@@ -274,7 +274,7 @@ class TestMakeJudgeChain:
 
         [chain] = result["completed_chains"]
         assert chain.steps == steps
-        then.chain_eval_result_is(
+        then.chain_judge_result_is(
             chain,
             tool_name=given.DEFAULT_TOOL_NAME,
             category=AuditCategory.INJECTION,
@@ -296,7 +296,7 @@ class TestMakeJudgeChain:
 
         [chain] = result["completed_chains"]
         assert chain.steps == [step]
-        assert chain.eval_result is None
+        assert chain.judge_result is None
         then.refused_call_recorded(result, ModelCallKind.CHAIN_JUDGMENT)
         assert result["chain_model_call_missed"] is False
         assert result["judge_usage"] == [refusal.usage]

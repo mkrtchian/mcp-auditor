@@ -5,7 +5,7 @@ from collections import Counter
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 
-from mcp_auditor.domain.models import EvalResult, EvalVerdict, MissCause, Severity
+from mcp_auditor.domain.models import EvalVerdict, JudgeResult, MissCause, Severity
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.rendering import format_severity_breakdown
 
@@ -34,7 +34,7 @@ class CIProgress:
         for failure in t.failures:
             self._console.print(format_failure_line(failure))
 
-    def advance(self, result: EvalResult) -> None:
+    def advance(self, result: JudgeResult) -> None:
         self._tracker.record(result)
 
     def advance_blocked(self, reason: str) -> None:
@@ -74,7 +74,7 @@ class ToolProgress:
         style = "green" if t.fail_count == 0 else "red"
         self._console.print(f"[{style}]{summary}[/{style}]")
 
-    def advance(self, result: EvalResult) -> None:
+    def advance(self, result: JudgeResult) -> None:
         self._tracker.record(result)
         if result.verdict == EvalVerdict.FAIL:
             self._progress.console.print(format_failure_line(result))
@@ -95,15 +95,15 @@ class ToolProgress:
 class _ResultTracker:
     def __init__(self) -> None:
         self.fail_count = 0
-        self.failures: list[EvalResult] = []
+        self.failures: list[JudgeResult] = []
 
-    def record(self, result: EvalResult) -> None:
+    def record(self, result: JudgeResult) -> None:
         if result.verdict == EvalVerdict.FAIL:
             self.fail_count += 1
             self.failures.append(result)
 
 
-def format_failure_line(result: EvalResult) -> str:
+def format_failure_line(result: JudgeResult) -> str:
     category_display = category_with_owasp_id(result.category)
     return f"  \u2717 {category_display} ({result.severity}): {result.justification}"
 
@@ -112,7 +112,7 @@ def format_blocked_line(reason: str) -> str:
     return f"  \u2298 blocked, not sent: {reason}"
 
 
-def format_tool_summary(fail_count: int, failures: list[EvalResult]) -> str:
+def format_tool_summary(fail_count: int, failures: list[JudgeResult]) -> str:
     if fail_count == 0:
         return "\u2713 all passed"
     severity_counts: Counter[Severity] = Counter(f.severity for f in failures)

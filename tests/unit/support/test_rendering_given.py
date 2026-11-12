@@ -6,10 +6,10 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     ChainStep,
     CoverageGap,
-    EvalResult,
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    JudgeResult,
     MissCause,
     MissedModelCall,
     ModelCallKind,
@@ -105,7 +105,7 @@ def a_report_with_mapped_pass() -> AuditReport:
 
 
 def a_report_with_chain_finding() -> AuditReport:
-    chain = a_chain(eval_result=a_chain_fail_result())
+    chain = a_chain(judge_result=a_chain_fail_result())
     tool_report = ToolReport(
         tool=a_tool_definition(name="get_user"),
         cases=[],
@@ -117,7 +117,7 @@ def a_report_with_chain_finding() -> AuditReport:
 def a_report_with_chain_injection_finding() -> AuditReport:
     chain = a_chain(
         category=AuditCategory.INJECTION,
-        eval_result=a_chain_fail_result(category=AuditCategory.INJECTION),
+        judge_result=a_chain_fail_result(category=AuditCategory.INJECTION),
     )
     tool_report = ToolReport(
         tool=a_tool_definition(name="get_user"),
@@ -129,7 +129,7 @@ def a_report_with_chain_injection_finding() -> AuditReport:
 
 def a_report_with_pass_case_and_fail_chain() -> AuditReport:
     pass_result = a_pass_result("get_user", AuditCategory.ERROR_HANDLING)
-    chain = a_chain(eval_result=a_chain_fail_result())
+    chain = a_chain(judge_result=a_chain_fail_result())
     tool_report = ToolReport(
         tool=a_tool_definition(name="get_user"),
         cases=[
@@ -139,7 +139,7 @@ def a_report_with_pass_case_and_fail_chain() -> AuditReport:
                     description="test",
                     arguments={"input": "test"},
                 ),
-                eval_result=pass_result,
+                judge_result=pass_result,
             ),
         ],
         chains=[chain],
@@ -344,16 +344,16 @@ def a_report(
 
 def a_tool_report(
     tool_name: str,
-    results: list[EvalResult],
+    results: list[JudgeResult],
 ) -> ToolReport:
     cases = [
         TestCase(
             payload=AuditPayload(
                 category=r.category,
                 description="test",
-                arguments=r.payload,
+                arguments=r.arguments,
             ),
-            eval_result=r,
+            judge_result=r,
         )
         for r in results
     ]
@@ -366,7 +366,7 @@ def a_tool_report(
 def a_chain(
     description: str = "probe then exploit",
     category: AuditCategory = AuditCategory.INJECTION,
-    eval_result: EvalResult | None = None,
+    judge_result: JudgeResult | None = None,
     blocked_reason: str | None = None,
 ) -> AttackChain:
     goal = ChainGoal(
@@ -395,7 +395,7 @@ def a_chain(
         ),
     ]
     return AttackChain(
-        goal=goal, steps=steps, eval_result=eval_result, blocked_reason=blocked_reason
+        goal=goal, steps=steps, judge_result=judge_result, blocked_reason=blocked_reason
     )
 
 
@@ -404,11 +404,11 @@ def a_fail_result(
     category: AuditCategory,
     severity: Severity,
     justification: str = "Vulnerable to attack",
-) -> EvalResult:
-    return EvalResult(
+) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool_name,
         category=category,
-        payload={"input": "malicious"},
+        arguments={"input": "malicious"},
         verdict=EvalVerdict.FAIL,
         justification=justification,
         severity=severity,
@@ -418,11 +418,11 @@ def a_fail_result(
 def a_pass_result(
     tool_name: str,
     category: AuditCategory,
-) -> EvalResult:
-    return EvalResult(
+) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool_name,
         category=category,
-        payload={"input": "test"},
+        arguments={"input": "test"},
         verdict=EvalVerdict.PASS,
         justification="Handled correctly",
         severity=Severity.LOW,
@@ -445,11 +445,11 @@ def a_chain_fail_result(
     category: AuditCategory = AuditCategory.INJECTION,
     severity: Severity = Severity.HIGH,
     justification: str = "Chain exploited",
-) -> EvalResult:
-    return EvalResult(
+) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool_name,
         category=category,
-        payload={"path": "/etc/passwd"},
+        arguments={"path": "/etc/passwd"},
         verdict=EvalVerdict.FAIL,
         justification=justification,
         severity=severity,

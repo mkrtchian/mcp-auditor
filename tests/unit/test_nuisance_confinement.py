@@ -4,14 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_cve_planting_stand_ins_given as stand_ins_given
-from evals.cve_planting_base import (
-    PlantingHost,
-    PublicNames,
-    SymbolicUser,
-    confinement_args,
-    no_network_args,
-)
-from evals.nuisance_confinement import (
+from evals.cve.nuisance.confinement import (
     labelled_run_args,
     launch_digest,
     launch_matches,
@@ -19,6 +12,13 @@ from evals.nuisance_confinement import (
     single_container_launch_args,
     single_container_run_args,
     user_args,
+)
+from evals.cve.planting_base import (
+    PlantingHost,
+    PublicNames,
+    SymbolicUser,
+    confinement_args,
+    no_network_args,
 )
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)

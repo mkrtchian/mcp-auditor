@@ -9,7 +9,7 @@ from evals.concurrency import bounded
 from evals.cve.detection.calibration_check import check_calibrations, passes_calibration_check
 from evals.cve.detection.layout_check import check_layouts_and_routes
 from evals.cve.detection.targets import Target
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 from typing import Any
 
-from evals.nuisance_admission import AdmittedServer, ToolCall
+from evals.cve.nuisance.admission import AdmittedServer, ToolCall
 from mcp_auditor.domain import ToolDefinition, ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support.test_nuisance_admission_edits_given import with_the_first_benign_call

@@ -5,8 +5,8 @@ import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.dossier import write_dossier
-from evals.nuisance_admission import AdmittedServer
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_census,
@@ -28,7 +28,8 @@ def a_detection_holdout_server_with_its_own_fix_check() -> AdmittedServer:
         server
         for server in the_committed_admission().servers
         if any(
-            flaw.flaw in _holdout_identifiers() and flaw.fix_check.source != "holdout_calibration"
+            flaw.flaw in _holdout_identifiers()
+            and flaw.fix_check.source != "detection_holdout_calibration"
             for flaw in server.flaws
         )
     )

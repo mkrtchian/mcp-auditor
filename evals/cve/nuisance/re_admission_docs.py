@@ -7,14 +7,14 @@ import shlex
 from collections.abc import Sequence
 
 from evals.cve.kit.backend_launch import lifecycle_of
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_confinement import (
+from evals.cve.nuisance.confinement import (
     memory_bound_args,
     nuisance_confinement_args,
     single_container_run_args,
 )
+from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 _IMAGE = "<image>"
 _NAME = "<name>"
@@ -71,7 +71,7 @@ def _backend_paragraph(server: AdmittedServer) -> str:
 def re_admission_readme(server: AdmittedServer, fix_check_modules: Sequence[str]) -> str:
     backend = server.backend.provisioner if server.backend is not None else None
     backend_line = (
-        f"`evals/{backend}_backend.py` is the lifecycle of its `{backend}` backend."
+        f"`evals/cve/backends/{backend}.py` is the lifecycle of its `{backend}` backend."
         if backend is not None
         else "The server has no backend."
     )

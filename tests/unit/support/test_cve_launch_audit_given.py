@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
+from evals.cve.environments import Launch
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.launch_audit import Auditor
-from evals.cve_environments import Launch
 from mcp_auditor.adapters.llm_throttling import ThrottleBreaker, current_breaker
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import (

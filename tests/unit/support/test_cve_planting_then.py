@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from evals.cve_planting_base import resolver_args
+from evals.cve.planting_base import resolver_args
 from tests.fakes.planting_docker import FakePlantingDocker
 
 

@@ -12,9 +12,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from uuid import uuid4
 
-from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_planting_base import LABEL, PlantingSpec
-from evals.doris_backend import (
+from evals.cve.backends.doris import (
     DORIS_LAUNCH_LOCK,
     DORIS_SERVER_LAUNCH,
     doris_rm,
@@ -22,6 +20,8 @@ from evals.doris_backend import (
     ensure_doris,
     start_doris_sentinel,
 )
+from evals.cve.kit.launch import Launch, LaunchShape
+from evals.cve.planting_base import LABEL, PlantingSpec
 
 
 @contextmanager

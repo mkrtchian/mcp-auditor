@@ -8,10 +8,10 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals.cve.census.census import load_census
+from evals.cve.nuisance.admission import NuisanceAdmission, load_admission
 from evals.cve.nuisance.walk_record import WalkInputs, load_walk_record
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_admission import NuisanceAdmission, load_admission
 
 CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 WALK_RECORD_PATH = REPO_ROOT / "evals" / "nuisance_walk_record.json"

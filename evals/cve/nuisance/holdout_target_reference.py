@@ -15,7 +15,7 @@ from pathlib import Path
 from evals.cve.census.census import Census
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
-from evals.docker_paths import image_dockerfile
+from evals.cve.docker_paths import image_dockerfile
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 

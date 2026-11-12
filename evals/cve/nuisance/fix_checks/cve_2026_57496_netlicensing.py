@@ -23,15 +23,15 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, PlantingSpec, confinement_args, planted
-from evals.cve_planting_base import PublicNames, SymbolicUser
-from evals.cve_planting_docker import DOCKER_PLANTING
-from evals.public_stand_ins import STAND_INS_DIRECTORY
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, PlantingSpec, confinement_args, planted
+from evals.cve.planting_base import PublicNames, SymbolicUser
+from evals.cve.planting_docker import DOCKER_PLANTING
+from evals.cve.public_stand_ins import STAND_INS_DIRECTORY
 
 HOST_NAME = "go.netlicensing.io"
 COMMITTED_CAPTURE = STAND_INS_DIRECTORY / f"{HOST_NAME}.json"
@@ -45,9 +45,9 @@ AIM = re.compile(r"\.\./token")
 WITNESS = Place(
     id=WITNESS_ID,
     family="rest_token_endpoint",
-    reachable_by=frozenset({"arbitrary_read"}),
-    kind=PlantKind.FILE,  # a nonce carrier only; the builder places the nonce in the /token route
-    coordinates=Coordinates(PlantKind.FILE, path="/opt/marker.dat"),
+    reaches=frozenset({"arbitrary_read"}),
+    kind=PlaceKind.FILE,  # a nonce carrier only; the builder places the nonce in the /token route
+    coordinates=Coordinates(PlaceKind.FILE, path="/opt/marker.dat"),
 )
 HOST = PlantingHost(
     user=SymbolicUser.UNPRIVILEGED,
@@ -81,7 +81,7 @@ def _token_route(nonce: str) -> dict[str, object]:
     return {
         "scheme": "https",
         "method": "GET",
-        "target": "/core/v2/rest/token",
+        "request_target": "/core/v2/rest/token",
         "status": 200,
         "headers": [["Content-Type", "application/json;charset=UTF-8"]],
         "body": json.dumps(body),
@@ -121,7 +121,7 @@ async def benign_product(places: Places, client: KitClient) -> None:
 
 FIXTURE = FixCheckFixture(
     flaw="CVE-2026-57496",
-    effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+    effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,

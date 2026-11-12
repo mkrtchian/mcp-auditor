@@ -13,8 +13,8 @@ import pytest
 
 import tests.integration.support.test_cve_layout_mount_given as given
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_layout import build_empty_layout
-from evals.cve_planting_base import SENTINEL_SERVICE
+from evals.cve.layout import build_empty_layout
+from evals.cve.planting_base import SENTINEL_SERVICE
 
 
 @pytest.fixture(autouse=True, scope="module")

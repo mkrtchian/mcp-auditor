@@ -3,8 +3,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
-from evals.cve_units import JudgeCategory
+from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus
+from evals.cve.units import JudgeCategory
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -12,8 +12,8 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainGoal,
     ChainStep,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     ProviderUsage,
     Severity,
     TestCase,
@@ -35,25 +35,25 @@ INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
 
 @dataclass(frozen=True)
 class FakeTarget:
-    mechanisms: frozenset[MechanismClass]
+    classes: frozenset[FlawClass]
     nonces: Mapping[str, str]
     aim: re.Pattern[str]
 
 
 def a_read_target() -> FakeTarget:
-    return a_target_under(MechanismClass.READ_OUTSIDE_SCOPE)
+    return a_target_under(FlawClass.READ_OUTSIDE_SCOPE)
 
 
 def a_command_target() -> FakeTarget:
     return FakeTarget(
-        frozenset({MechanismClass.COMMAND_EXECUTION}),
+        frozenset({FlawClass.COMMAND_EXECUTION}),
         {PLACE: SENTINEL},
         re.compile(r"[;&|`]|\$\("),
     )
 
 
-def a_target_under(*mechanisms: MechanismClass) -> FakeTarget:
-    return FakeTarget(frozenset(mechanisms), {PLACE: SENTINEL}, re.compile(r"^/outside/"))
+def a_target_under(*classes: FlawClass) -> FakeTarget:
+    return FakeTarget(frozenset(classes), {PLACE: SENTINEL}, re.compile(r"^/outside/"))
 
 
 def a_case(
@@ -67,7 +67,7 @@ def a_case(
         payload=_a_payload(category, arguments or {"path": UNAIMED_PATH}),
         response=response,
         error=error,
-        eval_result=_a_result(verdict, category) if verdict else None,
+        judge_result=_a_result(verdict, category) if verdict else None,
     )
 
 
@@ -102,7 +102,7 @@ def a_chain(
             description="test chain", category=INFO_LEAKAGE, first_step=steps[0].payload
         ),
         steps=steps,
-        eval_result=_a_result(verdict, INFO_LEAKAGE),
+        judge_result=_a_result(verdict, INFO_LEAKAGE),
         blocked_reason=blocked_reason,
     )
 
@@ -146,7 +146,7 @@ def a_report_of_tools(*tool_reports: ToolReport) -> AuditReport:
 
 def a_detected_run() -> RunGrade:
     return RunGrade(
-        status=CVEStatus.DETECTED,
+        status=TargetStatus.DETECTED,
         surfaced_places=frozenset({PLACE}),
         aimed=True,
         evidence=f"leaked {SENTINEL}",
@@ -155,11 +155,11 @@ def a_detected_run() -> RunGrade:
 
 
 def a_missed_run(
-    miss_class: MissClass, aimed: bool = True, fail_without_proof: bool = False
+    miss_kind: MissKind, aimed: bool = True, fail_without_proof: bool = False
 ) -> RunGrade:
     return RunGrade(
-        status=CVEStatus.MISSED,
-        miss_class=miss_class,
+        status=TargetStatus.MISSED,
+        miss_kind=miss_kind,
         fail_without_proof=fail_without_proof,
         aimed=aimed,
     )
@@ -167,7 +167,7 @@ def a_missed_run(
 
 def a_reached_run() -> RunGrade:
     return RunGrade(
-        status=CVEStatus.REACHED_BUT_JUDGED_PASS,
+        status=TargetStatus.REACHED_BUT_JUDGED_PASS,
         surfaced_places=frozenset({PLACE}),
         aimed=True,
         evidence=f"leaked {SENTINEL}",
@@ -179,11 +179,11 @@ def _a_payload(category: AuditCategory, arguments: dict[str, Any]) -> AuditPaylo
     return AuditPayload(category=category, description="test", arguments=arguments)
 
 
-def _a_result(verdict: EvalVerdict, category: AuditCategory) -> EvalResult:
-    return EvalResult(
+def _a_result(verdict: EvalVerdict, category: AuditCategory) -> JudgeResult:
+    return JudgeResult(
         tool_name="read_file",
         category=category,
-        payload={},
+        arguments={},
         verdict=verdict,
         justification="test",
         severity=Severity.HIGH,

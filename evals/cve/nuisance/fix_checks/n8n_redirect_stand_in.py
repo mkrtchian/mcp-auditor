@@ -19,8 +19,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind
+from evals.cve.planting import (
     SENTINEL_IMAGE,
     PlantingHost,
     PlantingSpec,
@@ -28,7 +28,7 @@ from evals.cve_planting import (
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import no_network_args
+from evals.cve.planting_base import no_network_args
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
@@ -126,9 +126,9 @@ def http_place(place_id: str) -> Place:
     return Place(
         id=place_id,
         family="fix_check",
-        reachable_by=frozenset({"internal_fetch"}),
-        kind=PlantKind.HTTP_ENDPOINT,
-        coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="127.0.0.1", path="/flag"),
+        reaches=frozenset({"internal_fetch"}),
+        kind=PlaceKind.HTTP_ENDPOINT,
+        coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="127.0.0.1", path="/flag"),
     )
 
 

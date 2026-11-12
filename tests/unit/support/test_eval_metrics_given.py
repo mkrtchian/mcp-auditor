@@ -4,8 +4,8 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
     ChainGoal,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     MissCause,
     MissedModelCall,
     ModelCallKind,
@@ -18,7 +18,7 @@ from mcp_auditor.domain.models import (
 
 
 def a_report(
-    results_by_tool: dict[str, list[EvalResult]],
+    results_by_tool: dict[str, list[JudgeResult]],
     chains_by_tool: dict[str, list[AttackChain]] | None = None,
 ) -> AuditReport:
     chains_map = chains_by_tool or {}
@@ -31,7 +31,7 @@ def a_report(
     )
 
 
-def _a_tool_report(name: str, results: list[EvalResult], chains: list[AttackChain]) -> ToolReport:
+def _a_tool_report(name: str, results: list[JudgeResult], chains: list[AttackChain]) -> ToolReport:
     return ToolReport(
         tool=ToolDefinition(name=name, description="test", input_schema={"type": "object"}),
         cases=[_a_case_for(result) for result in results],
@@ -39,14 +39,14 @@ def _a_tool_report(name: str, results: list[EvalResult], chains: list[AttackChai
     )
 
 
-def _a_case_for(result: EvalResult) -> TestCase:
+def _a_case_for(result: JudgeResult) -> TestCase:
     return TestCase(
         payload=AuditPayload(
             category=result.category,
             description="test",
-            arguments=result.payload,
+            arguments=result.arguments,
         ),
-        eval_result=result,
+        judge_result=result,
     )
 
 
@@ -58,15 +58,15 @@ def a_chain(tool: str, category: AuditCategory, verdict: EvalVerdict) -> AttackC
             first_step=AuditPayload(category=category, description="test", arguments={}),
         ),
         steps=[],
-        eval_result=a_result(tool, category, verdict),
+        judge_result=a_result(tool, category, verdict),
     )
 
 
-def a_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> EvalResult:
-    return EvalResult(
+def a_result(tool: str, category: AuditCategory, verdict: EvalVerdict) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool,
         category=category,
-        payload={},
+        arguments={},
         verdict=verdict,
         justification="test",
         severity=Severity.LOW,

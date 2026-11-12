@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 import tests.unit.support.test_cve_grammar_given as given
-from evals.cve_grammar import MissClass, RunGrade
-from evals.cve_report_units import units_of
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.grammar import MissKind, RunGrade
+from evals.cve.report_units import units_of
+from evals.cve.units import Unit, unit_of_exchanges
 from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
@@ -85,20 +85,20 @@ def test_exchanges() -> dict[str, Unit]:
 def test_resolutions() -> dict[str, list[RunGrade]]:
     return {
         "highest_rung_over_runs": [
-            given.a_missed_run(MissClass.NOT_AIMED),
+            given.a_missed_run(MissKind.NOT_AIMED),
             given.a_reached_run(),
             given.a_detected_run(),
         ],
         "best_miss_class_over_missed_runs": [
-            given.a_missed_run(MissClass.NOT_AIMED, aimed=False),
-            given.a_missed_run(MissClass.AIMED_NO_PROOF),
-            given.a_missed_run(MissClass.AIMED_BLOCKED),
+            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            given.a_missed_run(MissKind.AIMED_NO_PROOF),
+            given.a_missed_run(MissKind.AIMED_BLOCKED),
         ],
         "each_condition_per_run": [
             given.a_detected_run(),
             given.a_reached_run(),
-            given.a_missed_run(MissClass.AIMED_NO_PROOF, fail_without_proof=True),
-            given.a_missed_run(MissClass.NOT_AIMED, aimed=False),
+            given.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
+            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
         ],
     }
 
@@ -140,7 +140,7 @@ def chain_reports(cases: list[JudgeCase]) -> dict[str, AuditReport]:
     }
 
 
-def dead_conditions_units(inputs: JudgeInputs) -> tuple[Unit, Unit]:
+def not_live_reasons_units(inputs: JudgeInputs) -> tuple[Unit, Unit]:
     [exploit] = units_of(_of_cases(_case_of(_with_response(inputs, SENTINEL), FAIL)))
     [benign] = units_of(_of_cases(_case_of(inputs, FAIL)))
     return exploit, benign

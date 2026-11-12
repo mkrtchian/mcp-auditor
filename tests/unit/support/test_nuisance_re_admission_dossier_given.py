@@ -3,6 +3,7 @@ from pathlib import Path
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.re_admission_dossier import (
     fix_check_modules,
@@ -10,7 +11,6 @@ from evals.cve.nuisance.re_admission_dossier import (
     write_re_admission_dossier,
 )
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_admission import AdmittedServer, FlawRecord
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_census,
@@ -53,7 +53,7 @@ def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
 
 
 def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:
-    fix_check = flaw.fix_check.model_copy(update={"source": "holdout_calibration"})
+    fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
     return flaw.model_copy(update={"flaw": flaw_id, "fix_check": fix_check})
 
 

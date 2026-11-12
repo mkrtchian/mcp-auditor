@@ -14,11 +14,11 @@ layout read-only, no network of its own.
 import re
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2026-15415-healthomics"
@@ -56,9 +56,9 @@ KEPT_PLACES: tuple[str, ...] = (
 
 
 def _read_target(place: Place) -> str:
-    if place.kind is PlantKind.ENV:
+    if place.kind is PlaceKind.ENV:
         return "/proc/self/environ"
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return "/etc/hostname"
     coordinates = place.coordinates
     if coordinates.path is not None:
@@ -93,7 +93,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-15415",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,

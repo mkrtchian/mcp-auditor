@@ -12,8 +12,8 @@ def a_written_kit(tmp_path: Path) -> Path:
 
 
 def places_loaded_through(module_path: Path) -> dict[str, object]:
-    spec = importlib.util.spec_from_file_location("kit_cve_places", module_path)
+    spec = importlib.util.spec_from_file_location("kit_places", module_path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.load_places(module.HOLDOUT_PLACES)
+    return module.load_places(module.DETECTION_PLACES)

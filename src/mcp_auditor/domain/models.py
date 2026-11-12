@@ -106,10 +106,10 @@ class TestCaseBatch(BaseModel):
     cases: list[AuditPayload]
 
 
-class EvalResult(BaseModel):
+class JudgeResult(BaseModel):
     tool_name: str
     category: AuditCategory
-    payload: dict[str, Any]
+    arguments: dict[str, Any]
     verdict: EvalVerdict
     justification: str
     severity: Severity
@@ -136,7 +136,7 @@ class TestCase(BaseModel):
     payload: AuditPayload
     response: str | dict[str, Any] | None = None
     error: str | None = None
-    eval_result: EvalResult | None = None
+    judge_result: JudgeResult | None = None
     blocked_reason: str | None = None
 
 
@@ -185,7 +185,7 @@ class AttackChain(BaseModel):
 
     goal: ChainGoal
     steps: list[ChainStep]
-    eval_result: EvalResult | None = None
+    judge_result: JudgeResult | None = None
     blocked_reason: str | None = None
 
 
@@ -236,9 +236,9 @@ class ToolReport(BaseModel):
     coverage_gap: CoverageGap | None = None
 
     @property
-    def eval_results(self) -> list[EvalResult]:
-        case_results = [c.eval_result for c in self.cases if c.eval_result]
-        chain_results = [ch.eval_result for ch in self.chains if ch.eval_result]
+    def judge_results(self) -> list[JudgeResult]:
+        case_results = [c.judge_result for c in self.cases if c.judge_result]
+        chain_results = [ch.judge_result for ch in self.chains if ch.judge_result]
         return case_results + chain_results
 
 
@@ -365,11 +365,11 @@ class AuditReport(BaseModel):
         )
 
     @property
-    def findings(self) -> list[EvalResult]:
+    def findings(self) -> list[JudgeResult]:
         return [
             result
             for tr in self.tool_reports
-            for result in tr.eval_results
+            for result in tr.judge_results
             if result.verdict == EvalVerdict.FAIL
         ]
 

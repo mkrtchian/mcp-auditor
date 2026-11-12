@@ -1,9 +1,10 @@
-# Neo4j database of the CVE-2026-35402 fix check (evals/nuisance_fix_checks/), at the release the
-# run image and the holdout twin run: stock Neo4j 5.26.1 with its bundled APOC core plugin copied
-# into the plugins directory, as the twin's Dockerfiles copy it, so apoc.* is available without
-# NEO4J_PLUGINS fetching a jar at container start (the fix check's bridge is closed). The jar ships
-# inside the base image under /var/lib/neo4j/labs, so this is a copy within the image, not a
-# COPY/ADD from the build context. Not a server under audit and not a compose service: the fix
-# check builds it when absent and stands one container of it beside its sentinel.
+# Neo4j database of the CVE-2026-35402 fix check (evals/cve/nuisance/fix_checks/), at the release
+# the run image and the images of its holdout target run: stock Neo4j 5.26.1 with its bundled APOC
+# core plugin copied into the plugins directory, as the holdout target's Dockerfiles copy it, so
+# apoc.* is available without NEO4J_PLUGINS fetching a jar at container start (the fix check's
+# bridge is closed). The jar ships inside the base image under /var/lib/neo4j/labs, so this is a
+# copy within the image, not a COPY/ADD from the build context. Not an audited server and not a
+# compose service: the fix check builds it when absent and stands one container of it beside its
+# sentinel.
 FROM neo4j:5.26.1@sha256:2ebf971c90529d900bdaf8125761a54a4f78203796756eef74c579143f9577c5
 RUN cp /var/lib/neo4j/labs/apoc-*-core.jar /var/lib/neo4j/plugins/

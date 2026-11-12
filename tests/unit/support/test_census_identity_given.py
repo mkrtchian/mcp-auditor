@@ -11,10 +11,10 @@ def a_ghsa(ghsa_id: str, *aliases: str, published: date = date(2025, 6, 10)) -> 
 
 
 def an_nvd(
-    cve_id: str, published: date = date(2025, 7, 2), rejected: bool = False
+    identifier: str, published: date = date(2025, 7, 2), rejected: bool = False
 ) -> AdvisoryRecord:
     return sources.a_record(
-        source=SourceName.NVD, id=cve_id, published=published, rejected=rejected
+        source=SourceName.NVD, id=identifier, published=published, rejected=rejected
     )
 
 

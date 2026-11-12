@@ -5,9 +5,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.closed_network import create_closed_network
-from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import (
+from evals.cve.closed_network import create_closed_network
+from evals.cve.places import Coordinates, Place, PlaceKind
+from evals.cve.planting import (
     RANDOM_NONCES,
     DockerPlanting,
     PlantedArgs,
@@ -17,8 +17,8 @@ from evals.cve_planting import (
     confinement_args,
     planting_spec,
 )
-from evals.cve_planting_base import LABEL, SENTINEL_IMAGE
-from evals.cve_planting_spec import request_target
+from evals.cve.planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve.planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
 IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
@@ -103,14 +103,14 @@ def spec_of(
 ) -> PlantingSpec:
     places: list[Place] = []
     if file_at is not None:
-        places.append(_place("file-1", Coordinates(PlantKind.FILE, path=file_at)))
-    places.append(_place("endpoint-1", Coordinates(PlantKind.HTTP_ENDPOINT, host=host, path=path)))
+        places.append(_place("file-1", Coordinates(PlaceKind.FILE, path=file_at)))
+    places.append(_place("endpoint-1", Coordinates(PlaceKind.HTTP_ENDPOINT, host=host, path=path)))
     planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
     return planting_spec(places, planting_host, RANDOM_NONCES)
 
 
 def a_work_spec(*, with_an_account: bool) -> PlantingSpec:
-    places = [_place("account-1", Coordinates(PlantKind.ACCOUNT))] if with_an_account else []
+    places = [_place("account-1", Coordinates(PlaceKind.ACCOUNT))] if with_an_account else []
     planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", False)
     return planting_spec(places, planting_host, RANDOM_NONCES)
 
@@ -124,11 +124,11 @@ def a_launch_of_shape(shape: str) -> PlantingSpec:
     return spec_of("meta.fict", "/fict/secret", has_network=True)
 
 
-def _place(entry_id: str, coordinates: Coordinates) -> Place:
+def _place(place_id: str, coordinates: Coordinates) -> Place:
     return Place(
-        id=entry_id,
+        id=place_id,
         family="fictional-family",
-        reachable_by=frozenset({"arbitrary_read"}),
+        reaches=frozenset({"arbitrary_read"}),
         kind=coordinates.kind,
         coordinates=coordinates,
     )

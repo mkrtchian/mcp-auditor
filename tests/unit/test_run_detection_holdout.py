@@ -7,12 +7,12 @@ import tests.unit.support.test_census_given as given
 import tests.unit.support.test_detection_holdout_run_given as holdout_given
 import tests.unit.support.test_run_detection_holdout_run_given as run_given
 from evals import run_detection_holdout
-from evals.closed_network import ClosedNetworkUnsupported
+from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
 from evals.cve.kit import launch as kit_launch
+from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import target_services
-from evals.cve_planting_base import SENTINEL_SERVICE
 from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_detection_calibration_check_exit_given import deps_with
 
@@ -218,8 +218,8 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
     for relative in (
         f"advisories/{given.FLAW_WITH_A_CVE}.json",
         "evals/__init__.py",
-        "evals/cve_grammar.py",
-        "evals/holdout_places.json",
+        "evals/cve/grammar.py",
+        "evals/detection_places.json",
         "evals/cve/kit/driver.py",
         "docker/Dockerfile.sentinel",
         "docker/Dockerfile.stand-in",

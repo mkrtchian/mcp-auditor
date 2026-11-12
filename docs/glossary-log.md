@@ -34,6 +34,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | CVE gate, CVE oracle, CVE grammar, CVE baseline, CVE fixture, CVE run (ADRs, rules, logs, plans) | detection gate, oracle, grammar, detection baseline, detection fixture, detection suite run | rename | 2026-11-11 |
 | CVE holdout (ADR 028) | detection holdout layer | rename | 2026-11-11 |
 | CVE target | target (acceptance target, holdout target) | rename | 2026-11-11 |
+| `CVEStatus` | status (`TargetStatus`) | rename | 2026-11-11 |
 | `CVETarget`, `CVE_TARGETS` | target (`Target`), `ACCEPTANCE_TARGETS` | rename | 2026-11-11 |
 | CVE validation benchmark | detection suite | rename | 2026-11-11 |
 | `--cve ID` | `--flaw ID` | rename | 2026-11-11 |
@@ -44,6 +45,7 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | Distribution (ADR 003, ADR 005, the honeypot report's label) | distribution coverage | rename | 2026-11-11 |
 | e2e eval, E2E evals, end-to-end eval, honeypot e2e suite (ADR 003, ADR 006, ADR 007, ADR 015, ADR 034, CONTRIBUTING) | honeypot suite | rename | 2026-11-11 |
 | `e2e-eval` (the honeypot CI job) | `honeypot-suite` | rename | 2026-11-11 |
+| `entry_id` (of a place) | place id (`place_id`) | rename | 2026-11-11 |
 | `eval_result`, `EvalResult` | judge result (`judge_result`) | rename | 2026-11-11 |
 | `evals/baselines/cve/` | `evals/baselines/detection/` | rename | 2026-11-11 |
 | `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
@@ -85,7 +87,9 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | known gap of the holdout | known gap | rename | 2026-11-11 |
 | location id | place id | rename | 2026-11-11 |
 | `MCP_AUDITOR_OPENROUTER_HOSTS` | `MCP_AUDITOR_OPENROUTER_PROVIDERS` | rename | 2026-11-11 |
+| `MechanismClass`, `mechanisms` | class (`FlawClass`, `classes`) | rename | 2026-11-11 |
 | `miss_causes` | `missed_call_causes` | rename | 2026-11-11 |
+| `MissClass`, `miss_class` | `MissKind`, `miss_kind` | rename | 2026-11-11 |
 | missed step, refused step, `missed_steps` | missed model call (`missed_model_calls`) | rename | 2026-11-11 |
 | `not_run_conditions` | `not_run_reasons` | rename | 2026-11-11 |
 | `NuisanceCensus` (the census with the walk record) | `WalkInputs` | rename | 2026-11-11 |
@@ -101,7 +105,10 @@ The words whose meaning moved are the ones to watch, since a reader who thinks t
 | `payload` (the key of a judge result in the JSON report, the "Payload" line of the Markdown report: the arguments only) | arguments (`arguments`). "Payload" now names the whole generated test input. | moved meaning | 2026-11-11 |
 | `pending_replay`, `replay_observations`, `replay_rule` | `pending_retest`, `retest_observations`, `retest_rule`, the two committed baselines keeping `replay_rule` until their next re-recording | rename | 2026-11-11 |
 | planting layer | planting code | rename | 2026-11-11 |
+| `PlantKind` | `PlaceKind` | rename | 2026-11-11 |
 | `primary_number`, primary number (detection suite rule v11) | holdout detection rate (`holdout_detection_rate`) | rename | 2026-11-11 |
+| `probed_target`, `target` (stand-in captures) | `probed_request_target`, `request_target` | rename | 2026-11-11 |
+| `REACHABLE_BY`, `Place.reachable_by` | reach (`REACHES`, `Place.reaches`), the JSON key `reachable_by` of `evals/detection_places.json` is kept | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
 | `--readmission` | `--re-admission` | rename | 2026-11-11 |
 | `RecordingClient`, `KitRecorder`, `RecordingLLM` | `ExchangeLog`, `KitExchangeLog`, `CapturingLLM` ("recording" names only a baseline recording) | rename | 2026-11-11 |

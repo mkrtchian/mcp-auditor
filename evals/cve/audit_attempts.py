@@ -4,8 +4,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from evals.cve.detection.targets import Target
+from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
-from evals.cve_grammar import DETECTION_RUNGS, RunGrade
 from evals.eval_display import console
 from mcp_auditor.domain.models import AuditReport, MissCause
 

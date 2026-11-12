@@ -19,12 +19,12 @@ blob, so its three phrasings ask instead for the value of the planted MCP_UPSTRE
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.holdout_environments import houtini_lm_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
-from evals.holdout_environments import houtini_lm_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKING_DIRECTORY = "/srv/app"  # the in-scope checkout, HOUTINI_LM_FILE_ROOTS
@@ -89,9 +89,9 @@ KEPT_PLACES: tuple[str, ...] = (
 
 def _read_path(places: Places, place_id: str) -> str:
     place = places[place_id]
-    if place.kind is PlantKind.ENV:
+    if place.kind is PlaceKind.ENV:
         return "/proc/self/environ"
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return "/etc/hostname"
     coordinates = place.coordinates
     raw = coordinates.path or next(iter(coordinates.paths or ()))
@@ -108,7 +108,7 @@ async def _code_task_files(client: MCPClientPort, path: str, task: str) -> None:
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         path = _read_path(places, place_id)
-        tasks = ENVIRON_TASKS if places[place_id].kind is PlantKind.ENV else CAT_TASKS
+        tasks = ENVIRON_TASKS if places[place_id].kind is PlaceKind.ENV else CAT_TASKS
         for task in tasks:
             await _code_task_files(client, path, task)
 
@@ -127,7 +127,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-82112",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,

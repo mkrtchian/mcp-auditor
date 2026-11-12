@@ -16,10 +16,13 @@ import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_dossier_given as dossier_given
 import tests.unit.support.test_nuisance_dossier_then as dossier_then
 import tests.unit.support.test_nuisance_re_admission_dossier_given as given
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.dossier_closure import import_closure
 from evals.cve.kit import benign_probe
 from evals.cve.kit.fix_check import check_fix
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
 from evals.cve.nuisance.dossier import NUISANCE_RULE
 from evals.cve.nuisance.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.re_admission_docs import confinement_text, re_admission_readme
@@ -30,11 +33,8 @@ from evals.cve.nuisance.re_admission_dossier import (
     re_admission_dockerfiles,
     write_re_admission_dossier,
 )
-from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.docker_paths import image_dockerfile
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.eval_session import Refused
-from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.nuisance_confinement import nuisance_confinement_args, user_args
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_census,
@@ -110,10 +110,10 @@ def test_a_backend_dossier_carries_its_backend_alone(dossier_of: DossierOf):
 
     out = dossier_of(server)
 
-    assert (out / "evals" / f"{provisioner}_backend.py").exists()
+    assert (out / "evals" / "cve" / "backends" / f"{provisioner}.py").exists()
     for service in BACKENDS[provisioner].built_services:
         assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
-    assert not (out / "evals" / f"{another}_backend.py").exists()
+    assert not (out / "evals" / "cve" / "backends" / f"{another}.py").exists()
 
 
 def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of: DossierOf):
@@ -185,7 +185,7 @@ def test_the_readme_names_the_backend_lifecycle_of_a_server_with_a_backend():
 
     readme = re_admission_readme(server, [])
 
-    assert "`evals/doris_backend.py`" in readme
+    assert "`evals/cve/backends/doris.py`" in readme
 
 
 def test_the_readme_says_a_server_without_a_backend_has_none():
@@ -214,7 +214,9 @@ def test_every_holdout_calibration_flaw_resolves_to_one_target_and_one_fixture()
     resolution = given.the_copy_resolution()
     for server in the_committed_admission().servers:
         calibrated = {
-            flaw.flaw for flaw in server.flaws if flaw.fix_check.source == "holdout_calibration"
+            flaw.flaw
+            for flaw in server.flaws
+            if flaw.fix_check.source == "detection_holdout_calibration"
         }
         assert calibrated <= resolution.keys(), server.server_package
         targets = holdout_target_references(server, resolution)
@@ -235,7 +237,7 @@ def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
 
 def test_a_holdout_calibration_flaw_no_target_carries_is_refused():
     def calibrated_on_an_unknown_target(flaw: FlawRecord) -> FlawRecord:
-        fix_check = flaw.fix_check.model_copy(update={"source": "holdout_calibration"})
+        fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
         return flaw.model_copy(update={"flaw": "CVE-2099-0001", "fix_check": fix_check})
 
     server = edits.with_the_first_flaw(

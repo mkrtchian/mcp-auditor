@@ -14,7 +14,7 @@ RUN npm install -g --ignore-scripts @wonderwhy-er/desktop-commander@0.2.33 \
 # write_pdf renders through md-to-pdf's puppeteer, which launches the Chrome for Testing build it
 # pins from $HOME/.cache/puppeteer; the server's own download at start needs a network the run
 # does not have. --ignore-scripts above also drops puppeteer's postinstall, which downloads that
-# build, so its CLI (the bin of puppeteer/package.json) replays it here, its system libraries
+# build, so its CLI (the bin of puppeteer/package.json) runs it here, its system libraries
 # included (--install-deps), under HOME=/tmp as the launch sets it: Chrome follows whatever
 # puppeteer the build resolves, and the server's install telemetry stays skipped.
 RUN apt-get update && apt-get install -y --no-install-recommends unzip \

@@ -3,7 +3,7 @@ from collections.abc import Callable
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_records_given as records_given
-from evals.nuisance_admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 
 SERVER = admission_given.SERVER_PACKAGE
 
@@ -106,5 +106,5 @@ def _tools_without_a_declared_function_record(flaw: FlawRecord) -> FlawRecord:
 
 
 def _fix_check_copied_from_the_holdout(flaw: FlawRecord) -> FlawRecord:
-    check = flaw.fix_check.model_copy(update={"source": "holdout_calibration"})
+    check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
     return flaw.model_copy(update={"fix_check": check})

@@ -6,16 +6,16 @@ from contextlib import AbstractContextManager
 from dataclasses import replace
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
-from evals import cve_environments
-from evals.backend_lifecycle import BackendLifecycle
+from evals.cve import environments
+from evals.cve.backends.lifecycle import BackendLifecycle
+from evals.cve.backends.responder import Responder
 from evals.cve.kit import launch as kit_launch
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.provisioners import provisioner_of
-from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.responder_backend import Responder
+from evals.cve.planting_base import PlantingHost, SymbolicUser
 
-type Launch = cve_environments.Launch | kit_launch.Launch
+type Launch = environments.Launch | kit_launch.Launch
 type Launcher = Callable[[BackendLifecycle], AbstractContextManager[Launch]]
 
 
@@ -24,7 +24,7 @@ def a_host() -> PlantingHost:
 
 
 def every_responder() -> list[Responder]:
-    modules = (importlib.import_module(f"evals.{key}_backend") for key in BACKENDS)
+    modules = (importlib.import_module(f"evals.cve.backends.{key}") for key in BACKENDS)
     return [
         value
         for module in modules

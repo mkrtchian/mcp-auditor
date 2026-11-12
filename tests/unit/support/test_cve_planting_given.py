@@ -5,15 +5,15 @@ nothing can be mistaken for the imported data.
 
 from collections.abc import Sequence
 
-from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
+from evals.cve.planting import (
     NonceSource,
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
     planting_spec,
 )
-from evals.cve_planting_base import PublicNames
+from evals.cve.planting_base import PublicNames
 from tests.fakes.planting_docker import FakePlantingDocker as FakePlantingDocker
 from tests.fakes.planting_docker import HostFile as HostFile
 from tests.unit.support.docker_argv import value_after
@@ -37,77 +37,77 @@ def unprivileged_host(
 
 
 def file_place(
-    entry_id: str = "file-1",
+    place_id: str = "file-1",
     *,
     path: str = "/etc/fictional/secret",
     paths: Sequence[str] | None = None,
 ) -> Place:
     coordinates = Coordinates(
-        PlantKind.FILE,
+        PlaceKind.FILE,
         path=None if paths is not None else path,
         paths=tuple(paths) if paths is not None else None,
     )
-    return _place(entry_id, PlantKind.FILE, coordinates)
+    return _place(place_id, PlaceKind.FILE, coordinates)
 
 
-def env_place(entry_id: str = "env-1", *, name: str = "FICTIONAL_TOKEN") -> Place:
-    return _place(entry_id, PlantKind.ENV, Coordinates(PlantKind.ENV, name=name))
+def env_place(place_id: str = "env-1", *, name: str = "FICTIONAL_TOKEN") -> Place:
+    return _place(place_id, PlaceKind.ENV, Coordinates(PlaceKind.ENV, name=name))
 
 
-def account_place(entry_id: str = "account-1") -> Place:
-    return _place(entry_id, PlantKind.ACCOUNT, Coordinates(PlantKind.ACCOUNT))
+def account_place(place_id: str = "account-1") -> Place:
+    return _place(place_id, PlaceKind.ACCOUNT, Coordinates(PlaceKind.ACCOUNT))
 
 
-def hostname_place(entry_id: str = "hostname-1") -> Place:
-    return _place(entry_id, PlantKind.HOSTNAME, Coordinates(PlantKind.HOSTNAME))
+def hostname_place(place_id: str = "hostname-1") -> Place:
+    return _place(place_id, PlaceKind.HOSTNAME, Coordinates(PlaceKind.HOSTNAME))
 
 
 def endpoint_place(
-    entry_id: str = "endpoint-1",
+    place_id: str = "endpoint-1",
     *,
     host: str = "fictional-service",
     path: str = "/fictional/secret",
 ) -> Place:
     return _place(
-        entry_id,
-        PlantKind.HTTP_ENDPOINT,
-        Coordinates(PlantKind.HTTP_ENDPOINT, host=host, path=path),
+        place_id,
+        PlaceKind.HTTP_ENDPOINT,
+        Coordinates(PlaceKind.HTTP_ENDPOINT, host=host, path=path),
     )
 
 
-def unplaceable_place(entry_id: str = "unplaceable-1") -> Place:
-    return _place(entry_id, PlantKind.UNPLACEABLE, Coordinates(PlantKind.UNPLACEABLE))
+def unplaceable_place(place_id: str = "unplaceable-1") -> Place:
+    return _place(place_id, PlaceKind.UNPLACEABLE, Coordinates(PlaceKind.UNPLACEABLE))
 
 
-def git_remote_url_place(entry_id: str = "bare-remote-url-fic") -> Place:
+def git_remote_url_place(place_id: str = "bare-remote-url-fic") -> Place:
     return _place(
-        entry_id,
-        PlantKind.GIT_REMOTE_URL,
-        Coordinates(PlantKind.GIT_REMOTE_URL, anchor=LayoutAnchor.PROJECT_BARE, relpath="config"),
+        place_id,
+        PlaceKind.GIT_REMOTE_URL,
+        Coordinates(PlaceKind.GIT_REMOTE_URL, anchor=LayoutAnchor.PROJECT_BARE, relpath="config"),
     )
 
 
-def git_history_place(entry_id: str = "bare-history-fic") -> Place:
+def git_history_place(place_id: str = "bare-history-fic") -> Place:
     return _place(
-        entry_id,
-        PlantKind.GIT_HISTORY,
-        Coordinates(PlantKind.GIT_HISTORY, anchor=LayoutAnchor.PROJECT_BARE, relpath=".env"),
+        place_id,
+        PlaceKind.GIT_HISTORY,
+        Coordinates(PlaceKind.GIT_HISTORY, anchor=LayoutAnchor.PROJECT_BARE, relpath=".env"),
     )
 
 
-def dotenv_place(entry_id: str = "ws-dotenv-fic") -> Place:
+def dotenv_place(place_id: str = "ws-dotenv-fic") -> Place:
     return _place(
-        entry_id,
-        PlantKind.DOTENV,
-        Coordinates(PlantKind.DOTENV, anchor=LayoutAnchor.WORKSPACE, relpath=".env"),
+        place_id,
+        PlaceKind.DOTENV,
+        Coordinates(PlaceKind.DOTENV, anchor=LayoutAnchor.WORKSPACE, relpath=".env"),
     )
 
 
-def _place(entry_id: str, kind: PlantKind, coordinates: Coordinates) -> Place:
+def _place(place_id: str, kind: PlaceKind, coordinates: Coordinates) -> Place:
     return Place(
-        id=entry_id,
+        id=place_id,
         family="fictional-family",
-        reachable_by=frozenset({"arbitrary_read"}),
+        reaches=frozenset({"arbitrary_read"}),
         kind=kind,
         coordinates=coordinates,
     )

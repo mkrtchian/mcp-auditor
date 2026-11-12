@@ -30,9 +30,9 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "evals/__init__.py",
         "evals/cve/__init__.py",
         "evals/cve/kit/__init__.py",
-        "evals/cve_grammar.py",
-        "evals/cve_places.py",
-        "evals/cve_planting.py",
+        "evals/cve/grammar.py",
+        "evals/cve/places.py",
+        "evals/cve/planting.py",
         "evals/cve/kit/fix_check.py",
         "evals/cve/kit/driver.py",
         "docker/Dockerfile.sentinel",
@@ -51,10 +51,10 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
     assert (out / "nuisance-rule.md").read_text() == NUISANCE_RULE.read_text()
     assert (out / "confinement.md").read_text() == admission_confinement_text()
     assert not (out / "reference").exists()
-    assert not (out / "evals" / "holdout_places.json").exists()
+    assert not (out / "evals" / "detection_places.json").exists()
     assert not (out / "layout.md").exists()
     assert not (out / "evals" / "cve" / "kit" / "backends.py").exists()
-    assert not (out / "evals" / "doris_backend.py").exists()
+    assert not (out / "evals" / "cve" / "backends" / "doris.py").exists()
     assert "doris" not in (out / "fixture_format.md").read_text()
 
 
@@ -68,8 +68,8 @@ def test_a_backend_dossier_imports_closed(tmp_path: Path):
     out = given.a_written_dossier(tmp_path, backend="doris")
 
     assert (out / "evals" / "cve" / "kit" / "backends.py").exists()
-    assert (out / "evals" / "doris_backend.py").exists()
-    assert (out / "evals" / "nuisance_confinement.py").exists()
+    assert (out / "evals" / "cve" / "backends" / "doris.py").exists()
+    assert (out / "evals" / "cve" / "nuisance" / "confinement.py").exists()
     fixture_format = (out / "fixture_format.md").read_text()
     assert "backends.doris_backend_env" in fixture_format
     assert "169.254.0.0/16" in fixture_format

@@ -5,7 +5,7 @@ import tests.unit.support.test_nuisance_admission_given as given
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance import images as nuisance_images
-from evals.nuisance_admission import NuisanceAdmission
+from evals.cve.nuisance.admission import NuisanceAdmission
 
 
 def test_the_three_image_namespaces_are_pairwise_distinct():

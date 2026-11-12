@@ -22,7 +22,7 @@ from evals.cve.fixture_provenance import (
     software_release_problems,
     stand_in_problems,
 )
-from evals.cve_places import REACHABLE_BY
+from evals.cve.places import REACHES
 
 
 class KeptPlace(BaseModel):
@@ -284,7 +284,7 @@ def _place_problems(draw: DrawRecord, place_ids: set[str]) -> list[str]:
         problems += [
             f"card for flaw {card.flaw} has a sibling reach {sibling.reach} outside the vocabulary"
             for sibling in card.siblings
-            if sibling.reach not in REACHABLE_BY
+            if sibling.reach not in REACHES
         ]
     return problems
 

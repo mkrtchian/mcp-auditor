@@ -11,9 +11,14 @@ from rich.markup import escape
 from evals.concurrency import entered_in_thread
 from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_causes
 from evals.cve.detection.audit import RunOverrides
+from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
+from evals.cve.nuisance.confinement import single_container_launch_args
+from evals.cve.nuisance.counter import flagged_tools
+from evals.cve.nuisance.counting import counted_tools
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
 from evals.cve.nuisance.results import NotRunCause
@@ -24,13 +29,8 @@ from evals.cve.provider_errors import (
     describe_provider_error,
 )
 from evals.cve.server_health import ServerHealth
-from evals.cve_environments import Launch
 from evals.eval_display import console
 from evals.metrics import SessionThrottles
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_confinement import single_container_launch_args
-from evals.nuisance_counter import flagged_tools
-from evals.nuisance_counting import counted_tools
 from mcp_auditor.domain.models import AuditReport, MissCause
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries

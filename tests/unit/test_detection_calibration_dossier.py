@@ -21,7 +21,7 @@ def test_the_fixture_format_embeds_the_card_and_classification_schemas(tmp_path:
 def test_the_places_file_loads_through_the_copied_loader(tmp_path: Path):
     out = given.a_written_kit(tmp_path)
 
-    places = given.places_loaded_through(out / "evals" / "cve_places.py")
+    places = given.places_loaded_through(out / "evals" / "cve" / "places.py")
 
     assert places
 
@@ -29,7 +29,7 @@ def test_the_places_file_loads_through_the_copied_loader(tmp_path: Path):
 def test_a_stand_in_loads_through_the_copied_loader(tmp_path: Path):
     out = given.a_written_kit(tmp_path)
     script = (
-        "from evals import public_stand_ins\n"
+        "from evals.cve import public_stand_ins\n"
         "print(public_stand_ins.STAND_INS_DIRECTORY)\n"
         "print(public_stand_ins.stand_in('example.com').host)\n"
     )

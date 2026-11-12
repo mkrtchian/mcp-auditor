@@ -1,13 +1,13 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from evals.apify_backend import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
+from evals.cve.backends.apify import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
+from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as facebook_ads
 from evals.cve.nuisance.fix_checks import cve_2026_46341_apify as apify
 from evals.cve.nuisance.fix_checks import cve_2026_61462_gitlab as gitlab
 from evals.cve.nuisance.fix_checks import cve_2026_77252_atlassian as atlassian
-from evals.facebook_ads_backend import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
 
 RESPONDER_ADDRESS = "198.18.9.77"
 

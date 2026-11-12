@@ -13,13 +13,13 @@ reads it: nothing is seeded inside the layout, which stays byte-for-byte univers
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.holdout_environments import filesystem_scope_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import LayoutMount
-from evals.cve_planting_spec import resolve_container_path
-from evals.holdout_environments import filesystem_scope_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import LayoutMount
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKING_DIRECTORY = "/srv/app"  # the in-scope checkout and the scope the launch passes
@@ -62,7 +62,7 @@ def _coordinate_paths(places: Places, place_id: str) -> tuple[str, ...]:
     # in-scope path to. container-hostname surfaces through /etc/hostname (Docker fills it from
     # --hostname), as for the HOSTNAME-kind place in every read fixture.
     place = places[place_id]
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return ("/etc/hostname",)
     coordinates = place.coordinates
     raw = coordinates.paths if coordinates.paths is not None else (coordinates.path,)
@@ -106,7 +106,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-11489",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE, FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read", "command_execution"}),
     kept_places=KEPT_PLACES,

@@ -16,7 +16,7 @@ from evals.cve.detection.survey import TargetSurvey, survey_all, survey_one
 from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 
 def _check(places: Places, limit: int) -> Callable[[Target], Awaitable[bool]]:
@@ -274,7 +274,7 @@ async def test_the_git_target_starts_on_the_valid_reference_arm(capsys: pytest.C
     except ImageBuildFailed as error:
         pytest.fail(str(error))
 
-    failures = await check_layouts_and_routes([target], given.the_holdout_places())
+    failures = await check_layouts_and_routes([target], given.the_detection_places())
 
     output = capsys.readouterr().out
     assert "layout check launch error" not in output

@@ -1,8 +1,8 @@
 import re
 from collections.abc import Mapping
 
-from evals.cve_grammar import MechanismClass, PlantedTarget
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.grammar import FlawClass, PlantedTarget
+from evals.cve.units import Unit, unit_of_exchanges
 
 NONCE_A = "MCPAUDIT-aaaaaaaa11112222"
 NONCE_B = "MCPAUDIT-bbbbbbbb33334444"
@@ -15,9 +15,9 @@ AIM = re.compile(r"^/outside/")
 
 def a_target(
     nonces: Mapping[str, str],
-    mechanisms: frozenset[MechanismClass] = frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+    classes: frozenset[FlawClass] = frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
 ) -> PlantedTarget:
-    return PlantedTarget(mechanisms, AIM, nonces)
+    return PlantedTarget(classes, AIM, nonces)
 
 
 def leaking_unit(*nonces: str) -> Unit:

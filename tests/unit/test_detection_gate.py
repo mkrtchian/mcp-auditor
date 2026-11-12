@@ -10,7 +10,7 @@ from evals.cve.detection.gate import (
     decide,
     exit_code,
 )
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 
@@ -74,7 +74,7 @@ def test_a_confirmed_file_with_a_miss_does_not_gate():
     ],
     ids=["detected", "missed once"],
 )
-def test_a_gated_target(runs: list[CVEStatus], outcome: TargetOutcome):
+def test_a_gated_target(runs: list[TargetStatus], outcome: TargetOutcome):
     comparison = compare_target(given.a_gated_baseline(), given.a_candidate(runs))
 
     assert comparison.outcome == outcome
@@ -95,7 +95,7 @@ def test_a_gated_target(runs: list[CVEStatus], outcome: TargetOutcome):
     ids=["held", "pending", "not gated"],
 )
 def test_a_comparison_carries_the_baseline_runs(
-    baseline: DetectionBaseline, runs: list[CVEStatus], outcome: TargetOutcome
+    baseline: DetectionBaseline, runs: list[TargetStatus], outcome: TargetOutcome
 ):
     comparison = compare_target(baseline, given.a_candidate(runs))
 

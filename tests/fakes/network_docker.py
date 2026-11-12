@@ -8,8 +8,8 @@ open, or one whose default network options enable IPv6.
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from evals.closed_network import NetworkCommandFailed, NetworkFacts
-from evals.cve_planting_base import LABEL
+from evals.cve.closed_network import NetworkCommandFailed, NetworkFacts
+from evals.cve.planting_base import LABEL
 
 _GATEWAY_MODE = "com.docker.network.bridge.gateway_mode_ipv4"
 

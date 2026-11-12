@@ -1,6 +1,6 @@
 {
   "rule_commit": "93de2d8",
-  "grammar_fingerprint": "4208029a711b929723d0a0460a0fb986e94f15dbb865afa7078dffd54e5ac9b1",
+  "grammar_fingerprint": "58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1",
   "servers": [
     {
       "server_package": "npm:@sunwood-ai-labs/github-kanban-mcp-server",
@@ -1170,7 +1170,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-a6abb8dd996a3dbb7168c977598cb332",
             "exploit_calls": [
               "call_aws"
@@ -1180,7 +1180,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "f05e8ea31777dbd9385884e3e3b07abfa8638df5e878c593dc0ed2a5a5134c96"
+            "holdout_fingerprint": "ed3cd97e7dbb836e4a11511ea2846f96e47657695794d28bb5447c481270103e"
           }
         },
         {
@@ -4462,7 +4462,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-217ede00fa232416fc5806f70669457c",
             "exploit_calls": [
               "get_table_comment"
@@ -4472,7 +4472,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "648aaa3ca4f1db68dc04dee2f696f4062ff95fc8c7e6430ee77d70c903a7bcb0"
+            "holdout_fingerprint": "9315a95ad80f7501dfa66ff7506cab269ff6a1f69bc0a39acb6f86b74e771c47"
           }
         },
         {
@@ -5385,7 +5385,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-b0c184cb3e0fe049a6b96f1368588f8f",
             "exploit_calls": [
               "search_username"
@@ -5395,7 +5395,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "49ef4026fe80f63c9551846ddcbca39b086636b39c0f1834204f850a3d305ca6"
+            "holdout_fingerprint": "e87ff4a5003ce23361095d202fe13bfa1ad6d98f064173590c2024063d7f63fa"
           }
         }
       ],
@@ -5741,7 +5741,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-6183875544065c67eaf49dd29aa9a191",
             "exploit_calls": [
               "run_nmap_scan"
@@ -5751,7 +5751,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "0c0d616bd1a8ac297e971de16554214c42d456d6c5c47e7897ce3976fc0a5b6f"
+            "holdout_fingerprint": "155aba9beb625d6c7a4043ed98dd106c696f1b4f16414fa284e154ee7f387503"
           }
         }
       ],
@@ -6431,7 +6431,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-513d4ed296e84f7c73703a1e1dce2bd2",
             "exploit_calls": [
               "list-packages"
@@ -6441,7 +6441,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "0867d76a93d4c4303be26cc9a85bd225669fbaae07557e2300e1b7f1e5ba5139"
+            "holdout_fingerprint": "ec939145f710e1f833796eb8fbe8c13410ffdfc111271fed38f79f154ea934b8"
           }
         }
       ],
@@ -6946,7 +6946,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-2bcfbb4cfad3418874f24efb9592a648",
             "exploit_calls": [
               "pptx-to-markdown"
@@ -6956,7 +6956,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "2dc0cfc78fd6f29cb7cbd9e5e35c0f9399b0083dc5d1fc802a160808c770d51b"
+            "holdout_fingerprint": "cd11aef72420b193ddfcf3dce4cd3a17837ee2788bb8c7165d614a97c5fd856b"
           }
         },
         {
@@ -7518,7 +7518,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-d443edb8cd48091b4c1793e9c0776afa",
             "exploit_calls": [
               "read_file"
@@ -7528,7 +7528,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "9c0f8a0fcc8721d1eb4803ae8aadda6f2f4296de4c83dc351a84c514ff164d0b"
+            "holdout_fingerprint": "f61faea07ea7009f694cc1962891429ccb6a8957f77c76df513e45239b7abf17"
           }
         },
         {
@@ -7853,7 +7853,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-4d6111674f8d5636539d8b260fda8348",
             "exploit_calls": [
               "mark_task_done"
@@ -7863,7 +7863,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "b0ba03f9bc28c0dde8fc62b5e65abc01b3f0d2acad8a22a70f60ad200099ed4d"
+            "holdout_fingerprint": "d7efbf503f12738dfb182df8e4dc1022a5fa6e0a8c3082295c0d594dda117ada"
           }
         }
       ],
@@ -9183,7 +9183,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-godot-mcp-recopied",
             "exploit_calls": [
               "create_scene"
@@ -9193,7 +9193,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "b2329b8a29577f7309347daddd01ef8b94f238e7cb429d81338af462f68653ec"
+            "holdout_fingerprint": "48aa5d15a8a36e3d1292ea18de50e03e82cd083e5f91906c71588dbd140e7bee"
           }
         }
       ],
@@ -9379,7 +9379,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-sf-mcp-recopied",
             "exploit_calls": [
               "query_records"
@@ -9389,7 +9389,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "2aa925982eabde45e2dd5bf44595474907f19abd6a1cdf508eba1d300cdab297"
+            "holdout_fingerprint": "c67b5b3ad798f3694fad69830291584dcd5851e0d106f804fa81e0cc966d90d0"
           }
         }
       ],
@@ -9681,7 +9681,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-biome-recopied",
             "exploit_calls": [
               "biome-lint"
@@ -9691,7 +9691,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "7ff145cceb4143e2eb49664dc1a324333401a8a966e8794ad540580976051597"
+            "holdout_fingerprint": "e4865b5a18c4a7898239f90ac76d4201a4380c72d953bd76761863c85ca9a353"
           }
         }
       ],
@@ -10372,7 +10372,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-magento2-recopied",
             "exploit_calls": [
               "db-query"
@@ -10382,7 +10382,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "8251652269c2250e3a112805ffa7a30b248d830dace285d189e1d51402e6ceae"
+            "holdout_fingerprint": "00dcd5f5fa22a6531e4afceb164b3cf3d8d41e0485ac19f69e900448b1dae536"
           }
         }
       ],
@@ -10618,7 +10618,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-mysql-recopied",
             "exploit_calls": [
               "run_query"
@@ -10627,7 +10627,7 @@
             "patched_surfaces": false,
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
-            "holdout_fingerprint": "9293064a42ac39768cb25cff59e2a2d0fe3559c51750f22088763e5f8867329c",
+            "holdout_fingerprint": "237f8dae3baa2d8d8c8c9307a3495aa9aa939cd085e89bda738c1629c9dce55a",
             "relies_on_relaying_stand_in": false
           }
         }
@@ -10921,7 +10921,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-postgres-recopied",
             "exploit_calls": [
               "run_query"
@@ -10931,7 +10931,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "7545567c23acdd7747b9e5b6d8b8b4f89089bd74201112bb4c8589b63edbb7c3"
+            "holdout_fingerprint": "3d8f930e36e99608a7a21ba1d93b11daef36b00ae527695b19f7953dcc7a0156"
           }
         },
         {
@@ -10983,7 +10983,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": true,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-postgres-recopied",
             "exploit_calls": [
               "run_query"
@@ -10993,7 +10993,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "7545567c23acdd7747b9e5b6d8b8b4f89089bd74201112bb4c8589b63edbb7c3"
+            "holdout_fingerprint": "3d8f930e36e99608a7a21ba1d93b11daef36b00ae527695b19f7953dcc7a0156"
           }
         }
       ],
@@ -11248,7 +11248,7 @@
           "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-frogman-recopied",
             "exploit_calls": [
               "fm_dialplan_apply"
@@ -11258,7 +11258,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "c80a55aaab79738dfbb8c915fd1669b22399f93432841ac76a0d23cf55cdebb7"
+            "holdout_fingerprint": "9547e41dd14d75c87e64b4c626f5cf7197dfe7e9ce0254afece724e8cb442c7f"
           }
         },
         {
@@ -11554,7 +11554,7 @@
           "backend_need": "none",
           "declared_function_is_effect": false,
           "fix_check": {
-            "source": "holdout_calibration",
+            "source": "detection_holdout_calibration",
             "witness": "MCPAUDIT-kubectl-recopied",
             "exploit_calls": [
               "process_natural_language"
@@ -11564,7 +11564,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "45499ba8728ef23013af5c6fc54aaec4d7491b1361e4d686ac2247c1ab3504bc"
+            "holdout_fingerprint": "d4d799678e3e117981d30bab72bf29289a2d03e569df19f035db5a2c9b71f583"
           }
         },
         {

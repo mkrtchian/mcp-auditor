@@ -1,7 +1,7 @@
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_counting_given as given
-from evals.cve_grammar import VALID_CATEGORIES, MechanismClass
-from evals.nuisance_counting import (
+from evals.cve.grammar import VALID_CATEGORIES, FlawClass
+from evals.cve.nuisance.counting import (
     counted_flaws,
     counted_tools,
     declared_function_tools,
@@ -9,8 +9,8 @@ from evals.nuisance_counting import (
     flaw_tools,
 )
 
-_READ = MechanismClass.READ_OUTSIDE_SCOPE
-_EXEC = MechanismClass.COMMAND_EXECUTION
+_READ = FlawClass.READ_OUTSIDE_SCOPE
+_EXEC = FlawClass.COMMAND_EXECUTION
 
 
 def test_a_flaw_still_surfacing_on_the_patched_version_is_not_counted():

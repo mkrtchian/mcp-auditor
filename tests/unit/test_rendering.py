@@ -410,6 +410,19 @@ def test_json_names_the_server_command_the_redacted_variables_and_the_missed_mod
     assert "relayed_variables" not in data["execution"]
 
 
+def test_json_names_each_judgment_judge_result_and_its_arguments():
+    report = given.a_report_with_pass_case_and_fail_chain()
+
+    data = json.loads(render_json(report))
+
+    [tool] = data["tool_reports"]
+    judged = [*tool["cases"], *tool["chains"]]
+    assert judged
+    assert all("eval_result" not in item for item in judged)
+    assert all("arguments" in item["judge_result"] for item in judged)
+    assert all("payload" not in item["judge_result"] for item in judged)
+
+
 def test_json_execution_is_null_without_a_record():
     report = given.a_two_tool_report()
 

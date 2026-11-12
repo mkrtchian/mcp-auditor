@@ -12,11 +12,11 @@ from evals.cve.audit_attempts import AttemptOutcome
 from evals.cve.detection import audit as detection_audit
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.environments import Launch, LaunchShape
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.grammar import PlantedTarget
 from evals.cve.launch_audit import Auditor
-from evals.cve_environments import Launch, LaunchShape
-from evals.cve_grammar import PlantedTarget
-from evals.cve_planting_base import PlantingSpec
+from evals.cve.planting_base import PlantingSpec
 from mcp_auditor.domain.models import (
     AuditReport,
     MissCause,
@@ -98,7 +98,7 @@ def a_report_throttled(times: int) -> AuditReport:
 def a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
     return RunToCheck(
         target=TARGET,
-        run_target=PlantedTarget(TARGET.mechanisms, TARGET.aim, nonces or {}),
+        run_target=PlantedTarget(TARGET.classes, TARGET.aim, nonces or {}),
         report=report,
         recorded_calls=[],
         records=(),

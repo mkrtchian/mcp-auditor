@@ -17,6 +17,7 @@ request per counted tool, which the stand-in answers as an n8n instance does.
 
 import re
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.nuisance.fix_checks.n8n_redirect_stand_in import (
@@ -26,8 +27,7 @@ from evals.cve.nuisance.fix_checks.n8n_redirect_stand_in import (
     http_place,
     ssrf_redirect_env,
 )
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 _WEBHOOK_EXAMPLE: dict[str, object] = {
     "nodes": [
@@ -94,7 +94,7 @@ def _call(tool: str, args: dict[str, object]) -> FixCheckExploit:
 FIXTURES: tuple[FixCheckFixture, ...] = (
     FixCheckFixture(
         flaw="CVE-2026-44694",
-        effect_class=MechanismClass.INTERNAL_FETCH,
+        effect_class=FlawClass.INTERNAL_FETCH,
         # The exploit's marker is the argument the stand-in redirects on; the redirect target
         # never reaches the exploit's arguments.
         aim=re.compile(f"{MARKER}|{AUDIT_MARKER}"),

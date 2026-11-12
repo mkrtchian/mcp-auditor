@@ -13,7 +13,7 @@
 #     (id 9i3iDZf5MpjlJ2sh, "Extract from file example"), the one active webhook workflow;
 #   - .../n8n-nodes-base.form/mutually-exclusive-branching.json, the Form node example
 #     (id DCotkGqkv0VfT6QT), imported again whenever it is missing.
-# At each start of a launch the lifecycle (evals/n8n_backend.py) runs /opt/n8n-setup/owner.mjs
+# At each start of a launch the lifecycle (evals/cve/backends/n8n.py) runs /opt/n8n-setup/owner.mjs
 # through `docker exec`. On the instance's first start it sets up the owner account, has n8n
 # issue an API key and activates the webhook example through n8n's public API. It then imports
 # the Form node example again when it is missing, and prints the key.

@@ -10,8 +10,8 @@ WORKDIR /app
 RUN git clone https://github.com/hekmon8/Jenkins-server-mcp.git . \
     && git checkout b1f32a7a5e0c
 RUN npm install && npm run build
-# The run Jenkins singleton (jenkins_backend.JENKINS_URL: its fixed address, Jenkins's default port)
-# and the account its image seeds (Dockerfile.jenkins-responder); the fix check overrides
-# JENKINS_URL with its own -e to reach its per-launch Jenkins.
+# The run Jenkins singleton (evals.cve.backends.jenkins.JENKINS_URL: its fixed address, Jenkins's
+# default port) and the account its image seeds (Dockerfile.jenkins-responder); the fix check
+# overrides JENKINS_URL with its own -e to reach its per-launch Jenkins.
 ENV JENKINS_URL=http://198.18.2.2:8080 JENKINS_USER=admin JENKINS_TOKEN=11794c0bdb7038b17e9411596ab682d0c0
 ENTRYPOINT ["node", "/app/build/index.js"]

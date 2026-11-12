@@ -23,12 +23,12 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import PublicNames
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import PublicNames
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKDIR = "/srv/app"
@@ -83,16 +83,16 @@ def _file_paths(place: Place) -> tuple[str, ...]:
 
 def injection_command(place: Place) -> str:
     kind = place.kind
-    if kind is PlantKind.FILE:
+    if kind is PlaceKind.FILE:
         paths = " ".join(resolve_container_path(p, WORKDIR) for p in _file_paths(place))
         return f"cat {paths}"
-    if kind is PlantKind.ENV:
+    if kind is PlaceKind.ENV:
         return "cat /proc/self/environ"  # the server's env, carrying the planted secret
-    if kind is PlantKind.ACCOUNT:
+    if kind is PlaceKind.ACCOUNT:
         return "whoami"  # the account the server runs as (its nonce is the username)
-    if kind is PlantKind.HOSTNAME:
+    if kind is PlaceKind.HOSTNAME:
         return "uname -n"
-    if kind is PlantKind.HTTP_ENDPOINT:
+    if kind is PlaceKind.HTTP_ENDPOINT:
         assert place.coordinates.host is not None and place.coordinates.path is not None
         return f"curl -s http://{place.coordinates.host}{place.coordinates.path}"
     raise ValueError(f"{place.id}: no injection for kind {kind}")
@@ -118,7 +118,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-2130",
     severity="CVSS 6.3 (v3.1, kit card)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

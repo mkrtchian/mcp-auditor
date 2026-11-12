@@ -9,10 +9,12 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded, positive_int
+from evals.cve.closed_network import check_closed_network_support
+from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
+from evals.cve.nuisance.admission import ADMISSION_PATH, FixCheckRecord
 from evals.cve.nuisance.backend_registry import built_backend_tags
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
@@ -26,8 +28,6 @@ from evals.cve.nuisance.commands import (
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
 from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
 from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
-from evals.docker_paths import DOCKER_DIRECTORY
-from evals.nuisance_admission import ADMISSION_PATH, FixCheckRecord
 
 
 @dataclass(frozen=True)
@@ -123,9 +123,9 @@ def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list
     """Where a re-run fix-check result departs from the admission's recorded fix_check, field by
     field. The witness is a fresh random nonce each run (check_fix plants RANDOM_NONCES), so it
     never equals the recorded nonce and is not compared. A holdout calibration copy (source
-    holdout_calibration) carries the provenance of a holdout target's calibration, not a fresh fix
-    check, so its source field is not compared either. Whether the positive control rests on a
-    relaying stand-in is a judgment the admission records, and the fingerprint a holdout
+    detection_holdout_calibration) carries the provenance of a holdout target's calibration, not a
+    fresh fix check, so its source field is not compared either. Whether the positive control rests
+    on a relaying stand-in is a judgment the admission records, and the fingerprint a holdout
     calibration copy was taken at is the copy's provenance: the kit observes neither."""
     return list(_field_mismatches(result, record).values())
 
@@ -133,7 +133,7 @@ def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list
 def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
     # The admission records these two, the kit observes neither.
     skip = {"witness", "relies_on_relaying_stand_in", "holdout_fingerprint"}
-    if record.source == "holdout_calibration":
+    if record.source == "detection_holdout_calibration":
         skip.add("source")
     mismatches: dict[str, str] = {}
     for name in FixCheckRecord.model_fields:

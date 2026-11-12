@@ -12,7 +12,8 @@ import pytest
 import tests.integration.support.test_cve_planting_given as planting
 import tests.integration.support.test_cve_planting_stand_ins_given as given
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_planting_base import (
+from evals.cve.nuisance.confinement import single_container_launch_args
+from evals.cve.planting_base import (
     SENTINEL_IMAGE,
     SENTINEL_SERVICE,
     STAND_IN_SERVICE,
@@ -20,7 +21,6 @@ from evals.cve_planting_base import (
     PublicNames,
     SymbolicUser,
 )
-from evals.nuisance_confinement import single_container_launch_args
 from tests.integration.support.test_cve_planting_then import no_container_it_started_outlives
 
 

@@ -1,9 +1,9 @@
-from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as fix_check
-from evals.facebook_ads_backend import (
+from evals.cve.backends.facebook_ads import (
     FACEBOOK_ADS_BENIGN_HOST,
     FACEBOOK_ADS_CA_BUNDLE,
     facebook_ads_network_args,
 )
+from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as fix_check
 from tests.unit.support.docker_argv import environment, values_after
 
 

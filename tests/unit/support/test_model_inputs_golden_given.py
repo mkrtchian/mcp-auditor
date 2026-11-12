@@ -29,8 +29,8 @@ from pydantic import BaseModel
 import tests.unit.support.test_graph_given as graph
 from evals.cve.census.classification import Classification
 from evals.cve.detection.draw_record import CalibrationCard
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.judge.fixture import load_fixture
-from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.probe.corpus import SCHEMA_NAMES, schema_for
 from evals.run_judge_eval import FIXTURES_PATH, judge_one_case
 from mcp_auditor.adapters.llm import LLM, STRUCTURED_OUTPUTS
@@ -42,8 +42,8 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     ChainGoal,
     ChainStep,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     Judgment,
     Severity,
     TestCase,
@@ -238,11 +238,11 @@ def _payload(
     return AuditPayload(category=category, description=description, arguments={"id": "1 OR 1=1"})
 
 
-def _judge_result() -> EvalResult:
-    return EvalResult(
+def _judge_result() -> JudgeResult:
+    return JudgeResult(
         tool_name="get_user",
         category=AuditCategory.INJECTION,
-        payload={"id": "1 OR 1=1"},
+        arguments={"id": "1 OR 1=1"},
         verdict=EvalVerdict.FAIL,
         justification="rows of every user came back",
         severity=Severity.HIGH,
@@ -257,14 +257,14 @@ def _test_case(
     payload: AuditPayload,
     response: str | dict[str, Any] | None = None,
     error: str | None = None,
-    judge_result: EvalResult | None = None,
+    judge_result: JudgeResult | None = None,
     blocked_reason: str | None = None,
 ) -> TestCase:
     return TestCase(
         payload=payload,
         response=response,
         error=error,
-        eval_result=judge_result,
+        judge_result=judge_result,
         blocked_reason=blocked_reason,
     )
 

@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/apple/swift-argument-parser/main/README.md",
+      "request_target": "/apple/swift-argument-parser/main/README.md",
       "status": 200,
       "headers": [
         [
@@ -119,7 +119,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/c25aa15cc3c2bcb8",
+      "probed_request_target": "/c25aa15cc3c2bcb8",
       "status": 301,
       "headers": [
         [
@@ -192,7 +192,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/c25aa15cc3c2bcb8",
+      "probed_request_target": "/c25aa15cc3c2bcb8",
       "status": 404,
       "headers": [
         [

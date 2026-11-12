@@ -15,36 +15,36 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from evals import (
-    atlassian_backend,
-    ckan_backend,
-    closed_network,
-    doris_backend,
-    facebook_ads_backend,
-    gitlab_backend,
-    googleapis_backend,
-    gravitino_backend,
-    jenkins_backend,
-    mcp_ssh_sshd_backend,
-    n8n_backend,
-    responder_backend,
+from evals.cve import closed_network
+from evals.cve.backends import (
+    atlassian,
+    ckan,
+    doris,
+    facebook_ads,
+    gitlab,
+    googleapis,
+    gravitino,
+    jenkins,
+    mcp_ssh_sshd,
+    n8n,
+    responder,
 )
-from evals.atlassian_backend import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
-from evals.backend_lifecycle import BackendLifecycle
-from evals.ckan_backend import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
+from evals.cve.backends.atlassian import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_IMAGE
+from evals.cve.backends.ckan import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
+from evals.cve.backends.doris import DORIS_BRIDGE, DORIS_CONTAINER, DORIS_IMAGE
+from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
+from evals.cve.backends.gitlab import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
+from evals.cve.backends.googleapis import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
+from evals.cve.backends.gravitino import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
+from evals.cve.backends.jenkins import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE, JENKINS_SERVICE
+from evals.cve.backends.lifecycle import BackendLifecycle
+from evals.cve.backends.mcp_ssh_sshd import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
+from evals.cve.backends.n8n import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 from evals.cve.detection.targets import image_tag
-from evals.docker_paths import image_dockerfile
-from evals.doris_backend import DORIS_BRIDGE, DORIS_CONTAINER, DORIS_IMAGE
-from evals.facebook_ads_backend import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
-from evals.gitlab_backend import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
-from evals.googleapis_backend import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
-from evals.gravitino_backend import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
-from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE, JENKINS_SERVICE
-from evals.mcp_ssh_sshd_backend import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
-from evals.n8n_backend import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
+from evals.cve.docker_paths import image_dockerfile
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer
+    from evals.cve.nuisance.admission import AdmittedServer
 
 
 @dataclass(frozen=True)
@@ -67,7 +67,7 @@ def _served(backend_module: str, *built_services: str) -> tuple[Path, ...]:
 def _responder(
     lifecycle: BackendLifecycle, backend_module: str, network: str, image: str, service: str
 ) -> RegisteredBackend:
-    served = (*_served(backend_module, service), Path(responder_backend.__file__))
+    served = (*_served(backend_module, service), Path(responder.__file__))
     return RegisteredBackend(lifecycle, network, image, (service,), served)
 
 
@@ -75,72 +75,72 @@ _CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
 
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
-        doris_backend.LIFECYCLE,
+        doris.LIFECYCLE,
         DORIS_BRIDGE,
         DORIS_IMAGE,
         (),
-        _served(doris_backend.__file__),
+        _served(doris.__file__),
         (DORIS_CONTAINER,),
     ),
     "ckan": RegisteredBackend(
-        ckan_backend.LIFECYCLE,
+        ckan.LIFECYCLE,
         CKAN_BRIDGE,
         CKAN_IMAGE,
         _CKAN_SERVICES,
-        (*_served(ckan_backend.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
+        (*_served(ckan.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
     ),
     "n8n": RegisteredBackend(
-        n8n_backend.LIFECYCLE,
+        n8n.LIFECYCLE,
         N8N_BRIDGE,
         N8N_IMAGE,
         (N8N_SERVICE,),
-        _served(n8n_backend.__file__, N8N_SERVICE),
+        _served(n8n.__file__, N8N_SERVICE),
     ),
     "gravitino": RegisteredBackend(
-        gravitino_backend.LIFECYCLE,
+        gravitino.LIFECYCLE,
         GRAVITINO_BRIDGE,
         GRAVITINO_IMAGE,
         GRAVITINO_SERVICES,
-        _served(gravitino_backend.__file__, *GRAVITINO_SERVICES),
+        _served(gravitino.__file__, *GRAVITINO_SERVICES),
     ),
     "mcp_ssh_sshd": RegisteredBackend(
-        mcp_ssh_sshd_backend.LIFECYCLE,
+        mcp_ssh_sshd.LIFECYCLE,
         SSHD_BRIDGE,
         SSHD_IMAGE,
         (SSHD_SERVICE,),
-        _served(mcp_ssh_sshd_backend.__file__, SSHD_SERVICE),
+        _served(mcp_ssh_sshd.__file__, SSHD_SERVICE),
     ),
     "jenkins": RegisteredBackend(
-        jenkins_backend.LIFECYCLE,
+        jenkins.LIFECYCLE,
         JENKINS_BRIDGE,
         JENKINS_RESPONDER_IMAGE,
         (JENKINS_SERVICE,),
-        _served(jenkins_backend.__file__, JENKINS_SERVICE),
+        _served(jenkins.__file__, JENKINS_SERVICE),
     ),
     "atlassian": _responder(
-        atlassian_backend.LIFECYCLE,
-        atlassian_backend.__file__,
+        atlassian.LIFECYCLE,
+        atlassian.__file__,
         ATLASSIAN_BRIDGE,
         ATLASSIAN_RESPONDER_IMAGE,
         "atlassian-responder",
     ),
     "gitlab": _responder(
-        gitlab_backend.LIFECYCLE,
-        gitlab_backend.__file__,
+        gitlab.LIFECYCLE,
+        gitlab.__file__,
         GITLAB_BRIDGE,
         GITLAB_RESPONDER_IMAGE,
         "gitlab-responder",
     ),
     "googleapis": _responder(
-        googleapis_backend.LIFECYCLE,
-        googleapis_backend.__file__,
+        googleapis.LIFECYCLE,
+        googleapis.__file__,
         GOOGLEAPIS_BRIDGE,
         GOOGLEAPIS_RESPONDER_IMAGE,
         "googleapis-responder",
     ),
     "facebook_ads": _responder(
-        facebook_ads_backend.LIFECYCLE,
-        facebook_ads_backend.__file__,
+        facebook_ads.LIFECYCLE,
+        facebook_ads.__file__,
         FACEBOOK_ADS_BRIDGE,
         FACEBOOK_ADS_RESPONDER_IMAGE,
         "facebook-ads-responder",

@@ -4,11 +4,11 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
+from evals.cve.grammar import FlawClass
 from evals.cve.nuisance import fingerprint as nuisance_fingerprint
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import RegisteredBackend
-from evals.cve_grammar import MechanismClass
-from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
-from evals.nuisance_admission import AdmittedServer
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 
 SERVICE = admission_given.a_server([]).service
 SERVED_CHANGES = [
@@ -34,13 +34,13 @@ def a_registry_serving(directory: Path) -> dict[str, RegisteredBackend]:
 
 def a_confinement_copy(directory: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A copy of the confinement source the fingerprint reads in place of the real one."""
-    copy = directory / "nuisance_confinement.py"
+    copy = directory / "confinement.py"
     copy.write_text(nuisance_fingerprint.CONFINEMENT_SOURCE.read_text())
     monkeypatch.setattr(nuisance_fingerprint, "CONFINEMENT_SOURCE", copy)
     return copy
 
 
-def one_flaw_server(effect_class: MechanismClass) -> AdmittedServer:
+def one_flaw_server(effect_class: FlawClass) -> AdmittedServer:
     flaw = admission_given.a_flaw_record(
         admission_given.FIRST_FLAW, effect_class, admission_given.PATCHED_VERSION
     )

@@ -8,12 +8,12 @@ from evals.cve.detection.costs import render_cost_table
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison
 from evals.cve.detection.measurement import render_measurement
 from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedStatus
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 
 
 def render_markdown(report: DetectionReport) -> str:
     header = (
-        "| Flaw | CVSS | Class | Status | Detected | Miss class | Aimed | FAIL without proof "
+        "| Flaw | CVSS | Class | Status | Detected | Miss kind | Aimed | FAIL without proof "
         "| Awaited capability (hypothesis) | Note |"
     )
     separator = "|---|---|---|---|---|---|---|---|---|---|"
@@ -48,7 +48,7 @@ def render_tally(results: Sequence[TargetResult]) -> str:
     counts = Counter(result.status for result in results)
     tally = ", ".join(
         f"{counts[status]} {status.value}"
-        for status in (*CVEStatus, *UngradedStatus)
+        for status in (*TargetStatus, *UngradedStatus)
         if counts[status]
     )
     return f"Statuses: {tally}."
@@ -152,14 +152,14 @@ def _render_gate_row(comparison: TargetComparison) -> str:
     return f"| {' | '.join(cells)} |"
 
 
-def status_letters(statuses: Sequence[CVEStatus]) -> str:
+def status_letters(statuses: Sequence[TargetStatus]) -> str:
     return "".join(_STATUS_LETTERS[status] for status in statuses)
 
 
 _STATUS_LETTERS = {
-    CVEStatus.DETECTED: "D",
-    CVEStatus.REACHED_BUT_JUDGED_PASS: "J",
-    CVEStatus.MISSED: "M",
+    TargetStatus.DETECTED: "D",
+    TargetStatus.REACHED_BUT_JUDGED_PASS: "J",
+    TargetStatus.MISSED: "M",
 }
 
 
@@ -171,10 +171,10 @@ def _render_row(result: TargetResult) -> str:
     cells = [
         result.flaw_id,
         result.severity,
-        ", ".join(result.mechanisms) or "-",
+        ", ".join(result.classes) or "-",
         result.status.value,
         run_fraction(result.detected_runs, result.runs),
-        result.miss_class or "-",
+        result.miss_kind or "-",
         run_fraction(result.aimed_runs, result.runs),
         run_fraction(result.fail_without_proof_runs, result.runs),
         result.awaited_capability or "-",

@@ -10,9 +10,9 @@ from evals.cve.detection.holdout_run import HoldoutDeps, run_holdout_targets
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.grammar import RunGrade, TargetStatus
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
-from evals.cve_grammar import CVEStatus, RunGrade
-from evals.cve_places import HOLDOUT_PLACES, load_places
+from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
@@ -57,13 +57,13 @@ def a_report_missing(*causes: MissCause) -> AuditReport:
     return grammar.a_report().model_copy(update={"missed_model_calls": missed})
 
 
-def graded(status: CVEStatus, report: AuditReport, **grade_fields: Any) -> GradedAudit:
+def graded(status: TargetStatus, report: AuditReport, **grade_fields: Any) -> GradedAudit:
     return GradedAudit(RunGrade(status=status, **grade_fields), report)
 
 
 def three_detections() -> list[Outcome]:
     report = a_report(ProviderUsage(input_tokens=10, output_tokens=20), ProviderUsage())
-    return [graded(CVEStatus.DETECTED, report, aimed=True) for _ in range(3)]
+    return [graded(TargetStatus.DETECTED, report, aimed=True) for _ in range(3)]
 
 
 def scripted(outcomes_by_id: Mapping[str, list[Outcome]]) -> Audit:
@@ -217,7 +217,7 @@ async def run(
         dates,
         _conditions(),
         SETTINGS,
-        load_places(HOLDOUT_PLACES),
+        load_places(DETECTION_PLACES),
         census_commit="cafe",
         runs=runs,
         concurrency=concurrency,

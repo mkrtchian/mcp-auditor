@@ -81,7 +81,7 @@ LIB_RS_EOF
 # The `heim` CLI is an external program heim-mcp shells out to; its toolchain cannot run under
 # the container confinement (no Heim runtime, no registry, no network) and heim.dev no longer
 # distributes it, so it is served by a stand-in under its real name on PATH. For `heim deploy
-# /opt/myapp` the stand-in replays the documented `heim deploy` output (same source as the app);
+# /opt/myapp` the stand-in serves the documented `heim deploy` output (same source as the app);
 # `heim deploy` with any other / no path gets heim's build error, and any non-deploy invocation
 # the unrecognized-subcommand error. The command-injection flaw lives entirely in heim-mcp's
 # exec() call. Baked inline so the Dockerfile fingerprint covers the stand-in's content. Its

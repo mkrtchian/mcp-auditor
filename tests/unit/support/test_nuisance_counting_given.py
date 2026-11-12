@@ -1,7 +1,7 @@
 import tests.unit.support.test_nuisance_admission_given as admission
+from evals.cve.grammar import FlawClass
+from evals.cve.nuisance.admission import FixCheckRecord, FlawRecord, ToolRecord
 from evals.cve.nuisance.admission_records import RealSoftwareRecord
-from evals.cve_grammar import MechanismClass
-from evals.nuisance_admission import FixCheckRecord, FlawRecord, ToolRecord
 
 
 def a_fix_check(**overrides: object) -> FixCheckRecord:
@@ -33,7 +33,7 @@ def a_removed_tool_whose_declared_function_is_effect(name: str, is_effect: bool)
 
 
 def a_flaw_whose_declared_function_is_effect(
-    identifier: str, effect_class: MechanismClass, tools: list[ToolRecord]
+    identifier: str, effect_class: FlawClass, tools: list[ToolRecord]
 ) -> FlawRecord:
     flaw = admission.a_flaw_record(identifier, effect_class, "1.2.0", tools=tools)
     return flaw.model_copy(update={"declared_function_is_effect": True})

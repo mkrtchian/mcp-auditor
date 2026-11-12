@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
-from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, RunGrade
+from evals.cve.grammar import DETECTION_RUNGS, RunGrade, TargetStatus
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 
@@ -40,7 +40,7 @@ class TargetOutcome(StrEnum):
 class TargetCandidate(BaseModel):
     flaw_id: str
     fixture_fingerprint: str
-    runs: list[CVEStatus]
+    runs: list[TargetStatus]
     # False when a run did not complete: the runs then hold the completed ones only.
     completed: bool
     # True when a run's status would change if its unchecked credits were misses.
@@ -57,8 +57,8 @@ def depends_on_unchecked(grade: RunGrade) -> bool:
 class TargetComparison(BaseModel):
     flaw_id: str
     outcome: TargetOutcome
-    candidate_runs: list[CVEStatus]
-    baseline_runs: list[CVEStatus] = []  # empty without a baseline
+    candidate_runs: list[TargetStatus]
+    baseline_runs: list[TargetStatus] = []  # empty without a baseline
     retests: list[bool] = []  # True: the miss reproduced
     detail: str | None = None
 

@@ -10,7 +10,7 @@ from evals.cve.detection.calibration_dossier import write_kit
 from evals.cve.detection.targets import Target
 from evals.cve.kit.fix_check import FixCheckResult
 from evals.cve.kit.target import KitTarget
-from evals.nuisance_admission import FixCheckRecord
+from evals.cve.nuisance.admission import FixCheckRecord
 
 _KIT_DIR = iso.REPO_ROOT / "evals" / "cve" / "kit"
 

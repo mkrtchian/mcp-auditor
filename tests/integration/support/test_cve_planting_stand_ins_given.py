@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.cve_planting import (
+from evals.cve.planting import (
     RANDOM_NONCES,
     PlantedArgs,
     PlantingHost,
@@ -13,7 +13,7 @@ from evals.cve_planting import (
     SymbolicUser,
     planting_spec,
 )
-from evals.cve_planting_base import STAND_IN_IMAGE, PublicNames
+from evals.cve.planting_base import STAND_IN_IMAGE, PublicNames
 from tests.integration.support.test_cve_planting_given import TargetCommand, run_as_target
 
 STAND_IN_HOST = "public.fict"
@@ -224,7 +224,7 @@ def _route(scheme: str, body: str, headers: list[list[str]]) -> dict[str, object
     return {
         "scheme": scheme,
         "method": "GET",
-        "target": "/",
+        "request_target": "/",
         "status": 200,
         "headers": headers,
         "body": body,
@@ -235,7 +235,7 @@ def _head_only_route() -> dict[str, object]:
     return {
         "scheme": "https",
         "method": "HEAD",
-        "target": HEAD_ONLY_TARGET,
+        "request_target": HEAD_ONLY_TARGET,
         "status": 200,
         "headers": [list(header) for header in HEAD_ONLY_HEADERS],
         "body": "",
@@ -243,12 +243,12 @@ def _head_only_route() -> dict[str, object]:
 
 
 def _post_route(
-    target: str, action: str | None, body: str, headers: Sequence[tuple[str, str]]
+    request_target: str, action: str | None, body: str, headers: Sequence[tuple[str, str]]
 ) -> dict[str, object]:
     route: dict[str, object] = {
         "scheme": "https",
         "method": "POST",
-        "target": target,
+        "request_target": request_target,
         "status": 200,
         "headers": [list(header) for header in headers],
         "body": body,
@@ -262,7 +262,7 @@ def _form_route() -> dict[str, object]:
     return {
         "scheme": "https",
         "method": "POST",
-        "target": FORM_TARGET,
+        "request_target": FORM_TARGET,
         "form_field": FORM_FIELD,
         "status": 200,
         "headers": [list(header) for header in RESULTS_HEADERS],
@@ -273,7 +273,7 @@ def _form_route() -> dict[str, object]:
 def _redirect_to_https() -> dict[str, object]:
     return {
         "scheme": "http",
-        "probed_target": PROBED_TARGET,
+        "probed_request_target": PROBED_TARGET,
         "status": 301,
         "headers": [
             ["Location", f"https://{STAND_IN_HOST}{PROBED_TARGET}"],
@@ -287,7 +287,7 @@ def _redirect_to_https() -> dict[str, object]:
 def _not_found() -> dict[str, object]:
     return {
         "scheme": "https",
-        "probed_target": PROBED_TARGET,
+        "probed_request_target": PROBED_TARGET,
         "status": 404,
         "headers": [["Content-Type", "text/plain"]],
         "body": MISSING_BODY,
@@ -298,7 +298,7 @@ def _not_found() -> dict[str, object]:
 def _quoting_not_found(case: QuotingCase) -> dict[str, object]:
     return {
         "scheme": "https",
-        "probed_target": PROBED_TARGET,
+        "probed_request_target": PROBED_TARGET,
         "status": 404,
         "headers": [["Content-Type", case.content_type]],
         "body": case.body,

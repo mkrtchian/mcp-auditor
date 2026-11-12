@@ -21,13 +21,13 @@ import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from evals import doris_backend
+from evals.cve.backends import doris
+from evals.cve.backends.doris import DORIS_DB, DORIS_IMAGE, MYSQL_CLIENT_IMAGE
+from evals.cve.detection.holdout_environments import doris_db_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.doris_backend import DORIS_DB, DORIS_IMAGE, MYSQL_CLIENT_IMAGE
-from evals.holdout_environments import doris_db_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 # An exploit is aimed when its SQL carries Doris' http() TVF; the benign metadata read does not.
@@ -56,7 +56,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-66335",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
+    classes=frozenset({FlawClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
@@ -75,5 +75,5 @@ TARGET = Target(
     ),
     tools_filter=None,
     backend_images=(DORIS_IMAGE, MYSQL_CLIENT_IMAGE),
-    backend_sources=(Path(doris_backend.__file__),),
+    backend_sources=(Path(doris.__file__),),
 )

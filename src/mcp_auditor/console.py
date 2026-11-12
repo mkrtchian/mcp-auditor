@@ -15,8 +15,8 @@ from rich.text import Text
 from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
-    EvalResult,
     ExecutionRegime,
+    JudgeResult,
     MissedModelCall,
     ProviderUsage,
     Severity,
@@ -118,13 +118,13 @@ class AuditDisplay:
         else:
             self._print_findings_recap_rich(findings)
 
-    def _print_findings_recap_ci(self, findings: list[EvalResult]) -> None:
+    def _print_findings_recap_ci(self, findings: list[JudgeResult]) -> None:
         self._console.print("Findings:")
         for finding in findings:
             severity = finding.severity.value.upper()
             self._console.print(f"  {severity}: {_format_finding(finding)}")
 
-    def _print_findings_recap_rich(self, findings: list[EvalResult]) -> None:
+    def _print_findings_recap_rich(self, findings: list[JudgeResult]) -> None:
         lines: list[Text] = []
         current_severity: Severity | None = None
         for finding in findings:
@@ -203,7 +203,7 @@ def _describe_regime(regime: ExecutionRegime) -> str:
     return regime.replace("_", " ")
 
 
-def _format_finding(finding: EvalResult) -> str:
+def _format_finding(finding: JudgeResult) -> str:
     category_display = category_with_owasp_id(finding.category)
     justification = _truncate(finding.justification, 80)
     return f"{finding.tool_name} > {category_display} \u2014 {justification}"

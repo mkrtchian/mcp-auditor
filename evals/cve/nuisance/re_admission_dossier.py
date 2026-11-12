@@ -20,18 +20,18 @@ from pathlib import Path
 from evals.cve import dossier_closure
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance import fix_checks, re_admission_docs
+from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.dossier import write_dossier
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
 from evals.cve.nuisance.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.holdout_target_reference import holdout_targets_among
 from evals.cve.nuisance.walk_record import WalkInputs
-from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.docker_paths import image_dockerfile
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.eval_session import Refused
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 
 
 def write_re_admission_dossier(
@@ -118,7 +118,7 @@ def closure_roots(server: AdmittedServer) -> list[str]:
         "evals.cve.kit.backend_launch",
     ]
     if server.backend is not None:
-        roots.append(f"evals.{server.backend.provisioner}_backend")
+        roots.append(f"evals.cve.backends.{server.backend.provisioner}")
     return roots
 
 
@@ -126,7 +126,11 @@ def holdout_target_references(
     server: AdmittedServer, resolution: Mapping[str, str]
 ) -> list[Target]:
     by_identifier = {target.flaw_id: target for target in HOLDOUT_TARGETS}
-    copied = [flaw.flaw for flaw in server.flaws if flaw.fix_check.source == "holdout_calibration"]
+    copied = [
+        flaw.flaw
+        for flaw in server.flaws
+        if flaw.fix_check.source == "detection_holdout_calibration"
+    ]
     unknown = [flaw for flaw in copied if flaw not in resolution]
     if unknown:
         raise Refused(

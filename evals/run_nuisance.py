@@ -32,6 +32,7 @@ from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
+from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission_walk import addition_entries
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
@@ -68,13 +69,12 @@ from evals.cve.nuisance.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.vet_command import add_vet_arguments
 from evals.cve.nuisance.walk import NuisanceServer, acceptance_target_servers, nuisance_population
 from evals.cve.nuisance.walk_record import WalkInputs
+from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
-from evals.cve_places import HOLDOUT_PLACES, load_places
 from evals.eval_session import Refused, last_commit
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import quiet_throttle_waits
-from evals.nuisance_admission import ADMISSION_PATH, AdmittedServer
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -275,7 +275,7 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
 def _refuse_stale_holdout_calibration_copies(
     servers: Sequence[AdmittedServer], draw: DrawRecord | None
 ) -> None:
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     fingerprints = {
         target.flaw_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
     }

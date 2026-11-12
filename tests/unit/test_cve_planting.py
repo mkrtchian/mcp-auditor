@@ -8,9 +8,9 @@ import pytest
 
 import tests.unit.support.test_cve_planting_given as given
 import tests.unit.support.test_cve_planting_then as then
-from evals.cve_endpoint_address import RESERVED_NAME_BLOCK
-from evals.cve_places import is_endpoint_host
-from evals.cve_planting import (
+from evals.cve.endpoint_address import RESERVED_NAME_BLOCK
+from evals.cve.places import is_endpoint_host
+from evals.cve.planting import (
     RANDOM_NONCES,
     DockerPlanting,
     PlantedArgs,
@@ -18,7 +18,7 @@ from evals.cve_planting import (
     PlantingSpec,
     planted,
 )
-from evals.cve_planting_base import (
+from evals.cve.planting_base import (
     confinement_args,
     no_network_args,
     own_network_args,

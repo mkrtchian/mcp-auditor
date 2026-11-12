@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from evals import holdout_environments
-from evals.cve_environments import Launch
-from evals.cve_planting_base import PlantingHost, PlantingSpec, SentinelIntent, SymbolicUser
+from evals.cve.detection import holdout_environments
+from evals.cve.environments import Launch
+from evals.cve.planting_base import PlantingHost, PlantingSpec, SentinelIntent, SymbolicUser
 
 
 @dataclass

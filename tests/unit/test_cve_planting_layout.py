@@ -1,10 +1,10 @@
 import pytest
 
 import tests.unit.support.test_cve_planting_given as given
-from evals.cve_places import LayoutAnchor
-from evals.cve_planting import RANDOM_NONCES, planting_spec
-from evals.cve_planting_base import LayoutNode
-from evals.cve_planting_spec import URL_SAFE_USERINFO
+from evals.cve.places import LayoutAnchor
+from evals.cve.planting import RANDOM_NONCES, planting_spec
+from evals.cve.planting_base import LayoutNode
+from evals.cve.planting_spec import URL_SAFE_USERINFO
 
 
 def test_a_git_remote_url_place_records_a_project_bare_config_node_with_the_nonce():

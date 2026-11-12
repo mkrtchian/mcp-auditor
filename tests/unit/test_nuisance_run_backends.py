@@ -7,8 +7,8 @@ import pytest
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_backends_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
-from evals.cve_planting_base import STAND_IN_IMAGE
-from evals.doris_backend import DORIS_CONTAINER
+from evals.cve.backends.doris import DORIS_CONTAINER
+from evals.cve.planting_base import STAND_IN_IMAGE
 from evals.eval_session import Refused
 
 

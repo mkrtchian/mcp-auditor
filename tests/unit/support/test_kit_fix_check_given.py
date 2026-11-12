@@ -9,12 +9,12 @@ import re
 from collections.abc import Sequence
 from contextlib import AbstractContextManager
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitResponse
 from evals.cve.kit.fix_check import Exchange, Exercised, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import PlantedArgs, PlantingHost, PlantingSpec, SymbolicUser, planted
+from evals.cve.places import Coordinates, Place, PlaceKind
+from evals.cve.planting import PlantedArgs, PlantingHost, PlantingSpec, SymbolicUser, planted
 from tests.fakes.planting_docker import FakePlantingDocker
 
 WITNESS_ID = "witness"
@@ -26,9 +26,9 @@ def a_witness(path: str = "/tmp/witness") -> Place:
     return Place(
         id=WITNESS_ID,
         family="fix_check",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path=path),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path=path),
     )
 
 
@@ -66,7 +66,7 @@ def a_fix_check_fixture(
 ) -> FixCheckFixture:
     return FixCheckFixture(
         flaw="CVE-2025-0001",
-        effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+        effect_class=FlawClass.READ_OUTSIDE_SCOPE,
         aim=AIM,
         witness=a_witness(witness_path),
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),

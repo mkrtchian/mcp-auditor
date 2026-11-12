@@ -7,12 +7,9 @@ on:
       - evals/docker/**
       - evals/cve/*.py
       - evals/cve/detection/*.py
-      - evals/cve_*.py
-      - evals/holdout_places.json
+      - evals/detection_places.json
       - evals/run_detection.py
       - evals/detection_preflight.py
-      - evals/closed_network.py
-      - evals/public_stand_ins.py
       - evals/stand_ins/**
       - tests/integration/test_cve_planting.py
       - tests/integration/support/test_cve_planting_*.py
@@ -25,12 +22,9 @@ on:
       - evals/docker/**
       - evals/cve/*.py
       - evals/cve/detection/*.py
-      - evals/cve_*.py
-      - evals/holdout_places.json
+      - evals/detection_places.json
       - evals/run_detection.py
       - evals/detection_preflight.py
-      - evals/closed_network.py
-      - evals/public_stand_ins.py
       - evals/stand_ins/**
       - tests/integration/test_cve_planting.py
       - tests/integration/support/test_cve_planting_*.py

@@ -3,8 +3,8 @@ import pytest
 import tests.integration.support.test_detection_replay_given as given
 import tests.integration.support.test_detection_replay_then as then
 from evals.cve.detection.replay import REPLAY_ATTEMPTS, ReplayAttemptFailure, replay_with_causes
-from evals.cve_grammar import CVEStatus, grade_run
-from evals.cve_report_units import units_of
+from evals.cve.grammar import TargetStatus, grade_run
+from evals.cve.report_units import units_of
 
 pytestmark = pytest.mark.usefixtures("docker_on_the_host")
 
@@ -17,7 +17,9 @@ async def test_a_declared_path_strikes_the_credit():
     outcome = await replay_with_causes(run)
 
     then.the_flaw_credit_is_struck(outcome)
-    assert grade_run(run.run_target, units_of(run.report), outcome.check).status == CVEStatus.MISSED
+    assert (
+        grade_run(run.run_target, units_of(run.report), outcome.check).status == TargetStatus.MISSED
+    )
 
 
 async def test_the_flaw_path_keeps_the_credit():
@@ -27,7 +29,7 @@ async def test_the_flaw_path_keeps_the_credit():
 
     then.the_credit_is_kept(outcome)
     status = grade_run(run.run_target, units_of(run.report), outcome.check).status
-    assert status == CVEStatus.DETECTED
+    assert status == TargetStatus.DETECTED
 
 
 async def test_a_chain_second_step_reaching_the_flaw_keeps_the_credit():
@@ -73,8 +75,8 @@ async def test_a_patched_launch_that_always_fails_leaves_the_credit_unchecked():
         outcome, (ReplayAttemptFailure.LAUNCH_FAILED,) * REPLAY_ATTEMPTS
     )
     grade = grade_run(run.run_target, units_of(run.report), outcome.check)
-    assert grade.status == CVEStatus.DETECTED
-    assert grade.status_if_unchecked_missed == CVEStatus.MISSED
+    assert grade.status == TargetStatus.DETECTED
+    assert grade.status_if_unchecked_missed == TargetStatus.MISSED
 
 
 async def test_a_patched_server_dying_while_answering_leaves_the_credit_unchecked():
@@ -100,7 +102,7 @@ async def test_a_detection_before_a_shared_death_is_decided_and_kept():
 
     then.the_credit_is_kept(outcome)
     status = grade_run(run.run_target, units_of(run.report), outcome.check).status
-    assert status == CVEStatus.DETECTED
+    assert status == TargetStatus.DETECTED
 
 
 async def test_a_straddling_credit_is_struck_when_the_patched_server_survives():

@@ -11,8 +11,8 @@ import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance import vet_command as nuisance_vet_command
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.vet_command import VetDeps
-from evals.nuisance_admission import AdmittedServer
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost
 
 SERVER = admission_given.SERVER_PACKAGE

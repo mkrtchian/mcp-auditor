@@ -319,7 +319,7 @@ def test_the_recorded_at_line_carries_the_run_timestamp():
 
 
 def test_the_report_holds_no_proof_text_fields():
-    forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_class"}
+    forbidden = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
     models = [
         HoldoutReport,
         TargetLine,

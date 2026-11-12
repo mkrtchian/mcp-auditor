@@ -8,11 +8,11 @@ from pathlib import Path
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, LaunchMode, Target
-from evals.cve_grammar import CVEStatus, MechanismClass
-from evals.cve_places import Coordinates, LayoutAnchor, Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import LayoutMount, PublicNames
-from evals.docker_paths import DOCKER_DIRECTORY
+from evals.cve.docker_paths import DOCKER_DIRECTORY
+from evals.cve.grammar import FlawClass, TargetStatus
+from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import LayoutMount, PublicNames
 from evals.gate import RetestRule
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.unit.support.test_cve_planting_stand_ins_given import HOST as STAND_IN_HOST
@@ -48,24 +48,24 @@ def _an_endpoint_record(
     return Place(
         id=KEPT_ENDPOINT_ID,
         family=family,
-        reachable_by=frozenset({"internal_fetch"}),
-        kind=PlantKind.HTTP_ENDPOINT,
-        coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="fictional-service", path=path),
+        reaches=frozenset({"internal_fetch"}),
+        kind=PlaceKind.HTTP_ENDPOINT,
+        coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="fictional-service", path=path),
     )
 
 
 def _a_file_record(
-    entry_id: str = KEPT_FILE_ID,
+    place_id: str = KEPT_FILE_ID,
     *,
     path: str = "/fictional/secret",
     family: str = "fictional-family",
 ) -> Place:
     return Place(
-        id=entry_id,
+        id=place_id,
         family=family,
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path=path),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path=path),
     )
 
 
@@ -85,9 +85,9 @@ def a_layout_record(
     return Place(
         id=KEPT_LAYOUT_ID,
         family="fictional-family",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.GIT_REMOTE_URL,
-        coordinates=Coordinates(PlantKind.GIT_REMOTE_URL, anchor=anchor, relpath=relpath),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.GIT_REMOTE_URL,
+        coordinates=Coordinates(PlaceKind.GIT_REMOTE_URL, anchor=anchor, relpath=relpath),
     )
 
 
@@ -202,11 +202,11 @@ FINGERPRINTED_CHANGES: dict[str, TargetChange] = {
     "dockerfile instruction": _appending_to_its_dockerfile("RUN true"),
     "patched dockerfile instruction": _appending_to_the_patched_dockerfile("RUN true"),
     "aim": _replacing(aim=re.compile(r"[;&]")),
-    "class": _replacing(mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE})),
+    "class": _replacing(classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE})),
     "a class gained": _replacing(
-        mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE})
+        classes=frozenset({FlawClass.COMMAND_EXECUTION, FlawClass.READ_OUTSIDE_SCOPE})
     ),
-    "no class": _replacing(mechanisms=frozenset[MechanismClass]()),
+    "no class": _replacing(classes=frozenset[FlawClass]()),
     "tools filter": _replacing(tools_filter=frozenset({"kubectl_generic", "kubectl_get"})),
     "server image": _replacing(server_image="another-service"),
     "reaches": _replacing(reaches=frozenset({"arbitrary_read"})),
@@ -294,7 +294,7 @@ def conditions(runs: int = 3) -> DetectionRunConditions:
 
 
 def a_baseline(
-    runs: list[CVEStatus],
+    runs: list[TargetStatus],
     status: BaselineStatus = BaselineStatus.UNCONFIRMED,
     flaw_id: str = "CVE-2025-53355",
 ) -> DetectionBaseline:
@@ -311,6 +311,6 @@ def a_baseline(
     )
 
 
-def a_confirmation(runs: list[CVEStatus]) -> DetectionBaseline:
+def a_confirmation(runs: list[TargetStatus]) -> DetectionBaseline:
     first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-28T09:00:00+00:00")
     return a_baseline(runs, status=BaselineStatus.CONFIRMED).model_copy(update={"confirms": first})

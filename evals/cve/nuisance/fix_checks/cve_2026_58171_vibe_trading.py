@@ -31,12 +31,12 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import (
     DockerPlanting,
     PlantingHost,
     PlantingSpec,
@@ -51,9 +51,9 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 WITNESS = Place(
     id="vibe-trading-run-escape",
     family="fix_check",
-    reachable_by=frozenset({"arbitrary_read"}),
-    kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path="/tmp/run.json"),
+    reaches=frozenset({"arbitrary_read"}),
+    kind=PlaceKind.FILE,
+    coordinates=Coordinates(PlaceKind.FILE, path="/tmp/run.json"),
 )
 _RUN_JSON = "/tmp/run.json"
 _TRAVERSAL_RUN_ID = "../" * 8 + "tmp"
@@ -118,7 +118,7 @@ async def _benign_retry_run(places: Places, client: KitClient) -> None:
 
 FIXTURE = FixCheckFixture(
     flaw="CVE-2026-58171",
-    effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+    effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,

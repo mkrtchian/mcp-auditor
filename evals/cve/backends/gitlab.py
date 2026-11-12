@@ -1,0 +1,72 @@
+"""The GitLab responder backend's lifecycle.
+
+A light HTTP responder standing in for the GitLab instance that the pipeline-job tools of the
+audited server call through `GITLAB_API_URL`. It answers the job endpoints with GitLab's own
+documented example responses and spec fixtures (see Dockerfile.gitlab-responder), and any other
+request with GitLab's 404. Like the Jenkins responder it is cheap to stand and a singleton on a
+fixed address: stood once and reused across a server's concurrent nuisance runs, reaped by the
+generic orphan sweep, so no lock is held across the yield. The singleton carries no witness
+nonce, so it has no responder route that serves a witness and answers the run-phase benign calls
+only: a fix check stands its own container of the same image with `WITNESS_NONCE` set, which adds
+the responder route that serves a witness, on the bridge and subnet exported here.
+
+The audited server reaches the responder as an outbound HTTP request. Its `GITLAB_API_URL` is
+baked into the run image's own `ENV` at the singleton's network alias `GITLAB_RESPONDER_ALIAS`, so
+`gitlab_server_args` carries no `-e` of its own. A fix check that stands its responder on another
+address of the bridge overrides `GITLAB_API_URL` with a `-e` on the server's `docker run`, which
+wins over the baked `ENV`. The responder sits in the RFC 2544 benchmarking range on its own
+bridge, overlapping no other responder's subnet.
+
+A caller drives this through `ensure_gitlab_responder`, `gitlab_server_args`, `gitlab_rm` and
+`GITLAB_LAUNCH_LOCK`, built on the shared lifecycle of `evals.cve.backends.responder`.
+"""
+
+import threading
+from collections.abc import Sequence
+
+from evals.cve.backends.lifecycle import BackendLifecycle
+from evals.cve.backends.responder import Responder, remove
+from evals.cve.docker_paths import DOCKER_DIRECTORY
+from evals.cve.planting_base import PlantingHost
+
+GITLAB_RESPONDER_IMAGE = "mcp-auditor-cve-gitlab-responder:local"
+GITLAB_RESPONDER_CONTAINER = "mcp-auditor-cve-gitlab-responder"
+GITLAB_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.gitlab-responder"
+GITLAB_BRIDGE = "mcp-auditor-cve-gitlab-bridge"  # server <-> responder, static IPs
+GITLAB_SUBNET = "198.18.4.0/24"  # RFC 2544: overlaps no other responder's subnet
+GITLAB_RESPONDER_IP = "198.18.4.2"
+GITLAB_RESPONDER_ALIAS = "gitlab.example.com"  # the host of GITLAB_API_URL in the run image
+
+# The responder is a singleton on a fixed IP, so a caller does not hold this across its yield: a
+# server's concurrent runs share the one responder. A plain Lock serialises only the stand-up,
+# since __enter__ and __exit__ may run on different worker threads.
+GITLAB_LAUNCH_LOCK = threading.Lock()
+
+_RESPONDER = Responder(
+    image=GITLAB_RESPONDER_IMAGE,
+    container=GITLAB_RESPONDER_CONTAINER,
+    bridge=GITLAB_BRIDGE,
+    subnet=GITLAB_SUBNET,
+    ip=GITLAB_RESPONDER_IP,
+    dockerfile=GITLAB_RESPONDER_DOCKERFILE,
+    run_args=("--network-alias", GITLAB_RESPONDER_ALIAS),
+)
+
+
+def gitlab_server_args(
+    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> list[str]:
+    return _RESPONDER.server_args(name, image, host, server_launch)
+
+
+def ensure_gitlab_responder() -> None:
+    _RESPONDER.ensure()
+
+
+def gitlab_rm(name: str) -> None:
+    remove(name)
+
+
+LIFECYCLE = BackendLifecycle(
+    "gitlab", GITLAB_LAUNCH_LOCK, ensure_gitlab_responder, gitlab_server_args, gitlab_rm
+)

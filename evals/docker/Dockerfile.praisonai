@@ -1,5 +1,5 @@
 # praisonai 4.6.40, the shipped server (first fix of CVE-2026-47394, carrying CVE-2026-44336's
-# earlier fix too). Real pinned software from PyPI, no stub, installed as the README documents
+# earlier fix too). Real pinned software from PyPI, no stand-in, installed as the README documents
 # (`pip install praisonai`): mcp floats with praisonai's own requirement, 4.6.40 starting under
 # the mcp 2 line. Base pinned by digest for cross-machine reproducibility (python:3.12-slim).
 # No COPY/ADD: the fingerprint hashes instructions only.

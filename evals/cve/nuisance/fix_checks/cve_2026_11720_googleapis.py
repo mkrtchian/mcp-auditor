@@ -29,28 +29,28 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from evals.closed_network import ensure_closed_network
-from evals.cve.kit.client import KitClient
-from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import (
-    PlantingHost,
-    PlantingSpec,
-    SymbolicUser,
-    confinement_args,
-    unprivileged_user_args,
-)
-from evals.cve_planting_base import LABEL, own_network_args
-from evals.docker_paths import DOCKER_DIRECTORY
-from evals.googleapis_backend import (
+from evals.cve.backends.googleapis import (
     GOOGLEAPIS_BRIDGE,
     GOOGLEAPIS_LAUNCH_LOCK,
     GOOGLEAPIS_SUBNET,
     ensure_googleapis_responder,
     googleapis_rm,
 )
+from evals.cve.closed_network import ensure_closed_network
+from evals.cve.docker_paths import DOCKER_DIRECTORY
+from evals.cve.grammar import FlawClass
+from evals.cve.kit.client import KitClient
+from evals.cve.kit.fix_check import FixCheckFixture
+from evals.cve.kit.launch import Launch, LaunchShape
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import (
+    PlantingHost,
+    PlantingSpec,
+    SymbolicUser,
+    confinement_args,
+    unprivileged_user_args,
+)
+from evals.cve.planting_base import LABEL, own_network_args
 
 INTERNAL_BRIDGE = "mcp-auditor-cve-googleapis-internal-bridge"
 INTERNAL_SUBNET = "10.199.0.0/24"
@@ -61,9 +61,9 @@ WITNESS_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.googleapis-witness
 WITNESS = Place(
     id="googleapis-witness",
     family="fix_check",
-    reachable_by=frozenset({"read_outside_scope", "internal_fetch"}),
-    kind=PlantKind.HTTP_ENDPOINT,
-    coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="googleapis-internal", path="/sentinel"),
+    reaches=frozenset({"read_outside_scope", "internal_fetch"}),
+    kind=PlaceKind.HTTP_ENDPOINT,
+    coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="googleapis-internal", path="/sentinel"),
 )
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
@@ -164,7 +164,7 @@ async def _benign_fetch(places: Places, client: KitClient) -> None:
 
 FIXTURE_11720 = FixCheckFixture(
     flaw="CVE-2026-11720",
-    effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+    effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=re.compile(r"\.\./|%2e%2e", re.I),
     witness=WITNESS,
     planting_host=HOST,
@@ -178,7 +178,7 @@ FIXTURE_11720 = FixCheckFixture(
 
 FIXTURE_14540 = FixCheckFixture(
     flaw="CVE-2026-14540",
-    effect_class=MechanismClass.INTERNAL_FETCH,
+    effect_class=FlawClass.INTERNAL_FETCH,
     aim=re.compile(r"redirect", re.I),
     witness=WITNESS,
     planting_host=HOST,

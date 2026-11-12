@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/academy.md",
+      "request_target": "/academy.md",
       "status": 200,
       "headers": [
         [
@@ -127,7 +127,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/e0dedf2794647f15",
+      "probed_request_target": "/e0dedf2794647f15",
       "status": 301,
       "headers": [
         [
@@ -176,7 +176,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/e0dedf2794647f15",
+      "probed_request_target": "/e0dedf2794647f15",
       "status": 404,
       "headers": [
         [

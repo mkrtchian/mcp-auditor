@@ -18,13 +18,13 @@ from evals.cve.detection.targets import (
     TargetVersion,
     image_tag,
 )
+from evals.cve.environments import Launch, LaunchShape, command_injection_env
 from evals.cve.exchange_log import ExchangeLog
-from evals.cve_environments import Launch, LaunchShape, command_injection_env
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import PlantingSpec
-from evals.cve_planting_base import LayoutMount
-from evals.cve_proofs import is_aimed
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import PlantingSpec
+from evals.cve.planting_base import LayoutMount
+from evals.cve.proofs import is_aimed
+from evals.cve.units import Unit, unit_of_exchanges
 from mcp_auditor.domain import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ToolResponse
@@ -53,23 +53,23 @@ def _a_fictional_places() -> Places:
         "fict-file": Place(
             id="fict-file",
             family="fictional",
-            reachable_by=frozenset({"arbitrary_read", "command_execution"}),
-            kind=PlantKind.FILE,
-            coordinates=Coordinates(PlantKind.FILE, path="/etc/fict-secret"),
+            reaches=frozenset({"arbitrary_read", "command_execution"}),
+            kind=PlaceKind.FILE,
+            coordinates=Coordinates(PlaceKind.FILE, path="/etc/fict-secret"),
         ),
         "fict-env": Place(
             id="fict-env",
             family="fictional",
-            reachable_by=frozenset({"command_execution"}),
-            kind=PlantKind.ENV,
-            coordinates=Coordinates(PlantKind.ENV, name="FICT_SECRET"),
+            reaches=frozenset({"command_execution"}),
+            kind=PlaceKind.ENV,
+            coordinates=Coordinates(PlaceKind.ENV, name="FICT_SECRET"),
         ),
         "fict-endpoint": Place(
             id="fict-endpoint",
             family="fictional",
-            reachable_by=frozenset({"internal_fetch"}),
-            kind=PlantKind.HTTP_ENDPOINT,
-            coordinates=Coordinates(PlantKind.HTTP_ENDPOINT, host="169.254.169.254", path="/fict"),
+            reaches=frozenset({"internal_fetch"}),
+            kind=PlaceKind.HTTP_ENDPOINT,
+            coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="169.254.169.254", path="/fict"),
         ),
     }
 
@@ -86,9 +86,9 @@ def _an_env_place() -> Place:
     return Place(
         id="fict-env",
         family="fictional",
-        reachable_by=frozenset({"command_execution"}),
-        kind=PlantKind.ENV,
-        coordinates=Coordinates(PlantKind.ENV, name="FICT"),
+        reaches=frozenset({"command_execution"}),
+        kind=PlaceKind.ENV,
+        coordinates=Coordinates(PlaceKind.ENV, name="FICT"),
     )
 
 

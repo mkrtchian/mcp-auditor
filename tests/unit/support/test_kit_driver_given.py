@@ -1,5 +1,5 @@
-from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind
+from evals.cve.planting import (
     RANDOM_NONCES,
     PlantingHost,
     PlantingSpec,
@@ -18,9 +18,9 @@ def a_spec_with_an_account() -> PlantingSpec:
     place = Place(
         id="account-1",
         family="fictional",
-        reachable_by=frozenset({"command_execution"}),
-        kind=PlantKind.ACCOUNT,
-        coordinates=Coordinates(PlantKind.ACCOUNT),
+        reaches=frozenset({"command_execution"}),
+        kind=PlaceKind.ACCOUNT,
+        coordinates=Coordinates(PlaceKind.ACCOUNT),
     )
     return planting_spec((place,), _HOST, RANDOM_NONCES)
 

@@ -2,15 +2,15 @@
 
 Parity note: the nuisance counterpart of driver.check_target. Where driver checks the
 calibration of a holdout target against the frozen list, the fix check plants the flaw's own
-witness at its own coordinate (no holdout_places.json, no kept-records lookup) and reproduces it
+witness at its own coordinate (no detection_places.json, no kept-records lookup) and reproduces it
 on the vulnerable version, the flaw's patched version and, when it differs, the server's patched
 version. The
-grading reuses the clean grammar (cve_proofs / cve_units) unchanged, entered synchronously like
+grading reuses the clean grammar (evals.cve.proofs and units) unchanged, entered synchronously like
 driver: one flaw at a time, no event loop, no evals/concurrency.
 
 The result is a pure function of the exchanges each version records (`fix_check_result`), kept
 apart from the launches so the record logic is tested with no Docker, as driver keeps
-dead_conditions apart from its _exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
+not_live_reasons apart from its _exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
 field for field, except relies_on_relaying_stand_in, a judgment the admission records and the kit
 does not observe; it is kit-local because the kit imports nothing from mcp_auditor and the admission
 module reaches it through evals.cve.detection.baseline. A parity test pins the two field sets equal.
@@ -24,15 +24,15 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import asdict, dataclass, replace
 from typing import Literal
 
+from evals.cve.grammar import FlawClass, PlantedTarget
 from evals.cve.kit.client import KitClient, KitMCPClient, docker_client_env
 from evals.cve.kit.driver import Exchange, KitExchangeLog, unit_of
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitBuilder
-from evals.cve_grammar import MechanismClass, PlantedTarget
-from evals.cve_places import Place, Places
-from evals.cve_planting import RANDOM_NONCES, NonceSource, PlantingHost, PlantingSpec
-from evals.cve_planting import planting_spec as compute_planting_spec
-from evals.cve_proofs import is_aimed, proofs_in
+from evals.cve.places import Place, Places
+from evals.cve.planting import RANDOM_NONCES, NonceSource, PlantingHost, PlantingSpec
+from evals.cve.planting import planting_spec as compute_planting_spec
+from evals.cve.proofs import is_aimed, proofs_in
 
 FixCheckExploit = Callable[[Places, KitClient], Awaitable[None]]
 
@@ -40,7 +40,7 @@ FixCheckExploit = Callable[[Places, KitClient], Awaitable[None]]
 @dataclass(frozen=True)
 class FixCheckFixture:
     flaw: str
-    effect_class: MechanismClass | None
+    effect_class: FlawClass | None
     aim: re.Pattern[str]
     witness: Place
     planting_host: PlantingHost
@@ -52,7 +52,8 @@ class FixCheckFixture:
     server_patched_service: str | None  # None when the server's patched version is the flaw's
 
     def planting_spec(self, nonces: NonceSource = RANDOM_NONCES) -> PlantingSpec:
-        # The nuisance rule defines no `/work`: a fix check's is a directory baked into its image.
+        # The nuisance suite rule defines no `/work`: a fix check's is a directory baked into its
+        # image.
         host = replace(self.planting_host, baked_work=True)
         return compute_planting_spec((self.witness,), host, nonces)
 
@@ -66,7 +67,7 @@ class Exercised:
 
 @dataclass(frozen=True)
 class FixCheckResult:
-    source: Literal["fix_check", "holdout_calibration"]
+    source: Literal["fix_check", "detection_holdout_calibration"]
     witness: str
     exploit_calls: list[str]
     vulnerable_surfaces: bool
@@ -161,10 +162,10 @@ async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:
 
 
 def _surfaces(fixture: FixCheckFixture, exercise: Exercised) -> bool:
-    mechanisms: frozenset[MechanismClass] = (
+    classes: frozenset[FlawClass] = (
         frozenset() if fixture.effect_class is None else frozenset({fixture.effect_class})
     )
-    planted = PlantedTarget(mechanisms, fixture.aim, exercise.nonces)
+    planted = PlantedTarget(classes, fixture.aim, exercise.nonces)
     return any(
         is_aimed(unit, fixture.aim) and bool(proofs_in(unit, planted))
         for unit in (unit_of(exchanges) for exchanges in exercise.exploits)

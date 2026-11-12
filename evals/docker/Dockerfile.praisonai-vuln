@@ -1,6 +1,6 @@
 # praisonai 4.6.33, last version before either the CVE-2026-44336 or the CVE-2026-47394 fix
 # (rules.show's rule_name and workflow.show's file_path both join onto their base directory
-# with no containment check). Real pinned software from PyPI, no stub. mcp is pinned below 2.0
+# with no containment check). Real pinned software from PyPI, no stand-in. mcp is pinned below 2.0
 # because the server's FastMCP-era API is v1-only and PyPI's default resolution of praisonai's
 # unbounded "mcp>=1.20.0" picks the incompatible v2 line otherwise (confirmed: `mcp.server.
 # fastmcp` was renamed in mcp 2.x). Base pinned by digest for cross-machine reproducibility

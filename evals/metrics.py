@@ -63,17 +63,17 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     verdicts: VerdictMap = {}
     for tool_report in report.tool_reports:
         for case in tool_report.cases:
-            if case.eval_result is None:
+            if case.judge_result is None:
                 continue
-            result = case.eval_result
+            result = case.judge_result
             key = (result.tool_name, result.category)
             current = verdicts.get(key)
             if current is None or result.verdict == EvalVerdict.FAIL:
                 verdicts[key] = result.verdict
         for chain in tool_report.chains:
-            if chain.eval_result is None:
+            if chain.judge_result is None:
                 continue
-            result = chain.eval_result
+            result = chain.judge_result
             key = (result.tool_name, result.category)
             current = verdicts.get(key)
             if current is None or result.verdict == EvalVerdict.FAIL:
@@ -142,7 +142,7 @@ def compute_distribution_coverage(
 ) -> dict[str, float]:
     coverage: dict[str, float] = {}
     for tool_report in report.tool_reports:
-        covered = {case.eval_result.category for case in tool_report.cases if case.eval_result}
+        covered = {case.judge_result.category for case in tool_report.cases if case.judge_result}
         coverage[tool_report.tool.name] = len(covered) / len(categories)
     return coverage
 
@@ -255,8 +255,8 @@ def _verdict_detail(
 ) -> dict[str, dict[str, ToolVerdictDetail]]:
     case_counts: dict[tuple[str, AuditCategory], int] = {}
     for tool_report in audit_report.tool_reports:
-        judged = [case.eval_result for case in tool_report.cases] + [
-            chain.eval_result for chain in tool_report.chains
+        judged = [case.judge_result for case in tool_report.cases] + [
+            chain.judge_result for chain in tool_report.chains
         ]
         for result in judged:
             if result is None:

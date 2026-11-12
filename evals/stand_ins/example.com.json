@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/",
+      "request_target": "/",
       "status": 200,
       "headers": [
         [
@@ -66,7 +66,7 @@
     {
       "scheme": "https",
       "method": "HEAD",
-      "target": "/",
+      "request_target": "/",
       "status": 200,
       "headers": [
         [
@@ -119,7 +119,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/robots.txt",
+      "request_target": "/robots.txt",
       "status": 404,
       "headers": [
         [
@@ -164,7 +164,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/s.js",
+      "request_target": "/s.js",
       "status": 200,
       "headers": [
         [
@@ -225,7 +225,7 @@
     {
       "scheme": "http",
       "method": "GET",
-      "target": "/",
+      "request_target": "/",
       "status": 200,
       "headers": [
         [
@@ -282,7 +282,7 @@
     {
       "scheme": "http",
       "method": "GET",
-      "target": "/robots.txt",
+      "request_target": "/robots.txt",
       "status": 404,
       "headers": [
         [
@@ -327,7 +327,7 @@
     {
       "scheme": "http",
       "method": "GET",
-      "target": "/s.js",
+      "request_target": "/s.js",
       "status": 200,
       "headers": [
         [
@@ -389,7 +389,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/2259508acc207c29",
+      "probed_request_target": "/2259508acc207c29",
       "status": 404,
       "headers": [
         [
@@ -434,7 +434,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/2259508acc207c29",
+      "probed_request_target": "/2259508acc207c29",
       "status": 404,
       "headers": [
         [

@@ -77,8 +77,8 @@ class AuditProgressReporter:
                 last_case = processed[-1]
                 if self._active_progress is None:
                     return
-                if last_case.eval_result is not None:
-                    self._active_progress.advance(last_case.eval_result)
+                if last_case.judge_result is not None:
+                    self._active_progress.advance(last_case.judge_result)
                 elif last_case.blocked_reason is None:
                     missed: list[MissedModelCall] = state_update["missed_model_calls"]
                     self._active_progress.advance_unjudged(missed[-1].cause)
@@ -96,7 +96,7 @@ class AuditProgressReporter:
             chains = state_update.get("completed_chains", [])
             if chains:
                 last = chains[-1]
-                verdict = last.eval_result.verdict if last.eval_result else "?"
+                verdict = last.judge_result.verdict if last.judge_result else "?"
                 self._display.print_info(f"  Chain judged: {verdict}")
 
 

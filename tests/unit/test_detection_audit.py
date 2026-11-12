@@ -20,11 +20,11 @@ from evals.cve.detection.audit import (
 from evals.cve.detection.replay import ReplayAttemptFailure, ReplayOutcome, UncheckedReason
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.grammar import CreditCheck, MissKind, RunGrade, TargetStatus, grade_run
+from evals.cve.proofs import UnitPlace
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.report_units import units_of
 from evals.cve.server_health import ServerHealth
-from evals.cve_grammar import CreditCheck, CVEStatus, MissClass, RunGrade, grade_run
-from evals.cve_proofs import UnitPlace
-from evals.cve_report_units import units_of
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import MissCause
 from tests.unit.support import test_cve_grammar_given as grammar
@@ -142,12 +142,12 @@ def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
     outcome = graded_or_incomplete(a_detected_grade(), given.a_report_missing(cause))
 
     assert isinstance(outcome, RunGrade)
-    assert outcome.status == CVEStatus.DETECTED
+    assert outcome.status == TargetStatus.DETECTED
 
 
 @pytest.mark.parametrize("cause", list(MissCause))
 def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: MissCause):
-    missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
+    missed = grammar.a_missed_run(MissKind.AIMED_NO_PROOF)
 
     outcome = graded_or_incomplete(missed, given.a_report_missing(cause))
 
@@ -156,12 +156,12 @@ def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: Mi
 
 
 def test_a_miss_with_no_refused_step_is_graded_a_miss():
-    missed = grammar.a_missed_run(MissClass.AIMED_NO_PROOF)
+    missed = grammar.a_missed_run(MissKind.AIMED_NO_PROOF)
 
     outcome = graded_or_incomplete(missed, grammar.a_report())
 
     assert isinstance(outcome, RunGrade)
-    assert outcome.status == CVEStatus.MISSED
+    assert outcome.status == TargetStatus.MISSED
 
 
 def test_a_struck_only_credit_with_a_refused_model_call_reads_as_refused():
@@ -169,8 +169,8 @@ def test_a_struck_only_credit_with_a_refused_model_call_reads_as_refused():
     # then makes it a refusal, not a genuine miss, so a refusal never poisons the gate or the
     # baseline.
     struck = RunGrade(
-        status=CVEStatus.MISSED,
-        miss_class=MissClass.AIMED_NO_PROOF,
+        status=TargetStatus.MISSED,
+        miss_kind=MissKind.AIMED_NO_PROOF,
         struck_places=frozenset({grammar.PLACE}),
     )
 
@@ -194,7 +194,7 @@ async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
 
     grade, outcome = await checked_grade(run, replay=given.a_replay_returning(replayed))
 
-    assert grade.status == CVEStatus.MISSED
+    assert grade.status == TargetStatus.MISSED
     assert outcome is replayed
 
 

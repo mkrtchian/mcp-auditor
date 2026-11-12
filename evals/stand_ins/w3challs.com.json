@@ -18,7 +18,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/profile/noonewouldeverusethis7",
+      "request_target": "/profile/noonewouldeverusethis7",
       "status": 200,
       "headers": [
         [
@@ -68,7 +68,7 @@
   "defaults": [
     {
       "scheme": "https",
-      "probed_target": "/e10ddd7651bafbca",
+      "probed_request_target": "/e10ddd7651bafbca",
       "status": 200,
       "headers": [
         [
@@ -117,7 +117,7 @@
     },
     {
       "scheme": "http",
-      "probed_target": "/af8162cdca94b3f7",
+      "probed_request_target": "/af8162cdca94b3f7",
       "status": 200,
       "headers": [
         [

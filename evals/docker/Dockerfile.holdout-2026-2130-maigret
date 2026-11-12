@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir 'maigret==0.6.6'
 
-# The pinned vulnerable server, installed from npm (the real published package, not a stub).
+# The pinned vulnerable server, installed from npm (the real published package, not a stand-in).
 RUN npm install -g mcp-maigret@1.0.12
 
 # The server invokes the `docker` CLI to run `soxoj/maigret:latest`; nested Docker is unavailable

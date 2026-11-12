@@ -9,7 +9,7 @@ from mcp_auditor.domain.models import (
     BlockedPayload,
     ChainPlanBatch,
     ChainStep,
-    EvalResult,
+    JudgeResult,
     Judgment,
     ModelCallKind,
     StepObservation,
@@ -149,8 +149,8 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
         if isinstance(outcome, Missed):
             return {**_completion(chain), **outcome.state_update()}
         judgment, usage = outcome
-        eval_result = _chain_eval_result(tool.name, chain, judgment)
-        judged_chain = chain.model_copy(update={"eval_result": eval_result})
+        judge_result = _chain_judge_result(tool.name, chain, judgment)
+        judged_chain = chain.model_copy(update={"judge_result": judge_result})
         return {
             **_completion(judged_chain),
             "provider_usage": [usage],
@@ -161,12 +161,12 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
     return judge_chain
 
 
-def _chain_eval_result(tool_name: str, chain: AttackChain, judgment: Judgment) -> EvalResult:
+def _chain_judge_result(tool_name: str, chain: AttackChain, judgment: Judgment) -> JudgeResult:
     last_payload = chain.steps[-1].payload if chain.steps else chain.goal.first_step
-    return EvalResult(
+    return JudgeResult(
         tool_name=tool_name,
         category=chain.goal.category,
-        payload=last_payload.arguments,
+        arguments=last_payload.arguments,
         verdict=judgment.verdict,
         justification=judgment.justification,
         severity=judgment.severity,

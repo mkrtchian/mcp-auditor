@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from evals.cve_planting import PlantingSpec
-from evals.cve_planting_base import PublicNames
+from evals.cve.planting import PlantingSpec
+from evals.cve.planting_base import PublicNames
 from tests.unit.support.test_cve_planting_given import FakePlantingDocker as FakePlantingDocker
 from tests.unit.support.test_cve_planting_given import endpoint_place as endpoint_place
 from tests.unit.support.test_cve_planting_given import file_place as file_place
@@ -29,7 +29,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
             {
                 "scheme": "http",
                 "method": "GET",
-                "target": "/",
+                "request_target": "/",
                 "status": 200,
                 "headers": [["Content-Type", "text/html"]],
                 "body": "<html></html>",
@@ -49,7 +49,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
 def _default(scheme: str) -> dict[str, object]:
     return {
         "scheme": scheme,
-        "probed_target": "/0123456789abcdef",
+        "probed_request_target": "/0123456789abcdef",
         "status": 404,
         "headers": [["Content-Type", "text/html"]],
         "body": "<html>not found</html>",

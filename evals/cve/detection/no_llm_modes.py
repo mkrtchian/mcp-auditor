@@ -9,7 +9,7 @@ from evals.cve.detection.calibration_check_exit import (
 )
 from evals.cve.detection.survey import survey_all, survey_one
 from evals.cve.detection.targets import Target
-from evals.cve_places import Places
+from evals.cve.places import Places
 
 
 async def calibration_check(args: argparse.Namespace, graded: list[Target], places: Places) -> int:

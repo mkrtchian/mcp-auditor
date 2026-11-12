@@ -20,10 +20,10 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Coordinates, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 # command_execution-reachable, plantable places the server does not read itself.
@@ -66,16 +66,16 @@ def _injection(snippet: str) -> str:
 
 
 def _snippet_for(coord: Coordinates) -> str:
-    if coord.kind is PlantKind.FILE:
+    if coord.kind is PlaceKind.FILE:
         paths = coord.paths if coord.paths is not None else (coord.path,)
         return "; ".join(f"cat {p} 2>/dev/null" for p in paths)
-    if coord.kind is PlantKind.ENV:
+    if coord.kind is PlaceKind.ENV:
         return f"printenv {coord.name}"
-    if coord.kind is PlantKind.ACCOUNT:
+    if coord.kind is PlaceKind.ACCOUNT:
         return "id -un; getent passwd $(id -u) 2>/dev/null"
-    if coord.kind is PlantKind.HOSTNAME:
+    if coord.kind is PlaceKind.HOSTNAME:
         return "cat /etc/hostname 2>/dev/null; hostname"
-    if coord.kind is PlantKind.HTTP_ENDPOINT:
+    if coord.kind is PlaceKind.HTTP_ENDPOINT:
         url = f"http://{coord.host}{coord.path}"
         return f"wget -qO- -T 8 '{url}'"
     raise ValueError(f"no command-execution snippet for kind {coord.kind}")
@@ -98,7 +98,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-9654",
     severity="CVSS 8.8 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

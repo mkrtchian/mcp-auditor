@@ -8,7 +8,7 @@
     {
       "scheme": "https",
       "method": "POST",
-      "target": "/v1/messages",
+      "request_target": "/v1/messages",
       "status": 200,
       "headers": [
         [
@@ -22,7 +22,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [
@@ -35,7 +35,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/0123456789abcdef",
+      "probed_request_target": "/0123456789abcdef",
       "status": 404,
       "headers": [
         [

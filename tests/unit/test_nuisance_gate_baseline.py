@@ -6,6 +6,7 @@ import pytest
 import tests.unit.support.test_nuisance_gate_baseline_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     baseline_file_name,
@@ -17,7 +18,6 @@ from evals.cve.nuisance.gate_baseline import (
 )
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
-from evals.nuisance_counter import counter_fingerprint
 
 
 def test_the_baselines_live_under_evals_baselines_nuisance():

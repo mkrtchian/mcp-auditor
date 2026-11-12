@@ -5,8 +5,8 @@ the run and the gate share this one list."""
 import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.run_interruption import first_failure
-from evals.nuisance_admission import AdmittedServer
 
 # magento2-dev-mcp bounds each magerun2 command at 30 s, and magerun2 exits 0 when that bound
 # stops it, so a command cut short answers its partial output as a success. Magento's own work

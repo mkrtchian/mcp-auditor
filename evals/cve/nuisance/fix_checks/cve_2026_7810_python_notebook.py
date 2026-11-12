@@ -24,19 +24,19 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import (
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import no_network_args
+from evals.cve.planting_base import no_network_args
 
 WITNESS_ID = "python-notebook-7810-escape"
 SECRET_PATH = "/srv/secret.ipynb"
@@ -48,9 +48,9 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 WITNESS = Place(
     id=WITNESS_ID,
     family="notebook_file",
-    reachable_by=frozenset({"arbitrary_read"}),
-    kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path=SECRET_PATH),
+    reaches=frozenset({"arbitrary_read"}),
+    kind=PlaceKind.FILE,
+    coordinates=Coordinates(PlaceKind.FILE, path=SECRET_PATH),
 )
 
 _Call = tuple[str, dict[str, object]]
@@ -158,7 +158,7 @@ def _printed_cell(text: str) -> dict[str, object]:
 
 FIXTURE = FixCheckFixture(
     flaw="CVE-2026-7810",
-    effect_class=MechanismClass.READ_OUTSIDE_SCOPE,
+    effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,

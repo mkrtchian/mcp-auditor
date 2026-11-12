@@ -19,7 +19,9 @@ from evals.cve.audit_attempts import (
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck, replay_with_causes
 from evals.cve.detection.session_model import AuditTarget, GradedAudit
 from evals.cve.detection.targets import Target
+from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
+from evals.cve.grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve.launch_audit import (
     Auditor,
     AuditShape,
@@ -27,18 +29,16 @@ from evals.cve.launch_audit import (
     audit_launch,
     print_lost_connections,
 )
+from evals.cve.places import Places, kept_records
+from evals.cve.planting import PlantingFailed
 from evals.cve.provider_errors import (
     AuditFailed,
     ProviderErrorKind,
     ProviderFatal,
     describe_provider_error,
 )
+from evals.cve.report_units import units_of
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
-from evals.cve_environments import Launch
-from evals.cve_grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
-from evals.cve_places import Places, kept_records
-from evals.cve_planting import PlantingFailed
-from evals.cve_report_units import units_of
 from evals.eval_display import console
 from evals.metrics import SessionThrottles, blocked_reasons
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
@@ -110,7 +110,7 @@ async def attempt_once(
             # `connect`). The nonces travel per launch, so the graded target is built here.
             run = RunToCheck(
                 target=target,
-                run_target=PlantedTarget(target.mechanisms, target.aim, planted.nonces),
+                run_target=PlantedTarget(target.classes, target.aim, planted.nonces),
                 report=audit.report,
                 recorded_calls=audit.exchanges,
                 records=records,

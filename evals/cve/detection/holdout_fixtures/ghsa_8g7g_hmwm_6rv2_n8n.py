@@ -10,8 +10,8 @@ target's body is returned to the caller: reach = internal_fetch.
 
 The instance N8N_API_URL points at is the real n8n, provisioned for each launch with one active
 webhook workflow whose Respond to Webhook node answers with a 302 to the request's `u` query
-parameter (`evals/n8n_instance_backend.py`). The webhook is the endpoint the published SSRF puts
-under the attacker's control, and the redirect target is the exploit call's own `data.u`. The
+parameter (`evals/cve/backends/n8n_instance.py`). The webhook is the endpoint the published SSRF
+puts under the attacker's control, and the redirect target is the exploit call's own `data.u`. The
 internal targets are the frozen-list http_endpoint sentinels. n8n never fetches the redirect target
 itself, so the nonce surfaces only through n8n-mcp following the redirect.
 """
@@ -20,18 +20,18 @@ import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from evals import n8n_instance_backend
-from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Places
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.holdout_environments import ssrf_redirect_env
-from evals.n8n_instance_backend import (
+from evals.cve.backends import n8n_instance
+from evals.cve.backends.n8n_instance import (
     N8N_INSTANCE_IP,
     N8N_PORT,
     WEBHOOK_PATH,
     provisioned_workflow_id,
 )
+from evals.cve.detection.holdout_environments import ssrf_redirect_env
+from evals.cve.detection.targets import Target
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Places
+from evals.cve.planting import PlantingHost, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 AIM = re.compile(r"169\.254\.\d{1,3}\.\d{1,3}")
@@ -70,7 +70,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="GHSA-8g7g-hmwm-6rv2",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
+    classes=frozenset({FlawClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,
@@ -94,5 +94,5 @@ TARGET = Target(
         "target and returning its body."
     ),
     tools_filter=None,
-    backend_sources=(Path(n8n_instance_backend.__file__),),
+    backend_sources=(Path(n8n_instance.__file__),),
 )

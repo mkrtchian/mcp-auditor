@@ -13,7 +13,7 @@ from evals.cve.detection.gate import (
     condition_mismatches,
     target_reset,
 )
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
@@ -27,7 +27,7 @@ class TargetRecording(BaseModel):
     fixture_fingerprint: str
     commit: str
     recorded_at: str
-    runs: list[CVEStatus]
+    runs: list[TargetStatus]
     completed: bool
     image_ids: dict[str, str]
 

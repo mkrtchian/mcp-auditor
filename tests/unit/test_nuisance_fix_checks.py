@@ -1,15 +1,16 @@
 import ast
+import importlib.util
 from pathlib import Path
 
 import pytest
 
 import tests.unit.support.test_nuisance_fix_checks_given as given
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.driver import unit_of
 from evals.cve.kit.fix_check import FixCheckFixture
+from evals.cve.nuisance.counting import counted_flaws
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
-from evals.cve_proofs import is_aimed
-from evals.docker_paths import image_dockerfile
-from evals.nuisance_counting import counted_flaws
+from evals.cve.proofs import is_aimed
 from tests.unit.support.kit_isolation import scan_tree
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
@@ -30,13 +31,21 @@ def _cve_environments_imports(source: str, filename: str) -> list[str]:
     return offenders
 
 
+_ENVIRONMENTS = "evals.cve.environments"
+
+
 def _is_cve_environments(name: str) -> bool:
-    return name == "evals.cve_environments" or name.startswith("evals.cve_environments.")
+    return name == _ENVIRONMENTS or name.startswith(f"{_ENVIRONMENTS}.")
 
 
 def test_the_scans_read_the_fix_check_modules():
     # Both scans pass on an empty tree, so a stale directory would check nothing.
     assert any(path.name != "__init__.py" for path in _FIX_CHECK_DIR.rglob("*.py"))
+
+
+def test_the_environments_scan_names_an_importable_module():
+    # A stale name would match no import, so the scan below would check nothing.
+    assert importlib.util.find_spec(_ENVIRONMENTS) is not None
 
 
 def test_no_fix_check_module_imports_mcp_auditor():
@@ -56,7 +65,7 @@ def test_every_counted_flaw_has_a_fix_check_fixture_unless_its_fix_check_is_a_co
     fixture_flaws = {fixture.flaw for fixture in FIX_CHECK_FIXTURES}
     for server in the_committed_admission().servers:
         for flaw in counted_flaws(server):
-            if flaw.fix_check.source == "holdout_calibration":
+            if flaw.fix_check.source == "detection_holdout_calibration":
                 continue
             assert flaw.flaw in fixture_flaws, (
                 f"{server.server_package}: counted flaw {flaw.flaw} has no FixCheckFixture"

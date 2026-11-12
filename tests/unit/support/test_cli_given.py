@@ -15,7 +15,7 @@ def a_report(
     if finding is not None:
         report.tool_reports[0].cases.append(
             TestCase(
-                payload=models.a_payload(), eval_result=models.an_eval_result(severity=finding)
+                payload=models.a_payload(), judge_result=models.a_judge_result(severity=finding)
             )
         )
     return report

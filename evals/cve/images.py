@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Protocol
 
 from evals.cve.detection.targets import image_tag
-from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"

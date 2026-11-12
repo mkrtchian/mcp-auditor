@@ -1,6 +1,6 @@
 # praisonai 4.6.34, the first version whose rules.show resolves rule_name strictly inside
 # ~/.praison/rules (CVE-2026-44336's fix); workflow.show is still unfixed at this version
-# (CVE-2026-47394's fix lands later). Real pinned software from PyPI, no stub. mcp pinned below
+# (CVE-2026-47394's fix lands later). Real pinned software from PyPI, no stand-in. mcp pinned below
 # 2.0, same reason as Dockerfile.praisonai-vuln. Base pinned by digest for cross-machine
 # reproducibility (python:3.12-slim). No COPY/ADD: the fingerprint hashes instructions only.
 FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1

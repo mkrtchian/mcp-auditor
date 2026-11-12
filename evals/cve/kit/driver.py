@@ -1,9 +1,9 @@
 """The no-LLM calibration check the agent runs until a fixture reproduces, free of mcp_auditor.
 
 Parity note: it mirrors evals/cve/detection/calibration_check.check_target (with
-dead_conditions / patched_dead_conditions) and evals/cve/exchange_log.ExchangeLog. Rewritten on
-the kit client and KitTarget; the grading logic reuses the clean grammar (cve_grammar / cve_proofs /
-cve_units) unchanged, so the kit grades exactly as the detection suite does. Unlike the
+not_live_reasons / not_fixed_reasons) and evals/cve/exchange_log.ExchangeLog. Rewritten on
+the kit client and KitTarget; the grading logic reuses the clean grammar (evals.cve.grammar,
+proofs and units) unchanged, so the kit grades exactly as the detection suite does. Unlike the
 repository's calibration check, the builder is entered synchronously (no worker thread): the kit
 checks one target's calibration at a time, so there is no event loop to keep free, and the kit
 stays clear of evals/concurrency. Beyond the repository's check, `check_target` reports a launch
@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
 from evals.cve.kit.client import (
     KitClient,
     KitMCPClient,
@@ -27,11 +28,10 @@ from evals.cve.kit.client import (
 )
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitTarget
-from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
-from evals.cve_places import Place, Places, kept_records
-from evals.cve_planting_base import UNPRIVILEGED_GID, UNPRIVILEGED_UID, PlantingSpec
-from evals.cve_proofs import is_aimed, proofs_in
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.places import Place, Places, kept_records
+from evals.cve.planting_base import UNPRIVILEGED_GID, UNPRIVILEGED_UID, PlantingSpec
+from evals.cve.proofs import is_aimed, proofs_in
+from evals.cve.units import Unit, unit_of_exchanges
 
 type Exchange = tuple[str, dict[str, Any], KitResponse]
 
@@ -67,7 +67,7 @@ async def check_target(target: KitTarget, places: Places) -> list[str]:
     vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE, places)
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
-    reasons = dead_conditions(
+    reasons = not_live_reasons(
         _graded(target, vulnerable), _units(vulnerable.exploits), unit_of(vulnerable.benign)
     )
     reasons += _account_conditions(TargetVersion.VULNERABLE, vulnerable)
@@ -76,14 +76,14 @@ async def check_target(target: KitTarget, places: Places) -> list[str]:
         reasons.append(_launch_failed(TargetVersion.PATCHED))
     else:
         benign_errored = _any_error(patched.benign)
-        reasons += patched_dead_conditions(
+        reasons += not_fixed_reasons(
             _graded(target, patched), _units(patched.exploits), benign_errored
         )
         reasons += _account_conditions(TargetVersion.PATCHED, patched)
     return reasons
 
 
-def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
+def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
     nonce = ProofKind.PLANTED_NONCE.value
     conditions: list[str] = []
     if not target.nonces:
@@ -102,7 +102,7 @@ def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit
     return conditions
 
 
-def patched_dead_conditions(
+def not_fixed_reasons(
     target: GradedTarget, exploits: Sequence[Unit], benign_errored: bool
 ) -> list[str]:
     conditions = [
@@ -196,7 +196,7 @@ def _account_conditions(version: TargetVersion, exercised: _Exercised) -> list[s
 
 
 def _graded(target: KitTarget, exercised: _Exercised) -> PlantedTarget:
-    return PlantedTarget(target.mechanisms, target.aim, exercised.spec.nonces)
+    return PlantedTarget(target.classes, target.aim, exercised.spec.nonces)
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:

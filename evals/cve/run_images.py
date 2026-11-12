@@ -6,7 +6,7 @@ import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from evals.closed_network import ClosedNetworkUnsupported, check_closed_network_support
+from evals.cve.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve.detection.targets import Target
 from evals.cve.images import RunBatch, compose_build, compose_build_batch
 from evals.eval_session import Refused

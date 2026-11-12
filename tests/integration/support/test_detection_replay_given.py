@@ -14,10 +14,10 @@ from contextlib import contextmanager
 import tests.unit.support.test_cve_grammar_given as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
-from evals.cve_environments import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass, PlantedTarget
-from evals.cve_places import Places, kept_records
-from evals.cve_planting import PlantingSpec
+from evals.cve.environments import Launch, LaunchShape
+from evals.cve.grammar import FlawClass, PlantedTarget
+from evals.cve.places import Places, kept_records
+from evals.cve.planting import PlantingSpec
 from mcp_auditor.domain.models import AuditReport, ToolResponse
 from tests.integration.support.detection_fake_targets import (
     OUTSIDE_AIM,
@@ -212,9 +212,7 @@ def _run(
     places = a_places_mapping()
     return RunToCheck(
         target=_a_target(serve, kept),
-        run_target=PlantedTarget(
-            frozenset({MechanismClass.READ_OUTSIDE_SCOPE}), OUTSIDE_AIM, nonces
-        ),
+        run_target=PlantedTarget(frozenset({FlawClass.READ_OUTSIDE_SCOPE}), OUTSIDE_AIM, nonces),
         report=report,
         recorded_calls=calls,
         records=kept_records(kept, places),

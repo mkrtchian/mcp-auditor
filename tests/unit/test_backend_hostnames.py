@@ -3,10 +3,10 @@ import base64
 import pytest
 
 import tests.unit.support.test_backend_hostnames_given as given
-from evals.doris_backend import DORIS_HOST, DORIS_SERVER_LAUNCH
-from evals.gravitino_backend import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
-from evals.mcp_ssh_sshd_backend import SSHD_ALIAS, SSHD_PORT, singleton_run_args
-from evals.nuisance_admission import AdmittedServer
+from evals.cve.backends.doris import DORIS_HOST, DORIS_SERVER_LAUNCH
+from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
+from evals.cve.backends.mcp_ssh_sshd import SSHD_ALIAS, SSHD_PORT, singleton_run_args
+from evals.cve.nuisance.admission import AdmittedServer
 from tests.unit.support.docker_argv import carries
 
 _AUDIT_WORDS = ("mcp-auditor", "mcpaudit")

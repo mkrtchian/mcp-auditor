@@ -10,11 +10,12 @@ import functools
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
+from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import image_ids
 from evals.cve.nuisance import vetting as nuisance_vetting
+from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission_walk import standing_exit
 from evals.cve.nuisance.audit import (
     GateRun,
@@ -60,7 +61,6 @@ from evals.cve.nuisance.solo import gathered_then_alone, played_alone
 from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
 from evals.metrics import SessionThrottles
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 from evals.recording import RecordingRefused
 
 

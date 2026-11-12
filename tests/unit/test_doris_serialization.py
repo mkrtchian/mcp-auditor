@@ -3,8 +3,8 @@ import asyncio
 import pytest
 
 import tests.unit.support.test_doris_serialization_given as given
-from evals import holdout_environments
 from evals.concurrency import entered_in_thread
+from evals.cve.detection import holdout_environments
 from tests.fakes.planting_docker import FakePlantingDocker
 
 

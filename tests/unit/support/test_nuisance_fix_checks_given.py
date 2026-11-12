@@ -1,10 +1,10 @@
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.images import dockerfile_instructions
 from evals.cve.kit.client import KitTool
 from evals.cve.kit.driver import Exchange, KitExchangeLog
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
-from evals.docker_paths import image_dockerfile
-from evals.nuisance_admission import AdmittedServer, FlawRecord
-from evals.nuisance_counting import flaw_counted_tools, flaw_tools
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.counting import flaw_counted_tools, flaw_tools
 from tests.fakes import FakeKitClient
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 

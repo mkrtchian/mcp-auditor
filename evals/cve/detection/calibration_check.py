@@ -20,13 +20,13 @@ from typing import IO, cast
 from rich.markup import escape
 
 from evals.cve.detection.targets import Target, TargetVersion
+from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve_environments import connect
-from evals.cve_grammar import GradedTarget, PlantedTarget, ProofKind
-from evals.cve_places import Place, Places, kept_records
-from evals.cve_proofs import is_aimed, proofs_in
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
+from evals.cve.places import Place, Places, kept_records
+from evals.cve.proofs import is_aimed, proofs_in
+from evals.cve.units import Unit, unit_of_exchanges
 from evals.eval_display import console
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -59,7 +59,7 @@ async def check_calibrations(
     return all_pass
 
 
-def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
+def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
     nonce = ProofKind.PLANTED_NONCE.value
     conditions: list[str] = []
     if not target.nonces:
@@ -78,7 +78,7 @@ def dead_conditions(target: GradedTarget, exploits: Sequence[Unit], benign: Unit
     return conditions
 
 
-def patched_dead_conditions(
+def not_fixed_reasons(
     target: GradedTarget, exploits: Sequence[Unit], benign_errored: bool
 ) -> list[str]:
     conditions = [
@@ -106,7 +106,7 @@ async def check_target(
     vulnerable = await first_launch(lambda: exercise.version(TargetVersion.VULNERABLE))
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
-    reasons = dead_conditions(
+    reasons = not_live_reasons(
         _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
     )
     patched = await first_launch(lambda: exercise.version(TargetVersion.PATCHED))
@@ -150,7 +150,7 @@ class _Exercised:
 
 
 def _not_fixed_reasons(target: Target, patched: _Exercised) -> list[str]:
-    return patched_dead_conditions(
+    return not_fixed_reasons(
         _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
     )
 
@@ -195,7 +195,7 @@ class _Exercise:
 
 
 def _graded(target: Target, exercised: _Exercised) -> PlantedTarget:
-    return PlantedTarget(target.mechanisms, target.aim, exercised.nonces)
+    return PlantedTarget(target.classes, target.aim, exercised.nonces)
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:

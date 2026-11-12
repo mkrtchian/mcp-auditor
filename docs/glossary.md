@@ -200,7 +200,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **planting**: putting a fresh nonce in each kept place of a launch, and starting the network, holder, sentinels and stand-ins the launch needs. The planting code does it.
 - **planting host**: what a launch may hold: its user, working directory, network, public names and layout mount.
 - **namespace holder**: a container that only runs `sleep` and owns the network namespace that the target, its sentinels and its stand-ins join. It carries the hostname and the public names.
-- **closed network**: a Docker network with no route to the host or the internet, created only through `evals/closed_network.py`. Defined by: ADR 034.
+- **closed network**: a Docker network with no route to the host or the internet, created only through `evals/cve/closed_network.py`. Defined by: ADR 034.
 - **stand-in**: anything that takes the place of software the fixture cannot run (a program, a device, an HTTP backend, a public host under its real name) and answers what the real software would. A stand-in may not relay a flaw's effect. Defined by: detection suite rule (Eligibility, What a fixture seeds and serves), nuisance suite rule (Admission, Stand-ins), ADR 034.
 - **capture stand-in**: the generic image that serves a captured or documented answer file under a public host's real name. Code: `evals/stand_ins/<host>.json`, `python -m evals.capture_stand_in`.
 - **responder**: a hand-written HTTP stand-in for a remote service's API, answering from its documented examples.

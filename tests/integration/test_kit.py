@@ -16,7 +16,7 @@ from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env
-from evals.cve_planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
+from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 
 _SERVICE = "filesystem"
 _IMAGE = image_tag(_SERVICE)

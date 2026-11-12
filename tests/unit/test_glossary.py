@@ -16,21 +16,6 @@ from tests.unit.support.test_glossary_given import (
 # Pattern ids whose living hits a later step still has to rename, emptied step by step, grouped by
 # the step of the migration plan that removes them.
 _NOT_YET_RENAMED = (
-    # body step 4
-    "cve-family",
-    "cve-ident",
-    "eval-result",
-    "holdout-places",
-    "location-id",
-    "sentinel-route",
-    "stub",
-    "target-product",
-    "plant-kind",
-    "miss-class",
-    "reachable-by",
-    "entry-id",
-    "cve-id",
-    "stand-in-target",
     # body step 5
     "acceptance-gate",
     "bare-acceptance-server",
@@ -175,6 +160,12 @@ _ALLOWLIST = (
     ),
     AllowedLine(
         "tests/unit/test_rendering.py",
+        "eval-result",
+        '"eval_result"',
+        "asserts that the product report carries none of the old keys",
+    ),
+    AllowedLine(
+        "tests/unit/test_rendering.py",
         "relayed-variables",
         '"relayed_variables"',
         "asserts that the product report carries none of the old keys",
@@ -306,6 +297,24 @@ _ALLOWLIST = (
         "a rename entry names the word it replaces",
     ),
     AllowedLine(
+        "CHANGELOG.md",
+        "eval-result",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "holdout-places",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "stand-in-target",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
         "evals/cve/census/work.py",
         "cve-id",
         "cve_id: str",
@@ -346,6 +355,30 @@ _ALLOWLIST = (
         "readmission",
         '"--readmission"',
         "the CLI tests that the old flag is refused",
+    ),
+    AllowedLine(
+        "evals/cve/detection/holdout_fixtures/cve_2026_3484_nmap.py",
+        "target-product",
+        '"run_nmap_scan", {"target": ',
+        "the `target` argument of run_nmap_scan, named by the audited server",
+    ),
+    AllowedLine(
+        "evals/cve/nuisance/fix_checks/cve_2025_53100_codehooks.py",
+        "target-product",
+        '"file_upload": {"target": ',
+        "the `target` argument of file_upload, named by the audited server",
+    ),
+    AllowedLine(
+        "evals/cve/nuisance/fix_checks/cve_2025_53107_git_mcp.py",
+        "target-product",
+        '"target": "feature"',
+        "the `target` argument of the git checkout tool, named by the audited server",
+    ),
+    AllowedLine(
+        "evals/cve/nuisance/fix_checks/cve_2025_53107_git_mcp.py",
+        "target-product",
+        '"git_reset", {',
+        "the `target` argument of git_reset, named by the audited server",
     ),
     AllowedLine(
         "evals/cve/nuisance/fix_checks/cve_2025_69256_serverless.py",

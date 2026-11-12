@@ -7,8 +7,8 @@ from mcp_auditor.domain import (
     AuditPayload,
     ChainGoal,
     ChainStep,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     Judgment,
     ProviderUsage,
     Severity,
@@ -103,11 +103,11 @@ def a_judgment(
     )
 
 
-def a_fail_eval_result() -> EvalResult:
-    return EvalResult(
+def a_fail_judge_result() -> JudgeResult:
+    return JudgeResult(
         tool_name="t",
         category=AuditCategory.INJECTION,
-        payload={"path": "/etc/passwd"},
+        arguments={"path": "/etc/passwd"},
         verdict=EvalVerdict.FAIL,
         justification="path traversal succeeded",
         severity=Severity.HIGH,
@@ -118,7 +118,7 @@ def a_single_step_case(response: str = "ok") -> TestCase:
     return TestCase(
         payload=a_payload(),
         response=response,
-        eval_result=a_fail_eval_result(),
+        judge_result=a_fail_judge_result(),
     )
 
 

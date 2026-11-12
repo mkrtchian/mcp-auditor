@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.baseline import BaselineStatus
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.gate import NuisanceGateResult
 from evals.cve.nuisance.gate_baseline import (
@@ -16,7 +17,6 @@ from evals.cve.nuisance.gate_baseline import (
 )
 from evals.cve.run_images import ContainerSweep
 from evals.eval_session import TreeState
-from evals.nuisance_admission import AdmittedServer
 from mcp_auditor.domain.models import AuditReport
 
 type Baselines = dict[str, NuisanceServerBaseline]

@@ -9,7 +9,7 @@ from evals.baseline import BaselineStatus
 from evals.cve.detection.baseline import load_baselines
 from evals.cve.detection.gate import TargetOutcome
 from evals.cve.detection.session import run_gated
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from evals.eval_session import Refused, TreeState
 from evals.gate_outcome import GateOutcome
 
@@ -118,7 +118,7 @@ async def test_a_not_run_target_with_a_baseline_carries_its_baseline_runs(tmp_pa
     )
 
     comparison = then.the_one_target_ends(result, TargetOutcome.NOT_RUN, GateOutcome.NOT_COMPARABLE)
-    assert comparison.baseline_runs == [CVEStatus.DETECTED] * 6
+    assert comparison.baseline_runs == [TargetStatus.DETECTED] * 6
 
 
 async def test_a_run_depending_on_unchecked_credits_is_not_comparable(tmp_path: Path):

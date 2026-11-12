@@ -10,7 +10,7 @@ def json_has_owasp_for_category(
     data = json.loads(json_str)
     for tool_report in data["tool_reports"]:
         for case in tool_report["cases"]:
-            result = case["eval_result"]
+            result = case["judge_result"]
             if result and result["category"] == category:
                 assert result["owasp"]["code"] == expected_code
                 assert result["owasp"]["title"] == expected_title
@@ -22,7 +22,7 @@ def json_has_null_owasp(json_str: str) -> None:
     data = json.loads(json_str)
     for tool_report in data["tool_reports"]:
         for case in tool_report["cases"]:
-            result = case["eval_result"]
+            result = case["judge_result"]
             if result:
                 assert result["owasp"] is None
 
@@ -73,9 +73,9 @@ def json_chain_has_owasp(json_str: str, category: str, expected_code: str) -> No
     data = json.loads(json_str)
     for tool_report in data["tool_reports"]:
         for chain in tool_report.get("chains", []):
-            result = chain.get("eval_result")
+            result = chain.get("judge_result")
             if result and result["category"] == category:
-                assert "owasp" in result, f"Expected owasp on chain eval_result for {category}"
+                assert "owasp" in result, f"Expected owasp on chain judge_result for {category}"
                 assert result["owasp"]["code"] == expected_code
                 return
     raise AssertionError(f"No chain with category {category} found")

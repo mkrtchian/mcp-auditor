@@ -5,8 +5,8 @@ from mcp_auditor.domain import (
     AuditPayload,
     AuditReport,
     CoverageGap,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     ProviderUsage,
     Severity,
     TestCase,
@@ -32,22 +32,22 @@ def a_payload(**overrides: Any) -> AuditPayload:
     return AuditPayload(**(defaults | overrides))
 
 
-def an_eval_result(**overrides: Any) -> EvalResult:
+def a_judge_result(**overrides: Any) -> JudgeResult:
     defaults: dict[str, Any] = {
         "tool_name": "t",
         "category": AuditCategory.INJECTION,
-        "payload": {},
+        "arguments": {},
         "verdict": EvalVerdict.FAIL,
         "justification": "vuln",
         "severity": Severity.HIGH,
     }
-    return EvalResult(**(defaults | overrides))
+    return JudgeResult(**(defaults | overrides))
 
 
 def a_report_with_finding(severity: Severity) -> AuditReport:
     case = TestCase(
         payload=a_payload(category=AuditCategory.INJECTION),
-        eval_result=an_eval_result(severity=severity),
+        judge_result=a_judge_result(severity=severity),
     )
     return AuditReport(
         server_command="test",

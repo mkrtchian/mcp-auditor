@@ -17,8 +17,8 @@ from evals.cve.detection.session_model import (
     GradedAudit,
 )
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
-from evals.cve_grammar import CVEStatus, MissClass, RunGrade
-from evals.cve_places import HOLDOUT_PLACES, load_places
+from evals.cve.grammar import MissKind, RunGrade, TargetStatus
+from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
 from tests.unit.support.test_cve_grammar_given import a_report
 from tests.unit.support.test_detection_gate_given import (
@@ -32,7 +32,7 @@ __all__ = ["a_detected_grade", "conditions"]
 
 # The real loaded places, so the real targets' kept ids resolve (fixture_fingerprint and the
 # session both read them); no Docker, load_places only reads the frozen JSON.
-PLACES = load_places(HOLDOUT_PLACES)
+PLACES = load_places(DETECTION_PLACES)
 KUBERNETES = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355")
 SYMLINK = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
 COMMIT = "0123abc"
@@ -40,17 +40,17 @@ RECORDED_AT = "2026-09-28T12:00:00+00:00"
 
 
 def a_miss() -> RunGrade:
-    return a_missed_grade(MissClass.NOT_AIMED)
+    return a_missed_grade(MissKind.NOT_AIMED)
 
 
 def an_unchecked_detected_grade() -> RunGrade:
     """A detection the replay could not check: it reads detected now, but a miss once every
     unchecked credit counts as one, so its status depends on the unchecked credits."""
     return RunGrade(
-        status=CVEStatus.DETECTED,
+        status=TargetStatus.DETECTED,
         surfaced_places=frozenset({"planted"}),
         unchecked_places=frozenset({"planted"}),
-        status_if_unchecked_missed=CVEStatus.MISSED,
+        status_if_unchecked_missed=TargetStatus.MISSED,
         aimed=True,
     )
 
@@ -155,7 +155,7 @@ def a_gated_file(directory: Path, target: Target = KUBERNETES, budget: int = 10)
 
 
 def a_file_holding_one_run_of_three(directory: Path, target: Target = KUBERNETES) -> None:
-    baseline = an_unconfirmed_baseline([CVEStatus.DETECTED], target.flaw_id)
+    baseline = an_unconfirmed_baseline([TargetStatus.DETECTED], target.flaw_id)
     _write(directory, baseline, target, conditions())
 
 

@@ -16,14 +16,13 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals import cve_places
-from evals.cve import dossier_closure
+from evals.cve import dossier_closure, places
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import Classification
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_planting_base import SENTINEL_SERVICE
+from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASSES
@@ -118,7 +117,7 @@ def copy_kit_sources(out: Path, kit_roots: Sequence[str]) -> None:
 
 def _copy_sources(out: Path) -> None:
     copy_kit_sources(out, KIT_ROOTS)
-    shutil.copyfile(cve_places.HOLDOUT_PLACES, out / "evals" / "holdout_places.json")
+    shutil.copyfile(places.DETECTION_PLACES, out / "evals" / "detection_places.json")
 
 
 def _write_docs(out: Path) -> None:
@@ -154,14 +153,14 @@ Every launch builds the frozen `/srv` deployment layout (ADR 031) under a temp r
 place into its node; every other node carries neutral content of the same shape.
 
 The tree is owned by the unprivileged account, `65534:65534`, on every target and both versions:
-`cve_layout.owned_layout` builds it on the host, hands it over with a short-lived container of
-the pinned busybox running `chown -hR 65534:65534`, and removes it with another after the
-launch. A layout builder enters `owned_layout` before `planted`.
+`owned_layout` (`evals/cve/layout.py`) builds it on the host, hands it over with a short-lived
+container of the pinned busybox running `chown -hR 65534:65534`, and removes it with another after
+the launch. A layout builder enters `owned_layout` before `planted`.
 
 The mount mode is the target's, declared on its `PlantingHost` (`layout_mount`) and the same on
 both versions: read-only by default, read-write (`LayoutMount.READ_WRITE`) only on a target whose
 exploits, written from the published mechanism, write to the layout. A builder mounts the tree
-with `cve_layout.layout_mount_args(root, spec.host.layout_mount)` and never chooses the mode.
+with `layout.layout_mount_args(root, spec.host.layout_mount)` and never chooses the mode.
 
 The target runs as the unprivileged account, `65534:65534`, unless a kept `account` place has it
 run as the account named after a nonce: the planting code emits that `--user`. The kit driver
@@ -171,11 +170,11 @@ not pass a `--user` of its own.
 
 A target that cannot write to the checkout, while a tool its flaw is reached through writes to
 the working directory before the flaw's code runs, takes `/work` as its working directory
-(`PlantingHost.working_directory`, `cve_layout.WORK`): an empty tmpfs outside the layout, owned
+(`PlantingHost.working_directory`, `layout.WORK`): an empty tmpfs outside the layout, owned
 by `65534:65534` and sticky, that the planting code mounts at each launch. The checkout stays its
 scope, and `/work` holds no place: a file place resolving under it is refused.
 
-Nodes (the `anchor` of a layout place in `holdout_places.json`):
+Nodes (the `anchor` of a layout place in `detection_places.json`):
 
 - `workspace` -> `/srv`: the workspace directory. `/srv/.env` sits here, a dotenv at the
   workspace level.
@@ -198,14 +197,14 @@ Author a `KitTarget` (`evals/cve/kit/target.py`) and run it through the kit driv
 
 - `from evals.cve.kit.client import KitClient` -> the auditor's `MCPClientPort` and
   `ToolResponse` (the exploits run unchanged: `KitResponse` mirrors `ToolResponse`).
-- `from evals.cve.kit.launch import Launch` -> `evals.cve_environments.Launch`.
+- `from evals.cve.kit.launch import Launch` -> `evals.cve.environments.Launch`.
 
 The authored `KitTarget` then wraps into a `Target` (the shared fields).
 
 ## KitTarget fields
 
 - `flaw_id`: the drawn flaw ID.
-- `mechanisms`: the `frozenset` of grammar `MechanismClass` values the target is filed under:
+- `classes`: the `frozenset` of grammar `FlawClass` values the target is filed under:
   one class, the union of its flaws' classes when they differ, or empty for no class.
 - `aim`: a compiled `re.Pattern` the exploit's call arguments must match, so a place that
   surfaces by accident (an exploit not aimed at it) does not count.
@@ -238,7 +237,7 @@ The authored `KitTarget` then wraps into a `Target` (the shared fields).
 ```
 
 The grammar effect classes are in `grammar_classes.md`; the places are in
-`evals/holdout_places.json`; the deployment layout is in `layout.md`.
+`evals/detection_places.json`; the deployment layout is in `layout.md`.
 """
 
 _README = """\
@@ -263,12 +262,12 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    ```
 
    The first launch also pulls the busybox pinned by digest in
-   `evals/cve_planting_docker.py` (`LAYOUT_HELPER_IMAGE`), which hands the layout over and
+   `evals/cve/planting_docker.py` (`LAYOUT_HELPER_IMAGE`), which hands the layout over and
    removes it, so it needs network once.
 
 2. Read `advisories/<id>.json` (the candidate and the advisories of its server's other census
    flaws), `fixture_format.md`, `grammar_classes.md`, `layout.md` and
-   `evals/holdout_places.json`. A target that declares a stand-in loads its capture from
+   `evals/detection_places.json`. A target that declares a stand-in loads its capture from
    `evals/stand_ins/` (`public_stand_ins.stand_in(host)`).
 
 3. Write the candidate's two Dockerfiles into `docker/`: `Dockerfile.<service>` (the vulnerable

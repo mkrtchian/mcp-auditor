@@ -7,7 +7,7 @@ from pathlib import Path
 
 from evals.concurrency import entered_in_thread
 from evals.cve.detection import exploits
-from evals.cve_environments import (
+from evals.cve.environments import (
     FALLBACK_SCOPE,
     Launch,
     LaunchShape,
@@ -17,17 +17,17 @@ from evals.cve_environments import (
     git_init_traversal_env,
     ssrf_env,
 )
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places
-from evals.cve_planting import (
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, Places
+from evals.cve.planting import (
     RANDOM_NONCES,
     NonceSource,
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
 )
-from evals.cve_planting import planting_spec as compute_planting_spec
-from evals.cve_planting_base import LayoutMount, PublicNames
+from evals.cve.planting import planting_spec as compute_planting_spec
+from evals.cve.planting_base import LayoutMount, PublicNames
 from mcp_auditor.domain.ports import MCPClientPort
 
 
@@ -80,7 +80,7 @@ def image_tag(name: str) -> str:
 class Target:
     flaw_id: str
     severity: str
-    mechanisms: frozenset[MechanismClass]
+    classes: frozenset[FlawClass]
     aim: re.Pattern[str]
     reaches: frozenset[str]  # the flaw's reachable_by tokens, among the three in cve_places
     kept_places: tuple[str, ...]  # place ids the flaw alone reaches, empty until filled
@@ -176,7 +176,7 @@ _SHELL_METACHARACTER_AIM = re.compile(r"[;&|`]|\$\(")
 # A URL whose host is loopback (shortened forms such as 127.1 included), link-local,
 # RFC 1918, 0.0.0.0, [::1], an IPv6 unique local or IPv4-mapped address, or a single-label
 # name. A public URL that redirects inward does not read as aimed, since the aim reads only
-# the arguments sent: that affects the miss class alone, never a detection.
+# the arguments sent: that affects the miss kind alone, never a detection.
 _INTERNAL_HOST_AIM = re.compile(
     r"^[a-z][a-z0-9+.-]*://(?:[^/?#@]*@)?"
     r"(?:127(?:\.\d{1,3}){1,3}"
@@ -203,7 +203,7 @@ ACCEPTANCE_TARGETS: list[Target] = [
     Target(
         flaw_id="CVE-2025-53109",
         severity="CVSS 7.3 (v4.0, CNA)",
-        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+        classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
         aim=_FILESYSTEM_SCOPE_AIM,
         reaches=frozenset({"arbitrary_read"}),
         # The flaw reaches app.git/config by prefix collision too, but no server output names the
@@ -253,7 +253,7 @@ ACCEPTANCE_TARGETS: list[Target] = [
     Target(
         flaw_id="CVE-2025-68143",
         severity="CVSS 6.5 (v4.0, CNA)",
-        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+        classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
         aim=_OUTSIDE_REPO_AIM,
         reaches=frozenset({"arbitrary_read"}),
         # git_init traversal reaches the bare config and the workspace .env, but no git tool names
@@ -289,7 +289,7 @@ ACCEPTANCE_TARGETS: list[Target] = [
     Target(
         flaw_id="CVE-2025-53355",
         severity="CVSS 7.5 (v3.1, CNA)",
-        mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+        classes=frozenset({FlawClass.COMMAND_EXECUTION}),
         aim=_SHELL_METACHARACTER_AIM,
         reaches=frozenset({"command_execution"}),
         kept_places=(
@@ -333,7 +333,7 @@ ACCEPTANCE_TARGETS: list[Target] = [
     Target(
         flaw_id="CVE-2025-65513",
         severity="CVSS 7.5 (v3.1, CISA-ADP)",
-        mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
+        classes=frozenset({FlawClass.INTERNAL_FETCH}),
         aim=_INTERNAL_HOST_AIM,
         reaches=frozenset({"internal_fetch"}),
         kept_places=("ecs-task-credentials", "eks-pod-identity", "imds"),

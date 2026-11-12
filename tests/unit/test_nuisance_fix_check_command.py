@@ -7,14 +7,14 @@ import pytest
 
 import tests.unit.support.test_nuisance_fix_check_command_given as given
 from evals import run_nuisance
-from evals.closed_network import ClosedNetworkUnsupported
+from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance import fix_check_command
+from evals.cve.nuisance.admission import NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.commands import CRASHED_EXIT, UNKNOWN_SERVER_EXIT
 from evals.cve.nuisance.fix_check_command import check_fixes, fix_check_mismatches
-from evals.nuisance_admission import NuisanceAdmission
 from tests.fakes import FakeContainerSweep
 from tests.unit.support.test_kit_fix_check_given import a_fix_check_fixture
 from tests.unit.support.test_nuisance_admission_given import a_passing_fix_check, an_admission
@@ -161,13 +161,13 @@ def test_a_differing_field_is_reported():
 
 
 def test_a_holdout_calibration_copy_excludes_the_source_field():
-    record = RECORD.model_copy(update={"source": "holdout_calibration"})
+    record = RECORD.model_copy(update={"source": "detection_holdout_calibration"})
 
     assert fix_check_mismatches(given.a_result_matching(record, source="fix_check"), record) == []
 
 
 def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
-    result = given.a_result_matching(RECORD, source="holdout_calibration")
+    result = given.a_result_matching(RECORD, source="detection_holdout_calibration")
 
     mismatches = fix_check_mismatches(result, RECORD)
 
@@ -183,7 +183,7 @@ def test_a_record_judging_a_relaying_stand_in_matches_a_result_that_cannot_carry
 
 def test_a_record_carrying_a_holdout_fingerprint_matches_a_result_that_cannot_carry_it():
     record = RECORD.model_copy(
-        update={"source": "holdout_calibration", "holdout_fingerprint": "f" * 64}
+        update={"source": "detection_holdout_calibration", "holdout_fingerprint": "f" * 64}
     )
 
     assert fix_check_mismatches(given.a_result_matching(record), record) == []

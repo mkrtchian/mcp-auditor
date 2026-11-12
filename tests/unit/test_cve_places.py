@@ -7,21 +7,21 @@ import pytest
 import tests.unit.support.test_cve_places_given as given
 import tests.unit.support.test_cve_planting_given as planting_given
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_places import (
-    HOLDOUT_PLACES,
-    REACHABLE_BY,
+from evals.cve.places import (
+    DETECTION_PLACES,
+    REACHES,
     LayoutAnchor,
-    PlantKind,
+    PlaceKind,
     kept_records,
     load_places,
 )
-from evals.cve_planting import planting_spec
+from evals.cve.planting import planting_spec
 
 RECORDED_HASH = "240a7b83a977d0aca9e05952132d1d49acb581631360aee6793043fbff664f4b"
 
 
 def test_the_imported_places_file_matches_the_recorded_hash():
-    digest = hashlib.sha256(HOLDOUT_PLACES.read_bytes()).hexdigest()
+    digest = hashlib.sha256(DETECTION_PLACES.read_bytes()).hexdigest()
 
     assert digest == RECORDED_HASH
 
@@ -31,7 +31,7 @@ def test_a_file_place_keeps_its_path(tmp_path: Path):
         tmp_path, [given.an_entry(kind="file", coordinates={"path": "/fictional/config"})]
     ).values()
 
-    assert place.kind is PlantKind.FILE
+    assert place.kind is PlaceKind.FILE
     assert place.coordinates.path == "/fictional/config"
 
 
@@ -44,19 +44,19 @@ def test_a_file_place_keeps_its_paths(tmp_path: Path):
     assert place.coordinates.paths == ("/fictional/a", "~/b", "work/c")
 
 
-def test_reachable_by_round_trips(tmp_path: Path):
+def test_reaches_round_trip(tmp_path: Path):
     [place] = given.loaded(
-        tmp_path, [given.an_entry(reachable_by=["arbitrary_read", "internal_fetch"])]
+        tmp_path, [given.an_entry(reaches=["arbitrary_read", "internal_fetch"])]
     ).values()
 
-    assert place.reachable_by == frozenset({"arbitrary_read", "internal_fetch"})
+    assert place.reaches == frozenset({"arbitrary_read", "internal_fetch"})
 
 
 @pytest.mark.parametrize("kind", ["account", "hostname", "unplaceable"])
 def test_an_empty_coordinate_kind_loads(tmp_path: Path, kind: str):
     [place] = given.loaded(tmp_path, [given.an_entry(kind=kind, coordinates={})]).values()
 
-    assert place.kind is PlantKind(kind)
+    assert place.kind is PlaceKind(kind)
 
 
 @pytest.mark.parametrize(
@@ -161,7 +161,7 @@ def test_a_rejected_file_notation_raises_naming_the_entry(tmp_path: Path, path: 
 
 def test_an_unknown_reachable_by_token_raises(tmp_path: Path):
     with pytest.raises(ValueError, match=r"place-1.*reachable_by"):
-        given.loaded(tmp_path, [given.an_entry(reachable_by=["arbitrary_read", "mystery_token"])])
+        given.loaded(tmp_path, [given.an_entry(reaches=["arbitrary_read", "mystery_token"])])
 
 
 @pytest.mark.parametrize("missing", ["source", "category", "technique_ids", "place"])
@@ -194,7 +194,7 @@ def test_a_layout_place_keeps_its_anchor_and_relpath(tmp_path: Path, kind: str):
         tmp_path, [given.an_entry(kind=kind, source="layout", coordinates=coordinates)]
     ).values()
 
-    assert place.kind is PlantKind(kind)
+    assert place.kind is PlaceKind(kind)
     assert place.coordinates.anchor is LayoutAnchor.PROJECT_BARE
     assert place.coordinates.relpath == "sub/fictional"
 
@@ -255,32 +255,32 @@ def test_an_unknown_source_raises(tmp_path: Path):
 
 def test_every_target_reaches_only_the_closed_vocabulary():
     for target in ACCEPTANCE_TARGETS:
-        assert target.reaches <= REACHABLE_BY, (
+        assert target.reaches <= REACHES, (
             f"{target.flaw_id}: reaches holds a token outside the closed vocabulary"
         )
 
 
 def test_every_kept_place_is_offered_by_the_file_within_its_target_reach():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in ACCEPTANCE_TARGETS:
         for place_id in target.kept_places:
             assert place_id in places, f"{target.flaw_id}: keeps {place_id}, absent from the file"
-            assert places[place_id].reachable_by & target.reaches, (
+            assert places[place_id].reaches & target.reaches, (
                 f"{target.flaw_id}: keeps {place_id}, reachable by none of its reach"
             )
 
 
 def test_no_target_keeps_an_unplaceable_place():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in ACCEPTANCE_TARGETS:
         for record in kept_records(target.kept_places, places):
-            assert record.kind is not PlantKind.UNPLACEABLE, (
+            assert record.kind is not PlaceKind.UNPLACEABLE, (
                 f"{target.flaw_id}: keeps {record.id}, an unplaceable place that plants nothing"
             )
 
 
 def test_every_target_kept_list_plants_together():
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     for target in ACCEPTANCE_TARGETS:
         planting_spec(
             kept_records(target.kept_places, places),

@@ -22,8 +22,8 @@ from typing import Any
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse, docker_client_env
 from evals.cve.kit.launch import Launch
-from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
-from evals.nuisance_confinement import single_container_launch_args
+from evals.cve.nuisance.confinement import single_container_launch_args
+from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 

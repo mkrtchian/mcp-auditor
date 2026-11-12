@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/json",
+      "request_target": "/json",
       "status": 200,
       "headers": [
         [
@@ -47,7 +47,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/a0929678e7798e15",
+      "probed_request_target": "/a0929678e7798e15",
       "status": 404,
       "headers": [
         [
@@ -84,7 +84,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/a0929678e7798e15",
+      "probed_request_target": "/a0929678e7798e15",
       "status": 404,
       "headers": [
         [

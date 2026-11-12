@@ -1484,7 +1484,7 @@ RUN set -e; mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld; \
 #    undaemonized under the launch account, so its run, lock and log directories, and the snakeoil
 #    key default-ssl reads, are made account-accessible (repairs the confinement forces, not FreePBX
 #    changes: the account is not root and cannot read a 640 root key or write a root-owned dir).
-#    The launch runs the server under that account (the planting layer emits its --user when the
+#    The launch runs the server under that account (the planting code emits its --user when the
 #    place is kept), and the uid resolves to the planted account name through the passwd the launch
 #    mounts. runuser stays commented so asterisk keeps the launch account instead of dropping privilege.
 #    The build-time stack logs are then removed and the runtime tree is made world-accessible: the

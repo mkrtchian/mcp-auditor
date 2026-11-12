@@ -9,8 +9,8 @@ from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.costs import TargetCost
 from evals.cve.detection.gate import DetectionGateResult
 from evals.cve.detection.measurement import MeasurementSettings
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade, resolve
-from evals.cve_units import JudgeCategory
+from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus, resolve
+from evals.cve.units import JudgeCategory
 from mcp_auditor.domain.models import ProviderUsage
 
 
@@ -19,7 +19,7 @@ class UngradedStatus(StrEnum):
     OUT_OF_SCOPE = "out_of_scope"
 
 
-type ResultStatus = CVEStatus | UngradedStatus
+type ResultStatus = TargetStatus | UngradedStatus
 
 
 class TargetInfo(Protocol):
@@ -31,7 +31,7 @@ class TargetInfo(Protocol):
     @property
     def severity(self) -> str: ...
     @property
-    def mechanisms(self) -> frozenset[MechanismClass]: ...
+    def classes(self) -> frozenset[FlawClass]: ...
     @property
     def awaited_capability(self) -> str | None: ...
     @property
@@ -53,9 +53,9 @@ class TargetResult(BaseModel):
     flaw_id: str
     severity: str
     note: str
-    mechanisms: list[MechanismClass] = []  # sorted, empty for no class and out of scope
+    classes: list[FlawClass] = []  # sorted, empty for no class and out of scope
     status: ResultStatus
-    miss_class: MissClass | None = None
+    miss_kind: MissKind | None = None
     awaited_capability: str | None = None
     runs: int = 0
     detected_runs: int = 0
@@ -94,9 +94,9 @@ def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> T
         flaw_id=target.flaw_id,
         severity=target.severity,
         note=target.note,
-        mechanisms=sorted(target.mechanisms),
+        classes=sorted(target.classes),
         status=resolution.status,
-        miss_class=resolution.miss_class,
+        miss_kind=resolution.miss_kind,
         awaited_capability=target.awaited_capability,
         runs=len(grades),
         detected_runs=resolution.detected_runs,
@@ -117,7 +117,7 @@ def not_run(target: TargetInfo, reasons: list[str] | None = None) -> TargetResul
         flaw_id=target.flaw_id,
         severity=target.severity,
         note=target.note,
-        mechanisms=sorted(target.mechanisms),
+        classes=sorted(target.classes),
         status=UngradedStatus.NOT_RUN,
         awaited_capability=target.awaited_capability,
         not_run_reasons=reasons or [],

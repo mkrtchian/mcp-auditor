@@ -2,7 +2,8 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_run_given as run_given
-from evals.atlassian_backend import ATLASSIAN_RESPONDER_IMAGE
+from evals.cve.backends.atlassian import ATLASSIAN_RESPONDER_IMAGE
+from evals.cve.backends.responder import Responder
 from evals.cve.detection import targets as detection_targets
 from evals.cve.nuisance.backend_registry import (
     BACKENDS,
@@ -10,7 +11,6 @@ from evals.cve.nuisance.backend_registry import (
     built_backend_services,
     built_backend_tags,
 )
-from evals.responder_backend import Responder
 from tests.unit.support.test_backend_lifecycle_given import every_responder
 
 

@@ -5,14 +5,15 @@ import pytest
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_fingerprint_given as given
-from evals import cve_planting_base, nuisance_confinement
+from evals.cve import planting_base
 from evals.cve.fixture_provenance import StandInRecord
+from evals.cve.grammar import FlawClass
+from evals.cve.nuisance import confinement
+from evals.cve.nuisance.admission import AdmissionSettlement, BackendFixture, ToolCall
 from evals.cve.nuisance.admission_records import SeedRecord
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
-from evals.cve_grammar import MechanismClass
-from evals.cve_planting_base import PlantingHost, SymbolicUser
-from evals.nuisance_admission import AdmissionSettlement, BackendFixture, ToolCall
+from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 FAKE_BACKEND = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
 
@@ -29,8 +30,8 @@ def test_the_fingerprint_is_stable_over_the_same_server(tmp_path: Path):
 
 def test_the_fingerprint_moves_when_a_counted_tools_class_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
-    reader = given.one_flaw_server(MechanismClass.READ_OUTSIDE_SCOPE)
-    runner = given.one_flaw_server(MechanismClass.COMMAND_EXECUTION)
+    reader = given.one_flaw_server(FlawClass.READ_OUTSIDE_SCOPE)
+    runner = given.one_flaw_server(FlawClass.COMMAND_EXECUTION)
 
     assert nuisance_fixture_fingerprint(reader, tmp_path) != nuisance_fixture_fingerprint(
         runner, tmp_path
@@ -277,9 +278,9 @@ def test_the_fingerprint_moves_when_the_confinement_options_change(
     given.written_dockerfile(tmp_path)
     server = admission_given.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, tmp_path)
-    options = [*nuisance_confinement.nuisance_confinement_args(), "--pids-limit", "512"]
+    options = [*confinement.nuisance_confinement_args(), "--pids-limit", "512"]
 
-    monkeypatch.setattr(nuisance_confinement, "nuisance_confinement_args", lambda: options)
+    monkeypatch.setattr(confinement, "nuisance_confinement_args", lambda: options)
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != before
 
@@ -291,7 +292,7 @@ def test_the_fingerprint_moves_when_the_resolver_option_changes(
     server = admission_given.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, tmp_path)
 
-    monkeypatch.setattr(cve_planting_base, "resolver_args", lambda: ["--dns-search", "fict"])
+    monkeypatch.setattr(planting_base, "resolver_args", lambda: ["--dns-search", "fict"])
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != before
 

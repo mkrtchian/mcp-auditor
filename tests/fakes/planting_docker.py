@@ -13,7 +13,7 @@ from ipaddress import AddressValueError, IPv4Address
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from evals.cve_planting_base import ImageAccounts, PlantingFailed, check_layout_outer
+from evals.cve.planting_base import ImageAccounts, PlantingFailed, check_layout_outer
 
 IMAGE_PASSWD = (
     "root:x:0:0:root:/root:/bin/sh\nnobody:x:65534:65534:nobody:/nonexistent:/bin/false\n"
@@ -118,19 +118,19 @@ class FakePlantingDocker:
         self._maybe_fail("run_address_setup")
         self.address_setups.append(list(run_args))
 
-    def probe_endpoint(self, target_args: Sequence[str], url: str) -> str | None:
-        self.probes.append(list(target_args))
+    def probe_endpoint(self, server_args: Sequence[str], url: str) -> str | None:
+        self.probes.append(list(server_args))
         host = (urlsplit(url).hostname or "").lower()
-        if host in _OWN_LOOPBACK_NAMES or self._unresolved(target_args, host):
+        if host in _OWN_LOOPBACK_NAMES or self._unresolved(server_args, host):
             return None
-        sentinel = self._reached(target_args, host)
+        sentinel = self._reached(server_args, host)
         return None if sentinel is None else _env_value(sentinel, "FLAG")
 
-    def probe_listener(self, target_args: Sequence[str], host: str, port: int) -> bool:
-        self.probes.append(list(target_args))
+    def probe_listener(self, server_args: Sequence[str], host: str, port: int) -> bool:
+        self.probes.append(list(server_args))
         # A stand-in serves 80 and 443 alike, so only the address the name resolves to counts.
-        network = _first_after(target_args, "--network") or "none"
-        address = self._address_in(target_args, host.lower())
+        network = _first_after(server_args, "--network") or "none"
+        address = self._address_in(server_args, host.lower())
         if address is None or address in self.dead_stand_ins:
             return False
         return any(
@@ -139,51 +139,51 @@ class FakePlantingDocker:
             for run_args in self.stand_ins.values()
         )
 
-    def _unresolved(self, target_args: Sequence[str], host: str) -> bool:
+    def _unresolved(self, server_args: Sequence[str], host: str) -> bool:
         if _is_ipv4(host):
             return False
-        mounted = [mount.split(":")[1] for mount in _all_after(target_args, "-v")]
+        mounted = [mount.split(":")[1] for mount in _all_after(server_args, "-v")]
         hosts_shadowed = _shadows(mounted, "/etc/hosts")
         resolv_shadowed = _shadows(mounted, "/etc/resolv.conf")
         if host == "localhost":
             # On a launch with a network Docker's embedded DNS still answers localhost through
             # the host's resolver, which this fake models as answering.
-            return hosts_shadowed and (resolv_shadowed or not self._has_network(target_args))
-        if host in self._added_names(target_args):
+            return hosts_shadowed and (resolv_shadowed or not self._has_network(server_args))
+        if host in self._added_names(server_args):
             return hosts_shadowed
         return resolv_shadowed
 
-    def _has_network(self, target_args: Sequence[str]) -> bool:
-        network = _first_after(target_args, "--network") or "none"
+    def _has_network(self, server_args: Sequence[str]) -> bool:
+        network = _first_after(server_args, "--network") or "none"
         if network.startswith("container:"):
-            network = _first_after(self._holder_of(target_args), "--network") or "none"
+            network = _first_after(self._holder_of(server_args), "--network") or "none"
         return network != "none"
 
-    def _added_names(self, target_args: Sequence[str]) -> set[str]:
-        entries = _all_after(self._holder_of(target_args), "--add-host")
+    def _added_names(self, server_args: Sequence[str]) -> set[str]:
+        entries = _all_after(self._holder_of(server_args), "--add-host")
         return {entry.partition(":")[0].lower() for entry in entries}
 
-    def _holder_of(self, target_args: Sequence[str]) -> list[str]:
-        network = _first_after(target_args, "--network") or ""
+    def _holder_of(self, server_args: Sequence[str]) -> list[str]:
+        network = _first_after(server_args, "--network") or ""
         return self.holders.get(network.removeprefix("container:"), [])
 
-    def _reached(self, target_args: Sequence[str], host: str) -> list[str] | None:
-        network = _first_after(target_args, "--network") or "none"
+    def _reached(self, server_args: Sequence[str], host: str) -> list[str] | None:
+        network = _first_after(server_args, "--network") or "none"
         if network.startswith("container:"):
-            bound = self._bound_sentinel(network, self._address_in(target_args, host))
+            bound = self._bound_sentinel(network, self._address_in(server_args, host))
             if bound is not None:
                 return bound
-            network = _first_after(self._holder_of(target_args), "--network") or "none"
+            network = _first_after(self._holder_of(server_args), "--network") or "none"
         return self._aliased_sentinel(network, host)
 
-    def _address_in(self, target_args: Sequence[str], host: str) -> str | None:
+    def _address_in(self, server_args: Sequence[str], host: str) -> str | None:
         # The order a joined namespace resolves a name in: a literal, Docker's own localhost
         # line, then the holder's --add-host lines, all case-insensitively.
         if _is_ipv4(host):
             return host
         if host == "localhost":
             return "127.0.0.1"
-        for entry in _all_after(self._holder_of(target_args), "--add-host"):
+        for entry in _all_after(self._holder_of(server_args), "--add-host"):
             name, _, address = entry.partition(":")
             if name.lower() == host:
                 return address

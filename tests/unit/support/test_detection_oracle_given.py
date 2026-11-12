@@ -5,8 +5,8 @@ from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.costs import TargetCost
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
 from evals.cve.detection.oracle import DetectionReport, TargetResult
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass, RunGrade
-from evals.cve_units import JudgeCategory
+from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus
+from evals.cve.units import JudgeCategory
 from evals.gate_outcome import GateOutcome
 from evals.metrics import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
@@ -22,7 +22,7 @@ class FakeTarget:
     flaw_id: str = "CVE-2025-0001"
     severity: str = "9.1 CRITICAL"
     nonce: str = NONCE
-    mechanisms: frozenset[MechanismClass] = frozenset({MechanismClass.READ_OUTSIDE_SCOPE})
+    classes: frozenset[FlawClass] = frozenset({FlawClass.READ_OUTSIDE_SCOPE})
     aim: re.Pattern[str] = field(default=re.compile(r"^/outside/"))
     awaited_capability: str | None = "declared-scope awareness"
     note: str = "test note"
@@ -37,7 +37,7 @@ class FakeOutOfScopeFlaw:
 
 def a_detected_grade() -> RunGrade:
     return RunGrade(
-        status=CVEStatus.DETECTED,
+        status=TargetStatus.DETECTED,
         surfaced_places=frozenset({"planted"}),
         aimed=True,
         evidence=f"leaked {NONCE}",
@@ -45,33 +45,33 @@ def a_detected_grade() -> RunGrade:
     )
 
 
-def a_missed_grade(miss_class: MissClass, fail_without_proof: bool = False) -> RunGrade:
+def a_missed_grade(miss_kind: MissKind, fail_without_proof: bool = False) -> RunGrade:
     return RunGrade(
-        status=CVEStatus.MISSED,
-        miss_class=miss_class,
-        aimed=miss_class != MissClass.NOT_AIMED,
+        status=TargetStatus.MISSED,
+        miss_kind=miss_kind,
+        aimed=miss_kind != MissKind.NOT_AIMED,
         fail_without_proof=fail_without_proof,
     )
 
 
 def a_cve_result(
     flaw_id: str,
-    status: CVEStatus,
+    status: TargetStatus,
     detected_runs: int = 0,
     aimed_runs: int = 0,
     fail_without_proof_runs: int = 0,
-    miss_class: MissClass | None = None,
+    miss_kind: MissKind | None = None,
     struck_places: list[list[str]] | None = None,
     unchecked_places: list[list[str]] | None = None,
-    mechanisms: tuple[MechanismClass, ...] = (MechanismClass.COMMAND_EXECUTION,),
+    classes: tuple[FlawClass, ...] = (FlawClass.COMMAND_EXECUTION,),
 ) -> TargetResult:
     return TargetResult(
         flaw_id=flaw_id,
         severity="9.1 CRITICAL",
         note="test note",
-        mechanisms=list(mechanisms),
+        classes=list(classes),
         status=status,
-        miss_class=miss_class,
+        miss_kind=miss_kind,
         awaited_capability="cross-tool chains",
         runs=3,
         detected_runs=detected_runs,
@@ -113,16 +113,16 @@ def a_red_gate() -> DetectionGateResult:
                 flaw_id="CVE-2025-53355",
                 outcome=TargetOutcome.REGRESSION,
                 candidate_runs=[
-                    CVEStatus.DETECTED,
-                    CVEStatus.MISSED,
-                    CVEStatus.REACHED_BUT_JUDGED_PASS,
+                    TargetStatus.DETECTED,
+                    TargetStatus.MISSED,
+                    TargetStatus.REACHED_BUT_JUDGED_PASS,
                 ],
                 retests=[True] * 4,
             ),
             TargetComparison(
                 flaw_id="CVE-2025-53109",
                 outcome=TargetOutcome.HELD,
-                candidate_runs=[CVEStatus.DETECTED] * 3,
+                candidate_runs=[TargetStatus.DETECTED] * 3,
             ),
         ],
     )

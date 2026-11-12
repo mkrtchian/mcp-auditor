@@ -5,15 +5,15 @@ from datetime import date
 import tests.unit.support.test_cve_grammar_given as grammar
 import tests.unit.support.test_nuisance_admission_given as admission
 from evals.cve.census.draw_order import DrawEntry
+from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import NuisanceRunResult, ServerExit
 from evals.cve.nuisance.run import NuisanceDeps, RunProvenance, run_nuisance
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
-from evals.cve_grammar import MechanismClass
 from evals.eval_session import TreeState
-from evals.nuisance_admission import AdmittedServer, FlawRecord
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import (
@@ -63,7 +63,7 @@ def a_server(
         if flaws is not None
         else [
             admission.a_flaw_record(
-                FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
+                FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
             )
         ]
     )

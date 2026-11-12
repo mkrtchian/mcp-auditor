@@ -4,7 +4,7 @@ import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.detection.draw_record import CalibrationCard, DrawRecord, Sibling
-from evals.nuisance_admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 
 SERVER = admission_given.SERVER_PACKAGE
 COPIED_FLAW = admission_given.FIRST_FLAW
@@ -27,7 +27,7 @@ def _a_card_listing(flaw: str, sibling: str) -> CalibrationCard:
 
 def a_server_copying_the_holdout_calibration_at(
     fingerprint: str | None,
-    source: Literal["fix_check", "holdout_calibration"] = "holdout_calibration",
+    source: Literal["fix_check", "detection_holdout_calibration"] = "detection_holdout_calibration",
 ) -> AdmittedServer:
     """The admission's server whose COPIED_FLAW record carries `fingerprint` under `source`."""
 

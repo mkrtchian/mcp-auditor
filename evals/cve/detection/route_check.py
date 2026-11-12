@@ -27,9 +27,9 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import Launch
-from evals.cve_layout import ANCHOR_PATHS
-from evals.cve_places import Place, PlantKind
+from evals.cve.environments import Launch
+from evals.cve.layout import ANCHOR_PATHS
+from evals.cve.places import Place, PlaceKind
 from mcp_auditor.domain.models import ToolDefinition
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -74,7 +74,7 @@ def _documented_default(place: Place, scope: str | None) -> set[str]:
     (The places of the deployment layout)). No other kind documents a relation, so the bare's
     <project>.git sibling placement, a convention of our layout rather than a location the git
     documentation fixes relative to a checkout, is never derived."""
-    if place.kind is PlantKind.DOTENV and scope:
+    if place.kind is PlaceKind.DOTENV and scope:
         parent = posixpath.dirname(_normalise(scope))
         if parent not in ("", "/"):
             return {parent}

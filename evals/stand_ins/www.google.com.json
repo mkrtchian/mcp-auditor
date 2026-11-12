@@ -9,7 +9,7 @@
     {
       "scheme": "http",
       "method": "POST",
-      "target": "/speech-api/v2/recognize?client=chromium&lang=en-US&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&pFilter=0",
+      "request_target": "/speech-api/v2/recognize?client=chromium&lang=en-US&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&pFilter=0",
       "status": 200,
       "headers": [
         [
@@ -67,7 +67,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/7217e17d28e2418c",
+      "probed_request_target": "/7217e17d28e2418c",
       "status": 404,
       "headers": [
         [
@@ -92,7 +92,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/7217e17d28e2418c",
+      "probed_request_target": "/7217e17d28e2418c",
       "status": 404,
       "headers": [
         [

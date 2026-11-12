@@ -8,7 +8,7 @@
     {
       "scheme": "https",
       "method": "POST",
-      "target": "/v1/chat/completions",
+      "request_target": "/v1/chat/completions",
       "status": 200,
       "headers": [
         [
@@ -22,7 +22,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/4aadada4b3b08a68",
+      "probed_request_target": "/4aadada4b3b08a68",
       "status": 403,
       "headers": [
         [
@@ -87,7 +87,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/4aadada4b3b08a68",
+      "probed_request_target": "/4aadada4b3b08a68",
       "status": 404,
       "headers": [
         [

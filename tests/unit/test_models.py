@@ -21,7 +21,7 @@ class TestEnumConstraints:
 
     def test_rejects_unknown_severity(self):
         with pytest.raises(ValueError):
-            given.an_eval_result(severity="unknown")
+            given.a_judge_result(severity="unknown")
 
 
 class TestJudgmentSchema:

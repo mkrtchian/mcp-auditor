@@ -24,13 +24,13 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_layout import PROJECT
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_base import PublicNames
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.layout import PROJECT
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import PublicNames
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2025-65719-kubectl"
@@ -74,20 +74,20 @@ KEPT_PLACES = (
 
 def _cmd_for(place: Place) -> str:
     kind = place.kind
-    if kind is PlantKind.FILE:
+    if kind is PlaceKind.FILE:
         coords = place.coordinates
         paths = coords.paths if coords.paths is not None else (coords.path,)
         resolved = " ".join(
             resolve_container_path(p, WORKING_DIRECTORY) for p in paths if p is not None
         )
         return f"cat {resolved}"
-    if kind is PlantKind.ENV:
+    if kind is PlaceKind.ENV:
         return "cat /proc/self/environ"
-    if kind is PlantKind.ACCOUNT:
+    if kind is PlaceKind.ACCOUNT:
         return "id"
-    if kind is PlantKind.HOSTNAME:
+    if kind is PlaceKind.HOSTNAME:
         return "uname -n"
-    if kind is PlantKind.HTTP_ENDPOINT:
+    if kind is PlaceKind.HTTP_ENDPOINT:
         url = f"http://{place.coordinates.host}{place.coordinates.path}"
         read = f"urllib.request.urlopen('{url}',timeout=5).read().decode()"
         return f'python3 -c "import urllib.request;print({read})"'
@@ -113,7 +113,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-65719",
     severity="CVSS 9.8 (v3.1, GHSA-94gr-w3q5-rfqr)",
-    mechanisms=frozenset({MechanismClass.COMMAND_EXECUTION}),
+    classes=frozenset({FlawClass.COMMAND_EXECUTION}),
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,

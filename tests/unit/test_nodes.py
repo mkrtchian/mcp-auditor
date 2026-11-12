@@ -190,7 +190,7 @@ class TestExecuteTool:
         result = await node({"pending_cases": [case], "current_tool": tool})
 
         blocked = result["processed_cases"][0]
-        assert blocked.eval_result is None
+        assert blocked.judge_result is None
         assert blocked.response is None
         assert blocked.error is None
         assert result["current_case"] is None
@@ -219,7 +219,7 @@ class TestJudgeResponse:
         result = await node({"current_case": case, "processed_cases": [], "current_tool": tool})
 
         assert result["processed_cases"] == [case]
-        assert result["processed_cases"][0].eval_result is None
+        assert result["processed_cases"][0].judge_result is None
         assert result["current_case"] is None
         then.refused_call_recorded(result, tool_name="read_file", kind=ModelCallKind.JUDGMENT)
         assert result["provider_usage"] == [refusal.usage]

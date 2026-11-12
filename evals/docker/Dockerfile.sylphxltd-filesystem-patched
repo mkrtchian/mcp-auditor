@@ -1,4 +1,4 @@
-# Fix-check-only twin of Dockerfile.sylphxltd-filesystem (CVE-2025-67366 patched arm): the same build, plus what only
+# Fix-check-only copy of Dockerfile.sylphxltd-filesystem (CVE-2025-67366 patched arm): the same build, plus what only
 # the fix check reads: the symlinks its exploits name (leaklink to the file the witness is planted at, leakdir to the
 # directory that holds it) and that directory, owned by the run's account so the writing exploits act in it. The run
 # never builds it.

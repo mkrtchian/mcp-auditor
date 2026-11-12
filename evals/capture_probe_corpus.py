@@ -17,8 +17,8 @@ from datetime import UTC, datetime
 from rich.console import Console
 
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.environments import Launch
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_environments import Launch
 from evals.detection_preflight import VULNERABLE_SERVICES
 from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
 from evals.probe.candidates import REFERENCE

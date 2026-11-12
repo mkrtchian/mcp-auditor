@@ -1,7 +1,7 @@
 import pytest
 
 import tests.unit.support.test_nuisance_fixture_sources_then as then
-from evals.nuisance_admission import AdmittedServer
+from evals.cve.nuisance.admission import AdmittedServer
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 ADMITTED = the_committed_admission().servers

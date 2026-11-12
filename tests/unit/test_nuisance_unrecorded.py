@@ -3,9 +3,9 @@ from collections.abc import Callable
 import pytest
 
 import tests.unit.support.test_nuisance_unrecorded_given as given
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.unrecorded import refuse_unrecorded, unrecorded_fields
 from evals.eval_session import Refused
-from evals.nuisance_admission import AdmittedServer
 
 
 def test_a_recorded_server_has_no_gap():

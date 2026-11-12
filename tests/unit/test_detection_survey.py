@@ -14,11 +14,11 @@ def test_candidates_for_returns_exactly_the_places_whose_reach_meets_the_target(
     places = {
         "read": given.file_place("read", path="/a"),
         "fetch": dataclasses.replace(
-            given.file_place("fetch", path="/b"), reachable_by=frozenset({"internal_fetch"})
+            given.file_place("fetch", path="/b"), reaches=frozenset({"internal_fetch"})
         ),
         "both": dataclasses.replace(
             given.file_place("both", path="/c"),
-            reachable_by=frozenset({"arbitrary_read", "internal_fetch"}),
+            reaches=frozenset({"arbitrary_read", "internal_fetch"}),
         ),
     }
 

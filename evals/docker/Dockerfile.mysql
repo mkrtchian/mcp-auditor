@@ -1,16 +1,16 @@
-# Nuisance run image of mysql: the real awslabs.mysql-mcp-server 1.0.23 (the admission's
-# patched version) wrapping a real MySQL engine. Brought into line with rule v4 from the
-# holdout patched fixture (Dockerfile.holdout-2026-85788-mysql-patched): the committed run image
-# pointed boto3 at a moto stub through AWS_ENDPOINT_URL, which rule v4 forbids; here the real AWS
-# endpoints are served by stand-ins under their real host names on the closed network and boto3
-# trusts the fixture authority through AWS_CA_BUNDLE, so no endpoint override and no third-party
-# substitute remain. The real MySQL engine runs in the container, as the confinement allows.
-# The engine and the MCP server live in this image; the entrypoint starts MySQL in
-# the background, then execs the real server on stdio. The server's RDS
-# DescribeDBClusters and Secrets Manager GetSecretValue credential lookups are served
-# off-image by the shared public-service stand-in, each under the AWS endpoint's real
-# host name on the closed fixture network; nothing stands in for the server or the
-# database, which are the real pinned software.
+# Nuisance run image of mysql: the real awslabs.mysql-mcp-server 1.0.23 (the admission's patched
+# version) wrapping a real MySQL engine. Brought into line with nuisance suite rule v4 from the
+# patched image of its holdout target (Dockerfile.holdout-2026-85788-mysql-patched): the
+# committed run image pointed boto3 at a moto stand-in through AWS_ENDPOINT_URL, which nuisance
+# suite rule v4 forbids; here the real AWS endpoints are served by stand-ins under their real
+# host names on the closed network and boto3 trusts the fixture authority through AWS_CA_BUNDLE,
+# so no endpoint override and no third-party substitute remain. The real MySQL engine runs in
+# the container, as the confinement allows. The engine and the MCP server live in this image;
+# the entrypoint starts MySQL in the background, then execs the real server on stdio. The
+# server's RDS DescribeDBClusters and Secrets Manager GetSecretValue credential lookups are
+# served off-image by the shared public-service stand-in, each under the AWS endpoint's real
+# host name on the closed fixture network; nothing stands in for the server or the database,
+# which are the real pinned software.
 #
 # The server's documentation names no MySQL version, so the engine is the latest GA release the MySQL
 # project published on the calibration day (2026-11-05), MySQL Community Server 26.10.0

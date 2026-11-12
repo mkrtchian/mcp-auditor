@@ -3,7 +3,7 @@ import re
 import pytest
 
 import tests.unit.support.test_backend_lifecycle_given as given
-from evals.ckan_backend import (
+from evals.cve.backends.ckan import (
     CKAN_FRONT_IP,
     CKAN_PARTS,
     EUROPA_IP,
@@ -11,15 +11,15 @@ from evals.ckan_backend import (
     BackendPart,
     ckan_server_args,
 )
+from evals.cve.backends.doris import DORIS_CONTAINER
+from evals.cve.backends.gitlab import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
+from evals.cve.backends.googleapis import GOOGLEAPIS_RESPONDER_IP
+from evals.cve.backends.jenkins import JENKINS_URL
+from evals.cve.backends.n8n import N8N_IP, n8n_server_args, singleton_run_args
+from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.docker_paths import DOCKER_DIRECTORY
-from evals.doris_backend import DORIS_CONTAINER
-from evals.gitlab_backend import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
-from evals.googleapis_backend import GOOGLEAPIS_RESPONDER_IP
-from evals.jenkins_backend import JENKINS_URL
-from evals.n8n_backend import N8N_IP, n8n_server_args, singleton_run_args
-from evals.nuisance_confinement import memory_bound_args
-from evals.public_stand_ins import stand_in_files
+from evals.cve.nuisance.confinement import memory_bound_args
+from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,
     environment,

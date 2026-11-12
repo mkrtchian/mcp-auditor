@@ -13,8 +13,8 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import bounded
+from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, attempt_once, build_auditor
 from evals.cve.detection.baseline import (
     backend_image_ids,
@@ -39,6 +39,7 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target, image_tag
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.places import Places, kept_records
 from evals.cve.run_images import (
     rebuild_images,
     refuse_running_containers,
@@ -49,7 +50,6 @@ from evals.cve.run_images import (
     target_services,
 )
 from evals.cve.run_interruption import first_failure, sibling_runs
-from evals.cve_places import Places, kept_records
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles

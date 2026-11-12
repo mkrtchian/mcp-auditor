@@ -7,10 +7,10 @@ from collections.abc import Awaitable, Callable
 from contextlib import AbstractContextManager
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, PlantingSpec, SymbolicUser
+from evals.cve.environments import Launch, LaunchShape
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 OUTSIDE_AIM = re.compile(r"^/outside/")
@@ -39,7 +39,7 @@ def a_fake_target(
     return Target(
         flaw_id=flaw_id,
         severity="CVSS 0.0",
-        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE}),
+        classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
         aim=aim,
         reaches=frozenset({"arbitrary_read"}),
         kept_places=kept_places,
@@ -67,7 +67,7 @@ def a_file_place(place_id: str, path: str) -> Place:
     return Place(
         id=place_id,
         family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path=path),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path=path),
     )

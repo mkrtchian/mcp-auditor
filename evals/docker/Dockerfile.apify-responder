@@ -1,6 +1,6 @@
 # TLS responder of the nuisance suite's CVE-2026-46341 fix check only: the suffix host
 # docs.apify.com.example.test, the place the fix check's witness sits. No run builds or serves it:
-# the run's docs.apify.com is the stand-in replaying evals/stand_ins/docs.apify.com.json. It serves
+# the run's docs.apify.com is the stand-in serving evals/stand_ins/docs.apify.com.json. It serves
 # a page carrying WITNESS_NONCE for every request, and never what it is sent. The cert is
 # self-signed at build, and only the fix check's own launch skips its check.
 # No COPY/ADD: the fingerprint hashes instructions only, so the responder is inlined.

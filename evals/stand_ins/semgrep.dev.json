@@ -9,7 +9,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/api/check-version",
+      "request_target": "/api/check-version",
       "status": 200,
       "headers": [
         [
@@ -67,7 +67,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/cd90f448a1c5ae0c",
+      "probed_request_target": "/cd90f448a1c5ae0c",
       "status": 301,
       "headers": [
         [
@@ -116,7 +116,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/cd90f448a1c5ae0c",
+      "probed_request_target": "/cd90f448a1c5ae0c",
       "status": 200,
       "headers": [
         [

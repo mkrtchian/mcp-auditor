@@ -61,7 +61,7 @@ def test_each_record_carries_the_index_of_its_run(tmp_path: Path) -> None:
     assert [record["run_index"] for record in records] == [0, 1]
 
 
-def test_cases_without_eval_result_are_excluded(tmp_path: Path) -> None:
+def test_cases_without_judge_result_are_excluded(tmp_path: Path) -> None:
     runs = [(0, given.a_report([given.an_unjudged_case(), given.a_judged_case(EvalVerdict.PASS)]))]
 
     export_judged_cases(runs, {}, tmp_path / "honeypot_report.json")

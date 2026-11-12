@@ -17,11 +17,11 @@ HTTP endpoints.
 import re
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import command_injection_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
+from evals.cve.environments import command_injection_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 WORKDIR = "/srv/app"
@@ -58,17 +58,17 @@ KEPT_PLACES = (
 
 def _reader(place: Place) -> str:
     coord = place.coordinates
-    if place.kind is PlantKind.FILE:
+    if place.kind is PlaceKind.FILE:
         raw = coord.paths if coord.paths is not None else (coord.path,)
         paths = " ".join(resolve_container_path(p, WORKDIR) for p in raw if p)
         return f"cat {paths} 2>/dev/null"
-    if place.kind is PlantKind.ENV:
+    if place.kind is PlaceKind.ENV:
         return "cat /proc/self/environ 2>/dev/null | tr '\\0' '\\n'"
-    if place.kind is PlantKind.ACCOUNT:
+    if place.kind is PlaceKind.ACCOUNT:
         return "id 2>/dev/null"
-    if place.kind is PlantKind.HOSTNAME:
+    if place.kind is PlaceKind.HOSTNAME:
         return "hostname 2>/dev/null"
-    if place.kind is PlantKind.HTTP_ENDPOINT:
+    if place.kind is PlaceKind.HTTP_ENDPOINT:
         return f'curl -s "http://{coord.host}{coord.path}"'
     raise ValueError(f"{place.id}: no command reader for kind {place.kind}")
 
@@ -90,11 +90,11 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2025-58358",
     severity="CVSS 8.8 (v3.1, placeholder)",
-    mechanisms=frozenset(
+    classes=frozenset(
         {
-            MechanismClass.COMMAND_EXECUTION,
-            MechanismClass.READ_OUTSIDE_SCOPE,
-            MechanismClass.INTERNAL_FETCH,
+            FlawClass.COMMAND_EXECUTION,
+            FlawClass.READ_OUTSIDE_SCOPE,
+            FlawClass.INTERNAL_FETCH,
         }
     ),
     aim=AIM,

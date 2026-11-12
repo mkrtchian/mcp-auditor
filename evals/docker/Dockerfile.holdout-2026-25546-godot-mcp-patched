@@ -21,7 +21,7 @@ RUN wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/
  && rm -rf /tmp/godot.zip /tmp/godot
 
 # A plain writable Godot project the exploits' first create_scene call writes into. It lives
-# outside /work, which the planting layer covers with a per-launch tmpfs.
+# outside /work, which the planting code covers with a per-launch tmpfs.
 RUN mkdir -p /opt/base-project \
  && printf 'config_version=5\n\n[application]\n\nconfig/name="Platformer"\nconfig/features=PackedStringArray("4.4")\n' > /opt/base-project/project.godot \
  && chmod -R 0777 /opt/base-project

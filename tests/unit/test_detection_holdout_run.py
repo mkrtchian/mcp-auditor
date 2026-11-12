@@ -14,9 +14,9 @@ from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode
+from evals.cve.grammar import FlawClass, TargetStatus
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
-from evals.cve_grammar import CVEStatus, MechanismClass
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
@@ -30,17 +30,17 @@ async def test_a_target_is_assembled_from_its_runs():
     report = given.a_report(provider, judge)
     outcomes: list[given.Outcome] = [
         given.graded(
-            CVEStatus.DETECTED, report, surfaced_places=frozenset({"etc-shadow"}), aimed=True
+            TargetStatus.DETECTED, report, surfaced_places=frozenset({"etc-shadow"}), aimed=True
         ),
         given.graded(
-            CVEStatus.DETECTED,
+            TargetStatus.DETECTED,
             report,
             surfaced_places=frozenset({"etc-shadow"}),
             unchecked_places=frozenset({"etc-shadow"}),
-            status_if_unchecked_missed=CVEStatus.MISSED,
+            status_if_unchecked_missed=TargetStatus.MISSED,
             aimed=True,
         ),
-        given.graded(CVEStatus.MISSED, report, aimed=True, fail_without_proof=True),
+        given.graded(TargetStatus.MISSED, report, aimed=True, fail_without_proof=True),
     ]
     audit = given.scripted({target.flaw_id: outcomes})
 
@@ -61,7 +61,7 @@ async def test_a_target_is_assembled_from_its_runs():
 
 async def test_a_union_target_is_assembled_with_its_class_labels_sorted():
     target = given.a_target(
-        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION})
+        classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE, FlawClass.COMMAND_EXECUTION})
     )
     audit = given.scripted({target.flaw_id: given.three_detections()})
 
@@ -89,7 +89,7 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     refused_report = given.a_report(provider, ProviderUsage())
     outcomes: list[given.Outcome] = [
-        given.graded(CVEStatus.DETECTED, given.a_report(provider, ProviderUsage()), aimed=True),
+        given.graded(TargetStatus.DETECTED, given.a_report(provider, ProviderUsage()), aimed=True),
         IncompleteRun(refused_report),
         IncompleteRun(refused_report),
     ]
@@ -106,7 +106,9 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
 
 async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss_causes():
     target = given.a_target(given.KUBERNETES)
-    detection = given.graded(CVEStatus.DETECTED, given.a_report(ProviderUsage(), ProviderUsage()))
+    detection = given.graded(
+        TargetStatus.DETECTED, given.a_report(ProviderUsage(), ProviderUsage())
+    )
     unchecked = GradedAudit(
         detection.grade,
         detection.report,
@@ -203,7 +205,7 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
     report = given.a_report(ProviderUsage(), ProviderUsage())
     launch_failure = DroppedRun(NotRunCause.LAUNCH_FAILURE)
     sick_outcomes: list[given.Outcome] = [
-        given.graded(CVEStatus.DETECTED, report, aimed=True),
+        given.graded(TargetStatus.DETECTED, report, aimed=True),
         launch_failure,
         launch_failure,
     ]
@@ -224,7 +226,7 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
     sick_outcomes: list[given.Outcome] = [
         DroppedRun(NotRunCause.LAUNCH_FAILURE),
         DroppedRun(NotRunCause.THROTTLED),
-        given.graded(CVEStatus.DETECTED, report, aimed=True),
+        given.graded(TargetStatus.DETECTED, report, aimed=True),
     ]
     audit = given.scripted({sick.flaw_id: sick_outcomes, healthy.flaw_id: given.three_detections()})
 
@@ -242,7 +244,7 @@ async def test_a_provider_error_wins_over_a_launch_failure():
     sick_outcomes: list[given.Outcome] = [
         DroppedRun(NotRunCause.LAUNCH_FAILURE),
         DroppedRun(NotRunCause.PROVIDER_ERROR),
-        given.graded(CVEStatus.DETECTED, report, aimed=True),
+        given.graded(TargetStatus.DETECTED, report, aimed=True),
     ]
     audit = given.scripted({sick.flaw_id: sick_outcomes, healthy.flaw_id: given.three_detections()})
 

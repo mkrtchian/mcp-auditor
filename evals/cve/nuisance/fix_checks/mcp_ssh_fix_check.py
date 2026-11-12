@@ -27,26 +27,26 @@ import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 
-from evals.closed_network import create_closed_network
+from evals.cve.backends.mcp_ssh_sshd import (
+    SSHD_ALIAS,
+    SSHD_IMAGE,
+    SSHD_PORT,
+    ensure_sshd_image,
+)
+from evals.cve.closed_network import create_closed_network
+from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.planting import (
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
     confinement_args,
     unprivileged_user_args,
 )
-from evals.cve_planting_base import LABEL, own_network_args
-from evals.mcp_ssh_sshd_backend import (
-    SSHD_ALIAS,
-    SSHD_IMAGE,
-    SSHD_PORT,
-    ensure_sshd_image,
-)
+from evals.cve.planting_base import LABEL, own_network_args
 
 WITNESS_PATH = "/tmp/secret"
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
@@ -54,9 +54,9 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 WITNESS = Place(
     id="mcp-ssh-command-secret",
     family="fix_check",
-    reachable_by=frozenset({"command_execution"}),
-    kind=PlantKind.FILE,
-    coordinates=Coordinates(PlantKind.FILE, path=WITNESS_PATH),
+    reaches=frozenset({"command_execution"}),
+    kind=PlaceKind.FILE,
+    coordinates=Coordinates(PlaceKind.FILE, path=WITNESS_PATH),
 )
 
 # The three counted tools, driven against the sshd with no injection, so none reads as aimed.
@@ -194,7 +194,7 @@ def target(
 ) -> FixCheckFixture:
     return FixCheckFixture(
         flaw=flaw,
-        effect_class=MechanismClass.COMMAND_EXECUTION,
+        effect_class=FlawClass.COMMAND_EXECUTION,
         aim=aim,
         witness=WITNESS,
         planting_host=HOST,

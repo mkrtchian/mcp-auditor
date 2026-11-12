@@ -12,7 +12,7 @@ from evals.cve.nuisance import walk as nuisance_walk
 from evals.cve.nuisance.walk_record import WalkInputs
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
+    from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 
 
 def walk_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list[str]:

@@ -4,8 +4,8 @@ from mcp_auditor.domain import (
     AuditCategory,
     AuditPayload,
     CoverageGap,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     Judgment,
     ProviderUsage,
     Severity,
@@ -64,17 +64,17 @@ def a_judgment(
     )
 
 
-def an_eval_result(
+def a_judge_result(
     tool_name: str = "test_tool",
     category: AuditCategory = AuditCategory.INJECTION,
     verdict: EvalVerdict = EvalVerdict.PASS,
     severity: Severity = Severity.LOW,
-) -> EvalResult:
+) -> JudgeResult:
     payload = a_payload(category=category)
-    return EvalResult(
+    return JudgeResult(
         tool_name=tool_name,
         category=category,
-        payload=payload.arguments,
+        arguments=payload.arguments,
         verdict=verdict,
         justification="test justification",
         severity=severity,
@@ -82,7 +82,7 @@ def an_eval_result(
 
 
 def a_judged_case(response: str) -> TestCase:
-    return a_test_case(response=response).model_copy(update={"eval_result": an_eval_result()})
+    return a_test_case(response=response).model_copy(update={"judge_result": a_judge_result()})
 
 
 def a_tool_report(

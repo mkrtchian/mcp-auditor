@@ -5,13 +5,13 @@ from dataclasses import dataclass
 import pytest
 
 from evals.cve.detection.calibration_check import (
-    dead_conditions,
+    not_fixed_reasons,
+    not_live_reasons,
     passes_calibration_check,
-    patched_dead_conditions,
 )
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_grammar import MechanismClass
-from evals.cve_units import unit_of_exchanges
+from evals.cve.grammar import FlawClass
+from evals.cve.units import unit_of_exchanges
 
 NONCE = "MCPAUDIT-0123456789abcdef"
 ID_OUTPUT = "uid=65534(nobody) gid=65534(nogroup)"
@@ -21,13 +21,13 @@ PLAIN = {"command": "version"}
 
 @dataclass(frozen=True)
 class FakeTarget:
-    mechanisms: frozenset[MechanismClass]
+    classes: frozenset[FlawClass]
     nonces: dict[str, str]
     aim: re.Pattern[str]
 
 
 COMMAND_TARGET = FakeTarget(
-    frozenset({MechanismClass.COMMAND_EXECUTION}), {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
+    frozenset({FlawClass.COMMAND_EXECUTION}), {"planted": NONCE}, re.compile(r"[;&|`]|\$\(")
 )
 NO_PLACE_TARGET = dataclasses.replace(COMMAND_TARGET, nonces={})
 
@@ -73,7 +73,7 @@ def test_dead_conditions_name_each_failed_condition(
     benign: tuple[dict[str, str], str],
     conditions: list[str],
 ):
-    result = dead_conditions(
+    result = not_live_reasons(
         COMMAND_TARGET, [unit_of_exchanges([exploit])], unit_of_exchanges([benign])
     )
 
@@ -81,7 +81,7 @@ def test_dead_conditions_name_each_failed_condition(
 
 
 def test_a_target_that_keeps_no_place_is_out_of_calibration():
-    result = dead_conditions(
+    result = not_live_reasons(
         NO_PLACE_TARGET,
         [unit_of_exchanges([(INJECTED, ID_OUTPUT)])],
         unit_of_exchanges([(PLAIN, "v1")]),
@@ -111,6 +111,6 @@ def test_a_target_that_keeps_no_place_is_out_of_calibration():
 def test_patched_dead_conditions_name_a_surviving_flaw_or_an_erroring_benign_call(
     exploit: tuple[dict[str, str], str], benign_errored: bool, conditions: list[str]
 ):
-    result = patched_dead_conditions(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)
+    result = not_fixed_reasons(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)
 
     assert result == conditions

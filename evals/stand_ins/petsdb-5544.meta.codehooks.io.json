@@ -9,7 +9,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/dev/blob/%2Fupload%2Freport.html",
+   "request_target": "/dev/blob/%2Fupload%2Freport.html",
    "status": 201,
    "headers": [
     [
@@ -50,7 +50,7 @@
   {
    "scheme": "https",
    "method": "DELETE",
-   "target": "/dev/blob/%2Fupload%2Freport.html",
+   "request_target": "/dev/blob/%2Fupload%2Freport.html",
    "status": 200,
    "headers": [
     [
@@ -91,7 +91,7 @@
   {
    "scheme": "https",
    "method": "DELETE",
-   "target": "/dev/src/*",
+   "request_target": "/dev/src/*",
    "status": 200,
    "headers": [
     [
@@ -132,7 +132,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/dev/src/index.js",
+   "request_target": "/dev/src/index.js",
    "status": 201,
    "headers": [
     [
@@ -173,7 +173,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/dev/src/package.json",
+   "request_target": "/dev/src/package.json",
    "status": 201,
    "headers": [
     [
@@ -214,7 +214,7 @@
   {
    "scheme": "https",
    "method": "POST",
-   "target": "/dev/src/package-lock.json",
+   "request_target": "/dev/src/package-lock.json",
    "status": 201,
    "headers": [
     [
@@ -256,7 +256,7 @@
  "defaults": [
   {
    "scheme": "http",
-   "probed_target": "/6351b4a4742e5a4e",
+   "probed_request_target": "/6351b4a4742e5a4e",
    "status": 308,
    "headers": [
     [
@@ -285,7 +285,7 @@
   },
   {
    "scheme": "https",
-   "probed_target": "/6351b4a4742e5a4e",
+   "probed_request_target": "/6351b4a4742e5a4e",
    "status": 404,
    "headers": [
     [

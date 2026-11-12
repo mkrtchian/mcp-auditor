@@ -3,8 +3,8 @@ from typing import Any
 from mcp_auditor.domain import (
     AuditCategory,
     AuditPayload,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     Severity,
     TestCase,
     ToolDefinition,
@@ -53,7 +53,7 @@ def a_tool_report(
         ),
         response=response,
         error=error,
-        eval_result=_a_failing_eval_result(tool_name),
+        judge_result=_a_failing_judge_result(tool_name),
     )
     return ToolReport(tool=a_tool(name=tool_name), cases=[case])
 
@@ -78,11 +78,11 @@ def _a_blocked_case() -> TestCase:
     )
 
 
-def _a_failing_eval_result(tool_name: str) -> EvalResult:
-    return EvalResult(
+def _a_failing_judge_result(tool_name: str) -> JudgeResult:
+    return JudgeResult(
         tool_name=tool_name,
         category=AuditCategory.INJECTION,
-        payload={"id": "1 OR 1=1"},
+        arguments={"id": "1 OR 1=1"},
         verdict=EvalVerdict.FAIL,
         justification="vulnerable",
         severity=Severity.HIGH,

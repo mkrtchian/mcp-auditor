@@ -1,10 +1,10 @@
 import pytest
 
 import tests.unit.support.test_doris_serialization_given as given
-from evals import holdout_environments
-from evals.cve_planting_base import unprivileged_user_args
-from evals.doris_backend import DORIS_SERVER_LAUNCH, doris_server_args
-from evals.nuisance_confinement import memory_bound_args
+from evals.cve.backends.doris import DORIS_SERVER_LAUNCH, doris_server_args
+from evals.cve.detection import holdout_environments
+from evals.cve.nuisance.confinement import memory_bound_args
+from evals.cve.planting_base import unprivileged_user_args
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after
 

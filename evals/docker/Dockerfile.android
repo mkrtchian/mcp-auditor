@@ -13,7 +13,7 @@ RUN apt-get update \
 
 # Real Android SDK Platform-Tools (adb), release 37.0.1, installed as the server README prescribes
 # (download the Android SDK Platform Tools); the release and day are the holdout card's
-# (37.0.1, the stable channel-0 release on 2026-11-05). sha256 as pinned by the holdout twin.
+# (37.0.1, the stable channel-0 release on 2026-11-05). sha256 as pinned by the holdout target.
 ARG PLATFORM_TOOLS_SHA256=d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
 RUN curl -fsSL -o /tmp/platform-tools.zip \
       https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip \

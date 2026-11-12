@@ -1,6 +1,6 @@
 from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.recording import TargetRecording
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from tests.unit.support.test_detection_gate_given import (
     CVE_ID,
     DETECTED,
@@ -28,7 +28,7 @@ RECORDING_TIME = "2026-09-28T11:00:00+00:00"
 
 
 def a_recording(
-    runs: list[CVEStatus] | None = None,
+    runs: list[TargetStatus] | None = None,
     commit: str = RECORDED_COMMIT,
     recording_conditions: DetectionRunConditions | None = None,
     fixture: str = FIXTURE,

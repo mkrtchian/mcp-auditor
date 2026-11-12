@@ -7,5 +7,5 @@ evals/cve/detection/holdout_targets.py aggregates evals/cve/detection/holdout_fi
 
 Every module here keeps the kit's import closure: it imports only from evals.cve.kit and the
 clean evals.cve_* modules the kit rests on (cve_grammar, cve_places, cve_planting,
-cve_planting_spec), never from mcp_auditor nor from evals.cve_environments.
+cve_planting_spec), never from mcp_auditor nor from evals.cve.environments.
 """

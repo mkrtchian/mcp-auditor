@@ -7,58 +7,58 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals import (
-    closed_network,
-    cve_endpoint_address,
-    cve_environments,
-    cve_grammar,
-    cve_layout,
-    cve_places,
-    cve_planting,
-    cve_planting_base,
-    cve_planting_docker,
-    cve_planting_spec,
-    cve_planting_stand_ins,
-    cve_proofs,
-    cve_report_units,
-    cve_units,
-    holdout_environments,
-    public_stand_ins,
-)
 from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
+from evals.cve import (
+    closed_network,
+    endpoint_address,
+    environments,
+    grammar,
+    layout,
+    places,
+    planting,
+    planting_base,
+    planting_docker,
+    planting_spec,
+    planting_stand_ins,
+    proofs,
+    public_stand_ins,
+    report_units,
+    units,
+)
+from evals.cve.detection import holdout_environments
 from evals.cve.detection.targets import LaunchMode, Target, image_tag
+from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.cve.grammar import DETECTION_RUNGS, FlawClass, TargetStatus
 from evals.cve.images import dockerfile_instructions
-from evals.cve_grammar import DETECTION_RUNGS, CVEStatus, MechanismClass
-from evals.cve_places import Coordinates, Place, Places, PlantKind, kept_records
-from evals.cve_planting import PlantingHost
-from evals.cve_planting_base import LayoutMount
-from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.cve.places import Coordinates, Place, PlaceKind, Places, kept_records
+from evals.cve.planting import PlantingHost
+from evals.cve.planting_base import LayoutMount
+from evals.cve.public_stand_ins import STAND_INS_DIRECTORY, stand_in, stand_in_files
 from evals.gate import RetestRule
-from evals.public_stand_ins import STAND_INS_DIRECTORY, stand_in, stand_in_files
 from mcp_auditor.config import Settings
 
 DETECTION_BASELINE_DIRECTORY = Path(__file__).parents[2] / "baselines" / "detection"
 # Fingerprinted in this fixed order, so the fingerprint names one version of the grammar.
 GRAMMAR_PATHS = (
-    Path(cve_grammar.__file__),
-    Path(cve_proofs.__file__),
-    Path(cve_units.__file__),
-    Path(cve_report_units.__file__),
+    Path(grammar.__file__),
+    Path(proofs.__file__),
+    Path(units.__file__),
+    Path(report_units.__file__),
 )
 # Fingerprinted in this fixed order, as part of every target's fixture. The planting code
 # decides what reaches the auditor, so a semantic change to it moves every target's fingerprint.
 ENVIRONMENT_PATHS = (
-    Path(cve_environments.__file__),
+    Path(environments.__file__),
     Path(holdout_environments.__file__),
-    Path(cve_layout.__file__),
-    Path(cve_places.__file__),
-    Path(cve_planting.__file__),
-    Path(cve_planting_base.__file__),
-    Path(cve_planting_spec.__file__),
-    Path(cve_planting_docker.__file__),
-    Path(cve_endpoint_address.__file__),
+    Path(layout.__file__),
+    Path(places.__file__),
+    Path(planting.__file__),
+    Path(planting_base.__file__),
+    Path(planting_spec.__file__),
+    Path(planting_docker.__file__),
+    Path(endpoint_address.__file__),
     Path(public_stand_ins.__file__),
-    Path(cve_planting_stand_ins.__file__),
+    Path(planting_stand_ins.__file__),
     Path(closed_network.__file__),
 )
 
@@ -99,7 +99,7 @@ class DetectionBaseline(BaseModel):
     commit: str
     recorded_at: str
     # One status per run, the rung kept for the reader: the planted nonce is the one detection.
-    runs: list[CVEStatus]
+    runs: list[TargetStatus]
     confirms: RecordingRef | None = None
     replaces: RecordingRef | None = None
     # Image name to image ID at recording: provenance, not a condition (ADR 024).
@@ -152,7 +152,7 @@ def fixture_fingerprint(
         dockerfile_instructions(image_dockerfile(target.patched_image, docker_directory)),
         target.builder.__name__,
         target.server_image,
-        _class_part(target.mechanisms),
+        _class_part(target.classes),
         target.aim.pattern,
         None if target.tools_filter is None else sorted(target.tools_filter),
         sorted(target.reaches),
@@ -169,18 +169,18 @@ def fixture_fingerprint(
         parts.append(sorted(target.backend_images))
     if target.backend_sources:
         parts.append(fingerprint_sources([path.read_text() for path in target.backend_sources]))
-    if any(record.kind is PlantKind.HTTP_ENDPOINT for record in records):
+    if any(record.kind is PlaceKind.HTTP_ENDPOINT for record in records):
         parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
-def _class_part(mechanisms: frozenset[MechanismClass]) -> object:
+def _class_part(classes: frozenset[FlawClass]) -> object:
     # None and one value as before the class set, so a one-class target keeps its fingerprint.
-    if not mechanisms:
+    if not classes:
         return None
-    if len(mechanisms) == 1:
-        return next(iter(mechanisms)).value
-    return sorted(m.value for m in mechanisms)
+    if len(classes) == 1:
+        return next(iter(classes)).value
+    return sorted(m.value for m in classes)
 
 
 def planting_host_parts(
@@ -224,7 +224,7 @@ def _record_parts(record: Place) -> list[object]:
         record.id,
         record.kind.value,
         _coordinate_parts(record.coordinates),
-        sorted(record.reachable_by),
+        sorted(record.reaches),
     ]
 
 

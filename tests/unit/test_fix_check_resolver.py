@@ -11,7 +11,7 @@ from evals.cve.nuisance.fix_checks import (
     cve_2026_61462_gitlab,
     cve_2026_77252_atlassian,
 )
-from evals.cve_planting_base import PlantedArgs, resolver_args
+from evals.cve.planting_base import PlantedArgs, resolver_args
 
 _ADDRESS = "10.0.0.100"
 _NO_PLANTING = PlantedArgs(

@@ -9,8 +9,8 @@ with no recorded fingerprint are never read (the last is `unrecorded`'s)."""
 from collections.abc import Iterable, Mapping, Sequence
 
 from evals.cve.detection.draw_record import DrawRecord
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_counting import counted_flaws
+from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.counting import counted_flaws
 
 
 def copy_targets(drawn: Iterable[str], draw: DrawRecord | None) -> dict[str, str]:
@@ -33,7 +33,7 @@ def stale_holdout_calibration_copies(
         for flaw in counted_flaws(server):
             check = flaw.fix_check
             recorded = check.holdout_fingerprint
-            if check.source != "holdout_calibration" or recorded is None:
+            if check.source != "detection_holdout_calibration" or recorded is None:
                 continue
             now = current.get(flaw.flaw)
             where = f"{server.server_package}: {flaw.flaw}"

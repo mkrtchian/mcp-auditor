@@ -1,15 +1,15 @@
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
 from evals.cve.detection.gate import TargetCandidate, TargetComparison, TargetOutcome
-from evals.cve_grammar import CVEStatus
+from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
 
 CVE_ID = "CVE-2025-53355"
 FIXTURE = "fixture"
 RECORDED_COMMIT = "0123abc"
 
-DETECTED = CVEStatus.DETECTED
-MISSED = CVEStatus.MISSED
+DETECTED = TargetStatus.DETECTED
+MISSED = TargetStatus.MISSED
 
 
 def conditions(budget: int = 10) -> DetectionRunConditions:
@@ -30,7 +30,7 @@ def a_gated_baseline(flaw_id: str = CVE_ID) -> DetectionBaseline:
     return a_confirmed_baseline([DETECTED] * 6, flaw_id)
 
 
-def a_confirmed_baseline(runs: list[CVEStatus], flaw_id: str = CVE_ID) -> DetectionBaseline:
+def a_confirmed_baseline(runs: list[TargetStatus], flaw_id: str = CVE_ID) -> DetectionBaseline:
     first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-28T09:00:00+00:00")
     return an_unconfirmed_baseline(runs, flaw_id).model_copy(
         update={"status": BaselineStatus.CONFIRMED, "confirms": first}
@@ -38,7 +38,7 @@ def a_confirmed_baseline(runs: list[CVEStatus], flaw_id: str = CVE_ID) -> Detect
 
 
 def an_unconfirmed_baseline(
-    runs: list[CVEStatus] | None = None, flaw_id: str = CVE_ID
+    runs: list[TargetStatus] | None = None, flaw_id: str = CVE_ID
 ) -> DetectionBaseline:
     return DetectionBaseline(
         flaw_id=flaw_id,
@@ -54,7 +54,7 @@ def an_unconfirmed_baseline(
 
 
 def a_candidate(
-    runs: list[CVEStatus] | None = None,
+    runs: list[TargetStatus] | None = None,
     fixture: str = FIXTURE,
     completed: bool = True,
     flaw_id: str = CVE_ID,

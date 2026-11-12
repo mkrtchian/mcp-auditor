@@ -11,14 +11,14 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from uuid import uuid4
 
-from evals.backend_lifecycle import BackendLifecycle
+from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.kit.launch import Launch
-from evals.cve_planting_base import LABEL, PlantingHost
+from evals.cve.planting_base import LABEL, PlantingHost
 
 
 def lifecycle_of(key: str) -> BackendLifecycle:
     try:
-        return importlib.import_module(f"evals.{key}_backend").LIFECYCLE
+        return importlib.import_module(f"evals.cve.backends.{key}").LIFECYCLE
     except (ModuleNotFoundError, AttributeError) as error:
         raise ValueError(f"no backend lifecycle for the key {key!r}") from error
 

@@ -70,17 +70,17 @@ def servers_by_cve() -> dict[str, str]:
 def server_corpus_of(cases: list[JudgeCase], servers: dict[str, str]) -> set[str]:
     corpus: set[str] = set()
     for case in cases:
-        cve_id = _cve_id_of(case)
-        if cve_id not in servers:
-            raise LookupError(f"the census does not classify {cve_id} of case {case.id}")
-        if servers[cve_id] not in EXCLUDED_SERVERS:
+        flaw_id = _flaw_id_of(case)
+        if flaw_id not in servers:
+            raise LookupError(f"the census does not classify {flaw_id} of case {case.id}")
+        if servers[flaw_id] not in EXCLUDED_SERVERS:
             continue
         corpus |= _server_texts_of(case)
     return corpus
 
 
 def a_cve_case(
-    cve_id: str,
+    flaw_id: str,
     *,
     tool_description: str = "",
     response: str | None = None,
@@ -90,7 +90,7 @@ def a_cve_case(
     return JudgeCase(
         id="crafted",
         source=CaseSource.CVE,
-        origin=f"cve {cve_id}",
+        origin=f"cve {flaw_id}",
         inputs=JudgeInputs(
             tool_name="tool",
             tool_description=tool_description,
@@ -105,7 +105,7 @@ def a_cve_case(
     )
 
 
-def _cve_id_of(case: JudgeCase) -> str:
+def _flaw_id_of(case: JudgeCase) -> str:
     return case.origin.split()[1]
 
 

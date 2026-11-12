@@ -34,9 +34,9 @@ def a_ghsa_clone(tmp_path: Path, *advisories: dict[str, Any]) -> Path:
     return clone
 
 
-def an_nvd_cve(cve_id: str, **overrides: Any) -> dict[str, Any]:
+def an_nvd_cve(identifier: str, **overrides: Any) -> dict[str, Any]:
     return {
-        "id": cve_id,
+        "id": identifier,
         "published": "2025-07-02T15:15:27.670",
         "lastModified": "2025-07-03T10:00:00.000",
         "vulnStatus": "Analyzed",
@@ -44,7 +44,7 @@ def an_nvd_cve(cve_id: str, **overrides: Any) -> dict[str, Any]:
             {"lang": "es", "value": "El servidor lee archivos."},
             {"lang": "en", "value": "The server reads files outside its root."},
         ],
-        "references": [{"url": f"https://example.org/{cve_id}", "source": "cna@example.org"}],
+        "references": [{"url": f"https://example.org/{identifier}", "source": "cna@example.org"}],
         **overrides,
     }
 

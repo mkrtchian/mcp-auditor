@@ -14,7 +14,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/v2/actors/apify~rag-web-browser",
+      "request_target": "/v2/actors/apify~rag-web-browser",
       "status": 401,
       "headers": [
         [
@@ -83,7 +83,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/v2/users/me",
+      "request_target": "/v2/users/me",
       "status": 401,
       "headers": [
         [
@@ -153,7 +153,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/5a390deb0e71343c",
+      "probed_request_target": "/5a390deb0e71343c",
       "status": 301,
       "headers": [
         [
@@ -186,7 +186,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/5a390deb0e71343c",
+      "probed_request_target": "/5a390deb0e71343c",
       "status": 404,
       "headers": [
         [

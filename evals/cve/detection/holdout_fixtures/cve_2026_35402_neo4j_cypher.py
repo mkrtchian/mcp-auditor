@@ -11,11 +11,11 @@ import re
 from collections.abc import Awaitable, Callable
 
 from evals.cve.detection.targets import Target
-from evals.cve_environments import ssrf_env
-from evals.cve_grammar import MechanismClass
-from evals.cve_layout import PROJECT
-from evals.cve_places import Places
-from evals.cve_planting import PlantingHost, SymbolicUser
+from evals.cve.environments import ssrf_env
+from evals.cve.grammar import FlawClass
+from evals.cve.layout import PROJECT
+from evals.cve.places import Places
+from evals.cve.planting import PlantingHost, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
 READ_TOOL = "read_neo4j_cypher"
@@ -52,7 +52,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-35402",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.INTERNAL_FETCH}),
+    classes=frozenset({FlawClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"internal_fetch"}),
     kept_places=KEPT_PLACES,

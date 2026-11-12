@@ -14,11 +14,11 @@ import pytest
 
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
-from evals import cve_planting_docker
+from evals.cve import planting_docker
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_layout import owned_layout
-from evals.cve_planting import DockerPlanting, PlantingFailed, planted
-from evals.cve_planting_base import (
+from evals.cve.layout import owned_layout
+from evals.cve.planting import DockerPlanting, PlantingFailed, planted
+from evals.cve.planting_base import (
     SENTINEL_IMAGE,
     SENTINEL_SERVICE,
     UNPRIVILEGED_GID,
@@ -124,7 +124,7 @@ def test_a_file_place_beside_a_name_host_still_serves_its_nonce(has_network: boo
 def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.setattr("evals.cve_planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
+    monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
     spec = given.spec_of("meta.fict", "/fict/secret", file_at="/etc/hosts")
 
     with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
@@ -134,7 +134,7 @@ def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
 def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.setattr("evals.cve_planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
+    monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
     spec = given.spec_of("meta.fict", "/fict/secret", has_network=True, file_at="/etc/resolv.conf")
 
     with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
@@ -187,11 +187,11 @@ def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_l
 
 def test_a_probe_killed_past_its_run_timeout_leaves_no_container(monkeypatch: pytest.MonkeyPatch):
     # Below `wget`'s 5 s bound, above a container's start-up of about 2.5 s.
-    monkeypatch.setattr(cve_planting_docker, "_PROBE_RUN_TIMEOUT", 4.0)
+    monkeypatch.setattr(planting_docker, "_PROBE_RUN_TIMEOUT", 4.0)
 
     with given.a_listener_that_accepts_and_never_answers() as listener:
-        target_args, label = given.labelled_probe_args(listener.network)
-        body = cve_planting_docker._probe_read(target_args, f"http://{listener.name}/")  # pyright: ignore[reportPrivateUsage]
+        server_args, label = given.labelled_probe_args(listener.network)
+        body = planting_docker._probe_read(server_args, f"http://{listener.name}/")  # pyright: ignore[reportPrivateUsage]
 
         assert body is None
         then.no_container_carries(label)

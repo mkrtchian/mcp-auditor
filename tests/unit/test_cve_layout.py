@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from evals.cve_layout import ANCHOR_PATHS, NEUTRAL_TOKEN, build_empty_layout, build_layout
-from evals.cve_places import LayoutAnchor
-from evals.cve_planting_base import LayoutNode
+from evals.cve.layout import ANCHOR_PATHS, NEUTRAL_TOKEN, build_empty_layout, build_layout
+from evals.cve.places import LayoutAnchor
+from evals.cve.planting_base import LayoutNode
 
 
 def test_the_empty_reference_arm_builds_a_valid_repository_at_each_repo_anchor(tmp_path: Path):

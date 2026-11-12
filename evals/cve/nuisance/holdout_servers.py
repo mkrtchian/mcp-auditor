@@ -7,10 +7,10 @@ run, since only the gate audits it (nuisance-rule.md, Run conditions and statist
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission_walk import standing_exit
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.walk import NuisanceServer, ServerMark
-from evals.nuisance_admission import AdmittedServer, NuisanceAdmission
 
 
 @dataclass(frozen=True)

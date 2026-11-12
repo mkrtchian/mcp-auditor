@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_SEED, GravitinoPart
+from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.images import dockerfile_instructions
-from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.gravitino_backend import GRAVITINO_PARTS, GRAVITINO_SEED, GravitinoPart
-from evals.nuisance_admission import AdmittedServer
+from evals.cve.nuisance.admission import AdmittedServer
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 

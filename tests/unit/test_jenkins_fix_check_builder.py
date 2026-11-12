@@ -1,7 +1,7 @@
+from evals.cve.backends.jenkins import JENKINS_BRIDGE, JENKINS_PORT
+from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.nuisance.fix_checks import cve_2026_10276_jenkins as jenkins
-from evals.cve_planting_base import confinement_args
-from evals.jenkins_backend import JENKINS_BRIDGE, JENKINS_PORT
-from evals.nuisance_confinement import memory_bound_args
+from evals.cve.planting_base import confinement_args
 
 _ADDRESS = "198.18.2.123"
 

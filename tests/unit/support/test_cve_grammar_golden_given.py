@@ -1,5 +1,5 @@
-"""The golden master of the CVE grammar: what `grade_run`, `proofs_in`, `is_aimed`, `resolve`,
-`dead_conditions`, `patched_dead_conditions` and `struck_by_replay` return on a fixed corpus,
+"""The grammar golden master: what `grade_run`, `proofs_in`, `is_aimed`, `resolve`,
+`not_live_reasons`, `not_fixed_reasons` and `struck_by_replay` return on a fixed corpus,
 recorded in `cve_grammar_golden.json`.
 
 The corpus is built by `cve_grammar_golden_corpus`: the reports and units of the grammar unit
@@ -9,7 +9,7 @@ case is graded against its target's classes and aim, with the planted nonce as t
 proof.
 
 The file is regenerated only in a commit that changes what the grammar grades, or what
-`dead_conditions` or `patched_dead_conditions` reports, beside its labeling log entry, or in the
+`not_live_reasons` or `not_fixed_reasons` reports, beside its labeling log entry, or in the
 commit of a fixture that changes a target's classes or aim. A refactoring never regenerates it.
 """
 
@@ -21,12 +21,12 @@ from typing import Any
 import tests.unit.support.cve_grammar_golden_corpus as corpus
 import tests.unit.support.test_cve_grammar_given as given
 import tests.unit.support.test_cve_strike_given as strike
-from evals.cve.detection.calibration_check import dead_conditions, patched_dead_conditions
+from evals.cve.detection.calibration_check import not_fixed_reasons, not_live_reasons
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve_grammar import CreditCheck, GradedTarget, grade_run, resolve
-from evals.cve_proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
-from evals.cve_report_units import units_of
-from evals.cve_units import Unit
+from evals.cve.grammar import CreditCheck, GradedTarget, grade_run, resolve
+from evals.cve.proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
+from evals.cve.report_units import units_of
+from evals.cve.units import Unit
 from evals.judge.fixture import JudgeCase, JudgeInputs
 from mcp_auditor.domain.models import AuditReport
 
@@ -50,8 +50,8 @@ def golden_entries() -> dict[str, Any]:
         f"resolve/tests/{name}": resolve(grades).model_dump(mode="json")
         for name, grades in corpus.test_resolutions().items()
     }
-    for cve_id, cases in corpus.cases_by_target().items():
-        entries |= _target_entries(cve_id, cases)
+    for flaw_id, cases in corpus.cases_by_target().items():
+        entries |= _target_entries(flaw_id, cases)
     entries |= {
         f"strike/{name}": _struck(run, replay) for name, (run, replay) in _strike_pairs().items()
     }
@@ -73,41 +73,39 @@ def _unit_entry(unit: Unit, target: GradedTarget) -> dict[str, Any]:
     return {"proofs": proofs_in(unit, target), "aimed": is_aimed(unit, target.aim)}
 
 
-def _target_entries(cve_id: str, cases: list[JudgeCase]) -> dict[str, Any]:
-    target = _graded_target(cve_id)
-    real = {f"real/{cve_id}/{key}": report for key, report in corpus.real_reports(cases).items()}
+def _target_entries(flaw_id: str, cases: list[JudgeCase]) -> dict[str, Any]:
+    target = _graded_target(flaw_id)
+    real = {f"real/{flaw_id}/{key}": report for key, report in corpus.real_reports(cases).items()}
     variants = {
-        f"variant/{cve_id}/{key}": report for key, report in corpus.variant_reports(cases).items()
+        f"variant/{flaw_id}/{key}": report for key, report in corpus.variant_reports(cases).items()
     }
     chains = {
-        f"chain/{cve_id}/{name}": report for name, report in corpus.chain_reports(cases).items()
+        f"chain/{flaw_id}/{name}": report for name, report in corpus.chain_reports(cases).items()
     }
     reports = real | variants | chains
     return {
         **{key: _graded(target, report) for key, report in reports.items()},
-        f"resolve/{cve_id}/real": _resolved(target, real.values()),
-        f"resolve/{cve_id}/all": _resolved(target, reports.values()),
+        f"resolve/{flaw_id}/real": _resolved(target, real.values()),
+        f"resolve/{flaw_id}/all": _resolved(target, reports.values()),
         **{
-            f"dead_conditions/{cve_id}/{case.id}": _dead_conditions(target, case.inputs)
+            f"not_live_reasons/{flaw_id}/{case.id}": _not_live_reasons_of(target, case.inputs)
             for case in cases
         },
         **{
-            f"patched_dead_conditions/{cve_id}/{case.id}": _patched_dead_conditions(
-                target, case.inputs
-            )
+            f"not_fixed_reasons/{flaw_id}/{case.id}": _not_fixed_reasons_of(target, case.inputs)
             for case in cases
         },
     }
 
 
-def _dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
-    exploit, benign = corpus.dead_conditions_units(inputs)
-    return dead_conditions(target, [exploit], benign)
+def _not_live_reasons_of(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
+    exploit, benign = corpus.not_live_reasons_units(inputs)
+    return not_live_reasons(target, [exploit], benign)
 
 
-def _patched_dead_conditions(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
-    exploit, _ = corpus.dead_conditions_units(inputs)
-    return patched_dead_conditions(target, [exploit], benign_errored=False)
+def _not_fixed_reasons_of(target: GradedTarget, inputs: JudgeInputs) -> list[str]:
+    exploit, _ = corpus.not_live_reasons_units(inputs)
+    return not_fixed_reasons(target, [exploit], benign_errored=False)
 
 
 # The filesystem sibling CVE-2025-53110 merged into the keeper CVE-2025-53109 (one patched twin
@@ -123,10 +121,10 @@ _MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
 _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 
 
-def _graded_target(cve_id: str) -> given.FakeTarget:
-    keeper = _REMOVED_GRADED_UNDER.get(cve_id) or _MERGED_SIBLINGS.get(cve_id, cve_id)
+def _graded_target(flaw_id: str) -> given.FakeTarget:
+    keeper = _REMOVED_GRADED_UNDER.get(flaw_id) or _MERGED_SIBLINGS.get(flaw_id, flaw_id)
     [target] = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == keeper]
-    return given.FakeTarget(target.mechanisms, {given.PLACE: given.SENTINEL}, target.aim)
+    return given.FakeTarget(target.classes, {given.PLACE: given.SENTINEL}, target.aim)
 
 
 def _resolved(target: GradedTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:

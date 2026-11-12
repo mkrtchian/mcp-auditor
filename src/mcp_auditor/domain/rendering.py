@@ -7,10 +7,10 @@ from mcp_auditor.domain.models import (
     AuditReport,
     ChainStep,
     CoverageGap,
-    EvalResult,
     EvalVerdict,
     ExecutionRecord,
     ExecutionRegime,
+    JudgeResult,
     MissCause,
     MissedModelCall,
     Severity,
@@ -163,14 +163,14 @@ def _render_tool_section(tool_report: ToolReport, missed_calls: list[MissedModel
 
 
 def _render_case_section(case: TestCase) -> str:
-    if case.eval_result is not None:
-        return _render_result_section(case.eval_result)
+    if case.judge_result is not None:
+        return _render_result_section(case.judge_result)
     if case.blocked_reason is not None:
         return _render_blocked_section(case)
     return _render_unjudged_section(case)
 
 
-def _render_result_section(result: EvalResult) -> str:
+def _render_result_section(result: JudgeResult) -> str:
     category_display = category_with_owasp_label(result.category)
     if result.verdict == EvalVerdict.PASS:
         heading = f"### PASS -- {category_display} (-)"
@@ -178,7 +178,7 @@ def _render_result_section(result: EvalResult) -> str:
         heading = f"### FAIL -- {category_display} ({result.severity})"
     lines = [
         heading,
-        f"**Payload**: `{result.payload}`",
+        f"**Arguments**: `{result.arguments}`",
         f"**Justification**: {result.justification}",
     ]
     return "\n".join(lines)
@@ -187,7 +187,7 @@ def _render_result_section(result: EvalResult) -> str:
 def _render_blocked_section(case: TestCase) -> str:
     lines = [
         f"### BLOCKED -- {case.payload.category}",
-        f"**Payload**: `{case.payload.arguments}`",
+        f"**Arguments**: `{case.payload.arguments}`",
         f"**Reason**: {case.blocked_reason}",
     ]
     return "\n".join(lines)
@@ -196,7 +196,7 @@ def _render_blocked_section(case: TestCase) -> str:
 def _render_unjudged_section(case: TestCase) -> str:
     lines = [
         f"### NOT JUDGED -- {case.payload.category}",
-        f"**Payload**: `{case.payload.arguments}`",
+        f"**Arguments**: `{case.payload.arguments}`",
         "**Reason**: the judgment model call was missed, its cause is listed under the tool",
     ]
     return "\n".join(lines)
@@ -210,8 +210,8 @@ def _render_chain_section(chain: AttackChain) -> str:
     ]
     if chain.blocked_reason:
         lines.append(f"**Blocked**: {chain.blocked_reason}")
-    if chain.eval_result:
-        lines.append(_render_chain_verdict(chain.eval_result))
+    if chain.judge_result:
+        lines.append(_render_chain_verdict(chain.judge_result))
     elif not chain.blocked_reason:
         lines.append("**Verdict**: not judged")
     return "\n".join(lines)
@@ -226,7 +226,7 @@ def _render_chain_steps(steps: list[ChainStep]) -> str:
     return "\n".join(lines)
 
 
-def _render_chain_verdict(result: EvalResult) -> str:
+def _render_chain_verdict(result: JudgeResult) -> str:
     if result.verdict == EvalVerdict.FAIL:
         verdict_line = f"**Verdict**: FAIL ({result.severity})"
     else:
@@ -245,7 +245,7 @@ def format_severity_breakdown(counts: Counter[Severity]) -> str:
     return ", ".join(f"{counts[sev]} {sev.value}" for sev in sorted_severities)
 
 
-def _severity_breakdown(findings: list[EvalResult]) -> str:
+def _severity_breakdown(findings: list[JudgeResult]) -> str:
     counts: Counter[Severity] = Counter(f.severity for f in findings)
     return format_severity_breakdown(counts)
 
@@ -264,7 +264,7 @@ def summarize_tools(report: AuditReport) -> list[ToolSummary]:
 
 
 def _summarize_tool_report(tool_report: ToolReport) -> ToolSummary:
-    all_results = tool_report.eval_results
+    all_results = tool_report.judge_results
     passed = sum(1 for r in all_results if r.verdict == EvalVerdict.PASS)
     severity_counts: Counter[Severity] = Counter(
         r.severity for r in all_results if r.verdict == EvalVerdict.FAIL

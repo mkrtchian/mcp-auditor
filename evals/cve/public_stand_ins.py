@@ -1,0 +1,227 @@
+"""The stand-in captures (`evals/stand_ins/<host>.json`) and their loader.
+
+A capture records what a public service answered at one date, and the stand-in image serves
+it under the service's real name inside a closed fixture network. A target names a stand-in by
+its host only: nothing is read at import, the planting and the fixture fingerprint load the
+capture at call time, and a test passes its own directory. A capture also records, on each
+scheme, the default answer: what the host answered for a generated path it does not have, which
+the stand-in serves for any request its routes lack. The stand-in quotes the request target
+wherever the host quoted the probed one, in `Location` as sent and in an HTML or JSON body in
+the measured form (`path_form`), escaped as the body's media type escapes it. Every answer
+carries its captured headers, the connection and framing ones apart, with a `Content-Length` of
+the stand-in's own, every route but a captured `HEAD` framed by the body it serves.
+
+A `POST` route written by hand may carry the action it answers, which the stand-in reads from the
+request. For an AWS service it is the full `X-Amz-Target` value for the JSON protocol (for example
+`secretsmanager.GetSecretValue`), the bare `Action` field of a form body for the query protocol (for
+example `DescribeDBInstances`). For a GraphQL API it is the operation name the `query` of a JSON
+body declares (for example `IssueList` for `api.github.com`). A request whose action no route names
+gets the action-less route of its request target, else the default, as the real service answers an
+action it does not know with an error. The capture command records no action: those routes are
+written by hand from the services' published examples, since a real capture would need signed or
+authenticated requests.
+
+A `POST` route may instead carry a form field: a request whose
+`application/x-www-form-urlencoded` body carries that field gets the route, else the
+field-less route of its request target, else the default. The route is chosen on a fixed word at a
+fixed position of the request, the field's name, never on its value.
+
+A file is either a capture (`source` `capture`, dated by `captured_at`) or written by hand
+from the software's documentation or published examples (`source` `software_sources`, no
+`captured_at`, `command` naming the documentation it follows). A written file's `address` is a
+fixed global address of the fixture, not a resolution of the host.
+
+The leaf, its key and the fixture authority sit beside the captures under `tls/`, made by
+`tls/generate.sh`.
+"""
+
+import json
+import re
+from collections.abc import Sequence
+from dataclasses import dataclass
+from ipaddress import IPv4Address
+from pathlib import Path
+from typing import Annotated, Literal, Self
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
+
+from evals.cve.planting_base import StandIn
+
+STAND_INS_DIRECTORY = Path(__file__).parents[1] / "stand_ins"
+QUOTING_MEDIA_TYPES = ("text/html", "application/json")
+# markupsafe's table, the one CKAN's Jinja uses; `html.escape` writes `&quot;` and `&#x27;`.
+_HTML_ESCAPES = (("&", "&amp;"), ("<", "&lt;"), (">", "&gt;"), ('"', "&#34;"), ("'", "&#39;"))
+
+
+def _global_unicast(address: str) -> str:
+    parsed = IPv4Address(address)
+    if not parsed.is_global or parsed.is_multicast:
+        raise ValueError("address is not a global unicast IPv4")
+    return address
+
+
+class StandInRoute(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    scheme: Literal["http", "https"]
+    method: str
+    request_target: str
+    status: int
+    headers: list[tuple[str, str]]
+    body: str
+    action: str | None = None
+    form_field: str | None = None
+
+    @model_validator(mode="after")
+    def _an_action_or_a_form_field_keys_a_post_only(self) -> Self:
+        if self.action is not None and self.method != "POST":
+            raise ValueError("only a POST route carries an action")
+        if self.form_field is not None and self.method != "POST":
+            raise ValueError("only a POST route carries a form field")
+        if self.action is not None and self.form_field is not None:
+            raise ValueError(
+                "a route is keyed on an action or a form field, never both,"
+                " since the stand-in looks them up one after the other"
+            )
+        return self
+
+
+class StandInDefault(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    scheme: Literal["http", "https"]
+    probed_request_target: str = Field(pattern=r"^/[0-9a-f]{16}$")
+    status: int
+    headers: list[tuple[str, str]]
+    body: str
+    path_form: Literal["decoded", "raw"] | None
+
+    @model_validator(mode="after")
+    def _quotes_its_request_target_only_where_the_stand_in_substitutes_it(self) -> Self:
+        others = [value for name, value in self.headers if name.lower() != "location"]
+        if any(self.probed_request_target in value for value in others):
+            raise ValueError(
+                "the default answer quotes the request in a header other than its Location,"
+                " which the stand-in does not reproduce"
+            )
+        texts = (self.body, *(value for _, value in self.headers))
+        if not all(self._in_path_position(text) for text in texts):
+            raise ValueError(
+                "the probed path appears outside path position,"
+                " so a substitution would rewrite an unrelated value"
+            )
+        return self
+
+    def _in_path_position(self, text: str) -> bool:
+        # A backslash before the slash makes it half of an escape (JSON's `\/`), not the path's.
+        quoted = len(re.findall(rf"(?<!\\){re.escape(self.probed_request_target)}", text))
+        return text.count(self.probed_request_target[1:]) == quoted
+
+    @model_validator(mode="after")
+    def _path_form_says_how_a_known_body_escaping_quotes_its_request_target(self) -> Self:
+        quotes = self.probed_request_target in self.body
+        if quotes and media_type(self.headers) not in QUOTING_MEDIA_TYPES:
+            raise ValueError(
+                "the default answer quotes the request in a body that is neither HTML nor JSON,"
+                " whose escaping the stand-in does not know"
+            )
+        if quotes != (self.path_form is not None):
+            raise ValueError(
+                "path_form must say how the body quotes the request, and only when it does"
+            )
+        return self
+
+
+class StandInCapture(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    host: str
+    address: Annotated[str, AfterValidator(_global_unicast)]
+    source: Literal["capture", "software_sources"]
+    captured_at: str | None = Field(default=None, min_length=1)
+    command: str = Field(min_length=1)
+    request_headers: list[tuple[str, str]]
+    routes: list[StandInRoute]
+    defaults: list[StandInDefault]
+
+    @model_validator(mode="after")
+    def _a_date_only_on_a_capture(self) -> Self:
+        if (self.captured_at is not None) != (self.source == "capture"):
+            raise ValueError(
+                "captured_at dates a capture, so a capture carries it"
+                " and a file written from the software's sources does not"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _one_default_per_scheme(self) -> Self:
+        if sorted(default.scheme for default in self.defaults) != ["http", "https"]:
+            raise ValueError(
+                "the stand-in serves both schemes,"
+                " so a capture records the answer to an unknown path on each"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _one_route_per_key(self) -> Self:
+        keys = [
+            (each.scheme, each.method, each.request_target, each.action, each.form_field)
+            for each in self.routes
+        ]
+        if len(set(keys)) != len(keys):
+            raise ValueError(
+                "two routes answer one (scheme, method, request_target, action, form_field),"
+                " so the stand-in could serve only one of them"
+            )
+        return self
+
+
+def media_type(headers: Sequence[tuple[str, str]]) -> str | None:
+    for name, value in headers:
+        if name.lower() == "content-type":
+            return value.split(";", 1)[0].strip().lower()
+    return None
+
+
+def body_quoting(value: str, media: str) -> str:
+    if media == "text/html":
+        for raw, escaped in _HTML_ESCAPES:
+            value = value.replace(raw, escaped)
+        return value
+    if media == "application/json":
+        return json.dumps(value)[1:-1]
+    raise ValueError(f"a {media} body has no escaping the stand-in knows")
+
+
+@dataclass(frozen=True)
+class StandInFiles:
+    capture: Path
+    certificate: Path
+    key: Path
+    authority: Path
+
+
+def stand_in(host: str, directory: Path = STAND_INS_DIRECTORY) -> StandIn:
+    files = stand_in_files(host, directory)
+    text = files.capture.read_text()
+    capture = StandInCapture.model_validate_json(text)
+    if capture.host != host:
+        raise ValueError(f"{files.capture.name}: host is {capture.host}, not its file's {host}")
+    return StandIn(
+        host=host,
+        address=capture.address,
+        capture=text,
+        certificate=files.certificate.read_text(),
+        key=files.key.read_text(),
+        authority=files.authority.read_text(),
+    )
+
+
+def stand_in_files(host: str, directory: Path = STAND_INS_DIRECTORY) -> StandInFiles:
+    tls = directory / "tls"
+    return StandInFiles(
+        capture=directory / f"{host}.json",
+        certificate=tls / f"{host}.pem",
+        key=tls / f"{host}-key.pem",
+        authority=tls / "fixture-authority.pem",
+    )

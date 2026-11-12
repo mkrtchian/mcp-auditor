@@ -2,8 +2,8 @@ import re
 from pathlib import Path
 
 from evals.cve.census.census import load_census
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.images import dockerfile_instructions
-from evals.docker_paths import image_dockerfile
 from evals.run_census import CENSUS_PATH
 
 

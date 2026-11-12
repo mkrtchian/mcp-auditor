@@ -5,17 +5,17 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from evals.cve.census.draw_order import DrawEntry
+from evals.cve.nuisance.admission import AdmittedServer
 from evals.cve.nuisance.audit import NuisanceAudit, incomplete_causes, is_incomplete
-from evals.cve.nuisance.results import NuisanceRunStatus, NuisanceServerResult
-from evals.cve_units import JudgeCategory
-from evals.nuisance_admission import AdmittedServer
-from evals.nuisance_counter import fail_count_on, flagged_tools, raw_fail_count
-from evals.nuisance_counting import (
+from evals.cve.nuisance.counter import fail_count_on, flagged_tools, raw_fail_count
+from evals.cve.nuisance.counting import (
     counted_flaws,
     counted_tools,
     declared_function_tools,
     flaw_counted_tools,
 )
+from evals.cve.nuisance.results import NuisanceRunStatus, NuisanceServerResult
+from evals.cve.units import JudgeCategory
 from evals.probe.analysis import call_cost
 from evals.probe.candidates import Prices
 

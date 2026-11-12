@@ -14,7 +14,7 @@ from evals.cve.detection.layout_check import (
 )
 from evals.cve.detection.route_check import RouteObservations
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, LaunchMode
-from evals.cve_places import Coordinates, LayoutAnchor, Place, PlantKind
+from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
 
 _A_TARGET = ACCEPTANCE_TARGETS[0]
 
@@ -41,11 +41,11 @@ def _observed(*, started: bool) -> RouteObservations:
     )
 
 
-def _layout_place(place_id: str, anchor: LayoutAnchor, kind: PlantKind) -> Place:
+def _layout_place(place_id: str, anchor: LayoutAnchor, kind: PlaceKind) -> Place:
     return Place(
         id=place_id,
         family="deployment layout",
-        reachable_by=frozenset({"arbitrary_read"}),
+        reaches=frozenset({"arbitrary_read"}),
         kind=kind,
         coordinates=Coordinates(kind, anchor=anchor, relpath="config"),
     )
@@ -55,16 +55,16 @@ def _catalogue_place() -> Place:
     return Place(
         id="etc-shadow",
         family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path="/etc/shadow"),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path="/etc/shadow"),
     )
 
 
 def test_unrouted_kept_places_lists_only_the_unadmitted_layout_place():
     catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
 
     unrouted = unrouted_kept_places((catalogue, dotenv, bare_url), _SCOPED_NO_DISCLOSURE)
 
@@ -73,7 +73,7 @@ def test_unrouted_kept_places_lists_only_the_unadmitted_layout_place():
 
 def test_unrouted_kept_places_is_empty_when_every_kept_place_is_admitted():
     catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
 
     assert unrouted_kept_places((catalogue, dotenv), _SCOPED_NO_DISCLOSURE) == []
 
@@ -145,8 +145,8 @@ def test_layout_check_results_match_the_golden_master():
 
 
 def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
     healthy = _observed(started=True)
     vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces=())
     patched = VersionObservation(reference=healthy, planted=_observed(started=False), nonces=())
@@ -160,8 +160,8 @@ def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
 
 def test_layout_routes_lists_each_layout_place_once_with_its_kept_flag_and_route():
     catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
     places = {place.id: place for place in (catalogue, dotenv, bare_url)}
 
     routes = layout_routes(places, ("workspace-dotenv", "etc-shadow"), _SCOPED_NO_DISCLOSURE)
@@ -173,8 +173,8 @@ def test_layout_routes_lists_each_layout_place_once_with_its_kept_flag_and_route
 
 
 def test_an_unrouted_unkept_layout_place_adds_no_admission_failure():
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlantKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlantKind.GIT_REMOTE_URL)
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
     healthy = _observed(started=True)
     vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces=())
     places = {place.id: place for place in (dotenv, bare_url)}

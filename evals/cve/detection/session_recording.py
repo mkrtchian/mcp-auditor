@@ -25,8 +25,8 @@ from evals.cve.detection.recording import (
 )
 from evals.cve.detection.session_model import Baselines, GatedSession, TargetRuns
 from evals.cve.detection.targets import Target
-from evals.cve_places import Places, PlantKind, kept_records
-from evals.cve_planting import SENTINEL_SERVICE
+from evals.cve.places import PlaceKind, Places, kept_records
+from evals.cve.planting import SENTINEL_SERVICE
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState, tree_drift
 from evals.recording import RecordingRefused
 
@@ -142,7 +142,7 @@ def _recorded_images(target: Target, places: Places) -> tuple[str, ...]:
     it (it serves the endpoint and holds its namespace, ADR 024)."""
     images = (*target.images, target.patched_image)
     records = kept_records(target.kept_places, places)
-    serves_endpoint = any(record.kind is PlantKind.HTTP_ENDPOINT for record in records)
+    serves_endpoint = any(record.kind is PlaceKind.HTTP_ENDPOINT for record in records)
     if serves_endpoint and SENTINEL_SERVICE not in target.images:
         return (*images, SENTINEL_SERVICE)
     return images

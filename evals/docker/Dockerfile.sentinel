@@ -2,7 +2,7 @@
 # over HTTP on port 80. SERVE_FILE names that file under the doc root (default /index.html),
 # computed by the harness (`served_file`) as the file httpd maps the planted path to; BIND_ADDR
 # chooses the bind address (default every address). It is never spoken to over MCP stdio: a
-# fetch-style server reaches it, or the planting layer serves it inside a namespace holder the
+# fetch-style server reaches it, or the planting code serves it inside a namespace holder the
 # target joins.
 # Base pinned by digest for cross-machine reproducibility (busybox).
 FROM busybox:latest@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d

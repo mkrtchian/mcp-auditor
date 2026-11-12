@@ -14,19 +14,19 @@ def discovered_tools_are(tools: list[ToolDefinition], expected_names: list[str])
 
 
 def judged_case_identity_from(result: dict[str, Any], tool_name: str, case: TestCase) -> None:
-    eval_result = result["processed_cases"][0].eval_result
-    assert eval_result is not None
-    assert eval_result.tool_name == tool_name
-    assert eval_result.category == case.payload.category
-    assert eval_result.payload == case.payload.arguments
+    judge_result = result["processed_cases"][0].judge_result
+    assert judge_result is not None
+    assert judge_result.tool_name == tool_name
+    assert judge_result.category == case.payload.category
+    assert judge_result.arguments == case.payload.arguments
 
 
 def judged_case_uses_judgment(result: dict[str, Any], judgment: Judgment) -> None:
-    eval_result = result["processed_cases"][0].eval_result
-    assert eval_result is not None
-    assert eval_result.verdict == judgment.verdict
-    assert eval_result.justification == judgment.justification
-    assert eval_result.severity == judgment.severity
+    judge_result = result["processed_cases"][0].judge_result
+    assert judge_result is not None
+    assert judge_result.verdict == judgment.verdict
+    assert judge_result.justification == judgment.justification
+    assert judge_result.severity == judgment.severity
 
 
 def refused_call_recorded(result: dict[str, Any], tool_name: str, kind: ModelCallKind) -> None:

@@ -18,7 +18,7 @@ def export_judged_cases(
         for run_index, report in runs:
             for tool_report in report.tool_reports:
                 for case in tool_report.cases:
-                    if case.eval_result is None:
+                    if case.judge_result is None:
                         continue
                     line = _single_step_line(
                         run_index,
@@ -49,7 +49,7 @@ def export_detection_judged_cases(audits: list[DetectionAudit], report_path: Pat
         for audit in audits:
             for tool_report in audit.report.tool_reports:
                 for case in tool_report.cases:
-                    if case.eval_result is None:
+                    if case.judge_result is None:
                         continue
                     line = {
                         "flaw_id": audit.flaw_id,
@@ -74,7 +74,7 @@ def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path
                 lines = [
                     _judge_input(case, description)
                     for case in tool_report.cases
-                    if case.eval_result is not None
+                    if case.judge_result is not None
                 ]
                 lines += [
                     line
@@ -91,7 +91,7 @@ def _single_step_line(
     tool_description: str | None,
     ground_truth: GroundTruth,
 ) -> dict[str, Any]:
-    result = case.eval_result
+    result = case.judge_result
     assert result is not None
     gt_key = (result.tool_name, result.category)
     expected = ground_truth.get(gt_key)
@@ -104,7 +104,7 @@ def _single_step_line(
 
 
 def _judge_input(case: TestCase, tool_description: str | None) -> dict[str, Any]:
-    result = case.eval_result
+    result = case.judge_result
     assert result is not None
     return {
         "type": "single_step",
@@ -129,7 +129,7 @@ def _chain_line(
     judge_input = _chain_judge_input(chain, tool_description)
     if judge_input is None:
         return None
-    result = chain.eval_result
+    result = chain.judge_result
     assert result is not None
     expected = ground_truth.get((result.tool_name, result.category))
     return {
@@ -141,7 +141,7 @@ def _chain_line(
 
 
 def _chain_judge_input(chain: AttackChain, tool_description: str | None) -> dict[str, Any] | None:
-    result = chain.eval_result
+    result = chain.judge_result
     if result is None:
         return None
     steps = [

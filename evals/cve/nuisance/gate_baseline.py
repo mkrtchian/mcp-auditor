@@ -19,8 +19,8 @@ from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.nuisance.counter import counter_fingerprint
 from evals.gate import RetestRule
-from evals.nuisance_counter import counter_fingerprint
 from mcp_auditor.config import Settings
 
 NUISANCE_GATE_RUNS = 3

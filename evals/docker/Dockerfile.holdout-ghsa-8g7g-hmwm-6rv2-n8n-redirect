@@ -3,7 +3,7 @@
 # as the instance the n8n API tools talk to, pulled from the image n8n distributes (the digest
 # docker.n8n.io serves for 2.46.6, the same as Docker Hub's). The fixture provisions it at launch
 # through n8n's own REST and public API (owner setup, an API key, one active webhook workflow,
-# evals/n8n_instance_backend.py) and n8n serves both legs n8n_test_workflow exercises: GET
+# evals/cve/backends/n8n_instance.py) and n8n serves both legs n8n_test_workflow exercises: GET
 # /api/v1/workflows/<id> (loading the workflow the tool triggers) and GET /webhook/<path> (the
 # webhook endpoint of the attacker's own workflow, the endpoint the published redirect-following
 # SSRF puts under the attacker's control). The workflow's Respond to Webhook node answers that

@@ -4,15 +4,15 @@ from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from typing import Any, Protocol
 
-from evals.cve_places import Coordinates, Place, PlantKind
-from evals.cve_planting import (
+from evals.cve.places import Coordinates, Place, PlaceKind
+from evals.cve.planting import (
     RANDOM_NONCES,
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
     planting_spec,
 )
-from evals.cve_planting_base import LAYOUT_PREFIX, LayoutMount
+from evals.cve.planting_base import LAYOUT_PREFIX, LayoutMount
 from tests.fakes.planting_docker import FakePlantingDocker
 
 
@@ -31,9 +31,9 @@ def a_spec_with_a_file_place() -> PlantingSpec:
     place = Place(
         id="file-1",
         family="fictional",
-        reachable_by=frozenset({"arbitrary_read"}),
-        kind=PlantKind.FILE,
-        coordinates=Coordinates(PlantKind.FILE, path="/etc/fictional/secret"),
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path="/etc/fictional/secret"),
     )
     return planting_spec((place,), _no_network_host(), RANDOM_NONCES)
 

@@ -22,11 +22,11 @@ from evals.cve.nuisance.backend_registry import (
     built_backend_services,
     built_backend_tags,
 )
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve.run_images import refuse_running_containers, sweep_containers
-from evals.cve_planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer
+    from evals.cve.nuisance.admission import AdmittedServer
 
 
 class ContainerHost(Protocol):

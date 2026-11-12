@@ -1,4 +1,4 @@
-from evals.atlassian_backend import atlassian_env_args
+from evals.cve.backends.atlassian import atlassian_env_args
 from tests.unit.support.docker_argv import environment
 
 

@@ -15,10 +15,10 @@ from pathlib import Path
 from rich.progress import Progress
 
 from evals import eval_display as display
-from evals.closed_network import check_closed_network_support
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import Census, load_census
+from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection import calibration_dossier
 from evals.cve.detection.calibration_check_exit import (
     default_calibration_check_deps,
@@ -38,6 +38,7 @@ from evals.cve.detection.holdout_run import (
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target, image_tag
 from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
+from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
 from evals.cve.run_images import (
@@ -47,7 +48,6 @@ from evals.cve.run_images import (
     sweep_containers,
     target_services,
 )
-from evals.cve_places import HOLDOUT_PLACES, Places, load_places
 from evals.eval_session import Refused, last_commit
 from evals.honeypot.runs import tracing_enabled
 from evals.honeypots import REPO_ROOT
@@ -176,7 +176,7 @@ class _ReadyHoldoutRun:
 
 def _audit_drawn_targets(args: argparse.Namespace, ready: _ReadyHoldoutRun) -> HoldoutRunResult:
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in ready.census.flaws}
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     deps = default_deps(places, holdout_overrides(ready.conditions), args.concurrency)
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
@@ -201,7 +201,7 @@ def _tracked(deps: HoldoutDeps, progress: AuditProgress) -> HoldoutDeps:
 
 
 def _calibration_check(args: argparse.Namespace) -> int:
-    places = load_places(HOLDOUT_PLACES)
+    places = load_places(DETECTION_PLACES)
     targets = [
         target for target in HOLDOUT_TARGETS if args.flaw is None or target.flaw_id == args.flaw
     ]

@@ -75,7 +75,7 @@ fn hello(req: Request) -> Result<Response, ErrorCode> {
 }
 LIB_RS_EOF
 
-# Same heim stand-in as the vulnerable image: `heim deploy /opt/myapp` replays the documented
+# Same heim stand-in as the vulnerable image: `heim deploy /opt/myapp` serves the documented
 # `heim deploy` output, `heim deploy` with any other / no path gets heim's build error, and any
 # non-deploy invocation the unrecognized-subcommand error. On this version execFile passes the
 # payload as one literal argv element, so the stand-in sees `deploy` plus a single path argument

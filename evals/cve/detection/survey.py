@@ -19,23 +19,23 @@ from dataclasses import dataclass
 from rich.console import Console
 
 from evals.cve.detection.targets import Target, TargetVersion
+from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
-from evals.cve_environments import connect
-from evals.cve_grammar import PlantedTarget
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import RANDOM_NONCES, NonceSource, PlantingHost, planting_spec
-from evals.cve_proofs import proofs_in
-from evals.cve_units import Unit, unit_of_exchanges
+from evals.cve.grammar import PlantedTarget
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import RANDOM_NONCES, NonceSource, PlantingHost, planting_spec
+from evals.cve.proofs import proofs_in
+from evals.cve.units import Unit, unit_of_exchanges
 from mcp_auditor.domain.ports import MCPClientPort
 
 console = Console()
 
-_ALONE = frozenset({PlantKind.HOSTNAME, PlantKind.ACCOUNT})
+_ALONE = frozenset({PlaceKind.HOSTNAME, PlaceKind.ACCOUNT})
 
 
 def candidates_for(places: Places, reaches: frozenset[str]) -> list[Place]:
     ordered = (places[place_id] for place_id in sorted(places))
-    return [place for place in ordered if place.reachable_by & reaches]
+    return [place for place in ordered if place.reaches & reaches]
 
 
 @dataclass(frozen=True)
@@ -146,7 +146,7 @@ async def _exercise(
                 ]
         except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
             return None
-    graded = PlantedTarget(target.mechanisms, target.aim, planted.nonces)
+    graded = PlantedTarget(target.classes, target.aim, planted.nonces)
     return _Surfaced(_surfaced(exploit_exchanges, graded), _surfaced([benign_exchanges], graded))
 
 
@@ -171,7 +171,7 @@ def _unit(exchanges: list[Exchange]) -> Unit:
 
 
 def _refused_alone(place: Place, host: PlantingHost, nonces: NonceSource) -> bool:
-    return place.kind is PlantKind.UNPLACEABLE or not _plantable_together((place,), host, nonces)
+    return place.kind is PlaceKind.UNPLACEABLE or not _plantable_together((place,), host, nonces)
 
 
 def _pack(

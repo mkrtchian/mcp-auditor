@@ -1,7 +1,7 @@
-# CVE-2025-53109 / CVE-2025-53110 patched twin: @modelcontextprotocol/server-filesystem.
+# CVE-2025-53109 / CVE-2025-53110 patched version: @modelcontextprotocol/server-filesystem.
 # Same digest-pinned base and floating transitive deps as Dockerfile.filesystem; only the
 # server version moves to the first pinnable patched release. The advisory's 0.6.3 was never
-# published to npm, so this pins 2025.7.1 (a later date-based release) and calibration
+# published to npm, so this pins 2025.7.1 (a later date-based release) and the calibration check
 # confirms the fix is present.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 

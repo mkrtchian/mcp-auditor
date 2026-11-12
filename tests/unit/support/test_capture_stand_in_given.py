@@ -4,7 +4,7 @@ from evals.capture_stand_in import (
     CaptureProvenance,
     ProbedDefault,
 )
-from tests.unit.support.test_public_stand_ins_given import PROBED_TARGET
+from tests.unit.support.test_cve_public_stand_ins_given import PROBED_TARGET
 
 A_PROVENANCE = CaptureProvenance(
     host="example.com",
@@ -25,7 +25,7 @@ def a_route(
     return CapturedResponse(
         scheme="https",
         method=method,
-        target="/robots.txt?a=1",
+        request_target="/robots.txt?a=1",
         status=status,
         headers=(("Content-Type", "text/html; charset=UTF-8"), ("Alt-Svc", 'h3=":443"')),
         body=body,
@@ -33,10 +33,18 @@ def a_route(
 
 
 def a_not_found_answer(
-    scheme: str, target: str, headers: tuple[tuple[str, str], ...] = (), body: str = "not found"
+    scheme: str,
+    request_target: str,
+    headers: tuple[tuple[str, str], ...] = (),
+    body: str = "not found",
 ) -> CapturedResponse:
     return CapturedResponse(
-        scheme=scheme, method="GET", target=target, status=404, headers=headers, body=body.encode()
+        scheme=scheme,
+        method="GET",
+        request_target=request_target,
+        status=404,
+        headers=headers,
+        body=body.encode(),
     )
 
 

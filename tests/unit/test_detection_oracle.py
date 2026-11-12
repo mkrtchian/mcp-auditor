@@ -11,7 +11,7 @@ from evals.cve.detection.oracle import (
     out_of_scope_results,
     result_for,
 )
-from evals.cve_grammar import CVEStatus, MechanismClass, MissClass
+from evals.cve.grammar import FlawClass, MissKind, TargetStatus
 from mcp_auditor.domain.models import AuditCategory, ProviderUsage
 
 
@@ -20,7 +20,7 @@ def test_not_run_keeps_the_target_description():
 
     assert result.status == UngradedStatus.NOT_RUN
     assert result.runs == 0
-    assert result.mechanisms == [MechanismClass.READ_OUTSIDE_SCOPE]
+    assert result.classes == [FlawClass.READ_OUTSIDE_SCOPE]
     assert result.awaited_capability == "declared-scope awareness"
 
 
@@ -37,17 +37,17 @@ def test_out_of_scope_results_carry_no_class():
     assert results[0].status == UngradedStatus.OUT_OF_SCOPE
     assert results[0].flaw_id == "CVE-2025-68144"
     assert results[0].note == "silent write"
-    assert results[0].mechanisms == []
+    assert results[0].classes == []
 
 
 def test_result_for_a_detected_resolution():
-    grades = [given.a_detected_grade(), given.a_missed_grade(MissClass.NOT_AIMED)]
+    grades = [given.a_detected_grade(), given.a_missed_grade(MissKind.NOT_AIMED)]
 
     result = result_for(given.FakeTarget(), grades, budget=10)
 
-    assert result.status == CVEStatus.DETECTED
-    assert result.miss_class is None
-    assert result.mechanisms == [MechanismClass.READ_OUTSIDE_SCOPE]
+    assert result.status == TargetStatus.DETECTED
+    assert result.miss_kind is None
+    assert result.classes == [FlawClass.READ_OUTSIDE_SCOPE]
     assert result.awaited_capability == "declared-scope awareness"
     assert (result.runs, result.detected_runs, result.surfaced_runs, result.aimed_runs) == (
         2,
@@ -62,34 +62,34 @@ def test_result_for_a_detected_resolution():
 
 def test_a_result_lists_a_union_target_classes_sorted():
     target = given.FakeTarget(
-        mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.COMMAND_EXECUTION})
+        classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE, FlawClass.COMMAND_EXECUTION})
     )
 
     result = not_run(target)
 
-    assert result.mechanisms == [
-        MechanismClass.COMMAND_EXECUTION,
-        MechanismClass.READ_OUTSIDE_SCOPE,
+    assert result.classes == [
+        FlawClass.COMMAND_EXECUTION,
+        FlawClass.READ_OUTSIDE_SCOPE,
     ]
 
 
 def test_a_result_of_a_target_with_no_class_lists_none():
-    result = not_run(given.FakeTarget(mechanisms=frozenset()))
+    result = not_run(given.FakeTarget(classes=frozenset()))
 
-    assert result.mechanisms == []
+    assert result.classes == []
 
 
 def test_result_for_a_missed_resolution():
     grades = [
-        given.a_missed_grade(MissClass.AIMED_BLOCKED, fail_without_proof=True),
-        given.a_missed_grade(MissClass.NOT_AIMED),
-        given.a_missed_grade(MissClass.NOT_AIMED),
+        given.a_missed_grade(MissKind.AIMED_BLOCKED, fail_without_proof=True),
+        given.a_missed_grade(MissKind.NOT_AIMED),
+        given.a_missed_grade(MissKind.NOT_AIMED),
     ]
 
     result = result_for(given.FakeTarget(), grades, budget=10)
 
-    assert result.status == CVEStatus.MISSED
-    assert result.miss_class == MissClass.AIMED_BLOCKED
+    assert result.status == TargetStatus.MISSED
+    assert result.miss_kind == MissKind.AIMED_BLOCKED
     assert (result.runs, result.detected_runs, result.aimed_runs) == (3, 0, 1)
     assert result.fail_without_proof_runs == 1
     assert result.evidence is None
@@ -144,7 +144,7 @@ def test_render_header_names_the_ladder_columns():
     markdown = render_markdown(given.a_benchmark_report([]))
 
     assert (
-        "| Flaw | CVSS | Class | Status | Detected | Miss class | Aimed | FAIL without proof "
+        "| Flaw | CVSS | Class | Status | Detected | Miss kind | Aimed | FAIL without proof "
         "| Awaited capability (hypothesis) | Note |"
     ) in markdown
 
@@ -152,10 +152,10 @@ def test_render_header_names_the_ladder_columns():
 def test_render_counts_runs_as_fractions():
     result = given.a_cve_result(
         "CVE-2025-53355",
-        CVEStatus.MISSED,
+        TargetStatus.MISSED,
         aimed_runs=2,
         fail_without_proof_runs=1,
-        miss_class=MissClass.AIMED_NO_PROOF,
+        miss_kind=MissKind.AIMED_NO_PROOF,
     )
 
     markdown = render_markdown(given.a_benchmark_report([result]))
@@ -169,8 +169,8 @@ def test_render_counts_runs_as_fractions():
 def test_render_joins_a_union_target_classes_in_its_row():
     result = given.a_cve_result(
         "CVE-2025-0002",
-        CVEStatus.MISSED,
-        mechanisms=(MechanismClass.COMMAND_EXECUTION, MechanismClass.READ_OUTSIDE_SCOPE),
+        TargetStatus.MISSED,
+        classes=(FlawClass.COMMAND_EXECUTION, FlawClass.READ_OUTSIDE_SCOPE),
     )
 
     markdown = render_markdown(given.a_benchmark_report([result]))
@@ -179,7 +179,7 @@ def test_render_joins_a_union_target_classes_in_its_row():
 
 
 def test_render_shows_a_dash_for_a_target_with_no_class():
-    result = given.a_cve_result("CVE-2025-0002", CVEStatus.MISSED, mechanisms=())
+    result = given.a_cve_result("CVE-2025-0002", TargetStatus.MISSED, classes=())
 
     markdown = render_markdown(given.a_benchmark_report([result]))
 
@@ -188,9 +188,9 @@ def test_render_shows_a_dash_for_a_target_with_no_class():
 
 def test_render_ends_with_the_status_tally():
     results = [
-        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
-        given.a_cve_result("CVE-2025-53110", CVEStatus.DETECTED, detected_runs=1),
-        given.a_cve_result("CVE-2025-68143", CVEStatus.MISSED, miss_class=MissClass.NOT_AIMED),
+        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
+        given.a_cve_result("CVE-2025-53110", TargetStatus.DETECTED, detected_runs=1),
+        given.a_cve_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
     ]
 
     markdown = render_markdown(given.a_benchmark_report(results))
@@ -205,8 +205,8 @@ def test_render_tallies_the_ungraded_statuses_after_the_ladder():
     results = [
         *out_of_scope_results([out_of_scope]),
         not_run(given.FakeTarget()),
-        given.a_cve_result("CVE-2025-68143", CVEStatus.MISSED, miss_class=MissClass.NOT_AIMED),
-        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
+        given.a_cve_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
+        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
     ]
 
     markdown = render_markdown(given.a_benchmark_report(results))
@@ -217,7 +217,7 @@ def test_render_tallies_the_ungraded_statuses_after_the_ladder():
 def test_render_lists_the_not_run_reasons_in_a_section_after_the_table():
     results = [
         not_run(given.FakeTarget(), ["keeps no place", "exploit 0 not aimed"]),
-        given.a_cve_result("CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2),
+        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
     ]
 
     markdown = render_markdown(given.a_benchmark_report(results))
@@ -231,12 +231,12 @@ def test_render_lists_the_struck_and_unchecked_credits_after_the_table():
     results = [
         given.a_cve_result(
             "CVE-2025-53355",
-            CVEStatus.MISSED,
-            miss_class=MissClass.NOT_AIMED,
+            TargetStatus.MISSED,
+            miss_kind=MissKind.NOT_AIMED,
             struck_places=[["alpha", "beta"], []],
         ),
         given.a_cve_result(
-            "CVE-2025-53109", CVEStatus.DETECTED, detected_runs=2, unchecked_places=[["gamma"]]
+            "CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2, unchecked_places=[["gamma"]]
         ),
     ]
 
@@ -249,7 +249,7 @@ def test_render_lists_the_struck_and_unchecked_credits_after_the_table():
 
 
 def test_render_without_replay_credits_has_no_replay_section():
-    result = given.a_cve_result("CVE-X", CVEStatus.MISSED)
+    result = given.a_cve_result("CVE-X", TargetStatus.MISSED)
 
     markdown = render_markdown(given.a_benchmark_report([result]))
 
@@ -273,8 +273,8 @@ def test_render_shows_the_baseline_runs_beside_the_run_and_the_legend():
     comparison = TargetComparison(
         flaw_id="CVE-X",
         outcome=TargetOutcome.NOT_GATED,
-        candidate_runs=[CVEStatus.MISSED, CVEStatus.DETECTED, CVEStatus.MISSED],
-        baseline_runs=[CVEStatus.MISSED] * 3,
+        candidate_runs=[TargetStatus.MISSED, TargetStatus.DETECTED, TargetStatus.MISSED],
+        baseline_runs=[TargetStatus.MISSED] * 3,
     )
 
     markdown = render_markdown(given.a_report_gated_on(comparison))
@@ -291,7 +291,7 @@ def test_render_counts_the_retests_as_a_fraction():
     comparison = TargetComparison(
         flaw_id="CVE-X",
         outcome=TargetOutcome.PENDING_RETEST,
-        candidate_runs=[CVEStatus.MISSED],
+        candidate_runs=[TargetStatus.MISSED],
         retests=[True, False],
     )
 

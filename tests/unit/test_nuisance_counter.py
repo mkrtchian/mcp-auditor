@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import tests.unit.support.test_cve_grammar_given as grammar_given
-from evals import nuisance_counter, nuisance_counting
 from evals.baseline import fingerprint_sources
-from evals.cve_grammar import VALID_CATEGORIES, MechanismClass
-from evals.cve_units import JudgeCategory, Verdict
-from evals.nuisance_counter import (
+from evals.cve.grammar import VALID_CATEGORIES, FlawClass
+from evals.cve.nuisance import counter, counting
+from evals.cve.nuisance.counter import (
     ToolVerdict,
     counter_fingerprint,
     fail_count_on,
@@ -13,9 +12,10 @@ from evals.nuisance_counter import (
     raw_fail_count,
     tool_verdicts,
 )
+from evals.cve.units import JudgeCategory, Verdict
 
-_READ_CATEGORIES = VALID_CATEGORIES[MechanismClass.READ_OUTSIDE_SCOPE]
-_EXEC_CATEGORIES = VALID_CATEGORIES[MechanismClass.COMMAND_EXECUTION]
+_READ_CATEGORIES = VALID_CATEGORIES[FlawClass.READ_OUTSIDE_SCOPE]
+_EXEC_CATEGORIES = VALID_CATEGORIES[FlawClass.COMMAND_EXECUTION]
 _INFO_LEAKAGE = JudgeCategory(grammar_given.INFO_LEAKAGE.value)
 _INJECTION = JudgeCategory(grammar_given.INJECTION.value)
 
@@ -120,8 +120,8 @@ def test_the_count_on_listed_tools_takes_each_fail_on_a_listed_tool_in_its_categ
 
 def test_the_counter_fingerprint_covers_the_verdict_predicate_and_the_counted_tool_derivation():
     sources = [
-        Path(nuisance_counter.__file__).read_text(),
-        Path(nuisance_counting.__file__).read_text(),
+        Path(counter.__file__).read_text(),
+        Path(counting.__file__).read_text(),
     ]
 
     assert counter_fingerprint() == fingerprint_sources(sources)

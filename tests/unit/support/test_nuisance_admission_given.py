@@ -7,17 +7,13 @@ import tests.unit.support.test_census_given as census_given
 import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_walk_given as walk_given
-from evals.backend_lifecycle import BackendLifecycle
+from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.census.census import CLASSIFIERS, Census
 from evals.cve.census.classification import Classification
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection import baseline as detection_baseline
-from evals.cve.nuisance.admission_records import RealSoftwareRecord
-from evals.cve.nuisance.backend_registry import RegisteredBackend
-from evals.cve.nuisance.walk_record import WalkInputs
-from evals.cve_grammar import MechanismClass
-from evals.cve_planting_base import PlantingHost, PublicNames, SymbolicUser
-from evals.nuisance_admission import (
+from evals.cve.grammar import FlawClass
+from evals.cve.nuisance.admission import (
     AdmissionSettlement,
     AdmittedServer,
     BackendFixture,
@@ -29,6 +25,10 @@ from evals.nuisance_admission import (
     ToolRecord,
     admission_problems,
 )
+from evals.cve.nuisance.admission_records import RealSoftwareRecord
+from evals.cve.nuisance.backend_registry import RegisteredBackend
+from evals.cve.nuisance.walk_record import WalkInputs
+from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
 
 OTHER_PACKAGE = "PyPI:context-forge"
 
@@ -61,8 +61,8 @@ def an_admitted_server() -> AdmittedServer:
         server_package=SERVER_PACKAGE,
         reaching_flaw=FIRST_FLAW,
         flaws=[
-            a_flaw_record(FIRST_FLAW, MechanismClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION),
-            a_flaw_record(SECOND_FLAW, MechanismClass.COMMAND_EXECUTION, PATCHED_VERSION),
+            a_flaw_record(FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION),
+            a_flaw_record(SECOND_FLAW, FlawClass.COMMAND_EXECUTION, PATCHED_VERSION),
         ],
         runs_over_stdio=True,
         runs_under_docker=True,
@@ -84,7 +84,7 @@ def an_admitted_server() -> AdmittedServer:
 
 def a_flaw_record(
     flaw: str,
-    effect_class: MechanismClass | None,
+    effect_class: FlawClass | None,
     patched_version: str | None,
     tools: list[ToolRecord] | None = None,
     fix_check: FixCheckRecord | None = None,
@@ -363,7 +363,7 @@ def with_the_second_flaw_settled_here(admission: NuisanceAdmission) -> NuisanceA
 
 
 def admitting_the_server_of(flaw: str, server_package: str, service: str) -> NuisanceAdmission:
-    server = a_server([a_flaw_record(flaw, MechanismClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION)])
+    server = a_server([a_flaw_record(flaw, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION)])
     return an_admission().model_copy(
         update={
             "servers": [

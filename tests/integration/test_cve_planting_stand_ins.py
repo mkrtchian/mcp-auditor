@@ -13,9 +13,10 @@ import pytest
 import tests.integration.support.test_cve_planting_given as planting
 import tests.integration.support.test_cve_planting_stand_ins_given as given
 import tests.integration.support.test_cve_planting_stand_ins_then as then
+from evals.cve import planting_docker
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve_planting import DockerPlanting, planted
-from evals.cve_planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE, STAND_IN_SERVICE
+from evals.cve.planting import DockerPlanting, planted
+from evals.cve.planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE, STAND_IN_SERVICE
 from tests.integration.support.test_cve_planting_then import nothing_it_made_outlives
 
 
@@ -40,7 +41,7 @@ def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anyth
     host = given.STAND_IN_HOST
 
     with (
-        caplog.at_level(logging.WARNING, logger="evals.cve_planting_docker"),
+        caplog.at_level(logging.WARNING, logger=planting_docker.__name__),
         planted(given.a_stand_in_spec(), SENTINEL_IMAGE, docker, stand_ins_directory) as args,
     ):
         plain = given.fetch_as_target(args, f"http://{host}/")

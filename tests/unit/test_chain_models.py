@@ -3,8 +3,8 @@ from mcp_auditor.domain import (
     AttackChain,
     AuditCategory,
     AuditReport,
-    EvalResult,
     EvalVerdict,
+    JudgeResult,
     ProviderUsage,
     Severity,
     ToolDefinition,
@@ -17,7 +17,7 @@ class TestAuditReportChainFindings:
         chain = AttackChain(
             goal=given.a_chain_goal(),
             steps=[given.a_chain_step()],
-            eval_result=given.a_fail_eval_result(),
+            judge_result=given.a_fail_judge_result(),
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(
@@ -30,10 +30,10 @@ class TestAuditReportChainFindings:
         assert report.findings[0].verdict == EvalVerdict.FAIL
 
     def test_excludes_chain_pass_verdicts(self):
-        pass_result = EvalResult(
+        pass_result = JudgeResult(
             tool_name="t",
             category=AuditCategory.INJECTION,
-            payload={},
+            arguments={},
             verdict=EvalVerdict.PASS,
             justification="safe",
             severity=Severity.LOW,
@@ -41,7 +41,7 @@ class TestAuditReportChainFindings:
         chain = AttackChain(
             goal=given.a_chain_goal(),
             steps=[given.a_chain_step()],
-            eval_result=pass_result,
+            judge_result=pass_result,
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(

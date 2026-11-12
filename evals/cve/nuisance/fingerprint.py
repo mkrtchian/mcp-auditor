@@ -13,39 +13,39 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from evals import (
+from evals.baseline import fingerprint_sources
+from evals.cve import (
     closed_network,
-    cve_endpoint_address,
-    cve_planting,
-    cve_planting_base,
-    cve_planting_docker,
-    cve_planting_spec,
-    cve_planting_stand_ins,
-    nuisance_confinement,
+    endpoint_address,
+    planting,
+    planting_base,
+    planting_docker,
+    planting_spec,
+    planting_stand_ins,
     public_stand_ins,
 )
-from evals.baseline import fingerprint_sources
 from evals.cve.detection.baseline import host_stand_in_files, planting_host_parts
+from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.images import dockerfile_instructions
+from evals.cve.nuisance import confinement
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
-from evals.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.nuisance_counting import counted_flaws, counted_tools
+from evals.cve.nuisance.counting import counted_flaws, counted_tools
 
 if TYPE_CHECKING:
-    from evals.nuisance_admission import AdmittedServer, BenignCall
+    from evals.cve.nuisance.admission import AdmittedServer, BenignCall
 
-CONFINEMENT_SOURCE = Path(nuisance_confinement.__file__)
+CONFINEMENT_SOURCE = Path(confinement.__file__)
 # What a backend-less server with public names is launched through besides the confinement: the
 # holder's and the stand-in's images, the planting code that stands them, the capture loader it
 # reads them through and the closed network it puts them on.
-_SHARED_SERVICES = (cve_planting_base.SENTINEL_SERVICE, cve_planting_base.STAND_IN_SERVICE)
+_SHARED_SERVICES = (planting_base.SENTINEL_SERVICE, planting_base.STAND_IN_SERVICE)
 _PUBLIC_NAME_SOURCES = (
-    Path(cve_planting.__file__),
-    Path(cve_planting_base.__file__),
-    Path(cve_planting_spec.__file__),
-    Path(cve_planting_stand_ins.__file__),
-    Path(cve_planting_docker.__file__),
-    Path(cve_endpoint_address.__file__),
+    Path(planting.__file__),
+    Path(planting_base.__file__),
+    Path(planting_spec.__file__),
+    Path(planting_stand_ins.__file__),
+    Path(planting_docker.__file__),
+    Path(endpoint_address.__file__),
     Path(public_stand_ins.__file__),
     Path(closed_network.__file__),
 )
@@ -81,8 +81,8 @@ def nuisance_fixture_fingerprint(
         server.launch,
         planting_host_parts(server.host),
         fingerprint_sources([CONFINEMENT_SOURCE.read_text()]),
-        nuisance_confinement.nuisance_confinement_args(),
-        cve_planting_base.resolver_args(),
+        confinement.nuisance_confinement_args(),
+        planting_base.resolver_args(),
         None if backend is None else backend.model_dump(),
         None if backend is None else backend_content(_served(server, backends)),
         sorted((name, sorted(categories)) for name, categories in counted.items()),

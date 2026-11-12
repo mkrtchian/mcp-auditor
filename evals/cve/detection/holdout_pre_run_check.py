@@ -14,7 +14,7 @@ from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
 from evals.cve.detection.layout_check import LayoutCheck, layout_check, observe_versions
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve_places import Places, kept_records
+from evals.cve.places import Places, kept_records
 
 
 @dataclass(frozen=True)

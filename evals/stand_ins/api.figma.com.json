@@ -8,7 +8,7 @@
     {
       "scheme": "https",
       "method": "GET",
-      "target": "/v1/files/1234abcd",
+      "request_target": "/v1/files/1234abcd",
       "status": 200,
       "headers": [
         [
@@ -22,7 +22,7 @@
   "defaults": [
     {
       "scheme": "http",
-      "probed_target": "/6781fbb9fd060ba5",
+      "probed_request_target": "/6781fbb9fd060ba5",
       "status": 403,
       "headers": [
         [
@@ -71,7 +71,7 @@
     },
     {
       "scheme": "https",
-      "probed_target": "/6781fbb9fd060ba5",
+      "probed_request_target": "/6781fbb9fd060ba5",
       "status": 404,
       "headers": [
         [

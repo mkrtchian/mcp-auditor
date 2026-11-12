@@ -12,12 +12,12 @@ chain throws before it touches a file or a socket, for every principal (the stdi
 import re
 from collections.abc import Awaitable, Callable
 
+from evals.cve.detection.holdout_environments import arcadedb_mcp_env
 from evals.cve.detection.targets import Target
-from evals.cve_grammar import MechanismClass
-from evals.cve_places import Place, Places, PlantKind
-from evals.cve_planting import PlantingHost, SymbolicUser
-from evals.cve_planting_spec import resolve_container_path
-from evals.holdout_environments import arcadedb_mcp_env
+from evals.cve.grammar import FlawClass
+from evals.cve.places import Place, PlaceKind, Places
+from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 # Deployment layout runs the server with the read-only checkout /srv/app as the working directory.
@@ -93,13 +93,13 @@ def _fetch_url_js(url: str) -> str:
 
 def _command_for(place: Place) -> str:
     kind = place.kind
-    if kind is PlantKind.HTTP_ENDPOINT:
+    if kind is PlaceKind.HTTP_ENDPOINT:
         return _fetch_url_js(f"http://{place.coordinates.host}{place.coordinates.path}")
-    if kind is PlantKind.ENV:
+    if kind is PlaceKind.ENV:
         return _read_file_js("/proc/self/environ")  # the server JVM's own environment
-    if kind is PlantKind.HOSTNAME:
+    if kind is PlaceKind.HOSTNAME:
         return _read_file_js("/etc/hostname")
-    if kind is PlantKind.FILE:
+    if kind is PlaceKind.FILE:
         return _read_file_js(resolve_container_path(_file_path(place), WORKDIR))
     raise ValueError(f"{place.id}: kind {kind} is not reachable by this flaw")
 
@@ -133,7 +133,7 @@ async def _benign(places: Places, client: MCPClientPort) -> None:
 TARGET = Target(
     flaw_id="CVE-2026-65831",
     severity="CVSS 7.5 (v3.1, placeholder)",
-    mechanisms=frozenset({MechanismClass.READ_OUTSIDE_SCOPE, MechanismClass.INTERNAL_FETCH}),
+    classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE, FlawClass.INTERNAL_FETCH}),
     aim=AIM,
     reaches=frozenset({"arbitrary_read", "internal_fetch"}),
     kept_places=KEPT_PLACES,
