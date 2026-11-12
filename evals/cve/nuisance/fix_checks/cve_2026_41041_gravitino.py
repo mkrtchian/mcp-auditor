@@ -24,7 +24,7 @@ import re
 import secrets
 import subprocess
 import time
-from collections.abc import Awaitable, Callable, Generator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -39,8 +39,14 @@ from evals.cve.closed_network import create_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
-from evals.cve.kit.fix_check import FixCheckFixture
+from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
+from evals.cve.nuisance.fix_checks.gravitino_exploits import (
+    EXPLOITS,
+    HIDDEN_CATALOG,
+    HIDDEN_METALAKE,
+    TRAVERSAL,
+)
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import (
     PlantingHost,
@@ -63,48 +69,40 @@ WITNESS = Place(
     coordinates=Coordinates(PlaceKind.HOSTNAME),
 )
 
-_HIDDEN_METALAKE = "hidden"
-_HIDDEN_CATALOG = "secretcat"
-_TRAVERSAL = f"../../{_HIDDEN_METALAKE}/catalogs/{_HIDDEN_CATALOG}"
 # An exploit is aimed when an identifier carries the dot-segment traversal into the sibling
 # metalake. The benign calls carry seeded names only, so none is aimed.
-AIM = re.compile(re.escape(_TRAVERSAL))
+AIM = re.compile(re.escape(TRAVERSAL))
 _INSTANCE_ALIAS = "gravitino"
 _SERVER_URI = f"http://{_INSTANCE_ALIAS}:{GRAVITINO_PORT}"
 _SERVER_LAUNCH = ["--metalake", METALAKE, "--gravitino-uri", _SERVER_URI]
 _API = f"http://localhost:{GRAVITINO_PORT}/api"
 _READY_SECONDS = 300.0
 
-# (tool, benign arguments, the identifier the traversal is injected into) for each counted tool.
-_TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
-    ("get_list_of_schemas", {"catalog_name": "lakehouse"}, "catalog_name"),
-    ("get_list_of_tables", {"catalog_name": "warehouse", "schema_name": "retail"}, "catalog_name"),
+# (tool, benign arguments) for each counted tool.
+_TOOLS: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("get_list_of_schemas", {"catalog_name": "lakehouse"}),
+    ("get_list_of_tables", {"catalog_name": "warehouse", "schema_name": "retail"}),
     (
         "get_table_metadata_details",
         {"catalog_name": "warehouse", "schema_name": "retail", "table_name": "orders"},
-        "catalog_name",
     ),
-    ("list_of_topics", {"catalog_name": "streams", "schema_name": "default"}, "catalog_name"),
+    ("list_of_topics", {"catalog_name": "streams", "schema_name": "default"}),
     (
         "load_topic",
         {"catalog_name": "streams", "schema_name": "default", "topic_name": "clicks"},
-        "catalog_name",
     ),
-    ("list_of_models", {"catalog_name": "registry", "schema_name": "prod"}, "catalog_name"),
+    ("list_of_models", {"catalog_name": "registry", "schema_name": "prod"}),
     (
         "load_model",
         {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker"},
-        "catalog_name",
     ),
     (
         "list_model_versions",
         {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker"},
-        "catalog_name",
     ),
     (
         "load_model_version",
         {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker", "version": 0},
-        "catalog_name",
     ),
     (
         "load_model_version_by_alias",
@@ -114,13 +112,11 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "model_name": "ranker",
             "alias": "stable",
         },
-        "catalog_name",
     ),
-    ("list_of_filesets", {"catalog_name": "lakehouse", "schema_name": "sales"}, "catalog_name"),
+    ("list_of_filesets", {"catalog_name": "lakehouse", "schema_name": "sales"}),
     (
         "load_fileset",
         {"catalog_name": "lakehouse", "schema_name": "sales", "fileset_name": "events"},
-        "catalog_name",
     ),
     (
         "list_files_in_fileset",
@@ -130,14 +126,12 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "fileset_name": "events",
             "location_name": "unknown",
         },
-        "catalog_name",
     ),
-    ("get_tag_by_name", {"tag_name": "gold"}, "tag_name"),
-    ("list_metadata_by_tag", {"tag_name": "gold"}, "tag_name"),
+    ("get_tag_by_name", {"tag_name": "gold"}),
+    ("list_metadata_by_tag", {"tag_name": "gold"}),
     (
         "list_tags_for_metadata",
         {"metadata_full_name": "lakehouse", "metadata_type": "catalog"},
-        "metadata_full_name",
     ),
     (
         "associate_tag_with_metadata",
@@ -146,7 +140,6 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "metadata_type": "schema",
             "tags_to_associate": ["gold"],
         },
-        "metadata_full_name",
     ),
     (
         "disassociate_tag_from_metadata",
@@ -155,19 +148,16 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "metadata_type": "schema",
             "tags_to_disassociate": ["gold"],
         },
-        "metadata_full_name",
     ),
-    ("get_policy_detail_information", {"policy_name": "retention"}, "policy_name"),
-    ("list_metadata_by_policy", {"policy_name": "retention"}, "policy_name"),
+    ("get_policy_detail_information", {"policy_name": "retention"}),
+    ("list_metadata_by_policy", {"policy_name": "retention"}),
     (
         "list_policies_for_metadata",
         {"metadata_full_name": "lakehouse", "metadata_type": "catalog"},
-        "metadata_full_name",
     ),
     (
         "get_policy_for_metadata",
         {"metadata_full_name": "lakehouse", "metadata_type": "catalog", "policy_name": "retention"},
-        "metadata_full_name",
     ),
     (
         "associate_policy_with_metadata",
@@ -176,7 +166,6 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "metadata_type": "schema",
             "policies_to_add": ["retention"],
         },
-        "metadata_full_name",
     ),
     (
         "disassociate_policy_from_metadata",
@@ -185,7 +174,6 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "metadata_type": "schema",
             "policies_to_remove": ["retention"],
         },
-        "metadata_full_name",
     ),
     (
         "list_statistics_for_metadata",
@@ -194,7 +182,6 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "metadata_type": "table",
             "metadata_fullname": "warehouse.retail.orders",
         },
-        "metadata_fullname",
     ),
     (
         "list_statistics_for_partition",
@@ -205,9 +192,8 @@ _TOOLS: tuple[tuple[str, dict[str, Any], str], ...] = (
             "from_partition_name": "a",
             "to_partition_name": "z",
         },
-        "metadata_fullname",
     ),
-    ("get_job_template_by_name", {"name": "builtin-iceberg-rewrite-data-files"}, "name"),
+    ("get_job_template_by_name", {"name": "builtin-iceberg-rewrite-data-files"}),
 )
 
 _PROBES: dict[str, list[str]] = {
@@ -305,14 +291,14 @@ def _seed(instance: str, nonce: str) -> None:
         instance,
         "POST",
         "/metalakes",
-        {"name": _HIDDEN_METALAKE, "comment": "demo", "properties": {}},
+        {"name": HIDDEN_METALAKE, "comment": "demo", "properties": {}},
     )
     _request(
         instance,
         "POST",
-        f"/metalakes/{_HIDDEN_METALAKE}/catalogs",
+        f"/metalakes/{HIDDEN_METALAKE}/catalogs",
         {
-            "name": _HIDDEN_CATALOG,
+            "name": HIDDEN_CATALOG,
             "type": "fileset",
             "provider": "hadoop",
             "comment": "demo",
@@ -322,7 +308,7 @@ def _seed(instance: str, nonce: str) -> None:
     _request(
         instance,
         "POST",
-        f"/metalakes/{_HIDDEN_METALAKE}/catalogs/{_HIDDEN_CATALOG}/schemas",
+        f"/metalakes/{HIDDEN_METALAKE}/catalogs/{HIDDEN_CATALOG}/schemas",
         {"name": nonce, "comment": "demo", "properties": {}},
     )
 
@@ -349,9 +335,6 @@ def _rm(name: str) -> None:
     subprocess.run(["docker", "rm", "-f", "-v", name], capture_output=True)
 
 
-FixCheckExploit = Callable[[Places, KitClient], Awaitable[None]]
-
-
 def _call(tool: str, arguments: dict[str, Any]) -> FixCheckExploit:
     async def call(places: Places, client: KitClient) -> None:
         await client.call_tool(tool, arguments)
@@ -359,8 +342,7 @@ def _call(tool: str, arguments: dict[str, Any]) -> FixCheckExploit:
     return call
 
 
-EXPLOITS = tuple(_call(tool, {**benign, field: _TRAVERSAL}) for tool, benign, field in _TOOLS)
-BENIGN_CALLS = tuple(_call(tool, benign) for tool, benign, _ in _TOOLS)
+BENIGN_CALLS = tuple(_call(tool, benign) for tool, benign in _TOOLS)
 
 
 FIXTURE = FixCheckFixture(
