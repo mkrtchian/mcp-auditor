@@ -9,12 +9,14 @@ from evals.cve.detection.baseline import (
     fixture_fingerprint,
 )
 from evals.cve.detection.baseline import write_baseline as _write_baseline
+from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import (
     AuditTarget,
     CheckTarget,
     DetectionHarness,
     DetectionOptions,
     GradedAudit,
+    ObserveLayout,
 )
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
 from evals.cve.grammar import MissKind, RunGrade, TargetStatus
@@ -105,6 +107,20 @@ class ScriptedCheck:
         return self.conditions.get(target.flaw_id, [])
 
 
+SOUND_LAYOUT = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
+BROKEN_LAYOUT = LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])
+
+
+@dataclass
+class ScriptedLayout:
+    """The layout and route checks: each target's observed layout, sound by default."""
+
+    layouts: dict[str, LayoutCheck] = field(default_factory=lambda: {})
+
+    async def __call__(self, target: Target) -> LayoutCheck:
+        return self.layouts.get(target.flaw_id, SOUND_LAYOUT)
+
+
 @dataclass
 class RecordingAnnounce:
     """Records each announced audit count, with the audits already started at that moment."""
@@ -122,10 +138,12 @@ def a_harness(
     tree: TreeState | None = None,
     check: CheckTarget | None = None,
     announce: Callable[[int], None] = lambda _: None,
+    layout: ObserveLayout | None = None,
 ) -> DetectionHarness:
     return DetectionHarness(
         audit=audit,
         check=check or ScriptedCheck(),
+        layout=layout or ScriptedLayout(),
         announce_audits=announce,
         baselines=baselines,
         read_tree=lambda: tree or TreeState(commit=COMMIT, dirty=False),

@@ -75,6 +75,32 @@ async def test_a_target_failing_the_pre_run_check_is_not_run_and_the_gate_is_not
     then.the_one_target_ends(result, TargetOutcome.NOT_RUN, GateOutcome.NOT_COMPARABLE)
 
 
+async def test_a_target_the_layout_breaks_under_the_normal_launch_is_not_run(tmp_path: Path):
+    layout = given.ScriptedLayout({given.KUBERNETES.flaw_id: given.BROKEN_LAYOUT})
+    audit = given.ScriptedAudit()
+
+    result = await run_gated(given.options(), given.a_harness(audit, tmp_path, layout=layout))
+
+    assert audit.calls == []
+    assert result.not_run == {
+        given.KUBERNETES.flaw_id: ["the layout breaks the server under the normal launch"]
+    }
+    then.the_one_target_ends(result, TargetOutcome.NOT_RUN, GateOutcome.NOT_COMPARABLE)
+
+
+async def test_a_layout_failure_refuses_a_recording_before_any_audit(tmp_path: Path):
+    layout = given.ScriptedLayout({given.KUBERNETES.flaw_id: given.BROKEN_LAYOUT})
+    audit = given.ScriptedAudit()
+
+    with pytest.raises(Refused) as refusal:
+        await run_gated(
+            given.options(record_baseline=True), given.a_harness(audit, tmp_path, layout=layout)
+        )
+
+    assert audit.calls == []
+    assert any("layout breaks" in reason for reason in refusal.value.reasons)
+
+
 async def test_a_passing_target_is_audited_while_a_failing_one_is_not_run_in_target_order(
     tmp_path: Path,
 ):

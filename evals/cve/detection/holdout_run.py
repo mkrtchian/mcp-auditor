@@ -25,7 +25,7 @@ from evals.cve.detection.baseline import (
 from evals.cve.detection.calibration_check import check_target
 from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
-from evals.cve.detection.holdout_pre_run_check import check_before_run, observe_layout
+from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import (
     DROPPED_RUN_REASONS,
     HoldoutRunResult,
@@ -34,7 +34,7 @@ from evals.cve.detection.holdout_results import (
     NotRunTarget,
     RunInterrupted,
 )
-from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.layout_check import LayoutCheck, observe_layout
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target, image_tag
 from evals.cve.failure_text import TYPES_ONLY

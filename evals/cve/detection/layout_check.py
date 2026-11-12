@@ -15,21 +15,22 @@ implementing a distinct clause of the rule: a place the server itself reads at l
 appear in the server's ordinary surface. Both are pinned by a golden master. The benign call is not
 run here.
 
-`check_layouts_and_routes` is the Docker orchestration run under the maintainer paths
-(--calibration-check and --record-baseline, never a gated run), before the exploits of the
-calibration check so the break is reported first. Per target it launches, on both the vulnerable
-and the patched version, the reference arm (a minimal valid empty node at each layout path) then
-the launch its launch-mode field selects (normal, or the fallback); it reports the break (on either
-version) and, on the vulnerable version, the leak (the layout check), each kept place's route (the
-route check) and each unkept layout place's route, labelled not kept, which a card records and no
-decision reads. It gives up (`layout_check_gave_up`) only when a target already in the fallback
-launch-mode cannot start even that launch. It gates nothing on the model.
+`check_layouts_and_routes` is the Docker orchestration of the calibration check
+(--calibration-check), run before its exploits so the break is reported first. Per target it
+launches, on both the vulnerable and the patched version, the reference arm (a minimal valid empty
+node at each layout path) then the launch its launch-mode field selects (normal, or the fallback);
+it reports the break (on either version) and, on the vulnerable version, the leak (the layout
+check), each kept place's route (the route check) and each unkept layout place's route, labelled not
+kept, which a card records and no decision reads. It gives up (`layout_check_gave_up`) only when a
+target already in the fallback launch-mode cannot start even that launch. It gates nothing on the
+model.
 
-`layout_failure` is the one reading of the result that fails a target, shared with the holdout
-pre-run check: a give-up, a break under the normal launch (the maintainer sets the fallback
-launch-mode), a nonce in the ordinary surface on a place its calibration did not settle, or a kept
-layout place without a route. These are the layout items of the check that proves a repair
-(detection-suite-log.md, version 13).
+`layout_failure` is the one reading of the result that fails a target, shared by the calibration
+check and by the pre-run checks of a graded run and of a holdout run, which observe it through
+`observe_layout`: a give-up, a break under the normal launch (the maintainer sets the fallback
+launch-mode), a nonce in what the route procedure observes on a place whose leak was not settled at
+calibration, or a kept layout place without a route. These are the layout items of the check that
+proves a repair (detection-suite-log.md, version 13).
 """
 
 import tempfile
@@ -195,6 +196,13 @@ async def observe_versions(
     vuln = await observer.version(TargetVersion.VULNERABLE)
     patched = await observer.version(TargetVersion.PATCHED)
     return vuln, patched
+
+
+async def observe_layout(
+    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+) -> LayoutCheck:
+    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
+    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
 
 
 async def check_layouts_and_routes(

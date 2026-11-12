@@ -23,7 +23,7 @@ from evals.cve.detection.baseline import (
 from evals.cve.detection.calibration_check import check_target
 from evals.cve.detection.console import print_detection_summary
 from evals.cve.detection.costs import CostPricing
-from evals.cve.detection.layout_check import check_layouts_and_routes
+from evals.cve.detection.layout_check import observe_layout
 from evals.cve.detection.markdown import render_markdown
 from evals.cve.detection.measurement import (
     MeasurementSettings,
@@ -112,9 +112,6 @@ async def _run(
             return await no_llm_modes.survey(args, graded, places)
         if args.calibration_check:
             return await no_llm_modes.calibration_check(args, graded, places)
-        # A target the layout check fails is a misconfigured fixture: refuse before recording.
-        if args.record_baseline and await check_layouts_and_routes(graded, places, ci=args.ci):
-            return 1
         return await _run_graded(args, graded, tracked, places)
     finally:
         sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
@@ -264,6 +261,7 @@ def _harness(args: argparse.Namespace, places: Places, tracking: _Tracking) -> D
     return DetectionHarness(
         audit=tracking.progress.tracked(bounded(audit, args.concurrency)),
         check=bounded(lambda target: check_target(target, places), args.concurrency),
+        layout=bounded(lambda target: observe_layout(target, places), args.concurrency),
         announce_audits=tracking.progress.announce,
         baselines=DETECTION_BASELINE_DIRECTORY,
         read_tree=read_tree,

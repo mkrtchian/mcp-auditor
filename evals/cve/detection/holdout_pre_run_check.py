@@ -13,13 +13,9 @@ from dataclasses import dataclass
 from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
 from evals.cve.detection.layout_check import (
     LayoutCheck,
-    layout_check,
     layout_failure,
-    observe_versions,
 )
 from evals.cve.detection.targets import Target
-from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.places import Places, kept_records
 
 
 @dataclass(frozen=True)
@@ -70,10 +66,3 @@ def not_run_reason(target: Target, reasons: list[str], layout: LayoutCheck) -> s
     if reasons:
         return "out of calibration: " + "; ".join(reasons)
     return layout_failure(target, layout)
-
-
-async def observe_layout(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
-) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
-    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)

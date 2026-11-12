@@ -87,9 +87,6 @@ def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: Baselin
     """A green recording run that writes one baseline file with this status, reaching no Docker."""
     a_session_under_priced_models(monkeypatch)
 
-    async def check_layouts_and_routes(*_args: object, **_kwargs: object) -> list[str]:
-        return []
-
     async def session(
         options: DetectionOptions, harness: DetectionHarness
     ) -> DetectionSessionResult:
@@ -104,7 +101,6 @@ def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: Baselin
             exit_code=0,
         )
 
-    monkeypatch.setattr(run_detection, "check_layouts_and_routes", check_layouts_and_routes)
     monkeypatch.setattr(run_detection, "run_gated", session)
 
 

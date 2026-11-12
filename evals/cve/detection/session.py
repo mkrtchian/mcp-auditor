@@ -21,6 +21,7 @@ from evals.cve.detection.gate import (
     depends_on_unchecked,
     exit_code,
 )
+from evals.cve.detection.layout_check import layout_failure
 from evals.cve.detection.session_model import (
     DetectionAudit,
     DetectionHarness,
@@ -77,11 +78,12 @@ async def run_gated(options: DetectionOptions, harness: DetectionHarness) -> Det
 
 
 async def _checked(session: GatedSession) -> dict[str, list[str]]:
-    """The pre-run check gathered over every target, before any audit. A configuration error it
-    raises propagates out of the gather, so the run crashes (exit 4) before any audit instead of
-    reading a target not_run. Under --record-baseline a failing target refuses the recording."""
+    """The pre-run check gathered over every target, before any audit: the calibration check, then
+    the layout and route checks the holdout pre-run check runs. A configuration error it raises
+    propagates out of the gather, so the run crashes (exit 4) before any audit instead of reading a
+    target not_run. Under --record-baseline a failing target refuses the recording."""
     targets = session.options.targets
-    reasons = await asyncio.gather(*(session.harness.check(target) for target in targets))
+    reasons = await asyncio.gather(*(_pre_run_reasons(session, target) for target in targets))
     not_run = {
         target.flaw_id: target_reasons
         for target, target_reasons in zip(targets, reasons, strict=True)
@@ -89,6 +91,12 @@ async def _checked(session: GatedSession) -> dict[str, list[str]]:
     }
     _refuse_recording_of_not_run(session, not_run)
     return not_run
+
+
+async def _pre_run_reasons(session: GatedSession, target: Target) -> list[str]:
+    reasons = await session.harness.check(target)
+    failure = layout_failure(target, await session.harness.layout(target))
+    return reasons if failure is None else [*reasons, failure]
 
 
 def _refuse_recording_of_not_run(session: GatedSession, not_run: dict[str, list[str]]) -> None:

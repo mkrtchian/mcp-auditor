@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
+from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
 from evals.cve.grammar import RunGrade
@@ -35,6 +36,10 @@ it raises (an unknown kept id, a planting_spec refusal) is not an out-of-calibra
 propagates and crashes the run before any audit. The session calls it concurrently, like the
 audit."""
 
+type ObserveLayout = Callable[[Target], Awaitable[LayoutCheck]]
+"""The layout check and route check of one target, run beside `CheckTarget` before any audit, as
+the holdout pre-run check runs them. The session reads them through `layout_failure`."""
+
 type Baselines = dict[str, DetectionBaseline]
 
 
@@ -50,6 +55,7 @@ class DetectionOptions:
 class DetectionHarness:
     audit: AuditTarget
     check: CheckTarget  # the pre-run check, gathered over every target before any audit
+    layout: ObserveLayout  # the layout and route checks of that same pre-run check
     announce_audits: Callable[[int], None]  # the main audits about to run, once checked
     baselines: Path
     read_tree: Callable[[], TreeState]
