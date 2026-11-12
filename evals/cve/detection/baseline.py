@@ -134,9 +134,10 @@ def fixture_fingerprint(
     the sentinel Dockerfile whenever a kept record is an http_endpoint, since the sentinel
     image serves it on any target. Out: the exploits and benign call (calibration check only), the
     severity, the note, the awaited capability (report text), the drawn nonces (random per launch),
-    the CI skip, the kept places' family (plants nothing), and what each caller chooses to plant and
-    launch (the kept places for a graded run, every candidate for the survey), which live in the
-    callers. A change to the shared environment code moves every target's fingerprint.
+    the CI skip, the settled leaks (layout check only), the kept places' family (plants nothing),
+    and what each caller chooses to plant and launch (the kept places for a graded run, every
+    candidate for the survey), which live in the callers. A change to the shared environment code
+    moves every target's fingerprint.
 
     The environment modules are fingerprinted whole, the layout check's reference arm
     (`build_empty_layout`, inert on the graded run) included, by choice of granularity: a rare
