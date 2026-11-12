@@ -38,16 +38,16 @@ def test_no_value_reaching_an_admitted_server_names_the_audit(server: AdmittedSe
 
 def test_the_gravitino_server_is_launched_at_the_instances_alias():
     assert GRAVITINO_SERVER_LAUNCH == [
-        "--metalake", "analytics", "--gravitino-uri", "http://gravitino:8090",
+        "--metalake", "metalake_demo", "--gravitino-uri", "http://gravitino:8090",
     ]  # fmt: skip
 
 
-def test_the_gravitino_catalogs_reach_postgres_and_kafka_at_their_aliases():
+def test_the_gravitino_catalogs_reach_postgresql_and_kafka_at_their_aliases():
     properties = given.gravitino_catalog_properties()
 
-    assert {part.alias for part in GRAVITINO_PARTS} == {"gravitino", "postgres", "kafka"}
-    assert properties["warehouse"]["jdbc-url"] == "jdbc:postgresql://postgres:5432/warehouse"
-    assert properties["streams"]["bootstrap.servers"] == "kafka:9092"
+    assert {part.alias for part in GRAVITINO_PARTS} == {"gravitino", "postgresql", "kafka"}
+    assert properties["catalog_postgres"]["jdbc-url"] == "jdbc:postgresql://postgresql/db"
+    assert properties["catalog_kafka"]["bootstrap.servers"] == "kafka:9092"
     assert given.kafka_advertised_listeners() == "PLAINTEXT://kafka:9092"
 
 

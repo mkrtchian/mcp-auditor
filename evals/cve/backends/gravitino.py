@@ -7,13 +7,18 @@ jdbc-postgresql catalog and Kafka 4.4.0 under its kafka catalog, each a built pa
 pins its image, each in its own container under the nuisance confinement with no added capability,
 on one closed labeled bridge (no route to the host or the Internet) at a fixed address. The
 server reaches Gravitino under the alias `gravitino`, and Gravitino reaches the other two under
-`postgres` and `kafka`.
+`postgresql` (the Gravitino Playground's service name) and `kafka`.
 
 At each stand-up `ensure_gravitino_backend` checks that Gravitino answers 1.2.1, then sends the
 seed through Gravitino's REST API with `docker exec` inside the instance (the host cannot reach a
-closed bridge) when the metalake is absent: the metalake, a fileset, a model, a jdbc-postgresql
-and a kafka catalog with their objects, a tag and a policy on the `lakehouse` catalog and a second
-of each on its `sales` schema, every value written for the fixture.
+closed bridge) when the metalake is absent. The seed is the part of the Gravitino Playground
+(apache/gravitino-playground at 11b37bc618763c2f172f6ae997871a067666389f, its branch-1.2) the
+backend holds, the metalake `metalake_demo` and its `catalog_postgres` over the HR schema the
+Playground's init.sql loads into PostgreSQL, then the fileset, model, messaging, statistic, tag and
+policy examples of Gravitino's documentation at v1.2.1. The Playground's Hive, Trino, Spark,
+Iceberg and MySQL parts are left out: Trino and Spark are engines that query through Gravitino,
+not catalogs it manages, so no counted tool reaches them, and the Hive, Iceberg and MySQL catalogs
+are further relational catalogs, whose tools the PostgreSQL catalog already serves.
 The backend's state lives in its containers only, so a stand-up after their removal starts from
 the images and the seed. The backend carries no witness: a fix check stands its own instance.
 
@@ -27,8 +32,8 @@ import threading
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
 
+from evals.cve.backends.gravitino_seed import FILESET_DIRECTORY, GRAVITINO_SEED, METALAKE
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
@@ -44,7 +49,6 @@ from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
 GRAVITINO_BRIDGE = "mcp-auditor-cve-gravitino-bridge"
 GRAVITINO_SUBNET = "198.18.7.0/24"  # RFC 2544: overlaps no other backend's subnet
 GRAVITINO_RELEASE = "1.2.1"
-METALAKE = "analytics"
 GRAVITINO_PORT = 8090
 GRAVITINO_SERVER_LAUNCH = [
     "--metalake", METALAKE, "--gravitino-uri", f"http://gravitino:{GRAVITINO_PORT}",
@@ -85,115 +89,11 @@ class GravitinoPart:
 _INSTANCE = GravitinoPart(
     "mcp-auditor-cve-gravitino-instance", "gravitino-instance", "198.18.7.2", "gravitino"
 )
-_DB = GravitinoPart("mcp-auditor-cve-gravitino-db", "gravitino-db", "198.18.7.3", "postgres")
+_DB = GravitinoPart("mcp-auditor-cve-gravitino-db", "gravitino-db", "198.18.7.3", "postgresql")
 _KAFKA = GravitinoPart("mcp-auditor-cve-gravitino-kafka", "gravitino-kafka", "198.18.7.4", "kafka")
 GRAVITINO_PARTS = (_INSTANCE, _DB, _KAFKA)
 GRAVITINO_IMAGE = _INSTANCE.image
 GRAVITINO_SERVICES = tuple(part.service for part in GRAVITINO_PARTS)
-
-
-@dataclass(frozen=True)
-class SeedRequest:
-    method: str
-    path: str  # under the metalakes endpoint
-    body: dict[str, Any]
-
-
-def _catalog(name: str, kind: str, provider: str, **properties: str) -> SeedRequest:
-    body: dict[str, Any] = {"name": name, "type": kind, "provider": provider, "comment": "demo"}
-    return SeedRequest("POST", f"/{METALAKE}/catalogs", body | {"properties": properties})
-
-
-def _named(path: str, name: str, **fields: Any) -> SeedRequest:
-    no_properties: dict[str, str] = {}
-    body: dict[str, Any] = {"name": name, "comment": "demo", "properties": no_properties}
-    return SeedRequest("POST", f"/{METALAKE}{path}", body | fields)
-
-
-_WAREHOUSE = {
-    "jdbc-url": "jdbc:postgresql://postgres:5432/warehouse",
-    "jdbc-user": "grav",
-    "jdbc-password": "grav",
-    "jdbc-database": "warehouse",
-    "jdbc-driver": "org.postgresql.Driver",
-}
-_ORDERS_COLUMNS = [
-    {"name": "id", "type": "integer", "comment": "c", "nullable": False},
-    {"name": "amount", "type": "integer", "comment": "c", "nullable": True},
-]
-_RETENTION = {
-    "policyType": "custom",
-    "enabled": True,
-    "content": {
-        "customRules": {"k": "v"},
-        "supportedObjectTypes": ["CATALOG", "SCHEMA", "FILESET"],
-    },
-}
-EVENTS_DIRECTORY = "/tmp/lakehouse/events"
-
-GRAVITINO_SEED: tuple[SeedRequest, ...] = (
-    SeedRequest("POST", "", {"name": METALAKE, "comment": "demo", "properties": {}}),
-    _catalog("lakehouse", "fileset", "hadoop", location="file:/tmp/lakehouse"),
-    _named("/catalogs/lakehouse/schemas", "sales"),
-    _named(
-        "/catalogs/lakehouse/schemas/sales/filesets",
-        "events",
-        type="managed",
-        storageLocation=f"file:{EVENTS_DIRECTORY}",
-    ),
-    _catalog("registry", "model", "model"),
-    _named("/catalogs/registry/schemas", "prod"),
-    _named("/catalogs/registry/schemas/prod/models", "ranker"),
-    SeedRequest(
-        "POST",
-        f"/{METALAKE}/catalogs/registry/schemas/prod/models/ranker/versions",
-        {"uri": "file:/tmp/ranker/v0", "aliases": ["stable"], "comment": "demo", "properties": {}},
-    ),
-    _catalog("warehouse", "relational", "jdbc-postgresql", **_WAREHOUSE),
-    _named("/catalogs/warehouse/schemas", "retail"),
-    _named("/catalogs/warehouse/schemas/retail/tables", "orders", columns=_ORDERS_COLUMNS),
-    SeedRequest(
-        "PUT",
-        f"/{METALAKE}/objects/table/warehouse.retail.orders/statistics",
-        {"updates": {"custom-row-count": 100}},
-    ),
-    _catalog("streams", "messaging", "kafka", **{"bootstrap.servers": "kafka:9092"}),
-    _named(
-        "/catalogs/streams/schemas/default/topics",
-        "clicks",
-        properties={"partition-count": "1", "replication-factor": "1"},
-    ),
-    _named("/tags", "gold"),
-    _named("/tags", "silver"),
-    SeedRequest(
-        "POST", f"/{METALAKE}/policies", {"name": "retention", "comment": "demo"} | _RETENTION
-    ),
-    SeedRequest(
-        "POST", f"/{METALAKE}/policies", {"name": "compaction", "comment": "demo"} | _RETENTION
-    ),
-    SeedRequest(
-        "POST",
-        f"/{METALAKE}/objects/catalog/lakehouse/tags",
-        {"tagsToAdd": ["gold"], "tagsToRemove": []},
-    ),
-    SeedRequest(
-        "POST",
-        f"/{METALAKE}/objects/catalog/lakehouse/policies",
-        {"policiesToAdd": ["retention"], "policiesToRemove": []},
-    ),
-    # silver and compaction sit on the sales schema, so the associate benign calls (which add gold
-    # and retention there) return a name they did not pass in, which the expect keys on.
-    SeedRequest(
-        "POST",
-        f"/{METALAKE}/objects/schema/lakehouse.sales/tags",
-        {"tagsToAdd": ["silver"], "tagsToRemove": []},
-    ),
-    SeedRequest(
-        "POST",
-        f"/{METALAKE}/objects/schema/lakehouse.sales/policies",
-        {"policiesToAdd": ["compaction"], "policiesToRemove": []},
-    ),
-)
 
 
 def gravitino_server_args(
@@ -217,7 +117,7 @@ def ensure_gravitino_backend() -> None:
         _ensure_image(part)
     ensure_closed_network(GRAVITINO_BRIDGE, "--subnet", GRAVITINO_SUBNET)
     _ensure_running()
-    _wait_until(_DB, "pg_isready", "-h", "127.0.0.1", "-U", "grav", "-d", "warehouse")
+    _wait_until(_DB, "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "db")
     _wait_until(
         _KAFKA, "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"
     )
@@ -291,8 +191,8 @@ def _send_the_seed() -> None:
             "-d", json.dumps(request.body),
             f"{_API}/metalakes{request.path}",
         )  # fmt: skip
-    _in_the_instance("mkdir", "-p", EVENTS_DIRECTORY)
-    _in_the_instance("sh", "-c", f"printf hi > {EVENTS_DIRECTORY}/part-000.txt")
+    _in_the_instance("mkdir", "-p", FILESET_DIRECTORY)
+    _in_the_instance("sh", "-c", f"printf hi > {FILESET_DIRECTORY}/part-000.txt")
 
 
 def _in_the_instance(*command: str) -> str:

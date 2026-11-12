@@ -1458,7 +1458,7 @@ services:
       context: .
       dockerfile: Dockerfile.gravitino-db
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9e11453214d51a7fd7928e39e7ed51dc2ae6ea34f32d4bc9281f693824d21d29"
+        org.mcp-auditor.dockerfile-fingerprint: "4a7ae397b1fae855aec3ef2ab0b3830f466f043b4c82ed91c9b04db8a5258191"
     image: mcp-auditor-cve-gravitino-db:local
     profiles: ["nuisance"]
 

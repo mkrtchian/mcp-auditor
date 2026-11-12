@@ -7,16 +7,19 @@ without percent-encoding, so dot-segments in a caller-supplied identifier are re
 metalake the server is launched for. `get_list_of_schemas` with `../../hidden/catalogs/secretcat`
 reaches a sibling metalake's catalog and lists its schemas: reach = internal_fetch. The patched
 client wraps every path identifier in `urllib.parse.quote(segment, safe="")`, so the dot-segments
-are encoded and the request stays inside `analytics`. Every counted tool carries the same
+are encoded and the request stays inside `metalake_demo`. Every counted tool carries the same
 unencoded interpolation, so each has an exploit that injects the traversal into its own identifier;
 only `get_list_of_schemas` lists schema names, so the planted nonce surfaces through it.
 
 The run singleton never carries the witness (it is where every nuisance run reads), so the builder
 stands its own Gravitino stack (the backend's three parts) on a per-launch closed network, seeds
-the benign `analytics` metalake plus a sibling `hidden` metalake whose `secretcat` catalog holds one
-schema named the planted nonce, points the server's `--gravitino-uri` at that stack's `gravitino`,
-and reaps the containers and the network. The benign calls read `analytics`, so the stack keeps the
-Postgres and the Kafka the relational and messaging catalogs manage.
+the run's `metalake_demo` metalake (the backend's seed) plus a sibling `hidden` metalake whose
+`secretcat` catalog holds one schema named the planted nonce, points the server's `--gravitino-uri`
+at that stack's `gravitino`, and reaps the containers and the network. The benign calls read
+`metalake_demo`, so the stack keeps the PostgreSQL and the Kafka the relational and messaging
+catalogs manage. The exploits are written out (`gravitino_exploits`) and name the objects of an
+earlier seed: the traversal leaves the launched metalake whatever the names after it, and only
+`get_list_of_schemas` surfaces the nonce.
 """
 
 import json
@@ -28,13 +31,8 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
-from evals.cve.backends.gravitino import (
-    EVENTS_DIRECTORY,
-    GRAVITINO_PARTS,
-    GRAVITINO_PORT,
-    GRAVITINO_SEED,
-    METALAKE,
-)
+from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_PORT
+from evals.cve.backends.gravitino_seed import FILESET_DIRECTORY, GRAVITINO_SEED, METALAKE
 from evals.cve.closed_network import create_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.grammar import FlawClass
@@ -78,127 +76,62 @@ _SERVER_LAUNCH = ["--metalake", METALAKE, "--gravitino-uri", _SERVER_URI]
 _API = f"http://localhost:{GRAVITINO_PORT}/api"
 _READY_SECONDS = 300.0
 
-# (tool, benign arguments) for each counted tool.
+_POSTGRES = {"catalog_name": "catalog_postgres"}
+_FILESET = {"catalog_name": "catalog", "schema_name": "schema"}
+_MODEL = {
+    "catalog_name": "model_catalog",
+    "schema_name": "model_schema",
+    "model_name": "example_model",
+}
+_TOPICS = {"catalog_name": "catalog_kafka", "schema_name": "default"}
+_CATALOG = {"metadata_full_name": "catalog_postgres", "metadata_type": "catalog"}
+_SCHEMA = {"metadata_full_name": "catalog_postgres.hr", "metadata_type": "schema"}
+_TABLE = {
+    "metalake_name": METALAKE,
+    "metadata_type": "table",
+    "metadata_fullname": "catalog_postgres.hr.employees",
+}
+
+# (tool, benign arguments) for each counted tool, the admission's benign calls.
 _TOOLS: tuple[tuple[str, dict[str, Any]], ...] = (
-    ("get_list_of_schemas", {"catalog_name": "lakehouse"}),
-    ("get_list_of_tables", {"catalog_name": "warehouse", "schema_name": "retail"}),
-    (
-        "get_table_metadata_details",
-        {"catalog_name": "warehouse", "schema_name": "retail", "table_name": "orders"},
-    ),
-    ("list_of_topics", {"catalog_name": "streams", "schema_name": "default"}),
-    (
-        "load_topic",
-        {"catalog_name": "streams", "schema_name": "default", "topic_name": "clicks"},
-    ),
-    ("list_of_models", {"catalog_name": "registry", "schema_name": "prod"}),
-    (
-        "load_model",
-        {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker"},
-    ),
-    (
-        "list_model_versions",
-        {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker"},
-    ),
-    (
-        "load_model_version",
-        {"catalog_name": "registry", "schema_name": "prod", "model_name": "ranker", "version": 0},
-    ),
-    (
-        "load_model_version_by_alias",
-        {
-            "catalog_name": "registry",
-            "schema_name": "prod",
-            "model_name": "ranker",
-            "alias": "stable",
-        },
-    ),
-    ("list_of_filesets", {"catalog_name": "lakehouse", "schema_name": "sales"}),
-    (
-        "load_fileset",
-        {"catalog_name": "lakehouse", "schema_name": "sales", "fileset_name": "events"},
-    ),
+    ("get_list_of_schemas", _POSTGRES),
+    ("get_list_of_tables", {**_POSTGRES, "schema_name": "hr"}),
+    ("get_table_metadata_details", {**_POSTGRES, "schema_name": "hr", "table_name": "employees"}),
+    ("list_of_topics", _TOPICS),
+    ("load_topic", {**_TOPICS, "topic_name": "example_topic"}),
+    ("list_of_models", {"catalog_name": "model_catalog", "schema_name": "model_schema"}),
+    ("load_model", _MODEL),
+    ("list_model_versions", _MODEL),
+    ("load_model_version", {**_MODEL, "version": 0}),
+    ("load_model_version_by_alias", {**_MODEL, "alias": "alias1"}),
+    ("list_of_filesets", _FILESET),
+    ("load_fileset", {**_FILESET, "fileset_name": "example_fileset"}),
     (
         "list_files_in_fileset",
-        {
-            "catalog_name": "lakehouse",
-            "schema_name": "sales",
-            "fileset_name": "events",
-            "location_name": "unknown",
-        },
+        {**_FILESET, "fileset_name": "example_fileset", "location_name": "unknown"},
     ),
-    ("get_tag_by_name", {"tag_name": "gold"}),
-    ("list_metadata_by_tag", {"tag_name": "gold"}),
-    (
-        "list_tags_for_metadata",
-        {"metadata_full_name": "lakehouse", "metadata_type": "catalog"},
-    ),
-    (
-        "associate_tag_with_metadata",
-        {
-            "metadata_full_name": "lakehouse.sales",
-            "metadata_type": "schema",
-            "tags_to_associate": ["gold"],
-        },
-    ),
-    (
-        "disassociate_tag_from_metadata",
-        {
-            "metadata_full_name": "lakehouse.sales",
-            "metadata_type": "schema",
-            "tags_to_disassociate": ["gold"],
-        },
-    ),
-    ("get_policy_detail_information", {"policy_name": "retention"}),
-    ("list_metadata_by_policy", {"policy_name": "retention"}),
-    (
-        "list_policies_for_metadata",
-        {"metadata_full_name": "lakehouse", "metadata_type": "catalog"},
-    ),
-    (
-        "get_policy_for_metadata",
-        {"metadata_full_name": "lakehouse", "metadata_type": "catalog", "policy_name": "retention"},
-    ),
-    (
-        "associate_policy_with_metadata",
-        {
-            "metadata_full_name": "lakehouse.sales",
-            "metadata_type": "schema",
-            "policies_to_add": ["retention"],
-        },
-    ),
-    (
-        "disassociate_policy_from_metadata",
-        {
-            "metadata_full_name": "lakehouse.sales",
-            "metadata_type": "schema",
-            "policies_to_remove": ["retention"],
-        },
-    ),
-    (
-        "list_statistics_for_metadata",
-        {
-            "metalake_name": "analytics",
-            "metadata_type": "table",
-            "metadata_fullname": "warehouse.retail.orders",
-        },
-    ),
+    ("get_tag_by_name", {"tag_name": "tag1"}),
+    ("list_metadata_by_tag", {"tag_name": "tag1"}),
+    ("list_tags_for_metadata", _CATALOG),
+    ("associate_tag_with_metadata", {**_SCHEMA, "tags_to_associate": ["tag2"]}),
+    ("disassociate_tag_from_metadata", {**_SCHEMA, "tags_to_disassociate": ["tag2"]}),
+    ("get_policy_detail_information", {"policy_name": "policy1"}),
+    ("list_metadata_by_policy", {"policy_name": "policy1"}),
+    ("list_policies_for_metadata", _CATALOG),
+    ("get_policy_for_metadata", {**_CATALOG, "policy_name": "policy1"}),
+    ("associate_policy_with_metadata", {**_SCHEMA, "policies_to_add": ["policy2"]}),
+    ("disassociate_policy_from_metadata", {**_SCHEMA, "policies_to_remove": ["policy2"]}),
+    ("list_statistics_for_metadata", _TABLE),
     (
         "list_statistics_for_partition",
-        {
-            "metalake_name": "analytics",
-            "metadata_type": "table",
-            "metadata_fullname": "warehouse.retail.orders",
-            "from_partition_name": "a",
-            "to_partition_name": "z",
-        },
+        {**_TABLE, "from_partition_name": "p0", "to_partition_name": "p1"},
     ),
     ("get_job_template_by_name", {"name": "builtin-iceberg-rewrite-data-files"}),
 )
 
 _PROBES: dict[str, list[str]] = {
     "gravitino": ["curl", "-fsS", "-o", "/dev/null", f"{_API}/version"],
-    "postgres": ["pg_isready", "-h", "127.0.0.1", "-U", "grav", "-d", "warehouse"],
+    "postgresql": ["pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "db"],
     "kafka": ["/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"],
 }
 
@@ -285,8 +218,8 @@ def _wait_until(container: str, probe: Sequence[str]) -> None:
 def _seed(instance: str, nonce: str) -> None:
     for request in GRAVITINO_SEED:
         _request(instance, request.method, f"/metalakes{request.path}", request.body)
-    _exec(instance, "mkdir", "-p", EVENTS_DIRECTORY)
-    _exec(instance, "sh", "-c", f"printf hi > {EVENTS_DIRECTORY}/part-000.txt")
+    _exec(instance, "mkdir", "-p", FILESET_DIRECTORY)
+    _exec(instance, "sh", "-c", f"printf hi > {FILESET_DIRECTORY}/part-000.txt")
     _request(
         instance,
         "POST",

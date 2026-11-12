@@ -24,6 +24,7 @@ from evals.cve.backends import (
     gitlab,
     googleapis,
     gravitino,
+    gravitino_seed,
     jenkins,
     mcp_ssh_sshd,
     n8n,
@@ -101,7 +102,7 @@ BACKENDS: dict[str, RegisteredBackend] = {
         GRAVITINO_BRIDGE,
         GRAVITINO_IMAGE,
         GRAVITINO_SERVICES,
-        _served(gravitino.__file__, *GRAVITINO_SERVICES),
+        (*_served(gravitino.__file__, *GRAVITINO_SERVICES), Path(gravitino_seed.__file__)),
     ),
     "mcp_ssh_sshd": RegisteredBackend(
         mcp_ssh_sshd.LIFECYCLE,

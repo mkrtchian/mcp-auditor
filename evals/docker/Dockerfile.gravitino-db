@@ -1,7 +1,13 @@
 # The PostgreSQL the Gravitino backend's jdbc-postgresql catalog manages: PostgreSQL 16, the newest
 # release line Gravitino 1.2.1's JDBC PostgreSQL catalog documentation names
-# (docs/jdbc-postgresql-catalog.md at v1.2.1). Runs as the image's postgres user (uid 70), so the
-# entrypoint needs no capability to drop privileges.
+# (docs/jdbc-postgresql-catalog.md at v1.2.1). Its account and its data are the Gravitino
+# Playground's (apache/gravitino-playground at 11b37bc618763c2f172f6ae997871a067666389f, the head of
+# its branch-1.2): the postgresql service's user and password, and init/postgres/init.sql, which
+# creates database db with the HR schema and its rows, run by the entrypoint at the first start.
+# A remote ADD lands 0600 and owned by root, so it is made readable to the postgres user the
+# entrypoint runs as. Runs as the image's postgres user (uid 70), so the entrypoint needs no
+# capability to drop privileges.
 FROM postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
-ENV POSTGRES_USER=grav POSTGRES_PASSWORD=grav POSTGRES_DB=warehouse
+ENV POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres
+ADD --chmod=0644 --checksum=sha256:cdb40dbb5c14e0eb6aad3b9b972bb7b3cfae3aa2a82cef83646503811eae892b https://raw.githubusercontent.com/apache/gravitino-playground/11b37bc618763c2f172f6ae997871a067666389f/init/postgres/init.sql /docker-entrypoint-initdb.d/init.sql
 USER postgres
