@@ -146094,6 +146094,22 @@
             "reason": "the server is launched in the deployment checkout; it derives its project root (.venv/markitdown) from its install path at /app, independent of cwd. Duplicated from launch_options per the v9 accounting.",
             "returned_by": [],
             "used_by_default_by": []
+          },
+          {
+            "item": "ffmpeg 7:5.1.9-0+deb12u1, the Debian bookworm package, installed in both images.",
+            "reason": "markitdown's own Dockerfile installs ffmpeg from its distribution as its runtime dependency; pydub, which markitdown imports on every run, looks it up on the PATH, and markitdown runs it for audio. It carries no nonce.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "youtube-to-markdown",
+              "bing-search-to-markdown",
+              "webpage-to-markdown",
+              "pdf-to-markdown",
+              "image-to-markdown",
+              "audio-to-markdown",
+              "docx-to-markdown",
+              "xlsx-to-markdown",
+              "pptx-to-markdown"
+            ]
           }
         ],
         "stand_ins": [],
@@ -146109,6 +146125,12 @@
             "release": "0.13.7",
             "day": "2026-11-05",
             "source": "Fixture: docker/Dockerfile.holdout-2025-58358-markdownify installs uv unpinned with `curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh` (latest at build time), the method of upstream setup.sh; the built image mcp-auditor-cve-holdout-2025-58358-markdownify:local (install layer 2026-11-05T00:48+01:00) reports `uv 0.13.7`. markdownify-mcp README at commit 949f12e names no uv version ('this will also install uv'), so the latest stable at the calibration day counts. uv 0.13.7 released 2026-11-03, still the latest release on 2026-11-05 (github.com/astral-sh/uv/releases)."
+          },
+          {
+            "software": "ffmpeg",
+            "release": "7:5.1.9-0+deb12u1 (Debian bookworm package)",
+            "day": "2026-11-12",
+            "source": "Fixture: both Dockerfiles install the base distribution's package pinned, `apt-get install -y --no-install-recommends ffmpeg=7:5.1.9-0+deb12u1`, as evals/docker/Dockerfile.markdownify does; both built images report `dpkg-query -W ffmpeg` 7:5.1.9-0+deb12u1 and `command -v ffmpeg` /usr/bin/ffmpeg. The documented deployment sets the release: markitdown v0.0.1a3's Dockerfile installs ffmpeg as its runtime dependency from its distribution's package ('apk add --no-cache ffmpeg', no version), and the images' base node:22-bookworm is Debian bookworm (/etc/debian_version 12.15), whose ffmpeg candidate on 2026-11-12 is 7:5.1.9-0+deb12u1 (apt-cache policy: bookworm main and bookworm-security). pydub, which markitdown imports, looks ffmpeg up on the PATH."
           }
         ],
         "fallback_scope": null,

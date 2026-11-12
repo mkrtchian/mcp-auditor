@@ -23,4 +23,11 @@ RUN npx tsc && npx shx chmod +x dist/*.js
 RUN uv sync
 ENV UV_PATH=/usr/local/bin/uv
 
+# ffmpeg: the runtime dependency markitdown's own Dockerfile installs from its distribution
+# (microsoft/markitdown v0.0.1a3, "apk add --no-cache ffmpeg"), here the base distribution's
+# package. pydub, imported by markitdown, needs it on the PATH for markitdown to enable audio.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg=7:5.1.9-0+deb12u1 \
+ && rm -rf /var/lib/apt/lists/*
+
 ENTRYPOINT ["node", "/app/dist/index.js"]
