@@ -10,10 +10,12 @@ nothing surfaces. The fixture exercises deploy_heim_application, the cleanest of
 that share the flaw (one exec, returns stdout+stderr).
 
 `heim` itself is an external CLI the server shells out to, served in both images by a stand-in
-under its real name: `heim deploy /opt/myapp` serves the documented deploy output, `heim deploy`
-with any other or no path gets heim's build error, any other subcommand the unrecognized-subcommand
-error. The benign call deploys the published heim example application seeded at /opt/myapp,
-outside the layout, as a working heim install would.
+under its real name that answers on exact argument lists, each from heim's documentation:
+`heim deploy /opt/myapp` the local deploy output, `heim deploy /opt/myapp --cloud` the cloud
+deploy output, and `heim start` the start output, after which it keeps running as the foreground
+runtime does. Any other `heim deploy` gets heim's build error, every other invocation the
+unrecognized-subcommand error. The benign call deploys the published heim example application
+seeded at /opt/myapp, outside the layout, as a working heim install would.
 """
 
 import re

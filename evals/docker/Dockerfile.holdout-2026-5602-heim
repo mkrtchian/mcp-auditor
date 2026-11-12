@@ -80,12 +80,14 @@ LIB_RS_EOF
 
 # The `heim` CLI is an external program heim-mcp shells out to; its toolchain cannot run under
 # the container confinement (no Heim runtime, no registry, no network) and heim.dev no longer
-# distributes it, so it is served by a stand-in under its real name on PATH. For `heim deploy
-# /opt/myapp` the stand-in serves the documented `heim deploy` output (same source as the app);
-# `heim deploy` with any other / no path gets heim's build error, and any non-deploy invocation
-# the unrecognized-subcommand error. The command-injection flaw lives entirely in heim-mcp's
-# exec() call. Baked inline so the Dockerfile fingerprint covers the stand-in's content. Its
-# outputs are recorded in the calibration card (stand_ins).
+# distributes it, so it is served by a stand-in under its real name on PATH. It answers on exact
+# argument lists, each with the documented output of the same guide as the app: `heim deploy
+# /opt/myapp` the local deploy output, `heim deploy /opt/myapp --cloud` the cloud deploy output,
+# and `heim start` the runtime's start output, after which it keeps running as the foreground
+# runtime does. Any other `heim deploy` gets heim's build error, and every other invocation the
+# unrecognized-subcommand error. The command-injection flaw lives entirely in heim-mcp's exec()
+# call. Baked inline so the Dockerfile fingerprint covers the stand-in's content. Its outputs are
+# recorded in the calibration card (stand_ins).
 RUN mkdir -p /usr/local/share/heim
 RUN cat > /usr/local/share/heim/deploy.stdout <<'HEIM_DEPLOY_STDOUT_EOF'
 INFO [ heim_cli::wasm::build ] Building Component: myapp
@@ -125,14 +127,70 @@ INFO [ Heim::Deploy ] Application is accaccessible at:
 INFO [ Heim::Deploy ] [GET] http://127.0.0.1:3000/myapp
 INFO [ Heim::Deploy ] Written and deployed application `myapp`.
 HEIM_DEPLOY_STDOUT_EOF
+RUN cat > /usr/local/share/heim/deploy-cloud.stdout <<'HEIM_DEPLOY_CLOUD_STDOUT_EOF'
+
+INFO [ heim_registry::registry ] "myapp":"0.1.0":02f6d7d3c34210438f293efc1ff2f8e9494f783a402e5dcbe6a308fea40d870e
+INFO [ Heim::Deploy ] Heim application `myapp` is now built and written to registry.
+INFO [ Heim::Pipeline ] Starting pipeline 'Deploy application'
+INFO [ Heim::Pipeline ] Storing unoptimized component state
+INFO [ Heim::Pipeline ] Checking if defined regions in app definition is valid
+INFO [ Heim::Pipeline ] Continuing with localhost region heim-localhost
+INFO [ Heim::Pipeline ] Getting region specific application environment values
+INFO [ Heim::Pipeline ] Set environment values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting region specific application scaling values
+INFO [ Heim::Pipeline ] Set scaling values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting capabilities
+INFO [ Heim::Pipeline ] Set capabilities values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Getting triggers
+INFO [ Heim::Pipeline ] Set trigger values for region 'heim-localhost'
+INFO [ Heim::Pipeline ] Component environment values are valid for all regions
+INFO [ Heim::Pipeline ] Checking for region with changes to build
+INFO [ Heim::Pipeline ] Region "heim-localhost" has been changed and will be built
+INFO [ Heim::Pipeline ] Optimizing base component
+INFO [ Heim::Pipeline ] Optimized base component, size before optimization: 2881425 bytes, size after optimization: 2278867 bytes
+INFO [ Heim::Pipeline ] Storing component and optimized component
+INFO [ Heim::Pipeline ] Stored component at ''
+INFO [ Heim::Pipeline ] Stored optimized component at ''
+INFO [ Heim::Pipeline ] Storing region states
+INFO [ Heim::Pipeline ] Stored state for region(s) heim-localhost successfully
+INFO [ Heim::Pipeline ] Creating and caching application(s)
+INFO [ Heim::Pipeline ] Creating and caching application(s) for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Created application with hash 62fd854418968a7c0cc383e962382dfc8e2d420b7fa5a4d48c6058ebb8544a05 for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Application has been deployed for region(s) heim-localhost
+INFO [ Heim::Pipeline ] Pipeline 'Deploy application' finished with status 'Success'
+INFO [ Heim::Deploy ] Heim deploy pipeline was successful
+INFO [ Heim::Deploy ] Application is accaccessible at:
+INFO [ Heim::Deploy ] [GET] https://my-subdomain.cloud.heim.dev/myapp
+INFO [ Heim::Deploy ] Written and deployed application `myapp`.
+HEIM_DEPLOY_CLOUD_STDOUT_EOF
+RUN cat > /usr/local/share/heim/start.stdout <<'HEIM_START_STDOUT_EOF'
+
+Starting Runtime with Config:
+...
+
+Http server listening on: http://127.0.0.1:3000
+Heim portal: http://127.0.0.1:3000/heim/portal/
+HEIM_START_STDOUT_EOF
 RUN cat > /usr/local/bin/heim <<'HEIM_STANDIN_EOF'
 #!/bin/sh
+# Chosen on the exact argument list: the count before the colon, then the arguments.
+case "$#:$*" in
+  "2:deploy /opt/myapp")
+    cat /usr/local/share/heim/deploy.stdout
+    exit 0
+    ;;
+  "3:deploy /opt/myapp --cloud")
+    cat /usr/local/share/heim/deploy-cloud.stdout
+    exit 0
+    ;;
+  "1:start")
+    cat /usr/local/share/heim/start.stdout
+    # The real runtime runs in the foreground until Ctrl+C, so the command never returns.
+    exec sleep infinity
+    ;;
+esac
 case "$1" in
   deploy)
-    if [ "$2" = "/opt/myapp" ]; then
-        cat /usr/local/share/heim/deploy.stdout
-        exit 0
-    fi
     printf 'ERROR [ heim_cli::wasm::build ] could not build component: no component.toml found in the target path\n' >&2
     exit 1
     ;;
