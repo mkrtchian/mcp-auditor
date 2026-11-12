@@ -134,6 +134,7 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
     out = capsys.readouterr().out
     assert f"image of {stale} is stale or absent" in out
     assert f"image of {absent} is stale or absent" in out
+    assert "docker compose -f evals/docker/compose.yml build" in out
     assert store.builds == []
 
 
