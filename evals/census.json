@@ -141544,10 +141544,10 @@
             "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags)"
           },
           {
-            "option": "config/mcp-config.json: allowInsert/allowUpdate/allowDelete/allowSchemaChange/allowAdmin",
+            "option": "config/mcp-config.json: allowInsert/allowUpdate/allowDelete",
             "value": "true",
-            "reason": "ArcadeDB classifies a polyglot (language=js) script as a write/CREATE operation, so execute_command needs write-class permission to reach the engine at all. These default to false. A deployment choice, identical on both images, so the only behavioural difference is the engine host-access policy, not the permission set.",
-            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags)"
+            "reason": "ArcadeDB 26.6.1 classifies a polyglot (language=js) script as neither idempotent nor DDL, so its operation types are CREATE, UPDATE and DELETE (QueryEngine.AnalyzedQuery.getOperationTypes, PolyglotQueryEngine), and execute_command checks them against allowInsert, allowUpdate and allowDelete (MCPToolUtils.checkPermission) before the script reaches the engine. These three default to false and are set to true. allowSchemaChange and allowAdmin, which the script does not need, are written at their documented default, false (the flag table of the MCP documentation, and MCPConfiguration at 26.6.1). A deployment choice, identical on both images, so the only behavioural difference is the engine host-access policy, not the permission set.",
+            "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html (config/mcp-config.json flags); https://github.com/ArcadeData/arcadedb/tree/26.6.1 (server/src/main/java/com/arcadedb/server/mcp/MCPConfiguration.java and tools/MCPToolUtils.java, engine/src/main/java/com/arcadedb/query/QueryEngine.java and polyglot/PolyglotQueryEngine.java)"
           },
           {
             "option": "config/mcp-config.json: allowedUsers",
@@ -141592,8 +141592,8 @@
             "used_by_default_by": []
           },
           {
-            "item": "Image file config/mcp-config.json (MCP enabled, allowReads/allowInsert/allowUpdate/allowDelete/allowSchemaChange/allowAdmin true, allowedUsers [root])",
-            "reason": "Enables the MCP stdio interface (shipped disabled) and permits the write-class tool call execute_command needs to reach the engine. Written by printf, no comments. Identical on both images; no tool returns or uses this file.",
+            "item": "Image file config/mcp-config.json (MCP enabled, allowReads/allowInsert/allowUpdate/allowDelete true, allowSchemaChange/allowAdmin false, allowedUsers [root])",
+            "reason": "Enables the MCP stdio interface (shipped disabled) and permits the insert, update and delete operations a polyglot script through execute_command needs to reach the engine, schema change and admin left at their default. Written by printf, no comments. Identical on both images; no tool returns or uses this file.",
             "returned_by": [],
             "used_by_default_by": []
           },

@@ -9,7 +9,7 @@ USER root
 
 # Identical MCP deployment config to the vulnerable image, so the only behavioural difference
 # between the two images is the engine's host-access policy.
-RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":false,"allowAdmin":false,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
 
 RUN chmod -R a+rwX /home/arcadedb
 

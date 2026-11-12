@@ -8,11 +8,13 @@ FROM arcadedata/arcadedb:26.6.1@sha256:b89478bd698ebfb6301918ec6745818a02759515b
 
 USER root
 
-# An MCP deployment that permits write-class tool calls. ArcadeDB classifies a polyglot script
-# as a CREATE operation, so execute_command needs write-class permission to reach the engine at
-# all; a deployment choice, identical on both versions. The only behavioural difference between
-# the two images is the engine's host-access policy.
-RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
+# An MCP deployment that permits the write operations a polyglot script needs. ArcadeDB 26.6.1
+# classifies a polyglot script as a CREATE, UPDATE and DELETE operation (neither idempotent nor
+# DDL), so execute_command needs allowInsert, allowUpdate and allowDelete to reach the engine at
+# all; allowSchemaChange and allowAdmin stay at their documented default, false. A deployment
+# choice, identical on both versions. The only behavioural difference between the two images is
+# the engine's host-access policy.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":false,"allowAdmin":false,"allowedUsers":["root"]}' > /home/arcadedb/config/mcp-config.json
 
 # The launch runs as a non-root uid (the kit's planting host). Make the install tree writable by
 # any uid so the server can open its database directory and write its log, independent of uid.
