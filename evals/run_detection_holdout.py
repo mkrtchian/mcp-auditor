@@ -38,6 +38,7 @@ from evals.cve.detection.holdout_run import (
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target, image_tag
 from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
+from evals.cve.images import COMPOSE_FILE, ComposeImageStore, ImageStore, stale_services
 from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
@@ -59,6 +60,7 @@ CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 DEFAULT_REPORT_PATH = "output/detection_holdout_report.json"
 REFUSED_EXIT = 3
 CRASHED_EXIT = 4
+IMAGE_STORE: ImageStore = ComposeImageStore()
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -209,6 +211,7 @@ def _calibration_check(args: argparse.Namespace) -> int:
         print("no holdout target is drawn")
         return 0
     refuse_without_closed_networks(check_closed_network_support)
+    _refuse_stale_images(targets, IMAGE_STORE)
     try:
         return asyncio.run(_check_calibrations(targets, places, args.concurrency, DOCKER_SWEEP))
     except ValueError as error:
@@ -219,6 +222,18 @@ def _calibration_check(args: argparse.Namespace) -> int:
             "Refused: a detection fixture of a holdout target is misconfigured.", [str(error)]
         )
         return CRASHED_EXIT
+
+
+def _refuse_stale_images(targets: list[Target], store: ImageStore) -> None:
+    """Refused rather than rebuilt: some holdout images must be built cold by hand, and a check
+    run on an image an older Dockerfile built would prove nothing about the fixture."""
+    stale = stale_services(target_services(targets), store)
+    if stale:
+        build = f"docker compose -f {COMPOSE_FILE.relative_to(REPO_ROOT)} build {' '.join(stale)}"
+        raise Refused(
+            "calibration check refused",
+            [*(f"the image of {service} is stale or absent" for service in stale), build],
+        )
 
 
 async def _check_calibrations(

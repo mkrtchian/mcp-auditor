@@ -10,10 +10,12 @@ from evals import run_detection_holdout
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
+from evals.cve.images import dockerfile_fingerprint
 from evals.cve.kit import launch as kit_launch
 from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import target_services
 from tests.fakes import FakeContainerSweep
+from tests.fakes.image_store import FakeImageStore
 from tests.unit.support.test_detection_calibration_check_exit_given import deps_with
 
 
@@ -115,6 +117,26 @@ def test_the_calibration_check_takes_one_flaw(
     assert "no holdout target is drawn" in capsys.readouterr().out
 
 
+def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_image(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    _a_drawn_target(monkeypatch)
+    stale, absent = target_services([holdout_given.a_target(holdout_given.FILESYSTEM)])[:2]
+    labels = _current_labels() | {image_tag(stale): "an-older-fingerprint"}
+    del labels[image_tag(absent)]
+    store = FakeImageStore(labels)
+    monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", store)
+    _a_calibration_check(monkeypatch, deps_with(raises=True))
+
+    exit_code = run_detection_holdout.main(["calibration-check"])
+
+    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    out = capsys.readouterr().out
+    assert f"image of {stale} is stale or absent" in out
+    assert f"image of {absent} is stale or absent" in out
+    assert store.builds == []
+
+
 @pytest.mark.parametrize(
     "old_command",
     [["calibrate"], ["calibration-check", "--cve", "CVE-2099-9999"]],
@@ -134,6 +156,12 @@ def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
         (holdout_given.a_target(holdout_given.FILESYSTEM),),
     )
     monkeypatch.setattr(run_detection_holdout, "check_closed_network_support", lambda: None)
+    monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", FakeImageStore(_current_labels()))
+
+
+def _current_labels() -> dict[str, str | None]:
+    services = target_services([holdout_given.a_target(holdout_given.FILESYSTEM)])
+    return {image_tag(service): dockerfile_fingerprint(service) for service in services}
 
 
 def _drawn_target_tags() -> list[str]:
