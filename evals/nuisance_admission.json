@@ -10601,7 +10601,7 @@
                 "connection_method": "mysqlwire",
                 "cluster_identifier": "app-cluster",
                 "db_endpoint": "127.0.0.1",
-                "database": "app",
+                "database": "employees",
                 "sql": "SELECT @@version_comment AS v"
               },
               "expect": "MySQL Community Server",
@@ -10615,7 +10615,7 @@
                     "cluster_identifier": "app-cluster",
                     "db_endpoint": "127.0.0.1",
                     "port": 3306,
-                    "database": "app"
+                    "database": "employees"
                   }
                 }
               ]
@@ -10777,8 +10777,8 @@
           "server_package": "PyPI:awslabs-mysql-mcp-server",
           "flaw": "CVE-2026-85788",
           "field": "benign_calls",
-          "value": "run_query: {db_endpoint: 127.0.0.1, sql: SELECT @@version_comment AS v}, before connect_to_database at 127.0.0.1",
-          "reason": "the benign call follows the retained fixture: its engine answers on 127.0.0.1 in the server's own container, where record A's call reached the alias of a separate engine container the retained fixture does not have. Both records query @@version_comment, whose answer carries a fixed heading of the real software and none of the call's arguments, and both open the connection first with connect_to_database."
+          "value": "run_query: {db_endpoint: 127.0.0.1, database: employees, sql: SELECT @@version_comment AS v}, before connect_to_database at 127.0.0.1 on database employees",
+          "reason": "the benign call follows the retained fixture: its engine answers on 127.0.0.1 in the server's own container, where record A's call reached the alias of a separate engine container the retained fixture does not have. Both records query @@version_comment, whose answer carries a fixed heading of the real software and none of the call's arguments, and both open the connection first with connect_to_database. The call and its prerequisite open the database employees, the published sample the run image loads in place of the written database app the records named, and the one database the account's grant reaches."
         },
         {
           "server_package": "PyPI:awslabs-mysql-mcp-server",
@@ -10791,8 +10791,8 @@
           "server_package": "PyPI:awslabs-mysql-mcp-server",
           "flaw": null,
           "field": "seeds",
-          "value": "record B's: the account postgres / EXAMPLE-PASSWORD (published sample) and the database app (written)",
-          "reason": "a seed is what the fixture writes for the server to read: both records seed the account the served secret names and the database the calls open, and record A also lists the engine settings the advisory names (secure_file_priv empty, local_infile, the FILE grant), which the account's record carries in its citation. The published sample is pinned by the version id of AWS's GetSecretValue example, which the served file holds."
+          "value": "the account postgres / EXAMPLE-PASSWORD (published sample), its grant SELECT ON employees.* (project document, the server's README at 1.0.23) and the employees sample database (published sample)",
+          "reason": "a seed is what the fixture writes for the server to read: both records seed the account the served secret names and the database the calls open, and record A also lists the engine settings the advisory names (secure_file_priv empty, local_infile, the FILE grant). Those settings and the ALL and FILE grants are what the reproduction of CVE-2026-85788 needs: they stay in the images of its holdout target, which the fix check copies, and leave the run image, whose engine runs on the image's own /etc/my.cnf. The account keeps the name and password of the served secret, pinned by the version id of AWS's GetSecretValue example, which the served file holds; its grant follows the server's README at 1.0.23, which recommends a least-privilege account granted SELECT on one database. MySQL publishes example databases, so the written database app gives way to the first of them, employees, pinned by the datacharmer/test_db commit its files are fetched at."
         }
       ],
       "patched_version": "1.0.23",
@@ -10853,16 +10853,22 @@
       ],
       "seeds": [
         {
-          "item": "MySQL account postgres / EXAMPLE-PASSWORD granted ALL PRIVILEGES WITH GRANT OPTION plus the FILE privilege, created with the engine's default caching_sha2_password plugin.",
+          "item": "MySQL account postgres / EXAMPLE-PASSWORD, created with the engine's default caching_sha2_password plugin.",
           "kind": "published_sample",
-          "citation": "The username and password are the AWS Secrets Manager GetSecretValue published example response (SecretString username 'david' -> postgres, password EXAMPLE-PASSWORD), the value the Secrets Manager stand-in serves and the server reads to open the pool. The ALL+FILE grant and the engine settings secure_file_priv= empty and local_infile=1 are the advisory's named precondition.",
+          "citation": "The username and password are the AWS Secrets Manager GetSecretValue published example response (SecretString username 'david' -> postgres, password EXAMPLE-PASSWORD), the value the Secrets Manager stand-in serves and the server reads to open the pool.",
           "pin": "EXAMPLE1-90ab-cdef-fedc-ba987SECRET1"
         },
         {
-          "item": "MySQL database `app` (the schema the connection opens; the name the benign call and connect_to_database use).",
-          "kind": "written",
-          "citation": "No published sample of MySQL or the server names a database, so the database name the benign call needs is written for the fixture; `app` carries no forbidden word and no value from any machine.",
+          "item": "The account's one grant, GRANT SELECT ON employees.* TO 'postgres'@'%' (no other privilege).",
+          "kind": "project_document",
+          "citation": "awslabs.mysql-mcp-server README at 1.0.23 (its PyPI description), Recommended configuration: \"CREATE USER 'mcp_readonly'@'%' IDENTIFIED BY '...'; GRANT SELECT ON your_database.* TO 'mcp_readonly'@'%';\". Replacements: mcp_readonly -> postgres and '...' -> EXAMPLE-PASSWORD (the account the Secrets Manager stand-in serves), your_database -> employees (the sample the image loads). The README's optional EXECUTE grant on a stored procedure is left out, since the sample defines none.",
           "pin": null
+        },
+        {
+          "item": "The employees sample database (tables departments, employees, dept_emp, dept_manager, titles, salaries and their views), loaded at build from employees.sql and the nine files it sources, with mysql --commands, since a client from MySQL 9.5 on disables source by default.",
+          "kind": "published_sample",
+          "citation": "The employees database, the first of MySQL's example databases (Example Databases, dev.mysql.com/doc/index-other.html), from github.com/datacharmer/test_db at commit e324b56193ca506ab7cc1ab143a9153d8c4535d7, each file fetched with its sha256 checksum.",
+          "pin": "e324b56193ca506ab7cc1ab143a9153d8c4535d7"
         }
       ],
       "software_releases": [
@@ -11170,21 +11176,21 @@
       ],
       "seeds": [
         {
-          "item": "A real PostgreSQL 18.6 backend co-located in the server image, initialised at build (initdb) and started by the entrypoint, reached by the MCP server over loopback (127.0.0.1:5432). pg_read_file reads files of that container, which in a self-managed deployment is the PostgreSQL host the advisory describes.",
+          "item": "A real PostgreSQL 18.6 backend co-located in the server image, initialised at build by initdb at its defaults and started by the entrypoint on the image's configuration sample, reached by the MCP server over loopback (localhost:5432). The database postgres holds no table.",
           "kind": "generated",
-          "citation": "PostgreSQL 18.6 official image postgres:18.6-bookworm; the server docs name no PostgreSQL version, so the latest project release on the calibration day is used.",
+          "citation": "PostgreSQL 18.6 official image postgres:18.6-bookworm; the server docs name no PostgreSQL version, so the latest project release on the calibration day is used. PostgreSQL publishes no sample database: its tutorial's src/tutorial/basics.source creates the weather and cities tables and ends by dropping them (DROP TABLE weather, cities;), so no sample is loaded.",
           "pin": "sha256:f1ea2a1a4fb7b68d4836be1fdcb8a6466a89b072158bf9d97663600538c294c5"
         },
         {
-          "item": "The bootstrap role is the initdb default superuser 'postgres', reachable over loopback with trust authentication. The advisory's impact requires an over-privileged role (AWS's remediation is to stop connecting as a superuser).",
+          "item": "The bootstrap superuser is initdb's default, named after the operating-system user running initdb (nobody, uid 65534), under initdb's default trust authentication. The server does not connect as it.",
           "kind": "generated",
-          "citation": "initdb default role; PostgreSQL docs initdb -U postgres --auth=trust.",
+          "citation": "initdb run with no -U and no --auth: the superuser takes the name of the user running initdb, and authentication defaults to trust (PostgreSQL documentation, initdb).",
           "pin": null
         },
         {
-          "item": "The dblink extension is created in the database at image build (CREATE EXTENSION dblink). dblink is the SSRF primitive the 1.1.7 fix blocks; Aurora/RDS ship it in shared_preload_libraries.",
-          "kind": "generated",
-          "citation": "PostgreSQL contrib dblink; bundled with the postgres 18.6 image.",
+          "item": "The read-only role postgres the server connects as: LOGIN PASSWORD 'EXAMPLE-PASSWORD' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION, GRANT CONNECT ON DATABASE postgres, GRANT USAGE ON SCHEMA public, GRANT SELECT ON ALL TABLES and ON ALL SEQUENCES IN SCHEMA public, the same SELECT grants as default privileges, and default_transaction_read_only = on.",
+          "kind": "project_document",
+          "citation": "awslabs.postgres-mcp-server README at 1.1.7 (its PyPI description): \"Do not connect as a superuser\", and its example read-only role (CREATE ROLE postgres_mcp_server_readonly WITH LOGIN PASSWORD 'change-me' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION; the GRANT CONNECT, USAGE and SELECT grants; ALTER DEFAULT PRIVILEGES; ALTER ROLE ... SET default_transaction_read_only = on). Replacements: postgres_mcp_server_readonly -> postgres and change-me -> EXAMPLE-PASSWORD (the account the Secrets Manager and RDS stand-ins name), mydb -> postgres (the database the benign call opens).",
           "pin": null
         },
         {

@@ -932,7 +932,7 @@ services:
       context: .
       dockerfile: Dockerfile.mysql
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3d7de7f47935b9a7847f3587d6701622aefbcad8d4a0a180988738ace94ab0a4"
+        org.mcp-auditor.dockerfile-fingerprint: "41ede29cee63e8098adf6136e7b0a22edbaef22d9d72036c2fc84f7611e0c07f"
     image: mcp-auditor-nuisance-mysql:local
     profiles: ["nuisance"]
 
@@ -941,7 +941,7 @@ services:
       context: .
       dockerfile: Dockerfile.postgres
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ca2fdf3ceb033115927f6b1bba4fbbf247bde10651a4d1a9c9f35c1f426721fe"
+        org.mcp-auditor.dockerfile-fingerprint: "e168ef41666ed81cf65772c8071d1f6795f622f43f0c3d1f72203a0db1633424"
     image: mcp-auditor-nuisance-postgres:local
     profiles: ["nuisance"]
 

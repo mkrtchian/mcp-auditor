@@ -1,6 +1,9 @@
-# CVE-2026-85787/87911 patched build: awslabs.postgres-mcp-server 1.1.7.
-# 1.1.7 folds quoted identifiers before matching (strip_quoted_identifiers) and blocks the dblink
-# family, so the run_query exploits are rejected as a query-injection risk.
+# CVE-2026-85787/87911 patched build: awslabs.postgres-mcp-server 1.1.7, the nuisance run image.
+# 1.1.7 folds quoted identifiers before matching (strip_quoted_identifiers)
+# and blocks the dblink family. Unlike the images of its holdout target
+# (Dockerfile.holdout-2026-85787-postgres*), which keep the dblink extension, the superuser role and
+# the listen and socket settings the reproduction needs, this image runs the engine at its
+# defaults and connects with a read-only role.
 #
 # The server is a PostgreSQL client: the real PostgreSQL backend runs co-located in the image. Its
 # documentation names no PostgreSQL version, so the latest release the project published on the
@@ -26,16 +29,35 @@ ENV AWS_DEFAULT_REGION=us-east-1
 
 # The data directory is initialised at build under the unprivileged account the server runs as.
 # The 18 image moved its default PGDATA under /var/lib/postgresql/18/docker; /data is set
-# explicitly here, so the move does not apply.
+# explicitly here, so the move does not apply. initdb runs at its defaults: its bootstrap
+# superuser takes the name of the operating-system user running it (nobody, uid 65534), and its
+# authentication is trust. The engine keeps the listen address the image's configuration sample
+# sets ('*', which reaches loopback alone in a container with no network) and PostgreSQL's
+# default socket directory, /var/run/postgresql, which the image leaves writable by every user.
+#
+# The server connects with the read-only role the server's README at 1.1.7 gives as its example
+# ("Do not connect as a superuser"), named postgres and given the password EXAMPLE-PASSWORD that
+# the Secrets Manager stand-in serves, in place of the README's postgres_mcp_server_readonly and
+# change-me, on the database postgres in place of the README's mydb.
 ENV PGDATA=/data
 RUN mkdir -p /data && chown 65534:65534 /data
 USER 65534
-RUN initdb -D /data -U postgres --auth=trust --auth-host=trust --auth-local=trust \
- && echo "listen_addresses='127.0.0.1'" >> /data/postgresql.conf \
- && echo "unix_socket_directories='/data'" >> /data/postgresql.conf \
- && pg_ctl -D /data -o "-c listen_addresses=127.0.0.1 -c unix_socket_directories=/data" -w -t 60 start \
- && psql -h /data -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS dblink;" \
+RUN initdb -D /data \
+ && pg_ctl -D /data -w -t 60 start \
+ && psql -v ON_ERROR_STOP=1 -d postgres <<'SQL' \
  && pg_ctl -D /data -w -t 60 stop
+CREATE ROLE postgres WITH LOGIN PASSWORD 'EXAMPLE-PASSWORD'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+GRANT CONNECT ON DATABASE postgres TO postgres;
+GRANT USAGE ON SCHEMA public TO postgres;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgres;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT ON SEQUENCES TO postgres;
+ALTER ROLE postgres SET default_transaction_read_only = on;
+SQL
 
 # pg_ctl's output goes to stderr so it never corrupts the JSON-RPC on stdout.
 RUN printf '%s\n' \
