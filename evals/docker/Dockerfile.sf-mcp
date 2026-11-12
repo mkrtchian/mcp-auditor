@@ -22,7 +22,8 @@ RUN npm install @salesforce/cli@2.157.8 --global
 # loopback endpoint started and stopped within this instruction, answering the six requests the
 # login makes with the same bodies as the run's stand-in capture (sources in the admission
 # record). The stored plaintext instanceUrl and loginUrl are then set to the org's My Domain host,
-# the one the run's stand-in serves.
+# the one the run's stand-in serves. Nothing else the login writes on the build day is kept: sf's
+# dated log and the update-check cache its oclif plugin fills from the npm registry go.
 RUN <<'LOGIN'
 set -e
 mkdir -p /opt/org && cd /opt/org
@@ -60,7 +61,7 @@ setpriv --reuid 65534 --regid 65534 --clear-groups env HOME=/tmp NODE_EXTRA_CA_C
     sf org login sfdx-url --sfdx-url-file /opt/org/auth-url.txt --alias playground --json >/dev/null
 kill "$ENDPOINT_PID"
 sed -i 's#https://127.0.0.1#https://example-org.my.salesforce.com#g' /tmp/.sfdx/*@*.json
-rm -rf /opt/org /tmp/node-compile-cache /tmp/sf-telemetry /tmp/.sf/*.log
+rm -rf /opt/org /tmp/node-compile-cache /tmp/sf-telemetry /tmp/.cache/sf/version /tmp/.sf/*.log
 LOGIN
 
 # `npm install` as the project documents it (advisory GHSA-h4w9-g9c5-vfwq, PoC step 1): it
