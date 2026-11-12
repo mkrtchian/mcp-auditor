@@ -128,8 +128,8 @@ def fixture_fingerprint(
     reach, the planting host (with what each declared stand-in serves: its address and its capture,
     leaf, key and authority by SHA-256), the loaded record of each kept place (its id, kind,
     coordinates and reach, in kept_places order), the launch-mode field (and the fallback scope
-    under the fallback launch-mode, holdout-rule.md, Run conditions and statistic (A holdout run
-    audits every target)), the backend images the builder pulls outside the compose build (when
+    under the fallback launch-mode, detection-suite-rule.md, Run conditions and statistic (A holdout
+    run audits every target)), the backend images the builder pulls outside the compose build (when
     any), the modules through which the builder seeds a backend (AST fingerprint, when any), and
     the sentinel Dockerfile whenever a kept record is an http_endpoint, since the sentinel
     image serves it on any target. Out: the exploits and benign call (calibration check only), the
@@ -161,8 +161,8 @@ def fixture_fingerprint(
         target.launch_mode.value,
     ]
     # The fingerprint covers the launch the target runs under with the fallback included
-    # (holdout-rule.md, Run conditions and statistic (A holdout run audits every target)): under the
-    # fallback launch-mode the fallback scope is part of it.
+    # (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)):
+    # under the fallback launch-mode the fallback scope is part of it.
     if target.launch_mode is LaunchMode.FALLBACK:
         parts.append([target.fallback_scope.kind.value, target.fallback_scope.path])
     if target.backend_images:

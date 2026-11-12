@@ -55,8 +55,8 @@ from evals.honeypot.runs import tracing_enabled
 from evals.metrics import SessionThrottles
 from mcp_auditor.config import Settings
 
-HOLDOUT_RUNS = 3  # holdout-rule.md, Run conditions and statistic, lowerable to 1 and logged
-HOLDOUT_BUDGET = 10  # holdout-rule.md, Run conditions and statistic, a constant, not a flag
+HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged
+HOLDOUT_BUDGET = 10  # detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 

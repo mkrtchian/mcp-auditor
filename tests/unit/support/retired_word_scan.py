@@ -121,8 +121,8 @@ _WHOLE_FILES = (
     "CONTRIBUTING.md",
     ".env.example",
     "docs/glossary.md",
-    "docs/holdout-rule.md",
-    "docs/nuisance-rule.md",
+    "docs/detection-suite-rule.md",
+    "docs/nuisance-suite-rule.md",
 )
 _CODE_ROOTS = ("src", "evals", "tests")
 _WORKFLOWS = ".github/workflows"
@@ -180,8 +180,8 @@ _CUT_FILES = {
         ends=lambda line: line.startswith("## ["),
     ),
     "docs/labeling-log.md": _Cut(_from_the_top, ends=lambda line: line.startswith("## Entries")),
-    "docs/holdout-log.md": _Cut(_from_the_top, ends=_is_dated_entry),
-    "docs/nuisance-log.md": _Cut(_from_the_top, ends=_is_dated_entry),
+    "docs/detection-suite-log.md": _Cut(_from_the_top, ends=_is_dated_entry),
+    "docs/nuisance-suite-log.md": _Cut(_from_the_top, ends=_is_dated_entry),
 }
 
 

@@ -80,8 +80,8 @@ def test_a_word_not_yet_renamed_is_skipped(tmp_path: Path):
 
 
 def test_a_file_not_yet_migrated_is_skipped(tmp_path: Path):
-    root = given.a_tree(tmp_path, {"docs/holdout-rule.md": given.A_LINE_WITH_THE_WORD})
-    exemptions = Exemptions(not_yet_migrated=("docs/holdout-rule.md",))
+    root = given.a_tree(tmp_path, {"docs/detection-suite-rule.md": given.A_LINE_WITH_THE_WORD})
+    exemptions = Exemptions(not_yet_migrated=("docs/detection-suite-rule.md",))
 
     result = scan(root, given.FIXTURE_WORDS, exemptions)
 

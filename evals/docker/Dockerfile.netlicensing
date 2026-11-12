@@ -7,7 +7,7 @@ FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d
 # The server pinned at its patched version, installed from PyPI. netlicensing-mcp 0.1.8 declares
 # mcp[cli]>=1.7.0 with no upper bound, which floats to mcp 2.x, where mcp.server.fastmcp has
 # moved and the server fails to import; mcp<2 is the loosest bound the project itself publishes
-# (from 0.1.10). See docs/nuisance-log.md for the failing import this pin fixes.
+# (from 0.1.10). See docs/nuisance-suite-log.md for the failing import this pin fixes.
 RUN pip install --no-cache-dir "netlicensing-mcp==0.1.8" "mcp<2"
 
 # Sandbox/demo access: with no per-request API key (stdio transport sets none) the client needs

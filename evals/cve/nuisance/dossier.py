@@ -38,7 +38,7 @@ from evals.run_census import GRAMMAR_CLASS_DEFINITIONS
 # auditor-coupled registry.
 _BACKENDS = frozenset({"doris"})
 
-NUISANCE_RULE = REPO_ROOT / "docs" / "nuisance-rule.md"
+NUISANCE_SUITE_RULE = REPO_ROOT / "docs" / "nuisance-suite-rule.md"
 
 
 def write_dossier(
@@ -84,7 +84,7 @@ def _write_advisories(census: Census, identifiers: list[str], out: Path) -> None
 
 def _write_docs(out: Path, backend: str | None) -> None:
     (out / "grammar_classes.md").write_text(_ADMISSION_GRAMMAR_CLASSES)
-    shutil.copyfile(NUISANCE_RULE, out / "nuisance-rule.md")
+    shutil.copyfile(NUISANCE_SUITE_RULE, out / "nuisance-suite-rule.md")
     (out / "confinement.md").write_text(admission_confinement_text())
     (out / "fixture_format.md").write_text(_fixture_format(backend))
     (out / "README.md").write_text(_readme())
@@ -295,7 +295,7 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 ## What else the dossier carries
 
-- `nuisance-rule.md`: the admission rule the record is checked against.
+- `nuisance-suite-rule.md`: the admission rule the record is checked against.
 - `confinement.md`: the container options every nuisance server runs with, and the shape of the
   run's argv.
 - The benign probe, `python -m evals.cve.kit.benign_probe --record <record.json> --image
@@ -310,6 +310,6 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
   and its builder's source as text under `reference/holdout_fixtures/`, its Dockerfiles under
   `reference/docker/` and its calibration card as `reference/cards/<id>.json`. The agents may
   start from that fixture when the server's patched version is the one the holdout target's
-  calibration checks, and adapt it otherwise (`nuisance-rule.md`, Admission). Nothing under
+  calibration checks, and adapt it otherwise (`nuisance-suite-rule.md`, Admission). Nothing under
   `reference/` imports or runs.
 """

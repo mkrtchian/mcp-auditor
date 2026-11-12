@@ -1,4 +1,4 @@
-"""The exclusions of the holdout layers that docs/holdout-log.md records, as the census code
+"""The exclusions of the holdout layers that docs/detection-suite-log.md records, as the census code
 reads them.
 
 Each change here is a line of that log. The packages are written as the classifiers write

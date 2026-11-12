@@ -21,8 +21,8 @@ class CalibrationCheckDeps:
 async def run_calibration_check(
     targets: list[Target], places: Places, deps: CalibrationCheckDeps
 ) -> int:
-    # ADR 031: the rule runs the layout check before the exploits (holdout-rule.md, Deployment
-    # layout (A server the layout breaks)), so it reports its break first.
+    # ADR 031: the rule runs the layout check before the exploits (detection-suite-rule.md,
+    # Deployment layout (A server the layout breaks)), so it reports its break first.
     layout_and_route_failures = await deps.check_layouts_and_routes(targets, places)
     all_pass = await deps.check_exploits(targets, places)
     return 0 if all_pass and not layout_and_route_failures else 1

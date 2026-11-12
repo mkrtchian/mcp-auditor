@@ -62,8 +62,8 @@ async def _check_one(
 
 def not_run_reason(target: Target, reasons: list[str], layout: LayoutCheck) -> str | None:
     """Why a target is dropped from N before any audit, or None to run it. A break keeps a FALLBACK
-    target but drops a NORMAL one calibrated under a launch it lost (holdout-rule.md, Deployment
-    layout (A server the layout breaks))."""
+    target but drops a NORMAL one calibrated under a launch it lost (detection-suite-rule.md,
+    Deployment layout (A server the layout breaks))."""
     if reasons:
         return "out of calibration: " + "; ".join(reasons)
     if layout.gave_up is not None:

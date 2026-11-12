@@ -15,7 +15,7 @@ The exploit's file_path is the absolute-path marker itself (the aim); the benign
 
 praisonai.workflow.validate and praisonai.deploy.validate, which the advisory also names and which
 open the caller's path on the vulnerable version, are left out of this flaw's tools: no admission
-record writes their fields or plays a benign call for them (docs/nuisance-log.md).
+record writes their fields or plays a benign call for them (docs/nuisance-suite-log.md).
 """
 
 import re

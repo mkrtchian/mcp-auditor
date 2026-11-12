@@ -23,7 +23,7 @@ from evals.cve.kit.fix_check import check_fix
 from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
-from evals.cve.nuisance.dossier import NUISANCE_RULE
+from evals.cve.nuisance.dossier import NUISANCE_SUITE_RULE
 from evals.cve.nuisance.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.re_admission_docs import confinement_text, re_admission_readme
 from evals.cve.nuisance.re_admission_dossier import (
@@ -86,7 +86,7 @@ def test_a_fix_check_dossier_carries_its_record_rule_dockerfiles_and_fix_checks(
 
     record = AdmittedServer.model_validate_json((out / "admission_record.json").read_text())
     assert record == server
-    assert (out / "nuisance-rule.md").read_text() == NUISANCE_RULE.read_text()
+    assert (out / "nuisance-suite-rule.md").read_text() == NUISANCE_SUITE_RULE.read_text()
     services = re_admission_dockerfiles(server, given.the_copy_resolution())
     for service in (*services, SENTINEL_SERVICE, STAND_IN_SERVICE):
         assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service

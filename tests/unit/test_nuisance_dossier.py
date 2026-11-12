@@ -17,7 +17,7 @@ import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.nuisance.dossier import NUISANCE_RULE, write_dossier
+from evals.cve.nuisance.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
 
@@ -42,13 +42,13 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "README.md",
         "fixture_format.md",
         "grammar_classes.md",
-        "nuisance-rule.md",
+        "nuisance-suite-rule.md",
         "confinement.md",
         "evals/cve/kit/benign_probe.py",
         "evals/capture_stand_in.py",
     ):
         assert (out / relative).exists(), relative
-    assert (out / "nuisance-rule.md").read_text() == NUISANCE_RULE.read_text()
+    assert (out / "nuisance-suite-rule.md").read_text() == NUISANCE_SUITE_RULE.read_text()
     assert (out / "confinement.md").read_text() == admission_confinement_text()
     assert not (out / "reference").exists()
     assert not (out / "evals" / "detection_places.json").exists()
@@ -134,7 +134,7 @@ def test_the_readme_lists_the_rule_confinement_probe_capture_tool_and_reference(
     readme = (given.a_written_dossier(tmp_path) / "README.md").read_text()
 
     for named in (
-        "`nuisance-rule.md`",
+        "`nuisance-suite-rule.md`",
         "`confinement.md`",
         "evals.cve.kit.benign_probe",
         "evals.capture_stand_in",

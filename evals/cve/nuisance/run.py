@@ -65,12 +65,12 @@ from evals.metrics import SessionThrottles
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 
-NUISANCE_RUNS = 2  # set in docs/nuisance-log.md, a --runs flag lowers it
+NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 # The budget is the holdout run's HOLDOUT_BUDGET: the rule reads the holdout nuisance rate beside
-# the holdout detection rate, whose budget is a constant, not a flag (holdout-rule.md, Run
+# the holdout detection rate, whose budget is a constant, not a flag (detection-suite-rule.md, Run
 # conditions and statistic (A holdout run audits every target)), so no budget of its own here.
 
 type Audit = Callable[[AdmittedServer], Awaitable[NuisanceAudit | DroppedRun]]

@@ -15,7 +15,7 @@ RUN python -m venv /opt/dbt \
 # The server, isolated from the dbt environment (the documentation runs it with uvx). dbt-mcp
 # 1.17.x imports pydantic._internal._typing_extra.eval_type_backport, which pydantic 2.14 removed,
 # so under a floating pydantic the server does not import; pydantic<2.14 is the one bound, every
-# other dependency floats. See docs/nuisance-log.md for the failing import this bound fixes.
+# other dependency floats. See docs/nuisance-suite-log.md for the failing import this bound fixes.
 RUN python -m venv /opt/mcp \
     && /opt/mcp/bin/pip install --no-cache-dir "dbt-mcp==1.17.1" "pydantic<2.14"
 

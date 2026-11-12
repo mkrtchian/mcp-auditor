@@ -102,9 +102,9 @@ _INCOMPLETE_RUNS = "Incomplete runs (a model call refused or unreadable)"
 
 
 def _incomplete_runs_lines(report: HoldoutReport) -> list[str]:
-    """The count with the targets it touches (holdout-rule.md, Run conditions and statistic (An
-    audit with a step refused)), derived from the per-target incomplete-run counts, then one line
-    per cause."""
+    """The count with the targets it touches (detection-suite-rule.md, Run conditions and statistic
+    (An audit with a step refused)), derived from the per-target incomplete-run counts, then one
+    line per cause."""
     touched = [target.flaw_id for target in report.targets if target.incomplete_runs > 0]
     count = f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
     by_cause = [

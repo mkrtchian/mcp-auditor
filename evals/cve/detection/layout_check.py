@@ -3,17 +3,17 @@
 The rule gates a fallback launch on a break: launch each version once with a minimal valid empty
 node at each layout path, by node type (the reference arm), and once with the layout, and call it a
 break when the launch or tools/list succeeded without the layout and failed with it, or when a call
-that returned no error without the layout returns one with it (holdout-rule.md, Deployment layout (A
-server the layout breaks)). `layout_breaks` is the pure detector over the two collected surfaces for
-one version, `layout_breaks_any` over both versions (a break on either is a break). A changed
-response body (a discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a break:
-only a lost tools/list or a newly-erroring call counts.
+that returned no error without the layout returns one with it (detection-suite-rule.md, Deployment
+layout (A server the layout breaks)). `layout_breaks` is the pure detector over the two collected
+surfaces for one version, `layout_breaks_any` over both versions (a break on either is a break). A
+changed response body (a discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a
+break: only a lost tools/list or a newly-erroring call counts.
 
 The anti-leak guard (`nonce_in_surface`) is a separate pure check of the planted surface,
 implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
-(holdout-rule.md, Deployment layout (A place is kept for a target)), so no planted nonce may appear
-in the server's ordinary surface. Both are pinned by a golden master. The benign call is not run
-here.
+(detection-suite-rule.md, Deployment layout (A place is kept for a target)), so no planted nonce may
+appear in the server's ordinary surface. Both are pinned by a golden master. The benign call is not
+run here.
 
 `check_layouts_and_routes` is the Docker orchestration run under the maintainer paths
 (--calibration-check and --record-baseline, never a gated run), before the exploits of the
@@ -43,8 +43,8 @@ from evals.cve.places import Place, Places, kept_records
 from evals.eval_display import console
 
 # When a target already in the fallback launch-mode cannot start even the fallback launch, the
-# layout check gives up: the container cannot run the server (holdout-rule.md, Deployment layout (A
-# server the layout breaks)).
+# layout check gives up: the container cannot run the server (detection-suite-rule.md, Deployment
+# layout (A server the layout breaks)).
 _GAVE_UP_REASON = "the container cannot run the server"
 
 
@@ -74,8 +74,8 @@ class VersionObservation:
 class LayoutCheck:
     """The result `check_layouts_and_routes` computes inline, exposed so the holdout orchestrator
     reads it directly: the give-up reason (or None), whether the layout breaks either version, and
-    the kept layout places left without a route (holdout-rule.md, Deployment layout (A place is kept
-    for a target, A server the layout breaks))."""
+    the kept layout places left without a route (detection-suite-rule.md, Deployment layout (A place
+    is kept for a target, A server the layout breaks))."""
 
     gave_up: str | None
     breaks: bool
@@ -83,9 +83,9 @@ class LayoutCheck:
 
 
 def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
-    """Whether the layout breaks the version by the rule's criterion (holdout-rule.md, Deployment
-    layout (A server the layout breaks)). The two surfaces run the same route procedure, so a call's
-    error state aligns by position."""
+    """Whether the layout breaks the version by the rule's criterion (detection-suite-rule.md,
+    Deployment layout (A server the layout breaks)). The two surfaces run the same route procedure,
+    so a call's error state aligns by position."""
     if reference.tools_list_succeeded and not with_layout.tools_list_succeeded:
         return True
     return any(
@@ -96,7 +96,7 @@ def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
 
 def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
     """Whether the layout breaks any of the version pairs. The rule launches each version once with
-    and once without the layout, and a break on either version is a break (holdout-rule.md,
+    and once without the layout, and a break on either version is a break (detection-suite-rule.md,
     Deployment layout (A server the layout breaks))."""
     return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
 
@@ -108,9 +108,9 @@ def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
 def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | None:
     """The reason the layout check gives up on a target, or None. A target already in the fallback
     launch-mode whose fallback launch itself fails to start cannot be run at all: the break detector
-    has no fallback left to gate (holdout-rule.md, Deployment layout (A server the layout breaks)).
-    A normal-mode target does not give up here, its break is only reported so the maintainer sets
-    the fallback launch-mode."""
+    has no fallback left to gate (detection-suite-rule.md, Deployment layout (A server the layout
+    breaks)). A normal-mode target does not give up here, its break is only reported so the
+    maintainer sets the fallback launch-mode."""
     if target.launch_mode is LaunchMode.FALLBACK and not planted.tools_list_succeeded:
         return _GAVE_UP_REASON
     return None
@@ -118,9 +118,9 @@ def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | No
 
 def unrouted_kept_places(records: Sequence[Place], observations: RouteObservations) -> list[Place]:
     """The kept layout places the route check finds no route to. Keeping a layout place needs a
-    route the server's own output reveals (holdout-rule.md, Deployment layout (A place is kept for a
-    target)), so one without a route breaks the rule's keeping condition and fails the route
-    check. A catalogue place carries no anchor and has_route always finds a route to it, so it
+    route the server's own output reveals (detection-suite-rule.md, Deployment layout (A place is
+    kept for a target)), so one without a route breaks the rule's keeping condition and fails the
+    route check. A catalogue place carries no anchor and has_route always finds a route to it, so it
     never appears here."""
     return [place for place in records if not has_route(place, observations)]
 
@@ -145,8 +145,8 @@ def layout_check(
     patched: VersionObservation,
 ) -> LayoutCheck:
     """The layout check's result over the two versions' observations: the give-up reason, the break
-    on either version, and the kept layout places with no route (holdout-rule.md, Deployment layout
-    (A place is kept for a target, A server the layout breaks))."""
+    on either version, and the kept layout places with no route (detection-suite-rule.md, Deployment
+    layout (A place is kept for a target, A server the layout breaks))."""
     gave_up = layout_check_gave_up(target, vuln.planted) or layout_check_gave_up(
         target, patched.planted
     )
@@ -172,8 +172,8 @@ async def check_layouts_and_routes(
 ) -> list[str]:
     """Report each target's layout break, nonce leak and per-layout-place route, and return the
     route check's failures: a kept layout place without a route breaks the rule's keeping condition
-    (holdout-rule.md, Deployment layout (A place is kept for a target)), so the caller fails the
-    maintainer run on it (never a gated run)."""
+    (detection-suite-rule.md, Deployment layout (A place is kept for a target)), so the caller fails
+    the maintainer run on it (never a gated run)."""
     console.print(
         "\n[bold]Layout and route checks[/bold] (no LLM): layout break then discovery route\n"
     )

@@ -23,7 +23,9 @@ LIVING_CUTS = (
         f"# Changelog\n\n## [Unreleased]\n\n- Says {THE_WORD}.\n\n## [0.1.0] - 2026-01-01\n",
     ),
     FixtureFile("docs/labeling-log.md", f"# Log\n\n## Rubric\n\n{THE_WORD}\n\n## Entries\n"),
-    FixtureFile("docs/holdout-log.md", f"# Log\n\nThe {THE_WORD} preamble.\n\n- 2026-01-01: x.\n"),
+    FixtureFile(
+        "docs/detection-suite-log.md", f"# Log\n\nThe {THE_WORD} preamble.\n\n- 2026-01-01: x.\n"
+    ),
 )
 
 HISTORICAL_TEXTS = (
@@ -35,7 +37,7 @@ HISTORICAL_TEXTS = (
         f"# Changelog\n\n## [Unreleased]\n\n## [0.1.0] - 2026-01-01\n\n- Says {THE_WORD}.\n",
     ),
     FixtureFile("docs/labeling-log.md", f"# Log\n\n## Entries\n\n### 2026-01-01\n\n{THE_WORD}\n"),
-    FixtureFile("docs/nuisance-log.md", f"# Log\n\nPreamble.\n\n- 2026-01-01: {THE_WORD}.\n"),
+    FixtureFile("docs/nuisance-suite-log.md", f"# Log\n\nPreamble.\n\n- 2026-01-01: {THE_WORD}.\n"),
     FixtureFile("evals/baselines/a_baseline.json", f'{{"word": "{THE_WORD}"}}\n'),
     FixtureFile("tests/unit/support/a_golden.json", f'{{"word": "{THE_WORD}"}}\n'),
 )

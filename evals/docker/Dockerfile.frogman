@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y wget gnupg procps hostname ca-certifica
 
 # The official FreePBX 17 Debian installer (sng_freepbx_debian_install.sh, SCRIPTVER 1.15), inlined
 # byte-for-byte from the copy the calibration used. The published installer at its repository tip
-# has moved past this snapshot, so it is inlined rather than fetched (recorded in the holdout log).
+# has moved past this snapshot, so it is inlined rather than fetched (recorded in the detection
+# suite log).
 RUN cat > /root/sng_install.sh <<'SNG_INSTALLER_EOF' \
     && chmod +x /root/sng_install.sh
 #!/bin/bash
@@ -1450,7 +1451,8 @@ fi
 SNG_INSTALLER_EOF
 
 # The pinned Frogman module (1.6.2), cloned at its tag commit. The published tag's tree carries
-# repository documentation the kit tree omitted; the tag's tree is the one used (holdout log).
+# repository documentation the kit tree omitted; the tag's tree is the one used (detection suite
+# log).
 RUN git clone https://github.com/mwtcmi/frogman /root/frogman \
     && git -C /root/frogman checkout 2ca0c36caad11e2833d844a3e33fba2e414896cb \
     && rm -rf /root/frogman/.git

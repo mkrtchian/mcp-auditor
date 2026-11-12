@@ -2,21 +2,9 @@
 
 from tests.unit.support.retired_word_scan import AllowedLine, Exemptions
 
-# Pattern ids whose living hits the rule versions after the migration rename: the rule and log
-# paths they catch change with those versions.
-NOT_YET_RENAMED = (
-    "holdout-rule-log",
-    "nuisance-rule-log",
-)
+NOT_YET_RENAMED: tuple[str, ...] = ()
 
-# Living files the rule versions after the migration rewrite. The two logs stand for their
-# living preambles, since their dated entries are never read.
-NOT_YET_MIGRATED = (
-    "docs/holdout-rule.md",
-    "docs/nuisance-rule.md",
-    "docs/holdout-log.md",
-    "docs/nuisance-log.md",
-)
+NOT_YET_MIGRATED: tuple[str, ...] = ()
 
 ALLOWLIST = (
     AllowedLine(
@@ -360,6 +348,18 @@ ALLOWLIST = (
         "stub",
         "installer stub",
         "npm's own word for the package, in Dockerfile.serverless and Dockerfile.serverless-vuln",
+    ),
+    AllowedLine(
+        "docs/detection-suite-rule.md",
+        "stub",
+        "`stub`, `calibration`",
+        "the rule lists the word among those a fixture may not carry",
+    ),
+    AllowedLine(
+        "docs/nuisance-suite-rule.md",
+        "stub",
+        "benign, seed, stub, calibration",
+        "the rule lists the word among those a fixture may not carry",
     ),
 )
 

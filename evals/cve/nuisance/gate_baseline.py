@@ -5,7 +5,7 @@ half of `evals.cve.detection.baseline`.
 The conditions are the nuisance run's (the holdout budget, no tools filter, the chain settings and
 tool call timeout of `evals/holdout_conditions.json`), since the gate gates what the holdout
 nuisance rate measures. The counter and grammar fingerprints are conditions, so a change to either
-is a whole reset (nuisance-rule.md, Versioning).
+is a whole reset (nuisance-suite-rule.md, Versioning).
 """
 
 import os

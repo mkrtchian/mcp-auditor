@@ -20,7 +20,7 @@ RUN cd /tmp && unzip -q awscliv2.zip && ./aws/install && rm -rf awscliv2.zip aws
 # mcp.server.fastmcp, mcp 1.12.3 and later dropped the catch-all through which FastMCP took the
 # server's version= and capabilities= keywords) and pydantic<2.14 (mcp 1.12.2 imports
 # pydantic._internal._typing_extra.eval_type_backport, which pydantic 2.14 removed). Every other
-# dependency floats. See docs/nuisance-log.md for the failing runs.
+# dependency floats. See docs/nuisance-suite-log.md for the failing runs.
 RUN pip install --no-cache-dir "mcp<1.12.3" "pydantic<2.14" \
     https://github.com/alexei-led/aws-mcp-server/archive/df44aabef7291cc0cefd3e0e9fcc45421150b212.tar.gz
 

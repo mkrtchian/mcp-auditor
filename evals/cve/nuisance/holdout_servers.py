@@ -1,7 +1,7 @@
 """The admitted servers a nuisance run audits, and the standing exits it records without auditing.
 
 A nuisance acceptance server, admitted outside the nuisance walk, is never audited by a nuisance
-run, since only the gate audits it (nuisance-rule.md, Run conditions and statistic).
+run, since only the gate audits it (nuisance-suite-rule.md, Run conditions and statistic).
 """
 
 from collections.abc import Sequence

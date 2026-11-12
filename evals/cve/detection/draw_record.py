@@ -97,7 +97,7 @@ class CardCheck(BaseModel):
     flaw: str
     reported_gaps: list[str]
     confirmed_gaps: list[ConfirmedGap]
-    rule_version: int  # the holdout rule version the card was checked under
+    rule_version: int  # the detection suite rule version the card was checked under
 
 
 class GiveUpReason(StrEnum):

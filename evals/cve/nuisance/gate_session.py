@@ -1,5 +1,5 @@
-"""One nuisance gate run on the nuisance acceptance servers (nuisance-rule.md, Run conditions and
-statistic, under ADR 024): the benign call of every gate server, then its runs, the gate and the
+"""One nuisance gate run on the nuisance acceptance servers (nuisance-suite-rule.md, Run conditions
+and statistic, under ADR 024): the benign call of every gate server, then its runs, the gate and the
 retests of a gated server's alarm, with git, Docker, the clock, the audit and the baseline
 directory injected. A server whose benign call fails is not audited, reads not_run and leaves the
 gate not comparable. The value objects live in `gate_session_model`, the recording in
