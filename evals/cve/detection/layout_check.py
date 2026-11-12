@@ -78,11 +78,11 @@ class VersionObservation:
 
 @dataclass(frozen=True)
 class LayoutCheck:
-    """The result `check_layouts_and_routes` computes inline, exposed so the holdout orchestrator
-    reads it directly: the give-up reason (or None), whether the layout breaks either version,
-    the kept places whose nonce surfaces in the vulnerable version's ordinary surface, and the
-    kept layout places left without a route (detection-suite-rule.md, Deployment layout (A place
-    is kept for a target, A server the layout breaks))."""
+    """The result `check_layouts_and_routes` computes inline, exposed so the pre-run checks of a
+    graded run and of a holdout run read it directly: the give-up reason (or None), whether the
+    layout breaks either version, the kept places whose nonce surfaces in the vulnerable version's
+    ordinary surface, and the kept layout places left without a route (detection-suite-rule.md,
+    Deployment layout (A place is kept for a target, A server the layout breaks))."""
 
     gave_up: str | None
     breaks: bool
