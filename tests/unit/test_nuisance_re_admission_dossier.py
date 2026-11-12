@@ -210,7 +210,7 @@ def test_the_readme_keeps_the_agent_off_every_shared_backend():
         assert fnmatch(backend.network, "mcp-auditor-cve-*"), key
 
 
-def test_every_holdout_calibration_flaw_resolves_to_one_target_and_one_fixture():
+def test_every_copied_flaw_resolves_to_one_target_and_one_fixture():
     resolution = given.the_copy_resolution()
     for server in the_committed_admission().servers:
         calibrated = {
@@ -235,7 +235,7 @@ def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
     assert [target.flaw_id for target in targets] == [given.A_DRAWN_TARGET]
 
 
-def test_a_holdout_calibration_flaw_no_target_carries_is_refused():
+def test_a_copied_flaw_no_target_carries_is_refused():
     def calibrated_on_an_unknown_target(flaw: FlawRecord) -> FlawRecord:
         fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
         return flaw.model_copy(update={"flaw": "CVE-2099-0001", "fix_check": fix_check})

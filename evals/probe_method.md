@@ -1,20 +1,20 @@
 # Model probe: method note
 
-The probe (`uv run python -m evals.run_probe [--report PATH]`) replays a frozen corpus of prompts against the reference model and each candidate, and reports per model its statistics and its defects. They feed the written judgment an ADR takes when it chooses a model (ADR 021). The candidates, `gpt-6-luna` at `none` and at `low`, Gemini 3.5 Flash-Lite at `minimal` and `claude-haiku-5-5` at `none` and at `low`, and GLM 5.3 (`z-ai/glm-5.3`) at `low` through OpenRouter on two pinned hosts, Sail Research (fp8) and DeepInfra (fp4), and their prices are in `evals/probe_candidates.py`. The ADR 019 run is reported in ADR 019 and in `evals/probe_runs/2026-09-25_adr-019.json`. This note defines what the probe measures and what it reports.
+The probe (`uv run python -m evals.run_probe [--report PATH]`) sends a frozen corpus of prompts to the reference model and each candidate, and reports per model its statistics and its defects. They feed the written judgment an ADR takes when it chooses a model (ADR 021). The candidates, `gpt-6-luna` at `none` and at `low`, Gemini 3.5 Flash-Lite at `minimal` and `claude-haiku-5-5` at `none` and at `low`, and GLM 5.3 (`z-ai/glm-5.3`) at `low` through OpenRouter on two pinned hosts, Sail Research (fp8) and DeepInfra (fp4), and their prices are in `evals/probe/candidates.py`. The ADR 019 run is reported in ADR 019 and in `evals/probe_runs/2026-09-25_adr-019.json`. This note defines what the probe measures and what it reports.
 
 ## What the probe measures, and what it does not
 
 It measures, per candidate, over the whole corpus: parse failures per schema, refusals, errors, the median latency per call in each role (generation calls and judge calls), the weighted corpus cost, and the reasoning tokens.
 
-It does not measure detection quality. No verdict is compared with a label, and the corpus holds no label. Detection quality is measured by the judge isolation eval and the e2e evals, whose results also feed the judgment.
+It does not measure detection quality. No verdict is compared with a label, and the corpus holds no label. Detection quality is measured by the judge eval and the honeypot suite, whose results also feed the judgment.
 
 ## The corpus
 
-`evals/fixtures/probe_corpus.json`, written by `uv run python -m evals.capture_probe_corpus` and committed. It holds prompts only: no response, no verdict, no justification. It is recaptured when the generation prompt changes, and the committed corpus is the one the next probe run replays (ADR 021).
+`evals/fixtures/probe_corpus.json`, written by `uv run python -m evals.capture_probe_corpus` and committed. It holds prompts only: no response, no verdict, no justification. It is recaptured when the generation prompt changes, and the committed corpus is the one the next probe run sends (ADR 021).
 
 - **Capture run.** One audit of each of the three honeypots at budget 10, on the reference settings (provider `google`, `gemini-3.1-flash-lite`, reasoning `minimal`, for both roles). The capture refuses any other setting. Every structured call the audit makes is recorded, a generator retry on an incomplete batch included, since it is a call the reference made.
 - **Judge sample.** 60 judge calls drawn uniformly with a fixed seed from the judge calls of the capture run, kept in capture order, never selected by verdict. The seed and the number of judge calls captured are recorded in the corpus. Every non-judge call is kept.
-- **CVE tool definitions.** One generation prompt (budget 10, all categories) per distinct tool listed by the CVE fixture servers, deduplicated on the whole tool definition. Reading a tool definition is not reading a trace (ADR 015). These calls widen the generator inputs beyond the honeypots.
+- **Tool definitions of the detection fixtures.** One generation prompt (budget 10, all categories) per distinct tool listed by the servers of the detection fixtures, deduplicated on the whole tool definition. Reading a tool definition is not reading a trace (ADR 015). These calls widen the generator inputs beyond the honeypots.
 
 ## The refusal rule
 
@@ -43,7 +43,7 @@ Per call, with list prices in dollars per million tokens:
 
 Output tokens include reasoning tokens: `langchain-google-genai` adds `thoughts_token_count` into `output_tokens`, OpenAI bills reasoning tokens as output tokens, counted inside `output_tokens`, and so does Anthropic with thinking tokens. OpenRouter returns GLM's reasoning inside `completion_tokens`, its count in `completion_tokens_details.reasoning_tokens`.
 
-The weighted corpus cost sums that cost over a candidate's calls, each judge call multiplied by `judge_calls_captured / judge calls in the corpus`. The corpus holds every non-judge call of the capture run but only 60 of its judge calls, so the weight restores the share of judging in an audit. The CVE generation calls keep weight 1: the weighted cost approximates the capture run's audits plus those extra generator calls.
+The weighted corpus cost sums that cost over a candidate's calls, each judge call multiplied by `judge_calls_captured / judge calls in the corpus`. The corpus holds every non-judge call of the capture run but only 60 of its judge calls, so the weight restores the share of judging in an audit. The generation calls on the tools of the detection fixtures keep weight 1: the weighted cost approximates the capture run's audits plus those extra generator calls.
 
 Prices are the list prices of 2026-10-15 (`PRICES_DATE`), per million tokens (input, cached input, output):
 
@@ -79,13 +79,13 @@ A reasoning-token count at odds with the setting is a defect: the setting did no
 
 ## Observations before the ADR 019 revision
 
-Calls made on 2026-09-24 before ADR 019 revised its challenger list, kept here as the evidence its alternatives point to. They come from two probe runs stopped before the end and from informal calls on the corpus outside the probe.
+Calls made on 2026-09-24 before ADR 019 revised its list of candidate models, kept here as the evidence its alternatives point to. They come from two probe runs stopped before the end and from informal calls on the corpus outside the probe.
 
 - `gpt-6-luna` at `none` and `low`: when it writes a resource-abuse case whose argument is a long string, it repeats one character in that argument without stopping, over a million characters in 950 seconds on one call, with only its 128,000-token output limit to end it. It did not loop at `medium` on four calls of the same prompt.
 - GLM-5.3-Flash is thinking-only: Fireworks refuses `reasoning_effort="none"`. With no effort set, it billed about ten thousand output tokens per batch, against about 700 for the reference, although Fireworks documents that an enforced schema "disables reasoning output". At `low`, it returned batches with a category or cases missing.
 - DeepSeek V4 Flash and `gpt-5.4-nano` with reasoning off returned incomplete batches. So did `gpt-oss-120b` at `low`, its lowest setting, since it cannot turn its reasoning off.
 - Each provider receives the output schema through its structured output mode. Fireworks enforces it during decoding. OpenAI receives it without strict mode, which refuses the open `arguments` object of a payload.
-- The output cap the adapter sets on OpenAI and Fireworks calls counts reasoning tokens, so a challenger that reasons can be cut by it. The cap is set to bound a loop without cutting a batch at `medium`: 8,192 tokens, where one GLM batch at `medium` used about 3,000.
+- The output cap the adapter sets on OpenAI and Fireworks calls counts reasoning tokens, so a candidate model that reasons can be cut by it. The cap is set to bound a loop without cutting a batch at `medium`: 8,192 tokens, where one GLM batch at `medium` used about 3,000.
 
 ## Data retention per provider
 
@@ -110,7 +110,7 @@ The report goes to `output/probe_report.json` by default: the observations, the 
 
 ## Subset runs
 
-`--candidates NAME [NAME ...]` and `--schema NAME` replay a slice of the corpus: the named candidates (every candidate of the full run when the flag is absent) on the calls of one schema, in corpus order (every call when the flag is absent). Either flag makes the run a subset run. It serves debugging only: it computes no statistics and writes no JSON report, and prints one row of defects per candidate. Its observations go to `output/probe_subset.jsonl` by default, so a debugging run never empties the full run's sink. Only the named candidates' models are built, so it needs their keys only.
+`--candidates NAME [NAME ...]` and `--schema NAME` send a slice of the corpus: the named candidates (every candidate of the full run when the flag is absent) on the calls of one schema, in corpus order (every call when the flag is absent). Either flag makes the run a subset run. It serves debugging only: it computes no statistics and writes no JSON report, and prints one row of defects per candidate. Its observations go to `output/probe_subset.jsonl` by default, so a debugging run never empties the full run's sink. Only the named candidates' models are built, so it needs their keys only.
 
 A subset run names its candidates among the reference and the candidates.
 

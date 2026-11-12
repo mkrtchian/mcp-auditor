@@ -25,7 +25,7 @@ def _a_card_listing(flaw: str, sibling: str) -> CalibrationCard:
     return draw_given.a_card(flaw).model_copy(update={"siblings": [sibling_record]})
 
 
-def a_server_copying_the_holdout_calibration_at(
+def a_server_with_a_holdout_calibration_copy_at(
     fingerprint: str | None,
     source: Literal["fix_check", "detection_holdout_calibration"] = "detection_holdout_calibration",
 ) -> AdmittedServer:

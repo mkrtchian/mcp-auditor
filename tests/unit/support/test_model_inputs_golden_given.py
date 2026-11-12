@@ -9,9 +9,7 @@ Anthropic adapters send for each, and the JSON schema of the four schemas the do
 agents. A JSON value is kept as the string produced, since its key order is part of what is sent.
 
 The file is regenerated only in a commit that changes what reaches a model or an agent, never
-in a rename. The one exception of the vocabulary alignment is the regeneration of `FlawRecord`
-and `AdmittedServer` in the commit of the hashed CVE benchmark code (`MechanismClass` to
-`FlawClass`, `holdout_calibration` to `detection_holdout_calibration`).
+in a rename.
 """
 
 import asyncio

@@ -68,7 +68,7 @@ async def test_an_unknown_kept_id_raises_out_of_the_calibration_check_before_any
         "benign_aimed",
     ],
 )
-def test_dead_conditions_name_each_failed_condition(
+def test_not_live_reasons_name_each_failed_condition(
     exploit: tuple[dict[str, str], str],
     benign: tuple[dict[str, str], str],
     conditions: list[str],
@@ -108,7 +108,7 @@ def test_a_target_that_keeps_no_place_is_out_of_calibration():
     ],
     ids=["clean", "still_surfaces", "benign_errored", "both"],
 )
-def test_patched_dead_conditions_name_a_surviving_flaw_or_an_erroring_benign_call(
+def test_not_fixed_reasons_name_a_surviving_flaw_or_an_erroring_benign_call(
     exploit: tuple[dict[str, str], str], benign_errored: bool, conditions: list[str]
 ):
     result = not_fixed_reasons(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)

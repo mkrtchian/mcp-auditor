@@ -6,6 +6,8 @@ The table has one line per change of vocabulary, sorted by the older word. A ren
 
 The words whose meaning moved are the ones to watch, since a reader who thinks they know the word will not look it up: acceptance layer, acceptance server, admission, alarm, calibration, CVE benchmark, exploratory, fixed, holdout, holdout server, oracle, payload, replay, report-only, rubric, sentinel, target and vet. In an ADR or a plan, read them through their line below.
 
+Some older words are kept on purpose in living code and data, since changing them would change a committed record, a hash or what a model reads: the salt literal `mcp-auditor-holdout:` of the draw order, the Docker label `mcp-auditor-cve`, the compose services `holdout-*` and their `Dockerfile.holdout-*` (the census cards cite them), the `replay_rule` key of the two committed baselines (read through an alias until their next re-recording), the data tokens `arbitrary_read`, `command_execution` and `internal_fetch` and every reach and class token, the `reachable_by` key of `evals/detection_places.json`, the `cve_id` values of the census (they are CVE IDs), `EvalVerdict` and the `cases` of `TestCaseBatch` (names sent to the model), and the historical words of every committed record (census cards and calibration records, the admission and walk records, baselines, stand-in captures, fixtures and the dated log entries).
+
 | Older word | Current term | Kind | Date |
 |---|---|---|---|
 | acceptance gate (ADR 006, the end-to-end eval as the gate of the whole system) | no successor: a role ADR 015 took away from the honeypot suite, which is now a regression guard gated by the honeypot gate | retired | 2026-09-21 |

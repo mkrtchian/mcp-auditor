@@ -50,7 +50,7 @@ def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.a_run_refused_before_its_settings(monkeypatch)
-    stale = copies_given.a_server_copying_the_holdout_calibration_at(copies_given.RECORDED)
+    stale = copies_given.a_server_with_a_holdout_calibration_copy_at(copies_given.RECORDED)
     admission = admission_given.an_admission().model_copy(update={"servers": [stale]})
 
     exit_code = run_nuisance.main(given.a_run_command(tmp_path, admission))

@@ -17,7 +17,7 @@ class FakeAIMessage:
 class FakeChatModel:
     """Mimics BaseChatModel.with_structured_output(include_raw=True).
 
-    Replays one scripted response per call, across every structured output bound on it,
+    Returns one scripted response per call, across every structured output bound on it,
     and counts the calls sent. An exception in the script is raised. A throttled response
     first logs an HTTP 429 the way the provider SDK's client does, then is returned, or
     raised when it is an exception.

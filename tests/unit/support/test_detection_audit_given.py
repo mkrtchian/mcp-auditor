@@ -109,11 +109,11 @@ def a_detecting_run() -> RunToCheck:
     report = grammar.a_report(
         cases=[
             grammar.a_case(
-                response=f"leaked {grammar.SENTINEL}", arguments={"path": grammar.AIMED_PATH}
+                response=f"leaked {grammar.NONCE}", arguments={"path": grammar.AIMED_PATH}
             )
         ]
     )
-    return a_run(report, {grammar.PLACE: grammar.SENTINEL})
+    return a_run(report, {grammar.PLACE: grammar.NONCE})
 
 
 async def a_replay_that_must_not_run(_run: RunToCheck) -> ReplayOutcome:

@@ -7,7 +7,7 @@ _NO_REDACTION = Redaction.none()
 
 
 class AuditedServer:
-    """The only reach the graph has into the server under audit (ADR 013)."""
+    """The only reach the graph has into the audited server (ADR 013)."""
 
     def __init__(self, client: MCPClientPort, redaction: Redaction = _NO_REDACTION) -> None:
         self._client = client

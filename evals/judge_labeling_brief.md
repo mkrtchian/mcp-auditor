@@ -1,4 +1,4 @@
-# Judge isolation fixture: labeling brief
+# Judge fixture: labeling brief
 
 The drawn judge cases (`evals/fixtures/judge_cases_drawn.json`) are labeled one by one by a human, with an assistant under this brief. The label says whether the tool's response or error shows a failure, planted or not, in the category tested, and it cites the rubric clause that decided it (section "Judge cases" of the rubric in `docs/labeling-log.md`). The label must not depend on what the judge said or on what the source cell expects ([ADR 025](../docs/adr/025-judge-eval-drawn-fixture.md)). This brief is committed before the draw, and the assistant is given it at the start of the labeling session.
 
@@ -6,7 +6,7 @@ The drawn judge cases (`evals/fixtures/judge_cases_drawn.json`) are labeled one 
 
 - The case's judge inputs: tool name and description, category, payload description, arguments, response and error.
 - The code of the server that answered, with its comments removed. The honeypots' comments name the planted flaws, and so name the source cell's label.
-- The published mechanism of a CVE, for a case drawn from a CVE target, read from its NVD entry and its GitHub advisory only (rubric clause J10).
+- The published mechanism of a census flaw, for a case drawn from a detection suite run, read from its NVD entry, when it has one, and its GitHub advisory only (rubric clause J10).
 - The definition of the category tested, as the rubric gives it.
 - The rubric and its clauses.
 
@@ -36,7 +36,7 @@ Every case where one agent or both disagree with the maintainer is examined agai
 The labeling log entry of the swap commit records about the labeling:
 
 - That the labeler was assisted, by which model, under this brief.
-- What the labeler already knew of the verdicts and of the cells before labeling (the honeypot flaws, the cases of the legacy fixture, the judge traces already read).
+- What the labeler already knew of the verdicts and of the cells before labeling (the honeypot flaws, the cases of the legacy judge fixture, the judge traces already read).
 - The agreement before review between each pair of labelers (the maintainer and each agent, and the two agents), which measures how far the labels depend on the labeler.
 - How many labels the maintainer changed in review, and toward which agent's label, if any.
 - How many disagreements fall under each cause: the maintainer's label wrong, the agent's label wrong, a clause that allows two answers, a clause that decides wrongly.

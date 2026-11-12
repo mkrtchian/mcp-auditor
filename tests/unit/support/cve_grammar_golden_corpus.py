@@ -1,5 +1,5 @@
-"""The fixed corpus the CVE grammar golden master grades: the reports and units of the
-grammar unit tests, and the CVE cases of the judge fixture pinned by id. The generator
+"""The fixed corpus the grammar golden master grades: the reports and units of the grammar
+unit tests, and the judge cases drawn from detection suite runs, pinned by id. The generator
 (`test_cve_grammar_golden_given`) grades it and freezes the result."""
 
 from collections import defaultdict
@@ -14,7 +14,7 @@ from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
 JUDGE_FIXTURE_PATH = Path(__file__).parents[3] / "evals" / "fixtures" / "judge_cases.json"
-SENTINEL = given.SENTINEL
+NONCE = given.NONCE
 FAIL = given.FAIL
 PASS = given.PASS
 
@@ -50,7 +50,7 @@ def command_target_reports() -> dict[str, AuditReport]:
     aimed = {"command": "id; whoami"}
     return {
         "nonce_under_fail": _of_cases(
-            given.a_case(response=f"FLAG={SENTINEL}", category=given.INJECTION)
+            given.a_case(response=f"FLAG={NONCE}", category=given.INJECTION)
         ),
         "fail_without_proof_injection": _of_cases(
             given.a_case(response="denied", arguments=aimed, category=given.INJECTION)
@@ -74,10 +74,10 @@ def test_exchanges() -> dict[str, Unit]:
             [({"depth": 3, "recursive": True, "path": None}, "ok")]
         ),
         "proof_in_the_last_output": unit_of_exchanges(
-            [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {SENTINEL}")]
+            [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {NONCE}")]
         ),
         "echo_from_the_first_exchange": unit_of_exchanges(
-            [({"path": SENTINEL}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, SENTINEL)]
+            [({"path": NONCE}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, NONCE)]
         ),
     }
 
@@ -129,7 +129,7 @@ def variant_reports(cases: list[JudgeCase]) -> dict[str, AuditReport]:
 
 def chain_reports(cases: list[JudgeCase]) -> dict[str, AuditReport]:
     first, second, third = (case.inputs for case in cases)
-    leaking = _step(_with_response(second, SENTINEL))
+    leaking = _step(_with_response(second, NONCE))
     echoing = _step(first.model_copy(update={"arguments": _echoing(first.arguments)}))
     blocked = "destructive payload"
     return {
@@ -141,38 +141,36 @@ def chain_reports(cases: list[JudgeCase]) -> dict[str, AuditReport]:
 
 
 def not_live_reasons_units(inputs: JudgeInputs) -> tuple[Unit, Unit]:
-    [exploit] = units_of(_of_cases(_case_of(_with_response(inputs, SENTINEL), FAIL)))
+    [exploit] = units_of(_of_cases(_case_of(_with_response(inputs, NONCE), FAIL)))
     [benign] = units_of(_of_cases(_case_of(inputs, FAIL)))
     return exploit, benign
 
 
 def _nonce_reports() -> dict[str, AuditReport]:
-    leaking = f"leaked {SENTINEL}"
+    leaking = f"leaked {NONCE}"
     return {
         "nonce_in_a_fail_case/response": _of_cases(given.a_case(response=leaking)),
-        "nonce_in_a_fail_case/error": _of_cases(given.a_case(error=f"boom {SENTINEL}")),
-        "nonce_in_a_fail_case/dict_response": _of_cases(
-            given.a_case(response={"content": SENTINEL})
-        ),
+        "nonce_in_a_fail_case/error": _of_cases(given.a_case(error=f"boom {NONCE}")),
+        "nonce_in_a_fail_case/dict_response": _of_cases(given.a_case(response={"content": NONCE})),
         "nonce_echoed_from_the_case_arguments": _of_cases(
-            given.a_case(response=f"no file {SENTINEL}", arguments={"path": SENTINEL})
+            given.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
         ),
         "nonce_carried_by_an_earlier_chain_step": _of_chain(
-            [given.a_step(arguments={"path": SENTINEL}), given.a_step(response=f"echo {SENTINEL}")]
+            [given.a_step(arguments={"path": NONCE}), given.a_step(response=f"echo {NONCE}")]
         ),
         "nonce_carried_only_by_a_later_chain_step": _of_chain(
             [
                 given.a_step(),
                 given.a_step(response=leaking),
-                given.a_step(arguments={"path": SENTINEL}),
+                given.a_step(arguments={"path": NONCE}),
             ]
         ),
         "nonce_only_in_the_report_target": given.a_report(
             cases=[given.a_case(response="nothing")],
-            server_command=f"docker run -e FLAG={SENTINEL}",
+            server_command=f"docker run -e FLAG={NONCE}",
         ),
         "nonce_only_in_a_step_observation": _of_chain(
-            [given.a_step(response="nothing", observation=f"saw {SENTINEL}")]
+            [given.a_step(response="nothing", observation=f"saw {NONCE}")]
         ),
         "nonce_under_pass": _of_cases(given.a_case(response=leaking, verdict=PASS)),
         "proof_and_fail_on_different_cases": _of_cases(
@@ -213,7 +211,7 @@ def _blocked_chain_reports() -> dict[str, AuditReport]:
             given.a_chain_blocked_at_first_step({"path": given.AIMED_PATH})
         ),
         "chain_blocked_after_a_leaking_first_step": _of_chains(
-            given.a_chain([given.a_step(response=f"leaked {SENTINEL}")], blocked_reason=blocked)
+            given.a_chain([given.a_step(response=f"leaked {NONCE}")], blocked_reason=blocked)
         ),
         "chain_blocked_after_its_first_step": _of_chains(
             given.a_chain(
@@ -224,12 +222,12 @@ def _blocked_chain_reports() -> dict[str, AuditReport]:
 
 
 def _variants(inputs: JudgeInputs) -> dict[str, tuple[JudgeInputs, EvalVerdict]]:
-    leaking = _with_response(inputs, SENTINEL)
+    leaking = _with_response(inputs, NONCE)
     return {
         "response_nonce_fail": (leaking, FAIL),
         "response_nonce_pass": (leaking, PASS),
         "error_nonce_fail": (
-            inputs.model_copy(update={"error": _spliced(inputs.error, SENTINEL)}),
+            inputs.model_copy(update={"error": _spliced(inputs.error, NONCE)}),
             FAIL,
         ),
         "echo_fail": (leaking.model_copy(update={"arguments": _echoing(inputs.arguments)}), FAIL),
@@ -273,4 +271,4 @@ def _spliced(output: str | dict[str, Any] | None, text: str) -> str:
 
 def _echoing(arguments: dict[str, Any]) -> dict[str, Any]:
     key = next(key for key, value in arguments.items() if isinstance(value, str))
-    return arguments | {key: f"{arguments[key]}{SENTINEL}"}
+    return arguments | {key: f"{arguments[key]}{NONCE}"}

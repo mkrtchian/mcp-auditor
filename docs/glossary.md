@@ -243,5 +243,5 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **rule**: the detection suite rule or the nuisance suite rule. The rules the oracle grades with are the grammar.
 - **run**: an instrument run (one invocation), or a repetition (one of the `--runs` passes inside an instrument run).
 - **scope**: a target's scope (the checkout), or the root a tool declares.
-- **step**: chain step, or walk step (one stage a reached flaw goes through in a walk). A model call is not a step.
+- **step**: chain step, walk step (one stage a reached flaw goes through in a walk), or census step (one stage of building the census, such as the collection, the recall or the classification). A model call is not a step.
 - **tools filter**: the user's `--tools`, or a target's tools filter.

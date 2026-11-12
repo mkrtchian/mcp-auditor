@@ -9,7 +9,7 @@ from evals.cve.report_units import units_of
 from evals.cve.units import unit_of_exchanges
 from mcp_auditor.domain.models import AuditCategory, TestCase
 
-SENTINEL = given.SENTINEL
+NONCE = given.NONCE
 PLACE = given.PLACE
 AIMED = {"path": given.AIMED_PATH}
 COMMAND_EXECUTION = FlawClass.COMMAND_EXECUTION
@@ -20,9 +20,9 @@ INTERNAL_FETCH = FlawClass.INTERNAL_FETCH
 @pytest.mark.parametrize(
     "case",
     [
-        given.a_case(response=f"leaked {SENTINEL}"),
-        given.a_case(error=f"boom {SENTINEL}"),
-        given.a_case(response={"content": SENTINEL}),
+        given.a_case(response=f"leaked {NONCE}"),
+        given.a_case(error=f"boom {NONCE}"),
+        given.a_case(response={"content": NONCE}),
     ],
     ids=["response", "error", "dict_response"],
 )
@@ -30,12 +30,12 @@ def test_nonce_in_a_fail_case_output_is_detected(case: TestCase):
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
     assert grade.status == TargetStatus.DETECTED
-    assert grade.evidence is not None and SENTINEL in grade.evidence
+    assert grade.evidence is not None and NONCE in grade.evidence
     assert grade.category == given.INFO_LEAKAGE
 
 
 def test_nonce_echoed_from_the_case_arguments_is_not_a_proof():
-    case = given.a_case(response=f"no file {SENTINEL}", arguments={"path": SENTINEL})
+    case = given.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
@@ -45,8 +45,8 @@ def test_nonce_echoed_from_the_case_arguments_is_not_a_proof():
 def test_nonce_carried_by_an_earlier_chain_step_is_not_a_proof():
     chain = given.a_chain(
         [
-            given.a_step(arguments={"path": SENTINEL}),
-            given.a_step(response=f"echo {SENTINEL}"),
+            given.a_step(arguments={"path": NONCE}),
+            given.a_step(response=f"echo {NONCE}"),
         ]
     )
 
@@ -59,8 +59,8 @@ def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
     chain = given.a_chain(
         [
             given.a_step(),
-            given.a_step(response=f"leaked {SENTINEL}"),
-            given.a_step(arguments={"path": SENTINEL}),
+            given.a_step(response=f"leaked {NONCE}"),
+            given.a_step(arguments={"path": NONCE}),
         ]
     )
 
@@ -71,7 +71,7 @@ def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
 
 def test_nonce_only_in_the_server_command_is_not_a_proof():
     report = given.a_report(
-        cases=[given.a_case(response="nothing")], server_command=f"docker run -e FLAG={SENTINEL}"
+        cases=[given.a_case(response="nothing")], server_command=f"docker run -e FLAG={NONCE}"
     )
 
     grade = grade_run(given.a_read_target(), units_of(report))
@@ -81,7 +81,7 @@ def test_nonce_only_in_the_server_command_is_not_a_proof():
 
 
 def test_nonce_only_in_a_step_observation_is_not_a_proof():
-    chain = given.a_chain([given.a_step(response="nothing", observation=f"saw {SENTINEL}")])
+    chain = given.a_chain([given.a_step(response="nothing", observation=f"saw {NONCE}")])
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
 
@@ -89,7 +89,7 @@ def test_nonce_only_in_a_step_observation_is_not_a_proof():
 
 
 def test_nonce_under_pass_is_reached_but_judged_pass():
-    case = given.a_case(response=f"leaked {SENTINEL}", verdict=given.PASS)
+    case = given.a_case(response=f"leaked {NONCE}", verdict=given.PASS)
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
@@ -98,7 +98,7 @@ def test_nonce_under_pass_is_reached_but_judged_pass():
 
 
 def test_proof_and_fail_on_different_cases_is_not_detected():
-    proof = given.a_case(response=f"leaked {SENTINEL}", verdict=given.PASS)
+    proof = given.a_case(response=f"leaked {NONCE}", verdict=given.PASS)
     fail = given.a_case(response="nothing", verdict=given.FAIL)
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[proof, fail])))
@@ -107,7 +107,7 @@ def test_proof_and_fail_on_different_cases_is_not_detected():
 
 
 def test_nonce_under_fail_in_any_category_is_detected():
-    case = given.a_case(response=f"leaked {SENTINEL}", category=given.RESOURCE_ABUSE)
+    case = given.a_case(response=f"leaked {NONCE}", category=given.RESOURCE_ABUSE)
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
 
@@ -223,7 +223,7 @@ def test_chain_blocked_at_its_first_step_is_aimed_blocked():
 
 def test_chain_blocked_after_a_leaking_first_step_is_detected():
     chain = given.a_chain(
-        [given.a_step(response=f"leaked {SENTINEL}")], blocked_reason="destructive payload"
+        [given.a_step(response=f"leaked {NONCE}")], blocked_reason="destructive payload"
     )
 
     grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
@@ -247,7 +247,7 @@ def test_resolve_keeps_the_highest_rung_over_runs():
 
     assert resolution.status == TargetStatus.DETECTED
     assert resolution.miss_kind is None
-    assert resolution.evidence == f"leaked {SENTINEL}"
+    assert resolution.evidence == f"leaked {NONCE}"
     assert resolution.category == given.INFO_LEAKAGE
 
 
@@ -282,15 +282,15 @@ def test_resolve_counts_each_condition_per_run():
 
 def test_unit_of_exchanges_finds_a_proof_in_the_last_output():
     unit = unit_of_exchanges(
-        [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {SENTINEL}")]
+        [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {NONCE}")]
     )
 
-    assert proofs_in(unit, given.a_read_target()) == {PLACE: f"leaked {SENTINEL}"}
+    assert proofs_in(unit, given.a_read_target()) == {PLACE: f"leaked {NONCE}"}
 
 
 def test_unit_of_exchanges_reads_every_exchange_for_the_anti_echo():
     unit = unit_of_exchanges(
-        [({"path": SENTINEL}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, SENTINEL)]
+        [({"path": NONCE}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, NONCE)]
     )
 
     assert proofs_in(unit, given.a_read_target()) == {}

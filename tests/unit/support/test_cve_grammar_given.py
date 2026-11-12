@@ -21,7 +21,7 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 
-SENTINEL = "s3nt1nel_ab12cd34ef56"
+NONCE = "s3nt1nel_ab12cd34ef56"
 PLACE = "planted"
 AIMED_PATH = "/outside/flag"
 UNAIMED_PATH = "/inside/file"
@@ -47,13 +47,13 @@ def a_read_target() -> FakeTarget:
 def a_command_target() -> FakeTarget:
     return FakeTarget(
         frozenset({FlawClass.COMMAND_EXECUTION}),
-        {PLACE: SENTINEL},
+        {PLACE: NONCE},
         re.compile(r"[;&|`]|\$\("),
     )
 
 
 def a_target_under(*classes: FlawClass) -> FakeTarget:
-    return FakeTarget(frozenset(classes), {PLACE: SENTINEL}, re.compile(r"^/outside/"))
+    return FakeTarget(frozenset(classes), {PLACE: NONCE}, re.compile(r"^/outside/"))
 
 
 def a_case(
@@ -149,7 +149,7 @@ def a_detected_run() -> RunGrade:
         status=TargetStatus.DETECTED,
         surfaced_places=frozenset({PLACE}),
         aimed=True,
-        evidence=f"leaked {SENTINEL}",
+        evidence=f"leaked {NONCE}",
         category=JudgeCategory(INFO_LEAKAGE.value),
     )
 
@@ -170,7 +170,7 @@ def a_reached_run() -> RunGrade:
         status=TargetStatus.REACHED_BUT_JUDGED_PASS,
         surfaced_places=frozenset({PLACE}),
         aimed=True,
-        evidence=f"leaked {SENTINEL}",
+        evidence=f"leaked {NONCE}",
         category=JudgeCategory(INFO_LEAKAGE.value),
     )
 

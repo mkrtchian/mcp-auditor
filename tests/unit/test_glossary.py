@@ -13,53 +13,9 @@ from tests.unit.support.test_glossary_given import (
     scan,
 )
 
-# Pattern ids whose living hits a later step still has to rename, emptied step by step, grouped by
-# the step of the migration plan that removes them.
+# Pattern ids whose living hits the rule versions after the migration rename: the rule and log
+# paths they catch change with those versions.
 _NOT_YET_RENAMED = (
-    # body step 5
-    "acceptance-gate",
-    "bare-acceptance-server",
-    "twin",
-    "missed-steps",
-    "calibrate-cmd",
-    "calibration-gate",
-    "workshop",
-    "capability",
-    "challenger",
-    "cve-x",
-    "cve-flag",
-    "dead",
-    "e2e",
-    "holdout-census",
-    "run-cve-benchmark",
-    "run-evals",
-    "exploratory-baseline",
-    "figure",
-    "version-setting",
-    "fresh-targets",
-    "gate-verdict",
-    "holdout-calibration",
-    "bare-holdout-server",
-    "holdout-walk",
-    "judge-isolation",
-    "payload-label",
-    "replay-retest",
-    "replay-retest-ident",
-    "planting-layer",
-    "readmission",
-    "refused-credit",
-    "replay-capture",
-    "replay-corpus",
-    "replays-exploits",
-    "sentinel-value",
-    "server-under-audit",
-    "ungated",
-    "mechanism-class",
-    "miss-causes",
-    "moved-module",
-    "moved-module-other",
-    "moved-test",
-    # after this plan
     "holdout-rule-log",
     "nuisance-rule-log",
 )
@@ -315,6 +271,24 @@ _ALLOWLIST = (
         "a rename entry names the word it replaces",
     ),
     AllowedLine(
+        "CHANGELOG.md",
+        "ungated",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "holdout-calibration",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
+        "CHANGELOG.md",
+        "missed-steps",
+        "(was ",
+        "a rename entry names the word it replaces",
+    ),
+    AllowedLine(
         "evals/cve/census/work.py",
         "cve-id",
         "cve_id: str",
@@ -341,6 +315,12 @@ _ALLOWLIST = (
     AllowedLine(
         "tests/unit/support/test_run_detection_holdout_run_given.py",
         "primary-number",
+        "RETIRED_KEYS = ",
+        "the old keys a holdout result and report no longer carry",
+    ),
+    AllowedLine(
+        "tests/unit/support/test_run_detection_holdout_run_given.py",
+        "mechanism-class",
         "RETIRED_KEYS = ",
         "the old keys a holdout result and report no longer carry",
     ),

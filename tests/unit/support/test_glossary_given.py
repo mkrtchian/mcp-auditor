@@ -486,13 +486,13 @@ RETIRED_WORDS = (
     RetiredWord("fresh-targets", r"\bfresh targets?\b", re.IGNORECASE, "5"),
     RetiredWord(
         "gate-verdict",
-        r"GateVerdict|gate_verdict|\bgate verdicts?\b|verdict of the gate",
+        r"\bGateVerdict|\bgate_verdict|\bgate verdicts?\b|verdict of the gate",
         re.IGNORECASE,
         "5",
     ),
     RetiredWord(
         "holdout-calibration",
-        r"(?<!detection_)holdout_calibration(?!_cop)|\bholdout calibration\b(?! copy)",
+        r"(?<!detection_)holdout_calibration(?!_cop)|\bholdout calibration\b(?! cop(?:y|ies)\b)",
         re.IGNORECASE,
         "5",
     ),

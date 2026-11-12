@@ -108,7 +108,7 @@ def _not_fixed_reasons_of(target: GradedTarget, inputs: JudgeInputs) -> list[str
     return not_fixed_reasons(target, [exploit], benign_errored=False)
 
 
-# The filesystem sibling CVE-2025-53110 merged into the keeper CVE-2025-53109 (one patched twin
+# The filesystem sibling CVE-2025-53110 merged into the keeper CVE-2025-53109 (one patched version
 # fixes both), so its historical judge cases grade against the keeper's merged target.
 _MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
 
@@ -124,7 +124,7 @@ _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 def _graded_target(flaw_id: str) -> given.FakeTarget:
     keeper = _REMOVED_GRADED_UNDER.get(flaw_id) or _MERGED_SIBLINGS.get(flaw_id, flaw_id)
     [target] = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == keeper]
-    return given.FakeTarget(target.classes, {given.PLACE: given.SENTINEL}, target.aim)
+    return given.FakeTarget(target.classes, {given.PLACE: given.NONCE}, target.aim)
 
 
 def _resolved(target: GradedTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:
