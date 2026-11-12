@@ -147779,7 +147779,7 @@
         "seeded_in_layout": [],
         "seeded_outside_layout": [
           {
-            "item": "/usr/local/bin/godot: the real Godot 4.4.1 engine (official linux x86_64 build) placed where detectGodotPath auto-detects it, so no GODOT_PATH override is set. godot-mcp does not install Godot; the image adds the real pinned dependency so it runs in-container (it is not a stand-in).",
+            "item": "/usr/local/bin/godot: the real Godot 4.7.2 engine (official linux x86_64 build, checked against the release's SHA512-SUMS.txt) placed where detectGodotPath auto-detects it, so no GODOT_PATH override is set. godot-mcp does not install Godot; the image adds the real pinned dependency so it runs in-container (it is not a stand-in).",
             "reason": "godot-mcp drives this external program; executeOperation must reach a real Godot for the shell string it builds to run, and the first call of each exploit needs the real engine to create the attacker-named directory.",
             "returned_by": [
               "get_godot_version"
@@ -147798,7 +147798,7 @@
             ]
           },
           {
-            "item": "/opt/base-project and /opt/base-project/project.godot: a plain writable Godot project (world-writable so the launch uid can write in it), config/name=\"Platformer\".",
+            "item": "/opt/base-project and /opt/base-project/project.godot: a plain writable Godot project (world-writable so the launch uid can write in it), config/name=\"Platformer\", config/features=PackedStringArray(\"4.7\"), the tag Godot 4.7.2 writes in config/features when it saves a project (ProjectSettings.save() run headless in the built image on 2026-11-12), so the seed does not ask the engine to convert a project of an older line.",
             "reason": "the first create_scene call of each exploit operates on it to write the attacker-named directory the second call's project.godot guard requires; it carries no payload, names no kept place, and holds no chosen word or machine value.",
             "returned_by": [],
             "used_by_default_by": []
@@ -147832,9 +147832,9 @@
         "software_releases": [
           {
             "software": "Godot Engine",
-            "release": "4.4.1-stable",
-            "day": "2025-03-26",
-            "source": "godot-mcp README at commit 90b907a names no Godot version; its Prerequisites link to https://godotengine.org/download, i.e. install the current stable. The fixture runs the official Godot 4.4.1-stable linux.x86_64 build (docker/Dockerfile.holdout-2026-25546-godot-mcp, seeded_outside_layout /usr/local/bin/godot). Godot 4.4.1-stable was released 2025-03-26 and remained the current stable release until 4.5-stable on 2025-09-15 (github.com/godotengine/godot/releases)."
+            "release": "4.7.2-stable",
+            "day": "2026-11-12",
+            "source": "godot-mcp's README at commits 90b907a and 21c785d names 'Godot 4.4+' as a constraint (UID management) and 'my Godot 4.4 project' as an example, not a prescribed version (the maintainer's reading), its Prerequisites link https://godotengine.org/download, and the server ships no test, so the stable release current on the day of the repair counts. On 2026-11-12 that is 4.7.2-stable, released 2026-08-18 (github.com/godotengine/godot/releases). Both images install the official Godot_v4.7.2-stable_linux.x86_64.zip from https://github.com/godotengine/godot/releases/tag/4.7.2-stable, checked with sha512sum -c against that release's SHA512-SUMS.txt (9aa00f7a...ed54c65), at /usr/local/bin/godot (seeded_outside_layout); both built images report `godot --version` 4.7.2.stable.official.ed1daf0bf."
           }
         ],
         "fallback_scope": null,

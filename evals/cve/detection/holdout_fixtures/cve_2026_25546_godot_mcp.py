@@ -10,7 +10,7 @@ Every executeOperation handler first checks existsSync(join(projectPath, 'projec
 injected projectPath must also be a real directory carrying a project.godot entry. That directory
 is not seeded: each exploit builds it from tool-call arguments. The first create_scene call writes
 a scene under scenePath `<payload>/project.godot/scene.tscn` inside the plain writable project the
-image bakes at /opt/base-project, so the real Godot 4.4.1's make_dir_recursive creates
+image bakes at /opt/base-project, so the real Godot 4.7.2's make_dir_recursive creates
 `<payload>/project.godot` as a directory; the second call passes projectPath `<base>/<payload>`,
 whose guard now passes, and the quote-break in <payload> fires the command. One exploit per kept
 place names the location it reads; the benign call carries no projectPath and is never aimed.

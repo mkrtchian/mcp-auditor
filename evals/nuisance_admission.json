@@ -9174,7 +9174,7 @@
                 "projectPath": "/opt/dodge_the_creeps",
                 "filePath": "player.gd"
               },
-              "expect": "uid://ccd1k2qxslohl",
+              "expect": "uid://6s0lxctks3qn",
               "before": []
             },
             {
@@ -9199,7 +9199,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "48aa5d15a8a36e3d1292ea18de50e03e82cd083e5f91906c71588dbd140e7bee"
+            "holdout_fingerprint": "501b368e1bf16a75104c2a844dad649157015bb38bab36a309b2198c538c3f05"
           }
         }
       ],
@@ -9312,22 +9312,22 @@
       "stand_ins": [],
       "seeds": [
         {
-          "item": "/opt/dodge_the_creeps: the whole 2d/dodge_the_creeps project of godot-demo-projects, the finished project of the Godot documentation's 'Your first 2D game' tutorial (the docs' first sample project: getting_started/first_2d_game/index.rst of godot-docs 4.4 links https://github.com/godotengine/godot-demo-projects/tree/master/2d/dodge_the_creeps as 'a completed version of this project'); project.godot config/features 4.4. Owned by uid 65534 so the tools can write in it.",
+          "item": "/opt/dodge_the_creeps: the whole 2d/dodge_the_creeps project of godot-demo-projects, the finished project of the Godot documentation's 'Your first 2D game' tutorial (the docs' first sample project: getting_started/first_2d_game/index.rst of godot-docs 4.4 links https://github.com/godotengine/godot-demo-projects/tree/master/2d/dodge_the_creeps as 'a completed version of this project'); project.godot config/features 4.7. Owned by uid 65534 so the tools can write in it.",
           "kind": "published_sample",
-          "citation": "https://github.com/godotengine/godot-demo-projects/tree/de00da353cd773b8831e74e16f251ec40335df70/2d/dodge_the_creeps",
-          "pin": "de00da353cd773b8831e74e16f251ec40335df70"
+          "citation": "https://github.com/godotengine/godot-demo-projects/tree/b761b4cd5718a7118f2c95eb55f181d0a5f004f1/2d/dodge_the_creeps",
+          "pin": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1"
         },
         {
           "item": "/opt/squash_the_creeps: the whole 3d/squash_the_creeps project of godot-demo-projects, finished project of the documentation's 'Your first 3D game' tutorial, the project's next published sample; seeded because export_mesh_library needs a scene with MeshInstance3D nodes, which the 2D sample does not hold.",
           "kind": "published_sample",
-          "citation": "https://github.com/godotengine/godot-demo-projects/tree/de00da353cd773b8831e74e16f251ec40335df70/3d/squash_the_creeps",
-          "pin": "de00da353cd773b8831e74e16f251ec40335df70"
+          "citation": "https://github.com/godotengine/godot-demo-projects/tree/b761b4cd5718a7118f2c95eb55f181d0a5f004f1/3d/squash_the_creeps",
+          "pin": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1"
         },
         {
-          "item": "/opt/dodge_the_creeps/.godot and /opt/squash_the_creeps/.godot: the import cache (imported textures, fonts, audio, glb meshes, uid cache) Godot 4.4.1 generates with 'godot --headless --import --path <project>' at build time, so resources load headless.",
+          "item": "/opt/dodge_the_creeps/.godot and /opt/squash_the_creeps/.godot: the import cache (imported textures, fonts, audio, glb meshes, uid cache) Godot 4.7.2 generates with 'godot --headless --import --path <project>' at build time, so resources load headless.",
           "kind": "generated",
           "citation": "Godot command line '--import' option (docs: tutorials/editor/command_line_tutorial)",
-          "pin": "Godot_v4.4.1-stable_linux.x86_64.zip"
+          "pin": "Godot_v4.7.2-stable_linux.x86_64.zip"
         },
         {
           "item": "Benign-call names not in the samples: scenePath 'level.tscn' (create_scene), nodeName 'Child' and the added node name 'Sprite2D' (add_node), outputPath 'out.meshlib' (export_mesh_library); passed as call arguments only, nothing written into the image.",
@@ -9339,9 +9339,9 @@
       "software_releases": [
         {
           "software": "Godot Engine",
-          "release": "4.4.1-stable",
-          "day": "2025-03-26",
-          "source": "Copied from the holdout calibration card of CVE-2026-25546, whose calibration this flaw's fix check reuses: the godot-mcp README names no Godot version and links https://godotengine.org/download; the run image installs the official Godot_v4.4.1-stable_linux.x86_64.zip from https://github.com/godotengine/godot/releases/tag/4.4.1-stable, checked against that release's SHA512-SUMS.txt (ef4e7688...71370e). godotengine.org/download's current stable release is later, through the same channel; the card's release is kept, the flaw's fix check reusing the twin's calibration."
+          "release": "4.7.2-stable",
+          "day": "2026-11-12",
+          "source": "Copied from the holdout calibration card of CVE-2026-25546, whose calibration this flaw's fix check reuses: godot-mcp's README at 21c785d names 'Godot 4.4+' as a constraint and 'my Godot 4.4 project' as an example, not a prescribed version (the maintainer's reading), its Prerequisites link https://godotengine.org/download, and the server ships no test, so the stable release current on the day of the repair counts. On 2026-11-12 that is 4.7.2-stable (github.com/godotengine/godot/releases, released 2026-08-18); the run image installs the official Godot_v4.7.2-stable_linux.x86_64.zip from https://github.com/godotengine/godot/releases/tag/4.7.2-stable, checked against that release's SHA512-SUMS.txt (9aa00f7a...ed54c65), and the built image reports 4.7.2.stable.official.ed1daf0bf."
         }
       ]
     },
