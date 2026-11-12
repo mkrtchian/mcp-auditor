@@ -166,8 +166,9 @@ def layout_check(
     patched: VersionObservation,
 ) -> LayoutCheck:
     """The layout check's result over the two versions' observations: the give-up reason, the break
-    on either version, and the kept layout places with no route (detection-suite-rule.md, Deployment
-    layout (A place is kept for a target, A server the layout breaks))."""
+    on either version, the nonce leak on the vulnerable version, and the kept layout places with no
+    route (detection-suite-rule.md, Deployment layout (A place is kept for a target, A server the
+    layout breaks))."""
     gave_up = layout_check_gave_up(target, vuln.planted) or layout_check_gave_up(
         target, patched.planted
     )
@@ -203,11 +204,7 @@ async def check_layouts_and_routes(
         if ci and target.ci_skip_reason is not None:
             console.print(f"[yellow]skip[/yellow]  {target.flaw_id}: {target.ci_skip_reason}")
             continue
-        vuln, patched = await observe_versions(target, places)
-        records = kept_records(target.kept_places, places)
-        check = layout_check(target, records, vuln, patched)
-        _report(target, check, records, places, vuln.planted)
-        failure = layout_failure(target, check)
+        failure = layout_failure(target, await _check_and_report(target, places))
         if failure is not None:
             failures.append(f"{target.flaw_id}: {failure}")
     if failures:
@@ -217,21 +214,19 @@ async def check_layouts_and_routes(
     return failures
 
 
-def _report(
-    target: Target,
-    check: LayoutCheck,
-    records: Sequence[Place],
-    places: Places,
-    planted: RouteObservations,
-) -> None:
+async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
+    vuln, patched = await observe_versions(target, places)
+    records = kept_records(target.kept_places, places)
+    check = layout_check(target, records, vuln, patched)
     if check.gave_up is not None:
         _report_give_up(target.flaw_id, check.gave_up)
-        return
+        return check
     _report_break(target.flaw_id, check.breaks)
     _report_leak(target.flaw_id, check.leaks)
     for place in records:
-        _report_route(target.flaw_id, place, has_route(place, planted))
-    _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, planted))
+        _report_route(target.flaw_id, place, has_route(place, vuln.planted))
+    _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, vuln.planted))
+    return check
 
 
 def _report_give_up(flaw_id: str, reason: str) -> None:
