@@ -14079,7 +14079,7 @@
             {
               "request": "https GET /academy.md",
               "source": "capture",
-              "citation": "Captured from https://docs.apify.com/academy.md on 2026-11-07T21:46:38Z with evals/capture_stand_in (200 text/markdown, Last-Modified Fri, 06 Nov 2026 14:09:56 GMT, ETag \"6aeddfb4-c62\"), stored whole"
+              "citation": "Captured from https://docs.apify.com/academy.md on 2026-11-12T23:40:00Z with evals/capture_stand_in (200 text/markdown, Last-Modified Thu, 12 Nov 2026 08:38:09 GMT, ETag \"6af57af1-c62\"), stored whole"
             },
             {
               "request": "https, any other request (default)",
@@ -14102,12 +14102,12 @@
             {
               "request": "https GET /v2/actors/apify~rag-web-browser",
               "source": "capture",
-              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-04T07:36:55Z: 401 user-or-token-not-found"
+              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-12T23:39:59Z with the server's own token (Authorization: Bearer your-apify-token): 401 user-or-token-not-found"
             },
             {
               "request": "https GET /v2/users/me",
               "source": "capture",
-              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-04T07:36:55Z: 401 user-or-token-not-found"
+              "citation": "evals/stand_ins/api.apify.com.json, captured 2026-11-12T23:39:59Z with the server's own token (Authorization: Bearer your-apify-token): 401 user-or-token-not-found"
             },
             {
               "request": "https, any other request (default)",
@@ -14126,9 +14126,9 @@
       "software_releases": [
         {
           "software": "Apify documentation site docs.apify.com (built from github.com/apify/apify-docs)",
-          "release": "deployment of apify/apify-docs master at 3d136ca2cbeaa4768aa2386c3a90f3bddab90cc6 (committed 2026-11-06T14:01:37Z; the captured page carries Last-Modified Fri, 06 Nov 2026 14:09:56 GMT), as served on 2026-11-07",
-          "day": "2026-11-07",
-          "source": "The server names the host only (ALLOWED_DOC_DOMAINS in dist/const.js of 0.9.21: https://docs.apify.com), no version; the current state is the live site, captured 2026-11-07, and the latest commit of https://api.github.com/repos/apify/apify-docs/commits on that day"
+          "release": "deployment of apify/apify-docs master as served on 2026-11-12 (the captured page carries Last-Modified Thu, 12 Nov 2026 08:38:09 GMT, ETag \"6af57af1-c62\"); the page's body is byte-identical to the one served on 2026-11-07 by the deployment of 3d136ca2cbeaa4768aa2386c3a90f3bddab90cc6 (committed 2026-11-06T14:01:37Z, Last-Modified Fri, 06 Nov 2026 14:09:56 GMT)",
+          "day": "2026-11-12",
+          "source": "The server names the host only (ALLOWED_DOC_DOMAINS in dist/const.js of 0.9.21: https://docs.apify.com), no version; the current state is the live site, captured 2026-11-12, whose /academy.md body equals that of the capture of 2026-11-07, when the latest commit of https://api.github.com/repos/apify/apify-docs/commits was 3d136ca2cbeaa4768aa2386c3a90f3bddab90cc6"
         }
       ]
     },
