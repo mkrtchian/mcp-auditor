@@ -186,6 +186,13 @@ def layout_check(
     return LayoutCheck(gave_up, breaks, leaking, unrouted)
 
 
+async def observe_layout(
+    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+) -> LayoutCheck:
+    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
+    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
+
+
 async def observe_versions(
     target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
 ) -> tuple[VersionObservation, VersionObservation]:
@@ -196,13 +203,6 @@ async def observe_versions(
     vuln = await observer.version(TargetVersion.VULNERABLE)
     patched = await observer.version(TargetVersion.PATCHED)
     return vuln, patched
-
-
-async def observe_layout(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
-) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
-    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
 
 
 async def check_layouts_and_routes(
