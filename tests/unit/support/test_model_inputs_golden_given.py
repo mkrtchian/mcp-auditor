@@ -106,13 +106,13 @@ def _single_step_prompts() -> dict[str, str]:
         "judge/text_response": prompts.build_judge_prompt(_tool(), _text_case()),
         "judge/dict_response": prompts.build_judge_prompt(_tool(), _dict_case()),
         "judge/error": prompts.build_judge_prompt(_bare_tool(), _error_case()),
-        "judge/nothing": prompts.build_judge_prompt(_tool(), _test_case(_payload())),
+        "judge/nothing": prompts.build_judge_prompt(_tool(), TestCase(payload=_payload())),
     }
 
 
 def _chain_prompts() -> dict[str, str]:
     steps = [_chain_step("probe", response="row 1"), _chain_step("exploit", error="denied")]
-    long_case = _test_case(_payload(), response="x" * 250, judge_result=_judge_result())
+    long_case = TestCase(payload=_payload(), response="x" * 250, judge_result=_judge_result())
     return {
         "chain_planning/empty": chain_prompts.build_chain_planning_prompt(
             _tool(), [], AttackContext(), 2
@@ -251,39 +251,23 @@ def _judgment() -> Judgment:
     return Judgment(verdict=EvalVerdict.PASS, justification="nothing shown", severity=Severity.LOW)
 
 
-def _test_case(
-    payload: AuditPayload,
-    response: str | dict[str, Any] | None = None,
-    error: str | None = None,
-    judge_result: JudgeResult | None = None,
-    blocked_reason: str | None = None,
-) -> TestCase:
-    return TestCase(
-        payload=payload,
-        response=response,
-        error=error,
-        judge_result=judge_result,
-        blocked_reason=blocked_reason,
-    )
-
-
 def _text_case() -> TestCase:
-    return _test_case(_payload(), response="alice, bob", judge_result=_judge_result())
+    return TestCase(payload=_payload(), response="alice, bob", judge_result=_judge_result())
 
 
 def _dict_case() -> TestCase:
     payload = _payload(AuditCategory.INFO_LEAKAGE, "valid id")
-    return _test_case(payload, response={"email": "a@example.com", "role": "admin"})
+    return TestCase(payload=payload, response={"email": "a@example.com", "role": "admin"})
 
 
 def _error_case() -> TestCase:
     payload = _payload(AuditCategory.ERROR_HANDLING, "unknown id")
-    return _test_case(payload, error="Traceback (most recent call last): KeyError: '7'")
+    return TestCase(payload=payload, error="Traceback (most recent call last): KeyError: '7'")
 
 
 def _blocked_case() -> TestCase:
     payload = _payload(description="drop the table")
-    return _test_case(payload, blocked_reason="destructive SQL: DROP")
+    return TestCase(payload=payload, blocked_reason="destructive SQL: DROP")
 
 
 def _judged_tool_report() -> ToolReport:
