@@ -52,7 +52,7 @@ ENV AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 # compose-labels test). No file carries a comment of the fixture author's.
 # The account keeps the name and password the Secrets Manager stand-in serves, in place of the
 # README's mcp_readonly and its elided password, and its grant names the employees database in
-# place of the README's your_database. A client from MySQL 9.5 on disables `source` by default,
+# place of the README's your_database. A client from MySQL 9.4 on disables `source` by default,
 # which employees.sql uses for its data files, so the load passes --commands.
 RUN mkdir -p /opt/mcp
 RUN cat > /opt/mcp/dbinit.sh <<'DBINIT_EOF'

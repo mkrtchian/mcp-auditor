@@ -10865,7 +10865,7 @@
           "pin": null
         },
         {
-          "item": "The employees sample database (tables departments, employees, dept_emp, dept_manager, titles, salaries and their views), loaded at build from employees.sql and the nine files it sources, with mysql --commands, since a client from MySQL 9.5 on disables source by default.",
+          "item": "The employees sample database (tables departments, employees, dept_emp, dept_manager, titles, salaries and their views), loaded at build from employees.sql and the nine files it sources, with mysql --commands, since a client from MySQL 9.4 on disables source by default.",
           "kind": "published_sample",
           "citation": "The employees database, the first of MySQL's example databases (Example Databases, dev.mysql.com/doc/index-other.html), from github.com/datacharmer/test_db at commit e324b56193ca506ab7cc1ab143a9153d8c4535d7, each file fetched with its sha256 checksum.",
           "pin": "e324b56193ca506ab7cc1ab143a9153d8c4535d7"
