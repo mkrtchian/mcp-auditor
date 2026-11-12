@@ -13,19 +13,25 @@ from evals.cve.nuisance.fix_check_command import FixCheckDeps
 
 
 class FakeFixCheck:
-    """Records the services it is asked to build, raising `build_error` instead when one is
-    given, and answers every fix check with `result`."""
+    """Records the services it is asked to build and the backend services it is asked to bring
+    up to date, raising `build_error` instead of building when one is given, and answers every fix
+    check with `result`."""
 
     def __init__(
         self, result: FixCheckResult | Exception, build_error: Exception | None = None
     ) -> None:
         self.built: list[str] = []
+        self.refreshed: list[str] = []
         self._result = result
         self._build_error = build_error
 
     @property
     def deps(self) -> FixCheckDeps:
-        return FixCheckDeps(build_images=self._build, check_fix=self._check_fix)
+        return FixCheckDeps(
+            build_images=self._build,
+            refresh_backend_images=self.refreshed.extend,
+            check_fix=self._check_fix,
+        )
 
     def _build(self, services: Sequence[str]) -> None:
         if self._build_error is not None:

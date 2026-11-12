@@ -32,8 +32,9 @@ ENV AWS_DEFAULT_REGION=us-east-1
 # explicitly here, so the move does not apply. initdb runs at its defaults: its bootstrap
 # superuser takes the name of the operating-system user running it (nobody, uid 65534), and its
 # authentication is trust. The engine keeps the listen address the image's configuration sample
-# sets ('*', which reaches loopback alone in a container with no network) and PostgreSQL's
-# default socket directory, /var/run/postgresql, which the image leaves writable by every user.
+# sets ('*', which reaches loopback alone in a container with no network) and the default socket
+# directory of the image's Debian build of PostgreSQL, /var/run/postgresql (a build from
+# PostgreSQL's own sources defaults to /tmp), which the image leaves writable by every user.
 #
 # The server connects with the read-only role the server's README at 1.1.7 gives as its example
 # ("Do not connect as a superuser"), named postgres and given the password EXAMPLE-PASSWORD that

@@ -1,6 +1,7 @@
 """The fix check core on fake deps, and the `fix-check` subcommand driven through run_nuisance's
 main, with no Docker."""
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,7 @@ from tests.unit.support.test_kit_fix_check_given import a_fix_check_fixture
 from tests.unit.support.test_nuisance_admission_given import a_passing_fix_check, an_admission
 
 FIXTURE = a_fix_check_fixture(server_patched_service="server-patched")
+FIXTURE_OF_NO_ADMITTED_FLAW = dataclasses.replace(FIXTURE, flaw="CVE-2099-0002")
 RECORD = a_passing_fix_check()
 
 
@@ -138,6 +140,32 @@ def test_the_fix_check_removes_the_kit_and_built_backend_containers_left_running
         detection_targets.image_tag(service) for service in BACKENDS["ckan"].built_services
     ]
     assert containers.listed_tags == [[*kit_tags, *ckan_tags]]
+
+
+def test_the_fix_check_brings_the_built_backend_images_of_its_servers_up_to_date(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (FIXTURE,))
+    monkeypatch.setattr(fix_check_command, "check_closed_network_support", lambda: None)
+    fake = given.FakeFixCheck(given.a_result_matching(RECORD))
+    _checking_with(monkeypatch, fake)
+
+    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+
+    assert fake.refreshed == list(BACKENDS["ckan"].built_services)
+
+
+def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its_flaws(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (FIXTURE_OF_NO_ADMITTED_FLAW,))
+    monkeypatch.setattr(fix_check_command, "check_closed_network_support", lambda: None)
+    fake = given.FakeFixCheck(given.a_result_matching(RECORD))
+    _checking_with(monkeypatch, fake)
+
+    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+
+    assert fake.refreshed == []
 
 
 def _checking_with(monkeypatch: pytest.MonkeyPatch, fix_check: given.FakeFixCheck) -> None:

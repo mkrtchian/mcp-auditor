@@ -1,5 +1,6 @@
-"""The `fix-check` subcommand of run_nuisance: rebuild each fix-check fixture's images and
-reproduce its flaw against the admission's recorded fix_check (Docker, no LLM)."""
+"""The `fix-check` subcommand of run_nuisance: rebuild each fix-check fixture's images, bring the
+built backend images of the servers it checks up to their compose fingerprint, and reproduce
+each flaw against the admission's recorded fix_check (Docker, no LLM)."""
 
 import argparse
 import asyncio
@@ -12,10 +13,11 @@ from pathlib import Path
 from evals.concurrency import bounded, positive_int
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.docker_paths import DOCKER_DIRECTORY
+from evals.cve.images import ComposeImageStore, ensure_images
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
-from evals.cve.nuisance.admission import ADMISSION_PATH, FixCheckRecord
-from evals.cve.nuisance.backend_registry import built_backend_tags
+from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer, FixCheckRecord
+from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -33,6 +35,9 @@ from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, s
 @dataclass(frozen=True)
 class FixCheckDeps:
     build_images: Callable[[Sequence[str]], None]
+    # A fixture builds its backend parts only when their tag is absent, which would stand a part
+    # an older Dockerfile built.
+    refresh_backend_images: Callable[[Sequence[str]], None]
     check_fix: Callable[[FixCheckFixture], Awaitable[FixCheckResult]]
 
 
@@ -64,16 +69,31 @@ def fix_check(args: argparse.Namespace) -> int:
     tags = [*kit_tags, *built_backend_tags(admission.servers)]
     try:
         deps = default_fix_check_deps(args.concurrency)
+        deps.refresh_backend_images(_backend_services(fixtures, admission.servers))
         return asyncio.run(check_fixes(fixtures, records, deps))
     finally:
         sweep_containers(tags, DOCKER_SWEEP.running_containers, DOCKER_SWEEP.remove_containers)
 
 
+def _backend_services(
+    fixtures: Sequence[FixCheckFixture], servers: Sequence[AdmittedServer]
+) -> list[str]:
+    checked = {fixture.flaw for fixture in fixtures}
+    return built_backend_services(
+        [server for server in servers if checked & {flaw.flaw for flaw in server.flaws}]
+    )
+
+
 def default_fix_check_deps(concurrency: int) -> FixCheckDeps:
     return FixCheckDeps(
         build_images=functools.partial(build_images, DOCKER_DIRECTORY),
+        refresh_backend_images=_ensure_compose_images,
         check_fix=bounded(check_fix, concurrency),
     )
+
+
+def _ensure_compose_images(services: Sequence[str]) -> None:
+    ensure_images(services, ComposeImageStore())
 
 
 async def check_fixes(
