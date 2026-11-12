@@ -85,7 +85,8 @@ class Companion(idb_grpc.CompanionServiceBase):
         if plain and not has_point and request.format == Info.NESTED:
             answer = NESTED
         elif plain and has_point and request.format == Info.LEGACY:
-            answer = POINT
+            at_captured_point = request.point.x == 201 and request.point.y == 90
+            answer = POINT if at_captured_point else "null"
         else:
             raise grpclib.exceptions.GRPCError(grpclib.const.Status.UNIMPLEMENTED, "Method not implemented")
         await stream.send_message(pb.AccessibilityInfoResponse(json=answer))

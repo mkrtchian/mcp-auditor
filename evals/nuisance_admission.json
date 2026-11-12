@@ -17447,8 +17447,8 @@
             {
               "tool": "ui_describe_point",
               "arguments": {
-                "x": 0,
-                "y": 0
+                "x": 201,
+                "y": 90
               },
               "expect": "AXGroup",
               "before": []
@@ -17632,7 +17632,7 @@
           "server_package": "npm:ios-simulator-mcp",
           "flaw": "CVE-2025-52573",
           "field": "benign_calls",
-          "value": "record A's: the committed arguments for the two describe tools, ui_tap at (201, 90), ui_type 'Photos', a vertical ui_swipe, screenshot to /tmp/screen.png, no prerequisite, expecting '\"children\"', 'AXGroup' and the server's own success texts",
+          "value": "record A's: ui_describe_all with no argument, ui_describe_point and ui_tap at (201, 90) (ui_describe_point moved from (0, 0) on 2026-11-12, to the point of the copied idb transcript, the one point the companion stand-in answers with an element), ui_type 'Photos', a vertical ui_swipe, screenshot to /tmp/screen.png, no prerequisite, expecting '\"children\"', 'AXGroup' and the server's own success texts",
           "reason": "the benign calls follow the retained stand-ins and seed: they expect the nested key and the role of the copied idb transcript the retained companion stand-in serves, where record B expected the identifier and frame key of its own answers; both records expect the server's own success texts for the four other tools."
         }
       ],
@@ -17659,9 +17659,16 @@
               "replacements": []
             },
             {
+              "request": "request.point.x == 201 and request.point.y == 90",
+              "source": "software_sources",
+              "citation": "accessibility_info with the point x 201, y 90 and format LEGACY, no marker, match, keys or profile (what `idb ui describe-point --json -- 201 90` sends): the 25 lines `idb ui describe-point 201 90 --json` printed on a real simulator in fbidb.io/idb/demos, 'Deliver a push notification and open the app from its banner', step 3 'Check what is where the banner will appear', as the page stood when the output was copied. The page is built from the manifest of an end-to-end run of idb's demo tests (fb-idb 1.7.7 EndToEndTests/test_demos.py, the step 'Check what is where the banner will appear'; website/scripts/generate-demos.js, 'the page, the manifest it imports and the media it serves are all gitignored'), which the repository does not hold, and is regenerated with each published run, so no idb version pins the copied output: the page now shows the same element from a later run (pid 1288 in place of 12327). It is the first describe-point --json output idb's documentation gives. The client prints the companion's json field verbatim (fb-idb 1.7.7 idb/cli/commands/accessibility.py `print(info.json)`), so the transcript is the field's text.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
               "request": "Info.LEGACY",
               "source": "software_sources",
-              "citation": "accessibility_info with a point and format LEGACY, no marker, match, keys or profile (what `idb ui describe-point --json -- X Y` sends): fbidb.io/idb/demos, 'Deliver a push notification and open the app from its banner', step 3 of 7: the 25 lines `idb ui describe-point 201 90 --json` printed on a real simulator, published from idb's documented end-to-end tests (fb-idb 1.7.7 EndToEndTests/documentation.py); the first describe-point --json output idb's documentation gives. The client prints the companion's json field verbatim (fb-idb 1.7.7 idb/cli/commands/accessibility.py `print(info.json)`), so the transcript is the field's text.",
+              "citation": "accessibility_info with any other point and format LEGACY, no marker, match, keys or profile (what `idb ui describe-point --json -- X Y` sends for any other point): the text null, from idb's documentation at v1.7.7, website/docs/idb/ui.mdx, `idb ui describe-point X Y`: 'In the `default` and `nested` formats a whole-screen read emits an array where this emits a bare object, or `null` when nothing is at the point.' (the `default` format is the LEGACY wire format, fb-idb 1.7.7 idb/common/types.py). No source publishes an element at another point of the simulated screen, so every other point is answered as a point with nothing at it.",
               "form_source": null,
               "replacements": []
             },

@@ -1184,7 +1184,7 @@ services:
       context: .
       dockerfile: Dockerfile.ios-simulator
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "7274ec0b7170bc7b72d7e203902ac21e74f36f568257e85d0a295d822aa23de3"
+        org.mcp-auditor.dockerfile-fingerprint: "8c5281dd6f539fa6ae3decece64d3dcb18c51f1811969d4424acc278e16c9f89"
     image: mcp-auditor-nuisance-ios-simulator:local
     profiles: ["nuisance"]
 

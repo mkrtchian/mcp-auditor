@@ -68,7 +68,7 @@ async def _benign_describe_all(places: Places, client: KitClient) -> None:
 
 
 async def _benign_describe_point(places: Places, client: KitClient) -> None:
-    await client.call_tool("ui_describe_point", {"x": 0, "y": 0})
+    await client.call_tool("ui_describe_point", {"x": 201, "y": 90})
 
 
 async def _benign_tap(places: Places, client: KitClient) -> None:
