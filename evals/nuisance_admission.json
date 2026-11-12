@@ -467,8 +467,8 @@
           "patched_source": "advisory",
           "launch_option": {
             "option": "config/mcp-config.json",
-            "value": "{\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"root\"]}",
-            "reason": "The MCP server must be enabled and the execute_command tool allowed so the polyglot js language path (PolyglotQueryEngine) is reachable; the GraalVM class-loader reflection pivot off the bound database object then reads a file outside the database scope.",
+            "value": "{\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":false,\"allowAdmin\":false,\"allowedUsers\":[\"root\"]}",
+            "reason": "The MCP server must be enabled and execute_command must pass its permission check so the polyglot js language path (PolyglotQueryEngine), where the flaw and its fix sit, is reachable; the GraalVM class-loader reflection pivot off the bound database object then reads a file outside the database scope. ArcadeDB 26.6.1 and 26.7.1 classify a polyglot script as neither idempotent nor DDL, so its operation types are CREATE, UPDATE and DELETE (QueryEngine.AnalyzedQuery.getOperationTypes, PolyglotQueryEngine), which execute_command checks against allowInsert, allowUpdate and allowDelete alone (MCPToolUtils.checkPermission): those three are set to true beside enabled and allowReads, and allowSchemaChange and allowAdmin, which the script does not need, are written at their documented default, false (the flag table of the MCP reference, and MCPConfiguration at 26.7.1).",
             "documentation": "https://docs.arcadedb.com/arcadedb/reference/mcp/mcp"
           },
           "benign_calls": [
@@ -840,8 +840,8 @@
           "server_package": "Maven:com.arcadedb:arcadedb-server",
           "flaw": null,
           "field": "seeds",
-          "value": "record B's: the OpenBeer dataset, the database name Imported and the root password playwithdata of ArcadeDB's Docker quick start, and the written config/mcp-config.json with allowedUsers at its documented default",
-          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer; the fixture sets only what the fix needs, so allowedUsers goes back from [\"*\"] to the documented default [\"root\"], which record A's calibration kept, the stdio session authenticating as root"
+          "value": "record B's: the OpenBeer dataset, the database name Imported and the root password playwithdata of ArcadeDB's Docker quick start, and the written config/mcp-config.json with allowInsert, allowUpdate and allowDelete set, and allowSchemaChange, allowAdmin and allowedUsers at their documented default",
+          "reason": "record B's fixture is retained: it seeds the published sample ArcadeDB's Docker page names, the OpenBeer dataset taken whole and imported at start-up by the documented defaultDatabases option, so each benign call expects a text the sample or the server produces, where record A's database is created empty and its calls expect a key of the server's own answer; the fixture sets only what the fix needs, so allowedUsers goes back from [\"*\"] to the documented default [\"root\"], which record A's calibration kept, the stdio session authenticating as root, and allowSchemaChange and allowAdmin go back from true to their documented default false, since a polyglot script, which execute_command must pass to the engine for the fix's patched path to run, needs allowInsert, allowUpdate and allowDelete alone"
         },
         {
           "server_package": "Maven:com.arcadedb:arcadedb-server",
@@ -880,9 +880,9 @@
           "pin": null
         },
         {
-          "item": "config/mcp-config.json {\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":true,\"allowAdmin\":true,\"allowedUsers\":[\"root\"]}",
+          "item": "config/mcp-config.json {\"enabled\":true,\"allowReads\":true,\"allowInsert\":true,\"allowUpdate\":true,\"allowDelete\":true,\"allowSchemaChange\":false,\"allowAdmin\":false,\"allowedUsers\":[\"root\"]}",
           "kind": "written",
-          "citation": "the launch option of CVE-2026-65831; keys and the allowedUsers default from the MCP reference (https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html, Configuration)",
+          "citation": "the launch option of CVE-2026-65831: enabled, allowReads, allowInsert, allowUpdate and allowDelete true, the three write flags being those a polyglot script needs; keys, the allowSchemaChange and allowAdmin default false and the allowedUsers default from the MCP reference (https://docs.arcadedb.com/arcadedb/reference/mcp/mcp.html, Configuration)",
           "pin": null
         }
       ],

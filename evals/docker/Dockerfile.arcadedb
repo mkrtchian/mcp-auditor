@@ -12,9 +12,12 @@ ADD --checksum=sha256:65dae3b7f1db115666e63b4855dd6224064c8be531ee034e301d201309
   https://github.com/ArcadeData/arcadedb-datasets/raw/6352075b2046178d6063ddbe102e50d117a436e0/orientdb/OpenBeer.gz \
   /home/arcadedb/datasets/OpenBeer.gz
 
-# MCP permissions (config/mcp-config.json): every tool class allowed, allowedUsers at its
-# documented default.
-RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":true,"allowAdmin":true,"allowedUsers":["root"]}' \
+# MCP permissions (config/mcp-config.json): the write operations a polyglot script needs to reach
+# the engine, where the flaw and its fix sit. ArcadeDB 26.7.1 classifies a polyglot script as a
+# CREATE, UPDATE and DELETE operation (neither idempotent nor DDL), checked against allowInsert,
+# allowUpdate and allowDelete alone; allowSchemaChange and allowAdmin stay at their documented
+# default, false, and allowedUsers at its documented default.
+RUN printf '%s' '{"enabled":true,"allowReads":true,"allowInsert":true,"allowUpdate":true,"allowDelete":true,"allowSchemaChange":false,"allowAdmin":false,"allowedUsers":["root"]}' \
   > /home/arcadedb/config/mcp-config.json
 
 # The run's uid is not the image's arcadedb user: let it write the server's runtime directories.
