@@ -1463,7 +1463,8 @@ RUN bash -o pipefail -c 'bash /root/sng_install.sh --nofreepbx --nochrony --skip
 # 2. FreePBX framework (bootstraps /etc/freepbx.conf + the asterisk DB via the freepbx17 postinst
 #    while MariaDB is up), then the API module and the pinned Frogman module. MariaDB must stay up
 #    through the freepbx17 postinst for the bootstrap to complete. The three stack packages are
-#    pinned to the versions the card records, and no install step masks its failure with `|| true`.
+#    pinned to the versions the card records, and the API module to its card's release through
+#    fwconsole's --tag, checked after the download since fwconsole's exit status is not.
 RUN set -e; mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld; \
     mariadbd --user=mysql >/tmp/mdb.log 2>&1 & \
     for i in $(seq 1 60); do [ -S /run/mysqld/mysqld.sock ] && break; sleep 1; done; \
@@ -1472,7 +1473,9 @@ RUN set -e; mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld; \
     test -f /etc/freepbx.conf || { echo "FreePBX DB bootstrap failed (see releve caveat)"; tail -30 /tmp/fpbx.log; exit 1; }; \
     ( [ -S /run/mysqld/mysqld.sock ] || mariadbd --user=mysql >/tmp/mdb2.log 2>&1 & ); \
     for i in $(seq 1 60); do [ -S /run/mysqld/mysqld.sock ] && break; sleep 1; done; \
-    fwconsole ma downloadinstall api >/tmp/api.log 2>&1 || true; \
+    fwconsole ma downloadinstall api --tag 17.0.9 >/tmp/api.log 2>&1 || true; \
+    grep -q '<version>17.0.9</version>' /var/www/html/admin/modules/api/module.xml \
+      || { echo "API module 17.0.9 not installed"; tail -30 /tmp/api.log; exit 1; }; \
     cp -r /root/frogman /var/www/html/admin/modules/frogman; \
     fwconsole ma installlocal >/tmp/il.log 2>&1 || true; \
     fwconsole ma install frogman >/tmp/fi.log 2>&1 || true; \
@@ -1506,6 +1509,27 @@ RUN a2ensite freepbx.conf; a2ensite default-ssl; \
       /var/lock/apache2 /var/log/apache2; \
     chmod a+rx /etc/ssl/private; chmod a+r /etc/ssl/private/ssl-cert-snakeoil.key; \
     chmod 1777 /tmp
+
+# 4. No value of the build machine stays in the image. The postfix package's maintainer scripts
+#    derive the mail name from the build container's `hostname --fqdn` and resolv.conf search
+#    domain: they write myhostname and the mail name in mydestination into main.cf, record the
+#    postfix/mailname debconf answer, and newaliases stores myhostname in aliases.db; exim4-config,
+#    installed then replaced by postfix, wrote /etc/mailname. The two main.cf lines are removed so
+#    postconf(5)'s defaults apply when postfix runs (myhostname from gethostname(),
+#    mydestination = $myhostname, localhost.$mydomain, localhost), the debconf answer is reset to
+#    its template default, and aliases.db is rebuilt under those defaults. /etc/mailname is removed:
+#    Debian policy has a mail package use it if it exists and ask for it otherwise, and main.cf
+#    leaves myorigin at its default ($myhostname), so nothing reads it. The launch writes none of
+#    these files, so the hostname a launch sets never lands in one. The installer's log and apt's
+#    terminal log, which record the build machine's kernel and the mail name, are removed.
+RUN set -e; \
+    sed -i -E '/^myhostname[[:space:]]*=/d; /^mydestination[[:space:]]*=/d; /^myorigin[[:space:]]*=[[:space:]]*\/etc\/mailname/d' /etc/postfix/main.cf; \
+    rm -f /etc/mailname; \
+    echo 'RESET postfix/mailname' | debconf-communicate postfix >/dev/null; \
+    rm -f /var/cache/debconf/config.dat-old; \
+    newaliases; \
+    postfix check; \
+    rm -f /var/log/pbx/freepbx17-install-*.log /var/log/apt/term.log
 
 # The entrypoint starts mariadbd, asterisk and the Apache FreePBX ajax web tier (all as the launch
 # account), waits for readiness, then execs the real php mcp-server.php on stdio.

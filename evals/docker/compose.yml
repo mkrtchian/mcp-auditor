@@ -410,7 +410,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-46514-frogman
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cdaece29b2d7aaa63dc2285be088f7d62b3eb90499d77e24986a0a6f085f510a"
+        org.mcp-auditor.dockerfile-fingerprint: "04259ba483c69815fbede66dff63c379a0a20ffffe6fb0b59c30eed3380af78c"
     image: mcp-auditor-cve-holdout-2026-46514-frogman:local
 
   holdout-2026-46514-frogman-patched:
@@ -418,7 +418,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-46514-frogman-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "66f8f1867b474eab8674b8082fa91af559f43655b5ac2a07ef85432b10313384"
+        org.mcp-auditor.dockerfile-fingerprint: "0892eb036f477798c6681ed682188beb2acfef18460029c6f7b16b68820b3861"
     image: mcp-auditor-cve-holdout-2026-46514-frogman-patched:local
 
   # Internal-fetch target: mcp-neo4j-cypher's read-only guard is a keyword regex, so a CALL of
@@ -950,7 +950,7 @@ services:
       context: .
       dockerfile: Dockerfile.frogman
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "66f8f1867b474eab8674b8082fa91af559f43655b5ac2a07ef85432b10313384"
+        org.mcp-auditor.dockerfile-fingerprint: "0892eb036f477798c6681ed682188beb2acfef18460029c6f7b16b68820b3861"
     image: mcp-auditor-nuisance-frogman:local
     profiles: ["nuisance"]
 

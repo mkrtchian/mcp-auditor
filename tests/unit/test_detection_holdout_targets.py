@@ -107,11 +107,12 @@ def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
         assert target.ci_skip_reason is None
 
 
-def test_only_the_desktop_commander_target_settles_a_leak_at_calibration():
+def test_only_the_desktop_commander_and_frogman_targets_settle_a_leak_at_calibration():
     settled = {t.flaw_id: t.settled_leaks for t in [*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS]}
 
     assert {flaw_id: leaks for flaw_id, leaks in settled.items() if leaks} == {
-        "CVE-2025-11489": frozenset({"container-hostname"})
+        "CVE-2025-11489": frozenset({"container-hostname"}),
+        "CVE-2026-46514": frozenset({"container-hostname"}),
     }
 
 

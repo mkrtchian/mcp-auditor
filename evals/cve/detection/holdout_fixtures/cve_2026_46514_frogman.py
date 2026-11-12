@@ -119,6 +119,8 @@ TARGET = Target(
     patched_image="holdout-2026-46514-frogman-patched",
     planting_host=PLANTING_HOST,
     builder=command_injection_env,
+    # fm_get_mcp_config returns gethostname() on both versions; kept by the log entry of 2026-11-12.
+    settled_leaks=frozenset({"container-hostname"}),
     exploits=tuple(_make_exploit(pid) for pid in KEPT),
     benign=_benign,
     awaited_capability=None,
