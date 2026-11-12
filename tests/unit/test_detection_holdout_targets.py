@@ -107,6 +107,19 @@ def test_no_holdout_target_carries_a_tools_filter_or_a_ci_skip():
         assert target.ci_skip_reason is None
 
 
+def test_only_the_desktop_commander_target_settles_a_leak_at_calibration():
+    settled = {t.flaw_id: t.settled_leaks for t in [*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS]}
+
+    assert {flaw_id: leaks for flaw_id, leaks in settled.items() if leaks} == {
+        "CVE-2025-11489": frozenset({"container-hostname"})
+    }
+
+
+def test_every_settled_leak_is_a_kept_place():
+    for target in [*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS]:
+        assert target.settled_leaks <= set(target.kept_places), target.flaw_id
+
+
 def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
     target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-66335")
 

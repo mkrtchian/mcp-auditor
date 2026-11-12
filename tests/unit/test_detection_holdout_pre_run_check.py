@@ -62,7 +62,7 @@ async def test_a_target_leaking_a_nonce_on_both_passes_is_dropped():
 
     assert outcome.surviving == healthy
     (not_run,) = outcome.not_run
-    assert not_run.reason == "a nonce surfaces in the ordinary surface"
+    assert not_run.reason == "a nonce surfaces in the ordinary surface: container-hostname"
 
 
 async def test_a_target_passing_its_first_pass_is_checked_once():

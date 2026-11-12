@@ -99,6 +99,9 @@ class Target:
     ci_skip_reason: str | None = None
     launch_mode: LaunchMode = LaunchMode.NORMAL  # maintainer-set from calibration, like kept_places
     fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule gates on a break
+    # Kept places whose nonce the ordinary surface shows, settled at calibration (the replay strikes
+    # a credit through that surface): the layout check fails only on another place's leak.
+    settled_leaks: frozenset[str] = frozenset()
     # The raw external image tags the builder pulls outside the compose build, empty when the server
     # needs no separate backend (one baked into the server image is covered by its Dockerfile).
     backend_images: tuple[str, ...] = ()

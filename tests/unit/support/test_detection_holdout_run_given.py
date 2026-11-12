@@ -129,7 +129,7 @@ def deps_auditing(
 
     async def _layout(target: Target) -> LayoutCheck:
         return layouts.get(
-            target.flaw_id, LayoutCheck(gave_up=None, breaks=False, leaks=False, unrouted=[])
+            target.flaw_id, LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
         )
 
     return HoldoutDeps(

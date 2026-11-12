@@ -27,12 +27,13 @@ launch-mode cannot start even that launch. It gates nothing on the model.
 
 `layout_failure` is the one reading of the result that fails a target, shared with the holdout
 pre-run check: a give-up, a break under the normal launch (the maintainer sets the fallback
-launch-mode), a nonce in the ordinary surface, or a kept layout place without a route. These are
-the layout items of the check that proves a repair (detection-suite-log.md, version 13).
+launch-mode), a nonce in the ordinary surface on a place its calibration did not settle, or a kept
+layout place without a route. These are the layout items of the check that proves a repair
+(detection-suite-log.md, version 13).
 """
 
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import IO
 
@@ -71,33 +72,35 @@ class LayoutRoute:
 class VersionObservation:
     reference: RouteObservations
     planted: RouteObservations
-    nonces: tuple[str, ...]  # the planted arm's nonces; the reference arm plants none
+    nonces: Mapping[str, str]  # the planted arm's nonce per place id; the reference arm plants none
 
 
 @dataclass(frozen=True)
 class LayoutCheck:
     """The result `check_layouts_and_routes` computes inline, exposed so the holdout orchestrator
     reads it directly: the give-up reason (or None), whether the layout breaks either version,
-    whether a nonce surfaces in the vulnerable version's ordinary surface, and the kept layout
-    places left without a route (detection-suite-rule.md, Deployment layout (A place is kept for a
-    target, A server the layout breaks))."""
+    the kept places whose nonce surfaces in the vulnerable version's ordinary surface, and the
+    kept layout places left without a route (detection-suite-rule.md, Deployment layout (A place
+    is kept for a target, A server the layout breaks))."""
 
     gave_up: str | None
     breaks: bool
-    leaks: bool
+    leaking: list[str]
     unrouted: list[str]
 
 
 def layout_failure(target: Target, check: LayoutCheck) -> str | None:
     """Why the layout check fails a target, or None. A break fails a NORMAL target, calibrated under
     a launch it lost, and keeps a FALLBACK one (detection-suite-rule.md, Deployment layout (A server
-    the layout breaks))."""
+    the layout breaks)). A leak fails it only on a place its calibration did not settle, by the
+    same reading (detection-suite-log.md, 2026-11-12)."""
     if check.gave_up is not None:
         return check.gave_up
     if check.breaks and target.launch_mode is LaunchMode.NORMAL:
         return "the layout breaks the server under the normal launch"
-    if check.leaks:
-        return "a nonce surfaces in the ordinary surface"
+    new_leaks = [place_id for place_id in check.leaking if place_id not in target.settled_leaks]
+    if new_leaks:
+        return "a nonce surfaces in the ordinary surface: " + ", ".join(new_leaks)
     if check.unrouted:
         return "kept layout place(s) without a route: " + ", ".join(check.unrouted)
     return None
@@ -124,6 +127,10 @@ def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> b
 
 def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
     return any(nonce in body for body in planted.responses for nonce in nonces)
+
+
+def leaking_places(planted: LayoutSurface, nonces: Mapping[str, str]) -> list[str]:
+    return [place_id for place_id, nonce in nonces.items() if nonce_in_surface(planted, (nonce,))]
 
 
 def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | None:
@@ -173,9 +180,9 @@ def layout_check(
         target, patched.planted
     )
     breaks = layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
-    leaks = nonce_in_surface(_surface(vuln.planted), vuln.nonces)
+    leaking = leaking_places(_surface(vuln.planted), vuln.nonces)
     unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
-    return LayoutCheck(gave_up, breaks, leaks, unrouted)
+    return LayoutCheck(gave_up, breaks, leaking, unrouted)
 
 
 async def observe_versions(
@@ -222,7 +229,7 @@ async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
         _report_give_up(target.flaw_id, check.gave_up)
         return check
     _report_break(target.flaw_id, check.breaks)
-    _report_leak(target.flaw_id, check.leaks)
+    _report_leaks(target, check.leaking)
     for place in records:
         _report_route(target.flaw_id, place, has_route(place, vuln.planted))
     _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, vuln.planted))
@@ -240,9 +247,11 @@ def _report_break(flaw_id: str, breaks: bool) -> None:
         console.print("  the layout breaks the server (set the fallback launch-mode)")
 
 
-def _report_leak(flaw_id: str, leaks: bool) -> None:
-    if leaks:
-        console.print(f"[red]nonce leak[/red]  {flaw_id}: a nonce surfaces in the ordinary surface")
+def _report_leaks(target: Target, leaking: Sequence[str]) -> None:
+    for place_id in leaking:
+        settled = place_id in target.settled_leaks
+        status = "[yellow]settled nonce leak[/yellow]" if settled else "[red]nonce leak[/red]"
+        console.print(f"{status}  {target.flaw_id}: {place_id} surfaces in the ordinary surface")
 
 
 def _report_route(flaw_id: str, place: Place, routed: bool) -> None:
@@ -276,11 +285,11 @@ class _Observer:
         planted, nonces = await self._observe(_Arm(self.target.kept_places, None, version))
         return VersionObservation(reference, planted, nonces)
 
-    async def _observe(self, arm: _Arm) -> tuple[RouteObservations, tuple[str, ...]]:
+    async def _observe(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
         observed = await first_launch(lambda: self._launch(arm))
-        return observed if observed is not None else (_failed_observation(), ())
+        return observed if observed is not None else (_failed_observation(), {})
 
-    async def _launch(self, arm: _Arm) -> tuple[RouteObservations, tuple[str, ...]]:
+    async def _launch(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
         # A server that fails to start, or a connection that drops, is a break observation
         # (tools/list did not succeed), not a benchmark crash: the break detector's criterion
         # names a failed launch, so catch it here rather than let it reach the exit-4 crash
@@ -297,12 +306,12 @@ class _Observer:
                 ):
                     launched = True
                     observations = await route_observations(self.target, client, planted.launch)
-                return observations, tuple(planted.nonces.values())
+                return observations, dict(planted.nonces)
             except Exception as exc:
                 _report_launch_error(self.target.flaw_id, exc, server_stderr, self.report_detail)
                 if not launched:
                     raise NotLaunched from exc
-                return _failed_observation(), ()
+                return _failed_observation(), {}
 
 
 def _failed_observation() -> RouteObservations:

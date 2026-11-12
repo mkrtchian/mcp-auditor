@@ -13,9 +13,9 @@ from tests.unit.support.test_detection_holdout_run_given import (
 
 TARGETS = (a_target(FILESYSTEM), a_target(KUBERNETES), a_target(GIT))
 LIVE: list[str] = []
-SOUND = LayoutCheck(gave_up=None, breaks=False, leaks=False, unrouted=[])
-BROKEN = LayoutCheck(gave_up=None, breaks=True, leaks=False, unrouted=[])
-LEAKING = LayoutCheck(gave_up=None, breaks=False, leaks=True, unrouted=[])
+SOUND = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
+BROKEN = LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])
+LEAKING = LayoutCheck(gave_up=None, breaks=False, leaking=["container-hostname"], unrouted=[])
 
 
 @dataclass

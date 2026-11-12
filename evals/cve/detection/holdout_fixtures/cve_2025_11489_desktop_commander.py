@@ -120,6 +120,8 @@ TARGET = Target(
         layout_mount=LayoutMount.READ_WRITE,
     ),
     builder=filesystem_scope_env,
+    # get_config returns the hostname on both versions; kept by the log entry of 2026-11-07.
+    settled_leaks=frozenset({"container-hostname"}),
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,
     awaited_capability=None,
