@@ -128,7 +128,9 @@ def deps_auditing(
         return checks.get(target.flaw_id, [])
 
     async def _layout(target: Target) -> LayoutCheck:
-        return layouts.get(target.flaw_id, LayoutCheck(gave_up=None, breaks=False, unrouted=[]))
+        return layouts.get(
+            target.flaw_id, LayoutCheck(gave_up=None, breaks=False, leaks=False, unrouted=[])
+        )
 
     return HoldoutDeps(
         audit=audit,

@@ -159,7 +159,8 @@ async def test_a_normal_target_the_layout_breaks_is_dropped():
     broken, healthy = given.a_target(given.KUBERNETES), given.a_target(given.FILESYSTEM)
     audit = given.scripted({broken.flaw_id: [], healthy.flaw_id: given.three_detections()})
     deps = given.deps_auditing(
-        audit, layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
+        audit,
+        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaks=False, unrouted=[])},
     )
 
     result = await given.run([broken, healthy], deps)
@@ -175,7 +176,8 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
     target = given.a_target(given.KUBERNETES, launch_mode=LaunchMode.FALLBACK)
     audit = given.scripted({target.flaw_id: given.three_detections()})
     deps = given.deps_auditing(
-        audit, layout={target.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])}
+        audit,
+        layout={target.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaks=False, unrouted=[])},
     )
 
     result = await given.run([target], deps)
@@ -323,7 +325,7 @@ async def test_every_target_dropped_refuses_with_the_reasons():
     deps = given.deps_auditing(
         given.scripted({unfit.flaw_id: [], broken.flaw_id: []}),
         check={unfit.flaw_id: ["patched: exploit 0 still surfaces etc-shadow"]},
-        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, unrouted=[])},
+        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaks=False, unrouted=[])},
     )
 
     with pytest.raises(Refused, match="no target survived") as caught:

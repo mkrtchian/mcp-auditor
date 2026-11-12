@@ -112,7 +112,7 @@ async def _run(
             return await no_llm_modes.survey(args, graded, places)
         if args.calibration_check:
             return await no_llm_modes.calibration_check(args, graded, places)
-        # A kept layout place without a route is a misconfigured fixture: refuse before recording.
+        # A target the layout check fails is a misconfigured fixture: refuse before recording.
         if args.record_baseline and await check_layouts_and_routes(graded, places, ci=args.ci):
             return 1
         return await _run_graded(args, graded, tracked, places)

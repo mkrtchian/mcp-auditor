@@ -1,5 +1,5 @@
 """The pre-run check of a holdout run: drop from N, before any audit, a target out of calibration
-or one the layout breaks or leaves unrouted.
+or one the layout check fails (`layout_failure`).
 
 A target the parallel pass would drop is checked once more, alone, once every first pass has
 finished, and runs if that second pass finds nothing. A fixture whose real software is slow or
@@ -11,8 +11,13 @@ from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 
 from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
-from evals.cve.detection.layout_check import LayoutCheck, layout_check, observe_versions
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.layout_check import (
+    LayoutCheck,
+    layout_check,
+    layout_failure,
+    observe_versions,
+)
+from evals.cve.detection.targets import Target
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.places import Places, kept_records
 
@@ -61,18 +66,10 @@ async def _check_one(
 
 
 def not_run_reason(target: Target, reasons: list[str], layout: LayoutCheck) -> str | None:
-    """Why a target is dropped from N before any audit, or None to run it. A break keeps a FALLBACK
-    target but drops a NORMAL one calibrated under a launch it lost (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks))."""
+    """Why a target is dropped from N before any audit, or None to run it."""
     if reasons:
         return "out of calibration: " + "; ".join(reasons)
-    if layout.gave_up is not None:
-        return layout.gave_up
-    if layout.breaks and target.launch_mode is LaunchMode.NORMAL:
-        return "the layout breaks the server under the normal launch"
-    if layout.unrouted:
-        return "kept layout place(s) without a route: " + ", ".join(layout.unrouted)
-    return None
+    return layout_failure(target, layout)
 
 
 async def observe_layout(

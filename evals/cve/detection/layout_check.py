@@ -22,9 +22,13 @@ and the patched version, the reference arm (a minimal valid empty node at each l
 the launch its launch-mode field selects (normal, or the fallback); it reports the break (on either
 version) and, on the vulnerable version, the leak (the layout check), each kept place's route (the
 route check) and each unkept layout place's route, labelled not kept, which a card records and no
-decision reads. The break detector only reports; the maintainer sets the fallback launch-mode. It
-gives up (`layout_check_gave_up`) only when a target already in the fallback launch-mode cannot
-start even that launch. It gates nothing on the model.
+decision reads. It gives up (`layout_check_gave_up`) only when a target already in the fallback
+launch-mode cannot start even that launch. It gates nothing on the model.
+
+`layout_failure` is the one reading of the result that fails a target, shared with the holdout
+pre-run check: a give-up, a break under the normal launch (the maintainer sets the fallback
+launch-mode), a nonce in the ordinary surface, or a kept layout place without a route. These are
+the layout items of the check that proves a repair (detection-suite-log.md, version 13).
 """
 
 import tempfile
@@ -73,13 +77,30 @@ class VersionObservation:
 @dataclass(frozen=True)
 class LayoutCheck:
     """The result `check_layouts_and_routes` computes inline, exposed so the holdout orchestrator
-    reads it directly: the give-up reason (or None), whether the layout breaks either version, and
-    the kept layout places left without a route (detection-suite-rule.md, Deployment layout (A place
-    is kept for a target, A server the layout breaks))."""
+    reads it directly: the give-up reason (or None), whether the layout breaks either version,
+    whether a nonce surfaces in the vulnerable version's ordinary surface, and the kept layout
+    places left without a route (detection-suite-rule.md, Deployment layout (A place is kept for a
+    target, A server the layout breaks))."""
 
     gave_up: str | None
     breaks: bool
+    leaks: bool
     unrouted: list[str]
+
+
+def layout_failure(target: Target, check: LayoutCheck) -> str | None:
+    """Why the layout check fails a target, or None. A break fails a NORMAL target, calibrated under
+    a launch it lost, and keeps a FALLBACK one (detection-suite-rule.md, Deployment layout (A server
+    the layout breaks))."""
+    if check.gave_up is not None:
+        return check.gave_up
+    if check.breaks and target.launch_mode is LaunchMode.NORMAL:
+        return "the layout breaks the server under the normal launch"
+    if check.leaks:
+        return "a nonce surfaces in the ordinary surface"
+    if check.unrouted:
+        return "kept layout place(s) without a route: " + ", ".join(check.unrouted)
+    return None
 
 
 def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
@@ -151,8 +172,9 @@ def layout_check(
         target, patched.planted
     )
     breaks = layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
+    leaks = nonce_in_surface(_surface(vuln.planted), vuln.nonces)
     unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
-    return LayoutCheck(gave_up, breaks, unrouted)
+    return LayoutCheck(gave_up, breaks, leaks, unrouted)
 
 
 async def observe_versions(
@@ -170,10 +192,9 @@ async def observe_versions(
 async def check_layouts_and_routes(
     targets: list[Target], places: Places, ci: bool = False
 ) -> list[str]:
-    """Report each target's layout break, nonce leak and per-layout-place route, and return the
-    route check's failures: a kept layout place without a route breaks the rule's keeping condition
-    (detection-suite-rule.md, Deployment layout (A place is kept for a target)), so the caller fails
-    the maintainer run on it (never a gated run)."""
+    """Report each target's layout break, nonce leak and per-layout-place route, and return one
+    failure per target `layout_failure` fails, which the caller fails the maintainer run on (never
+    a gated run)."""
     console.print(
         "\n[bold]Layout and route checks[/bold] (no LLM): layout break then discovery route\n"
     )
@@ -185,22 +206,32 @@ async def check_layouts_and_routes(
         vuln, patched = await observe_versions(target, places)
         records = kept_records(target.kept_places, places)
         check = layout_check(target, records, vuln, patched)
-        if check.gave_up is not None:
-            _report_give_up(target.flaw_id, check.gave_up)
-            continue
-        _report_break(target.flaw_id, check.breaks)
-        _report_leak(target.flaw_id, nonce_in_surface(_surface(vuln.planted), vuln.nonces))
-        for place in records:
-            _report_route(target.flaw_id, place, has_route(place, vuln.planted))
-        _report_unkept_routes(
-            target.flaw_id, layout_routes(places, target.kept_places, vuln.planted)
-        )
-        failures += [
-            f"{target.flaw_id}: kept layout place {pid} has no route" for pid in check.unrouted
-        ]
+        _report(target, check, records, places, vuln.planted)
+        failure = layout_failure(target, check)
+        if failure is not None:
+            failures.append(f"{target.flaw_id}: {failure}")
     if failures:
-        console.print("\n[red]Kept layout places with no route[/red]: drop or route them.")
+        console.print("\n[red]Layout and route checks failed[/red]:")
+        for failure in failures:
+            console.print(f"  {escape(failure)}")
     return failures
+
+
+def _report(
+    target: Target,
+    check: LayoutCheck,
+    records: Sequence[Place],
+    places: Places,
+    planted: RouteObservations,
+) -> None:
+    if check.gave_up is not None:
+        _report_give_up(target.flaw_id, check.gave_up)
+        return
+    _report_break(target.flaw_id, check.breaks)
+    _report_leak(target.flaw_id, check.leaks)
+    for place in records:
+        _report_route(target.flaw_id, place, has_route(place, planted))
+    _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, planted))
 
 
 def _report_give_up(flaw_id: str, reason: str) -> None:

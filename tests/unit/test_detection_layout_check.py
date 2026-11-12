@@ -3,12 +3,14 @@ import json
 
 import tests.unit.support.test_detection_layout_check_golden_given as given
 from evals.cve.detection.layout_check import (
+    LayoutCheck,
     LayoutRoute,
     LayoutSurface,
     VersionObservation,
     layout_breaks_any,
     layout_check,
     layout_check_gave_up,
+    layout_failure,
     layout_routes,
     unrouted_kept_places,
 )
@@ -185,3 +187,55 @@ def test_an_unrouted_unkept_layout_place_adds_no_admission_failure():
         places, ("workspace-dotenv",), vuln.planted
     )
     assert check.unrouted == []
+
+
+def test_layout_check_reports_a_nonce_of_the_vulnerable_planted_arm_in_its_ordinary_surface():
+    healthy = _observed(started=True)
+    leaking = dataclasses.replace(healthy, responses=("token MCPAUDIT-00ff",))
+    vuln = VersionObservation(reference=healthy, planted=leaking, nonces=("MCPAUDIT-00ff",))
+    patched = VersionObservation(reference=healthy, planted=healthy, nonces=())
+
+    assert layout_check(_A_TARGET, (), vuln, patched).leaks is True
+    assert layout_check(_A_TARGET, (), patched, patched).leaks is False
+
+
+_SOUND = LayoutCheck(gave_up=None, breaks=False, leaks=False, unrouted=[])
+
+
+def test_a_sound_layout_check_is_no_failure():
+    assert layout_failure(_A_TARGET, _SOUND) is None
+
+
+def test_a_give_up_is_a_failure():
+    check = dataclasses.replace(_SOUND, gave_up="the container cannot run the server")
+
+    assert layout_failure(_A_TARGET, check) == "the container cannot run the server"
+
+
+def test_a_break_under_the_normal_launch_is_a_failure():
+    check = dataclasses.replace(_SOUND, breaks=True)
+
+    assert (
+        layout_failure(_A_TARGET, check) == "the layout breaks the server under the normal launch"
+    )
+
+
+def test_a_break_under_the_fallback_launch_is_no_failure():
+    target = dataclasses.replace(_A_TARGET, launch_mode=LaunchMode.FALLBACK)
+
+    assert layout_failure(target, dataclasses.replace(_SOUND, breaks=True)) is None
+
+
+def test_a_nonce_in_the_ordinary_surface_is_a_failure():
+    check = dataclasses.replace(_SOUND, leaks=True)
+
+    assert layout_failure(_A_TARGET, check) == "a nonce surfaces in the ordinary surface"
+
+
+def test_kept_layout_places_without_a_route_are_a_failure():
+    check = dataclasses.replace(_SOUND, unrouted=["bare-remote-url", "workspace-dotenv"])
+
+    assert (
+        layout_failure(_A_TARGET, check)
+        == "kept layout place(s) without a route: bare-remote-url, workspace-dotenv"
+    )

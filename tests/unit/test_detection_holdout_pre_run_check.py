@@ -54,6 +54,17 @@ async def test_a_target_failing_both_passes_is_dropped_with_the_second_reason():
     assert outcome.second_pass == []
 
 
+async def test_a_target_leaking_a_nonce_on_both_passes_is_dropped():
+    leaking, *healthy = given.TARGETS
+    checks = given.ScriptedChecks(layouts={leaking.flaw_id: [given.LEAKING]})
+
+    outcome = await check_before_run(given.TARGETS, checks.check, checks.layout)
+
+    assert outcome.surviving == healthy
+    (not_run,) = outcome.not_run
+    assert not_run.reason == "a nonce surfaces in the ordinary surface"
+
+
 async def test_a_target_passing_its_first_pass_is_checked_once():
     checks = given.ScriptedChecks()
 

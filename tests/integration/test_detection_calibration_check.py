@@ -246,7 +246,7 @@ async def test_the_types_only_layout_check_prints_no_stderr_line(
 
 
 @pytest.mark.usefixtures("docker_on_the_host")
-async def test_check_layouts_and_routes_reports_a_break_when_the_layout_breaks_either_version(
+async def test_check_layouts_and_routes_fails_a_normal_target_the_layout_breaks_on_either_version(
     capsys: pytest.CaptureFixture[str],
 ):
     targets = [
@@ -257,7 +257,7 @@ async def test_check_layouts_and_routes_reports_a_break_when_the_layout_breaks_e
     failures = await check_layouts_and_routes(targets, given.a_places_mapping())
 
     output = capsys.readouterr().out
-    assert failures == []
+    assert failures == ["CVE-BREAK: the layout breaks the server under the normal launch"]
     assert "layout break  CVE-BREAK" in output
     assert "no break  CVE-LIVE" in output
 
