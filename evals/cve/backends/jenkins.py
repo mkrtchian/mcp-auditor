@@ -2,10 +2,13 @@
 hekmon8/Jenkins-server-mcp call through `JENKINS_URL`.
 
 The backend is Jenkins itself (`Dockerfile.jenkins-responder`, the 2.580.2 LTS of the project's
-official image pinned by digest), not a responder: its image seeds the job `MyJob`, its first build
-and the admin account with a fixed API token at build time. It listens on its default port 8080 as
-the image's own user, under the nuisance confinement, memory bound included, with no added
-capability. Its state lives in the container only (its home in the anonymous volume Docker fills
+official image pinned by digest), not a responder: its image installs the plugins the setup wizard
+suggests at that release with their required dependencies (92, each pinned at the version the
+update center for core 2.580.2 gave on 2026-11-13), then seeds the job `MyJob`, its first build and
+the admin account with a fixed API token at build time, with those plugins loaded. It listens on its
+default port 8080 as the image's own user, under the nuisance confinement, memory bound included,
+with no added capability: with the plugins it peaks at 103 processes, under the confinement's
+bound of 256. Its state lives in the container only (its home in the anonymous volume Docker fills
 from the image at each creation), so a stand-up after its removal starts from the seed. It is a
 singleton on a fixed address of its own closed bridge in the RFC 2544 benchmarking range, stood
 once and reused across a server's concurrent nuisance runs, reaped by the generic orphan sweep, so

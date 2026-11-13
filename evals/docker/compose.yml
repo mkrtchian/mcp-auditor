@@ -1413,7 +1413,7 @@ services:
       context: .
       dockerfile: Dockerfile.jenkins-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "23ee4c82cc73e44384b7c670578425ca28373e08a1806e9a9e3fe17fdf3687eb"
+        org.mcp-auditor.dockerfile-fingerprint: "34594729588e2e5f2299195714ec2333c2ad319f73b60d792eb80bb70d2b5e85"
     image: mcp-auditor-cve-jenkins-responder:local
     profiles: ["nuisance"]
 

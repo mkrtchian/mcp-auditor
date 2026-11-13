@@ -10,7 +10,7 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import MEMORY_BOUND, memory_bound_args
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
-from evals.cve.planting_base import LABEL, resolver_args
+from evals.cve.planting_base import LABEL, confinement_args, resolver_args
 from tests.unit.support.docker_argv import carries, count, value_after
 from tests.unit.support.recorded_subprocess import recorded_commands
 
@@ -160,6 +160,13 @@ def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_res
 ):
     assert carries(args, memory_bound_args())
     assert count(args, resolver_args()) == 1
+
+
+def test_the_jenkins_controller_drops_every_capability_and_bounds_its_processes():
+    args = jenkins.singleton_run_args()
+
+    assert carries(args, confinement_args())
+    assert "--cap-add" not in args
 
 
 def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():

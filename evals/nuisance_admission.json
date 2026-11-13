@@ -14330,10 +14330,16 @@
       "stand_ins": [],
       "seeds": [
         {
-          "item": "the Jenkins controller image seeds, at image build time: the admin account the server authenticates as (JENKINS_USER=admin, JENKINS_TOKEN a fixed API token named jenkins-server-mcp), the private security realm with logged-in authorization and no anonymous read, the freestyle job MyJob with Jenkins's default configuration, and MyJob's first build (number 1, result SUCCESS) triggered through the REST API; each container starts from this reference home (Jenkins's jenkins.sh copies it into a fresh JENKINS_HOME)",
+          "item": "the Jenkins controller image seeds, at image build time: the admin account the server authenticates as (JENKINS_USER=admin, JENKINS_TOKEN a fixed API token named jenkins-server-mcp), the private security realm with logged-in authorization and no anonymous read, the freestyle job MyJob with Jenkins's default configuration, and MyJob's first build (number 1, result SUCCESS) triggered through the REST API, all made with the 92 plugins below loaded; each container starts from this reference home (Jenkins's jenkins.sh copies it into a fresh JENKINS_HOME)",
           "kind": "written",
           "citation": "the server README's JENKINS_URL/JENKINS_USER/JENKINS_TOKEN configuration and Jenkins's default freestyle job",
           "pin": null
+        },
+        {
+          "item": "the Jenkins plugins the setup wizard installs by default, in JENKINS_HOME/plugins before the controller first starts at image build time: the 19 marked suggested in platform-plugins.json (cloudbees-folder, antisamy-markup-formatter, build-timeout, credentials-binding, timestamper, ws-cleanup, ant, gradle, workflow-aggregator, github-branch-source, pipeline-github-lib, pipeline-graph-view, git, ssh-slaves, matrix-auth, ldap, email-ext, mailer, dark-theme) and their required dependencies, 92 plugins, each pinned name:version in Dockerfile.jenkins-responder at the version the update center for core 2.580.2 (https://updates.jenkins.io/update-center.json?version=2.580.2) gave on 2026-11-13, installed with jenkins-plugin-cli, which checks each download against the update center's checksum; all 92 load and are active on 2.580.2",
+          "kind": "published_sample",
+          "citation": "core/src/main/resources/jenkins/install/platform-plugins.json at tag jenkins-2.580.2 of jenkinsci/jenkins, read from the jenkins-core-2.580.2.jar of the base image's jenkins.war; the dependency closure and versions read once from the update center for core 2.580.2 on 2026-11-13",
+          "pin": "jenkins/jenkins:2.580.2-lts-jdk21@sha256:74401de6a6f92e1afe1b02d1c8e3d0c33f263bfb5275dd8813f9150355f2367b"
         }
       ],
       "software_releases": [
@@ -14341,7 +14347,13 @@
           "software": "Jenkins",
           "release": "2.580.2",
           "day": "2026-11-11",
-          "source": "the backend controller image is jenkins/jenkins:2.580.2-lts-jdk21 pinned by its index digest, the newest LTS line; the server README names JENKINS_URL, JENKINS_USER and JENKINS_TOKEN with no Jenkins version"
+          "source": "the backend controller image is jenkins/jenkins:2.580.2-lts-jdk21 pinned by its index digest, the newest LTS line; the server README names JENKINS_URL, JENKINS_USER and JENKINS_TOKEN with no Jenkins version; the controller runs under the nuisance confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g) with no capability added back, none being needed: with the 92 plugins, measured on 2026-11-13 through a fix check and a vet, it starts in about 20 s, its peak process count is 103 and its peak memory 1.04 GB"
+        },
+        {
+          "software": "Jenkins plugins (the 19 suggested by the setup wizard of 2.580.2 and their required dependencies, 92)",
+          "release": "each at the version the update center for core 2.580.2 listed on 2026-11-13, pinned name:version in Dockerfile.jenkins-responder (for instance git 5.11.0, workflow-aggregator 608.v67378e9d3db_1, matrix-auth 3.3)",
+          "day": "2026-11-13",
+          "source": "the plugin list of platform-plugins.json at tag jenkins-2.580.2 and the update center https://updates.jenkins.io/update-center.json?version=2.580.2, whose required dependency closure jenkins-plugin-cli 2.15.0 resolved on 2026-11-13; the server README names no plugin"
         }
       ]
     },
