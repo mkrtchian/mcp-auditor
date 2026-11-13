@@ -1,31 +1,44 @@
 # syntax=docker/dockerfile:1
 # HTTP stand-in for the Jira and Confluence Server/DC REST API an mcp-atlassian deployment points
-# JIRA_URL and CONFLUENCE_URL at. Jira Software DC and Confluence DC run under the confinement but
-# stop at their setup wizard until a license key is entered, and a license needs an Atlassian
-# account, so the HTTP backend is a stand-in. It answers two routes:
+# JIRA_URL and CONFLUENCE_URL at. Jira Software DC and Confluence DC run within the memory bound
+# and set up with no person under Atlassian's published Data Center timebomb licenses, which need
+# no account, but those licenses expire three hours after they are applied, which would tie every
+# run to a three-hour window, so the maintainer keeps this stand-in. It answers three routes:
 #   GET /rest/api/2/search?jql=...  (jira.jql, the Server/DC path)
+#   GET /rest/api/2/issue/<key>     (jira.get_issue, for each key the Jira searches return)
 #   GET /rest/api/search?cql=...    (confluence.cql)
+# Each branches on the whole query mcp-atlassian builds (0.22.0, and 0.21.1 for the fix check)
+# with JIRA_PROJECTS_FILTER=PROJ and CONFLUENCE_SPACES_FILTER=TEAM, listed below in PROJ_JQLS,
+# DEMO_JQLS and CQL_RESULTS, never on a word inside it.
 # Outputs: the Jira search is the response of "Searching for issues and restricting the issue
 # fields returned in the results" in the Jira Data Center REST API examples
 # (https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/), elision lines
 # dropped, its project key QA replaced by PROJ; the Confluence search is MOCK_CQL_SEARCH_RESPONSE
 # (tests/fixtures/confluence_mocks.py) of mcp-atlassian v0.22.0, copied. The DEMO project and
-# space are copies of the same outputs with identifiers replaced. The branch reads only the key
-# that follows each fixed word "project =" or "space =": one known key answers its items, two
-# distinct keys joined by AND answer the empty result, anything else the API's error form.
-# DEMO_SUMMARY, when set, gives the DEMO issues a summary and replaces the title and excerpt of
-# the DEMO page (a per-launch container only).
+# space are copies of the same outputs with identifiers replaced. The issue is
+# MOCK_JIRA_ISSUE_RESPONSE (tests/fixtures/jira_mocks.py) of mcp-atlassian v0.22.0, copied, the
+# Jira reference giving no whole example of it: issue_detail replaces its host
+# https://example.atlassian.net by the search example's http://localhost:8080, its key and id by
+# those of the search's issue, and for a DEMO issue the project key PROJ by DEMO; any other key
+# answers 404 with the empty ErrorCollection below. Any other JQL answers 400 with
+# the ErrorCollection schema of the Jira Data Center 10.3 REST reference (errorMessages, errors),
+# which gives no example value, so both are empty; any other CQL answers 400 with the RestError
+# schema of the Confluence Data Center REST reference ("returned if the query cannot be parsed"),
+# whose properties give no example value, so only its statusCode is set; any other method or path
+# answers 404 with that empty ErrorCollection. No Server header is sent.
+# DEMO_SUMMARY, when set, gives the DEMO issues of the searches a summary and replaces the title
+# and excerpt of the DEMO page (a per-launch container only).
 FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 
 RUN cat > /responder.py <<'PY'
 import http.server
 import json
 import os
-import re
 import urllib.parse
 
 DEMO_SUMMARY = os.environ.get("DEMO_SUMMARY")
 JIRA = "http://localhost:8080/rest/api/2/issue/"
+ISSUE_PATH = "/rest/api/2/issue/"
 
 
 def example_issue(identifier, key):
@@ -50,7 +63,6 @@ PROJ_SEARCH = {
         example_issue("10389", "PROJ-35"),
     ],
 }
-JIRA_EMPTY = {"expand": "schema,names", "startAt": 0, "maxResults": 50, "total": 0, "issues": []}
 
 
 def demo_search():
@@ -113,36 +125,212 @@ def demo_result():
     return result
 
 
-RESULTS = {"TEAM": TEAM_RESULT, "DEMO": demo_result()}
+MOCK_JIRA_ISSUE_RESPONSE = {
+    "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+    "id": "12345",
+    "self": "https://example.atlassian.net/rest/api/2/issue/12345",
+    "key": "PROJ-123",
+    "fields": {
+        "summary": "Test Issue Summary",
+        "description": "This is a test issue description",
+        "created": "2024-01-01T10:00:00.000+0000",
+        "updated": "2024-01-02T15:30:00.000+0000",
+        "status": {
+            "self": "https://example.atlassian.net/rest/api/2/status/3",
+            "description": "This issue is currently being worked on.",
+            "iconUrl": "https://example.atlassian.net/images/icons/statuses/inprogress.png",
+            "name": "In Progress",
+            "id": "3",
+            "statusCategory": {
+                "self": "https://example.atlassian.net/rest/api/2/statuscategory/4",
+                "id": 4,
+                "key": "indeterminate",
+                "colorName": "yellow",
+                "name": "In Progress",
+            },
+        },
+        "issuetype": {
+            "self": "https://example.atlassian.net/rest/api/2/issuetype/10001",
+            "id": "10001",
+            "description": "A task that needs to be done.",
+            "iconUrl": "https://example.atlassian.net/secure/viewavatar?size=xsmall&avatarId=10318&avatarType=issuetype",
+            "name": "Task",
+            "subtask": False,
+        },
+        "priority": {
+            "self": "https://example.atlassian.net/rest/api/2/priority/3",
+            "iconUrl": "https://example.atlassian.net/images/icons/priorities/medium.svg",
+            "name": "Medium",
+            "id": "3",
+        },
+        "assignee": {
+            "self": "https://example.atlassian.net/rest/api/2/user?accountId=123",
+            "accountId": "123",
+            "emailAddress": "test@example.com",
+            "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/123?d=https%3A%2F%2Favatar.example.com%2Fdefault.png",
+            },
+            "displayName": "Test User",
+            "active": True,
+            "timeZone": "UTC",
+        },
+        "reporter": {
+            "self": "https://example.atlassian.net/rest/api/2/user?accountId=456",
+            "accountId": "456",
+            "displayName": "Reporter User",
+            "active": True,
+        },
+        "labels": ["test-label"],
+        "components": [{"name": "Backend"}],
+        "fixVersions": [{"name": "v1.0"}],
+        "versions": [{"name": "v0.9"}],
+        "attachment": [
+            {
+                "id": "10000",
+                "filename": "test_attachment.txt",
+                "size": 1024,
+                "mimeType": "text/plain",
+                "content": "https://example.atlassian.net/secure/attachment/10000/test_attachment.txt",
+            }
+        ],
+        "comment": {
+            "comments": [
+                {
+                    "id": "10001",
+                    "author": {"displayName": "Commenter User"},
+                    "body": "This is a test comment",
+                    "created": "2024-01-01T12:00:00.000+0000",
+                    "updated": "2024-01-01T12:00:00.000+0000",
+                }
+            ],
+            "maxResults": 1,
+            "total": 1,
+            "startAt": 0,
+        },
+        "timetracking": {
+            "originalEstimate": "1d",
+            "remainingEstimate": "4h",
+            "timeSpent": "4h",
+            "originalEstimateSeconds": 28800,
+            "remainingEstimateSeconds": 14400,
+            "timeSpentSeconds": 14400,
+        },
+        "project": {
+            "id": "10000",
+            "key": "PROJ",
+            "name": "Test Project",
+            "self": "https://example.atlassian.net/rest/api/2/project/10000",
+            "avatarUrls": {
+                "48x48": "https://example.atlassian.net/secure/projectavatar?size=large&pid=10000"
+            },
+        },
+        "resolution": {
+            "self": "https://example.atlassian.net/rest/api/2/resolution/10000",
+            "id": "10000",
+            "description": "Work has been completed on this issue.",
+            "name": "Fixed",
+        },
+        "duedate": "2024-12-31",
+        "resolutiondate": "2024-01-15T11:00:00.000+0000",
+        "parent": {
+            "id": "12344",
+            "key": "PROJ-122",
+            "fields": {"summary": "Parent Issue Summary"},
+        },
+        "subtasks": [
+            {
+                "id": "12346",
+                "key": "PROJ-124",
+                "fields": {"summary": "Subtask 1 Summary"},
+            }
+        ],
+        "security": {"name": "Internal", "id": "10001"},
+        "worklog": {"startAt": 0, "maxResults": 20, "total": 0, "worklogs": []},
+        # Custom fields for testing
+        "customfield_10011": "Epic Name Example",  # Epic Name
+        "customfield_10014": "EPIC-KEY-1",  # Epic Link
+        "customfield_10001": "Custom Text Field Value",
+        "customfield_10002": {"value": "Custom Select Value"},
+        "customfield_10003": [
+            {"value": "Custom MultiSelect 1"},
+            {"value": "Custom MultiSelect 2"},
+        ],
+    },
+    "names": {
+        "customfield_10011": "Epic Name",
+        "customfield_10014": "Epic Link",
+        "customfield_10001": "My Custom Text Field",
+        "customfield_10002": "My Custom Select",
+        "customfield_10003": "My Custom MultiSelect",
+    },
+}
 
 
-def known_keys(word, query, known):
-    if re.search(r"\bOR\b", query, re.IGNORECASE):
-        return None
-    keys = {k.upper() for k in re.findall(r"\b" + word + r'\s*=\s*"?([A-Za-z0-9_]+)"?', query, re.IGNORECASE)}
-    return keys if keys and keys <= set(known) else None
+def issue_detail(issue):
+    project = issue["key"].split("-")[0]
+    text = json.dumps(MOCK_JIRA_ISSUE_RESPONSE).replace("https://example.atlassian.net", "http://localhost:8080")
+    detail = json.loads(text.replace("PROJ", project))
+    detail.update(id=issue["id"], self=JIRA + issue["id"], key=issue["key"])
+    return detail
+
+
+ISSUES = {issue["key"]: issue_detail(issue) for search in SEARCHES.values() for issue in search["issues"]}
+
+
+JIRA_ERROR = {"errorMessages": [], "errors": {}}
+CONFLUENCE_ERROR = {"statusCode": 400}
+
+PROJ_JQLS = (
+    "project = PROJ",
+    "((project = PROJ) AND project = PROJ) AND project = PROJ",
+    'project = "PROJ"',
+    '(project = "PROJ") AND project = PROJ',
+    "(sprint = 10001) AND project = PROJ",
+)
+DEMO_JQLS = (
+    "(issuetype = Task) AND project = DEMO",
+    'project = "DEMO"',
+    "sprint = 10001 AND project = DEMO",
+)
+JQL_SEARCHES = {
+    **{jql: PROJ_SEARCH for jql in PROJ_JQLS},
+    **{jql: demo_search() for jql in DEMO_JQLS},
+}
+CQL_RESULTS = {
+    "space = TEAM": TEAM_RESULT,
+    "((space = TEAM) AND (space = TEAM)) AND (space = TEAM)": TEAM_RESULT,
+    "(type = page) AND (space = DEMO)": demo_result(),
+}
+
+
+def answer(method, target):
+    url = urllib.parse.urlparse(target)
+    params = urllib.parse.parse_qs(url.query)
+    path = url.path.rstrip("/")
+    if method == "GET" and path == "/rest/api/2/search":
+        return search_jira(params.get("jql", [""])[0])
+    if method == "GET" and path == "/rest/api/search":
+        return search_confluence(params.get("cql", [""])[0])
+    if method == "GET" and path.removeprefix(ISSUE_PATH) in ISSUES:
+        return 200, ISSUES[path.removeprefix(ISSUE_PATH)]
+    return 404, JIRA_ERROR
 
 
 def search_jira(jql):
-    keys = known_keys("project", jql, SEARCHES)
-    if keys is None:
-        return 400, {"errorMessages": ["Error in the JQL Query"], "errors": {}}
-    if len(keys) > 1:
-        return 200, JIRA_EMPTY
-    return 200, SEARCHES[keys.pop()]
+    if jql in JQL_SEARCHES:
+        return 200, JQL_SEARCHES[jql]
+    return 400, JIRA_ERROR
 
 
 def search_confluence(cql):
-    keys = known_keys("space", cql, RESULTS)
-    if keys is None:
-        return 400, {"statusCode": 400, "data": {"authorized": False, "valid": False, "errors": [], "successful": False}, "message": "Could not parse cql"}
-    found = [RESULTS[keys.pop()]] if len(keys) == 1 else []
+    if cql not in CQL_RESULTS:
+        return 400, CONFLUENCE_ERROR
     return 200, {
-        "results": found,
+        "results": [CQL_RESULTS[cql]],
         "start": 0,
         "limit": 50,
-        "size": len(found),
-        "totalSize": len(found),
+        "size": 1,
+        "totalSize": 1,
         "cqlQuery": cql,
         "searchDuration": 156,
         "_links": {
@@ -154,30 +342,31 @@ def search_confluence(cql):
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        url = urllib.parse.urlparse(self.path)
-        params = urllib.parse.parse_qs(url.query)
-        path = url.path.rstrip("/")
-        if path == "/rest/api/2/search":
-            self.reply(*search_jira(params.get("jql", [""])[0]))
-        elif path == "/rest/api/search":
-            self.reply(*search_confluence(params.get("cql", [""])[0]))
-        else:
-            self.reply(404, {"errorMessages": ["Not Found"], "errors": {}})
+    def __getattr__(self, name):
+        if name.startswith("do_"):
+            return self.respond
+        raise AttributeError(name)
 
-    def reply(self, code, payload):
+    def respond(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if length:
+            self.rfile.read(length)
+        code, payload = answer(self.command, self.path)
         body = json.dumps(payload).encode()
-        self.send_response(code)
+        self.send_response_only(code)
+        self.send_header("Date", self.date_time_string())
         self.send_header("Content-Type", "application/json;charset=UTF-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def log_message(self, *args):
         pass
 
 
-http.server.HTTPServer(("0.0.0.0", 80), Handler).serve_forever()
+if __name__ == "__main__":
+    http.server.HTTPServer(("0.0.0.0", 80), Handler).serve_forever()
 PY
 
 ENTRYPOINT ["python", "/responder.py"]

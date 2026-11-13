@@ -13813,14 +13813,14 @@
       "stand_ins": [
         {
           "replaces": "The Jira Software Data Center and Confluence Data Center REST API (GET /rest/api/2/search and GET /rest/api/search) at JIRA_URL and CONFLUENCE_URL",
-          "reason": "Both run under the confinement (atlassian/jira-software 11.3.13 and atlassian/confluence 11.0.1 were run with --cap-drop ALL, no-new-privileges, --memory 4g, as their run users, no network) but stay in their setup wizard: Jira's REST search answers 503 with / redirecting to SetupDatabase, Confluence's answers 404 with / on its license key page. A license needs an Atlassian account, so the whole HTTP backend is a stand-in, the backend's own container.",
+          "reason": "Both run under the confinement (atlassian/jira-software 11.3.13 and atlassian/confluence 11.0.1 were run with --cap-drop ALL, no-new-privileges, --memory 4g, as their run users, no network) but stay in their setup wizard: Jira's REST search answers 503 with / redirecting to SetupDatabase, Confluence's answers 404 with / on its license key page. The license needs no Atlassian account: Atlassian publishes Data Center timebomb licenses for testing (https://developer.atlassian.com/platform/marketplace/timebomb-licenses-for-testing-server-apps/), with which Jira Software 10.3.27 and Confluence 9.2.28 were set up on 2026-11-13 through their documented wizard forms with no person and within the memory bound. Those licenses expire three hours after they are applied, which ties every run to a three-hour window, so the maintainer keeps the whole HTTP backend as a stand-in, the backend's own container, repaired against the Jira and Confluence REST references (the maintainer's ruling, 2026-11-13).",
           "file": "evals/docker/Dockerfile.atlassian-responder",
           "capture": null,
           "outputs": [
             {
-              "request": "\"PROJ\": PROJ_SEARCH",
+              "request": "{jql: PROJ_SEARCH for jql in PROJ_JQLS}",
               "source": "software_sources",
-              "citation": "the response of 'Searching for issues and restricting the issue fields returned in the results', Jira Data Center REST API examples (https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/), elision lines dropped, served for a JQL whose only project key is PROJ",
+              "citation": "the response of 'Searching for issues and restricting the issue fields returned in the results', Jira Data Center REST API examples (https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples/), elision lines dropped, served for each JQL of PROJ_JQLS, the whole queries mcp-atlassian 0.22.0 and 0.21.1 build for the benign calls with JIRA_PROJECTS_FILTER=PROJ",
               "replacements": [
                 {
                   "original": "QA",
@@ -13829,9 +13829,9 @@
               ]
             },
             {
-              "request": "\"DEMO\": demo_search()",
+              "request": "{jql: demo_search() for jql in DEMO_JQLS}",
               "source": "software_sources",
-              "citation": "the same Jira Data Center REST API example, identifiers replaced, served for a JQL whose only project key is DEMO; a fix check's own container adds the witness as each issue's summary",
+              "citation": "the same Jira Data Center REST API example, identifiers replaced, served for each JQL of DEMO_JQLS, the whole queries mcp-atlassian 0.21.1 builds for the fix check's exploits; a fix check's own container adds the witness as each issue's summary",
               "replacements": [
                 {
                   "original": "QA",
@@ -13844,21 +13844,38 @@
               ]
             },
             {
-              "request": "return 200, JIRA_EMPTY",
-              "source": "invented",
-              "citation": "two distinct known project keys and no OR: no source gives an empty JQL result",
-              "form_source": "the Jira Data Center REST API example above (expand, startAt, maxResults, total 0, issues [])"
-            },
-            {
-              "request": "Error in the JQL Query",
-              "source": "invented",
-              "citation": "any other JQL (no project key, an unknown key, or an OR): no source gives the body of Jira's JQL error",
-              "form_source": "Jira Data Center REST API ErrorCollection schema (errorMessages, errors), HTTP 400 'Returned if there is a problem with the JQL query'"
-            },
-            {
-              "request": "\"TEAM\": TEAM_RESULT",
+              "request": "ISSUES = {issue[\"key\"]: issue_detail(issue) for search in SEARCHES.values() for issue in search[\"issues\"]}",
               "source": "server_tests",
-              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, served for a CQL whose only space key is TEAM",
+              "citation": "MOCK_JIRA_ISSUE_RESPONSE, tests/fixtures/jira_mocks.py at mcp-atlassian tag v0.22.0, served for GET /rest/api/2/issue/<key> for each issue key the PROJ and DEMO searches return; no capture exists and the Jira Data Center 10.3 REST reference gives no whole example output for this request (its IssueBean example is null)",
+              "replacements": [
+                {
+                  "original": "https://example.atlassian.net",
+                  "replacement": "http://localhost:8080, the host of the Jira search example served above"
+                },
+                {
+                  "original": "key 'PROJ-123'",
+                  "replacement": "the key of the search's issue (PROJ-19, PROJ-20, PROJ-22, PROJ-35, DEMO-19, DEMO-20, DEMO-22, DEMO-35)"
+                },
+                {
+                  "original": "id '12345', and self '.../rest/api/2/issue/12345'",
+                  "replacement": "the id of the search's issue (10050, 10051, 10053, 10389 for PROJ, 11050, 11051, 11053, 11389 for DEMO), in id and self"
+                },
+                {
+                  "original": "PROJ",
+                  "replacement": "DEMO, for an issue of the DEMO search"
+                }
+              ]
+            },
+            {
+              "request": "return 400, JIRA_ERROR",
+              "source": "software_sources",
+              "citation": "any other JQL: the ErrorCollection schema of the Jira Data Center 10.3 REST reference (https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_10003_swagger.v3.json), errorMessages and errors, whose example values are null, so both are empty; HTTP 400, 'Returned if there is a problem with the JQL query'",
+              "replacements": []
+            },
+            {
+              "request": "\"space = TEAM\": TEAM_RESULT",
+              "source": "server_tests",
+              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, served for the whole CQL mcp-atlassian 0.21.1 builds for the benign call, and for the one 0.22.0 builds, with CONFLUENCE_SPACES_FILTER=TEAM",
               "replacements": [
                 {
                   "original": "cqlQuery 'parent = 123456789'",
@@ -13867,9 +13884,9 @@
               ]
             },
             {
-              "request": "\"DEMO\": demo_result()",
+              "request": "\"(type = page) AND (space = DEMO)\": demo_result()",
               "source": "server_tests",
-              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, result item with identifiers replaced, served for a CQL whose only space key is DEMO; a fix check's own container replaces its title and excerpt with the witness",
+              "citation": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0, result item with identifiers replaced, served for the whole CQL mcp-atlassian 0.21.1 builds for the fix check's exploit; a fix check's own container replaces its title and excerpt with the witness",
               "replacements": [
                 {
                   "original": "123456789",
@@ -13890,22 +13907,16 @@
               ]
             },
             {
-              "request": "if len(keys) == 1 else []",
-              "source": "invented",
-              "citation": "two distinct known space keys and no OR: no source gives an empty CQL result",
-              "form_source": "MOCK_CQL_SEARCH_RESPONSE, tests/fixtures/confluence_mocks.py at mcp-atlassian tag v0.22.0 (results [], size 0, totalSize 0)"
+              "request": "return 400, CONFLUENCE_ERROR",
+              "source": "software_sources",
+              "citation": "any other CQL: the RestError schema of the Confluence Data Center REST reference, GET /rest/api/search, HTTP 400 'returned if the query cannot be parsed', whose properties (statusCode, data, message, reason) give no example value, so only statusCode is set, to the status sent",
+              "replacements": []
             },
             {
-              "request": "Could not parse cql",
-              "source": "invented",
-              "citation": "any other CQL: no source gives Confluence's CQL error body",
-              "form_source": "Confluence Data Center REST API RestError schema (statusCode, data, message)"
-            },
-            {
-              "request": "Not Found",
-              "source": "invented",
-              "citation": "any other route: no source",
-              "form_source": "Jira Data Center REST API ErrorCollection schema, HTTP 404"
+              "request": "return 404, JIRA_ERROR",
+              "source": "software_sources",
+              "citation": "any other method or path: the empty ErrorCollection above, HTTP 404",
+              "replacements": []
             }
           ]
         }
@@ -13916,13 +13927,13 @@
           "software": "Jira Software Data Center (atlassian/jira-software image)",
           "release": "11.3.13",
           "day": "2026-11-07",
-          "source": "The server's README names Jira Server/Data Center 8.14+ without a pinned version; the image tag latest on Docker Hub on 2026-11-07 is digest sha256:5ee1d0c989cbd1c53c67e95088fc24c471847b52e927a40d2b43d969088b62c6, JIRA_VERSION=11.3.13 in its environment. Run to establish the license gate; the fixture serves a stand-in, since it cannot leave setup without a license."
+          "source": "The server's README names Jira Server/Data Center 8.14+ without a pinned version; the image tag latest on Docker Hub on 2026-11-07 is digest sha256:5ee1d0c989cbd1c53c67e95088fc24c471847b52e927a40d2b43d969088b62c6, JIRA_VERSION=11.3.13 in its environment. Run to establish the setup gate; the fixture serves a stand-in under the maintainer's ruling of 2026-11-13, a license needing no account but the account-free Data Center licenses expiring three hours after they are applied."
         },
         {
           "software": "Confluence Data Center (atlassian/confluence image)",
           "release": "11.0.1",
           "day": "2026-11-07",
-          "source": "README names Confluence Server/Data Center 6.0+; tag latest on 2026-11-07, digest sha256:8231acf2ba0b0fda8916f78b452490a134d91117bec3f92c27290aa1d6db25bb, CONFLUENCE_VERSION=11.0.1. Same license gate; stand-in served."
+          "source": "README names Confluence Server/Data Center 6.0+; tag latest on 2026-11-07, digest sha256:8231acf2ba0b0fda8916f78b452490a134d91117bec3f92c27290aa1d6db25bb, CONFLUENCE_VERSION=11.0.1. Same setup gate; stand-in served under the same ruling."
         }
       ]
     },
