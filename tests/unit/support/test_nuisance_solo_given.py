@@ -15,6 +15,8 @@ from evals.cve.nuisance.vet_command import VetDeps
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost
 
 MAGENTO2 = run_given.a_server("npm:@elgentos/magento2-dev-mcp")
+GITLAB = run_given.a_server("npm:@zereight/mcp-gitlab")
+HEAVY_BACKEND_SERVERS = [run_given.a_server("PyPI:doris-mcp-server"), GITLAB]
 BOUND = 2
 
 
