@@ -1399,6 +1399,24 @@ services:
     image: mcp-auditor-cve-ckan-front:local
     profiles: ["nuisance"]
 
+  httpbin:
+    build:
+      context: .
+      dockerfile: Dockerfile.httpbin
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0b5fdd4890ac02f4b7b281e423ebc5ddc12998f619b56300d9d3b145d1c95f38"
+    image: mcp-auditor-cve-httpbin:local
+    profiles: ["nuisance"]
+
+  httpbin-front:
+    build:
+      context: .
+      dockerfile: Dockerfile.httpbin-front
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "0f6ab84e09f7e99b576f2c8904b7c1915b7e656513d83f08ba744e2a5452ca4f"
+    image: mcp-auditor-cve-httpbin-front:local
+    profiles: ["nuisance"]
+
   n8n-instance:
     build:
       context: .

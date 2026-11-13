@@ -24,6 +24,7 @@ from evals.cve.backends import (
     googleapis,
     gravitino,
     gravitino_seed,
+    httpbin,
     jenkins,
     mcp_ssh_sshd,
     n8n,
@@ -37,6 +38,7 @@ from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RE
 from evals.cve.backends.gitlab import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.cve.backends.googleapis import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.cve.backends.gravitino import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
+from evals.cve.backends.httpbin import HTTPBIN_BRIDGE, HTTPBIN_IMAGE, HTTPBIN_PARTS
 from evals.cve.backends.jenkins import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE, JENKINS_SERVICE
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.mcp_ssh_sshd import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
@@ -77,6 +79,7 @@ def _responder(
 
 
 _CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
+_HTTPBIN_SERVICES = tuple(part.service for part in HTTPBIN_PARTS)
 
 BACKENDS: dict[str, RegisteredBackend] = {
     "doris": RegisteredBackend(
@@ -93,6 +96,13 @@ BACKENDS: dict[str, RegisteredBackend] = {
         (CKAN_IMAGE,),
         _CKAN_SERVICES,
         (*_served(ckan.__file__, *_CKAN_SERVICES), *MOUNTED_FILES),
+    ),
+    "httpbin": RegisteredBackend(
+        httpbin.LIFECYCLE,
+        HTTPBIN_BRIDGE,
+        (HTTPBIN_IMAGE,),
+        _HTTPBIN_SERVICES,
+        (*_served(httpbin.__file__, *_HTTPBIN_SERVICES), *httpbin.MOUNTED_FILES),
     ),
     "n8n": RegisteredBackend(
         n8n.LIFECYCLE,
