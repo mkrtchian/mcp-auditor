@@ -67,19 +67,24 @@ def fix_check(args: argparse.Namespace) -> int:
         return UNKNOWN_SERVER_EXIT
     records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
     refuse_without_closed_networks(check_closed_network_support)
-    kit_tags = [image_tag(service) for service in _services(fixtures)]
     backend_services = _backend_services(fixtures, admission.servers)
-    backend_tags = [
-        *built_backend_tags(admission.servers),
-        *map(backend_image_tag, backend_services),
-    ]
-    tags = list(dict.fromkeys([*kit_tags, *backend_tags]))
+    tags = _swept_tags(fixtures, backend_services, admission.servers)
     try:
         deps = default_fix_check_deps(args.concurrency)
         deps.refresh_backend_images(backend_services)
         return asyncio.run(check_fixes(fixtures, records, deps))
     finally:
         sweep_containers(tags, DOCKER_SWEEP.running_containers, DOCKER_SWEEP.remove_containers)
+
+
+def _swept_tags(
+    fixtures: Sequence[FixCheckFixture],
+    backend_services: Sequence[str],
+    servers: Sequence[AdmittedServer],
+) -> list[str]:
+    kit_tags = [image_tag(service) for service in _services(fixtures)]
+    backend_tags = [*built_backend_tags(servers), *map(backend_image_tag, backend_services)]
+    return list(dict.fromkeys([*kit_tags, *backend_tags]))
 
 
 def _backend_services(

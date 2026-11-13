@@ -1,14 +1,12 @@
 import dataclasses
-from collections.abc import Awaitable, Callable, Generator, Sequence
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
-from functools import partial
 from pathlib import Path
 
 import pytest
 import yaml
 
-from evals.cve.backends.kubernetes import StoodControlPlane
-from evals.cve.backends.kubernetes_detection import ControlPlaneDocker, kubernetes_injection_env
+import tests.unit.support.test_detection_targets_given as given
 from evals.cve.detection import exploits
 from evals.cve.detection.targets import (
     ACCEPTANCE_TARGETS,
@@ -32,30 +30,8 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
-from tests.fakes.planting_docker import FakePlantingDocker
 
 SSRF_TARGET = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-65513")
-KUBERNETES_TARGET = next(
-    target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"
-)
-CONTROL_PLANE_NETWORK = "kube-net"
-
-
-@contextmanager
-def _a_stood_control_plane(name: str, memory_bound: Sequence[str]) -> Generator[StoodControlPlane]:
-    yield StoodControlPlane(CONTROL_PLANE_NETWORK, Path("/host/kubeconfig"))
-
-
-# The kubernetes target's builder on fake ports, so its layout hand-over and its control plane make
-# no Docker call.
-KUBERNETES_WITHOUT_DOCKER = dataclasses.replace(
-    KUBERNETES_TARGET,
-    builder=partial(
-        kubernetes_injection_env,
-        docker=FakePlantingDocker(),
-        control_plane=ControlPlaneDocker(_a_stood_control_plane, lambda network, container: None),
-    ),
-)
 COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compose.yml"
 
 ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
@@ -294,22 +270,24 @@ def test_every_acceptance_target_runs_from_the_checkout(target: Target):
 
 
 def test_an_empty_spec_plants_no_nonce():
-    with KUBERNETES_WITHOUT_DOCKER.environment(KUBERNETES_TARGET.planting_spec(())) as planted:
+    with given.the_kubernetes_target_without_docker().environment(
+        given.KUBERNETES_TARGET.planting_spec(())
+    ) as planted:
         assert planted.nonces == {}
         assert "FICT=MCPAUDIT-fakenonce" not in planted.launch.args
 
 
 def test_an_env_place_is_planted_through_arguments_with_no_docker():
-    spec = KUBERNETES_TARGET.planting_spec([_an_env_place()], nonces=_FakeNonces())
+    spec = given.KUBERNETES_TARGET.planting_spec([_an_env_place()], nonces=_FakeNonces())
 
-    with KUBERNETES_WITHOUT_DOCKER.environment(spec) as planted:
+    with given.the_kubernetes_target_without_docker().environment(spec) as planted:
         args = planted.launch.args
         assert planted.nonces == {"fict-env": "MCPAUDIT-fakenonce"}
         assert "FICT=MCPAUDIT-fakenonce" in args
         assert "65534:65534" in args
         assert args[args.index("-w") + 1] == "/srv/app"
         assert args[args.index("--network", args.index("--network") + 1) + 1] == (
-            CONTROL_PLANE_NETWORK
+            given.CONTROL_PLANE_NETWORK
         )
 
 
