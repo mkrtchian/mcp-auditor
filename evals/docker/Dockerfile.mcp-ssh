@@ -1,8 +1,8 @@
 # @aiondadotcom/mcp-ssh 1.3.5, the nuisance run image: the first release patched for both of its
-# census flaws (CVE-2025-9654 since 1.0.4, GHSA-p4h8-56qp-hpgv in 1.3.5). Its ~/.ssh/config names
-# one host, sshhost (the sshd backend, Dockerfile.mcp-ssh-sshd), reached with the private half of
-# the ed25519 key whose public half the sshd bakes. No COPY/ADD from the build context; the server
-# installs from npm by RUN.
+# census flaws (CVE-2025-9654 since 1.0.4, GHSA-p4h8-56qp-hpgv in 1.3.5). Its ~/.ssh/config is the
+# README's `Host production` entry, reaching prod.example.com (the sshd backend,
+# Dockerfile.mcp-ssh-sshd) as deploy with the id_production key whose public half the sshd bakes.
+# No COPY/ADD from the build context; the server installs from npm by RUN.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 # wget reaches an internal HTTP endpoint for a command-execution payload and fetches the OpenSSH
@@ -37,12 +37,18 @@ RUN apt-get update \
 
 RUN npm install -g @aiondadotcom/mcp-ssh@1.3.5
 
+# The README's sample (sections 1, 4 and 6): its `Host production` entry in ~/.ssh/config, and the
+# id_production key pair its `ssh-keygen -t ed25519 -f ~/.ssh/id_production -C "production-server"`
+# makes with an empty passphrase, generated once and baked as text, the private half 600 and the
+# rest 644 as section 4 sets them. uid 65534's passwd home is /tmp, so the client resolves `~` where
+# the confinement's HOME points. /tmp/payload.txt is the file the benign upload sends.
 RUN sed -i 's#^nobody:x:65534:65534:nobody:/nonexistent:#nobody:x:65534:65534:nobody:/tmp:#' /etc/passwd \
  && mkdir -p /tmp/.ssh \
- && printf 'Host sshhost\n    HostName sshhost\n    User tester\n    Port 2222\n    IdentityFile /tmp/.ssh/id_ed25519\n    IdentitiesOnly yes\n' > /tmp/.ssh/config \
- && printf '%s' 'LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNDUlZtcjhWellyWXlwREg3YVdEYkFXczhad3ZYWkoweE52VE5qbTZhRVlxd0FBQUlnV3R1OThGcmJ2CmZBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDQ1JWbXI4VnpZcll5cERIN2FXRGJBV3M4Wnd2WFpKMHhOdlROam02YUVZcXcKQUFBRUJjRlNiUytCL0xNcHFMcEtOVnhsT0RRckgvUnQyOVNlUzdGbGU1bXJTK2RwRldhdnhYTml0aktrTWZ0cFlOc0Jhegp4bkM5ZGtuVEUyOU0yT2Jwb1JpckFBQUFBQUVDQXdRRgotLS0tLUVORCBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K' | base64 -d > /tmp/.ssh/id_ed25519 \
+ && printf 'Host production\n    Hostname prod.example.com\n    User deploy\n    IdentityFile ~/.ssh/id_production\n    IdentitiesOnly yes\n' > /tmp/.ssh/config \
+ && printf '%s' 'LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNDSlpTMUsrdEV3ZGh4OVArVHVIM1RwcktOUnFuU3RUV2oxWFJYb0lteTBTUUFBQUpqbHZOcEQ1YnphClF3QUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDQ0paUzFLK3RFd2RoeDlQK1R1SDNUcHJLTlJxblN0VFdqMVhSWG9JbXkwU1EKQUFBRUE2cWdEMVBHeTIxVEJNdHFGUmt4bzR5QVR2dE50clNnMFBzcG1KNlR1dW1vbGxMVXI2MFRCMkhIMC81TzRmZE9tcwpvMUdxZEsxTmFQVmRGZWdpYkxSSkFBQUFFWEJ5YjJSMVkzUnBiMjR0YzJWeWRtVnlBUUlEQkE9PQotLS0tLUVORCBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K' | base64 -d > /tmp/.ssh/id_production \
+ && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIllLUr60TB2HH0/5O4fdOmso1GqdK1NaPVdFegibLRJ production-server' > /tmp/.ssh/id_production.pub \
  && printf 'demo transfer content\n' > /tmp/payload.txt \
  && chown -R 65534:65534 /tmp/.ssh /tmp/payload.txt \
- && chmod 700 /tmp/.ssh && chmod 600 /tmp/.ssh/config /tmp/.ssh/id_ed25519
+ && chmod 700 /tmp/.ssh && chmod 644 /tmp/.ssh/config /tmp/.ssh/id_production.pub && chmod 600 /tmp/.ssh/id_production
 
 ENTRYPOINT ["mcp-ssh"]

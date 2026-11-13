@@ -13,7 +13,7 @@ from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import shell_injection, target
 
 # An exploit is aimed when the hostAlias closes the ssh host string (`";`); the benign hostAlias
-# `sshhost` carries none.
+# `production` carries none.
 AIM = re.compile(r'";')
 
 FIXTURES: tuple[FixCheckFixture, ...] = (

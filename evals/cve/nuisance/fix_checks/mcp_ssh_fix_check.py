@@ -9,31 +9,24 @@ on its stderr. Both are closed in a later release the run image (1.3.5) carries,
 tools pass hostAlias into the same invocation, so each is a tool of the flaw with its own exploit;
 the planted witness file surfaces through the tools that return a command's output.
 
-The fix check stands its own OpenSSH sshd (the backend's image) on a per-launch closed network under
-the alias the run image's ~/.ssh/config names, never the run singleton, and reaps it with the
-network. The witness is one file mounted into the server container with the per-run nonce; the
-injected command reads it. The benign calls drive the three counted tools against the sshd; on the
-run image (the server's patched 1.3.5) they connect with the baked key, on the fix-check-only
-images they fail soft (the tools catch and return a value, never an MCP error), so no patched
-benign errors.
+The fix check stands its own OpenSSH sshd (the backend's image, `stood_sshd`) on a per-launch closed
+network under the Hostname the README's `Host production` entry names, never the run singleton, and
+reaps it with the network. Every server image of the fix check carries that entry and its key, and
+the launch mounts the sshd's host keys as the caller's known_hosts, as the README's section 5
+connection test writes it. The witness is one file mounted into the server container with the
+per-run nonce; the injected command reads it. The benign calls drive the three counted tools
+against the sshd at `production` on every version: 1.0.3 and 1.0.4 call ssh with no host-key option
+and find the key in known_hosts, 1.3.4 and 1.3.5 pass `StrictHostKeyChecking=accept-new`.
 """
 
 import os
 import re
 import secrets
-import subprocess
 import tempfile
-import time
 from collections.abc import Callable, Generator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 
-from evals.cve.backends.mcp_ssh_sshd import (
-    SSHD_ALIAS,
-    SSHD_IMAGE,
-    SSHD_PORT,
-    ensure_sshd_image,
-)
-from evals.cve.closed_network import create_closed_network
+from evals.cve.backends.mcp_ssh_sshd import CALLER, SSH_CONFIG_HOST, StoodSshd, stood_sshd
 from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
@@ -61,14 +54,14 @@ WITNESS = Place(
 
 # The three counted tools, driven against the sshd with no injection, so none reads as aimed.
 _BENIGN_ARGS: tuple[tuple[str, dict[str, object]], ...] = (
-    ("checkConnectivity", {"hostAlias": SSHD_ALIAS}),
+    ("checkConnectivity", {"hostAlias": SSH_CONFIG_HOST}),
     (
         "uploadFile",
-        {"hostAlias": SSHD_ALIAS, "localPath": "/tmp/payload.txt", "remotePath": "up.txt"},
+        {"hostAlias": SSH_CONFIG_HOST, "localPath": "/tmp/payload.txt", "remotePath": "up.txt"},
     ),
     (
         "downloadFile",
-        {"hostAlias": SSHD_ALIAS, "remotePath": "sample.txt", "localPath": "/tmp/down.txt"},
+        {"hostAlias": SSH_CONFIG_HOST, "remotePath": "sample.txt", "localPath": "/tmp/down.txt"},
     ),
 )
 
@@ -84,9 +77,8 @@ _EXPLOIT_FILLERS: tuple[tuple[str, dict[str, object]], ...] = (
     ("runCommandBatch", {"commands": ["probe"]}),
 )
 
-_READY_SECONDS = 30.0
-
 Injection = Callable[[str], str]
+type SshdStand = Callable[[str, str], AbstractContextManager[StoodSshd]]  # (name, owner)
 
 
 def shell_injection(path: str) -> str:
@@ -99,46 +91,32 @@ def option_injection(path: str) -> str:
     return f'-oProxyCommand=sh -c "cat {path} 1>&2"'
 
 
-def server_args(image: str, network: str, witness_file: str) -> list[str]:
+def server_args(image: str, sshd: StoodSshd, witness_file: str) -> list[str]:
     return [
         "run", "-i", "--rm",
         *confinement_args(),
-        *own_network_args(network),
+        *own_network_args(sshd.network),
         *unprivileged_user_args(),
         "-w", HOST.working_directory,
         "-v", f"{witness_file}:{WITNESS_PATH}:ro",
+        *sshd.mount_args(),
         image,
-    ]  # fmt: skip
-
-
-def sshd_args(name: str, network: str) -> list[str]:
-    return [
-        "run", "-d", "--rm",
-        "--name", name,
-        "--label", LABEL,
-        *own_network_args(network),
-        "--network-alias", SSHD_ALIAS,
-        *confinement_args(),
-        SSHD_IMAGE,
     ]  # fmt: skip
 
 
 @contextmanager
 def ssh_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    stand: SshdStand = stood_sshd,
 ) -> Generator[Launch]:
-    ensure_sshd_image()
-    network = f"mcp-auditor-kit-mcp-ssh-net-{secrets.token_hex(6)}"
-    create_closed_network(network)
-    sshd_name = f"mcp-auditor-kit-mcp-ssh-sshd-{secrets.token_hex(4)}"
     witness_file = _write_witness(spec.nonces[WITNESS.id])
     try:
-        subprocess.run(["docker", *sshd_args(sshd_name, network)], check=True, capture_output=True)
-        _wait_until_listening(sshd_name)
-        yield Launch(command="docker", args=server_args(image, network, witness_file))
+        with stand(f"{LABEL}-mcp-ssh-sshd-{secrets.token_hex(4)}", CALLER) as sshd:
+            yield Launch(command="docker", args=server_args(image, sshd, witness_file))
     finally:
-        subprocess.run(["docker", "rm", "-f", "-v", sshd_name], capture_output=True)
-        subprocess.run(["docker", "network", "rm", network], capture_output=True)
         os.unlink(witness_file)
 
 
@@ -148,17 +126,6 @@ def _write_witness(nonce: str) -> str:
         handle.write(nonce)
     os.chmod(path, 0o644)  # the server reads it as the unprivileged account
     return path
-
-
-def _wait_until_listening(container: str) -> None:
-    # ssh-keyscan prints the host key once sshd accepts connections. The verdict does not depend on
-    # the sshd (the benign tools fail soft), so a slow start is not fatal: give up quietly.
-    probe = ("docker", "exec", container, "ssh-keyscan", "-p", str(SSHD_PORT), "127.0.0.1")
-    deadline = time.monotonic() + _READY_SECONDS
-    while time.monotonic() < deadline:
-        if subprocess.run(probe, capture_output=True, text=True).stdout.strip():
-            return
-        time.sleep(1)
 
 
 def _call(tool: str, args: dict[str, object]) -> FixCheckExploit:

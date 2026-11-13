@@ -13,7 +13,7 @@ from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import option_injection, target
 
 # An exploit is aimed when the hostAlias supplies an ssh option (`-oProxyCommand=`); the benign
-# hostAlias `sshhost` carries none.
+# hostAlias `production` carries none.
 AIM = re.compile(r"-oProxyCommand=")
 
 FIXTURES: tuple[FixCheckFixture, ...] = (

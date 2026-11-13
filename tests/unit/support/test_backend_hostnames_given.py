@@ -29,6 +29,12 @@ def the_benign_argument(service: str, name: str) -> Any:
     return next(call.arguments[name] for call in calls if name in call.arguments)
 
 
+def the_benign_argument_values(service: str, name: str) -> list[Any]:
+    server = the_admitted_server(service)
+    calls = [call for flaw in server.flaws for call in flaw.benign_calls]
+    return [call.arguments[name] for call in calls if name in call.arguments]
+
+
 def run_dockerfile_env(server: AdmittedServer) -> dict[str, str]:
     return _env_values(image_dockerfile(server.service, DOCKER_DIRECTORY))
 
@@ -65,10 +71,15 @@ def mcp_ssh_config() -> dict[str, str]:
 
 def sshd_authorized_key_fields() -> list[str]:
     written = re.search(
-        r"'(ssh-ed25519 [^']*)' > /home/tester/\.ssh/authorized_keys", _text("mcp-ssh-sshd")
+        r"'(ssh-ed25519 [^']*)' > /home/deploy/\.ssh/authorized_keys", _text("mcp-ssh-sshd")
     )
     assert written is not None
     return written.group(1).split()
+
+
+def sshd_account() -> str:
+    users = re.findall(r"^USER (\S+)$", _text("mcp-ssh-sshd"), re.MULTILINE)
+    return users[-1]
 
 
 @dataclass(frozen=True)
@@ -78,7 +89,9 @@ class BakedPrivateKey:
 
 
 def mcp_ssh_private_key() -> BakedPrivateKey:
-    baked = re.search(r"'([A-Za-z0-9+/=]+)' \| base64 -d > /tmp/\.ssh/id_ed25519", _text("mcp-ssh"))
+    baked = re.search(
+        r"'([A-Za-z0-9+/=]+)' \| base64 -d > /tmp/\.ssh/id_production", _text("mcp-ssh")
+    )
     assert baked is not None
     armored = base64.b64decode(baked.group(1)).decode().splitlines()
     body = base64.b64decode("".join(line for line in armored if not line.startswith("-----")))

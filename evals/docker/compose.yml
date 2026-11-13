@@ -478,7 +478,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "21c4ed3959ab81efe120f1df6c01e91c3f368d713ac53821feeaf0d9682858d3"
+        org.mcp-auditor.dockerfile-fingerprint: "5746beadb4db5c2aee04a8d348c56923653c673a6c87d475cbc23bb7ad95e7b7"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh:local
 
   holdout-2025-9654-mcp-ssh-patched:
@@ -486,7 +486,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-9654-mcp-ssh-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "393fd71ac8df3dfa47a4ea15cb2e8b8fdd7e5beb7023eabc0bc7b48cfd3849cc"
+        org.mcp-auditor.dockerfile-fingerprint: "4cca1507bb6c5ed269c3903a914c8c0cf99d0e6609de9716563976b8c80a2b87"
     image: mcp-auditor-cve-holdout-2025-9654-mcp-ssh-patched:local
 
   # Command-execution target: android-mcp-server's executeAdbCommand interpolates the deviceId into
@@ -1356,7 +1356,7 @@ services:
       context: .
       dockerfile: Dockerfile.mcp-ssh
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a79ee6b5b9f6a17949a5628bb2c16acf88dff611420ab8fc2ce726113b810d8f"
+        org.mcp-auditor.dockerfile-fingerprint: "cf55c2c9d0f721cc1243fe7d6a0a608a9539c7a795a66b7f310ede8cf8423e46"
     image: mcp-auditor-nuisance-mcp-ssh:local
     profiles: ["nuisance"]
 
@@ -1517,11 +1517,12 @@ services:
     image: mcp-auditor-cve-gravitino-kafka:local
     profiles: ["nuisance"]
 
+  # The sshd also stands behind the holdout target CVE-2025-9654, outside the nuisance profile since
+  # that target builds it.
   mcp-ssh-sshd:
     build:
       context: .
       dockerfile: Dockerfile.mcp-ssh-sshd
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "1addc932b9a7f9e301fdd142f1d7da25c93579ea95af08802343c286ab10c8fb"
+        org.mcp-auditor.dockerfile-fingerprint: "55c169a7db295b355343326b19287d2059580cb0c87acb062ec3535ce9fe1b36"
     image: mcp-auditor-cve-mcp-ssh-sshd:local
-    profiles: ["nuisance"]
