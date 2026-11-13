@@ -17,9 +17,11 @@ returns the output of the code it runs, and sandbox_exec and run_js return the i
 stdout, while the nonce is written to stderr.
 
 The real Debian docker.io CLI is installed, and only the Docker daemon it speaks to is replaced,
-at the Engine API, by a responder baked into both images. The
-injected segment runs regardless of whether the preceding `docker` segment succeeds, since it is
-chained with `;`, not `&&`. The patched build (1.3.0) sanitizes container_id and switches every
+at the Engine API, by the node sandbox engine, the run's own backend: the builder stands one
+engine for each launch and mounts its socket at the server's `/var/run/docker.sock`, so the
+witness in the server's container shares no filesystem with the sandbox. The injected segment runs
+regardless of whether the preceding `docker` segment succeeds, since it is chained with `;`, not
+`&&`. The patched build (1.3.0) sanitizes container_id and switches every
 call site to execFileSync('docker', [...]) with a literal argument array, so a shell
 metacharacter in an argument never reaches a shell.
 
@@ -29,13 +31,24 @@ file read by `cat /flag`, so each exploit's injected argument carries the aim an
 """
 
 import re
+import secrets
+from collections.abc import Generator
+from contextlib import contextmanager
 
+from evals.cve.backends.node_sandbox_engine import socket_mount_args, stood_engine
 from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
-from evals.cve.kit.launch import command_injection_env
+from evals.cve.kit.launch import Launch, LaunchShape
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
-from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting import (
+    DockerPlanting,
+    PlantingHost,
+    PlantingSpec,
+    SymbolicUser,
+    confinement_args,
+    planted,
+)
 
 WITNESS = Place(
     id="node-sandbox-flag",
@@ -69,6 +82,28 @@ _BENIGN_ARGS: dict[str, dict[str, object]] = {
 }
 
 
+@contextmanager
+def node_sandbox_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    # The server keeps the suite's confinement without the memory bound, as every fix-check server
+    # does; its engine is the run's, memory bound included.
+    with (
+        stood_engine(f"mcp-auditor-kit-node-sandbox-engine-{secrets.token_hex(4)}") as socket,
+        planted(spec, image, DockerPlanting()) as args,
+    ):
+        yield Launch(
+            command="docker",
+            args=[
+                "run", "-i", "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                *socket_mount_args(socket),
+                image,
+            ],
+        )  # fmt: skip
+
+
 def _call(tool: str, args: dict[str, object]) -> FixCheckExploit:
     async def call(places: Places, client: KitClient) -> None:
         await client.call_tool(tool, args)
@@ -85,7 +120,7 @@ FIXTURE = FixCheckFixture(
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,
-    builder=command_injection_env,
+    builder=node_sandbox_env,
     exploits=EXPLOITS,
     benign_calls=BENIGN_CALLS,
     vulnerable_service="node-sandbox-vuln",

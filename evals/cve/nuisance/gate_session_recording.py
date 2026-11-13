@@ -101,7 +101,7 @@ def _recordings(
             image_ids={
                 **opened.harness.image_ids([server_runs.server.service]),
                 **opened.harness.backend_image_ids(
-                    [server_runs.server.backend.image] if server_runs.server.backend else []
+                    server_runs.server.backend.images if server_runs.server.backend else []
                 ),
             },
         )

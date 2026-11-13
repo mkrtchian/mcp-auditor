@@ -7,15 +7,14 @@ from evals.cve.backends.responder import Responder
 from evals.cve.detection import targets as detection_targets
 from evals.cve.nuisance.backend_registry import (
     BACKENDS,
-    RegisteredBackend,
     built_backend_services,
     built_backend_tags,
 )
 from tests.unit.support.test_backend_lifecycle_given import every_responder
 
 
-def _is_built(entry: RegisteredBackend) -> bool:
-    return entry.image.startswith("mcp-auditor-cve-") and entry.image.endswith(":local")
+def _is_built(image: str) -> bool:
+    return image.startswith("mcp-auditor-cve-") and image.endswith(":local")
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -23,11 +22,10 @@ def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str
     entry = BACKENDS[key]
     tags = [detection_targets.image_tag(service) for service in entry.built_services]
 
-    if _is_built(entry):
-        assert entry.image in tags
-    else:
+    for image in entry.images:
+        assert image in tags if _is_built(image) else "@sha256:" in image
+    if not any(_is_built(image) for image in entry.images):
         assert tags == []
-        assert "@sha256:" in entry.image
 
 
 @pytest.mark.parametrize("responder", every_responder(), ids=lambda r: r.container)

@@ -1,15 +1,20 @@
 import hashlib
+from collections.abc import Sequence
+from contextlib import AbstractContextManager
 from pathlib import Path
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
+from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission import AdmittedServer, BackendFixture, FlawRecord
+from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.re_admission_dossier import (
     fix_check_modules,
     holdout_target_references,
     write_re_admission_dossier,
 )
+from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
@@ -18,6 +23,34 @@ from tests.unit.support.test_nuisance_committed_admission_given import (
 
 A_DRAWN_TARGET = "CVE-2026-85787"
 ITS_SIBLING = "CVE-2026-87911"
+PER_LAUNCH_NETWORK_PREFIX = "fake-per-launch-net"
+
+
+def a_per_launch_registry() -> dict[str, RegisteredBackend]:
+    backend = PerLaunchBackend("fake_per_launch", _never_stood)
+    registered = RegisteredBackend(backend, PER_LAUNCH_NETWORK_PREFIX, ("fake/engine:1.0",), (), ())
+    return {backend.key: registered}
+
+
+def a_server_on_a_per_launch_backend() -> AdmittedServer:
+    backend = BackendFixture(
+        provisioner="fake_per_launch", images=["fake/engine:1.0"], network=PER_LAUNCH_NETWORK_PREFIX
+    )
+    return admission_given.with_a_backend(admission_given.an_admitted_server(), backend)
+
+
+def _never_stood(
+    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> AbstractContextManager[list[str]]:
+    raise AssertionError("the dossier's documents never stand a backend")
+
+
+def shared_backends() -> dict[str, RegisteredBackend]:
+    return {
+        key: entry
+        for key, entry in BACKENDS.items()
+        if isinstance(entry.lifecycle, BackendLifecycle)
+    }
 
 
 def the_copy_resolution() -> dict[str, str]:

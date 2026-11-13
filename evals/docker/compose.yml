@@ -1238,8 +1238,17 @@ services:
       context: .
       dockerfile: Dockerfile.node-sandbox
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "48f0a498b496170bb442cc1e5ee1aa444b34b5bdf643c129f327b5db3e16623f"
+        org.mcp-auditor.dockerfile-fingerprint: "4b982e0697b1a86efa69ca6033641828b3f90634adeb24861073bad8dabc1e56"
     image: mcp-auditor-nuisance-node-sandbox:local
+    profiles: ["nuisance"]
+
+  node-sandbox-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-sandbox-engine
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "4ada5f282956b89574a3f2fab68e5f384a654e110b63635ac49c10af92cab7a7"
+    image: mcp-auditor-cve-node-sandbox-engine:local
     profiles: ["nuisance"]
 
   codehooks:

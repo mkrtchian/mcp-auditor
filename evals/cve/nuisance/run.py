@@ -299,6 +299,7 @@ def _assemble_run(
 
 
 def _backend_images(servers: Sequence[AdmittedServer]) -> list[str]:
-    return list(
-        dict.fromkeys(server.backend.image for server in servers if server.backend is not None)
+    images = (
+        image for server in servers if server.backend is not None for image in server.backend.images
     )
+    return list(dict.fromkeys(images))

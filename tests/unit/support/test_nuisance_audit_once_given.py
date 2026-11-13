@@ -48,7 +48,7 @@ def an_auditor_raising(error: Exception, *, grouped: bool) -> NuisanceAuditor:
 def a_server_backed_by(lifecycle: BackendLifecycle) -> AdmittedServer:
     """A server whose backend fixture names the lifecycle, as `a_backend_registry` registers it."""
     fixture = BackendFixture(
-        provisioner=lifecycle.key, image="fake/backend:1.0", network="fake-net"
+        provisioner=lifecycle.key, images=["fake/backend:1.0"], network="fake-net"
     )
     return with_a_backend(an_admitted_server(), fixture)
 

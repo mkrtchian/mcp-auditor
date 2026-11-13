@@ -68,7 +68,7 @@ def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> 
 
 def an_admission_on_the_ckan_backend() -> NuisanceAdmission:
     ckan = BACKENDS["ckan"]
-    backend = BackendFixture(provisioner="ckan", image=ckan.image, network=ckan.network)
+    backend = BackendFixture(provisioner="ckan", images=list(ckan.images), network=ckan.network)
     admission = admission_given.an_admission()
     server = admission_given.with_a_backend(admission.servers[0], backend)
     return admission.model_copy(update={"servers": [server]})

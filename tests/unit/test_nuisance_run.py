@@ -84,7 +84,9 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
 async def test_a_backend_server_records_its_backend_image_beside_its_service():
     server = admission.with_a_backend(
         given.a_server(),
-        BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
+        BackendFixture(
+            provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
+        ),
     )
     audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
 

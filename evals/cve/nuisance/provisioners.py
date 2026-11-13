@@ -1,8 +1,9 @@
 """The provisioner of a registered nuisance backend, built from its lifecycle.
 
-It ensures the backend is up and query-ready, yields the server `Launch` wired to it, and reaps
-the server when the launch ends. `backend_registry` registers the lifecycles under their fixture
-keys.
+It brings the backend up (a shared backend ensured once, a per-launch backend stood for this
+launch alone), yields the server `Launch` wired to it, and reaps the server, and a per-launch
+backend with it, when the launch ends. `backend_registry` registers the lifecycles under their
+fixture keys.
 """
 
 from __future__ import annotations
@@ -12,32 +13,26 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from evals.cve.backends.lifecycle import launched_server_args
 from evals.cve.environments import Launch
 from evals.cve.nuisance.images import image_tag
 from evals.cve.planting_base import LABEL
 
 if TYPE_CHECKING:
-    from evals.cve.backends.lifecycle import BackendLifecycle
+    from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
     from evals.cve.nuisance.admission import AdmittedServer
 
 type BackendProvisioner = Callable[[AdmittedServer], AbstractContextManager[Launch]]
 
 
-def provisioner_of(lifecycle: BackendLifecycle) -> BackendProvisioner:
+def provisioner_of(lifecycle: BackendLifecycle | PerLaunchBackend) -> BackendProvisioner:
+    launched = launched_server_args(lifecycle)
+
     @contextmanager
     def provisioner(server: AdmittedServer) -> Generator[Launch]:
-        # The nuisance run plants nothing, so the lock serialises only the backend stand-up, not
-        # the yield: a server's concurrent runs share the one backend that serves them all.
-        with lifecycle.lock:
-            lifecycle.ensure()
         name = f"{LABEL}-{lifecycle.key}-server-{uuid4().hex}"
         image = image_tag(server.service)
-        try:
-            yield Launch(
-                command="docker",
-                args=lifecycle.server_args(name, image, server.host, server.launch),
-            )
-        finally:
-            lifecycle.remove(name)
+        with launched(name, image, server.host, server.launch) as args:
+            yield Launch(command="docker", args=args)
 
     return provisioner

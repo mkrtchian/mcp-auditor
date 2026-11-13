@@ -31,7 +31,10 @@ class ResponderFixCheck:
 
     @property
     def responder_image(self) -> str:
-        return self.image if self.image is not None else BACKENDS[self.backend].image
+        if self.image is not None:
+            return self.image
+        (image,) = BACKENDS[self.backend].images
+        return image
 
 
 RESPONDER_FIX_CHECKS = [

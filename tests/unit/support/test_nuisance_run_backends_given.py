@@ -8,9 +8,9 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.run import NuisanceDeps
 
 SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
-CKAN_TAG = BACKENDS["ckan"].image
+(CKAN_TAG,) = BACKENDS["ckan"].images
 CKAN_SERVICES = list(BACKENDS["ckan"].built_services)
-DORIS_TAG = BACKENDS["doris"].image
+(DORIS_TAG,) = BACKENDS["doris"].images
 
 
 class DockerHost:
@@ -36,8 +36,11 @@ class DockerHost:
         self.running_at_rebuild = [name for names in self.containers.values() for name in names]
 
     async def benign_call(self, server: AdmittedServer) -> str | None:
-        if server.backend is not None and not self.containers.get(server.backend.image):
-            self.containers[server.backend.image] = [f"{server.backend.provisioner}_started"]
+        if server.backend is None:
+            return None
+        for image in server.backend.images:
+            if not self.containers.get(image):
+                self.containers[image] = [f"{server.backend.provisioner}_started"]
         return None
 
 

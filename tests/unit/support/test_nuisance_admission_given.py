@@ -178,7 +178,7 @@ def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, R
         registered.key: RegisteredBackend(
             lifecycle=registered,
             network="fake-net",
-            image="fake/backend:1.0",
+            images=("fake/backend:1.0",),
             built_services=(),
             served=(),
         )
@@ -199,19 +199,19 @@ def with_a_backend(server: AdmittedServer, backend: BackendFixture) -> AdmittedS
 
 
 def with_a_registered_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
-    backend = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
+    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
     return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_an_unknown_backend_provisioner(admission: NuisanceAdmission) -> NuisanceAdmission:
-    backend = BackendFixture(provisioner="ghost", image="fake/backend:1.0", network="fake-net")
+    backend = BackendFixture(provisioner="ghost", images=["fake/backend:1.0"], network="fake-net")
     return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_a_backend_fixture_differing_from_its_provisioner(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
-    backend = BackendFixture(provisioner="fake", image="fake/backend:2.0", network="fake-net")
+    backend = BackendFixture(provisioner="fake", images=["fake/backend:2.0"], network="fake-net")
     return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 

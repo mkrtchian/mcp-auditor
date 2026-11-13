@@ -3,6 +3,8 @@ import re
 import pytest
 
 import tests.unit.support.test_backend_lifecycle_given as given
+import tests.unit.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.test_nuisance_run_given as run_given
 from evals.cve.backends.ckan import (
     CKAN_FRONT_IP,
     CKAN_PARTS,
@@ -17,7 +19,8 @@ from evals.cve.backends.googleapis import GOOGLEAPIS_RESPONDER_IP
 from evals.cve.backends.jenkins import JENKINS_URL
 from evals.cve.backends.n8n import N8N_IP, n8n_server_args, singleton_run_args
 from evals.cve.docker_paths import DOCKER_DIRECTORY
-from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.admission import BackendFixture
+from evals.cve.nuisance.backend_registry import BACKENDS, backend_problems
 from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
@@ -139,7 +142,7 @@ def test_the_n8n_instance_stands_confined_at_the_address_the_server_reaches_on_i
 
     assert value_after(args, "--network") == BACKENDS["n8n"].network
     assert value_after(args, "--ip") == N8N_IP
-    assert args[-1] == BACKENDS["n8n"].image
+    assert (args[-1],) == BACKENDS["n8n"].images
     assert value_after(args, "--cap-drop") == "ALL"
     assert "--cap-add" not in args
     assert carries(args, memory_bound_args())
@@ -159,3 +162,31 @@ def test_the_doris_cluster_is_reset_by_its_container_name():
 @pytest.mark.parametrize("key", [key for key, entry in BACKENDS.items() if entry.built_services])
 def test_a_built_backend_resets_no_container_by_name(key: str):
     assert BACKENDS[key].reset_containers == ()
+
+
+def test_a_recorded_backend_whose_image_list_differs_from_the_registered_one_is_refused():
+    recorded = BackendFixture(
+        provisioner="fake", images=["fake/backend:1.0", "fake/extra:1.0"], network="fake-net"
+    )
+    server = admission_given.with_a_backend(admission_given.an_admitted_server(), recorded)
+
+    problems = backend_problems(server, admission_given.a_backend_registry())
+
+    assert len(problems) == 1
+    assert "is not the registered" in problems[0]
+
+
+async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend():
+    two_images = BackendFixture(
+        provisioner="doris", images=["front:1.0", "back:1.0"], network="net"
+    )
+    server = admission_given.with_a_backend(run_given.a_server(), two_images)
+    audit = run_given.scripted({server.server_package: [run_given.an_audit(False)] * 3})
+
+    result = await run_given.run([server], run_given.deps_auditing(audit))
+
+    assert result.image_ids == {
+        "filesystem-patched": "sha256:filesystem-patched",
+        "front:1.0": "sha256:front:1.0",
+        "back:1.0": "sha256:back:1.0",
+    }

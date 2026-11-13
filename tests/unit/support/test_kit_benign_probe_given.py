@@ -36,7 +36,7 @@ def a_call(tool: str, **arguments: Any) -> dict[str, Any]:
 
 
 def a_record_with_a_backend() -> dict[str, Any]:
-    backend = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
+    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
     return the_record_of(admission_given.with_a_backend(a_server(), backend))
 
 

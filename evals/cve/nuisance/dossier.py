@@ -157,8 +157,9 @@ patched version.
 - `launch`: the container command appended after the image tag (the image's `ENTRYPOINT`, when
   it has one, applies to it).
 - `backend`: the backend fixture the run provisions, or `null` when the server needs none or
-  bakes it into its image. When set, it names the provisioner key, the pinned image tag the
-  provisioner pulls, and the network the server joins.
+  bakes it into its image. When set, it names the provisioner key, `images` (the list of the
+  pinned image tags the provisioner runs, one element for a backend of one image), and the network
+  the server joins.
 - `host`: the `PlantingHost` the agents fill.
   - `user`: `unprivileged`, the only user, uid 65534 with `HOME=/tmp`.
   - `working_directory`: `/` unless the image needs another.
@@ -279,11 +280,11 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    {acceptance_services}.
 
    For a server that needs a backend to answer its benign calls: a pulled backend is recorded in
-   the `backend` field (the provisioner key, the pinned image tag, the network), not written as a
-   Dockerfile. A built backend is out of scope, so the maintainer wires its provisioner at
-   settlement. A brand-new backend server that is not the server of a holdout target needs a
-   provisioner the maintainer writes: the agents record the backend and flag it, and the
-   maintainer wires it.
+   the `backend` field (the provisioner key, the list of pinned image tags, the network), not
+   written as a Dockerfile. A built backend is out of scope, so the maintainer wires its
+   provisioner at settlement. A brand-new backend server that is not the server of a holdout
+   target needs a provisioner the maintainer writes: the agents record the backend and flag it,
+   and the maintainer wires it.
 
 4. Write the `FixCheckFixture` fixture (see `fixture_format.md`) and run it through `check_fix`,
    making as many attempts as you need, until the witness surfaces on the vulnerable version and

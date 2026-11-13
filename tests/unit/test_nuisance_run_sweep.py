@@ -92,7 +92,9 @@ async def test_the_sweep_runs_when_no_server_survives():
 async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
     server = admission.with_a_backend(
         given.a_server(),
-        BackendFixture(provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"),
+        BackendFixture(
+            provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
+        ),
     )
     containers = FakeContainerSweep()
     audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})

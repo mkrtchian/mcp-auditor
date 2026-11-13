@@ -206,8 +206,28 @@ def test_the_readme_keeps_the_agent_off_every_shared_backend():
 
     assert "(`mcp-auditor-cve-*`)" in readme
     assert "never removed or stopped by the agent" in readme
-    for key, backend in BACKENDS.items():
+    for key, backend in given.shared_backends().items():
         assert fnmatch(backend.network, "mcp-auditor-cve-*"), key
+
+
+def test_the_readme_says_a_per_launch_backend_is_stood_for_the_launch_alone():
+    readme = re_admission_readme(admission_given.an_admitted_server(), [])
+
+    assert (
+        "A per-launch backend is stood by the probe or the fix check for its own launch" in readme
+    )
+
+
+def test_the_confinement_of_a_server_on_a_per_launch_backend_points_at_its_launch():
+    server = given.a_server_on_a_per_launch_backend()
+
+    confinement = confinement_text(server, given.a_per_launch_registry())
+
+    assert "`evals/cve/backends/fake_per_launch.py`" in confinement
+    assert "stood for each launch" in confinement
+    assert f"`{given.PER_LAUNCH_NETWORK_PREFIX}`" in confinement
+    for option in nuisance_confinement_args():
+        assert option in confinement, option
 
 
 def test_every_copied_flaw_resolves_to_one_target_and_one_fixture():

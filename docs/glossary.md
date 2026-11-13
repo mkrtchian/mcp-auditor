@@ -206,6 +206,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **responder**: a hand-written HTTP stand-in for a remote service's API, answering from its documented examples.
 - **backend**: any service on a fixture's network that the server talks to, real software or stand-in.
 - **provisioner**: the code that starts a backend, fills it, and gives the server its launch.
+- **per-launch backend**: a backend stood for one launch of a server and removed with it, since the auditor's calls change its state. The other backends are **shared**: stood once, they serve every launch and stay up once it ends. Code: `PerLaunchBackend`, and `BackendLifecycle` for a shared backend.
 - **seed**: what a fixture puts in place before the first call: files, records, configuration.
 - **fixture authority**: the certificate authority the stand-ins' certificates chain to, with one leaf per stand-in host. Code: `evals/stand_ins/tls/`.
 - **request target**: the target of the HTTP request a stand-in route answers. Code: `request_target` in a stand-in file.

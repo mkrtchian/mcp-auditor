@@ -33,7 +33,9 @@ def with_the_first_benign_call(server: AdmittedServer, **update: object) -> Admi
 
 def with_the_registered_backend(server: AdmittedServer, key: str) -> AdmittedServer:
     registered = BACKENDS[key]
-    backend = BackendFixture(provisioner=key, image=registered.image, network=registered.network)
+    backend = BackendFixture(
+        provisioner=key, images=list(registered.images), network=registered.network
+    )
     return server.model_copy(update={"backend": backend})
 
 

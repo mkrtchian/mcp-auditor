@@ -162,7 +162,7 @@ async def test_two_recordings_at_one_commit_write_an_exploratory_then_a_confirme
 
 async def test_a_backend_server_records_its_backend_image_beside_its_service(tmp_path: Path):
     backend = BackendFixture(
-        provisioner="doris", image="apache/doris:all-in-one-4.1.3", network="net"
+        provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
     )
     server = with_a_backend(FILESYSTEM, backend)
     scripts = {server.server_package: given.clean_runs()}

@@ -98,7 +98,7 @@ class AdmissionSettlement(BaseModel):
 
 class BackendFixture(BaseModel):
     provisioner: str
-    image: str
+    images: list[str]
     network: str
 
 

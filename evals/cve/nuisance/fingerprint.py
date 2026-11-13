@@ -64,7 +64,7 @@ def nuisance_fixture_fingerprint(
     user arguments and the single-container argv, AST fingerprint), the confinement's options
     (`nuisance_confinement_args()`, the acceptance confinement included), the resolver option
     (`resolver_args()`), the backend fixture
-    (provisioner, pinned image, network), what its backend serves (each Dockerfile by its
+    (provisioner, pinned images, network), what its backend serves (each Dockerfile by its
     instructions, each Python module by its code, any other file by its bytes), for a server
     with no backend and public names the holder's and the stand-in's Dockerfiles and the planting
     modules that stand them, the counted tools

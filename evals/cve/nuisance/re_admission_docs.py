@@ -4,11 +4,11 @@ server's launch takes before its record exists), and the README section on the r
 tools."""
 
 import shlex
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
-from evals.cve.kit.backend_launch import lifecycle_of
+from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.nuisance.admission import AdmittedServer
-from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import (
     memory_bound_args,
     nuisance_confinement_args,
@@ -20,12 +20,15 @@ _IMAGE = "<image>"
 _NAME = "<name>"
 
 
-def confinement_text(server: AdmittedServer) -> str:
+def confinement_text(
+    server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
+) -> str:
     options = "\n".join(f"- `{option}`" for option in _paired(nuisance_confinement_args()))
+    backend = backends[server.backend.provisioner] if server.backend is not None else None
     return _CONFINEMENT.format(
-        command=f"docker {shlex.join(_run_args(server))}",
+        launch=_launch_text(server, backend),
         options=options,
-        backend=_backend_paragraph(server),
+        backend=_backend_paragraph(backend),
     )
 
 
@@ -51,21 +54,34 @@ def _paired(args: list[str]) -> list[str]:
     return options
 
 
-def _run_args(server: AdmittedServer) -> list[str]:
-    if server.backend is None:
-        return single_container_run_args(_IMAGE, server.host, server.launch)
-    lifecycle = lifecycle_of(server.backend.provisioner)
-    return lifecycle.server_args(_NAME, _IMAGE, server.host, server.launch)
+def _launch_text(server: AdmittedServer, backend: RegisteredBackend | None) -> str:
+    if backend is None:
+        return _ARGV.format(
+            command=_docker(single_container_run_args(_IMAGE, server.host, server.launch))
+        )
+    match backend.lifecycle:
+        case BackendLifecycle() as lifecycle:
+            args = lifecycle.server_args(_NAME, _IMAGE, server.host, server.launch)
+            return _ARGV.format(command=_docker(args))
+        case PerLaunchBackend() as lifecycle:
+            return _PER_LAUNCH_ARGV.format(key=lifecycle.key)
 
 
-def _backend_paragraph(server: AdmittedServer) -> str:
-    if server.backend is None:
+def _docker(args: list[str]) -> str:
+    return f"docker {shlex.join(args)}"
+
+
+def _backend_paragraph(backend: RegisteredBackend | None) -> str:
+    if backend is None:
         return _NO_BACKEND
-    return _BACKEND.format(
-        key=server.backend.provisioner,
-        network=BACKENDS[server.backend.provisioner].network,
-        bound=" ".join(memory_bound_args()),
-    )
+    bound = " ".join(memory_bound_args())
+    match backend.lifecycle:
+        case BackendLifecycle() as lifecycle:
+            return _BACKEND.format(key=lifecycle.key, network=backend.network, bound=bound)
+        case PerLaunchBackend() as lifecycle:
+            return _PER_LAUNCH_BACKEND.format(
+                key=lifecycle.key, network=backend.network, bound=bound
+            )
 
 
 def re_admission_readme(server: AdmittedServer, fix_check_modules: Sequence[str]) -> str:
@@ -82,6 +98,14 @@ def re_admission_readme(server: AdmittedServer, fix_check_modules: Sequence[str]
 _CONFINEMENT = """\
 # The run's confinement
 
+{launch}
+The confinement options, every server alike:
+
+{options}
+
+{backend}"""
+
+_ARGV = """\
 The run launches the server with this argv, `<image>` standing for the image tag
 (`mcp-auditor-nuisance-<service>:local` in the repository, the prefixed kit tag here) and
 `<name>` for the container name:
@@ -89,12 +113,13 @@ The run launches the server with this argv, `<image>` standing for the image tag
 ```
 {command}
 ```
+"""
 
-The confinement options, every server alike:
-
-{options}
-
-{backend}"""
+_PER_LAUNCH_ARGV = """\
+The run launches the server with the argv its `{key}` backend yields once it has stood the
+backend for that launch (`LIFECYCLE.launch` in `evals/cve/backends/{key}.py`). The argv carries
+values only that stand-up knows, so it is not rendered here: read it in that module.
+"""
 
 _ADMISSION_CONFINEMENT = """\
 # The run's confinement
@@ -129,6 +154,14 @@ _BACKEND = """\
 The server joins the closed network `{network}` of its `{key}` backend, which reaches the
 backend's containers and nothing else (no route to the host or the Internet). The backend's
 containers run under the same memory bound, `{bound}`.
+"""
+
+_PER_LAUNCH_BACKEND = """\
+The `{key}` backend is stood for each launch of the server and removed with it, so no other
+launch reaches it. Each closed network it creates for a launch is named after the prefix
+`{network}` and reaches that launch's server and backend containers and nothing else (no route to
+the host or the Internet), or, when the prefix is `none`, it creates none and both run with no
+network. The backend's containers run under the same memory bound, `{bound}`.
 """
 
 _README = """
@@ -199,9 +232,11 @@ print(asyncio.run(check_fix(fixture)))
 EOF
 ```
 
-### Shared backends
+### Shared and per-launch backends
 
-The backend containers and networks (`mcp-auditor-cve-*`) are shared and persistent: they serve
+The shared backend containers and networks (`mcp-auditor-cve-*`) are persistent: they serve
 every agent on the machine, and are never removed or stopped by the agent. The probe and the fix
 check bring them up when they are down and remove only the server containers they start.
+A per-launch backend is stood by the probe or the fix check for its own launch and removed with
+it.
 """

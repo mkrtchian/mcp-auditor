@@ -1,3 +1,5 @@
+import importlib
+
 import pytest
 
 import tests.unit.support.test_backend_lifecycle_given as given
@@ -45,13 +47,13 @@ def test_the_registry_and_the_kit_read_one_lifecycle(key: str):
 
 
 # A backend recreated at every command would otherwise leave its image's anonymous volumes behind.
-@pytest.mark.parametrize("key", sorted(BACKENDS))
+@pytest.mark.parametrize("key", given.shared_keys())
 def test_every_backend_removes_a_container_with_its_anonymous_volumes(
     key: str, monkeypatch: pytest.MonkeyPatch
 ):
     commands = recorded_commands(monkeypatch)
 
-    lifecycle_of(key).remove("a-container")
+    given.shared_lifecycle_of(key).remove("a-container")
 
     assert commands == [["docker", "rm", "-f", "-v", "a-container"]]
 
@@ -63,7 +65,7 @@ LAUNCHERS = [
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
-@pytest.mark.parametrize("key", sorted(BACKENDS))
+@pytest.mark.parametrize("key", given.shared_keys())
 def test_a_backend_launch_names_its_server_after_the_backend(
     key: str, launch_through: given.Launcher
 ):
@@ -106,9 +108,11 @@ def test_two_launches_of_one_backend_are_open_at_once(launch_through: given.Laun
             assert given.name_of(second.args) != given.name_of(first.args)
 
 
-@pytest.mark.parametrize("key", sorted(BACKENDS))
+@pytest.mark.parametrize("key", given.shared_keys())
 def test_every_backend_server_joins_its_registered_bridge_confined_as_the_hosts_user(key: str):
-    args = lifecycle_of(key).server_args("server-name", "image", given.a_host(), ["serve"])
+    args = given.shared_lifecycle_of(key).server_args(
+        "server-name", "image", given.a_host(), ["serve"]
+    )
 
     assert value_after(args, "--network") == BACKENDS[key].network
     assert value_after(args, "--name") == "server-name"
@@ -120,12 +124,80 @@ def test_every_backend_server_joins_its_registered_bridge_confined_as_the_hosts_
     assert args[-2:] == ["image", "serve"]
 
 
-@pytest.mark.parametrize("key", sorted(BACKENDS))
+@pytest.mark.parametrize("key", given.shared_keys())
 def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_option(key: str):
-    args = lifecycle_of(key).server_args("name", "image", given.a_host(), ["serve"])
+    args = given.shared_lifecycle_of(key).server_args("name", "image", given.a_host(), ["serve"])
 
     assert carries(args, ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND])
     assert count(args, resolver_args()) == 1
+
+
+@pytest.mark.parametrize("launch_through", LAUNCHERS)
+def test_a_per_launch_backend_is_stood_on_entry_and_the_server_takes_the_arguments_it_yields(
+    launch_through: given.Launcher,
+):
+    recording = given.RecordingPerLaunchBackend()
+
+    with launch_through(recording.backend) as launch:
+        name = given.name_of(launch.args)
+        assert recording.events == [f"stand {name}"]
+        assert launch.command == "docker"
+        assert "TOKEN=token-0" in launch.args
+
+
+@pytest.mark.parametrize("launch_through", LAUNCHERS)
+def test_a_per_launch_backend_is_removed_with_its_server_on_exit(launch_through: given.Launcher):
+    recording = given.RecordingPerLaunchBackend()
+
+    with launch_through(recording.backend) as launch:
+        name = given.name_of(launch.args)
+
+    assert recording.events == [f"stand {name}", f"remove {name}"]
+    assert name.startswith(f"{LABEL}-fake_per_launch-server-")
+
+
+@pytest.mark.parametrize("launch_through", LAUNCHERS)
+def test_a_per_launch_backend_is_removed_when_the_body_raises(launch_through: given.Launcher):
+    recording = given.RecordingPerLaunchBackend()
+
+    with pytest.raises(RuntimeError), launch_through(recording.backend):
+        raise RuntimeError("the probe failed")
+
+    assert [event.split()[0] for event in recording.events] == ["stand", "remove"]
+
+
+@pytest.mark.parametrize("launch_through", LAUNCHERS)
+def test_two_concurrent_launches_of_one_server_stand_two_backends(launch_through: given.Launcher):
+    recording = given.RecordingPerLaunchBackend()
+
+    with launch_through(recording.backend) as first, launch_through(recording.backend) as second:
+        assert "TOKEN=token-0" in first.args
+        assert "TOKEN=token-1" in second.args
+
+    stood = [event for event in recording.events if event.startswith("stand")]
+    assert stood == [f"stand {given.name_of(first.args)}", f"stand {given.name_of(second.args)}"]
+
+
+def test_the_kit_launch_of_a_per_launch_backend_is_the_provisioner_launch():
+    server = admission_given.an_admitted_server()
+
+    with provisioner_of(given.RecordingPerLaunchBackend().backend)(server) as run_launch:
+        run_args = run_launch.args
+    kit_backend = given.RecordingPerLaunchBackend().backend
+    with backend_launch(kit_backend, image_tag(server.service), server.host, server.launch) as kit:
+        kit_command, kit_args = kit.command, kit.args
+
+    assert kit_command == run_launch.command
+    assert given.with_the_name_masked(kit_args) == given.with_the_name_masked(run_args)
+
+
+def test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(importlib, "import_module", given.a_module_whose_lifecycle_is_neither_kind)
+
+    with pytest.raises(ValueError, match="odd"):
+        lifecycle_of("odd")
 
 
 @pytest.mark.parametrize("responder", given.every_responder(), ids=lambda r: r.container)

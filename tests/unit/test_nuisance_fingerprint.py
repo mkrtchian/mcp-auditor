@@ -15,7 +15,7 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
-FAKE_BACKEND = BackendFixture(provisioner="fake", image="fake/backend:1.0", network="fake-net")
+FAKE_BACKEND = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
 
 
 def test_the_fingerprint_is_stable_over_the_same_server(tmp_path: Path):
@@ -105,7 +105,7 @@ def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path:
 def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     server = admission_given.an_admission().servers[0]
-    backend = BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+    backend = BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
         admission_given.with_a_backend(server, backend), tmp_path
@@ -116,10 +116,10 @@ def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     server = admission_given.an_admission().servers[0]
     one = admission_given.with_a_backend(
-        server, BackendFixture(provisioner="doris", image="fake/backend:1.0", network="net")
+        server, BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
     )
     two = admission_given.with_a_backend(
-        server, BackendFixture(provisioner="doris", image="fake/backend:2.0", network="net")
+        server, BackendFixture(provisioner="doris", images=["fake/backend:2.0"], network="net")
     )
 
     assert nuisance_fixture_fingerprint(one, tmp_path) != nuisance_fixture_fingerprint(

@@ -3460,7 +3460,9 @@
       "service": "ckan",
       "backend": {
         "provisioner": "ckan",
-        "image": "mcp-auditor-cve-ckan-portal:local",
+        "images": [
+          "mcp-auditor-cve-ckan-portal:local"
+        ],
         "network": "mcp-auditor-cve-ckan-bridge"
       },
       "agents": [
@@ -4562,7 +4564,9 @@
       "service": "doris",
       "backend": {
         "provisioner": "doris",
-        "image": "apache/doris:all-in-one-4.1.3@sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609",
+        "images": [
+          "apache/doris:all-in-one-4.1.3@sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609"
+        ],
         "network": "mcp-auditor-cve-doris-bridge"
       },
       "agents": [
@@ -8767,7 +8771,9 @@
       "service": "n8n",
       "backend": {
         "provisioner": "n8n",
-        "image": "mcp-auditor-cve-n8n-instance:local",
+        "images": [
+          "mcp-auditor-cve-n8n-instance:local"
+        ],
         "network": "mcp-auditor-cve-n8n-bridge"
       },
       "agents": [
@@ -13691,7 +13697,9 @@
       "service": "atlassian",
       "backend": {
         "provisioner": "atlassian",
-        "image": "mcp-auditor-cve-atlassian-responder:local",
+        "images": [
+          "mcp-auditor-cve-atlassian-responder:local"
+        ],
         "network": "mcp-auditor-cve-atlassian-bridge"
       },
       "agents": [
@@ -14285,7 +14293,9 @@
       "service": "jenkins",
       "backend": {
         "provisioner": "jenkins",
-        "image": "mcp-auditor-cve-jenkins-responder:local",
+        "images": [
+          "mcp-auditor-cve-jenkins-responder:local"
+        ],
         "network": "mcp-auditor-cve-jenkins-bridge"
       },
       "agents": [
@@ -16478,7 +16488,9 @@
       "service": "googleapis",
       "backend": {
         "provisioner": "googleapis",
-        "image": "mcp-auditor-cve-googleapis-responder:local",
+        "images": [
+          "mcp-auditor-cve-googleapis-responder:local"
+        ],
         "network": "mcp-auditor-cve-googleapis-bridge"
       },
       "agents": [
@@ -17097,7 +17109,9 @@
       "service": "gitlab",
       "backend": {
         "provisioner": "gitlab",
-        "image": "mcp-auditor-cve-gitlab-responder:local",
+        "images": [
+          "mcp-auditor-cve-gitlab-responder:local"
+        ],
         "network": "mcp-auditor-cve-gitlab-bridge"
       },
       "agents": [
@@ -19557,7 +19571,7 @@
               "before": []
             }
           ],
-          "backend_need": "none",
+          "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "fix_check",
@@ -19586,7 +19600,13 @@
       },
       "launch": [],
       "service": "node-sandbox",
-      "backend": null,
+      "backend": {
+        "provisioner": "node_sandbox_engine",
+        "images": [
+          "mcp-auditor-cve-node-sandbox-engine:local"
+        ],
+        "network": "none"
+      },
       "agents": [
         {
           "role": "admitter",
@@ -19693,8 +19713,8 @@
       "stand_ins": [
         {
           "replaces": "the Docker Engine daemon (dockerd) behind /var/run/docker.sock, the part of Docker the real CLI speaks to; the docker CLI itself is the real one (Debian docker.io)",
-          "reason": "The Docker Engine daemon cannot run under the confinement: as the unprivileged user with every capability dropped and no-new-privileges, dockerd 20.10.24 stops with 'dockerd needs to be started with root privileges', its rootless mode needs a user namespace that cannot be created there, and a daemon in its own container needs --privileged, which the confinement does not allow. The real Docker CLI stays, and only the daemon is replaced, at the Engine API v1.41 the CLI speaks: a responder branching on the method and the fixed path words (_ping, info, containers, create, start, stop, json, exec, archive), keeping the set of held containers (the seeded running one, plus the names a create registers until a delete removes them) and the one pending exec. Exec'd commands run in the real /bin/sh and node, and archive puts are extracted by the real tar.",
-          "file": "evals/docker/Dockerfile.node-sandbox",
+          "reason": "The Docker Engine daemon cannot run under the confinement: as the unprivileged user with every capability dropped and no-new-privileges, dockerd 20.10.24 stops with 'dockerd needs to be started with root privileges', its rootless mode needs a user namespace that cannot be created there, and a daemon in its own container needs --privileged, which the confinement does not allow. The real Docker CLI stays, and only the daemon is replaced, at the Engine API v1.41 the CLI speaks: a responder branching on the method and the fixed path words (_ping, info, containers, create, start, stop, json, exec, archive), keeping the set of held containers (the seeded running one, plus the names a create registers until a delete removes them) and the one pending exec. The responder runs in a container of its own, the node sandbox engine (evals/cve/backends/node_sandbox_engine.py), built FROM node:lts-slim, the image the server requests by default, and stood for each launch of the server and removed with it, since its pending exec and its set of held containers change with the calls: exec'd commands run in the real /bin/sh and node of that image and archive puts are extracted there by the real tar, as a real daemon runs them in a node:lts-slim container, and the server mounts the engine's socket at /var/run/docker.sock, the launch its README documents. A limit is kept: the responder's own script and process sit in that container, visible to the sandboxed code.",
+          "file": "evals/docker/Dockerfile.node-sandbox-engine",
           "capture": null,
           "outputs": [
             {
@@ -19778,7 +19798,7 @@
             {
               "request": "101 UPGRADED",
               "source": "real_software",
-              "citation": "POST /v1.41/exec/f33bbfb3.../start (Connection: Upgrade, Upgrade: tcp). status line and headers copied from moby v20.10.24 api/server/router/container/exec.go line 111 ('HTTP/1.1 101 UPGRADED', Content-Type application/vnd.docker.raw-stream, Connection: Upgrade, Upgrade: tcp); the stream carries, in the reference's multiplexed stream format (8-byte header, stream 1 stdout, 2 stderr), the output of the exec's Cmd run by the real program it names (the server sends /bin/sh -c <command>), in /workspace; the responder evaluates no code itself",
+              "citation": "POST /v1.41/exec/f33bbfb3.../start (Connection: Upgrade, Upgrade: tcp). status line and headers copied from moby v20.10.24 api/server/router/container/exec.go line 111 ('HTTP/1.1 101 UPGRADED', Content-Type application/vnd.docker.raw-stream, Connection: Upgrade, Upgrade: tcp); the stream carries, in the reference's multiplexed stream format (8-byte header, stream 1 stdout, 2 stderr), the output of the exec's Cmd run by the real program it names (the server sends /bin/sh -c <command>), in /workspace of the engine's node:lts-slim container; the responder evaluates no code itself",
               "form_source": null,
               "replacements": []
             },
@@ -19801,14 +19821,14 @@
             {
               "request": "X-Docker-Container-Path-Stat",
               "source": "invented",
-              "citation": "HEAD /v1.41/containers/<held name or id>/archive?path=/workspace. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerArchiveInfo 200 gives the header X-Docker-Container-Path-Stat ('A base64-encoded JSON object with some filesystem header information about the path') and no example; the JSON follows moby v20.10.24 api/types/types.go lines 88-94 (ContainerPathStat: name, size, mode, mtime, linkTarget), its values the real stat of /workspace",
+              "citation": "HEAD /v1.41/containers/<held name or id>/archive?path=/workspace. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), ContainerArchiveInfo 200 gives the header X-Docker-Container-Path-Stat ('A base64-encoded JSON object with some filesystem header information about the path') and no example; the JSON follows moby v20.10.24 api/types/types.go lines 88-94 (ContainerPathStat: name, size, mode, mtime, linkTarget), its values the real stat of /workspace in the engine's node:lts-slim container",
               "form_source": "ContainerPathStat of moby v20.10.24 api/types/types.go",
               "replacements": []
             },
             {
               "request": "m === 'PUT'",
               "source": "software_sources",
-              "citation": "PUT /v1.41/containers/<held name or id>/archive?path=/. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), PutContainerArchive 200 'The content was extracted successfully' (empty body), the archive's workspace tree extracted by the real tar; 500 with 'Error processing tar file' when tar fails",
+              "citation": "PUT /v1.41/containers/<held name or id>/archive?path=/. Docker Engine API v1.41 reference (https://docs.docker.com/reference/api/engine/version/v1.41.yaml, sha256 150601c804f075e235f7ce9759909796b270d3ebe172067a638b16aea8254ca8), PutContainerArchive 200 'The content was extracted successfully' (empty body), the archive's workspace tree extracted by the real tar into /workspace of the engine's node:lts-slim container; 500 with 'Error processing tar file' when tar fails",
               "form_source": null,
               "replacements": []
             },
@@ -19824,7 +19844,7 @@
       ],
       "seeds": [
         {
-          "item": "one running container held by the daemon: name js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c, image node:lts-slim, working directory /workspace (the directory sandbox_initialize gives its containers), Id ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39 (the ContainerInspect example's Id)",
+          "item": "one running container held by the daemon, in the responder's set of held containers in the node sandbox engine, whose own /workspace is the container's working directory: name js-sbx-3f2b8c1a-5d4e-4f6a-9b7c-2e1d0a9f8b6c, image node:lts-slim, working directory /workspace (the directory sandbox_initialize gives its containers), Id ba033ac4401106a3b513bc9d639eee123ad78ca3616b921167cd74b20e25ed39 (the ContainerInspect example's Id)",
           "kind": "written",
           "citation": "written for the fixture: Docker publishes no sample container a node sandbox session needs, the server publishes none, and neither generates one at build time; the name follows the form v1.3.0 dist/tools/initialize.js generates (`js-sbx-${randomUUID()}`), with a fixed UUID written for it, and it is the container_id the sandbox_exec and run_js benign calls use",
           "pin": null
@@ -19841,7 +19861,13 @@
           "software": "Docker Engine daemon (stood in for at its Engine API)",
           "release": "20.10.24+dfsg1-1+deb12u1+b6 (Engine API 1.41)",
           "day": "2026-11-07",
-          "source": "The same docker.io package carries dockerd 20.10.24, whose API version is 1.41; the responder answers at that version from the Engine API v1.41 reference and moby v20.10.24 sources"
+          "source": "The same docker.io package carries dockerd 20.10.24, whose API version is 1.41; the responder answers at that version from the Engine API v1.41 reference and moby v20.10.24 sources; the responder runs in the node sandbox engine, a container of its own stood for each launch"
+        },
+        {
+          "software": "node:lts-slim (the node sandbox engine's base image)",
+          "release": "Node.js v26.13.1 on Debian 13 (trixie), node:lts-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc, the same manifest list as node:26-slim that day",
+          "day": "2026-11-13",
+          "source": "node-code-sandbox-mcp v1.3.0 requests node:lts-slim by default (DEFAULT_NODE_IMAGE in dist/utils.js), the image a real daemon runs the sandbox in, read on the Docker Hub on 2026-11-13; the engine runs as root inside its container, as the sandbox of a real daemon does, with --network none and the nuisance confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g), with no capability added back, none being needed: measured on 2026-11-13 through a fix check and a vet, its peak process count is 16 and its peak memory 31 MB, and its socket directory is a per-launch host directory made writable by every account, since the engine's root holds no capability that would let it write into a directory the host's user owns"
         }
       ]
     },
@@ -22944,7 +22970,9 @@
       "service": "facebook-ads",
       "backend": {
         "provisioner": "facebook_ads",
-        "image": "mcp-auditor-cve-facebook-ads-responder:local",
+        "images": [
+          "mcp-auditor-cve-facebook-ads-responder:local"
+        ],
         "network": "mcp-auditor-cve-facebook-ads-bridge"
       },
       "agents": [
@@ -27090,7 +27118,9 @@
       "service": "gravitino",
       "backend": {
         "provisioner": "gravitino",
-        "image": "mcp-auditor-cve-gravitino-instance:local",
+        "images": [
+          "mcp-auditor-cve-gravitino-instance:local"
+        ],
         "network": "mcp-auditor-cve-gravitino-bridge"
       },
       "agents": [
@@ -27488,7 +27518,9 @@
       "service": "mcp-ssh",
       "backend": {
         "provisioner": "mcp_ssh_sshd",
-        "image": "mcp-auditor-cve-mcp-ssh-sshd:local",
+        "images": [
+          "mcp-auditor-cve-mcp-ssh-sshd:local"
+        ],
         "network": "mcp-auditor-cve-mcp-ssh-sshd-bridge"
       },
       "agents": [
