@@ -21,10 +21,18 @@ action it does not know with an error. The capture command records no action: th
 written by hand from the services' published examples, since a real capture would need signed or
 authenticated requests.
 
+A route with an action may also be keyed on the value of one identifier at a fixed position of the
+request: a field of a form body (`form`), a top-level member of a JSON body whatever its media type
+(`json_member`), or a member of the `variables` object of a GraphQL request (`graphql_variable`).
+The keyed route answers the request whose value at that position equals its own, string or integer,
+compared exactly and with its type. Its action's error route, the route of the same request target
+and action with no identifier, answers every other value and a request with none, so a keyed action
+always has one. The keyed routes of one action read one identifier, one location and one name.
+
 A `POST` route may instead carry a form field: a request whose
 `application/x-www-form-urlencoded` body carries that field gets the route, else the
 field-less route of its request target, else the default. The route is chosen on a fixed word at a
-fixed position of the request, the field's name, never on its value.
+fixed position of the request, the field's name.
 
 A file is either a capture (`source` `capture`, dated by `captured_at`) or written by hand
 from the software's documentation or published examples (`source` `software_sources`, no
@@ -37,15 +45,26 @@ The leaf, its key and the fixture authority sit beside the captures under `tls/`
 
 import json
 import re
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    StrictStr,
+    model_validator,
+)
 
 from evals.cve.planting_base import StandIn
+
+type _ActionKey = tuple[str, str, str, str | None]
 
 STAND_INS_DIRECTORY = Path(__file__).parents[1] / "stand_ins"
 QUOTING_MEDIA_TYPES = ("text/html", "application/json")
@@ -60,6 +79,20 @@ def _global_unicast(address: str) -> str:
     return address
 
 
+class RouteIdentifier(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    location: Literal["form", "json_member", "graphql_variable"]
+    name: str = Field(min_length=1)
+    value: StrictStr | StrictInt
+
+    @model_validator(mode="after")
+    def _a_form_carries_text(self) -> Self:
+        if self.location == "form" and not isinstance(self.value, str):
+            raise ValueError("a form identifier's value is a string, since a form carries text")
+        return self
+
+
 class StandInRoute(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -71,6 +104,7 @@ class StandInRoute(BaseModel):
     body: str
     action: str | None = None
     form_field: str | None = None
+    identifier: RouteIdentifier | None = None
 
     @model_validator(mode="after")
     def _an_action_or_a_form_field_keys_a_post_only(self) -> Self:
@@ -82,6 +116,15 @@ class StandInRoute(BaseModel):
             raise ValueError(
                 "a route is keyed on an action or a form field, never both,"
                 " since the stand-in looks them up one after the other"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _an_identifier_keys_an_action(self) -> Self:
+        if self.identifier is not None and self.action is None:
+            raise ValueError(
+                "an identifier keys a route that carries an action,"
+                " since the stand-in reads it only for a request naming one"
             )
         return self
 
@@ -165,15 +208,51 @@ class StandInCapture(BaseModel):
     @model_validator(mode="after")
     def _one_route_per_key(self) -> Self:
         keys = [
-            (each.scheme, each.method, each.request_target, each.action, each.form_field)
+            (
+                each.scheme,
+                each.method,
+                each.request_target,
+                each.action,
+                each.form_field,
+                each.identifier,
+            )
             for each in self.routes
         ]
         if len(set(keys)) != len(keys):
             raise ValueError(
-                "two routes answer one (scheme, method, request_target, action, form_field),"
+                "two routes answer one"
+                " (scheme, method, request_target, action, form_field, identifier),"
                 " so the stand-in could serve only one of them"
             )
         return self
+
+    @model_validator(mode="after")
+    def _every_keyed_action_has_its_error_route(self) -> Self:
+        unkeyed = {_action_key(each) for each in self.routes if each.identifier is None}
+        keyed = {_action_key(each) for each in self.routes if each.identifier is not None}
+        if not keyed <= unkeyed:
+            raise ValueError(
+                "a keyed action needs its error route, the route of its request target and action"
+                " with no identifier, since the real service answers another value with an error"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _the_keyed_routes_of_one_action_read_one_identifier(self) -> Self:
+        read: defaultdict[_ActionKey, set[tuple[str, str]]] = defaultdict(set)
+        for each in self.routes:
+            if each.identifier is not None:
+                read[_action_key(each)].add((each.identifier.location, each.identifier.name))
+        if any(len(identifiers) > 1 for identifiers in read.values()):
+            raise ValueError(
+                "the keyed routes of one action share one location and one name,"
+                " so the stand-in reads one identifier per action"
+            )
+        return self
+
+
+def _action_key(route: StandInRoute) -> _ActionKey:
+    return (route.scheme, route.method, route.request_target, route.action)
 
 
 def media_type(headers: Sequence[tuple[str, str]]) -> str | None:

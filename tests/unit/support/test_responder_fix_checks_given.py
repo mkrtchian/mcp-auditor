@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from evals.cve.backends.apify import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
 from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
@@ -55,7 +56,7 @@ RESPONDER_FIX_CHECKS = [
         facebook_ads.FIXTURE.flaw,
         "facebook_ads",
         facebook_ads.sentinel_args,
-        facebook_ads.server_args,
+        lambda image, address: facebook_ads.server_args(image, address, Path("/bundle.pem")),
         # The graph host stays on the run's responder, the attacker host goes to the sentinel.
         lambda address: [
             f"{FACEBOOK_ADS_BENIGN_HOST}:{FACEBOOK_ADS_RESPONDER_IP}",

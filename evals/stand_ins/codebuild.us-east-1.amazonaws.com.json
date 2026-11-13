@@ -1,0 +1,109 @@
+{
+  "host": "codebuild.us-east-1.amazonaws.com",
+  "address": "44.216.191.74",
+  "source": "software_sources",
+  "command": "hand-written from the server's own tests at 0.0.36 (awslabs/mcp fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2, src/aws-healthomics-mcp-server/tests), for each operation the first fully literal botocore return value set on a mock, in file then line order, serialized as compact JSON (a json.dumps of a literal policy kept as json.dumps writes it) in test_clone_container.py: BatchGetProjects (test_project_exists_returns_name, its project the server's own CODEBUILD_PROJECT_NAME, healthomics-container-clone), CreateProject (test_project_not_exists_creates_role_and_project), StartBuild and BatchGetBuilds (test_successful_build_returns_digest), each answered whatever the request names (JSON 1.1, X-Amz-Target CodeBuild_20161006.*, read on the wire in both images). the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://codebuild.us-east-1.amazonaws.com/` at 2026-11-13T06:49:24Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"projects\":[{\"name\":\"healthomics-container-clone\"}]}",
+      "action": "CodeBuild_20161006.BatchGetProjects"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "CodeBuild_20161006.CreateProject"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"build\":{\"id\":\"build-123\"}}",
+      "action": "CodeBuild_20161006.StartBuild"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"builds\":[{\"buildStatus\":\"SUCCEEDED\"}]}",
+      "action": "CodeBuild_20161006.BatchGetBuilds"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/af38636e4c312271",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "82677e47-8378-4fb3-b1f3-572bef9c9622"
+        ],
+        [
+          "Content-Length",
+          "272"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:24 GMT"
+        ]
+      ],
+      "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n  <title>Page Not Found</title>\n</head>\n<body>Page Not Found</body>\n</html>",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/af38636e4c312271",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "82677e47-8378-4fb3-b1f3-572bef9c9622"
+        ],
+        [
+          "Content-Length",
+          "272"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:24 GMT"
+        ]
+      ],
+      "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n  <title>Page Not Found</title>\n</head>\n<body>Page Not Found</body>\n</html>",
+      "path_form": null
+    }
+  ]
+}

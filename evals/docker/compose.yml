@@ -99,7 +99,7 @@ services:
       context: .
       dockerfile: Dockerfile.stand-in
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "617f58a4cde41e1a0337bfdfb2d740d99425fe1dfb9fe5adfe777190c831d25d"
+        org.mcp-auditor.dockerfile-fingerprint: "d99c84bc549d81a2f0bbaeea57dcd43c578ff88634bde63cd665df6787f7d066"
     image: mcp-auditor-cve-stand-in:local
 
   # Holdout targets (transplanted; see evals/cve/detection/holdout_targets.py).
@@ -273,7 +273,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "d670f69ce801517d88877d0e0cbd7659267853499b7e67bf94eee32f69f04cdc"
+        org.mcp-auditor.dockerfile-fingerprint: "82386344c6df9e708edb06b328ef4c0fc71422fd42f9e8839fdc1eba4f6f63c7"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -281,7 +281,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "5d6174dc22660b9e43cf8f25dd190fe63276a22c6eab27e2121dbcf6d9698c9a"
+        org.mcp-auditor.dockerfile-fingerprint: "ac5e087b40f0d8b6ea90fdfcc2ba7974a46088ae9948fe980b0b2e0238552322"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -1310,7 +1310,7 @@ services:
       context: .
       dockerfile: Dockerfile.facebook-ads
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ebd1b5768139603e029e0bcbb29f7530ee598de1819863c97cc9a0d85e18d4b7"
+        org.mcp-auditor.dockerfile-fingerprint: "7e9c9cbca07097d06ba556d8e866faa9190bebc66c8733b2f5dcf06b05d4ea4e"
     image: mcp-auditor-nuisance-facebook-ads:local
     profiles: ["nuisance"]
 
@@ -1440,7 +1440,7 @@ services:
       context: .
       dockerfile: Dockerfile.facebook-ads-responder
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "954f0fa9edb1668ed6b30e186e05c93caef5e8f7adb6f2fd24e65d4b00bdf0bb"
+        org.mcp-auditor.dockerfile-fingerprint: "b5cc8c6a845679301ebac1b85eff9f7eefcc5cd28b600d92e5b7354583ed2b0c"
     image: mcp-auditor-cve-facebook-ads-responder:local
     profiles: ["nuisance"]
 

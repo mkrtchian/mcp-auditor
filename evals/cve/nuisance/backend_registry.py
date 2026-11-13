@@ -139,12 +139,16 @@ BACKENDS: dict[str, RegisteredBackend] = {
         GOOGLEAPIS_RESPONDER_IMAGE,
         "googleapis-responder",
     ),
-    "facebook_ads": _responder(
+    "facebook_ads": RegisteredBackend(
         facebook_ads.LIFECYCLE,
-        facebook_ads.__file__,
         FACEBOOK_ADS_BRIDGE,
         FACEBOOK_ADS_RESPONDER_IMAGE,
-        "facebook-ads-responder",
+        ("facebook-ads-responder",),
+        (
+            *_served(facebook_ads.__file__, "facebook-ads-responder"),
+            Path(responder.__file__),
+            *facebook_ads.MOUNTED_FILES,
+        ),
     ),
 }
 

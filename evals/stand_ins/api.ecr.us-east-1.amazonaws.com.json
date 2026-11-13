@@ -1,0 +1,302 @@
+{
+  "host": "api.ecr.us-east-1.amazonaws.com",
+  "address": "44.213.78.216",
+  "source": "software_sources",
+  "command": "hand-written from the Amazon ECR API Reference Sample Responses, bodies as printed: DescribeRepositories (answered whatever the request names, its us-west-2 ARNs and repository URIs set to us-east-1), DescribeImages keyed on the repositoryName member equal to hello-repository, GetRepositoryPolicy keyed on ubuntu and BatchGetImage keyed on amazonlinux, the repositories the samples name, each with the x-amzn-RequestId and Content-Type its sample prints; and, for the operations with no sample, from the server's own tests at 0.0.36 (awslabs/mcp fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2, src/aws-healthomics-mcp-server/tests), for each operation the first fully literal botocore return value set on a mock, in file then line order, serialized as compact JSON (a json.dumps of a literal policy kept as json.dumps writes it): DescribePullThroughCacheRules (test_clone_container.py, test_pull_through_cache_success), GetRegistryPolicy and DescribeRepositoryCreationTemplates (test_ecr_coverage.py, test_matching_rule_with_full_permissions), CreateRepository (test_clone_container.py, test_no_ptc_supported_registry_suggests_creating), SetRepositoryPolicy (test_clone_container.py, test_pull_through_cache_success), PutRegistryPolicy (test_ecr_coverage.py, test_template_update_fails_but_has_policy), CreateRepositoryCreationTemplate (test_ecr_tools.py, test_create_ptc_uses_correct_url_for_registry_type) and UpdateRepositoryCreationTemplate (test_ecr_tools.py, test_template_already_exists_updated), each answered whatever the request names; for the three keyed actions, any other repositoryName, or none, gets status 400 and body {\"__type\":\"RepositoryNotFoundException\"}. each keyed action's error route, for any other value or none, is reduced to the error code the API reference names for an unknown resource, in the protocol's documented error envelope, with the status the API reference gives and no message, written by the maintainer under the departure for errors with no source beyond their documented name and status. every other operation the server sends gets the host's default, pending an agent's repair: CreatePullThroughCacheRule, whose tests set only return values that read the clock (datetime.now). the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://api.ecr.us-east-1.amazonaws.com/` at 2026-11-13T06:49:23Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "123a4b56-7c89-01d2-3ef4-example5678f"
+        ],
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{  \n   \"repositories\":[  \n      {  \n         \"createdAt\":1.563223656E9,\n         \"imageTagMutability\":\"MUTABLE\",\n         \"registryId\":\"012345678910\",\n         \"repositoryArn\":\"arn:aws:ecr:us-east-1:012345678910:repository/sample-repo\",\n         \"repositoryName\":\"sample-repo\",\n         \"repositoryUri\":\"012345678910.dkr.ecr.us-east-1.amazonaws.com/sample-repo\"\n      },\n      {  \n         \"createdAt\":1.554824595E9,\n         \"imageTagMutability\":\"IMMUTABLE\",\n         \"registryId\":\"012345678910\",\n         \"repositoryArn\":\"arn:aws:ecr:us-east-1:012345678910:repository/tagging-test\",\n         \"repositoryName\":\"tagging-test\",\n         \"repositoryUri\":\"012345678910.dkr.ecr.us-east-1.amazonaws.com/tagging-test\"\n      }\n   ]\n}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.DescribeRepositories"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ],
+        [
+          "x-amzn-RequestId",
+          "404826b1-c3c6-11e6-a9e5-e3c203a2f07f"
+        ]
+      ],
+      "body": "{\n    \"imageDetails\": [\n        {\n            \"registryId\": \"012345678910\",\n            \"repositoryName\": \"hello-repository\",\n            \"imageDigest\": \"sha256:7a64bc9c8843b0a8c8b8a7e4715b7615e4e1b0d8ca3c7e7a76ecEXAMPLE\",\n            \"imageTags\": [\n                \"tagtest\"\n            ],\n            \"imageSizeInBytes\": 78447648,\n            \"imagePushedAt\": \"2021-12-03T20:36:09+00:00\",\n            \"imageScanStatus\": {\n                \"status\": \"COMPLETE\",\n                \"description\": \"The scan was completed successfully.\"\n            },\n            \"imageScanFindingsSummary\": {\n                \"imageScanCompletedAt\": \"2021-12-03T20:36:14+00:00\",\n                \"vulnerabilitySourceUpdatedAt\": \"2021-11-24T16:11:37+00:00\",\n                \"findingSeverityCounts\": {\n                    \"HIGH\": 4,\n                    \"MEDIUM\": 76,\n                    \"INFORMATIONAL\": 9,\n                    \"LOW\": 50\n                }\n            },\n            \"imageManifestMediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n            \"artifactMediaType\": \"application/vnd.docker.container.image.v1+json\",\n            \"lastRecordedPullTime\": \"2022-02-23T05:06:01.514000+00:00\"\n        },\n        {\n            \"registryId\": \"012345678910\",\n            \"repositoryName\": \"hello-repository\",\n            \"imageDigest\": \"sha256:7a64bc9c8843b0a8c8b8a7e4715b7615e4e1b0d8ca3c7e7a76ecEXAMPLE\",\n            \"imageTags\": [\n                \"latest\"\n            ],\n            \"imageSizeInBytes\": 78447648,\n            \"imagePushedAt\": \"2020-01-23T17:56:13+00:00\",\n            \"imageScanStatus\": {\n                \"status\": \"COMPLETE\",\n                \"description\": \"The scan was completed successfully.\"\n            },\n            \"imageScanFindingsSummary\": {\n                \"imageScanCompletedAt\": \"2020-01-24T04:11:45+00:00\",\n                \"vulnerabilitySourceUpdatedAt\": \"2020-01-23T20:25:17+00:00\",\n                \"findingSeverityCounts\": {\n                    \"MEDIUM\": 14,\n                    \"INFORMATIONAL\": 11,\n                    \"LOW\": 27\n                }\n            },\n            \"imageManifestMediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n            \"lastRecordedPullTime\": \"2022-02-24T07:35:16.530000+00:00\"\n        }\n    ]\n}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.DescribeImages",
+      "identifier": {
+        "location": "json_member",
+        "name": "repositoryName",
+        "value": "hello-repository"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"__type\":\"RepositoryNotFoundException\"}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.DescribeImages"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ],
+        [
+          "x-amzn-RequestId",
+          "25da0b72-a2c2-11e5-8543-ebda6fb1393b"
+        ]
+      ],
+      "body": "{\n  \"policyText\": \"{\\n  \\\"Version\\\" : \\\"2012-10-17\\\",\\n  \\\"Statement\\\" : [ {\\n    \\\"Sid\\\" : \\\"AllowPull\\\",\\n    \\\"Effect\\\" : \\\"Allow\\\",\\n    \\\"Principal\\\" : \\\"*\\\",\\n    \\\"Action\\\" : [ \\\"ecr:BatchGetImage\\\", \\\"ecr:GetDownloadUrlForLayer\\\" ]\\n  } ]\\n}\",\n  \"registryId\": \"012345678910\",\n  \"repositoryName\": \"ubuntu\"\n}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.GetRepositoryPolicy",
+      "identifier": {
+        "location": "json_member",
+        "name": "repositoryName",
+        "value": "ubuntu"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"__type\":\"RepositoryNotFoundException\"}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.GetRepositoryPolicy"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ],
+        [
+          "x-amzn-RequestId",
+          "60dc1ea1-c3c9-11e6-aa04-25c3a5fb1b54"
+        ]
+      ],
+      "body": "{\n  \"failures\": [],\n  \"images\": [\n    {\n      \"imageId\": {\n        \"imageDigest\": \"sha256:f1d4ae3f7261a72e98c6ebefe9985cf10a0ea5bd762585a43e0700ed99863807\",\n        \"imageTag\": \"latest\"\n      },\n      \"imageManifest\": \"{\\n   \\\"schemaVersion\\\": 2,\\n   \\\"mediaType\\\": \\\"application/vnd.docker.distribution.manifest.v2+json\\\",\\n   \\\"config\\\": {\\n      \\\"mediaType\\\": \\\"application/vnd.docker.container.image.v1+json\\\",\\n      \\\"size\\\": 1486,\\n      \\\"digest\\\": \\\"sha256:5b52b314511a611975c2c65e695d920acdf8ae8848fe0ef00b7d018d1f118b64\\\"\\n   },\\n   \\\"layers\\\": [\\n      {\\n         \\\"mediaType\\\": \\\"application/vnd.docker.image.rootfs.diff.tar.gzip\\\",\\n         \\\"size\\\": 91768077,\\n         \\\"digest\\\": \\\"sha256:8e3fa21c4cc40232e835a6761332d225c7af3235c5755f44ada2ed9d0e4ab7e8\\\"\\n      }\\n   ]\\n}\",\n      \"registryId\": \"012345678910\",\n      \"repositoryName\": \"amazonlinux\"\n    }\n  ]\n}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.BatchGetImage",
+      "identifier": {
+        "location": "json_member",
+        "name": "repositoryName",
+        "value": "amazonlinux"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"__type\":\"RepositoryNotFoundException\"}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.BatchGetImage"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"pullThroughCacheRules\":[{\"upstreamRegistryUrl\":\"registry-1.docker.io\",\"ecrRepositoryPrefix\":\"docker\"}]}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.DescribePullThroughCacheRules"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"policyText\":\"{\\\"Version\\\": \\\"2012-10-17\\\", \\\"Statement\\\": [{\\\"Effect\\\": \\\"Allow\\\", \\\"Principal\\\": {\\\"Service\\\": \\\"omics.amazonaws.com\\\"}, \\\"Action\\\": [\\\"ecr:CreateRepository\\\", \\\"ecr:BatchImportUpstreamImage\\\"]}]}\"}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.GetRegistryPolicy"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"repositoryCreationTemplates\":[{\"repositoryPolicy\":\"{\\\"Version\\\": \\\"2012-10-17\\\", \\\"Statement\\\": [{\\\"Effect\\\": \\\"Allow\\\", \\\"Principal\\\": {\\\"Service\\\": \\\"omics.amazonaws.com\\\"}, \\\"Action\\\": [\\\"ecr:BatchGetImage\\\", \\\"ecr:GetDownloadUrlForLayer\\\"]}]}\"}]}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.DescribeRepositoryCreationTemplates"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.CreateRepository"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.SetRepositoryPolicy"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.PutRegistryPolicy"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.CreateRepositoryCreationTemplate"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{}",
+      "action": "AmazonEC2ContainerRegistry_V20150921.UpdateRepositoryCreationTemplate"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/62c72a2e28523447",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "ce70d65a-071d-4618-9b0e-e34a651d7fa8"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:23 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "connection",
+          "keep-alive"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/62c72a2e28523447",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "ce70d65a-071d-4618-9b0e-e34a651d7fa8"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:23 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "connection",
+          "keep-alive"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

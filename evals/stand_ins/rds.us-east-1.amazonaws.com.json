@@ -2,7 +2,7 @@
   "host": "rds.us-east-1.amazonaws.com",
   "address": "52.94.233.130",
   "source": "software_sources",
-  "command": "hand-written from the AWS RDS API Reference examples: DescribeDBInstances (85787's instance) and DescribeDBClusters (85788's cluster), each answered for its Action",
+  "command": "hand-written from the AWS RDS API Reference examples: DescribeDBInstances (85787's instance), answered for its Action whatever the request names, and DescribeDBClusters (85788's cluster), answered for its Action keyed on the DBClusterIdentifier form field equal to app-cluster; any other DBClusterIdentifier, or none, gets the action's error route, status 404 and an ErrorResponse with Type Sender, Code DBClusterNotFoundFault and the file's request id, reduced to the code and status the API reference and the botocore model give in the query protocol's error envelope, with no message, written by the maintainer",
   "request_headers": [],
   "routes": [
     {
@@ -39,6 +39,25 @@
         ]
       ],
       "body": "<DescribeDBClustersResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><DescribeDBClustersResult><DBClusters><DBCluster><DBClusterIdentifier>app-cluster</DBClusterIdentifier><Status>available</Status><Engine>aurora-mysql</Engine><Endpoint>127.0.0.1</Endpoint><Port>3306</Port><MasterUsername>postgres</MasterUsername><HttpEndpointEnabled>false</HttpEndpointEnabled><DBClusterArn>arn:aws:rds:us-east-1:123456789012:cluster:app-cluster</DBClusterArn><MasterUserSecret><SecretArn>arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3</SecretArn><SecretStatus>active</SecretStatus></MasterUserSecret></DBCluster></DBClusters></DescribeDBClustersResult><ResponseMetadata><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ResponseMetadata></DescribeDBClustersResponse>",
+      "action": "DescribeDBClusters",
+      "identifier": {
+        "location": "form",
+        "name": "DBClusterIdentifier",
+        "value": "app-cluster"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<ErrorResponse xmlns=\"http://rds.amazonaws.com/doc/2014-10-31/\"><Error><Type>Sender</Type><Code>DBClusterNotFoundFault</Code></Error><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ErrorResponse>",
       "action": "DescribeDBClusters"
     }
   ],

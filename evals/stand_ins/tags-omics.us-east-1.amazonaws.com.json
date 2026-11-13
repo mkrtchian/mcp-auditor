@@ -1,0 +1,170 @@
+{
+  "host": "tags-omics.us-east-1.amazonaws.com",
+  "address": "18.211.173.202",
+  "source": "software_sources",
+  "command": "hand-written from the AWS CLI v1 examples of awscli/examples/omics/ (awscli 1.46.3), each Output body as printed, compacted, its us-west-2 ARNs set to us-east-1 (no example output carries a pagination token): list-tags-for-resource, on the example's workflow ARN as botocore encodes it in the path. status and Content-Type from the AWS HealthOmics API Reference response syntax and the responseCode of the botocore omics model (botocore 1.44.0 and 1.44.1 of the two images). the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://tags-omics.us-east-1.amazonaws.com/` at 2026-11-13T01:05:49Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/tags/arn%3Aaws%3Aomics%3Aus-east-1%3A123456789012%3Aworkflow%2F1234567",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"tags\":{\"department\":\"analytics\"}}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/9651058caf6f61fd",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "3393b9bd-582b-4d36-8790-c8d8dc28c96d"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=47304000; includeSubDomains"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-User-Agent,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Amz-Session-Token,X-Amz-Dryrun,X-Amz-Client-Token"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRRMF6HIAMEvpw="
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate, private"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "x-amzn-ErrorType,x-amzn-requestid,x-amzn-trace-id,x-amz-apigw-id"
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626d-39a82c0fa610e4dd756ce8b3"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "75"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:48 GMT"
+        ]
+      ],
+      "body": "{\"message\": \"Unable to determine service/operation name to be authorized\" }",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/9651058caf6f61fd",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "3393b9bd-582b-4d36-8790-c8d8dc28c96d"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=47304000; includeSubDomains"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-User-Agent,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Amz-Session-Token,X-Amz-Dryrun,X-Amz-Client-Token"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRRMF6HIAMEvpw="
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate, private"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "x-amzn-ErrorType,x-amzn-requestid,x-amzn-trace-id,x-amz-apigw-id"
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626d-39a82c0fa610e4dd756ce8b3"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "75"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:48 GMT"
+        ]
+      ],
+      "body": "{\"message\": \"Unable to determine service/operation name to be authorized\" }",
+      "path_form": null
+    }
+  ]
+}

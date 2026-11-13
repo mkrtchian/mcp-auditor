@@ -1180,7 +1180,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "ed3cd97e7dbb836e4a11511ea2846f96e47657695794d28bb5447c481270103e"
+            "holdout_fingerprint": "06fae014af94bb6368a79541e5cb27a6361362baf66b3ec0a1f733cc691b3152"
           }
         },
         {
@@ -4479,7 +4479,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "9315a95ad80f7501dfa66ff7506cab269ff6a1f69bc0a39acb6f86b74e771c47"
+            "holdout_fingerprint": "1401f5efca71c44c4548b304080090bc81f16ce484c7867c8befc1289cd35ba1"
           }
         },
         {
@@ -5408,7 +5408,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "8f6e1504a7b8a4ce4644c71c2cfecc9340aaf4f8497128defe3aa3f45d3c7c68"
+            "holdout_fingerprint": "434b137e1c479d4dfdce59a5e54da3f061412b65f9b0b2a3741f8e9acd4bc471"
           }
         }
       ],
@@ -5764,7 +5764,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "155aba9beb625d6c7a4043ed98dd106c696f1b4f16414fa284e154ee7f387503"
+            "holdout_fingerprint": "075108c4be64911f4305dd6f69594f0fdde79557ed253e46591fe2a2d1217890"
           }
         }
       ],
@@ -6454,7 +6454,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "ec939145f710e1f833796eb8fbe8c13410ffdfc111271fed38f79f154ea934b8"
+            "holdout_fingerprint": "c9748379802fec3dfa1af8a4f5600d34240b10a67e98dafeee554778f85e5765"
           }
         }
       ],
@@ -6969,7 +6969,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "d5a5b3db1feef5de17311c7b7ad9bfa05be55cccc8b555a4100edbb1592cf69a"
+            "holdout_fingerprint": "6050a2ae171c564f16847ce991ebd4d067a79e546d60ee3a630009dec97df49c"
           }
         },
         {
@@ -7541,7 +7541,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "f61faea07ea7009f694cc1962891429ccb6a8957f77c76df513e45239b7abf17"
+            "holdout_fingerprint": "21d7101b81ce5b70377cf2ffeb62743a43712672f12971b4234e49389c572844"
           }
         },
         {
@@ -7876,7 +7876,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "d7efbf503f12738dfb182df8e4dc1022a5fa6e0a8c3082295c0d594dda117ada"
+            "holdout_fingerprint": "65ed14ca97118628202dc91bc925db08bbd896f72d6da51b8ac3927a84bf229c"
           }
         }
       ],
@@ -9206,7 +9206,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "501b368e1bf16a75104c2a844dad649157015bb38bab36a309b2198c538c3f05"
+            "holdout_fingerprint": "dfdfbab297ff64c277765787b0874c71b5d8199600bfad83079de88d7173b6de"
           }
         }
       ],
@@ -9402,7 +9402,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "e2d21898fa49b47d8e0358dabb6b15147bef7101a835d6dd1836df476b6f9546"
+            "holdout_fingerprint": "2626b7db031f97f136aceb89b16257e63dbeea32b44f63fac527380bc1d09a57"
           }
         }
       ],
@@ -9704,7 +9704,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "e4865b5a18c4a7898239f90ac76d4201a4380c72d953bd76761863c85ca9a353"
+            "holdout_fingerprint": "78e440beef8d35bcee8f751b62300aeea55a195c227884298a1240ef07f808ce"
           }
         }
       ],
@@ -10395,7 +10395,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "00dcd5f5fa22a6531e4afceb164b3cf3d8d41e0485ac19f69e900448b1dae536"
+            "holdout_fingerprint": "85fb3c43a4001552b716aed8ac43010f0de1c3904ceaac67d1b693fe3b1a2116"
           }
         }
       ],
@@ -10640,7 +10640,7 @@
             "patched_surfaces": false,
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
-            "holdout_fingerprint": "237f8dae3baa2d8d8c8c9307a3495aa9aa939cd085e89bda738c1629c9dce55a",
+            "holdout_fingerprint": "63d7022b1e0a95e4cb547c267c572016fd2ca521a53c518a38d8718c3a14e3fa",
             "relies_on_relaying_stand_in": false
           }
         }
@@ -10811,14 +10811,28 @@
           "capture": "evals/stand_ins/rds.us-east-1.amazonaws.com.json",
           "outputs": [
             {
-              "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com",
+              "request": "POST / (Action=DescribeDBClusters, DBClusterIdentifier=app-cluster) over TLS to rds.us-east-1.amazonaws.com",
               "source": "invented",
               "citation": "No published AWS RDS DescribeDBClusters sample response carries the MasterUserSecret member (MasterUserSecret.SecretArn) the server consumes, so the body is assembled in the form of a cited source rather than copied whole.",
               "form_source": "AWS RDS API Reference, DescribeDBClusters sample response (DBCluster shape and envelope) and the DBCluster data type for the MasterUserSecret member; the query-protocol envelope follows the botocore rds/2014-10-31 service model. Contains no part of the request.",
               "replacements": []
             },
             {
-              "request": "Any request the shared stand-in does not match (an RDS Action other than DescribeDBClusters on POST /); the server sends no such request on the benign path.",
+              "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com with a DBClusterIdentifier other than app-cluster, or none (the action's error route)",
+              "source": "invented",
+              "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code DBClusterNotFoundFault and the file's fixed RequestId: the error code and status the AWS RDS API Reference gives for DescribeDBClusters, a sender fault in the botocore rds/2014-10-31 model.",
+              "form_source": "AWS RDS Query API (rds/2014-10-31) error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the RDS query responses. The body contains no part of the request.",
+              "replacements": []
+            },
+            {
+              "request": "POST / (Action=DescribeDBInstances) over TLS to rds.us-east-1.amazonaws.com, which the server pages when it is given an empty cluster_identifier and a db_endpoint",
+              "source": "invented",
+              "citation": "AWS RDS API Reference, DescribeDBInstances Sample Response reduced to one instance; MasterUserSecret member shape from the RDS API Reference DBInstance data type; SecretArn equal to the Secrets Manager GetSecretValue Sample Response ARN; Endpoint.Address=localhost, MasterUsername=postgres, Engine=postgres set to the in-container backend",
+              "form_source": "Single-instance form of the DescribeDBInstances Sample Response with a MasterUserSecret member; the body carries no part of the request",
+              "replacements": []
+            },
+            {
+              "request": "Any request no route of the file answers (another scheme, method or path, or an RDS Action other than DescribeDBInstances and DescribeDBClusters on POST /); the server sends no such request on the benign path.",
               "source": "invented",
               "citation": "AWS RDS Query API error-response envelope for an unrecognised Action (HTTP 400 ErrorResponse, Error Type=Sender, Code=InvalidAction). No captured sample.",
               "form_source": "AWS RDS Query API (rds/2014-10-31) error-response format (ErrorResponse/Error with Code and Message). Contains no part of the request.",
@@ -10833,7 +10847,7 @@
           "capture": "evals/stand_ins/secretsmanager.us-east-1.amazonaws.com.json",
           "outputs": [
             {
-              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com",
+              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue, SecretId arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3) over TLS to secretsmanager.us-east-1.amazonaws.com",
               "source": "software_sources",
               "citation": "AWS Secrets Manager API Reference, GetSecretValue, Examples, Sample Response (ARN, CreatedDate, Name, SecretString with username/password, VersionId); response form follows the botocore secretsmanager x-amz-json-1.1 service model.",
               "form_source": null,
@@ -10849,7 +10863,14 @@
               ]
             },
             {
-              "request": "Any request the shared stand-in does not match (an X-Amz-Target other than secretsmanager.GetSecretValue on POST /); the server sends no such request on the benign path.",
+              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com with a SecretId other than arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3, or none (the action's error route)",
+              "source": "invented",
+              "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, the file's fixed x-amzn-RequestId, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the AWS Secrets Manager API Reference gives for GetSecretValue.",
+              "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+              "replacements": []
+            },
+            {
+              "request": "Any request no route of the file answers (another scheme, method or path, or an X-Amz-Target other than secretsmanager.GetSecretValue on POST /); the server sends no such request on the benign path.",
               "source": "invented",
               "citation": "AWS JSON (x-amz-json-1.1) protocol unknown-operation error (HTTP 400, body {\"__type\": \"UnknownOperationException\"}). No captured sample.",
               "form_source": "AWS JSON (x-amz-json-1.1) protocol error-response format (__type) for an unknown operation. Contains no part of the request.",
@@ -10950,7 +10971,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "3d8f930e36e99608a7a21ba1d93b11daef36b00ae527695b19f7953dcc7a0156"
+            "holdout_fingerprint": "d48b3c6f60ed99303dc840d3327f78da3342c4d482d0b0dbb4bd7628f2cf9caf"
           }
         },
         {
@@ -11012,7 +11033,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "3d8f930e36e99608a7a21ba1d93b11daef36b00ae527695b19f7953dcc7a0156"
+            "holdout_fingerprint": "d48b3c6f60ed99303dc840d3327f78da3342c4d482d0b0dbb4bd7628f2cf9caf"
           }
         }
       ],
@@ -11134,7 +11155,7 @@
           "capture": "evals/stand_ins/secretsmanager.us-east-1.amazonaws.com.json",
           "outputs": [
             {
-              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS",
+              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue, SecretId arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3) over TLS to secretsmanager.us-east-1.amazonaws.com",
               "source": "software_sources",
               "citation": "AWS Secrets Manager API Reference, GetSecretValue, Sample Response (ARN, Name, SecretString with username/password, VersionId)",
               "form_source": null,
@@ -11150,7 +11171,14 @@
               ]
             },
             {
-              "request": "any other (scheme, method, path) to the host",
+              "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com with a SecretId other than arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3, or none (the action's error route)",
+              "source": "invented",
+              "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, the file's fixed x-amzn-RequestId, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the AWS Secrets Manager API Reference gives for GetSecretValue.",
+              "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+              "replacements": []
+            },
+            {
+              "request": "any request no route of the file answers: another (scheme, method, path), or an X-Amz-Target other than secretsmanager.GetSecretValue on POST /",
               "source": "invented",
               "citation": "AWS JSON 1.1 unknown-operation error; HTTP 400 {\"__type\": \"UnknownOperationException\"}",
               "form_source": "AWS JSON 1.1 protocol unknown-operation error shape, carrying no part of the request",
@@ -11172,7 +11200,21 @@
               "replacements": []
             },
             {
-              "request": "any other (scheme, method, path) to the host",
+              "request": "POST / (Action=DescribeDBClusters, DBClusterIdentifier=app-cluster) over TLS to rds.us-east-1.amazonaws.com, which the server sends when it is given a non-empty cluster_identifier",
+              "source": "invented",
+              "citation": "No published AWS RDS DescribeDBClusters sample response carries the MasterUserSecret member (MasterUserSecret.SecretArn) the server consumes, so the body is assembled in the form of a cited source rather than copied whole.",
+              "form_source": "AWS RDS API Reference, DescribeDBClusters sample response (DBCluster shape and envelope) and the DBCluster data type for the MasterUserSecret member; the query-protocol envelope follows the botocore rds/2014-10-31 service model. Contains no part of the request.",
+              "replacements": []
+            },
+            {
+              "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com with a DBClusterIdentifier other than app-cluster, or none (the action's error route)",
+              "source": "invented",
+              "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code DBClusterNotFoundFault and the file's fixed RequestId: the error code and status the AWS RDS API Reference gives for DescribeDBClusters, a sender fault in the botocore rds/2014-10-31 model.",
+              "form_source": "AWS RDS Query API (rds/2014-10-31) error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the RDS query responses. The body contains no part of the request.",
+              "replacements": []
+            },
+            {
+              "request": "any request no route of the file answers: another (scheme, method, path), or an RDS Action other than DescribeDBInstances and DescribeDBClusters on POST /",
               "source": "invented",
               "citation": "AWS Query protocol error response (ErrorResponse/Error Type=Sender Code=InvalidAction); HTTP 400",
               "form_source": "AWS Query API error response shape, carrying no part of the request",
@@ -11277,7 +11319,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "c34da0b009ffdfc26d5bb6a920070f0fe96aa0d46077c6660e129c9aa6caaf16"
+            "holdout_fingerprint": "837a1374bc2cdb4c368bd148b2043e795e0aa39ef6d754b444ac091ba79afc05"
           }
         },
         {
@@ -11589,7 +11631,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "d4d799678e3e117981d30bab72bf29289a2d03e569df19f035db5a2c9b71f583"
+            "holdout_fingerprint": "4d4f54c43315d4be8739b702928f059e690e496255fea76e5d42086025243f3c"
           }
         },
         {
@@ -23037,7 +23079,7 @@
       "stand_ins": [
         {
           "replaces": "graph.facebook.com, the Meta Graph API (Marketing API) v22.0 host that fetch_pagination_url and every other tool of the server reach",
-          "reason": "The Graph API is a remote Meta service reached under its public name with a Meta account and access token; it has no distributable build to run in a container or as a backend, and the run's network reaches no Internet host. Served under its real name on the backend's closed bridge (--add-host), trusted through REQUESTS_CA_BUNDLE=/ca.pem.",
+          "reason": "The Graph API is a remote Meta service reached under its public name with a Meta account and access token; it has no distributable build to run in a container or as a backend, and the run's network reaches no Internet host. Served under its real name on the backend's closed bridge (--add-host), with its leaf of the fixture authority (evals/stand_ins/tls/graph.facebook.com.pem), the authority mounted read-only at /etc/ssl/extra-ca.pem and trusted through REQUESTS_CA_BUNDLE=/etc/ssl/extra-ca.pem.",
           "file": "evals/docker/Dockerfile.facebook-ads-responder",
           "capture": null,
           "outputs": [

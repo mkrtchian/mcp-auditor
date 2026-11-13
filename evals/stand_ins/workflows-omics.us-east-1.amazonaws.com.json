@@ -1,0 +1,402 @@
+{
+  "host": "workflows-omics.us-east-1.amazonaws.com",
+  "address": "50.19.149.92",
+  "source": "software_sources",
+  "command": "hand-written from the AWS CLI v1 examples of awscli/examples/omics/ (awscli 1.46.3), each Output body as printed, compacted, its us-west-2 ARNs set to us-east-1 (no example output carries a pagination token): list-workflows, get-workflow, create-workflow, list-runs, get-run, start-run, list-run-tasks, get-run-task, list-run-groups, get-run-group, create-run-group. from the server's own tests at 0.0.36 (awslabs/mcp fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2, src/aws-healthomics-mcp-server/tests), the first literal botocore return value set on a mock, a datetime serialized as the model's iso8601 timestampFormat: ListWorkflowVersions (test_workflow_management.py, test_list_workflow_versions_success, nextToken None dropped), CreateWorkflowVersion (test_create_workflow_version_success), ListRunCaches (test_run_cache.py, test_forwards_only_provided_filter_params), GetRunCache (test_get_with_all_fields), CreateRunCache (test_forwards_only_provided_optional_params), StartRunBatch (test_run_batch.py, sample_start_run_batch_response). UpdateRunGroup, UpdateRunCache and DeleteConfiguration answer 202 with an empty body (update-run-group.rst prints a body the operation does not return and is not used), on the run group the examples serve, the run cache GetRunCache serves and test-config, the configuration name of the list_configurations test. each list route on the server's request target with maxResults=100 (HEALTHOMICS_DEFAULT_MAX_RESULTS), each get route on the id its source names. status and Content-Type from the AWS HealthOmics API Reference response syntax and the responseCode of the botocore omics model (botocore 1.44.0 and 1.44.1 of the two images). the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://workflows-omics.us-east-1.amazonaws.com/` at 2026-11-13T01:05:47Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/workflow?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/1234567\",\"creationTime\":\"2022-09-23T23:08:22.041227Z\",\"digest\":\"nSCNo/qMWFxmplXpUdokXJnwgneOaxyyc2YOxVxrJTE=\",\"id\":\"1234567\",\"name\":\"my-wkflow-0\",\"status\":\"ACTIVE\",\"type\":\"PRIVATE\"},{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/1234567\",\"creationTime\":\"2022-11-30T22:33:16.225368Z\",\"digest\":\"sha256:c54bxmpl742dcc26f7fa1f10e37550ddd8f251f418277c0a58e895b801ed28cf\",\"id\":\"1234567\",\"name\":\"cram-converter\",\"status\":\"ACTIVE\",\"type\":\"PRIVATE\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/workflow/1234567",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/1234567\",\"creationTime\":\"2022-11-30T22:33:16.225368Z\",\"digest\":\"sha256:c54bxmpl742dcc26f7fa1f10e37550ddd8f251f418277c0a58e895b801ed28cf\",\"engine\":\"WDL\",\"id\":\"1234567\",\"main\":\"workflow-crambam.wdl\",\"name\":\"cram-converter\",\"parameterTemplate\":{\"ref_dict\":{\"description\":\"dictionary file for 'ref_fasta'\"},\"ref_fasta_index\":{\"description\":\"Index of the reference genome fasta file\"},\"ref_fasta\":{\"description\":\"Reference genome fasta file\"},\"input_cram\":{\"description\":\"The Cram file to convert to BAM\"},\"sample_name\":{\"description\":\"The name of the input sample, used to name the output BAM\"}},\"status\":\"ACTIVE\",\"statusMessage\":\"workflow-crambam.wdl\\n    workflow CramToBamFlow\\n        call CramToBamTask\\n        call ValidateSamFile\\n    task CramToBamTask\\n    task ValidateSamFile\\n\",\"tags\":{},\"type\":\"PRIVATE\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/workflow",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/1234567\",\"id\":\"1234567\",\"status\":\"CREATING\",\"tags\":{}}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/workflow/abc123/version?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/abc123/1.0\",\"id\":\"abc123\",\"status\":\"ACTIVE\",\"type\":\"WDL\",\"name\":\"Test Workflow\",\"versionName\":\"1.0\",\"creationTime\":\"2023-01-01T00:00:00Z\"},{\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/abc123/2.0\",\"id\":\"abc123\",\"status\":\"ACTIVE\",\"type\":\"WDL\",\"name\":\"Test Workflow\",\"versionName\":\"2.0\",\"creationTime\":\"2023-02-01T00:00:00Z\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/workflow/wfl-12345/version",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"id\":\"wfl-12345\",\"arn\":\"arn:aws:omics:us-east-1:123456789012:workflow/wfl-12345\",\"status\":\"ACTIVE\",\"name\":\"test-workflow\",\"versionName\":\"v2.0\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/run?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:run/1234567\",\"creationTime\":\"2022-12-02T23:20:01.202074Z\",\"id\":\"1234567\",\"name\":\"cram-to-bam\",\"priority\":1,\"startTime\":\"2022-12-02T23:29:18.115Z\",\"status\":\"COMPLETED\",\"stopTime\":\"2022-12-02T23:57:54.428812Z\",\"storageCapacity\":10,\"workflowId\":\"1234567\"},{\"arn\":\"arn:aws:omics:us-east-1:123456789012:run/1234567\",\"creationTime\":\"2022-12-03T00:16:57.180066Z\",\"id\":\"1234567\",\"name\":\"cram-to-bam\",\"priority\":1,\"startTime\":\"2022-12-03T00:26:50.233Z\",\"status\":\"FAILED\",\"stopTime\":\"2022-12-03T00:37:21.451340Z\",\"storageCapacity\":10,\"workflowId\":\"1234567\"},{\"arn\":\"arn:aws:omics:us-east-1:123456789012:run/1234567\",\"creationTime\":\"2022-12-05T17:57:08.444817Z\",\"id\":\"1234567\",\"name\":\"cram-to-bam\",\"status\":\"STARTING\",\"workflowId\":\"1234567\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/run/1234567",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:run/1234567\",\"creationTime\":\"2022-11-30T22:58:22.615865Z\",\"digest\":\"sha256:c54bxmpl742dcc26f7fa1f10e37550ddd8f251f418277c0a58e895b801ed28cf\",\"id\":\"1234567\",\"name\":\"cram-to-bam\",\"outputUri\":\"s3://omics-artifacts-01d6xmpl4e72dd32/workflow-output/\",\"parameters\":{\"ref_dict\":\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.dict\",\"ref_fasta_index\":\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.fasta.fai\",\"ref_fasta\":\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.fasta\",\"sample_name\":\"NA12878\",\"input_cram\":\"s3://omics-artifacts-01d6xmpl4e72dd32/NA12878.cram\"},\"resourceDigests\":{\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.fasta.fai\":\"etag:f76371b113734a56cde236bc0372de0a\",\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.dict\":\"etag:3884c62eb0e53fa92459ed9bff133ae6\",\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.fasta\":\"etag:e307d81c605fb91b7720a08f00276842-388\",\"s3://omics-artifacts-01d6xmpl4e72dd32/NA12878.cram\":\"etag:a9f52976381286c6143b5cc681671ec6\"},\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"startedBy\":\"arn:aws:iam::123456789012:user/laptop-2020\",\"status\":\"STARTING\",\"tags\":{},\"workflowId\":\"1234567\",\"workflowType\":\"PRIVATE\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/run",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:run/1234567\",\"id\":\"1234567\",\"status\":\"PENDING\",\"tags\":{}}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/run/1234567/task?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[{\"cpus\":1,\"creationTime\":\"2022-11-30T23:13:00.718651Z\",\"memory\":15,\"name\":\"CramToBamTask\",\"startTime\":\"2022-11-30T23:17:47.016Z\",\"status\":\"COMPLETED\",\"stopTime\":\"2022-11-30T23:18:21.503Z\",\"taskId\":\"1234567\"},{\"cpus\":1,\"creationTime\":\"2022-11-30T23:18:32.315606Z\",\"memory\":4,\"name\":\"ValidateSamFile\",\"startTime\":\"2022-11-30T23:23:40.165Z\",\"status\":\"COMPLETED\",\"stopTime\":\"2022-11-30T23:24:14.766Z\",\"taskId\":\"1234567\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/run/1234567/task/1234567",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"cpus\":1,\"creationTime\":\"2022-11-30T23:13:00.718651Z\",\"logStream\":\"arn:aws:logs:us-east-1:123456789012:log-group:/aws/omics/WorkflowLog:log-stream:run/1234567/task/1234567\",\"memory\":15,\"name\":\"CramToBamTask\",\"startTime\":\"2022-11-30T23:17:47.016Z\",\"status\":\"COMPLETED\",\"stopTime\":\"2022-11-30T23:18:21.503Z\",\"taskId\":\"1234567\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/runGroup?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:runGroup/1234567\",\"creationTime\":\"2022-12-01T00:58:42.915219Z\",\"id\":\"1234567\",\"maxCpus\":20,\"maxDuration\":600,\"name\":\"cram-convert\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/runGroup/1234567",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:runGroup/1234567\",\"creationTime\":\"2022-12-01T00:58:42.915219Z\",\"id\":\"1234567\",\"maxCpus\":20,\"maxDuration\":600,\"name\":\"cram-convert\",\"tags\":{}}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/runGroup",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:runGroup/1234567\",\"id\":\"1234567\",\"tags\":{}}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/runGroup/1234567",
+      "status": 202,
+      "headers": [],
+      "body": ""
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/runCache?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"items\":[]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/runCache/cache-full",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"id\":\"cache-full\",\"arn\":\"arn:aws:omics:us-east-1:123456789012:runCache/cache-full\",\"name\":\"Full Cache\",\"status\":\"ACTIVE\",\"cacheBehavior\":\"CACHE_ALWAYS\",\"cacheS3Uri\":\"s3://my-bucket/cache-prefix\",\"cacheBucketOwnerId\":\"111222333444\",\"description\":\"A fully populated run cache\",\"tags\":{\"project\":\"genomics\",\"env\":\"prod\"},\"creationTime\":\"2024-06-15T10:30:00Z\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/runCache",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"id\":\"cache-123\",\"arn\":\"arn:aws:omics:us-east-1:123456789012:runCache/cache-123\",\"status\":\"ACTIVE\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/runCache/cache-full",
+      "status": 202,
+      "headers": [],
+      "body": ""
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/runBatch",
+      "status": 201,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"id\":\"batch-12345678\",\"arn\":\"arn:aws:omics:us-east-1:123456789012:batch/batch-12345678\",\"status\":\"PENDING\",\"uuid\":\"uuid-12345678-1234-1234-1234-123456789012\",\"tags\":{\"env\":\"test\",\"project\":\"genomics\"}}"
+    },
+    {
+      "scheme": "https",
+      "method": "DELETE",
+      "request_target": "/configuration/test-config",
+      "status": 202,
+      "headers": [],
+      "body": ""
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/ca0ee549f9558b5a",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "2fb392e5-35dd-40e1-8d70-9df862bdfd61"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=47304000; includeSubDomains"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-User-Agent,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Amz-Session-Token,X-Amz-Dryrun,X-Amz-Client-Token"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRQ9ExjoAMEGNg="
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate, private"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "x-amzn-ErrorType,x-amzn-requestid,x-amzn-trace-id,x-amz-apigw-id"
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626c-fffcdd750518fd6716e826ad"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "75"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:47 GMT"
+        ]
+      ],
+      "body": "{\"message\": \"Unable to determine service/operation name to be authorized\" }",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/ca0ee549f9558b5a",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "2fb392e5-35dd-40e1-8d70-9df862bdfd61"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          "*"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=47304000; includeSubDomains"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-User-Agent,X-Amz-Security-Token,X-Amz-Content-Sha256,X-Amz-Session-Token,X-Amz-Dryrun,X-Amz-Client-Token"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRQ9ExjoAMEGNg="
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate, private"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+        ],
+        [
+          "Access-Control-Expose-Headers",
+          "x-amzn-ErrorType,x-amzn-requestid,x-amzn-trace-id,x-amz-apigw-id"
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626c-fffcdd750518fd6716e826ad"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "75"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:47 GMT"
+        ]
+      ],
+      "body": "{\"message\": \"Unable to determine service/operation name to be authorized\" }",
+      "path_form": null
+    }
+  ]
+}

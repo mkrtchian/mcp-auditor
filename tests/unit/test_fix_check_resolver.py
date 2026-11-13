@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 
@@ -26,7 +27,9 @@ _BUILDERS: dict[str, Callable[[], list[str]]] = {
     "jenkins-controller": lambda: cve_2026_10276_jenkins.controller_args("c", _ADDRESS),
     "jenkins-server": lambda: cve_2026_10276_jenkins.server_args("image", _ADDRESS),
     "facebook-ads-sentinel": lambda: cve_2026_19956_facebook_ads.sentinel_args("r", "n", _ADDRESS),
-    "facebook-ads-server": lambda: cve_2026_19956_facebook_ads.server_args("image", _ADDRESS),
+    "facebook-ads-server": lambda: cve_2026_19956_facebook_ads.server_args(
+        "image", _ADDRESS, Path("/bundle.pem")
+    ),
     "gitlab-responder": lambda: cve_2026_61462_gitlab.responder_args("r", "n", _ADDRESS),
     "gitlab-server": lambda: cve_2026_61462_gitlab.server_args("image", _ADDRESS),
     "googleapis-responder": lambda: cve_2026_11720_googleapis.responder_args("r", "n", 100),

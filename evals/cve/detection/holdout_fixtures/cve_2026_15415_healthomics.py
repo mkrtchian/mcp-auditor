@@ -7,6 +7,14 @@ bundle makes the linter read an arbitrary file and echo its first token in the e
 the file's content surfaces in the tool response: reach = arbitrary_read. 0.0.36 rejects a
 main_workflow_file that resolves outside the bundle.
 
+The tools that call AWS reach the hosts botocore resolves in us-east-1 (the three HealthOmics hosts
+its operations' host prefixes select, CloudWatch Logs, Pricing, STS, CodeConnections, ECR,
+CodeBuild and IAM), each served by a stand-in under its real name. Botocore trusts the fixture
+authority through AWS_CA_BUNDLE. S3 is not served: the real host's default quotes the probed bucket,
+which no stand-in default reproduces, so the S3 tools fail on connection as before. etc-hosts is not
+kept: a kept /etc/hosts would be mounted over the file that carries the stand-ins' entries, and no
+AWS host would resolve.
+
 Deployment layout: the server runs from the checkout (/srv/app) under the unprivileged account, the
 layout read-only, no network of its own.
 """
@@ -18,6 +26,7 @@ from evals.cve.environments import command_injection_env
 from evals.cve.grammar import FlawClass
 from evals.cve.places import Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
+from evals.cve.planting_base import PublicNames
 from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
@@ -29,6 +38,21 @@ BENIGN_WDL = "version 1.0\n\nworkflow w {\n}\n"
 TRAVERSAL = "../" * 20
 
 AIM = re.compile(r"\.\./")
+
+# Every host botocore resolves in us-east-1 for a client the tools create, read in both images,
+# S3 aside.
+AWS_HOSTS: tuple[str, ...] = (
+    "workflows-omics.us-east-1.amazonaws.com",
+    "control-storage-omics.us-east-1.amazonaws.com",
+    "tags-omics.us-east-1.amazonaws.com",
+    "logs.us-east-1.amazonaws.com",
+    "api.pricing.us-east-1.amazonaws.com",
+    "sts.us-east-1.amazonaws.com",
+    "codeconnections.us-east-1.amazonaws.com",
+    "api.ecr.us-east-1.amazonaws.com",
+    "codebuild.us-east-1.amazonaws.com",
+    "iam.amazonaws.com",
+)
 
 KEPT_PLACES: tuple[str, ...] = (
     "etc-shadow",
@@ -48,7 +72,6 @@ KEPT_PLACES: tuple[str, ...] = (
     "mongorc",
     "run-secrets",
     "k8s-sa-token",
-    "etc-hosts",
     "auth-log",
     "proc-environ",
     "container-hostname",
@@ -97,13 +120,14 @@ TARGET = Target(
     aim=AIM,
     reaches=frozenset({"arbitrary_read"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE,),
+    images=(SERVICE, "stand-in"),
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(
         user=SymbolicUser.UNPRIVILEGED,
         working_directory=WORKING_DIRECTORY,
         has_network=False,
+        public_names=PublicNames(stand_ins=AWS_HOSTS, trust=("AWS_CA_BUNDLE",)),
     ),
     builder=command_injection_env,
     exploits=tuple(_make_exploit(place_id) for place_id in KEPT_PLACES),

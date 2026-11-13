@@ -143865,19 +143865,33 @@
           {
             "stand_in": {
               "replaces": "AWS RDS public endpoint rds.us-east-1.amazonaws.com (the server's boto3 resolves the Aurora cluster's managed-secret ARN from it via DescribeDBClusters; the closed fixture network cannot reach the real host).",
-              "reason": "On connection_method=mysqlwire with a cluster_identifier, connect_to_database calls internal_get_cluster_properties, which calls RDS DescribeDBClusters and reads the cluster's MasterUserSecret.SecretArn. With no network to real AWS, the real host is replaced by a stand-in served under its real name on the closed network (ADR 034). Its DescribeDBClusters body is declared invented (see outputs): no published DescribeDBClusters sample response carries the MasterUserSecret member the server reads, so the body follows the form of the DescribeDBClusters example response and the RDS DBCluster data type, with its identifier slots set to fixed fixture values (recorded as replacements) and no part of the request reflected. The committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys each POST / route on its Action: this one answers DescribeDBClusters, the host's file also answers DescribeDBInstances for CVE-2026-85787, and a request naming any other Action gets the InvalidAction default (see the default output). The server only ever sends this one Action to this host.",
+              "reason": "On connection_method=mysqlwire with a cluster_identifier, connect_to_database calls internal_get_cluster_properties, which calls RDS DescribeDBClusters and reads the cluster's MasterUserSecret.SecretArn. With no network to real AWS, the real host is replaced by a stand-in served under its real name on the closed network (ADR 034). Its DescribeDBClusters body is declared invented (see outputs): no published DescribeDBClusters sample response carries the MasterUserSecret member the server reads, so the body follows the form of the DescribeDBClusters example response and the RDS DBCluster data type, with its identifier slots set to fixed fixture values (recorded as replacements) and no part of the request reflected. The committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys each POST / route on its Action, and the DescribeDBClusters route also on the DBClusterIdentifier form field: app-cluster gets the cluster, any other value or none gets the action's error route (DBClusterNotFoundFault). DescribeDBInstances is answered whatever the request names, and a request naming any other Action gets the InvalidAction default (see the outputs). The server sends DescribeDBClusters when it is given a cluster_identifier, and pages DescribeDBInstances when it is given an empty one and a db_endpoint.",
               "file": "evals/docker/Dockerfile.stand-in",
               "capture": "evals/stand_ins/rds.us-east-1.amazonaws.com.json",
               "outputs": [
                 {
-                  "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com",
+                  "request": "POST / (Action=DescribeDBClusters, DBClusterIdentifier=app-cluster) over TLS to rds.us-east-1.amazonaws.com",
                   "source": "invented",
                   "citation": "No published AWS RDS DescribeDBClusters sample response holds this body: the MasterUserSecret member the server consumes (MasterUserSecret.SecretArn) appears in no DescribeDBClusters example response, so the body is assembled rather than copied from a single source.",
                   "form_source": "AWS RDS API Reference, DescribeDBClusters, Examples, Sample Response (DBCluster with DBClusterIdentifier, Status, Engine, Endpoint, Port, MasterUsername, DBClusterArn, HttpEndpointEnabled) for the DBCluster shape and the response envelope; the MasterUserSecret member (SecretArn, SecretStatus) follows the RDS API Reference DBCluster data type; the envelope follows the botocore rds/2014-10-31 query-protocol service model (DescribeDBClustersResult). The body contains no part of the request.",
                   "replacements": []
                 },
                 {
-                  "request": "Any request the shared stand-in does not match on (scheme, method, path) at rds.us-east-1.amazonaws.com, e.g. an RDS Action other than DescribeDBClusters on POST / (the server sends no such request on the vulnerable version).",
+                  "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com with a DBClusterIdentifier other than app-cluster, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code DBClusterNotFoundFault and the file's fixed RequestId: the error code and status the AWS RDS API Reference gives for DescribeDBClusters, a sender fault in the botocore rds/2014-10-31 model.",
+                  "form_source": "AWS RDS Query API (rds/2014-10-31) error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the RDS query responses. The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (Action=DescribeDBInstances) over TLS to rds.us-east-1.amazonaws.com",
+                  "source": "invented",
+                  "citation": "AWS RDS API Reference, DescribeDBInstances, Examples, Sample Response (DBInstance with Endpoint, MasterUsername, DBInstanceIdentifier, Engine), reduced to one instance; the MasterUserSecret member shape from the RDS API Reference DBInstance data type; the SecretArn value is the ARN from the Secrets Manager GetSecretValue Sample Response",
+                  "form_source": "Single-instance form of the AWS RDS API Reference DescribeDBInstances Sample Response, with the MasterUserSecret member shape taken from the RDS API Reference DBInstance data type; the response body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "Any request no route of the file answers at rds.us-east-1.amazonaws.com: another scheme, method or path, or an RDS Action other than DescribeDBInstances and DescribeDBClusters on POST / (the server sends no such request on the vulnerable version).",
                   "source": "invented",
                   "citation": "AWS RDS Query API error-response envelope for an unrecognised Action: HTTP 400 ErrorResponse with Error Type=Sender, Code=InvalidAction, a short Message. No captured sample; the form follows the documented rds/2014-10-31 query-protocol error response.",
                   "form_source": "AWS RDS Query API (rds/2014-10-31) error-response format: ErrorResponse/Error with Code and Message. The body contains no part of the request.",
@@ -143893,12 +143907,12 @@
           {
             "stand_in": {
               "replaces": "AWS Secrets Manager public endpoint secretsmanager.us-east-1.amazonaws.com (the server's boto3 fetches the DB username/password from it via GetSecretValue; the closed fixture network cannot reach the real host).",
-              "reason": "The asyncmy mysqlwire path fetches the database credentials from AWS Secrets Manager (get_secret_value on the cluster's MasterUserSecret) to open the MySQL pool on the first query. With no network to real AWS, the real host is replaced by a stand-in served under its real name on the closed network (ADR 034). Its GetSecretValue body is the AWS Secrets Manager API Reference GetSecretValue published example response (source software_sources), with two identifier replacements recorded in the outputs: the example SecretString username 'david' -> postgres, and the example ARN region us-west-2 -> us-east-1 (the region of an ARN is an identifier; changed so the secret's ARN matches the us-east-1 cluster the server resolved it from). The committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys this POST / route on its X-Amz-Target action, secretsmanager.GetSecretValue, so a request naming any other action gets the unknown-operation default (see the default output). The server only ever sends this one X-Amz-Target action to this host. The served username/password (postgres / EXAMPLE-PASSWORD) are the MySQL account the fixture creates, so the pool opens.",
+              "reason": "The asyncmy mysqlwire path fetches the database credentials from AWS Secrets Manager (get_secret_value on the cluster's MasterUserSecret) to open the MySQL pool on the first query. With no network to real AWS, the real host is replaced by a stand-in served under its real name on the closed network (ADR 034). Its GetSecretValue body is the AWS Secrets Manager API Reference GetSecretValue published example response (source software_sources), with two identifier replacements recorded in the outputs: the example SecretString username 'david' -> postgres, and the example ARN region us-west-2 -> us-east-1 (the region of an ARN is an identifier; changed so the secret's ARN matches the us-east-1 cluster the server resolved it from). The committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys this POST / route on its X-Amz-Target action, secretsmanager.GetSecretValue, and on the SecretId member of the JSON body: the ARN the RDS answers carry gets the secret, any other SecretId or none gets the action's error route (ResourceNotFoundException), and a request naming any other action gets the unknown-operation default (see the outputs). The served username/password (postgres / EXAMPLE-PASSWORD) are the MySQL account the fixture creates, so the pool opens.",
               "file": "evals/docker/Dockerfile.stand-in",
               "capture": "evals/stand_ins/secretsmanager.us-east-1.amazonaws.com.json",
               "outputs": [
                 {
-                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com",
+                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue, SecretId arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3) over TLS to secretsmanager.us-east-1.amazonaws.com",
                   "source": "software_sources",
                   "citation": "AWS Secrets Manager API Reference, GetSecretValue, Examples, Sample Response (ARN, CreatedDate, Name, SecretString with username/password, VersionId); the response form follows the botocore secretsmanager JSON (x-amz-json-1.1) protocol service model.",
                   "form_source": null,
@@ -143914,7 +143928,14 @@
                   ]
                 },
                 {
-                  "request": "Any request the shared stand-in does not match on (scheme, method, path) at secretsmanager.us-east-1.amazonaws.com, e.g. an X-Amz-Target other than secretsmanager.GetSecretValue on POST / (the server sends no such request on the vulnerable version).",
+                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com with a SecretId other than arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, the file's fixed x-amzn-RequestId, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the AWS Secrets Manager API Reference gives for GetSecretValue.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "Any request no route of the file answers at secretsmanager.us-east-1.amazonaws.com: another scheme, method or path, or an X-Amz-Target other than secretsmanager.GetSecretValue on POST / (the server sends no such request on the vulnerable version).",
                   "source": "invented",
                   "citation": "AWS JSON (x-amz-json-1.1) protocol unknown-operation error: HTTP 400 with body {\"__type\": \"UnknownOperationException\"}. No captured sample; the form follows the documented AWS JSON-1.1 protocol error response.",
                   "form_source": "AWS JSON (x-amz-json-1.1) protocol error-response format (__type) for an unknown operation. The body contains no part of the request.",
@@ -151571,20 +151592,16 @@
             "reason": "Only the flaw reaches it: exploit call 17 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
           },
           {
-            "place_id": "etc-hosts",
+            "place_id": "auth-log",
             "reason": "Only the flaw reaches it: exploit call 18 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
           },
           {
-            "place_id": "auth-log",
+            "place_id": "proc-environ",
             "reason": "Only the flaw reaches it: exploit call 19 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
           },
           {
-            "place_id": "proc-environ",
-            "reason": "Only the flaw reaches it: exploit call 20 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
-          },
-          {
             "place_id": "container-hostname",
-            "reason": "Only the flaw reaches it: exploit call 21 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
+            "reason": "Only the flaw reaches it: exploit call 20 drives the bundle linter to read this place and echo its nonce in the returned lint output on 0.0.35; the benign call does not surface it and 0.0.36 blocks the traversal."
           }
         ],
         "unkept": [
@@ -151622,9 +151639,21 @@
             "place_id": "workspace-dotenv",
             "reason": "Layout place (anchor=workspace): the dotenv /srv/.env at the workspace level, the parent of the checkout working directory /srv/app. Reachable by arbitrary_read, the flaw's own reach. The repository per-place route check ran and found no route: the launch passes no scope, so find_dotenv's documented default does not apply, and the LintAHOWorkflowBundle tool surfaces no /srv path, so the server's own outputs reveal no route to this anchor. Not kept.",
             "route_checked": false
+          },
+          {
+            "place_id": "etc-hosts",
+            "reason": "Within the flaw's reach (arbitrary_read), but planting it cannot hold in one launch with the stand-ins the AWS tools reach: the holder writes the stand-ins' entries into /etc/hosts, the only name resolution on the closed fixture network, and planting this place's nonce mounts a nonce file over that file, so no AWS host would resolve. It was kept while the target ran with no stand-in, and leaves the kept places with the repair of 2026-11-13 that added the stand-ins, the departure from the frozen kept places the detection suite log records that day, as the calibration of CVE-2026-2130 dropped etc-hosts for the same launch conflict.",
+            "route_checked": false
           }
         ],
-        "launch_options": [],
+        "launch_options": [
+          {
+            "option": "AWS_CA_BUNDLE",
+            "value": "/etc/ssl/extra-ca.pem",
+            "reason": "The server must trust the fixture authority behind the stand-ins served under the real AWS hostnames (ADR 034); set by the planting trust machinery, not a server CLI flag.",
+            "documentation": "ADR 034 (stand-in served under the real host name, server trusts the fixture authority)."
+          }
+        ],
         "seeded_in_layout": [],
         "seeded_outside_layout": [
           {
@@ -151640,7 +151669,894 @@
             "used_by_default_by": []
           }
         ],
-        "stand_ins": [],
+        "stand_ins": [
+          {
+            "stand_in": {
+              "replaces": "AWS HealthOmics workflows endpoint workflows-omics.us-east-1.amazonaws.com (the workflow, run, run group, run cache, batch and configuration operations)",
+              "reason": "The workflow, run, run group, run cache, run batch and configuration tools call AWS HealthOmics through boto3, whose operations carry the host prefix workflows-. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). Each route answers one exact request target (each list on the server's maxResults=100, each get on the id its source names), so a get on another id, a list with another max_results and an operation no route names get the host's default. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). GetBatch, ListBatch, ListRunsInBatch, CancelRunBatch, DeleteRunBatch and DeleteBatch get no route: the server calls them with an id argument botocore refuses (it requires batchId), so no request reaches the host. CreateConfiguration, GetConfiguration and ListConfigurations get the default: the server's tests give them only with a creationTime read from the clock.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/workflows-omics.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "GET /workflow?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-workflows.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /workflow/1234567 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-workflow.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /workflow over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/create-workflow.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /workflow/abc123/version?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_workflow_management.py, test_list_workflow_versions_success, the first literal botocore return value set on the mock, its nextToken None dropped (a single page). Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /workflow/wfl-12345/version over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_workflow_management.py, test_create_workflow_version_success, the first literal botocore return value set on the mock, on the workflow id it names. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /run?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-runs.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /run/1234567 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-run.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /run over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/start-run.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /run/1234567/task?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-run-tasks.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /run/1234567/task/1234567 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-run-task.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /runGroup?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-run-groups.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /runGroup/1234567 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-run-group.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /runGroup over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/create-run-group.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /runGroup/1234567 over TLS to workflows-omics.us-east-1.amazonaws.com (UpdateRunGroup)",
+                  "source": "software_sources",
+                  "citation": "AWS HealthOmics API Reference, UpdateRunGroup, Response Syntax: HTTP 202 with an empty body, the botocore model's responseCode 202 and no output shape. update-run-group.rst prints a body the operation does not return and is not used. On the run group the CLI examples serve.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /runCache?maxResults=100 over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_run_cache.py, test_forwards_only_provided_filter_params, the first literal botocore return value set on the mock. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /runCache/cache-full over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_run_cache.py, test_get_with_all_fields, the first literal botocore return value set on the mock (the first test, test_datetime_fields_serialized, sets generated values), its creationTime datetime(2024, 6, 15, 10, 30, tzinfo=UTC) serialized as the model's iso8601 timestampFormat. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /runCache over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_run_cache.py, test_forwards_only_provided_optional_params, the first literal botocore return value set on the mock. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /runCache/cache-full over TLS to workflows-omics.us-east-1.amazonaws.com (UpdateRunCache)",
+                  "source": "software_sources",
+                  "citation": "AWS HealthOmics API Reference, UpdateRunCache: HTTP 202 with an empty body, the botocore model's responseCode 202 and no output shape. On the run cache the GetRunCache route serves.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /runBatch over TLS to workflows-omics.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_run_batch.py, sample_start_run_batch_response, the first literal botocore return value set on the mock. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "DELETE /configuration/test-config over TLS to workflows-omics.us-east-1.amazonaws.com (DeleteConfiguration)",
+                  "source": "software_sources",
+                  "citation": "AWS HealthOmics API Reference, DeleteConfiguration: HTTP 202 with an empty body, the botocore model's responseCode 202 and no output shape. On test-config, the configuration name of the server's list_configurations test (test_configuration_tools_properties.py).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to workflows-omics.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /ca0ee549f9558b5a, captured unauthenticated with the capture tool at 2026-11-13T01:05:47Z: 403 AccessDeniedException, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to workflows-omics.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset).",
+                  "form_source": "The host's https default captured at 2026-11-13T01:05:47Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS HealthOmics storage control endpoint control-storage-omics.us-east-1.amazonaws.com (the sequence store, read set and reference store operations)",
+              "reason": "The sequence store, read set and reference store tools call AWS HealthOmics through boto3, whose operations carry the host prefix control-storage-. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). Each route answers one exact request target (each list on the server's maxResults=100, each get on the id its source names), so a get on another id, a list with another max_results and an operation no route names get the host's default. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). UpdateSequenceStore gets the default: the server's tests give it only with a creationTime read from the clock.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/control-storage-omics.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST /sequencestores?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-sequence-stores.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /sequencestore/1234567890 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-sequence-store.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /sequencestore over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/create-sequence-store.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/readsets?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-read-sets.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /sequencestore/1234567890/readset/1234567890/metadata over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-read-set-metadata.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/importjob over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/start-read-set-import-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /sequencestore/1234567890/importjob/1234567890 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-read-set-import-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/importjobs?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-read-set-import-jobs.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/exportjob over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/start-read-set-export-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /sequencestore/1234567890/exportjob/1234567890 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-read-set-export-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/exportjobs?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-read-set-export-jobs.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /sequencestore/1234567890/activationjob over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/start-read-set-activation-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /referencestores?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-reference-stores.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /referencestores?maxResults=1 (the request the server sends to resolve a reference store) over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-reference-stores.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /referencestore/1234567890 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-reference-store.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /referencestore/1234567890/references?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-references.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "GET /referencestore/1234567890/reference/1234567890/metadata over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-reference-metadata.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST /referencestore/1234567890/importjob over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/start-reference-import-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "GET /referencestore/1234567890/importjob/1234567890 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/get-reference-import-job.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST /referencestore/1234567890/importjobs?maxResults=100 over TLS to control-storage-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-reference-import-jobs.rst of awscli 1.46.3, Output. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to control-storage-omics.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /ed5062792a182f7b, captured unauthenticated with the capture tool at 2026-11-13T01:05:48Z: 403 AccessDeniedException, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to control-storage-omics.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset).",
+                  "form_source": "The host's https default captured at 2026-11-13T01:05:48Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS HealthOmics tagging endpoint tags-omics.us-east-1.amazonaws.com (ListTagsForResource)",
+              "reason": "The genomics file search calls AWS HealthOmics through boto3, whose operations carry the host prefix tags-. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). Each route answers one exact request target (each list on the server's maxResults=100, each get on the id its source names), so a get on another id, a list with another max_results and an operation no route names get the host's default. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs).",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/tags-omics.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "GET /tags/arn%3Aaws%3Aomics%3Aus-east-1%3A123456789012%3Aworkflow%2F1234567 over TLS to tags-omics.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS CLI v1 example awscli/examples/omics/list-tags-for-resource.rst of awscli 1.46.3, Output, on the example's workflow ARN as botocore encodes it in the path. Status and Content-Type from the AWS HealthOmics API Reference response syntax and the botocore omics model responseCode.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, an ARN region is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "any other request over TLS to tags-omics.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /9651058caf6f61fd, captured unauthenticated with the capture tool at 2026-11-13T01:05:49Z: 403 AccessDeniedException, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to tags-omics.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset).",
+                  "form_source": "The host's https default captured at 2026-11-13T01:05:49Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "Amazon CloudWatch Logs endpoint logs.us-east-1.amazonaws.com (GetLogEvents)",
+              "reason": "The run, engine, manifest and task log tools read the run logs from CloudWatch Logs through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). GetLogEvents is keyed on the logStreamName member: my-log-stream, the stream the Sample Response names, gets it, and any other stream, every one the server names (run/<id>, manifest/run/<id>, ...), gets the action's error route (ResourceNotFoundException).",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/logs.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (X-Amz-Target: Logs_20140328.GetLogEvents, logStreamName my-log-stream) over TLS to logs.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "Amazon CloudWatch Logs API Reference, GetLogEvents, Example 1 (To list all the events for a log stream), Sample Response, body and Content-Type as printed, on the log stream the sample names.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: Logs_20140328.GetLogEvents) over TLS to logs.us-east-1.amazonaws.com with a logStreamName other than my-log-stream, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the Amazon CloudWatch Logs API Reference gives for GetLogEvents.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to logs.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /46395d2135140342, captured unauthenticated with the capture tool at 2026-11-13T06:49:20Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to logs.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:20Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS Price List endpoint api.pricing.us-east-1.amazonaws.com (GetProducts)",
+              "reason": "The run cost analysis reads instance and storage prices from the AWS Price List API through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). GetProducts is keyed on the ServiceCode member: AmazonEC2, the service the Sample Response names, gets it, and any other service, AmazonOmics the server sends among them, gets the action's error route (NotFoundException).",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/api.pricing.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (X-Amz-Target: AWSPriceListService.GetProducts, ServiceCode AmazonEC2) over TLS to api.pricing.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS Price List API Reference, GetProducts, Sample Response, body and Content-Type as printed, on the service the sample names.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the sample's NextToken member",
+                      "replacement": "dropped (a single page is a valid body)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AWSPriceListService.GetProducts) over TLS to api.pricing.us-east-1.amazonaws.com with a ServiceCode other than AmazonEC2, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, body {\"__type\":\"NotFoundException\"}: the error and status the AWS Price List API Reference gives for GetProducts.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to api.pricing.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /4dd5d3f40d253c7d, captured unauthenticated with the capture tool at 2026-11-13T06:49:21Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to api.pricing.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:21Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS STS regional endpoint sts.us-east-1.amazonaws.com (GetCallerIdentity)",
+              "reason": "The server reads the account ID and partition from STS GetCallerIdentity through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). GetCallerIdentity takes no parameter, so its route is not keyed.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/sts.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (Action=GetCallerIdentity) over TLS to sts.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "AWS STS API Reference, GetCallerIdentity, Example 1 (Called by an IAM user), Sample Response, body, Content-Type and x-amzn-RequestId as printed.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to sts.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /63ba86ba4e40098e, captured unauthenticated with the capture tool at 2026-11-13T06:49:21Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to sts.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:21Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS CodeConnections endpoint codeconnections.us-east-1.amazonaws.com (ListConnections, GetConnection, CreateConnection)",
+              "reason": "The CodeConnections tools call AWS CodeConnections (JSON 1.0 in both images) through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). ListConnections and CreateConnection are answered whatever the request names. GetConnection is keyed on the ConnectionArn member: the ARN those answers carry gets the connection, and any other ARN gets the action's error route (ResourceNotFoundException).",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/codeconnections.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (X-Amz-Target: com.amazonaws.codeconnections.CodeConnections_20231201.ListConnections) over TLS to codeconnections.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_codeconnections.py, test_list_codeconnections_success, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.0, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: com.amazonaws.codeconnections.CodeConnections_20231201.GetConnection, ConnectionArn arn:aws:codeconnections:us-east-1:123456789012:connection/abc123) over TLS to codeconnections.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_codeconnections.py, test_get_codeconnection_success, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON. Content-Type application/x-amz-json-1.0, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: com.amazonaws.codeconnections.CodeConnections_20231201.GetConnection) over TLS to codeconnections.us-east-1.amazonaws.com with a ConnectionArn other than arn:aws:codeconnections:us-east-1:123456789012:connection/abc123, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type application/x-amz-json-1.0, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the AWS CodeConnections API Reference gives for GetConnection.",
+                  "form_source": "AWS JSON 1.0 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: com.amazonaws.codeconnections.CodeConnections_20231201.CreateConnection) over TLS to codeconnections.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_codeconnections.py, test_create_codeconnection_success, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.0, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to codeconnections.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /02eab72f68b7697f, captured unauthenticated with the capture tool at 2026-11-13T06:49:22Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to codeconnections.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:22Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "Amazon ECR endpoint api.ecr.us-east-1.amazonaws.com (the repository, image, policy, pull through cache and creation template operations)",
+              "reason": "The ECR and container tools call Amazon ECR through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). DescribeRepositories is answered whatever the request names. DescribeImages, GetRepositoryPolicy and BatchGetImage are keyed on the repositoryName member, each on the repository its Sample Response names, any other getting the action's error route (RepositoryNotFoundException). The operations with no Sample Response take the server's tests and are answered whatever the request names. CreatePullThroughCacheRule gets the default, pending an agent's repair: its tests set only return values that read the clock.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/api.ecr.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.DescribeRepositories) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "Amazon ECR API Reference, DescribeRepositories, Example, Sample Response (body, Content-Type and x-amzn-RequestId 123a4b56-7c89-01d2-3ef4-example5678f as printed), answered whatever the request names.",
+                  "form_source": null,
+                  "replacements": [
+                    {
+                      "original": "the example ARN and repository URI region (us-west-2)",
+                      "replacement": "us-east-1 (the deployment region, a region in an ARN or URI is an identifier)"
+                    }
+                  ]
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.DescribeImages, repositoryName hello-repository) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "Amazon ECR API Reference, DescribeImages, Example, Sample Response (body, Content-Type and x-amzn-RequestId 404826b1-c3c6-11e6-a9e5-e3c203a2f07f as printed), on the repository the sample names.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.DescribeImages) over TLS to api.ecr.us-east-1.amazonaws.com with a repositoryName other than hello-repository, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, body {\"__type\":\"RepositoryNotFoundException\"}: the error and status the Amazon ECR API Reference gives for DescribeImages.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.GetRepositoryPolicy, repositoryName ubuntu) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "Amazon ECR API Reference, GetRepositoryPolicy, Example, Sample Response (body, Content-Type and x-amzn-RequestId 25da0b72-a2c2-11e5-8543-ebda6fb1393b as printed), on the repository the sample names.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.GetRepositoryPolicy) over TLS to api.ecr.us-east-1.amazonaws.com with a repositoryName other than ubuntu, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, body {\"__type\":\"RepositoryNotFoundException\"}: the error and status the Amazon ECR API Reference gives for GetRepositoryPolicy.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.BatchGetImage, repositoryName amazonlinux) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "Amazon ECR API Reference, BatchGetImage, Example, Sample Response (body, Content-Type and x-amzn-RequestId 60dc1ea1-c3c9-11e6-aa04-25c3a5fb1b54 as printed), on the repository the sample names.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.BatchGetImage) over TLS to api.ecr.us-east-1.amazonaws.com with a repositoryName other than amazonlinux, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, body {\"__type\":\"RepositoryNotFoundException\"}: the error and status the Amazon ECR API Reference gives for BatchGetImage.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.DescribePullThroughCacheRules) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_pull_through_cache_success, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.GetRegistryPolicy) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_ecr_coverage.py, test_matching_rule_with_full_permissions, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Its policy text is the json.dumps of a literal policy the test writes, kept as json.dumps writes it. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.DescribeRepositoryCreationTemplates) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_ecr_coverage.py, test_matching_rule_with_full_permissions, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Its policy text is the json.dumps of a literal policy the test writes, kept as json.dumps writes it. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.CreateRepository) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_no_ptc_supported_registry_suggests_creating, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.SetRepositoryPolicy) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_pull_through_cache_success, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.PutRegistryPolicy) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_ecr_coverage.py, test_template_update_fails_but_has_policy, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.CreateRepositoryCreationTemplate) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_ecr_tools.py, test_create_ptc_uses_correct_url_for_registry_type, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: AmazonEC2ContainerRegistry_V20150921.UpdateRepositoryCreationTemplate) over TLS to api.ecr.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_ecr_tools.py, test_template_already_exists_updated, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to api.ecr.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /62c72a2e28523447, captured unauthenticated with the capture tool at 2026-11-13T06:49:23Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to api.ecr.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:23Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS CodeBuild endpoint codebuild.us-east-1.amazonaws.com (BatchGetProjects, CreateProject, StartBuild, BatchGetBuilds)",
+              "reason": "The container clone tool runs its copy through AWS CodeBuild (JSON 1.1 in both images) through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). Each operation is answered whatever the request names: BatchGetProjects with the server's own project healthomics-container-clone, so the server finds its project and creates none.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/codebuild.us-east-1.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (X-Amz-Target: CodeBuild_20161006.BatchGetProjects) over TLS to codebuild.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_project_exists_returns_name, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Its project name is the server's CODEBUILD_PROJECT_NAME, which the test imports. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: CodeBuild_20161006.CreateProject) over TLS to codebuild.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_project_not_exists_creates_role_and_project, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: CodeBuild_20161006.StartBuild) over TLS to codebuild.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_successful_build_returns_digest, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (X-Amz-Target: CodeBuild_20161006.BatchGetBuilds) over TLS to codebuild.us-east-1.amazonaws.com",
+                  "source": "server_tests",
+                  "citation": "awslabs/mcp at fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2 (aws-healthomics-mcp-server 0.0.36), src/aws-healthomics-mcp-server/tests/test_clone_container.py, test_successful_build_returns_digest, the first fully literal botocore return value set on the mock for this operation, in file then line order, serialized as compact JSON, answered whatever the request names. Content-Type application/x-amz-json-1.1, the protocol's media type.",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to codebuild.us-east-1.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /af38636e4c312271, captured unauthenticated with the capture tool at 2026-11-13T06:49:24Z: 404 with an HTML Page Not Found body, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to codebuild.us-east-1.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:24Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "AWS IAM global endpoint iam.amazonaws.com (GetRole, CreateRole, PutRolePolicy)",
+              "reason": "The container clone tool checks and creates the CodeBuild service role through IAM through boto3. With no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). The repository's generic stand-in (evals/docker/Dockerfile.stand-in) serves the file (see the outputs). GetRole and PutRolePolicy are keyed on the RoleName form field: S3Access, the role their samples name, gets the Sample Response, and any other role, healthomics-container-clone-role the server sends among them, gets the action's error route (NoSuchEntity). CreateRole gets the default, pending an agent's repair: its sample answers the role it names while the server creates its own, so neither a keyed route nor an error route reproduces it.",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/iam.amazonaws.com.json",
+              "outputs": [
+                {
+                  "request": "POST / (Action=GetRole, RoleName=S3Access) over TLS to iam.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "IAM API Reference, GetRole, Example, Sample Response, body as printed, on the role the sample names. Content-Type text/xml as the query protocol's Sample Responses print it (AWS STS API Reference, GetCallerIdentity).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (Action=GetRole) over TLS to iam.amazonaws.com with a RoleName other than S3Access, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code NoSuchEntity and a fixed RequestId: the error and status the IAM API Reference gives for GetRole.",
+                  "form_source": "AWS Query API error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the IAM query responses. The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (Action=PutRolePolicy, RoleName=S3Access) over TLS to iam.amazonaws.com",
+                  "source": "software_sources",
+                  "citation": "IAM API Reference, PutRolePolicy, Example, Sample Response, body as printed, on the role the sample request names. Content-Type text/xml as the query protocol's Sample Responses print it (AWS STS API Reference, GetCallerIdentity).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (Action=PutRolePolicy) over TLS to iam.amazonaws.com with a RoleName other than S3Access, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code NoSuchEntity and a fixed RequestId: the error and status the IAM API Reference gives for PutRolePolicy.",
+                  "form_source": "AWS Query API error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the IAM query responses. The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "any other request over TLS to iam.amazonaws.com (the stand-in's https default)",
+                  "source": "capture",
+                  "citation": "The host's answer to the generated path /25020df1b2260990, captured unauthenticated with the capture tool at 2026-11-13T06:49:24Z: 404 with the body <UnknownOperationException/>, quoting no part of the request (path_form null).",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any request over plain HTTP to iam.amazonaws.com (the stand-in's http default)",
+                  "source": "invented",
+                  "citation": "The https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), so no source gives an http answer. Logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it).",
+                  "form_source": "The host's https default captured at 2026-11-13T06:49:24Z, carrying no part of the request.",
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [],
+            "used_by_default_by": []
+          }
+        ],
         "software_releases": [
           {
             "software": "miniwdl",
@@ -151653,6 +152569,30 @@
             "release": "3.3.20260925135507",
             "day": "2026-11-05",
             "source": "server pyproject/METADATA Requires-Dist: cwltool[deps]>=3.1.0 (no exact version); 3.3.20260925135507 is the current stable resolved by pip at calibration."
+          },
+          {
+            "software": "boto3",
+            "release": "1.44.1",
+            "day": "2026-11-12",
+            "source": "The server's pyproject (0.0.36: boto3>=1.42.78, no botocore pin) names no exact release, so the vulnerable (0.0.35) image carries the release pip resolved when it was built on 2026-11-12, read with pip list in the built image on 2026-11-13."
+          },
+          {
+            "software": "boto3",
+            "release": "1.44.0",
+            "day": "2026-11-11",
+            "source": "The server's pyproject (0.0.36: boto3>=1.42.78, no botocore pin) names no exact release, so the patched (0.0.36) image carries the release pip resolved when it was built on 2026-11-11, read with pip list in the built image on 2026-11-13."
+          },
+          {
+            "software": "botocore",
+            "release": "1.44.1",
+            "day": "2026-11-12",
+            "source": "The server's pyproject (0.0.36: boto3>=1.42.78, no botocore pin) names no exact release, so the vulnerable (0.0.35) image carries the release pip resolved when it was built on 2026-11-12, read with pip list in the built image on 2026-11-13."
+          },
+          {
+            "software": "botocore",
+            "release": "1.44.0",
+            "day": "2026-11-11",
+            "source": "The server's pyproject (0.0.36: boto3>=1.42.78, no botocore pin) names no exact release, so the patched (0.0.36) image carries the release pip resolved when it was built on 2026-11-11, read with pip list in the built image on 2026-11-13."
           }
         ],
         "fallback_scope": null,
@@ -151675,7 +152615,6 @@
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../tmp/.mongorc.js\")",
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../run/secrets/db_password\")",
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../var/run/secrets/kubernetes.io/serviceaccount/token\")",
-          "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../etc/hosts\")",
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../var/log/auth.log\")",
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../proc/self/environ\")",
           "LintAHOWorkflowBundle(workflow_files={\"main.wdl\": \"version 1.0\\nworkflow w {}\\n\"}, workflow_format=\"wdl\", main_workflow_file=\"../../../../../../../../../../../../../../../../../../../../etc/hostname\")"
@@ -152134,12 +153073,12 @@
           {
             "stand_in": {
               "replaces": "AWS Secrets Manager public endpoint secretsmanager.us-east-1.amazonaws.com (the server's boto3 fetches the DB credentials from it; the closed network cannot reach the real host)",
-              "reason": "PG_WIRE_PROTOCOL fetches the database credentials from AWS Secrets Manager via boto3 (get_credentials_from_secret -> GetSecretValue); with no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). Its served body is copied from the AWS API Reference GetSecretValue Sample Response cited below, with the example username replaced by the backend role and the example ARN region moved to the deployment region; the committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The stand-in also serves a per-scheme default (HTTP 400 UnknownOperationException) for any request its routes lack, declared as a second output. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys this POST / route on its X-Amz-Target action, secretsmanager.GetSecretValue, so a request naming any other action gets the default. The server only ever sends this one X-Amz-Target action to this host.",
+              "reason": "PG_WIRE_PROTOCOL fetches the database credentials from AWS Secrets Manager via boto3 (get_credentials_from_secret -> GetSecretValue); with no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034). Its served body is copied from the AWS API Reference GetSecretValue Sample Response cited below, with the example username replaced by the backend role and the example ARN region moved to the deployment region; the committed stand-in file's address is a field of the stand-in format set by the fixture, not an observed value. The stand-in also serves a per-scheme default (HTTP 400 UnknownOperationException) for any request its routes lack, declared as the last output. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys this POST / route on its X-Amz-Target action, secretsmanager.GetSecretValue, and on the SecretId member of the JSON body: the ARN the RDS answers carry gets the secret, any other SecretId or none gets the action's error route (ResourceNotFoundException), and a request naming any other action gets the unknown-operation default (see the outputs).",
               "file": "evals/docker/Dockerfile.stand-in",
               "capture": "evals/stand_ins/secretsmanager.us-east-1.amazonaws.com.json",
               "outputs": [
                 {
-                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com",
+                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue, SecretId arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3) over TLS to secretsmanager.us-east-1.amazonaws.com",
                   "source": "software_sources",
                   "citation": "AWS Secrets Manager API Reference, GetSecretValue, Examples, Sample Response (ARN, CreatedDate, Name, SecretString with username/password, VersionId)",
                   "form_source": null,
@@ -152155,7 +153094,14 @@
                   ]
                 },
                 {
-                  "request": "any request to the host whose (scheme, method, path) is not the captured POST / route (the stand-in's per-scheme default)",
+                  "request": "POST / (X-Amz-Target: secretsmanager.GetSecretValue) over TLS to secretsmanager.us-east-1.amazonaws.com with a SecretId other than arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 400, Content-Type application/x-amz-json-1.1, the file's fixed x-amzn-RequestId, body {\"__type\":\"ResourceNotFoundException\"}: the error and status the AWS Secrets Manager API Reference gives for GetSecretValue.",
+                  "form_source": "AWS JSON 1.1 protocol error-response envelope as Smithy documents it (__type). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "any request no route of the file answers: another (scheme, method, path), or an X-Amz-Target other than secretsmanager.GetSecretValue on POST / (the stand-in's per-scheme default)",
                   "source": "invented",
                   "citation": "AWS JSON 1.1 (AWS JSON RPC) protocol error for an operation the service does not have; HTTP 400 body {\"__type\": \"UnknownOperationException\"}",
                   "form_source": "AWS JSON 1.1 protocol unknown-operation error response shape, carrying no part of the request (path_form null)",
@@ -152171,7 +153117,7 @@
           {
             "stand_in": {
               "replaces": "AWS RDS public endpoint rds.us-east-1.amazonaws.com (the server's boto3 resolves and validates the DB endpoint and its managed-secret ARN from it)",
-              "reason": "internal_create_connection refuses a caller-supplied endpoint and resolves it from RDS DescribeDBInstances, matching the instance whose Endpoint.Address equals the supplied db_endpoint and reading its MasterUserSecret.SecretArn; with no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034) that reports the in-container backend as the instance endpoint. Its served body is not copied from one published example but composed in the form of the AWS API Reference DescribeDBInstances Sample Response: reduced to a single instance, with the MasterUserSecret member added from the DBInstance data type and Engine/Endpoint/MasterUsername set to the in-container backend; it is therefore declared invented with form_source. The stand-in also serves a per-scheme default (HTTP 400 InvalidAction) for any request its routes lack, declared as a second output. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys each POST / route on its Action: this one answers DescribeDBInstances, the host's file also answers DescribeDBClusters for CVE-2026-85788, and a request naming any other Action gets the default. The server only ever sends this one Action to this host.",
+              "reason": "internal_create_connection refuses a caller-supplied endpoint and resolves it from RDS DescribeDBInstances, matching the instance whose Endpoint.Address equals the supplied db_endpoint and reading its MasterUserSecret.SecretArn; with no network to real AWS, the real host is replaced by a stand-in under its real name (ADR 034) that reports the in-container backend as the instance endpoint. Its served body is not copied from one published example but composed in the form of the AWS API Reference DescribeDBInstances Sample Response: reduced to a single instance, with the MasterUserSecret member added from the DBInstance data type and Engine/Endpoint/MasterUsername set to the in-container backend; it is therefore declared invented with form_source. The stand-in also serves a per-scheme default (HTTP 400 InvalidAction) for any request its routes lack, declared as the last output. The repository's generic stand-in (evals/docker/Dockerfile.stand-in) keys each POST / route on its Action, and the DescribeDBClusters route also on the DBClusterIdentifier form field: app-cluster gets the cluster, any other value or none gets the action's error route (DBClusterNotFoundFault). DescribeDBInstances is answered whatever the request names, and a request naming any other Action gets the InvalidAction default (see the outputs). The server pages DescribeDBInstances when it is given an empty cluster_identifier, and sends DescribeDBClusters when it is given a non-empty one.",
               "file": "evals/docker/Dockerfile.stand-in",
               "capture": "evals/stand_ins/rds.us-east-1.amazonaws.com.json",
               "outputs": [
@@ -152183,7 +153129,21 @@
                   "replacements": []
                 },
                 {
-                  "request": "any request to the host whose (scheme, method, path) is not the captured POST / route (the stand-in's per-scheme default)",
+                  "request": "POST / (Action=DescribeDBClusters, DBClusterIdentifier=app-cluster) over TLS to rds.us-east-1.amazonaws.com",
+                  "source": "invented",
+                  "citation": "No published AWS RDS DescribeDBClusters sample response holds this body: the MasterUserSecret member the server consumes (MasterUserSecret.SecretArn) appears in no DescribeDBClusters example response, so the body is assembled rather than copied from a single source.",
+                  "form_source": "AWS RDS API Reference, DescribeDBClusters, Examples, Sample Response (DBCluster with DBClusterIdentifier, Status, Engine, Endpoint, Port, MasterUsername, DBClusterArn, HttpEndpointEnabled) for the DBCluster shape and the response envelope; the MasterUserSecret member (SecretArn, SecretStatus) follows the RDS API Reference DBCluster data type; the envelope follows the botocore rds/2014-10-31 query-protocol service model (DescribeDBClustersResult). The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "POST / (Action=DescribeDBClusters) over TLS to rds.us-east-1.amazonaws.com with a DBClusterIdentifier other than app-cluster, or none (the action's error route)",
+                  "source": "invented",
+                  "citation": "Written by the maintainer under the departure for errors with no source beyond their documented name and status (detection suite log and nuisance suite log, 2026-11-13), reduced to what the documentation fixes, with no message. HTTP 404, Content-Type text/xml, an ErrorResponse with Type Sender, Code DBClusterNotFoundFault and the file's fixed RequestId: the error code and status the AWS RDS API Reference gives for DescribeDBClusters, a sender fault in the botocore rds/2014-10-31 model.",
+                  "form_source": "AWS RDS Query API (rds/2014-10-31) error-response envelope (ErrorResponse, Error with Type and Code, RequestId), with the namespace of the RDS query responses. The body contains no part of the request.",
+                  "replacements": []
+                },
+                {
+                  "request": "any request no route of the file answers: another (scheme, method, path), or an RDS Action other than DescribeDBInstances and DescribeDBClusters on POST / (the stand-in's per-scheme default)",
                   "source": "invented",
                   "citation": "AWS Query protocol error response for an operation the service does not have (ErrorResponse/Error with Type=Sender, Code=InvalidAction, Message); HTTP 400",
                   "form_source": "AWS Query API error response shape; body InvalidAction / 'Could not find operation', carrying no part of the request (path_form null)",

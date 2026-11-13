@@ -209,6 +209,8 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **seed**: what a fixture puts in place before the first call: files, records, configuration.
 - **fixture authority**: the certificate authority the stand-ins' certificates chain to, with one leaf per stand-in host. Code: `evals/stand_ins/tls/`.
 - **request target**: the target of the HTTP request a stand-in route answers. Code: `request_target` in a stand-in file.
+- **keyed route**: a stand-in route chosen on the value of one identifier at a fixed position of the request (a form field, a top-level member of a JSON body, or a GraphQL variable), beside its action's error route for every other value. Code: `identifier` in a stand-in file.
+- **error route**: the route of a keyed action with no identifier, which answers every value no keyed route names and a request with none. Every keyed action has one.
 - **public names**: the public hosts a planting host declares, each served by a stand-in under its real name.
 
 ## Words with several senses

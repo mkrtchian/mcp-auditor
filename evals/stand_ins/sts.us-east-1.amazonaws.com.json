@@ -1,0 +1,79 @@
+{
+  "host": "sts.us-east-1.amazonaws.com",
+  "address": "13.217.78.216",
+  "source": "software_sources",
+  "command": "hand-written from the AWS STS API Reference, GetCallerIdentity, Example 1 Sample Response (body, Content-Type and x-amzn-RequestId as printed), answered for Action GetCallerIdentity whatever the request carries, since the operation takes no parameter. the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://sts.us-east-1.amazonaws.com/` at 2026-11-13T06:49:21Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "01234567-89ab-cdef-0123-456789abcdef"
+        ],
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<GetCallerIdentityResponse xmlns=\"https://sts.amazonaws.com/doc/2011-06-15/\">\n  <GetCallerIdentityResult>\n  <Arn>arn:aws:iam::123456789012:user/Alice</Arn>\n  <UserId>AIDACKCEVSQ6C2EXAMPLE</UserId>\n  <Account>123456789012</Account>\n  </GetCallerIdentityResult>\n  <ResponseMetadata>\n    <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>\n  </ResponseMetadata>\n</GetCallerIdentityResponse>",
+      "action": "GetCallerIdentity"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/63ba86ba4e40098e",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "393b86e8-6cce-4e5f-b920-d9d02feb1bf2"
+        ],
+        [
+          "X-Amz-Sts-Extended-Request-Id",
+          "MTp1cy1lYXN0LTE6UzoxNzk0NTUyNTYyMjQ0OlI6cWk5Y3pUUFY="
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:22 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/63ba86ba4e40098e",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "393b86e8-6cce-4e5f-b920-d9d02feb1bf2"
+        ],
+        [
+          "X-Amz-Sts-Extended-Request-Id",
+          "MTp1cy1lYXN0LTE6UzoxNzk0NTUyNTYyMjQ0OlI6cWk5Y3pUUFY="
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:22 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

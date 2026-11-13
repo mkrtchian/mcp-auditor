@@ -1,0 +1,94 @@
+{
+  "host": "api.pricing.us-east-1.amazonaws.com",
+  "address": "32.192.160.41",
+  "source": "software_sources",
+  "command": "hand-written from the AWS Price List API Reference, GetProducts, Sample Response, body as printed with its NextToken member dropped (a single page is a valid body), answered for X-Amz-Target AWSPriceListService.GetProducts keyed on the ServiceCode member equal to AmazonEC2, the service the sample names; any other ServiceCode, or none, gets status 400 and body {\"__type\":\"NotFoundException\"}. each keyed action's error route, for any other value or none, is reduced to the error code the API reference names for an unknown resource, in the protocol's documented error envelope, with the status the API reference gives and no message, written by the maintainer under the departure for errors with no source beyond their documented name and status. the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://api.pricing.us-east-1.amazonaws.com/` at 2026-11-13T06:49:21Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\n    \"FormatVersion\": \"aws_v1\",\n    \"PriceList\": [\n        \"{\\\"product\\\":{\\\"productFamily\\\":\\\"Storage\\\",\\\"attributes\\\":{\\\"storageMedia\\\":\\\"SSD-backed\\\",\\\"maxThroughputvolume\\\":\\\"320 MB/sec\\\",\\\"volumeType\\\":\\\"Provisioned IOPS\\\",\\\"maxIopsvolume\\\":\\\"20000\\\",\\\"servicecode\\\":\\\"AmazonEC2\\\",\\\"usagetype\\\":\\\"CAN1-EBS:VolumeUsage.piops\\\",\\\"locationType\\\":\\\"AWS Region\\\",\\\"location\\\":\\\"Canada (Central)\\\",\\\"servicename\\\":\\\"Amazon Elastic Compute Cloud\\\",\\\"maxVolumeSize\\\":\\\"16 TiB\\\",\\\"operation\\\":\\\"\\\"},\\\"sku\\\":\\\"WQGC34PB2AWS8R4U\\\"},\\\"serviceCode\\\":\\\"AmazonEC2\\\",\\\"terms\\\":{\\\"OnDemand\\\":{\\\"WQGC34PB2AWS8R4U.JRTCKXETXF\\\":{\\\"priceDimensions\\\":{\\\"WQGC34PB2AWS8R4U.JRTCKXETXF.6YS6EN2CT7\\\":{\\\"unit\\\":\\\"GB-Mo\\\",\\\"endRange\\\":\\\"Inf\\\",\\\"description\\\":\\\"$0.138 per GB-month of Provisioned IOPS SSD (io1)  provisioned storage - Canada (Central)\\\",\\\"appliesTo\\\":[],\\\"rateCode\\\":\\\"WQGC34PB2AWS8R4U.JRTCKXETXF.6YS6EN2CT7\\\",\\\"beginRange\\\":\\\"0\\\",\\\"pricePerUnit\\\":{\\\"USD\\\":\\\"0.1380000000\\\"}}},\\\"sku\\\":\\\"WQGC34PB2AWS8R4U\\\",\\\"effectiveDate\\\":\\\"2017-08-01T00:00:00Z\\\",\\\"offerTermCode\\\":\\\"JRTCKXETXF\\\",\\\"termAttributes\\\":{}}}},\\\"version\\\":\\\"20170901182201\\\",\\\"publicationDate\\\":\\\"2017-09-01T18:22:01Z\\\"}\"\n    ]\n}",
+      "action": "AWSPriceListService.GetProducts",
+      "identifier": {
+        "location": "json_member",
+        "name": "ServiceCode",
+        "value": "AmazonEC2"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"__type\":\"NotFoundException\"}",
+      "action": "AWSPriceListService.GetProducts"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/4dd5d3f40d253c7d",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:21 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "21b41b25-9e3f-45ff-bddd-1d88f982fdaa"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/4dd5d3f40d253c7d",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:21 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "21b41b25-9e3f-45ff-bddd-1d88f982fdaa"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

@@ -1,0 +1,353 @@
+{
+  "host": "control-storage-omics.us-east-1.amazonaws.com",
+  "address": "98.95.56.78",
+  "source": "software_sources",
+  "command": "hand-written from the AWS CLI v1 examples of awscli/examples/omics/ (awscli 1.46.3), each Output body as printed, compacted, its us-west-2 ARNs set to us-east-1 (no example output carries a pagination token): list-sequence-stores, get-sequence-store, create-sequence-store, list-read-sets, get-read-set-metadata, start-read-set-import-job, get-read-set-import-job, list-read-set-import-jobs, start-read-set-export-job, get-read-set-export-job, list-read-set-export-jobs, start-read-set-activation-job, list-reference-stores (also served for maxResults=1, the request the server sends to resolve a reference store), get-reference-store, list-references, get-reference-metadata, start-reference-import-job, get-reference-import-job, list-reference-import-jobs. each list route on the server's request target with maxResults=100 (HEALTHOMICS_DEFAULT_MAX_RESULTS), each get route on the example's id. status and Content-Type from the AWS HealthOmics API Reference response syntax and the responseCode of the botocore omics model (botocore 1.44.0 and 1.44.1 of the two images). the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://control-storage-omics.us-east-1.amazonaws.com/` at 2026-11-13T01:05:48Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 01:02 UTC and, spaced by minutes, at 06:31, 06:35 and 06:38 UTC), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it, HEALTHOMICS_ENDPOINT_URL unset)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestores?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"sequenceStores\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:sequenceStore/1234567890\",\"creationTime\":\"2022-11-23T01:24:33.629Z\",\"id\":\"1234567890\",\"name\":\"my-seq-store\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/sequencestore/1234567890",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:sequenceStore/1234567890\",\"creationTime\":\"2022-11-23T19:55:48.376Z\",\"id\":\"1234567890\",\"name\":\"my-seq-store\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:sequenceStore/1234567890\",\"creationTime\":\"2022-11-23T01:24:33.629Z\",\"id\":\"1234567890\",\"name\":\"my-seq-store\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/readsets?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"readSets\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:sequenceStore/1234567890/readSet/1234567890\",\"creationTime\":\"2022-11-23T21:55:00.515Z\",\"fileType\":\"FASTQ\",\"id\":\"1234567890\",\"name\":\"HG00146\",\"referenceArn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"sampleId\":\"fastq-sample\",\"sequenceStoreId\":\"1234567890\",\"status\":\"ACTIVE\",\"subjectId\":\"fastq-subject\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/sequencestore/1234567890/readset/1234567890/metadata",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:sequenceStore/1234567890/readSet/1234567890\",\"creationTime\":\"2022-11-23T21:55:00.515Z\",\"fileType\":\"FASTQ\",\"files\":{\"source1\":{\"contentLength\":310054739,\"partSize\":104857600,\"totalParts\":3},\"source2\":{\"contentLength\":307846621,\"partSize\":104857600,\"totalParts\":3}},\"id\":\"1234567890\",\"name\":\"HG00146\",\"referenceArn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"sampleId\":\"fastq-sample\",\"sequenceInformation\":{\"alignment\":\"UNALIGNED\",\"totalBaseCount\":677717384,\"totalReadCount\":8917334},\"sequenceStoreId\":\"1234567890\",\"status\":\"ACTIVE\",\"subjectId\":\"fastq-subject\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/importjob",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-11-23T01:36:38.158Z\",\"id\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"sequenceStoreId\":\"1234567890\",\"status\":\"SUBMITTED\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/sequencestore/1234567890/importjob/1234567890",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-11-23T01:36:38.158Z\",\"id\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"sequenceStoreId\":\"1234567890\",\"sources\":[{\"name\":\"HG00100\",\"referenceArn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"sampleId\":\"bam-sample\",\"sourceFileType\":\"BAM\",\"sourceFiles\":{\"source1\":\"s3://omics-artifacts-01d6xmpl4e72dd32/HG00100.chrom20.ILLUMINA.bwa.GBR.low_coverage.20101123.bam\",\"source2\":\"\"},\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The source job is currently in progress.\",\"subjectId\":\"bam-subject\",\"tags\":{\"aws:omics:sampleId\":\"bam-sample\",\"aws:omics:subjectId\":\"bam-subject\"}},{\"name\":\"HG00146\",\"referenceArn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"sampleId\":\"fastq-sample\",\"sourceFileType\":\"FASTQ\",\"sourceFiles\":{\"source1\":\"s3://omics-artifacts-01d6xmpl4e72dd32/SRR233106_1.filt.fastq.gz\",\"source2\":\"s3://omics-artifacts-01d6xmpl4e72dd32/SRR233106_2.filt.fastq.gz\"},\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The source job is currently in progress.\",\"subjectId\":\"fastq-subject\",\"tags\":{\"aws:omics:sampleId\":\"fastq-sample\",\"aws:omics:subjectId\":\"fastq-subject\"}},{\"name\":\"HG00096\",\"referenceArn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"sampleId\":\"cram-sample\",\"sourceFileType\":\"CRAM\",\"sourceFiles\":{\"source1\":\"s3://omics-artifacts-01d6xmpl4e72dd32/HG00096.alt_bwamem_GRCh38DH.20150718.GBR.low_coverage.cram\",\"source2\":\"\"},\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The source job is currently in progress.\",\"subjectId\":\"cram-subject\",\"tags\":{\"aws:omics:sampleId\":\"cram-sample\",\"aws:omics:subjectId\":\"cram-subject\"}}],\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The job is currently in progress.\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/importjobs?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"importJobs\":[{\"completionTime\":\"2022-11-29T18:17:49.244Z\",\"creationTime\":\"2022-11-29T17:32:47.700Z\",\"id\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"sequenceStoreId\":\"1234567890\",\"status\":\"COMPLETED\"},{\"completionTime\":\"2022-11-23T22:01:34.090Z\",\"creationTime\":\"2022-11-23T21:52:43.289Z\",\"id\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"sequenceStoreId\":\"1234567890\",\"status\":\"COMPLETED_WITH_FAILURES\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/exportjob",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-12-06T22:37:18.612Z\",\"destination\":\"s3://omics-artifacts-01d6xmpl4e72dd32/read-set-export/\",\"id\":\"1234567890\",\"sequenceStoreId\":\"1234567890\",\"status\":\"SUBMITTED\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/sequencestore/1234567890/exportjob/1234567890",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"completionTime\":\"2022-12-06T22:39:14.491Z\",\"creationTime\":\"2022-12-06T22:37:18.612Z\",\"destination\":\"s3://omics-artifacts-01d6xmpl4e72dd32/read-set-export/\",\"id\":\"1234567890\",\"sequenceStoreId\":\"1234567890\",\"status\":\"COMPLETED\",\"statusMessage\":\"The job is submitted and will start soon.\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/exportjobs?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"exportJobs\":[{\"completionTime\":\"2022-12-06T22:39:14.491Z\",\"creationTime\":\"2022-12-06T22:37:18.612Z\",\"destination\":\"s3://omics-artifacts-01d6xmpl4e72dd32/read-set-export/\",\"id\":\"1234567890\",\"sequenceStoreId\":\"1234567890\",\"status\":\"COMPLETED\"},{\"creationTime\":\"2022-12-06T22:38:04.871Z\",\"destination\":\"s3://omics-artifacts-01d6xmpl4e72dd32/read-set-export/\",\"id\":\"1234567890\",\"sequenceStoreId\":\"1234567890\",\"status\":\"IN_PROGRESS\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/sequencestore/1234567890/activationjob",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-12-06T22:35:10.100Z\",\"id\":\"1234567890\",\"sequenceStoreId\":\"1234567890\",\"status\":\"SUBMITTED\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/referencestores?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"referenceStores\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890\",\"creationTime\":\"2022-11-22T22:13:25.947Z\",\"id\":\"1234567890\",\"name\":\"my-ref-store\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/referencestores?maxResults=1",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"referenceStores\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890\",\"creationTime\":\"2022-11-22T22:13:25.947Z\",\"id\":\"1234567890\",\"name\":\"my-ref-store\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/referencestore/1234567890",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890\",\"creationTime\":\"2022-09-23T23:27:20.364Z\",\"id\":\"1234567890\",\"name\":\"my-rstore-0\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/referencestore/1234567890/references?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"references\":[{\"arn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"creationTime\":\"2022-11-22T22:27:09.033Z\",\"id\":\"1234567890\",\"md5\":\"7ff134953dcca8c8997453bbb80b6b5e\",\"name\":\"assembly-38\",\"referenceStoreId\":\"1234567890\",\"status\":\"ACTIVE\",\"updateTime\":\"2022-11-22T22:27:09.033Z\"}]}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/referencestore/1234567890/reference/1234567890/metadata",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"arn\":\"arn:aws:omics:us-east-1:123456789012:referenceStore/1234567890/reference/1234567890\",\"creationTime\":\"2022-11-22T22:27:09.033Z\",\"files\":{\"index\":{\"contentLength\":160928,\"partSize\":104857600,\"totalParts\":1},\"source\":{\"contentLength\":3249912778,\"partSize\":104857600,\"totalParts\":31}},\"id\":\"1234567890\",\"md5\":\"7ff134953dcca8c8997453bbb80b6b5e\",\"name\":\"assembly-38\",\"referenceStoreId\":\"1234567890\",\"status\":\"ACTIVE\",\"updateTime\":\"2022-11-22T22:27:09.033Z\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/referencestore/1234567890/importjob",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-11-22T22:25:41.124Z\",\"id\":\"1234567890\",\"referenceStoreId\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"status\":\"SUBMITTED\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/referencestore/1234567890/importjob/1234567890",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"creationTime\":\"2022-11-22T22:25:41.124Z\",\"id\":\"1234567890\",\"referenceStoreId\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"sources\":[{\"name\":\"assembly-38\",\"sourceFile\":\"s3://omics-artifacts-01d6xmpl4e72dd32/Homo_sapiens_assembly38.fasta\",\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The source job is currently in progress.\"}],\"status\":\"IN_PROGRESS\",\"statusMessage\":\"The job is currently in progress.\"}"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/referencestore/1234567890/importjobs?maxResults=100",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/json"
+        ]
+      ],
+      "body": "{\"importJobs\":[{\"completionTime\":\"2022-11-23T19:54:58.204Z\",\"creationTime\":\"2022-11-23T19:53:20.729Z\",\"id\":\"1234567890\",\"referenceStoreId\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"status\":\"COMPLETED\"},{\"creationTime\":\"2022-11-23T20:34:03.250Z\",\"id\":\"1234567890\",\"referenceStoreId\":\"1234567890\",\"roleArn\":\"arn:aws:iam::123456789012:role/omics-service-role-serviceRole-W8O1XMPL7QZ\",\"status\":\"IN_PROGRESS\"}]}"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/ed5062792a182f7b",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "34131dba-a821-404c-b7f9-ab63b1708e89"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRREEVsoAMEryQ="
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626c-f261bdb3310c4c17eade72a4"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "73"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:48 GMT"
+        ]
+      ],
+      "body": "{\"Message\":\"Unable to determine service/operation name to be authorized\"}",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/ed5062792a182f7b",
+      "status": 403,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "34131dba-a821-404c-b7f9-ab63b1708e89"
+        ],
+        [
+          "x-amzn-ErrorType",
+          "AccessDeniedException"
+        ],
+        [
+          "x-amz-apigw-id",
+          "GwRREEVsoAMEryQ="
+        ],
+        [
+          "X-Amzn-Trace-Id",
+          "Root=1-6af6626c-f261bdb3310c4c17eade72a4"
+        ],
+        [
+          "Content-Type",
+          "application/json"
+        ],
+        [
+          "Content-Length",
+          "73"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 01:05:48 GMT"
+        ]
+      ],
+      "body": "{\"Message\":\"Unable to determine service/operation name to be authorized\"}",
+      "path_form": null
+    }
+  ]
+}

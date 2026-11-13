@@ -190,7 +190,11 @@ QUOTING_CASES = {
 }
 
 
-def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -> Path:
+def a_stand_ins_directory(
+    directory: Path,
+    quoting: QuotingCase | None = None,
+    more_routes: Sequence[dict[str, object]] = (),
+) -> Path:
     secure_default = _not_found() if quoting is None else _quoting_not_found(quoting)
     capture = {
         "host": STAND_IN_HOST,
@@ -208,6 +212,7 @@ def a_stand_ins_directory(directory: Path, quoting: QuotingCase | None = None) -
             _form_route(),
             _post_route(GRAPHQL_TARGET, ISSUES_OPERATION, ISSUES_BODY, ISSUES_HEADERS),
             _post_route(GRAPHQL_TARGET, None, GRAPHQL_FALLBACK_BODY, GRAPHQL_FALLBACK_HEADERS),
+            *more_routes,
         ],
         "defaults": [_redirect_to_https(), secure_default],
     }

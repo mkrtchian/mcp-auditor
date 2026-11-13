@@ -1,0 +1,119 @@
+{
+  "host": "iam.amazonaws.com",
+  "address": "44.216.198.20",
+  "source": "software_sources",
+  "command": "hand-written from the IAM API Reference Sample Responses, bodies as printed, Content-Type text/xml as the query protocol's samples print it (STS GetCallerIdentity): GetRole keyed on the RoleName form field equal to S3Access, the role the sample names, and PutRolePolicy keyed on the same role, the one its sample request names; any other RoleName, or none, gets status 404 and an ErrorResponse with Type Sender, Code NoSuchEntity and a fixed RequestId. each keyed action's error route, for any other value or none, is reduced to the error code the API reference names for an unknown resource, in the protocol's documented error envelope, with the status the API reference gives and no message, written by the maintainer under the departure for errors with no source beyond their documented name and status. every other operation the server sends gets the host's default, pending an agent's repair: CreateRole, whose sample answers the role it names while the server creates its own, so neither a keyed route nor an error route reproduces it. the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://iam.amazonaws.com/` at 2026-11-13T06:49:24Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<GetRoleResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\">\n<GetRoleResult>\n  <Role>\n    <Path>/application_abc/component_xyz/</Path>\n    <Arn>arn:aws:iam::123456789012:role/application_abc/component_xyz/S3Access</Arn>\n    <RoleName>S3Access</RoleName>\n    <AssumeRolePolicyDocument>\n      {\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\n      \"Principal\":{\"Service\":[\"ec2.amazonaws.com\"]},\"Action\":[\"sts:AssumeRole\"]}]}\n    </AssumeRolePolicyDocument>\n    <CreateDate>2012-05-08T23:34:01Z</CreateDate>\n    <RoleId>AROADBQP57FF2AEXAMPLE</RoleId>\n    <RoleLastUsed>\n      <LastUsedDate>2019-11-20T17:09:20Z</LastUsedDate>\n      <Region>us-east-1</Region>\n    </RoleLastUsed>\n  </Role>\n</GetRoleResult>\n<ResponseMetadata>\n  <RequestId>df37e965-9967-11e1-a4c3-270EXAMPLE04</RequestId>\n</ResponseMetadata>\n</GetRoleResponse>",
+      "action": "GetRole",
+      "identifier": {
+        "location": "form",
+        "name": "RoleName",
+        "value": "S3Access"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<ErrorResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\"><Error><Type>Sender</Type><Code>NoSuchEntity</Code></Error><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ErrorResponse>",
+      "action": "GetRole"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<PutRolePolicyResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\">\n <ResponseMetadata>\n    <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>\n </ResponseMetadata>\n</PutRolePolicyResponse>",
+      "action": "PutRolePolicy",
+      "identifier": {
+        "location": "form",
+        "name": "RoleName",
+        "value": "S3Access"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "text/xml"
+        ]
+      ],
+      "body": "<ErrorResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\"><Error><Type>Sender</Type><Code>NoSuchEntity</Code></Error><RequestId>00000000-0000-0000-0000-000000000000</RequestId></ErrorResponse>",
+      "action": "PutRolePolicy"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/25020df1b2260990",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "5b1e95e8-d85d-4bd2-a80b-e1f8043c488c"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:25 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/25020df1b2260990",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "5b1e95e8-d85d-4bd2-a80b-e1f8043c488c"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:25 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

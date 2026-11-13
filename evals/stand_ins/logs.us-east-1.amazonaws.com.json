@@ -1,0 +1,86 @@
+{
+  "host": "logs.us-east-1.amazonaws.com",
+  "address": "3.236.94.188",
+  "source": "software_sources",
+  "command": "hand-written from the Amazon CloudWatch Logs API Reference, GetLogEvents, Example 1 Sample Response, body as printed, answered for X-Amz-Target Logs_20140328.GetLogEvents keyed on the logStreamName member equal to my-log-stream, the stream the sample names; any other logStreamName, or none, gets status 400 and body {\"__type\":\"ResourceNotFoundException\"}. each keyed action's error route, for any other value or none, is reduced to the error code the API reference names for an unknown resource, in the protocol's documented error envelope, with the status the API reference gives and no message, written by the maintainer under the departure for errors with no source beyond their documented name and status. the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://logs.us-east-1.amazonaws.com/` at 2026-11-13T06:49:20Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\n  \"events\": [\n    {\n      \"ingestionTime\": 1396035394997,\n      \"timestamp\": 1396035378988,\n      \"message\": \"Example event 1\"\n    },\n    {\n      \"ingestionTime\": 1396035394997,\n      \"timestamp\": 1396035378988,\n      \"message\": \"Example event 2\"\n    },\n    {\n      \"ingestionTime\": 1396035394997,\n      \"timestamp\": 1396035378989,\n      \"message\": \"Example event 3\"\n    }\n  ],\n  \"nextBackwardToken\": \"b/31132629274945519779805322857203735586714454643391594505\",\n  \"nextForwardToken\": \"f/31132629323784151764587387538205132201699397759403884544\"\n}",
+      "action": "Logs_20140328.GetLogEvents",
+      "identifier": {
+        "location": "json_member",
+        "name": "logStreamName",
+        "value": "my-log-stream"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 400,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.1"
+        ]
+      ],
+      "body": "{\"__type\":\"ResourceNotFoundException\"}",
+      "action": "Logs_20140328.GetLogEvents"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/46395d2135140342",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "36bd712e-1a39-451b-b742-e0af6fdc5119"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:20 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/46395d2135140342",
+      "status": 404,
+      "headers": [
+        [
+          "x-amzn-RequestId",
+          "36bd712e-1a39-451b-b742-e0af6fdc5119"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:20 GMT"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

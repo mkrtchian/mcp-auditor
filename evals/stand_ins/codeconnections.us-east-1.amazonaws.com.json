@@ -1,0 +1,162 @@
+{
+  "host": "codeconnections.us-east-1.amazonaws.com",
+  "address": "52.91.126.101",
+  "source": "software_sources",
+  "command": "hand-written from the server's own tests at 0.0.36 (awslabs/mcp fe649e4dfb8e21b8fa8ba1dff2d273613b816fc2, src/aws-healthomics-mcp-server/tests), for each operation the first fully literal botocore return value set on a mock, in file then line order, serialized as compact JSON (a json.dumps of a literal policy kept as json.dumps writes it): ListConnections (test_codeconnections.py, test_list_codeconnections_success) and CreateConnection (test_create_codeconnection_success), answered whatever the request names, and GetConnection (test_get_codeconnection_success) keyed on the ConnectionArn member equal to the ARN those answers carry; any other ConnectionArn, or none, gets status 404 and body {\"__type\":\"ResourceNotFoundException\"}, Content-Type application/x-amz-json-1.0 (JSON 1.0, X-Amz-Target com.amazonaws.codeconnections.CodeConnections_20231201.*, read on the wire in both images). each keyed action's error route, for any other value or none, is reduced to the error code the API reference names for an unknown resource, in the protocol's documented error envelope, with the status the API reference gives and no message, written by the maintainer under the departure for errors with no source beyond their documented name and status. the https default captured unauthenticated with `uv run python -m evals.capture_stand_in --out OUT --keep-default http https://codeconnections.us-east-1.amazonaws.com/` at 2026-11-13T06:49:22Z, OUT a temporary file outside the repository seeded for --keep-default http. the http default is the https default carried over verbatim, since the host answers nothing on port 80 (connect timeouts on 2026-11-13 at 06:47, 06:51 and 06:54 UTC, spaced by minutes), recorded as invented in the form of the https default and logged as a limit, the maintainer's reading of 2026-11-13: the stand-in cannot reproduce a closed port, the schema needs a default per scheme, and botocore reaches the host only over TLS (no tool takes a URL on it)",
+  "request_headers": [],
+  "routes": [
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.0"
+        ]
+      ],
+      "body": "{\"Connections\":[{\"ConnectionArn\":\"arn:aws:codeconnections:us-east-1:123456789012:connection/abc123\",\"ConnectionName\":\"my-github-connection\",\"ConnectionStatus\":\"AVAILABLE\",\"ProviderType\":\"GitHub\"}]}",
+      "action": "com.amazonaws.codeconnections.CodeConnections_20231201.ListConnections"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.0"
+        ]
+      ],
+      "body": "{\"Connection\":{\"ConnectionArn\":\"arn:aws:codeconnections:us-east-1:123456789012:connection/abc123\",\"ConnectionName\":\"my-connection\",\"ConnectionStatus\":\"AVAILABLE\",\"ProviderType\":\"GitHub\",\"OwnerAccountId\":\"123456789012\"}}",
+      "action": "com.amazonaws.codeconnections.CodeConnections_20231201.GetConnection",
+      "identifier": {
+        "location": "json_member",
+        "name": "ConnectionArn",
+        "value": "arn:aws:codeconnections:us-east-1:123456789012:connection/abc123"
+      }
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 404,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.0"
+        ]
+      ],
+      "body": "{\"__type\":\"ResourceNotFoundException\"}",
+      "action": "com.amazonaws.codeconnections.CodeConnections_20231201.GetConnection"
+    },
+    {
+      "scheme": "https",
+      "method": "POST",
+      "request_target": "/",
+      "status": 200,
+      "headers": [
+        [
+          "Content-Type",
+          "application/x-amz-json-1.0"
+        ]
+      ],
+      "body": "{\"ConnectionArn\":\"arn:aws:codeconnections:us-east-1:123456789012:connection/abc123\"}",
+      "action": "com.amazonaws.codeconnections.CodeConnections_20231201.CreateConnection"
+    }
+  ],
+  "defaults": [
+    {
+      "scheme": "http",
+      "probed_request_target": "/02eab72f68b7697f",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:22 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "6fa24174-3896-467a-8efe-cfc0a10f2d20"
+        ],
+        [
+          "X-XSS-Protection",
+          "1; mode=block"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains"
+        ],
+        [
+          "X-Frame-Options",
+          "DENY"
+        ],
+        [
+          "Content-Security-Policy",
+          ""
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    },
+    {
+      "scheme": "https",
+      "probed_request_target": "/02eab72f68b7697f",
+      "status": 404,
+      "headers": [
+        [
+          "Date",
+          "Fri, 13 Nov 2026 06:49:22 GMT"
+        ],
+        [
+          "Content-Length",
+          "29"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "x-amzn-RequestId",
+          "6fa24174-3896-467a-8efe-cfc0a10f2d20"
+        ],
+        [
+          "X-XSS-Protection",
+          "1; mode=block"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains"
+        ],
+        [
+          "X-Frame-Options",
+          "DENY"
+        ],
+        [
+          "Content-Security-Policy",
+          ""
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ]
+      ],
+      "body": "<UnknownOperationException/>\n",
+      "path_form": null
+    }
+  ]
+}

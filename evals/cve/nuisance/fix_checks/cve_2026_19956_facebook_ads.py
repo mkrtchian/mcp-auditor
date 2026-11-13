@@ -14,17 +14,23 @@ for any request, echoing nothing of the request. graph.facebook.com stays on the
 which answers the benign call. Neither container is the server, and neither carries the flaw nor
 the fix.
 
-The server is Python and reads its token off its command line, so the module builds its own launch
-carrying `--fb-token` with the value its readme gives, and trusts the stand-ins' cert through the
-backend's network arguments.
+The sentinel serves a certificate of its own, generated when its image is built and naming the
+attacker host only, outside the fixture authority, so nothing a run builds or serves carries that
+name. The builder reads it from the built image, writes a bundle of the fixture authority and that
+certificate, and mounts it on this module's launch alone, where `REQUESTS_CA_BUNDLE` points at it
+in place of the run's authority. The server is Python and reads its token off its command line,
+so the module builds its own launch carrying `--fb-token` with the value its readme gives.
 """
 
 import re
 import secrets
+import shutil
 import subprocess
+import tempfile
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
 
 from evals.cve.backends.facebook_ads import (
     FACEBOOK_ADS_BENIGN_HOST,
@@ -33,8 +39,9 @@ from evals.cve.backends.facebook_ads import (
     FACEBOOK_ADS_RESPONDER_IP,
     FACEBOOK_ADS_SUBNET,
     ensure_facebook_ads_responder,
-    facebook_ads_network_args,
+    facebook_ads_graph_host_args,
     facebook_ads_rm,
+    facebook_ads_trust_args,
 )
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.grammar import FlawClass
@@ -50,6 +57,7 @@ from evals.cve.planting import (
     unprivileged_user_args,
 )
 from evals.cve.planting_base import LABEL, own_network_args
+from evals.cve.public_stand_ins import stand_in_files
 
 ATTACKER_HOST = "attacker.example.test"
 # Its own image, so the run's responder carries no witness and serves no attacker name.
@@ -89,13 +97,14 @@ def sentinel_args(name: str, nonce: str, address: str) -> list[str]:
     ]  # fmt: skip
 
 
-def server_args(image: str, sentinel_address: str) -> list[str]:
+def server_args(image: str, sentinel_address: str, trust_bundle: Path) -> list[str]:
     return [
         "run", "-i", "--rm",
         *confinement_args(),
         *own_network_args(FACEBOOK_ADS_BRIDGE),
-        *facebook_ads_network_args(FACEBOOK_ADS_RESPONDER_IP),
+        *facebook_ads_graph_host_args(FACEBOOK_ADS_RESPONDER_IP),
         "--add-host", f"{ATTACKER_HOST}:{sentinel_address}",
+        *facebook_ads_trust_args(trust_bundle),
         *unprivileged_user_args(),
         "-w", HOST.working_directory,
         image,
@@ -112,16 +121,35 @@ def facebook_ads_env(
     _ensure_sentinel_image()
     name = f"mcp-auditor-kit-facebook-ads-r-{secrets.token_hex(4)}"
     address = _per_launch_address()
+    directory = Path(tempfile.mkdtemp(prefix="facebook-ads-trust-"))
     try:
+        bundle = write_trust_bundle(directory, _sentinel_certificate())
         subprocess.run(
             ["docker", *sentinel_args(name, spec.nonces[WITNESS.id], address)],
             check=True,
             capture_output=True,
         )
         time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, address))
+        yield Launch(command="docker", args=server_args(image, address, bundle))
     finally:
         facebook_ads_rm(name)
+        shutil.rmtree(directory, ignore_errors=True)
+
+
+def write_trust_bundle(directory: Path, sentinel_certificate: str) -> Path:
+    bundle = directory / "trust-bundle.pem"
+    authority = stand_in_files(FACEBOOK_ADS_BENIGN_HOST).authority.read_text()
+    bundle.write_text(authority + sentinel_certificate)
+    bundle.chmod(0o644)  # read by the server's unprivileged account through the mount
+    return bundle
+
+
+def _sentinel_certificate() -> str:
+    return subprocess.run(
+        ["docker", "run", "--rm", "--label", LABEL, "--network", "none",
+         "--entrypoint", "cat", SENTINEL_IMAGE, "/cert.pem"],
+        check=True, capture_output=True, text=True, timeout=120,
+    ).stdout  # fmt: skip
 
 
 def _ensure_sentinel_image() -> None:
