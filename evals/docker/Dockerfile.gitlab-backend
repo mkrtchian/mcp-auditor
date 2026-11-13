@@ -1,0 +1,7 @@
+# The GitLab backend of npm:@zereight/mcp-gitlab (evals/cve/backends/gitlab.py): GitLab CE 19.5.5,
+# the stable release on 2026-11-13 (the server's documentation and tests at 2.1.38 name no GitLab
+# version), with the GitLab Runner binary for linux-amd64 from GitLab's runner downloads. The
+# Runner is 19.5.3, the latest patch of the 19.5 line: no 19.5.5 Runner exists. The settings,
+# the seed and the Runner's registration happen at each launch, not here.
+FROM gitlab/gitlab-ce:19.5.5-ce.0@sha256:392e6bd5bf118ae520e4038261a5ae39aea05de0d2299a162b4c822a9684cf9b
+ADD --checksum=sha256:cd586a217b0ba4d339b3f3d645b84f8f5e1cc711e73148c30a3eec0f8c78378b --chmod=0755 https://gitlab-runner-downloads.s3.amazonaws.com/v19.5.3/binaries/gitlab-runner-linux-amd64 /usr/local/bin/gitlab-runner

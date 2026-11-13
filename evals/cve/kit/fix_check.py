@@ -50,6 +50,9 @@ class FixCheckFixture:
     vulnerable_service: str
     patched_service: str
     server_patched_service: str | None  # None when the server's patched version is the flaw's
+    # The compose services the builder stands, refreshed before the check. None: the built services
+    # of the run backend of the servers carrying the flaw.
+    backend_services: tuple[str, ...] | None = None
 
     def planting_spec(self, nonces: NonceSource = RANDOM_NONCES) -> PlantingSpec:
         # The nuisance suite rule defines no `/work`: a fix check's is a directory baked into its

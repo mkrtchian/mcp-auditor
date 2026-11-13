@@ -1453,6 +1453,15 @@ services:
     image: mcp-auditor-cve-gitlab-responder:local
     profiles: ["nuisance"]
 
+  gitlab-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.gitlab-backend
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "93288f6d5368d5d02273e6f2677334579ebe1791c0dc86816d0cb3350f864ee3"
+    image: mcp-auditor-cve-gitlab-backend:local
+    profiles: ["nuisance"]
+
   googleapis-responder:
     build:
       context: .

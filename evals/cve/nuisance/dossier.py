@@ -143,6 +143,9 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
   lists them).
 - `server_patched_service`: the server's own patched version when it differs from the flaw's,
   else `None`.
+- `backend_services`: the compose services of the backend the `builder` stands, brought up to
+  date before the fix check, or `None` (the default, which you may keep) for the built services
+  of the backend the run provisions for the server.
 
 ## FixCheckResult (the driver prints it)
 

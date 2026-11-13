@@ -14,7 +14,8 @@ from evals.cve.backends.ckan import (
     ckan_server_args,
 )
 from evals.cve.backends.doris import DORIS_CONTAINER
-from evals.cve.backends.gitlab import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
+from evals.cve.backends.gitlab import GITLAB_HOST
+from evals.cve.backends.gitlab_responder import GITLAB_RESPONDER_ALIAS, GITLAB_RESPONDER_IMAGE
 from evals.cve.backends.googleapis import GOOGLEAPIS_RESPONDER_IP
 from evals.cve.backends.jenkins import JENKINS_URL
 from evals.cve.backends.n8n import N8N_IP, n8n_server_args, singleton_run_args
@@ -32,10 +33,10 @@ from tests.unit.support.docker_argv import (
 )
 
 # These servers take their backend's address from their image, so the address baked into the run
-# Dockerfile and its vulnerable one has to be the one the backend stands its responder at.
+# Dockerfile and its vulnerable one has to be the one the backend stands at.
 _BAKED_ADDRESSES = {
     "jenkins": f"JENKINS_URL={JENKINS_URL}",
-    "gitlab": f"GITLAB_API_URL=http://{GITLAB_RESPONDER_ALIAS}/",
+    "gitlab": f"GITLAB_API_URL=http://{GITLAB_HOST}/",
     "googleapis": f"UPSTREAM_URL=http://{GOOGLEAPIS_RESPONDER_IP}",
 }
 
@@ -61,10 +62,12 @@ def test_the_jenkins_run_image_bakes_the_api_token_the_controller_image_seeds(do
     assert f"JENKINS_TOKEN={seeded[1]}" in (DOCKER_DIRECTORY / dockerfile).read_text()
 
 
+# The fix check's responder answers where the run image sends the server, which its `-e` overrides.
 def test_the_gitlab_responder_answers_at_the_host_its_run_image_bakes():
     responder = next(r for r in given.every_responder() if r.image == GITLAB_RESPONDER_IMAGE)
 
     assert carries(responder.singleton_run_args(), ["--network-alias", GITLAB_RESPONDER_ALIAS])
+    assert GITLAB_RESPONDER_ALIAS == GITLAB_HOST
 
 
 def test_the_ckan_front_names_resolve_to_the_front_and_data_europa_eu_to_its_stand_in():

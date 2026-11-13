@@ -1,9 +1,12 @@
 # Stand-in for the self-managed GitLab instance (GitLab CE) that the job tools of
 # @zereight/mcp-gitlab (execute_graphql, upload_markdown, get_pipeline_job, get_pipeline_job_output, list_job_artifacts,
 # download_job_artifacts, get_job_artifact_file, play/retry/cancel_pipeline_job) reach through
-# GITLAB_API_URL on port 80. GitLab itself cannot run under the confinement: the Omnibus image
-# needs root with CHOWN/DAC_OVERRIDE/SETUID/SETGID, which --cap-drop ALL removes. Every answer
-# comes from GitLab's own sources, pinned at tag v19.5.3-ee:
+# GITLAB_API_URL on port 80, serving the CVE-2026-61462 fix check alone: the run reaches GitLab CE
+# itself (Dockerfile.gitlab-backend). The Omnibus image starts as root and switches users, which
+# needs capabilities the server's confinement drops; that confinement binds a backend only through
+# its memory bound, within which an earlier admission record ran GitLab CE and the run now stands
+# it. The fix check keeps this responder for its frozen witness route. Every answer comes from
+# GitLab's own sources, pinned at tag v19.5.3-ee:
 #   - GET  /projects/1/jobs/8: doc/api/jobs.md "Retrieve a job by job ID" example response
 #   - GET  /projects/1/jobs/42/trace: spec/fixtures/trace/sample_trace, the log the jobs API
 #     spec serves through Workhorse

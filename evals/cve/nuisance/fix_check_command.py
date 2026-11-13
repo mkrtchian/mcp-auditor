@@ -1,6 +1,7 @@
 """The `fix-check` subcommand of run_nuisance: rebuild each fix-check fixture's images, bring the
-built backend images of the servers it checks up to their compose fingerprint, and reproduce
-each flaw against the admission's recorded fix_check (Docker, no LLM)."""
+built backend images its fixtures stand up to their compose fingerprint (the services a fixture
+names, else the run backend's of the servers it checks), and reproduce each flaw against the
+admission's recorded fix_check (Docker, no LLM)."""
 
 import argparse
 import asyncio
@@ -12,6 +13,7 @@ from pathlib import Path
 
 from evals.concurrency import bounded, positive_int
 from evals.cve.closed_network import check_closed_network_support
+from evals.cve.detection.targets import image_tag as backend_image_tag
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.images import ComposeImageStore, ensure_images
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
@@ -66,10 +68,15 @@ def fix_check(args: argparse.Namespace) -> int:
     records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
     refuse_without_closed_networks(check_closed_network_support)
     kit_tags = [image_tag(service) for service in _services(fixtures)]
-    tags = [*kit_tags, *built_backend_tags(admission.servers)]
+    backend_services = _backend_services(fixtures, admission.servers)
+    backend_tags = [
+        *built_backend_tags(admission.servers),
+        *map(backend_image_tag, backend_services),
+    ]
+    tags = list(dict.fromkeys([*kit_tags, *backend_tags]))
     try:
         deps = default_fix_check_deps(args.concurrency)
-        deps.refresh_backend_images(_backend_services(fixtures, admission.servers))
+        deps.refresh_backend_images(backend_services)
         return asyncio.run(check_fixes(fixtures, records, deps))
     finally:
         sweep_containers(tags, DOCKER_SWEEP.running_containers, DOCKER_SWEEP.remove_containers)
@@ -78,9 +85,21 @@ def fix_check(args: argparse.Namespace) -> int:
 def _backend_services(
     fixtures: Sequence[FixCheckFixture], servers: Sequence[AdmittedServer]
 ) -> list[str]:
-    checked = {fixture.flaw for fixture in fixtures}
+    services = (
+        service
+        for fixture in fixtures
+        for service in (
+            fixture.backend_services
+            if fixture.backend_services is not None
+            else _run_backend_services(fixture.flaw, servers)
+        )
+    )
+    return list(dict.fromkeys(services))
+
+
+def _run_backend_services(flaw: str, servers: Sequence[AdmittedServer]) -> list[str]:
     return built_backend_services(
-        [server for server in servers if checked & {flaw.flaw for flaw in server.flaws}]
+        [server for server in servers if flaw in {carried.flaw for carried in server.flaws}]
     )
 
 

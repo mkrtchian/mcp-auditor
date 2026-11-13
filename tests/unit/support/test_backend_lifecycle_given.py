@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve import environments
-from evals.cve.backends import node_sandbox_engine
+from evals.cve.backends import gitlab, gitlab_responder, node_sandbox_engine
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.responder import Responder
 from evals.cve.kit import launch as kit_launch
@@ -27,7 +27,9 @@ def a_host() -> PlantingHost:
 
 
 def every_responder() -> list[Responder]:
-    modules = (importlib.import_module(f"evals.cve.backends.{key}") for key in BACKENDS)
+    # The GitLab responder serves a fix check, not a registered backend.
+    names = [*(f"evals.cve.backends.{key}" for key in BACKENDS), gitlab_responder.__name__]
+    modules = (importlib.import_module(name) for name in names)
     return [
         value
         for module in modules
@@ -61,11 +63,18 @@ def _a_socket_with_no_engine(name: str) -> Generator[Path]:
     yield Path("/tmp/engine-socket-directory/docker.sock")
 
 
+@contextmanager
+def _a_gitlab_with_no_container(name: str) -> Generator[gitlab.StoodGitLab]:
+    yield gitlab.StoodGitLab(f"{gitlab.GITLAB_NETWORK}-quiet", "token-of-the-stand-up")
+
+
 def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
     # Each per-launch backend's own launch, with a stand-up that starts no container.
     match key:
         case "node_sandbox_engine":
             launch = node_sandbox_engine.engine_launch(_a_socket_with_no_engine, _noop_remove)
+        case "gitlab":
+            launch = gitlab.gitlab_launch(_a_gitlab_with_no_container, _noop_remove)
         case _:
             raise AssertionError(f"give the per-launch backend {key} a quiet stand-up here")
     return PerLaunchBackend(key, launch)

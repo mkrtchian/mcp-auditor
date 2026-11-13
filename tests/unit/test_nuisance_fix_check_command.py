@@ -142,7 +142,21 @@ def test_the_fix_check_removes_the_kit_and_built_backend_containers_left_running
     assert containers.listed_tags == [[*kit_tags, *ckan_tags]]
 
 
-def test_the_fix_check_brings_the_built_backend_images_of_its_servers_up_to_date(
+def test_the_fix_check_removes_the_containers_left_running_of_the_backend_services_it_names(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    containers = _leftovers(monkeypatch)
+    fixture = dataclasses.replace(FIXTURE, backend_services=("its-responder",))
+    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (fixture,))
+    monkeypatch.setattr(fix_check_command, "check_closed_network_support", lambda: None)
+    _checking_with(monkeypatch, given.FakeFixCheck(given.a_result_matching(RECORD)))
+
+    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+
+    assert detection_targets.image_tag("its-responder") in containers.listed_tags[0]
+
+
+def test_a_fixture_naming_no_backend_services_refreshes_the_run_backends_of_its_servers(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (FIXTURE,))
@@ -153,6 +167,20 @@ def test_the_fix_check_brings_the_built_backend_images_of_its_servers_up_to_date
     run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
 
     assert fake.refreshed == list(BACKENDS["ckan"].built_services)
+
+
+def test_a_fixture_naming_its_backend_services_refreshes_those_and_not_the_run_backends(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    fixture = dataclasses.replace(FIXTURE, backend_services=("its-responder",))
+    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (fixture,))
+    monkeypatch.setattr(fix_check_command, "check_closed_network_support", lambda: None)
+    fake = given.FakeFixCheck(given.a_result_matching(RECORD))
+    _checking_with(monkeypatch, fake)
+
+    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+
+    assert fake.refreshed == ["its-responder"]
 
 
 def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its_flaws(

@@ -15,12 +15,14 @@ traversal also escapes, so its response carries no body: it errors on the vulner
 fetch having passed, and reads the encoded job as not found on the patched one. None surfaces on
 the patched build. The benign calls, one per counted tool, use real job ids with no traversal.
 
-The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
-nonce per exercise: the builder stands its own responder of the same image with that nonce, on the
-backend's bridge, and reaps it when the launch ends. It serves the nonce on any `/internal/` path
-and the singleton's answers elsewhere. The server's `GITLAB_API_URL` is
-overridden to that responder with a `-e`, which wins over the image's baked `ENV`, while the baked
-token and toolsets stay. The responder is not the server and carries neither the flaw nor the fix.
+The responder serves this fix check only (`evals.cve.backends.gitlab_responder`), so the fixture
+names its compose service for `fix-check` to refresh. The singleton responder cannot carry the
+witness, since check_fix plants a fresh random nonce per exercise: the builder stands its own
+responder of the same image with that nonce, on the responder's bridge, and reaps it when the
+launch ends. It serves the nonce on any `/internal/` path and the singleton's answers elsewhere.
+The server's `GITLAB_API_URL` is overridden to that responder with a `-e`, which wins over the
+image's baked `ENV`, while the baked token and toolsets stay. The responder is not the server and
+carries neither the flaw nor the fix.
 """
 
 import re
@@ -30,7 +32,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from evals.cve.backends.gitlab import (
+from evals.cve.backends.gitlab_responder import (
     GITLAB_BRIDGE,
     GITLAB_LAUNCH_LOCK,
     GITLAB_RESPONDER_IMAGE,
@@ -239,6 +241,7 @@ FIXTURE = FixCheckFixture(
     vulnerable_service="gitlab-vuln",
     patched_service="gitlab",
     server_patched_service=None,
+    backend_services=("gitlab-responder",),
 )
 
 FIXTURES = (FIXTURE,)

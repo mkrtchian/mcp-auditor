@@ -4,6 +4,7 @@ from pathlib import Path
 
 from evals.cve.backends.apify import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
 from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
+from evals.cve.backends.gitlab_responder import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as facebook_ads
 from evals.cve.nuisance.fix_checks import cve_2026_46341_apify as apify
@@ -73,5 +74,7 @@ RESPONDER_FIX_CHECKS = [
         gitlab.responder_args,
         gitlab.server_args,
         lambda address: [f"GITLAB_API_URL=http://{address}/api/v4"],
+        network=GITLAB_BRIDGE,
+        image=GITLAB_RESPONDER_IMAGE,
     ),
 ]

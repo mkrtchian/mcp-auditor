@@ -21,6 +21,7 @@ from evals.cve.backends import (
     doris,
     facebook_ads,
     gitlab,
+    gitlab_seed,
     googleapis,
     gravitino,
     gravitino_seed,
@@ -35,7 +36,7 @@ from evals.cve.backends.atlassian import ATLASSIAN_BRIDGE, ATLASSIAN_RESPONDER_I
 from evals.cve.backends.ckan import CKAN_BRIDGE, CKAN_IMAGE, CKAN_PARTS, MOUNTED_FILES
 from evals.cve.backends.doris import DORIS_BRIDGE, DORIS_CONTAINER, DORIS_IMAGE
 from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BRIDGE, FACEBOOK_ADS_RESPONDER_IMAGE
-from evals.cve.backends.gitlab import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
+from evals.cve.backends.gitlab import GITLAB_IMAGE, GITLAB_NETWORK, GITLAB_SERVICE
 from evals.cve.backends.googleapis import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDER_IMAGE
 from evals.cve.backends.gravitino import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
 from evals.cve.backends.httpbin import HTTPBIN_BRIDGE, HTTPBIN_IMAGE, HTTPBIN_PARTS
@@ -139,12 +140,12 @@ BACKENDS: dict[str, RegisteredBackend] = {
         ATLASSIAN_RESPONDER_IMAGE,
         "atlassian-responder",
     ),
-    "gitlab": _responder(
+    "gitlab": RegisteredBackend(
         gitlab.LIFECYCLE,
-        gitlab.__file__,
-        GITLAB_BRIDGE,
-        GITLAB_RESPONDER_IMAGE,
-        "gitlab-responder",
+        GITLAB_NETWORK,
+        (GITLAB_IMAGE,),
+        (GITLAB_SERVICE,),
+        (*_served(gitlab.__file__, GITLAB_SERVICE), Path(gitlab_seed.__file__)),
     ),
     "googleapis": _responder(
         googleapis.LIFECYCLE,

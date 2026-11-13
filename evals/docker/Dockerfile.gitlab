@@ -5,11 +5,13 @@
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN npm install -g @zereight/mcp-gitlab@2.1.38
 # GITLAB_API_URL: the self-managed GitLab instance the README's GITLAB_API_URL row names ("Your
-# GitLab instance API URL"), here the gitlab backend's stand-in, reached by the network alias
-# gitlab.example.com (the host GitLab's API documentation uses for a self-managed instance). The
-# fix check overrides it with its own -e to reach its per-launch responder.
+# GitLab instance API URL"), here the GitLab CE backend stood for each launch, reached by the
+# network alias gitlab.example.com (the host GitLab's API documentation uses for a self-managed
+# instance). The fix check overrides it with its own -e to reach its per-launch responder.
 # GITLAB_PERSONAL_ACCESS_TOKEN: required to start (index.js exits without a credential); its value
-# is the README's docker example value.
+# is the README's docker example value, which the fix check's responder does not check. The run
+# overrides it with -e with the token the GitLab CE stand-up creates, since GitLab's documented
+# command requires 20 characters and this value has 17.
 # GITLAB_TOOLSETS=all: the launch option the fix needs, enabling the non-default pipelines toolset.
 ENV GITLAB_API_URL=http://gitlab.example.com/api/v4 GITLAB_PERSONAL_ACCESS_TOKEN=your_gitlab_token GITLAB_TOOLSETS=all
 ENTRYPOINT ["mcp-gitlab"]
