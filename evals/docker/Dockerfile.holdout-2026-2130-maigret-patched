@@ -1,6 +1,26 @@
 # mcp-maigret 1.0.13: the first patched version. search_username / parse_url validate input
 # (isValidUsername / isValidUrl / isValidTag) and run docker through execFile with an argument
 # array, so no shell parses the username/url.
+#
+# mcp-maigret runs maigret as `docker run --rm -v <reports>:/app/reports soxoj/maigret:latest ...`
+# through the Docker CLI (README: "Requirements: Docker"). As the nuisance run image
+# (Dockerfile.maigret) does, with the same Engine API stand-in:
+# - the real Docker CLI runs in the container, installed from Docker's static binaries (the
+#   "Install Docker Engine from binaries" channel of docs.docker.com/engine/install), 29.9.3;
+# - the Docker daemon cannot run under the confinement (it needs root and namespace/mount
+#   capabilities the launch drops), so a stand-in answers the Engine API on the CLI's default
+#   socket, /var/run/docker.sock, with outputs taken from the Engine API definition of the same
+#   release (moby api/swagger.yaml at docker-v29.9.3, API 1.56); it runs the image's own
+#   entrypoint, the real maigret 0.6.6 installed below, as the container's process, with the
+#   environment a `docker run` gives it (the daemon's PATH and HOSTNAME, the image's Env, the
+#   create request's Env, and runc's HOME, root's from /etc/passwd), never the server's own
+#   environment, apart from the fixture authority's trust setting REQUESTS_CA_BUNDLE when the
+#   launch declares it, which stands for the public trust store a real image carries;
+# - maigret is installed as the soxoj/maigret image installs it (`pip install .` without the
+#   pdf extra), from PyPI, 0.6.6; curl serves only the exploits that read the HTTP places;
+# - the injection stays in the server's own shell string: the injected command runs in the
+#   server's shell, outside docker, and the stand-in relays nothing that reaches it through it.
+# The image's Engine API stand-in is the run image's, line for line.
 FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,78 +28,313 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir 'maigret==0.6.6'
 
-# The pinned patched server, installed from npm.
 RUN npm install -g mcp-maigret@1.0.13
 
-# Same docker CLI stand-in as the vulnerable image (nested Docker unavailable under the kit
-# confinement). Baked inline, no comments; outputs recorded in the calibration card.
-RUN cat > /usr/local/bin/docker <<'DOCKER_STANDIN_EOF'
-#!/bin/sh
-case "$1" in
-  --version)
-    echo "Docker version 23.0.3, build 3e7cbfd"
-    ;;
-  image)
-    cat <<'IMAGE_INSPECT_JSON'
-[
-    {
-        "Id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-        "RepoTags": [],
-        "RepoDigests": [],
-        "Parent": "",
-        "Comment": "",
-        "Created": "2024-01-01T00:00:00Z",
-        "Container": "",
-        "DockerVersion": "23.0.3",
-        "Author": "",
-        "Config": {
-            "Env": [
-                "PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
-            ],
-            "Cmd": null,
-            "WorkingDir": "/app",
-            "Entrypoint": null,
-            "Labels": null
-        },
-        "Architecture": "amd64",
-        "Os": "linux",
-        "Size": 0,
-        "RootFS": {
-            "Type": "layers",
-            "Layers": [
-                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-            ]
-        }
-    }
-]
-IMAGE_INSPECT_JSON
-    ;;
-  run)
-    shift
-    reports_parent=""
-    while [ "$#" -gt 0 ]; do
-      arg="$1"
-      shift
-      if [ "$arg" = "-v" ]; then
-        host_path="${1%%:*}"
-        reports_parent="$(dirname "$host_path")"
-      elif [ "$arg" = "soxoj/maigret:latest" ]; then
-        break
-      fi
-    done
-    if [ -n "$reports_parent" ]; then
-      cd "$reports_parent"
-    fi
-    exec maigret "$@"
-    ;;
-  *)
-    echo "docker: '$1' is not a docker command." >&2
-    echo "See 'docker --help'" >&2
-    exit 1
-    ;;
-esac
-DOCKER_STANDIN_EOF
-RUN chmod +x /usr/local/bin/docker
+RUN curl -fsSL -o /tmp/docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-29.9.3.tgz \
+ && echo '3fb5d1f13014c18cc54945bc177c58a9056a482dada031e17d12cf2e6922c973  /tmp/docker.tgz' | sha256sum -c - \
+ && tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker \
+ && rm /tmp/docker.tgz
 
+# The daemon's socket directory, writable by the run's unprivileged user (the user the README's
+# Linux setup puts in the docker group), and the maigret image's WORKDIR, /app, where the
+# container's bind mount of the reports directory is linked, and the home of the container's
+# user, root (the maigret image sets no USER), where maigret keeps ~/.maigret.
+RUN chmod 1777 /run /root && mkdir -m 1777 /app
+
+RUN mkdir -p /usr/local/libexec && cat > /usr/local/libexec/docker-engine-api.py <<'ENGINE_EOF'
+import json
+import os
+import pwd
+import socketserver
+import subprocess
+import threading
+import http.server
+
+SOCKET = "/var/run/docker.sock"
+API_VERSION = "1.56"
+DEFAULT_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+TRUST = ("REQUESTS_CA_BUNDLE",)
+IMAGE = "soxoj/maigret:latest"
+CONTAINER_ID = "ede54ee1afda366ab42f824e8a5ffd195155d853ceaec74a927f249ea270c743"
+IMAGE_INSPECT = {
+    "Id": "sha256:ec3f0931a6e6b6855d76b2d7b0be30e81860baccd891b2e243280bf1cd8ad710",
+    "RepoTags": [],
+    "RepoDigests": [],
+    "Comment": "",
+    "Created": "2022-02-04T21:20:12.497794809Z",
+    "Author": "",
+    "Config": {
+        "Env": ["FLASK_HOST=0.0.0.0"],
+        "Entrypoint": ["maigret"],
+        "WorkingDir": "/app",
+    },
+    "Architecture": "amd64",
+    "Os": "linux",
+    "Size": 1239828,
+    "RootFS": {
+        "Type": "layers",
+        "Layers": [
+            "sha256:1834950e52ce4d5a88a1bbd131c537f4d0e56d10ff0dd69e66be3b7dfa9df7e6",
+            "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+        ],
+    },
+    "Metadata": {},
+}
+
+containers = {}
+lock = threading.Lock()
+
+
+def user_home():
+    try:
+        return pwd.getpwuid(0).pw_dir or "/"
+    except KeyError:
+        return "/"
+
+
+class Container:
+    def __init__(self, command, binds, env):
+        self.command = command
+        self.binds = binds
+        self.env = env
+        self.attached = False
+        self.started = threading.Event()
+        self.exited = threading.Event()
+        self.process = None
+        self.status = None
+
+    def start(self):
+        workdir = IMAGE_INSPECT["Config"]["WorkingDir"]
+        for bind in self.binds:
+            source, target = bind.split(":")[:2]
+            if target.startswith(workdir + "/"):
+                link = os.path.join(workdir, target[len(workdir) + 1 :])
+                if not os.path.lexists(link):
+                    os.symlink(source, link)
+        env = {}
+        for item in self.env:
+            key, _, value = item.partition("=")
+            env[key] = value
+        if not env.get("HOME"):
+            env["HOME"] = user_home()
+        for name in TRUST:
+            if name in os.environ:
+                env[name] = os.environ[name]
+        self.process = subprocess.Popen(
+            self.command,
+            cwd=workdir,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.started.set()
+        if not self.attached:
+            threading.Thread(target=self.drain, daemon=True).start()
+
+    def drain(self):
+        self.process.communicate()
+        self.finish()
+
+    def finish(self):
+        self.status = self.process.wait()
+        self.exited.set()
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def send_response(self, code, message=None):
+        self.send_response_only(code, message)
+        self.send_header("Date", self.date_time_string())
+
+    def log_message(self, *args):
+        pass
+
+    def route(self):
+        path = self.path.split("?", 1)[0]
+        if path.startswith("/v1."):
+            path = "/" + path.split("/", 2)[2]
+        return path, self.path.partition("?")[2]
+
+    def reply(self, status, body=None, content_type="application/json", head=False):
+        data = b"" if body is None else (body if isinstance(body, bytes) else json.dumps(body).encode() + b"\n")
+        self.send_response(status)
+        self.common_headers()
+        if body is not None:
+            self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if not head:
+            self.wfile.write(data)
+
+    def common_headers(self):
+        self.send_header("Server", "Docker/29.9.3 (linux)")
+        self.send_header("Api-Version", API_VERSION)
+        self.send_header("Ostype", "linux")
+
+    def not_found(self):
+        self.reply(404, {"message": "page not found"})
+
+    def container(self, path):
+        parts = path.split("/")
+        with lock:
+            return parts[2], containers.get(parts[2])
+
+    def ping(self, head):
+        self.send_response(200)
+        self.common_headers()
+        self.send_header("Builder-Version", "2")
+        self.send_header("Docker-Experimental", "false")
+        self.send_header("Swarm", "inactive")
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", "2")
+        self.end_headers()
+        if not head:
+            self.wfile.write(b"OK")
+
+    def do_HEAD(self):
+        path, _ = self.route()
+        if path == "/_ping":
+            return self.ping(True)
+        self.reply(404, None, head=True)
+
+    def do_GET(self):
+        path, _ = self.route()
+        if path == "/_ping":
+            return self.ping(False)
+        if path.startswith("/images/") and path.endswith("/json"):
+            name = path[len("/images/") : -len("/json")]
+            if name == IMAGE:
+                return self.reply(200, IMAGE_INSPECT)
+            return self.reply(404, {"message": "No such image: " + name})
+        self.not_found()
+
+    def do_DELETE(self):
+        path, _ = self.route()
+        if path.startswith("/containers/") and path.count("/") == 2:
+            ident, container = self.container(path)
+            if container is None:
+                return self.reply(404, {"message": "No such container: " + ident})
+            with lock:
+                containers.pop(ident, None)
+            return self.reply(204)
+        self.not_found()
+
+    def do_POST(self):
+        path, _ = self.route()
+        length = int(self.headers.get("Content-Length") or 0)
+        body = self.rfile.read(length) if length else b""
+        if path == "/containers/create":
+            return self.create(body)
+        if path.startswith("/containers/") and path.count("/") == 3:
+            ident, container = self.container(path)
+            action = path.rsplit("/", 1)[1]
+            if action not in ("attach", "start", "wait", "kill"):
+                return self.not_found()
+            if container is None:
+                return self.reply(404, {"message": "No such container: " + ident})
+            return getattr(self, action)(ident, container)
+        self.not_found()
+
+    def create(self, body):
+        config = json.loads(body or b"{}")
+        if config.get("Image") != IMAGE:
+            return self.reply(404, {"message": "No such image: " + str(config.get("Image"))})
+        entrypoint = config.get("Entrypoint") or IMAGE_INSPECT["Config"]["Entrypoint"]
+        command = list(entrypoint) + list(config.get("Cmd") or [])
+        binds = (config.get("HostConfig") or {}).get("Binds") or []
+        with lock:
+            ident = CONTAINER_ID
+            serial = 0
+            while ident in containers:
+                serial += 1
+                ident = CONTAINER_ID[:-8] + format(serial, "08x")
+            env = ["PATH=" + DEFAULT_PATH, "HOSTNAME=" + ident[:12]]
+            env += IMAGE_INSPECT["Config"]["Env"] + list(config.get("Env") or [])
+            containers[ident] = Container(command, binds, env)
+        self.reply(201, {"Id": ident, "Warnings": []})
+
+    def attach(self, ident, container):
+        container.attached = True
+        self.wfile.write(
+            b"HTTP/1.1 101 UPGRADED\r\n"
+            b"Content-Type: application/vnd.docker.multiplexed-stream\r\n"
+            b"Connection: Upgrade\r\n"
+            b"Upgrade: tcp\r\n\r\n"
+        )
+        self.wfile.flush()
+        container.started.wait()
+        write_lock = threading.Lock()
+
+        def pump(stream, kind):
+            for chunk in iter(lambda: stream.read1(65536), b""):
+                with write_lock:
+                    self.wfile.write(bytes([kind, 0, 0, 0]) + len(chunk).to_bytes(4, "big") + chunk)
+                    self.wfile.flush()
+
+        threads = [
+            threading.Thread(target=pump, args=(container.process.stdout, 1)),
+            threading.Thread(target=pump, args=(container.process.stderr, 2)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        container.finish()
+        self.close_connection = True
+
+    def kill(self, ident, container):
+        if container.process is not None and container.status is None:
+            signal = self.route()[1].partition("signal=")[2].split("&")[0] or "KILL"
+            container.process.send_signal(getattr(__import__("signal"), "SIG" + signal, 9))
+        self.reply(204)
+
+    def start(self, ident, container):
+        if container.started.is_set():
+            return self.reply(304)
+        container.start()
+        self.reply(204)
+
+    def wait(self, ident, container):
+        self.send_response(200)
+        self.common_headers()
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.flush()
+        container.exited.wait()
+        self.wfile.write(json.dumps({"StatusCode": container.status}).encode() + b"\n")
+        self.close_connection = True
+        if "condition=removed" in self.path:
+            with lock:
+                containers.pop(ident, None)
+
+
+class Server(socketserver.ThreadingUnixStreamServer):
+    daemon_threads = True
+
+
+if os.path.exists(SOCKET):
+    os.unlink(SOCKET)
+Server(SOCKET, Handler).serve_forever()
+ENGINE_EOF
+
+RUN cat > /usr/local/bin/mcp-maigret-with-docker <<'ENTRY_EOF'
+#!/bin/sh
+python3 /usr/local/libexec/docker-engine-api.py </dev/null >/dev/null 2>&1 &
+i=0
+while [ ! -S /var/run/docker.sock ] && [ "$i" -lt 100 ]; do
+  sleep 0.1
+  i=$((i + 1))
+done
+exec mcp-maigret "$@"
+ENTRY_EOF
+RUN chmod +x /usr/local/bin/mcp-maigret-with-docker
+
+# The server throws at construction if MAIGRET_REPORTS_DIR is unset; /tmp is writable under the
+# unprivileged launch user while /srv is mounted read-only.
 ENV MAIGRET_REPORTS_DIR=/tmp/reports
-ENTRYPOINT ["mcp-maigret"]
+ENTRYPOINT ["mcp-maigret-with-docker"]

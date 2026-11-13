@@ -10,6 +10,14 @@ Every exploit injects `; <command> #` as the username; the server's own shell ru
 and its stdout comes back in the tool response. One dedicated exploit per kept place names the
 location it reads.
 
+The server reaches maigret through the real Docker CLI 29.9.3. The Docker daemon cannot run under
+the confinement, so a stand-in answers the Engine API on /var/run/docker.sock with outputs from the
+Engine API definition of that release, and runs the real maigret 0.6.6 installed in the image as
+the container's process, with the environment a `docker run` gives it (the daemon's PATH and
+HOSTNAME, the image's and the request's Env, runc's HOME), never the server's own environment.
+The injected command runs in the server's own shell, outside docker, so the stand-in relays
+nothing that reaches it through the flaw.
+
 The benign call runs a real maigret username search. maigret is the real OSINT software the
 server shells out to, and it works by querying each public site over the network. The container
 reaches no Internet, so the benign call is bounded by `tags=['tn']` to the single site that tag
@@ -46,6 +54,8 @@ AIM = re.compile(r";")
 # excluded in the draw, not here. `etc-hosts` is also excluded: planting a nonce over /etc/hosts
 # removes the name resolution the real-maigret stand-in needs to reach w3challs.com on the closed
 # network, so it cannot be kept while the benign call runs the real software (card: unkept).
+# `docker-config` is excluded too: the real Docker CLI loads ~/.docker/config.json at launch and
+# in the benign call, so something other than the flaw reaches it (card: unkept).
 KEPT_PLACES: tuple[str, ...] = (
     "process-account-identity",
     "proc-environ",
@@ -59,7 +69,6 @@ KEPT_PLACES: tuple[str, ...] = (
     "git-credentials",
     "npmrc",
     "gh-hosts",
-    "docker-config",
     "kube-config",
     "pgpass",
     "mysql-client-cnf",

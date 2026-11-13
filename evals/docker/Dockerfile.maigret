@@ -8,7 +8,11 @@
 #   capabilities the run drops), so a stand-in answers the Engine API on the CLI's default
 #   socket, /var/run/docker.sock, with outputs taken from the Engine API definition of the same
 #   release (moby api/swagger.yaml at docker-v29.9.3, API 1.56); it runs the image's own
-#   entrypoint, the real maigret 0.6.6 installed below, as the container's process;
+#   entrypoint, the real maigret 0.6.6 installed below, as the container's process, with the
+#   environment a `docker run` gives it (the daemon's PATH and HOSTNAME, the image's Env, the
+#   create request's Env, and runc's HOME, root's from /etc/passwd), never the server's own
+#   environment, apart from the fixture authority's trust setting REQUESTS_CA_BUNDLE when the
+#   launch declares it, which stands for the public trust store a real image carries;
 # - maigret is installed as the soxoj/maigret image installs it (`pip install .` without the
 #   pdf extra), from the PyPI release the holdout card records, 0.6.6.
 FROM python:3.12-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
@@ -27,12 +31,14 @@ RUN curl -fsSL -o /tmp/docker.tgz https://download.docker.com/linux/static/stabl
 
 # The daemon's socket directory, writable by the run's unprivileged user (the user the README's
 # Linux setup puts in the docker group), and the maigret image's WORKDIR, /app, where the
-# container's bind mount of the reports directory is linked.
-RUN chmod 1777 /run && mkdir -m 1777 /app
+# container's bind mount of the reports directory is linked, and the home of the container's
+# user, root (the maigret image sets no USER), where maigret keeps ~/.maigret.
+RUN chmod 1777 /run /root && mkdir -m 1777 /app
 
 RUN mkdir -p /usr/local/libexec && cat > /usr/local/libexec/docker-engine-api.py <<'ENGINE_EOF'
 import json
 import os
+import pwd
 import socketserver
 import subprocess
 import threading
@@ -40,6 +46,8 @@ import http.server
 
 SOCKET = "/var/run/docker.sock"
 API_VERSION = "1.56"
+DEFAULT_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+TRUST = ("REQUESTS_CA_BUNDLE",)
 IMAGE = "soxoj/maigret:latest"
 CONTAINER_ID = "ede54ee1afda366ab42f824e8a5ffd195155d853ceaec74a927f249ea270c743"
 IMAGE_INSPECT = {
@@ -71,6 +79,13 @@ containers = {}
 lock = threading.Lock()
 
 
+def user_home():
+    try:
+        return pwd.getpwuid(0).pw_dir or "/"
+    except KeyError:
+        return "/"
+
+
 class Container:
     def __init__(self, command, binds, env):
         self.command = command
@@ -90,10 +105,15 @@ class Container:
                 link = os.path.join(workdir, target[len(workdir) + 1 :])
                 if not os.path.lexists(link):
                     os.symlink(source, link)
-        env = dict(os.environ)
-        for item in IMAGE_INSPECT["Config"]["Env"] + self.env:
+        env = {}
+        for item in self.env:
             key, _, value = item.partition("=")
             env[key] = value
+        if not env.get("HOME"):
+            env["HOME"] = user_home()
+        for name in TRUST:
+            if name in os.environ:
+                env[name] = os.environ[name]
         self.process = subprocess.Popen(
             self.command,
             cwd=workdir,
@@ -226,7 +246,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             while ident in containers:
                 serial += 1
                 ident = CONTAINER_ID[:-8] + format(serial, "08x")
-            containers[ident] = Container(command, binds, list(config.get("Env") or []))
+            env = ["PATH=" + DEFAULT_PATH, "HOSTNAME=" + ident[:12]]
+            env += IMAGE_INSPECT["Config"]["Env"] + list(config.get("Env") or [])
+            containers[ident] = Container(command, binds, env)
         self.reply(201, {"Id": ident, "Warnings": []})
 
     def attach(self, ident, container):
