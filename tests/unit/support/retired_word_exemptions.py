@@ -350,6 +350,12 @@ ALLOWLIST = (
         "npm's own word for the package, in Dockerfile.serverless and Dockerfile.serverless-vuln",
     ),
     AllowedLine(
+        "evals/docker/Dockerfile.android",
+        "stub",
+        "IPackageManager$Stub.onTransact",
+        "a frame of the stack trace the captured Android device prints, its own class name",
+    ),
+    AllowedLine(
         "docs/detection-suite-rule.md",
         "stub",
         "`stub`, `calibration`",

@@ -507,7 +507,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "fd191a11e68446c8c34ee24e5296e839658c855ea8dc8b820083603215a02b05"
+        org.mcp-auditor.dockerfile-fingerprint: "825c2cf48d5e48ab3e93192cb99c8ebba0eba84b8d13756d007b62ecbf8bbd4e"
     image: mcp-auditor-cve-holdout-2026-19978-android:local
 
   holdout-2026-19978-android-patched:
@@ -515,7 +515,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "9c7b039eab5a18c5306e59da407f9a6b642bca44322b0a95720e19b542802b60"
+        org.mcp-auditor.dockerfile-fingerprint: "a42ec350a07da7174e04cf975e6a9c0100304bd8c639b0d5afe923c12628a9e8"
     image: mcp-auditor-cve-holdout-2026-19978-android-patched:local
 
   holdout-2026-55581-mcp-shell:
@@ -699,7 +699,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a7f9f64be95312c84e121ecc4e35b829e6bf9bcbcf2630b63069ce4900a43f50"
+        org.mcp-auditor.dockerfile-fingerprint: "3e2c7c071af92ef259ea6b41c64c440dda47c09b2edc48dc70d763cb3440fcc9"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile:local
 
   holdout-2026-81562-claude-in-mobile-patched:
@@ -707,7 +707,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "6d8effb9105fe353e8cddb74fa3bb918da16c3ed11d2d5691b936a6fb898ba12"
+        org.mcp-auditor.dockerfile-fingerprint: "7b5e8cb44fc508ced9ead94ae7007e4bfb37de4186dad55eb4a0e9d66978b24d"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
 
   holdout-2026-44717-calculate:
@@ -871,7 +871,7 @@ services:
       context: .
       dockerfile: Dockerfile.android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "eb5fa4b57c19f03bd712098ed71350dd0cd8447ef9aa0768f83dcd24527e8316"
+        org.mcp-auditor.dockerfile-fingerprint: "23f7c16c51301d9d63cd4bd72d443767c1d5674e6c04fd24e4840942765d5014"
     image: mcp-auditor-nuisance-android:local
     profiles: ["nuisance"]
 
@@ -1249,7 +1249,7 @@ services:
       context: .
       dockerfile: Dockerfile.adb-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3977a37c3fe9b83b3888b149886b6e6f04b7281c09473309e7e4c9f2b56caf8e"
+        org.mcp-auditor.dockerfile-fingerprint: "cac14449542591f35ba7503b9a62d56fcd6ea4e0eadc46515d2116856ce3c1c0"
     image: mcp-auditor-nuisance-adb-mcp:local
     profiles: ["nuisance"]
 

@@ -19,13 +19,14 @@ no witness. Both were confirmed empirically against the built images (vulnerable
 nonce; patched: same ENOENT, irrelevant either way), so no exploit goes through them.
 
 Both images run the real adb (Android SDK Platform-Tools r37.0.1). The Android device, which cannot
-run under the confinement (the emulator needs /dev/kvm), is stood in for by a process speaking the
-adb transport protocol on 127.0.0.1:5555 that models the Android 17 emulator image; the injected
-command runs in the server's container shell, never on the device, so no stand-in output carries
-the witness. The patched build (0.1.1, fix commit 041729c0b25432df3199ff71b3163a307cf4c28c,
-merged as PR #8 "security-patch": the GHSA advisory names no fixed version, only that commit)
-switches every call site to execFile("adb", argv) with a literal argument array, so the device
-value never reaches a shell; confirmed empirically (the same injected device string reaches adb as
+run under the confinement (the emulator needs /dev/kvm) nor as a backend within the memory bound,
+is stood in for by a process speaking the adb transport protocol on 127.0.0.1:5555 that serves
+outputs captured from the Android 17 emulator image; the injected command runs in the server's
+container shell, never on the device, so no stand-in output carries the witness. The patched
+build (0.1.1, fix commit 041729c0b25432df3199ff71b3163a307cf4c28c, merged as PR #8
+"security-patch": the GHSA advisory names no fixed version, only that commit) switches every call
+site to execFile("adb", argv) with a literal argument array, so the device value never reaches a
+shell; confirmed empirically (the same injected device string reaches adb as
 one literal argument on 0.1.1, surfacing nothing).
 
 The witness and aim follow the command-injection convention the kanban pilot established: a /flag
@@ -62,14 +63,15 @@ _EXPLOIT_ARGS: dict[str, dict[str, object]] = {
 }
 
 # Benign calls of the counted tools on the real adb (platform-tools r37.0.1) and the Android 17
-# device stand-in: /sdcard/build.prop does not exist on an Android device, /system/build.prop
-# does. adb_push is left out: real adb prints its "1 file pushed" summary on stderr
-# (client/line_printer.cpp), which adb-mcp 0.1.1 reports as an error for every argument, so the
-# tool is not counted (real_software.answers false, software_error).
+# device stand-in: the device refuses /system/build.prop to the shell user (mode 0600), so
+# adb_pull reads /system/etc/hosts, which it serves. adb_push is left out: real adb prints its
+# "1 file pushed" summary on stderr (client/line_printer.cpp), which adb-mcp 0.1.1 reports as an
+# error for every argument, so the tool is not counted (real_software.answers false,
+# software_error).
 _BENIGN_ARGS: dict[str, dict[str, object]] = {
     "adb_install": {"apkPath": "/tmp/app.apk"},
     "adb_logcat": {"lines": 10},
-    "adb_pull": {"remotePath": "/system/build.prop", "asBase64": True},
+    "adb_pull": {"remotePath": "/system/etc/hosts", "asBase64": True},
 }
 
 

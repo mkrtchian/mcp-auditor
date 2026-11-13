@@ -6371,7 +6371,7 @@
               "arguments": {
                 "packageName": "com.example.helloworld"
               },
-              "expect": "** MEMINFO in pid",
+              "expect": "Applications Memory Usage (in Kilobytes):",
               "before": [
                 {
                   "tool": "install-apk",
@@ -6392,7 +6392,7 @@
               "arguments": {
                 "packageName": "com.example.helloworld"
               },
-              "expect": "% kernel / faults:",
+              "expect": "没有找到相关CPU信息",
               "before": [
                 {
                   "tool": "install-apk",
@@ -6422,7 +6422,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "15f3bed4bb2ba6ceffa660266b1806647148e7d5fa665a5de0954e7e49862a35"
+            "holdout_fingerprint": "42f591f2a9a123236bce93ed316256f74359e0cdfee16ce7e4f53d341778ab72"
           }
         }
       ],
@@ -6532,20 +6532,20 @@
           "flaw": "CVE-2026-19978",
           "field": "benign_calls",
           "value": "record A's: install-apk installs /opt/helloworld5.apk; uninstall-apk, clear-app-data, get-crash-log, start-activity, memory-info and cpu-info name its package com.example.helloworld, after installing it (and starting it for memory-info and cpu-info); grant-permission and revoke-permission name com.android.camera2 and android.permission.CAMERA; push sends /app/README.md, which pull and rm then find on the device; each call expects a fixed text of the real adb, of the server or of the device output, monitor-events none",
-          "reason": "a benign call is one the real software would answer without error: the committed arguments name files that exist in no image (/opt/app.apk, /opt/file.txt) and a package, com.example.app, that no factory device carries, so a device answers them with an error; record B kept them and made its device stand-in answer Success to a minimal zip named .apk and to uninstall, clear and start on that package, successes the real software does not return."
+          "reason": "a benign call is one the real software would answer without error: the committed arguments name files that exist in no image (/opt/app.apk, /opt/file.txt) and a package, com.example.app, that no factory device carries, so a device answers them with an error; record B kept them and made its device stand-in answer Success to a minimal zip named .apk and to uninstall, clear and start on that package, successes the real software does not return. The device capture of 2026-11-13 kept every call and expect but two: the sample app exits and restarts as soon as it starts, so the real device's dumpsys meminfo for it prints only its header and its dumpsys cpuinfo holds no line for it, and memory-info and cpu-info now expect that header and the server's answer for no matching line."
         },
         {
           "server_package": "https://github.com/jiantao88/android-mcp-server",
           "flaw": null,
           "field": "stand_ins",
-          "value": "record A's: the real adb of Platform-Tools 37.0.1 in the run image, and a stand-in for the Android device alone that keeps a device's state (installed packages, started app, pushed files) and answers from AOSP sources and the Android documentation, nine outputs invented in the form of the AOSP code that prints them",
+          "value": "record A's: the real adb of Platform-Tools 37.0.1 in the run image, and a stand-in for the Android device alone that keeps a device's state (installed packages, started app, pushed files) and answers with outputs captured from the Android 17 emulator image on Android Emulator 37.2.13",
           "reason": "a stand-in answers what the real software would answer for the same request: record B's device answers Success to an install, an uninstall, a clear and a start the real device refuses, so its outputs are not the software's; record A's device holds the state a device holds, so a call on a package not installed fails as on a device."
         },
         {
           "server_package": "https://github.com/jiantao88/android-mcp-server",
           "flaw": null,
           "field": "seeds",
-          "value": "record A's: helloworld5.apk of the adb project's own test data, taken whole and pinned by its checksum, the server's README as the file push sends, and the device state written (the package list, com.android.camera2 with its CAMERA permission)",
+          "value": "record A's: helloworld5.apk of the adb project's own test data, taken whole and pinned by its checksum, the server's README as the file push sends, and com.android.camera2 with its CAMERA permission, checked against the device capture",
           "reason": "a seed is a published sample or a project document before it is a written value: record B wrote /opt/app.apk, a minimal zip, and /opt/file.txt for the fixture, where the adb project publishes a sample APK and the server's README is already in the image."
         }
       ],
@@ -6553,208 +6553,168 @@
       "stand_ins": [
         {
           "replaces": "The Android device the server drives through the adb client (the device side of the adb transport, adbd and the device's programs: pm, am, input, screencap, rm, monkey, dumpsys, logcat, getevent, the sync service). The adb client and its server are the real Android SDK Platform-Tools 37.0.1 running in the container.",
-          "reason": "No Android device or emulator runs under the confinement: the Android Emulator needs hardware virtualization (/dev/kvm) for x86 system images, a device the confinement does not give, and a physical device needs USB passthrough. The adb client and server do run in the container, so only the device is replaced, at the interface the adb client speaks to it (the adb wire protocol on the local emulator port 5555, auto-detected by the adb server as emulator-5554).",
+          "reason": "No Android device runs under the confinement: the Android Emulator needs hardware virtualization (/dev/kvm) for x86_64 system images, a device the confinement does not give, and it cannot run as a backend within the memory bound either, since the Android Emulator release notes (36.6.11) raise the minimum RAM of a phone AVD to 4 GB from API 37 and the emulator overwrites a lower setting ('Increasing RAM size to 4096MB'), so a cold boot under --memory 4g --memory-swap 4g was killed for memory. The adb client and server do run in the container, so only the device is replaced, at the interface the adb client speaks to it (the adb wire protocol on the local emulator port 5555, auto-detected by the adb server as emulator-5554). Its outputs were captured from the real emulator, which ran by hand outside the fixture under a larger memory bound for the capture only.",
           "file": "evals/docker/Dockerfile.android",
           "capture": null,
           "outputs": [
             {
               "request": "A_CNXN",
-              "source": "software_sources",
-              "citation": "A_CNXN connection handshake: Device identity copied verbatim from the adb documentation's `adb devices -l` example (developer.android.com/tools/adb: 'emulator-5554 device product:sdk_google_phone_x86 model:Android_SDK_built_for_x86 device:generic_x86'), as the holdout twin has it; framing (CNXN, version 0x01000001, maxdata 256*1024, '<systemtype>::<props>;features=...' banner) from the AOSP adb protocol doc, packages/modules/adb at 1cf2f017d312f73b3dc53bda85ef2610e35a80e9 docs/dev/protocol.md. Features shell_v2,cmd,stat_v2 kept from the holdout twin. No AUTH step: the README's setup has the user enable and authorize USB debugging.",
+              "source": "capture",
+              "citation": "CNXN reply of the real device captured on 2026-11-13: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: version 0x01000001, maxdata 1048576, banner 'device::ro.product.name=sdk_phone64_x86_64;ro.product.model=Android SDK built for x86_64;ro.product.device=emu64x;features=shell_v2,cmd,stat_v2,ls_v2,fixed_push_mkdir,apex,abb,fixed_push_symlink_timestamp,abb_exec,remount_shell,track_app,sendrecv_v2,sendrecv_v2_brotli,sendrecv_v2_lz4,sendrecv_v2_zstd,sendrecv_v2_dry_run_send,openscreen_mdns,devicetracker_proto_format,devraw,app_info,server_status,track_mdns,delayed_ack'; no AUTH, the device being authorized by default ('adb devices -l' lists 'emulator-5554 device product:sdk_phone64_x86_64 model:Android_SDK_built_for_x86_64 device:emu64x')",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "[\"pm\", \"list\", \"packages\"]",
-              "source": "invented",
-              "citation": "shell: pm list packages: The package list is invented: AOSP package names of a stock phone build (android, com.android.settings, com.android.systemui, com.android.camera2 and others), plus com.example.helloworld once the sample APK is installed. No source holds this output for this device.",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java line 729-734, runListPackages: one `package:<name>` line per package",
-              "replacements": []
-            },
-            {
-              "request": "w[0] === \"input\" && w[1] === \"text\"",
-              "source": "software_sources",
-              "citation": "shell: input text <one word>: frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/input/InputShellCommand.java: the text command writes nothing to stdout on success (its only output is the usage text, lines 320 onwards); exit 0.",
+              "request": "['pm', 'list', 'packages']",
+              "source": "capture",
+              "citation": "shell: pm list packages, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: the factory device's 185 packages, and the same list with package:com.example.helloworld once the sample APK is installed",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"screencap\"",
-              "source": "software_sources",
-              "citation": "shell: screencap [-p] <path>: adb documentation, screencap section (developer.android.com/tools/adb): `shell@ $ screencap /sdcard/screen.png` prints nothing; exit 0.",
+              "request": "w[0] === 'input' && w[1] === 'text'",
+              "source": "capture",
+              "citation": "shell: input text hello, captured: no output, exit 0",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "w[0] === 'screencap'",
+              "source": "capture",
+              "citation": "shell: screencap -p /sdcard/screen.png, captured: no output, exit 0",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "settings get global enable_adb_incremental_install_default",
+              "source": "capture",
+              "citation": "abb_exec:settings get global enable_adb_incremental_install_default, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'null'",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "1998764",
-              "source": "software_sources",
-              "citation": "exec: cmd package 'install' <-g|-r|-d|-t options> -S 1998764 (the streamed sample APK): frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java line 1644 (runInstall) `pw.println(\"Success\")`; the request is recognized by its fixed size word, the size of the seeded sample APK. The adb client's own 'Performing Streamed Install' line is the real client's.",
+              "source": "capture",
+              "citation": "abb_exec:package install -r -d -t -S 1998764 with the seeded sample APK streamed, captured: 'Success'; the same stream without -t, captured: 'Failure [INSTALL_FAILED_TEST_ONLY: Failed to install test-only apk. Did you forget to add -t?]'; the request is recognized by its fixed size word, the size of the seeded sample APK. The adb client's own 'Performing Streamed Install' line is the real client's",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "INSTALL_FAILED_INVALID_APK",
-              "source": "invented",
-              "citation": "exec: cmd package 'install' ... -S <other size>: No source gives the failure for an arbitrary unparsed stream; invented in the form of runInstall's failure line, with a fixed status word.",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java lines 514-594, `pw.println(\"Failure [\" + ... + \"]\")`",
-              "replacements": []
-            },
-            {
-              "request": "\"cmd\", \"package\", \"uninstall\"",
-              "source": "software_sources",
-              "citation": "shell,v2: cmd package 'uninstall' [-k] '<package>': frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java line 2258 (runUninstall) `pw.println(\"Success\")` for the installed sample package; for any other package 'Failure [DELETE_FAILED_INTERNAL_ERROR]', exit 1, the failure line of lines 2260-2261 with the status message the package installer gives for a package that is not installed.",
+              "request": "INSTALL_PARSE_FAILED_NOT_APK",
+              "source": "capture",
+              "citation": "abb_exec:package install with a stream that is not the seeded APK, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport by installing a text file named x.apk: 'Failure [INSTALL_PARSE_FAILED_NOT_APK: Failed to parse /data/app/vmdl344711723.tmp/base.apk: Failed to load asset path /data/app/vmdl344711723.tmp/base.apk]', kept as captured",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"pm\", \"clear\"",
-              "source": "software_sources",
-              "citation": "shell: pm clear <package>: frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java line 2357 `Success` when the package is installed, else line 2360 `Failed` on stderr, exit 1 (runClear).",
+              "request": "['cmd', 'package', 'uninstall', null]",
+              "source": "capture",
+              "citation": "shell,v2: cmd package 'uninstall' 'com.example.helloworld', captured: 'Success' once the sample is installed, else 'Failure [DELETE_FAILED_INTERNAL_ERROR]' on stdout, exit 1",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "w[2] === \"com.android.camera2\" && w[3] === \"android.permission.CAMERA\"",
-              "source": "software_sources",
-              "citation": "shell: pm grant|revoke com.android.camera2 android.permission.CAMERA: frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java runGrantRevokePermission (line 2636 onwards) prints nothing on success; exit 0. Other pairs: 'Exception occurred while executing '<cmd>':' (frameworks/libs/modules-utils at b5f632eb359176c3ccb281c70ce13f035a303d66 java/com/android/modules/utils/BasicShellCommandHandler.java line 106) followed by the package manager's IllegalArgumentException 'Unknown package: <package>' or SecurityException 'Package <package> has not requested permission <permission>', exit 255; these quote the request only in the source's wording.",
+              "request": "['pm', 'clear', null]",
+              "source": "capture",
+              "citation": "shell: pm clear <package>, captured: 'Success' for an installed package, else 'Failed' on stderr, exit 1",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"reset-permissions\"",
-              "source": "software_sources",
-              "citation": "shell: pm reset-permissions ...: frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/pm/PackageManagerShellCommand.java lines 2744-2747, runResetPermissions: resets every package, prints nothing, exit 0.",
+              "request": "w[1] === 'grant' || w[1] === 'revoke'",
+              "source": "capture",
+              "citation": "shell: pm grant|revoke <package> <permission>, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: no output, exit 0, for a runtime permission (com.android.camera2, com.android.settings and com.example.helloworld with android.permission.CAMERA, android.permission.READ_SMS and android.permission.ACCESS_FINE_LOCATION); 'Failure [package not found]' on stdout and 'Error: package not found' on stderr, exit 1, for a package not installed; \"Exception occurred while executing '<grant|revoke>':\" with java.lang.SecurityException 'Permission android.permission.INTERNET requested by package com.android.camera2 is not a changeable permission type' and its stack, exit 255, for a permission that is not a runtime one; the same with java.lang.IllegalArgumentException 'Unknown permission android.permission.NOT_A_PERMISSION' for a name the device does not define. The runtime and defined permissions are those of the captured 'pm list permissions -d -g' and 'pm list permissions -g' outputs; the stand-in puts the requested package and permission where the captured message quotes them",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "w[0] === \"rm\"",
-              "source": "software_sources",
-              "citation": "shell: rm [-r] [-f] <path>: toybox rm (external/toybox at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 toys/posix/rm.c): no output on success; a missing path gives perror_msg_raw 'rm: <path>: No such file or directory', exit 1, or nothing with -f (line 110). A path exists only when it was pushed through sync.",
+              "request": "w[1] === 'reset-permissions'",
+              "source": "capture",
+              "citation": "shell: pm reset-permissions com.example.app, captured: no output, exit 0",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"monkey\", \"-p\", null, \"-c\", \"android.intent.category.LAUNCHER\", \"1\"",
-              "source": "software_sources",
-              "citation": "shell: monkey -p <package> -c android.intent.category.LAUNCHER 1: development at 88f7870b2c652922dc2afb01c076737e8bc50130 cmds/monkey/src/com/android/commands/monkey/Monkey.java: stdout 'Events injected: 1' (line 1363), stderr 'args: [...]' and ' arg: \"...\"' lines (lines 594, 622, which quote the arguments in the source's wording); for a package not installed '** No activities found to run, monkey aborted.' (line 1200), run() returning -4 (line 669), exit 252.",
+              "request": "w[0] === 'rm'",
+              "source": "capture",
+              "citation": "shell: rm [-r] [-f] <path>, captured: no output once the path was pushed; 'rm: /sdcard/file.txt: No such file or directory' on stderr, exit 1, for a missing path; nothing with -f",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"am\", \"start\", \"-n\"",
-              "source": "software_sources",
-              "citation": "shell: am start -n <component>: frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/am/ActivityManagerShellCommand.java line 802 `Starting: ` + intent (Intent { cmp=<short component> }) for the installed sample's launcher activity; any other component: 'Error type 3' and 'Error: Activity class {...} does not exist.' (lines 175, 908-912), exit 1. Starting it marks the app running.",
+              "request": "['monkey', '-p', null, '-c', 'android.intent.category.LAUNCHER', '1']",
+              "source": "capture",
+              "citation": "shell: monkey -p <package> -c android.intent.category.LAUNCHER 1, captured: stdout '  bash arg: <arg>' per argument, then 'Events injected: 1' and '## Network stats: elapsed time=5ms (0ms mobile, 0ms wifi, 5ms not connected)' once the sample is installed (exit 0), or '** No activities found to run, monkey aborted.' (exit 252); stderr 'args: [...]', ' arg: \"...\"' per argument and the two data= lines; the arguments quoted where the capture quotes them",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"dumpsys\", \"activity\", \"containers\"",
-              "source": "invented",
-              "citation": "shell: dumpsys activity containers: No source gives this dump; invented with no part of the request.",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/wm/ActivityTaskManagerService.java line 4446 header 'ACTIVITY MANAGER CONTAINERS (dumpsys activity containers)', then the root container's children names (WindowContainer.dumpChildrenNames), then ' '",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"window\", \"windows\"",
-              "source": "invented",
-              "citation": "shell: dumpsys window windows: No source gives this dump; invented with no part of the request.",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/wm/WindowManagerService.java line 6946 header 'WINDOW MANAGER WINDOWS (dumpsys window windows)' followed by the window list",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"SurfaceFlinger\"",
-              "source": "invented",
-              "citation": "shell: dumpsys SurfaceFlinger: No source gives this dump; invented with no part of the request.",
-              "form_source": "frameworks/native at 4f463a6b1de9198963dc6aff74154a504ba3f8f6 services/surfaceflinger/SurfaceFlinger.cpp dumpAll lines 6095-6112 ('Build configuration:' with appendSfConfigString lines 5761-5771, 'Display identification data:', 'Wide-Color information:', 'Sync configuration: ')",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"input\"",
-              "source": "software_sources",
-              "citation": "shell: dumpsys input: Copied verbatim from the dumpsys documentation (developer.android.com/tools/dumpsys, 'Event hub state'), the first sample it gives for `adb shell dumpsys input`, starting 'INPUT MANAGER (dumpsys input)'.",
+              "request": "['am', 'start', '-n', null]",
+              "source": "capture",
+              "citation": "shell: am start -n <component>, captured: 'Starting: Intent { cmp=com.example.helloworld/.MainActivity }' for the installed sample's launcher activity, exit 0; with 'Error type 3' and 'Error: Activity class {com.example.helloworld/com.example.helloworld.MainActivity} does not exist.' on stderr, exit 1, when it is not installed. Starting it marks the app started",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"dumpsys\", \"display\"",
-              "source": "invented",
-              "citation": "shell: dumpsys display: No source gives this dump; invented with no part of the request.",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/display/DisplayManagerService.java line 3623 header 'DISPLAY MANAGER (dumpsys display)' then mSafeMode, viewports and display devices",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"battery\"",
-              "source": "invented",
-              "citation": "shell: dumpsys battery: No source gives this dump; the values are invented (an emulator's mains-powered full battery).",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/BatteryService.java lines 1648-1676, dumpInternal ('Current Battery Service state:' then '  AC powered: ', '  level: ' and the other fields)",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"connectivity\"",
-              "source": "invented",
-              "citation": "shell: dumpsys connectivity: No source gives this dump; invented with no part of the request.",
-              "form_source": "packages/modules/Connectivity at 2519a78731526d2eb20ae8812acdcab6ef7a09b6 service/src/com/android/server/ConnectivityService.java doDump (line 4372 onwards: 'NetworkProviders for:', 'Active default network: ', 'Current Networks:')",
-              "replacements": []
-            },
-            {
-              "request": "\"dumpsys\", \"-l\"",
-              "source": "software_sources",
-              "citation": "shell: dumpsys -l: frameworks/native at 4f463a6b1de9198963dc6aff74154a504ba3f8f6 cmds/dumpsys/tests/dumpsys_test.cpp, test ListAllServices (lines 271-279) with AssertRunningServices (lines 222-228): 'Currently running services:\\n  Locksmith\\n  Valet\\n', copied verbatim (the software's own test, the first output a source gives for `dumpsys -l`).",
+              "request": "DUMPSYS[w[1]]",
+              "source": "capture",
+              "citation": "shell: each dumpsys request the server sends, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport on the factory device before any call changed its state",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"dumpsys\", \"cpuinfo\"",
-              "source": "invented",
-              "citation": "shell: dumpsys cpuinfo: No source gives this dump; invented with no part of the request (a process line for com.example.helloworld appears once the app has been started).",
-              "form_source": "frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 core/java/com/android/internal/os/ProcessCpuTracker.java printCurrentState and printProcessCPU (lines 826-990: 'Load: a / b / c', 'CPU usage from ...:', '  x% pid/name: y% user + z% kernel / faults: n minor', 'TOTAL')",
+              "request": "['dumpsys', 'meminfo', null]",
+              "source": "capture",
+              "citation": "shell: dumpsys meminfo <package>, captured: 'No process found for: com.example.helloworld' before the sample starts, and 'Applications Memory Usage (in Kilobytes):' with its Uptime line once it was started (the sample exits and restarts at once, so no process section follows); the package quoted where the capture quotes it",
+              "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"dumpsys\", \"meminfo\"",
-              "source": "software_sources",
-              "citation": "shell: dumpsys meminfo com.example.helloworld (app started): Copied from the dumpsys documentation (developer.android.com/tools/dumpsys), the meminfo sample for Maps on a Nexus 5 (`adb shell dumpsys meminfo -d com.google.android.apps.maps`), the first meminfo output it gives; for a package not running: 'No process found for: <package>' (frameworks/base at 1cdfff555f4a21f71ccc978290e2e212e2f8b168 services/core/java/com/android/server/am/ActivityManagerService.java line 11787).",
-              "form_source": null,
-              "replacements": [
-                {
-                  "original": "com.google.android.apps.maps",
-                  "replacement": "com.example.helloworld"
-                }
-              ]
-            },
-            {
-              "request": "\"timeout\", null, \"getevent\", \"-lrt\"",
-              "source": "software_sources",
-              "citation": "shell: timeout <n> getevent -lrt: No output and exit status 124 after <n> seconds: getevent loops until an event count it is never given (system/core at a3b721a32242006b59cb12bd62c9133632af3a2d toolbox/getevent.c lines 655-684) and its stdout is a pipe, so its buffered device lines are lost when toybox timeout kills it and exits 124 (external/toybox at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 toys/other/timeout.c line 85).",
+              "request": "['timeout', null, 'getevent', '-lrt']",
+              "source": "capture",
+              "citation": "shell: timeout 1 getevent -lrt, captured: getevent's 'add device' lines for the emulator's 13 input devices on stdout and exit 124 when timeout ends it; the stand-in answers after the requested number of seconds",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "export ANDROID_LOG_TAGS=''; exec logcat",
-              "source": "software_sources",
-              "citation": "shell,v2: export ANDROID_LOG_TAGS=''; exec logcat -c | -b <buffer> -c | -d -v threadtime *:E -n <n>: system/logging at bcac7c30d88a3773a7c0bc9f5617a23a886331fd logcat/logcat.cpp: -c clears and prints nothing; -d prints the stored entries matching *:E, none after the clear (no output), exit 0; -n without -f only sets the rotation count (lines 863-865).",
+              "source": "capture",
+              "citation": "shell,v2: export ANDROID_LOG_TAGS=''; exec logcat '-c' | '-b' <buffer> '-c' | '-d' '-v' 'threadtime' '*:E' '-n' <n>, captured: no output for a clear, and for the dump the error lines the device held after a clear and the sample's launch",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "\"sync:\"",
+              "request": "sync:",
+              "source": "capture",
+              "citation": "sync service, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: STA2 of /system/etc/hosts (dev 65029, ino 753, mode 0100644, root:root, 56 bytes, times 1791782088) and RCV2 of its 56 bytes; STA2 of /system/build.prop (mode 0100600, root:root, 5818 bytes) and RCV2 answered FAIL 'open failed: Permission denied'; STA2 of /sdcard/ (mode 042770, 1023:1023) and /data/local/tmp/ (mode 040771, 2000:2000); STA2 of a missing path answered errno 2 with zero fields; SEND of a file under /sdcard/ or /data/local/tmp/ answered OKAY and a later RCV2 returned the pushed bytes; SEND to /system/x.txt answered FAIL \"couldn't create file: Read-only file system\". /storage/emulated/0 is /sdcard's directory and gets its answer",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "PUSHED_FORM",
+              "source": "invented",
+              "citation": "sync: STA2/LST2/STAT of a file a SEND stored: the captured reply for /sdcard/file.txt after a push (dev 42, ino 229435, mode 0100660, nlink 1, uid 10148, gid 1023, ctime 1794602186), its size and its atime and mtime following the pushed file (the mtime the SEND's DONE carries, as adbd stores it); no tool response shows these fields",
+              "form_source": "the captured STA2 reply for /sdcard/file.txt after a push",
+              "replacements": []
+            },
+            {
+              "request": "open failed: No such file or directory",
               "source": "software_sources",
-              "citation": "sync: STAT / STA2 / LST2 / SEND+DATA+DONE / RECV / LIST / QUIT: adb sync protocol (packages/modules/adb at 1cf2f017d312f73b3dc53bda85ef2610e35a80e9 file_sync_protocol.h and docs/dev/sync.md): stat replies with mode/size/mtime (zeros, or error ENOENT for STA2, for a missing path; /sdcard and /data/local/tmp are directories), SEND stores the pushed bytes and replies OKAY, RECV returns DATA chunks and DONE for a stored path, else FAIL 'No such file or directory'. What it returns is only what an adb push stored, as a device's storage does; it never holds a command output.",
+              "citation": "sync: RECV/RCV2 of a path neither the device image nor a push holds: 'open failed: No such file or directory' (daemon/file_sync_service.cpp SendSyncFailErrno 'open failed', android-17.0.0_r1); lz4 and zstd flags answered 'unknown flags: N' (line 769); SEND to a path outside /system that is not writable: \"couldn't create file: Permission denied\" (SendSyncFailErrno line 376); LIST/LIS2 answered DONE with no entry",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "inaccessible or not found",
-              "source": "software_sources",
-              "citation": "any other shell command: mksh, Android's /system/bin/sh (external/mksh at 1548076841f243748a3f56da23b38794d437bc12 src/exec.c lines 817-821): '/system/bin/sh: <command>: inaccessible or not found', exit 127, quoting the command word only as the source does.",
+              "source": "capture",
+              "citation": "any other shell command, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'shell,v2,raw:probe' answers '/system/bin/sh: probe: inaccessible or not found' on stderr, exit 127; the stand-in quotes the command word in that place, as mksh does (external/mksh src/exec.c, android-17.0.0_r1)",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "A_CLSE",
               "source": "software_sources",
-              "citation": "any other service: adbd closes a stream it cannot open (packages/modules/adb at 1cf2f017d312f73b3dc53bda85ef2610e35a80e9 docs/dev/protocol.md lines 121 and 173-180: a CLOSE answers a failed OPEN); the adb client reports the closed stream.",
+              "citation": "any other service: adbd refuses a service it cannot open with A_CLSE (adb.cpp handle_packet A_OPEN); adb reports 'error: closed'",
               "form_source": null,
               "replacements": []
             }
@@ -6775,13 +6735,13 @@
           "pin": "14e2bf27c88ba137e35cbb0c2a75f72b595bb98a"
         },
         {
-          "item": "Device state held by the device stand-in: the installed package list (invented AOSP package names, see stand_ins) and the package com.android.camera2 used by grant-permission and revoke-permission (an AOSP app of every handheld build, build/make target/product/handheld_product.mk at 045a3d6a3e359633a14853a5a5e1e4f2a11cbdae line 27)",
+          "item": "com.android.camera2 and android.permission.CAMERA, the package and permission grant-permission and revoke-permission name: an app of the captured package list whose captured 'dumpsys package com.android.camera2' shows it requesting android.permission.CAMERA",
           "kind": "written",
-          "citation": "Written for the device model; com.android.camera2 and its android.permission.CAMERA request come from packages/apps/Camera2 AndroidManifest.xml at 4d11a50c5bc4f024072d89e68f63068803b10989 lines 5 and 16",
+          "citation": "The benign calls of the first admission, checked against the device capture of 2026-11-13",
           "pin": null
         },
         {
-          "item": "Benign call values written: remotePath /sdcard/file.txt and /sdcard/screen.png, localPath /tmp/file.txt, text 'hello', buffer 'main', lines 50, timeout 1, packageName com.example.app for reset-permissions (ignored by the device), all kept from the committed calls",
+          "item": "Benign call values written: remotePath /sdcard/file.txt and /sdcard/screen.png, localPath /tmp/file.txt, text 'hello', buffer 'main', lines 50, timeout 1, packageName com.example.app for reset-permissions (the captured device answers it with no output), all kept from the committed calls",
           "kind": "written",
           "citation": "The benign calls of the first admission",
           "pin": null
@@ -6793,6 +6753,12 @@
           "release": "37.0.1",
           "day": "2026-11-05",
           "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('安装 ADB: 下载 Android SDK Platform Tools ... 使用 `adb version` 验证安装'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
+        },
+        {
+          "software": "Android (device, captured for the stand-in)",
+          "release": "Android 17, system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), on Android Emulator 37.2.13 with the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile",
+          "day": "2026-11-13",
+          "source": "channel-0 of https://dl.google.com/android/repository/sys-img/android/sys-img2-3.xml (x86_64-37.0_r06.zip, sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, which requires emulator 37.2.11 as a minimum) and of https://dl.google.com/android/repository/repository2-3.xml (emulator-linux_x64-16740729.zip, sha1 f41f9e31eb5ca64926603c03265c50bbc0ff4172, and commandlinetools-linux-16111833_latest.zip, sha1 e025545c62a8e64c7559119566a569fb1dec5f60). 37.2.13 is the only stable emulator release Google publishes that meets that minimum, 37.2.11 being no longer published, so it is taken for availability. The emulator and avdmanager packages are used although the Android documentation now points to the android CLI, being the published releases the maintainer's rulings pin. The medium_phone profile is the default the Android CLI page gives (developer.android.com/tools/agents/android-cli/commands/emulator_create)"
         }
       ]
     },
@@ -19092,10 +19058,10 @@
             {
               "tool": "adb_pull",
               "arguments": {
-                "remotePath": "/system/build.prop",
+                "remotePath": "/system/etc/hosts",
                 "asBase64": true
               },
-              "expect": "CnJvLmJ1aWxkLnZlcnNpb24ucmVsZWFzZT0xNwpy",
+              "expect": "MTI3LjAuMC4xICAgICAgIGxvY2FsaG9zdAo",
               "before": []
             },
             {
@@ -19231,43 +19197,43 @@
           "server_package": "npm:adb-mcp",
           "flaw": "CVE-2025-59834",
           "field": "benign_calls",
-          "value": "adb_install: {apkPath: /tmp/app.apk}, expect 'Performing Streamed Install'; adb_logcat: {lines: 10}, expect 'I/ActivityManager'; adb_pull: {remotePath: /system/build.prop, asBase64: true}, expect the base64 of the line ro.build.version.release=17; before [] for each",
-          "reason": "the benign calls follow the retained fixture: adb_pull reads /system/build.prop, a file of every Android system image, where the committed /sdcard/build.prop does not exist on an Android device and the real adb refuses it; each expect is a fixed text of the real adb or of the published sample the device stand-in serves, absent from the arguments, where record B's expects came from its fake client. adb_push keeps its call, which the run does not play, the tool not being counted; adb_shell's call is not kept, the tool not being in the flaw's tools."
+          "value": "adb_install: {apkPath: /tmp/app.apk}, expect 'Performing Streamed Install'; adb_logcat: {lines: 10}, expect 'I/ActivityManager'; adb_pull: {remotePath: /system/etc/hosts, asBase64: true}, expect the base64 of its first line; before [] for each",
+          "reason": "the benign calls follow the retained fixture: adb_pull reads /system/build.prop, a file of every Android system image, where the committed /sdcard/build.prop does not exist on an Android device and the real adb refuses it; each expect is a fixed text of the real adb or of the published sample the device stand-in serves, absent from the arguments, where record B's expects came from its fake client. adb_push keeps its call, which the run does not play, the tool not being counted; adb_shell's call is not kept, the tool not being in the flaw's tools. The device capture of 2026-11-13 showed the real device refusing /system/build.prop to the shell user ('remote open failed: Permission denied', the file being mode 0600 root:root), so adb_pull's benign call moved to /system/etc/hosts, a file of the system image the shell user reads, which its description allows; the stand-in now answers the build.prop read as the device does, and the counted tool does not change."
         },
         {
           "server_package": "npm:adb-mcp",
           "flaw": null,
           "field": "stand_ins",
-          "value": "record A's: the real adb of Platform-Tools 37.0.1 in the run image, and a stand-in for the Android device alone, answering the adb transport protocol from AOSP sources, the Android documentation and the published Android 17 system image",
-          "reason": "a stand-in replaces only the part that cannot run under the confinement: the adb client and its server run in the container, while the device does not, the Android Emulator needing /dev/kvm; record B replaced the adb client itself by a fake binary answering fixed lines."
+          "value": "record A's: the real adb of Platform-Tools 37.0.1 in the run image, and a stand-in for the Android device alone, answering the adb transport protocol with outputs captured from the Android 17 emulator image on Android Emulator 37.2.13",
+          "reason": "a stand-in replaces only the part that cannot run under the confinement: the adb client and its server run in the container, while the device does not, the Android Emulator needing /dev/kvm and, as a backend, more than the memory bound; record B replaced the adb client itself by a fake binary answering fixed lines."
         },
         {
           "server_package": "npm:adb-mcp",
           "flaw": null,
           "field": "seeds",
-          "value": "record A's: /tmp/app.apk, the androidx.test orchestrator 1.4.2 APK the AndroidX Test runner guide installs, and the device's /system/build.prop, copied whole from the Android 17 system image",
+          "value": "record A's: /tmp/app.apk, the androidx.test orchestrator 1.4.2 APK the AndroidX Test runner guide installs; the device's /system/build.prop, which the device refuses to the shell user, is no longer seeded",
           "reason": "a seed is a published sample or a project document taken whole: Android and adb-mcp publish no sample APK, so the APK a project guide installs with adb install -r is used, pinned by its checksum; record B wrote its APK and its build.prop for the fixture."
         },
         {
           "server_package": "npm:adb-mcp",
           "flaw": null,
           "field": "software_releases",
-          "value": "Android SDK Platform-Tools 37.0.1, and Android 17 (system-images;android-37.0;default;x86_64 r06) as the release the device stand-in models",
-          "reason": "both records run Platform-Tools 37.0.1, the current stable release; the releases follow the retained fixture, whose device stand-in models a published Android release that record B's fixture, standing in for the client, does not have."
+          "value": "Android SDK Platform-Tools 37.0.1, and Android 17 (system-images;android-37.0;default;x86_64 r06 on Android Emulator 37.2.13) as the device the stand-in's outputs were captured from",
+          "reason": "both records run Platform-Tools 37.0.1, the current stable release; the releases follow the retained fixture, whose device stand-in serves outputs captured from a published Android release that record B's fixture, standing in for the client, does not have."
         }
       ],
       "patched_version": "0.1.1",
       "stand_ins": [
         {
-          "replaces": "the Android device (adbd and the device services the benign calls reach: shell, sync, abb_exec settings and package install), modelled on the Android 17 emulator image system-images;android-37.0;default;x86_64 r06 with adbd of android-17.0.0_r1",
-          "reason": "The real adb client and server run in the container. A device cannot be attached under the confinement, and the Android Emulator the README names ('Use an emulator (it was built using one)') needs KVM (/dev/kvm) for x86_64 system images (developer.android.com/studio/run/emulator-acceleration), while no device, /dev mount or capability may be added; so the device part only is stood in for, listening on 127.0.0.1:5555, the first port adb's emulator scanner probes (client/transport_emulator.cpp PollAllLocalPortsForEmulator).",
+          "replaces": "the Android device (adbd and the device services the benign calls reach: shell, sync, abb_exec settings and package install), its outputs captured from the Android 17 emulator image system-images;android-37.0;default;x86_64 r06 on Android Emulator 37.2.13",
+          "reason": "No Android device runs under the confinement: the Android Emulator needs hardware virtualization (/dev/kvm) for x86_64 system images, a device the confinement does not give, and it cannot run as a backend within the memory bound either, since the Android Emulator release notes (36.6.11) raise the minimum RAM of a phone AVD to 4 GB from API 37 and the emulator overwrites a lower setting ('Increasing RAM size to 4096MB'), so a cold boot under --memory 4g --memory-swap 4g was killed for memory. The adb client and server do run in the container, so only the device is replaced, at the interface the adb client speaks to it (the adb wire protocol on the local emulator port 5555, auto-detected by the adb server as emulator-5554). Its outputs were captured from the real emulator, which ran by hand outside the fixture under a larger memory bound for the capture only.",
           "file": "evals/docker/Dockerfile.adb-mcp",
           "capture": null,
           "outputs": [
             {
               "request": "A_CNXN",
-              "source": "software_sources",
-              "citation": "CNXN from the host: adb.cpp get_connection_string (android-17.0.0_r1 lines 294-316) for the banner form; transport.cpp supported_features (android-17.0.0_r1 lines 1197-1237) for the feature list; ro.product.vendor.name/model/device from the vendor.img /build.prop of x86_64-37.0_r06.zip; no AUTH because ro.adb.secure is unset in the image's system and vendor build.prop (daemon/main.cpp:233 GetBoolProperty(\"ro.adb.secure\", false))",
+              "source": "capture",
+              "citation": "CNXN reply of the real device captured on 2026-11-13: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: version 0x01000001, maxdata 1048576, banner 'device::ro.product.name=sdk_phone64_x86_64;ro.product.model=Android SDK built for x86_64;ro.product.device=emu64x;features=shell_v2,cmd,stat_v2,ls_v2,fixed_push_mkdir,apex,abb,fixed_push_symlink_timestamp,abb_exec,remount_shell,track_app,sendrecv_v2,sendrecv_v2_brotli,sendrecv_v2_lz4,sendrecv_v2_zstd,sendrecv_v2_dry_run_send,openscreen_mdns,devicetracker_proto_format,devraw,app_info,server_status,track_mdns,delayed_ack'; no AUTH, the device being authorized by default ('adb devices -l' lists 'emulator-5554 device product:sdk_phone64_x86_64 model:Android_SDK_built_for_x86_64 device:emu64x')",
               "form_source": null,
               "replacements": []
             },
@@ -19281,57 +19247,57 @@
             {
               "request": "cat /system/build.prop",
               "source": "capture",
-              "citation": "shell[,args]:cat /system/build.prop: /system/build.prop copied whole from x86_64/build.prop of https://dl.google.com/android/repository/sys-img/android/x86_64-37.0_r06.zip (zip sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, file sha256 a93661125a6ce1582f9d622067dd9b38b9fb47b6504e79317c68e1c364c724aa)",
+              "citation": "shell,v2,raw:cat /system/build.prop, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'cat: /system/build.prop: Permission denied' on stderr, exit 1 (the file is mode 0600 root:root and the shell user is uid 2000)",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "inaccessible or not found",
-              "source": "software_sources",
-              "citation": "any other shell command: mksh at android-17.0.0_r1 src/exec.c:817-820 (warningf Tf_sD_s_s, cp, \"inaccessible or\", Tnot_found; rv = 127): '/system/bin/sh: <command name>: inaccessible or not found' on stderr, exit 127; quotes only the command name as mksh does",
-              "form_source": null,
-              "replacements": []
-            },
-            {
-              "request": "statV2",
-              "source": "invented",
-              "citation": "sync: STA2/LST2/STAT of /system/build.prop, /sdcard, /data/local/tmp; ENOENT for any other path: daemon/file_sync_service.cpp do_stat_v2 (android-17.0.0_r1 lines 162-192) for the reply form; mode 0100644 root:root and directory modes 040770/040771 from AOSP fs_config defaults, size from the copied file, times 1230768000 (AOSP fixed image timestamp); dev/ino zero",
-              "form_source": "daemon/file_sync_service.cpp do_stat_v2",
-              "replacements": []
-            },
-            {
-              "request": "fileData",
               "source": "capture",
-              "citation": "sync: RECV/RCV2 /system/build.prop: DATA chunks of the copied /system/build.prop then DONE, as recv_impl (daemon/file_sync_service.cpp 630-724); other paths get 'open failed: No such file or directory' (SendSyncFailErrno 'open failed'); brotli flag served, lz4/zstd flags answered 'unknown flags: N' (adbd text for unknown flags, line 769)",
+              "citation": "any other shell command, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'shell,v2,raw:probe' answers '/system/bin/sh: probe: inaccessible or not found' on stderr, exit 127; the stand-in quotes the command word in that place, as mksh does (external/mksh src/exec.c, android-17.0.0_r1)",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "couldn't create file: Permission denied",
+              "request": "sync:",
+              "source": "capture",
+              "citation": "sync service, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: STA2 of /system/etc/hosts (dev 65029, ino 753, mode 0100644, root:root, 56 bytes, times 1791782088) and RCV2 of its 56 bytes; STA2 of /system/build.prop (mode 0100600, root:root, 5818 bytes) and RCV2 answered FAIL 'open failed: Permission denied'; STA2 of /sdcard/ (mode 042770, 1023:1023) and /data/local/tmp/ (mode 040771, 2000:2000); STA2 of a missing path answered errno 2 with zero fields; SEND of a file under /sdcard/ or /data/local/tmp/ answered OKAY and a later RCV2 returned the pushed bytes; SEND to /system/x.txt answered FAIL \"couldn't create file: Read-only file system\". /storage/emulated/0 is /sdcard's directory and gets its answer",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "PUSHED_FORM",
+              "source": "invented",
+              "citation": "sync: STA2/LST2/STAT of a file a SEND stored: the captured reply for /sdcard/file.txt after a push (dev 42, ino 229435, mode 0100660, nlink 1, uid 10148, gid 1023, ctime 1794602186), its size and its atime and mtime following the pushed file (the mtime the SEND's DONE carries, as adbd stores it); no tool response shows these fields",
+              "form_source": "the captured STA2 reply for /sdcard/file.txt after a push",
+              "replacements": []
+            },
+            {
+              "request": "open failed: No such file or directory",
               "source": "software_sources",
-              "citation": "sync: SEND/SND2 to a path under /sdcard/, /storage/emulated/0/ or /data/local/tmp/: handle_send_file sends ID_OKAY (daemon/file_sync_service.cpp:419); other paths get \"couldn't create file: Permission denied\" (SendSyncFailErrno line 376). Content is not kept.",
+              "citation": "sync: RECV/RCV2 of a path neither the device image nor a push holds: 'open failed: No such file or directory' (daemon/file_sync_service.cpp SendSyncFailErrno 'open failed', android-17.0.0_r1); lz4 and zstd flags answered 'unknown flags: N' (line 769); SEND to a path outside /system that is not writable: \"couldn't create file: Permission denied\" (SendSyncFailErrno line 376); LIST/LIS2 answered DONE with no entry",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "settings get global enable_adb_incremental_install_default",
-              "source": "software_sources",
-              "citation": "abb_exec:settings get global enable_adb_incremental_install_default: frameworks/base SettingsService.java android-17.0.0_r1 line 264 'pout.println(getForUser(...))' with getForUser returning null for an unset key (line 361): 'null'",
+              "source": "capture",
+              "citation": "abb_exec:settings get global enable_adb_incremental_install_default, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'null'",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "Success",
-              "source": "software_sources",
-              "citation": "abb_exec:package install -r -S <size> with APK bytes streamed, data starting with the zip magic: PackageManagerShellCommand.java android-17.0.0_r1 line 1666 pw.println(\"Success\")",
+              "source": "capture",
+              "citation": "abb_exec:package install -r -S 643551 with the seeded orchestrator APK streamed, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport: 'Success'",
               "form_source": null,
               "replacements": []
             },
             {
               "request": "INSTALL_PARSE_FAILED_NOT_APK",
-              "source": "invented",
-              "citation": "abb_exec:package install -r -S <size> with data not starting with the zip magic: 'Failure [INSTALL_PARSE_FAILED_NOT_APK]', no published output for this case",
-              "form_source": "PackageManagerShellCommand doCommitSession failure line",
+              "source": "capture",
+              "citation": "abb_exec:package install with a stream that is not the seeded APK, captured on 2026-11-13 from the real device: Android Emulator 37.2.13 running system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile, booted headless from its Quick Boot snapshot (-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -read-only -no-snapshot-save -timezone Etc/UTC -qemu -cpu qemu64), driven by the image's adb 37.0.1 through a relay that recorded the adb transport by installing a text file named x.apk: 'Failure [INSTALL_PARSE_FAILED_NOT_APK: Failed to parse /data/app/vmdl344711723.tmp/base.apk: Failed to load asset path /data/app/vmdl344711723.tmp/base.apk]', kept as captured",
+              "form_source": null,
               "replacements": []
             },
             {
@@ -19350,12 +19316,6 @@
           "kind": "project_document",
           "citation": "AndroidX Test runner guide, Test Orchestrator command-line section; Google Maven sha1 e39fb0a062aa533b8c2805bbf9648829a9cd977e, pinned at build by its sha256",
           "pin": "sha256:b7a2e7d0184b03e12c7357f3914d539da40b52a11e90815edff1022c655f459b"
-        },
-        {
-          "item": "/usr/local/share/android-device/build.prop: /system/build.prop of the Android 17 emulator system image, copied whole",
-          "kind": "published_sample",
-          "citation": "x86_64/build.prop of https://dl.google.com/android/repository/sys-img/android/x86_64-37.0_r06.zip (system-images;android-37.0;default;x86_64, channel stable); zip sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, the file's sha256 checked at build",
-          "pin": "a93661125a6ce1582f9d622067dd9b38b9fb47b6504e79317c68e1c364c724aa"
         }
       ],
       "software_releases": [
@@ -19366,10 +19326,10 @@
           "source": "https://dl.google.com/android/repository/repository2-3.xml, remotePackage platform-tools revision 37.0.1 on channel-0 (stable), archive platform-tools_r37.0.1-linux.zip sha1 477254aa5f903c15cf51001717bdf347fb6b53e0; the README names no adb version"
         },
         {
-          "software": "Android (device, modelled by the stand-in)",
-          "release": "Android 17, system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), adbd of android-17.0.0_r1",
-          "day": "2026-11-07",
-          "source": "https://dl.google.com/android/repository/sys-img/android/sys-img2-3.xml (channel-0) and the android-17.0.0_r1 tag of platform/packages/modules/adb; the README names only 'Android 8.0 and higher'"
+          "software": "Android (device, captured for the stand-in)",
+          "release": "Android 17, system-images;android-37.0;default;x86_64 r06 (build CE2A.260420.051.A3), on Android Emulator 37.2.13 with the AVD made by cmdline-tools 23.0 avdmanager from the medium_phone profile",
+          "day": "2026-11-13",
+          "source": "channel-0 of https://dl.google.com/android/repository/sys-img/android/sys-img2-3.xml (x86_64-37.0_r06.zip, sha1 8842a57a6b146423debb46c1496a9c0986aa1b9e, which requires emulator 37.2.11 as a minimum) and of https://dl.google.com/android/repository/repository2-3.xml (emulator-linux_x64-16740729.zip, sha1 f41f9e31eb5ca64926603c03265c50bbc0ff4172, and commandlinetools-linux-16111833_latest.zip, sha1 e025545c62a8e64c7559119566a569fb1dec5f60). 37.2.13 is the only stable emulator release Google publishes that meets that minimum, 37.2.11 being no longer published, so it is taken for availability. The emulator and avdmanager packages are used although the Android documentation now points to the android CLI, being the published releases the maintainer's rulings pin. The medium_phone profile is the default the Android CLI page gives (developer.android.com/tools/agents/android-cli/commands/emulator_create); the README names only 'Android 8.0 and higher'"
         }
       ]
     },
