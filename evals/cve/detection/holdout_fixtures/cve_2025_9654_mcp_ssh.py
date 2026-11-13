@@ -23,7 +23,7 @@ import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from evals.cve.backends import mcp_ssh_holdout, mcp_ssh_sshd
+from evals.cve.backends import backend_beside_launch, mcp_ssh_holdout, mcp_ssh_sshd
 from evals.cve.backends.mcp_ssh_holdout import mcp_ssh_injection_env
 from evals.cve.backends.mcp_ssh_sshd import SSHD_SERVICE
 from evals.cve.detection.targets import Target
@@ -122,5 +122,9 @@ TARGET = Target(
         "hostAlias executes an arbitrary command in the server's container."
     ),
     tools_filter=None,
-    backend_sources=(Path(mcp_ssh_holdout.__file__), Path(mcp_ssh_sshd.__file__)),
+    backend_sources=(
+        Path(mcp_ssh_holdout.__file__),
+        Path(mcp_ssh_sshd.__file__),
+        Path(backend_beside_launch.__file__),
+    ),
 )

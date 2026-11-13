@@ -11561,7 +11561,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "c6421988da79b82ee68c670bb4ebb4777af38d61f0e48c55e89e0f1d24fe03be"
+            "holdout_fingerprint": "16a9964b8534ae5de8d19827240688c76bcec9771da199bf52fc513866a338a1"
           }
         },
         {

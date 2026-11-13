@@ -25,7 +25,7 @@ import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from evals.cve.backends import kubernetes, kubernetes_detection
+from evals.cve.backends import backend_beside_launch, kubernetes, kubernetes_detection
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
 from evals.cve.detection.targets import Target
@@ -137,5 +137,9 @@ TARGET = Target(
         "executes an arbitrary command in the server's container."
     ),
     tools_filter=None,
-    backend_sources=(Path(kubernetes.__file__), Path(kubernetes_detection.__file__)),
+    backend_sources=(
+        Path(kubernetes.__file__),
+        Path(kubernetes_detection.__file__),
+        Path(backend_beside_launch.__file__),
+    ),
 )

@@ -5,7 +5,15 @@ from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_detection_holdout_targets_given as given
-from evals.cve.backends import doris, kubernetes, kubernetes_detection, n8n_instance, searxng
+from evals.cve.backends import (
+    backend_beside_launch,
+    doris,
+    kubernetes,
+    kubernetes_detection,
+    mcp_ssh_holdout,
+    n8n_instance,
+    searxng,
+)
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.backends.searxng import SEARXNG_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
@@ -140,9 +148,19 @@ def test_the_kubectl_targets_fingerprint_the_modules_that_stand_their_control_pl
         target = next(t for t in (*HOLDOUT_TARGETS, *ACCEPTANCE_TARGETS) if t.flaw_id == flaw_id)
 
         assert CONTROL_PLANE_SERVICE in target.images, flaw_id
-        assert {Path(kubernetes.__file__), Path(kubernetes_detection.__file__)} <= set(
-            target.backend_sources
-        ), flaw_id
+        assert {
+            Path(kubernetes.__file__),
+            Path(kubernetes_detection.__file__),
+            Path(backend_beside_launch.__file__),
+        } <= set(target.backend_sources), flaw_id
+
+
+def test_the_mcp_ssh_target_fingerprints_the_modules_that_build_its_launch():
+    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-9654")
+
+    assert {Path(mcp_ssh_holdout.__file__), Path(backend_beside_launch.__file__)} <= set(
+        target.backend_sources
+    )
 
 
 def test_the_searxng_target_builds_and_fingerprints_the_searxng_it_reaches():

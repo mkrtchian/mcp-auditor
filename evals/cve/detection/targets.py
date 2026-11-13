@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from evals.concurrency import entered_in_thread
-from evals.cve.backends import kubernetes, kubernetes_detection
+from evals.cve.backends import backend_beside_launch, kubernetes, kubernetes_detection
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
 from evals.cve.detection import exploits
@@ -343,7 +343,11 @@ ACCEPTANCE_TARGETS: list[Target] = [
             "reach the launch's control plane, so kube-config is not kept."
         ),
         tools_filter=frozenset({"kubectl_generic"}),
-        backend_sources=(Path(kubernetes.__file__), Path(kubernetes_detection.__file__)),
+        backend_sources=(
+            Path(kubernetes.__file__),
+            Path(kubernetes_detection.__file__),
+            Path(backend_beside_launch.__file__),
+        ),
     ),
     Target(
         flaw_id="CVE-2025-65513",
