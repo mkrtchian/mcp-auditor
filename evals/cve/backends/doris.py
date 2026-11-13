@@ -13,7 +13,10 @@ A caller drives this through `ensure_doris`, `start_doris_sentinel`, `doris_rm` 
 `DORIS_LAUNCH_LOCK`, wiring `DORIS_HOST` and `DORIS_BRIDGE` into the server launch: the server
 reaches the cluster by its alias `DORIS_HOST`, while the host-side tools address it by
 `DORIS_CONTAINER`. `DORIS_DB` names the seeded sample database the fixtures query, not a launch
-argument. `doris_server_args` assembles that launch's `docker run` arguments.
+argument. `doris_server_args` assembles that launch's `docker run` arguments. The CKAN holdout
+target (`evals.cve.backends.ckan_holdout`) stands its sentinels on the same link-local network,
+through `ensure_link_local_network` and `start_doris_sentinel` under `DORIS_LAUNCH_LOCK`, since
+its sentinels take the same addresses.
 
 The persistent cluster and its two networks are left running on purpose (reused across
 exercises); the generic orphan sweep documented in `evals.cve.environments` reaps anything labelled
@@ -59,7 +62,7 @@ MYSQL_CLIENT_IMAGE = (
 DORIS_CONTAINER = "mcp-auditor-cve-doris"
 DORIS_HOST = "doris"  # the cluster's hostname and alias on DORIS_BRIDGE
 DORIS_BRIDGE = "mcp-auditor-cve-doris-bridge"  # server <-> Doris FE, name resolution
-_DORIS_LLNET = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
+LINK_LOCAL_NETWORK = "mcp-auditor-cve-doris-llnet"  # Doris <-> sentinels, static link-local IPs
 _DORIS_LLSUBNET = "169.254.0.0/16"
 DORIS_DB = "demo"  # the database of Doris' quick-start sample, the one the fixture seeds
 _DORIS_HEALTH_DEADLINE = 240.0
@@ -119,14 +122,18 @@ def doris_server_args(
 
 def ensure_doris() -> None:
     ensure_closed_network(DORIS_BRIDGE)
-    ensure_closed_network(_DORIS_LLNET, "--subnet", _DORIS_LLSUBNET)
+    ensure_link_local_network()
     if not running_with_launch(DORIS_CONTAINER, doris_cluster_run_args()):
         if _doris_exists():
             doris_rm(DORIS_CONTAINER)
         _doris_run("docker", *labelled_run_args(doris_cluster_run_args()))
-    _doris_run("docker", "network", "connect", _DORIS_LLNET, DORIS_CONTAINER, check=False)
+    _doris_run("docker", "network", "connect", LINK_LOCAL_NETWORK, DORIS_CONTAINER, check=False)
     _wait_doris_healthy()
     _provision_doris_schema()
+
+
+def ensure_link_local_network() -> None:
+    ensure_closed_network(LINK_LOCAL_NETWORK, "--subnet", _DORIS_LLSUBNET)
 
 
 def doris_cluster_run_args() -> list[str]:
@@ -187,7 +194,7 @@ def start_doris_sentinel(sentinel: SentinelIntent) -> str:
         "--name", name,
         "--label", LABEL,
         *confinement_args(),
-        *own_network_args(_DORIS_LLNET),
+        *own_network_args(LINK_LOCAL_NETWORK),
         "--ip", sentinel.host,
         "--cap-add", "NET_BIND_SERVICE",
         "-e", f"FLAG={sentinel.content}",

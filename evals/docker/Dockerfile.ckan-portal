@@ -20,6 +20,11 @@ RUN pip install --no-cache-dir -r /srv/app/src/ckan/dev-requirements.txt
 # set-up" (doc/maintaining/datastore.rst) on a resource of that dataset. The resource id and a tag
 # are written (3b1c4a52-8a5d-4c55-9a43-7a1b2f6a9e01, my_tag): the id CKAN generates is random, and
 # neither the documentation's dataset nor the generated data carries a tag.
+# `ckan generate fake-data` has no seed option, and its factories draw titles, descriptions and
+# image URLs from an unseeded module-level Faker(), so the loader runs the command for both
+# entities in its own process after Faker.seed(4321), the call and value of the "Seeding the
+# Generator" example of Faker's README (Faker 40.28.1, the dev-requirements.txt pin): both get the
+# same text at every load, and differ from each other. Identifiers and timestamps stay CKAN's own.
 # The sources of the documented dataset and DataStore table, pinned. A build argument stays out of
 # the container's environment.
 ARG API_GUIDE_EXAMPLE=ckan/ckan@3e9afe078125182454c36c8adfc96f545d119553:doc/api/index.rst
@@ -30,6 +35,9 @@ import os
 import subprocess
 import urllib.error
 import urllib.request
+
+import ckan.cli.cli as ckan_cli
+import faker
 
 INI = os.environ.get("CKAN_INI", "/srv/app/ckan.ini")
 API = "http://localhost:5000/api/3/action/"
@@ -52,11 +60,17 @@ def ckan(*args):
     return subprocess.run(["ckan", "-c", INI, *args], check=True, capture_output=True, text=True).stdout
 
 
+def fake_data(category, name):
+    ckan_cli.ckan.main(["-c", INI, "generate", "fake-data", category, f"--name={name}"], standalone_mode=False)
+    return call(f"{category}_show?id={name}")["result"]
+
+
 if call("package_show?id=my_dataset_name").get("success"):
     raise SystemExit(0)
 token = ckan("user", "token", "add", os.environ["CKAN_SYSADMIN_NAME"], "import").strip().splitlines()[-1].strip()
-organization = json.loads(ckan("generate", "fake-data", "organization", "--name=my_organization").strip().splitlines()[-1])
-group = json.loads(ckan("generate", "fake-data", "group", "--name=my_group").strip().splitlines()[-1])
+faker.Faker.seed(4321)
+organization = fake_data("organization", "my_organization")
+group = fake_data("group", "my_group")
 dataset = call(
     "package_create",
     {

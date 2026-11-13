@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 import yaml
 
+from evals.cve.backends.ckan import CKAN_PARTS
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.backends.mcp_ssh_sshd import SSHD_SERVICE
 from evals.cve.detection.targets import image_tag
@@ -39,8 +40,9 @@ def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_detec
 ):
     compose_service = COMPOSE_SERVICES.get(service)
     # The CI's bare build, which skips the nuisance profile, builds the stand-in, the Kubernetes
-    # control plane and the sshd, which detection targets run.
-    detection = (STAND_IN_SERVICE, CONTROL_PLANE_SERVICE, SSHD_SERVICE)
+    # control plane, the sshd and the CKAN stack, which detection targets run.
+    ckan_stack = tuple(part.service for part in CKAN_PARTS)
+    detection = (STAND_IN_SERVICE, CONTROL_PLANE_SERVICE, SSHD_SERVICE, *ckan_stack)
     profiles = None if service in detection else ["nuisance"]
 
     assert compose_service is not None, f"{service}: no service in {COMPOSE_FILE}"

@@ -9,6 +9,8 @@ HTTPS front that serves it under the real names the benign calls use (www.dati.g
 data.europa.eu (piveau's MQA, fed by the EU portal's harvest of dati.gov.it) cannot run here:
 the stand-in image serves its capture (`evals/stand_ins/data.europa.eu.json`) under its real
 name. A loader in the CKAN image writes what CKAN's documentation gives, once the portal answers.
+The holdout target CVE-2026-33060 reaches the same stack under demo.ckan.org
+(`evals.cve.backends.ckan_holdout`).
 
 Everything sits on one closed labeled bridge (no route to the host or the Internet), each part at
 a fixed address, so no part takes the address the server resolves another to. The patched server
@@ -139,12 +141,18 @@ def ckan_server_args(
         "--label", LABEL,
         *own_network_args(CKAN_BRIDGE),
         *_host_args(),
-        "-e", f"NODE_EXTRA_CA_CERTS={_AUTHORITY_PATH}",
-        *_read_only(_EUROPA_FILES.authority, _AUTHORITY_PATH),
+        *trust_args(),
         *user_args(host.user),
         "-w", host.working_directory,
         image,
         *server_launch,
+    ]  # fmt: skip
+
+
+def trust_args() -> list[str]:
+    return [
+        "-e", f"NODE_EXTRA_CA_CERTS={_AUTHORITY_PATH}",
+        *_read_only(_EUROPA_FILES.authority, _AUTHORITY_PATH),
     ]  # fmt: skip
 
 
