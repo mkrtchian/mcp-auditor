@@ -148187,21 +148187,21 @@
                 {
                   "request": "POST https://html.duckduckgo.com/html/ (form body q=<query>)",
                   "source": "capture",
-                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> status 200, the DuckDuckGo results HTML served verbatim",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-13 by evals.capture_stand_in with the request that searchDuckDuckGoHtml in open-webSearch v2.1.6 sends (POST /html/, form body q=wikipedia, User-Agent: Apifox/1.0.0 (https://apifox.com), Accept: */*) -> status 200, the DuckDuckGo results HTML (ten div.result, each with an a.result__a, no ad) served verbatim",
                   "form_source": null,
                   "replacements": []
                 },
                 {
                   "request": "any other https path the routes lack (default answer for the https scheme)",
                   "source": "capture",
-                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> the host's nginx 400 Bad Request to a request it declines; html.duckduckgo.com has no distinct not-found on https (it treats any path as a search query and echoes it); never exercised by the fixture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, carried over verbatim by --keep-default https from the earlier capture of 2026-11-05, made with curl -> the host's nginx 400 Bad Request to a request line it declined; its probed_request_target /0123456789abcdef is the placeholder the schema requires, never probed. It is kept because the real host answers an https probe with a 200 results page that quotes the probed path both decoded and raw, which the capture tool refuses; never exercised by the fixture",
                   "form_source": null,
                   "replacements": []
                 },
                 {
                   "request": "any http path (default answer for the http scheme)",
                   "source": "capture",
-                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-05 from html.duckduckgo.com with the open-websearch duckduckgo-HTML request (POST /html/, body q=wikipedia; defaults from a declined request line on each scheme) -> the host's nginx 400 Bad Request to a declined request over http; never exercised by the fixture (the engine uses https only)",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-13 by the capture tool's probe of the http scheme under the server's headers (User-Agent: Apifox/1.0.0 (https://apifox.com), Accept: */*) -> the host's 410 Gone with the DuckDuckGo home page, quoting no path; never exercised by the fixture (the engine uses https only)",
                   "form_source": null,
                   "replacements": []
                 }
