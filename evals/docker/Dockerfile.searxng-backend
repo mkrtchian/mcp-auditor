@@ -1,0 +1,10 @@
+# SearXNG, the metasearch engine mcp-searxng's search tools query (CVE-2026-58485, see
+# evals/cve/backends/searxng.py). SearXNG publishes no numbered release, only images dated from its
+# main branch: this is the image published on 2026-11-13, tag 2026.11.13-219b63b20 (revision
+# 219b63b207c98b85471de5abab773e76432f1961), pinned by digest. Its settings are the image's own
+# template, which extends SearXNG's documented defaults (`use_default_settings: true`), with one
+# setting added: the JSON result format, which mcp-searxng's README (1.7.0 and 1.7.1,
+# Troubleshooting) says must be enabled in settings.yml. The entrypoint copies the template to
+# /etc/searxng/settings.yml at start.
+FROM searxng/searxng@sha256:048e613ce4a7ddc35dfb05a0b8ede795a054187b3c3b89518adc37d5e03a8297
+RUN printf '\nsearch:\n  formats:\n    - html\n    - json\n' >> /usr/local/searxng/settings.template.yml

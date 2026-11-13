@@ -5,8 +5,9 @@ from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_detection_holdout_targets_given as given
-from evals.cve.backends import doris, kubernetes, kubernetes_detection, n8n_instance
+from evals.cve.backends import doris, kubernetes, kubernetes_detection, n8n_instance, searxng
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
+from evals.cve.backends.searxng import SEARXNG_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
 from evals.cve.layout import PROJECT, WORK
@@ -142,6 +143,13 @@ def test_the_kubectl_targets_fingerprint_the_modules_that_stand_their_control_pl
         assert {Path(kubernetes.__file__), Path(kubernetes_detection.__file__)} <= set(
             target.backend_sources
         ), flaw_id
+
+
+def test_the_searxng_target_builds_and_fingerprints_the_searxng_it_reaches():
+    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2026-58485")
+
+    assert SEARXNG_SERVICE in target.images
+    assert Path(searxng.__file__) in target.backend_sources
 
 
 # The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration

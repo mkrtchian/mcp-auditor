@@ -143343,7 +143343,7 @@
             "option": "planting_host.has_network",
             "value": "true",
             "reason": "The exploit reaches a planted link-local sentinel through a public wildcard-DNS name (sslip.io) that resolves to it, which is the CVE's own mechanism; the closed network needs the namespace holder to carry the pinned name resolution.",
-            "documentation": "ssrf_env puts the server on the namespace holder's closed --internal network (ADR 034): the three sslip.io names and example.com are pinned in the holder's /etc/hosts (--add-host) and the sentinel and stand-in addresses are bound on the holder's loopback, so no public resolver is used. A literal-IP URL is blocked on both versions by the lexical check, so the resolving name is what separates them."
+            "documentation": "ssrf_env puts the server on the namespace holder's closed --internal network (ADR 034): the three sslip.io names, example.com and html.duckduckgo.com are pinned in the holder's /etc/hosts (--add-host) and the sentinel and stand-in addresses are bound on the holder's loopback, so no public resolver is used. A literal-IP URL is blocked on both versions by the lexical check, so the resolving name is what separates them."
           },
           {
             "option": "planting_host.user",
@@ -143359,15 +143359,27 @@
           },
           {
             "option": "builder",
-            "value": "ssrf_env",
-            "reason": "Read-only launch with no scope argument appended; the SSRF targets a caller-supplied URL.",
-            "documentation": "kit_launch.ssrf_env -> _read_only_launch (-v root:/srv:ro, container:holder network)."
+            "value": "searxng_env",
+            "reason": "The launch of ssrf_env (read-only layout, no scope argument appended, the SSRF targeting a caller-supplied URL) with a real SearXNG stood for the launch in the namespace holder, since the server's README sets SEARXNG_URL to a SearXNG instance its search tools query.",
+            "documentation": "evals/cve/backends/searxng.py: searxng_env enters owned_layout and planted as ssrf_env does, starts SearXNG joined to the holder (--network container:<holder>), waits for its /healthz to answer OK, launches the server and removes SearXNG (docker rm -f -v) before the holder at exit."
           },
           {
             "option": "NODE_EXTRA_CA_CERTS",
             "value": "/etc/ssl/extra-ca.pem",
             "reason": "The server must trust the leaf the example.com stand-in serves under the real host name (ADR 034), so the benign https://example.com/ read verifies on both versions. This is the trust setting the rule asks the card to record among the launch options.",
             "documentation": "Node.js docs (CLI / environment variables): NODE_EXTRA_CA_CERTS names a PEM file whose certificates are added to Node's trusted CA store. Set via -e by public_names.trust."
+          },
+          {
+            "option": "SEARXNG_URL",
+            "value": "http://localhost:8080",
+            "reason": "The address of the SearXNG instance the search tools query. SearXNG and the server share the holder's network namespace, so the server reaches it on loopback at the address of the README's own example. web_url_read, the flaw's tool, does not read it.",
+            "documentation": "mcp-searxng README (1.7.0 and 1.7.1): `MCP_HTTP_PORT=3000 SEARXNG_URL=http://localhost:8080 mcp-searxng`; SEARXNG_URL is required by the search tools. Set by searxng_env with -e."
+          },
+          {
+            "option": "SearXNG backend (docker run options)",
+            "value": "--network container:<holder> --user searxng --cap-drop ALL --security-opt no-new-privileges --pids-limit 64 --memory 4g --memory-swap 4g -e SSL_CERT_FILE=/etc/ssl/extra-ca.pem -v <fixture authority>:/etc/ssl/extra-ca.pem:ro",
+            "reason": "SearXNG joins the holder, so the server reaches it on loopback and its DuckDuckGo engine resolves html.duckduckgo.com through the holder's host entries to the stand-in. It runs under the image's own searxng account because its entrypoint copies the settings template into /etc/searxng, which that account owns, so the start needs no capability: as root with every capability dropped the copy is refused (`cp: can't create '/etc/searxng/settings.yml': Permission denied`). No capability is added back. The process bound is sized with a wide margin over the measured peak of 14 tasks (9 at rest) through start and searches, and the memory bound is the backends' (measured peak 169 to 181 MB). SSL_CERT_FILE makes it trust the fixture authority that signs the stand-in's leaf. These options bind a backend for the safety of the machine, and nothing SearXNG answers changes under them.",
+            "documentation": "SearXNG documentation, settings `outgoing` (https://docs.searxng.org/admin/settings/settings_outgoing.html): the HTTP client reads SSL_CERT_FILE; the image's entrypoint (/usr/local/searxng/entrypoint.sh) copies settings.template.yml to /etc/searxng/settings.yml when absent. evals/cve/backends/searxng.py: searxng_args."
           }
         ],
         "seeded_in_layout": [],
@@ -143422,7 +143434,7 @@
           },
           {
             "item": "Namespace holder container (sentinel image, entrypoint `sleep 2147483647`, confinement args, on the closed network), whose network namespace the server joins with --network container:<holder>",
-            "reason": "Holds the loopback-bound addresses of the sentinels and the stand-in, and the host entries, so the server reaches them by their real addresses and names.",
+            "reason": "Holds the loopback-bound addresses of the sentinels and the stand-in, and the host entries, so the server reaches them by their real addresses and names. SearXNG joins it too, so the server reaches SearXNG on loopback and SearXNG reads the same host entries.",
             "returned_by": [],
             "used_by_default_by": []
           },
@@ -143485,6 +143497,52 @@
             "reason": "Serves example.com under its real name, the host the benign call reads; detailed under stand_ins.",
             "returned_by": [
               "web_url_read"
+            ],
+            "used_by_default_by": []
+          },
+          {
+            "item": "SearXNG container (evals/docker/Dockerfile.searxng-backend, FROM searxng/searxng@sha256:048e613ce4a7ddc35dfb05a0b8ede795a054187b3c3b89518adc37d5e03a8297, tag 2026.11.13-219b63b20), joined to the namespace holder, listening on [::]:8080 (the image's GRANIAN_HOST and GRANIAN_PORT), with the options of the launch option 'SearXNG backend', removed with its anonymous volumes at the end of each launch",
+            "reason": "The SearXNG instance the server's README points SEARXNG_URL at, so the search tools reach real software. Its engines find no route on the closed network, except the DuckDuckGo engine, which reaches the html.duckduckgo.com stand-in.",
+            "returned_by": [
+              "searxng_web_search",
+              "searxng_instance_info"
+            ],
+            "used_by_default_by": [
+              "searxng_web_search",
+              "searxng_instance_info",
+              "searxng_search_suggestions"
+            ]
+          },
+          {
+            "item": "SearXNG setting search.formats: [html, json], appended to the image's settings template (/usr/local/searxng/settings.template.yml, which keeps `use_default_settings: true`) by a RUN in Dockerfile.searxng-backend; every other setting is SearXNG's documented default, the secret key generated by the entrypoint at each start",
+            "reason": "The server queries SearXNG with format=json, which SearXNG's default settings disable (formats: [html]). The server's README, Troubleshooting '403 Forbidden from SearXNG' (1.7.0 and 1.7.1), gives this exact block to put in settings.yml.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "searxng_web_search",
+              "searxng_instance_info"
+            ]
+          },
+          {
+            "item": "File /etc/ssl/extra-ca.pem in the SearXNG container (the fixture authority's certificate, evals/stand_ins/tls/fixture-authority.pem, mounted read-only) and SSL_CERT_FILE=/etc/ssl/extra-ca.pem",
+            "reason": "Lets SearXNG's DuckDuckGo engine verify the leaf the html.duckduckgo.com stand-in serves under the real name (ADR 034), through the variable SearXNG's outgoing settings page documents. The documented update-ca-certificates route of the image runs only as root and is not taken.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "searxng_web_search"
+            ]
+          },
+          {
+            "item": "Loopback alias 52.142.124.215/32 on the holder's lo and host entry html.duckduckgo.com -> 52.142.124.215 (--add-host on the holder, shared /etc/hosts of SearXNG and the server)",
+            "reason": "The address html.duckduckgo.com resolved to at capture, bound by its stand-in, so SearXNG's DuckDuckGo engine resolves the name inside the closed network.",
+            "returned_by": [],
+            "used_by_default_by": [
+              "searxng_web_search"
+            ]
+          },
+          {
+            "item": "Stand-in container for html.duckduckgo.com (docker/Dockerfile.stand-in), bound in the holder on 52.142.124.215:80 and :443, with the capture evals/stand_ins/html.duckduckgo.com.json, the leaf evals/stand_ins/tls/html.duckduckgo.com.pem and its key mounted read-only under /stand-in/",
+            "reason": "Serves html.duckduckgo.com under its real name to SearXNG's DuckDuckGo engine; detailed under stand_ins.",
+            "returned_by": [
+              "searxng_web_search"
             ],
             "used_by_default_by": []
           }
@@ -143566,9 +143624,53 @@
               "web_url_read"
             ],
             "used_by_default_by": []
+          },
+          {
+            "stand_in": {
+              "replaces": "html.duckduckgo.com, the DuckDuckGo HTML endpoint SearXNG's default `duckduckgo` engine POSTs its query to, served under its real name on http :80 and https :443",
+              "reason": "Every network of the fixture is closed and reaches no Internet (ADR 034), so the real html.duckduckgo.com cannot be reached; the stand-in is the capture the detection suite already serves for this host (CVE-2026-42260).",
+              "file": "evals/docker/Dockerfile.stand-in",
+              "capture": "evals/stand_ins/html.duckduckgo.com.json",
+              "outputs": [
+                {
+                  "request": "POST https://html.duckduckgo.com/html/ (form body carrying q=<query>)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-13 by evals.capture_stand_in (POST /html/, form body q=wikipedia, under open-websearch's User-Agent and Accept headers) -> status 200, the DuckDuckGo results HTML (ten div.result, no ad) served verbatim whatever the query; SearXNG 2026.11.13-219b63b20's duckduckgo engine sent only this request (no token fetch), measured 2026-11-13",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any other https path the routes lack (default answer for the https scheme)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, the https default carried over by --keep-default https (the host's nginx 400 Bad Request, captured 2026-11-05); never sent by SearXNG's engine",
+                  "form_source": null,
+                  "replacements": []
+                },
+                {
+                  "request": "any http path (default answer for the http scheme)",
+                  "source": "capture",
+                  "citation": "evals/stand_ins/html.duckduckgo.com.json, captured 2026-11-13 by the capture tool's probe of the http scheme -> the host's 410 Gone with the DuckDuckGo home page, quoting no path; never sent by SearXNG's engine, which uses https",
+                  "form_source": null,
+                  "replacements": []
+                }
+              ]
+            },
+            "returned_by": [
+              "searxng_web_search"
+            ],
+            "used_by_default_by": [
+              "searxng_web_search"
+            ]
           }
         ],
-        "software_releases": [],
+        "software_releases": [
+          {
+            "software": "SearXNG",
+            "release": "2026.11.13-219b63b20 (revision 219b63b207c98b85471de5abab773e76432f1961), image searxng/searxng@sha256:048e613ce4a7ddc35dfb05a0b8ede795a054187b3c3b89518adc37d5e03a8297",
+            "day": "2026-11-13",
+            "source": "mcp-searxng's README (1.7.0 and 1.7.1) names SearXNG and no version. SearXNG publishes no numbered release, only images built from its main branch and tagged by date and commit (github.com/searxng/searxng, Docker Hub searxng/searxng); the fixture runs the image published on 2026-11-13, tag 2026.11.13-219b63b20, also `latest` that day, pinned by digest in evals/docker/Dockerfile.searxng-backend."
+          }
+        ],
         "fallback_scope": null,
         "fallback_documentation": null,
         "exploit_calls": [

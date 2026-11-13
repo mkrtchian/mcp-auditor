@@ -4,7 +4,8 @@
 FROM node:24-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
 RUN npm install -g mcp-searxng@1.7.0 \
  && test -f /usr/local/lib/node_modules/mcp-searxng/dist/cli.js
-# STDIO transport is the default (MCP_HTTP_PORT unset). SEARXNG_URL is only needed by the search
-# tools, not by web_url_read, so it stays unset. MCP_HTTP_ALLOW_PRIVATE_URLS unset keeps the
-# vulnerable lexical check active (not disabled).
+# STDIO transport is the default (MCP_HTTP_PORT unset). SEARXNG_URL, which the search tools read,
+# is set at launch to the SearXNG the builder stands (evals/cve/backends/searxng.py), at the
+# address of the README's example. MCP_HTTP_ALLOW_PRIVATE_URLS unset keeps the vulnerable lexical
+# check active (not disabled).
 ENTRYPOINT ["node", "/usr/local/lib/node_modules/mcp-searxng/dist/cli.js"]

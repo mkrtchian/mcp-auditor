@@ -112,6 +112,16 @@ services:
         org.mcp-auditor.dockerfile-fingerprint: "f32b5fddaa0fb52dab43b9758af434af698ced1f785629f2281cb9ab395bf0fd"
     image: mcp-auditor-cve-kube-control-plane:local
 
+  # The SearXNG the mcp-searxng target reaches (see evals/cve/backends/searxng.py), outside the
+  # nuisance profile since a detection target builds it.
+  searxng-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.searxng-backend
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "b77d6293d660c14a32db2fb425fa97ca112a65f2482df92d5db953816437a738"
+    image: mcp-auditor-cve-searxng-backend:local
+
   # Holdout targets (transplanted; see evals/cve/detection/holdout_targets.py).
   holdout-2026-4270-aws-api-mcp:
     build:
