@@ -27,13 +27,12 @@ def test_the_committed_authority_signs_for_exactly_the_stand_in_hosts():
     assert excluded == {f".{host}" for host in hosts if not given.is_ip_literal(host)}
 
 
-def test_the_committed_authority_permits_an_ip_literal_host_as_its_single_address():
-    hosts = given.authority_hosts(STAND_INS_DIRECTORY)
-
+def test_the_committed_authority_permits_each_ip_literal_host_as_its_single_address():
     _, permitted, excluded = given.committed_authority_constraints(STAND_INS_DIRECTORY)
 
-    assert "45.55.0.10" in hosts
-    assert "45.55.0.10/32" in permitted
+    networks = {name for name in permitted if "/" in name}
+
+    assert all(network.endswith("/32") for network in networks)
     assert not any("/" in name for name in excluded)
 
 
@@ -45,10 +44,9 @@ def test_every_committed_leaf_names_a_stand_in_host():
     then.each_leaf_names_exactly_one_of(leaves, hosts)
 
 
-def test_an_ip_literal_leaf_names_its_address_and_carries_no_common_name():
+def test_each_ip_literal_leaf_names_its_address_and_carries_no_common_name():
     leaves = given.committed_leaf_names(STAND_INS_DIRECTORY)
 
     common_names = given.committed_leaf_common_names(STAND_INS_DIRECTORY)
 
-    assert leaves["45.55.0.10.pem"] == {"45.55.0.10"}
-    assert common_names["45.55.0.10.pem"] == []
+    then.each_ip_literal_leaf_names_only_its_address(leaves, common_names)

@@ -51,7 +51,12 @@ from evals.capture_defaults import (
     probed_schemes,
     with_kept_defaults,
 )
-from evals.cve.public_stand_ins import QUOTING_MEDIA_TYPES, StandInDefault, body_quoting, media_type
+from evals.cve.stand_in_defaults import (
+    QUOTING_MEDIA_TYPES,
+    StandInDefault,
+    body_quoting,
+    media_type,
+)
 
 _COMMAND = "uv run python -m evals.capture_stand_in"
 

@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Awaitable, Callable, Generator
+from collections.abc import Awaitable, Callable, Generator, Sequence
 from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from evals.cve.backends.kubernetes import StoodControlPlane
+from evals.cve.backends.kubernetes_detection import ControlPlaneDocker, kubernetes_injection_env
 from evals.cve.detection import exploits
 from evals.cve.detection.targets import (
     ACCEPTANCE_TARGETS,
@@ -18,7 +20,7 @@ from evals.cve.detection.targets import (
     TargetVersion,
     image_tag,
 )
-from evals.cve.environments import Launch, LaunchShape, command_injection_env
+from evals.cve.environments import Launch, LaunchShape
 from evals.cve.exchange_log import ExchangeLog
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import PlantingSpec
@@ -36,9 +38,23 @@ SSRF_TARGET = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == 
 KUBERNETES_TARGET = next(
     target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"
 )
-# The kubernetes target's builder on the fake port, so its layout hand-over makes no Docker call.
+CONTROL_PLANE_NETWORK = "kube-net"
+
+
+@contextmanager
+def _a_stood_control_plane(name: str, memory_bound: Sequence[str]) -> Generator[StoodControlPlane]:
+    yield StoodControlPlane(CONTROL_PLANE_NETWORK, Path("/host/kubeconfig"))
+
+
+# The kubernetes target's builder on fake ports, so its layout hand-over and its control plane make
+# no Docker call.
 KUBERNETES_WITHOUT_DOCKER = dataclasses.replace(
-    KUBERNETES_TARGET, builder=partial(command_injection_env, docker=FakePlantingDocker())
+    KUBERNETES_TARGET,
+    builder=partial(
+        kubernetes_injection_env,
+        docker=FakePlantingDocker(),
+        control_plane=ControlPlaneDocker(_a_stood_control_plane, lambda network, container: None),
+    ),
 )
 COMPOSE_PATH = Path(__file__).resolve().parents[2] / "evals" / "docker" / "compose.yml"
 
@@ -137,7 +153,7 @@ def test_four_targets_remain_and_the_prefix_collision_merged_into_the_symlink_ta
 def test_the_filesystem_target_aims_at_both_scope_escapes():
     filesystem = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
 
-    assert filesystem.aim.search("/srv/app/leak0/report")  # the symlink out of scope
+    assert filesystem.aim.search("/srv/app/archive0/report")  # the symlink out of scope
     assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
 
 
@@ -156,7 +172,7 @@ async def test_the_tools_filter_names_exactly_the_tools_its_exploits_call(target
     for exploit in target.exploits:
         client = FakeMCPClient(
             [],
-            responses={"list_directory": ToolResponse(content="leak0\n")},
+            responses={"list_directory": ToolResponse(content="archive0\n")},
         )
         await exploit(_a_fictional_places(), client)
         called.update(name for name, _ in client.calls)
@@ -270,6 +286,13 @@ def test_only_the_git_target_declares_a_read_write_layout():
     ]
 
 
+@pytest.mark.parametrize(
+    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
+)
+def test_every_acceptance_target_runs_from_the_checkout(target: Target):
+    assert target.planting_host.working_directory == "/srv/app"
+
+
 def test_an_empty_spec_plants_no_nonce():
     with KUBERNETES_WITHOUT_DOCKER.environment(KUBERNETES_TARGET.planting_spec(())) as planted:
         assert planted.nonces == {}
@@ -284,8 +307,10 @@ def test_an_env_place_is_planted_through_arguments_with_no_docker():
         assert planted.nonces == {"fict-env": "MCPAUDIT-fakenonce"}
         assert "FICT=MCPAUDIT-fakenonce" in args
         assert "65534:65534" in args
-        assert args[args.index("-w") + 1] == "/"
-        assert args[args.index("--network") + 1] == "none"
+        assert args[args.index("-w") + 1] == "/srv/app"
+        assert args[args.index("--network", args.index("--network") + 1) + 1] == (
+            CONTROL_PLANE_NETWORK
+        )
 
 
 @pytest.mark.parametrize(
@@ -331,9 +356,9 @@ def _a_payload(arguments: dict[str, object]) -> AuditPayload:
 
 
 async def _recorded(call: ExploitCall) -> Unit:
-    # The symlink traversal discovers the planted leaks by listing the checkout, so the fake
-    # names at least one leak<N> for its read chain to issue an aimed read_file.
-    listing = ToolResponse(content="leak0\nleak7\n")
+    # The symlink traversal discovers the planted links by listing the checkout, so the fake
+    # names at least one archive<N> for its read chain to issue an aimed read_file.
+    listing = ToolResponse(content="archive0\narchive7\n")
     recorder = ExchangeLog(FakeMCPClient([], responses={"list_directory": listing}))
     await call(_a_fictional_places(), recorder)
     return unit_of_exchanges([(args, response.content) for _, args, response in recorder.exchanges])

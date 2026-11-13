@@ -96,21 +96,23 @@ def test_an_empty_spec_still_materialises_the_universal_tree_with_neutral_conten
         assert NEUTRAL_TOKEN in (root / ".env").read_text()
 
 
-def test_the_tree_is_handed_over_once_complete_its_leak_links_included():
+def test_the_tree_is_handed_over_once_complete_its_report_links_included():
     docker = FakePlantingDocker()
 
     with filesystem_env("img", given.a_spec_with_a_file_place(), docker=docker) as launch:
         assert list(docker.layouts) == [str(_root(launch))]
-        assert {".env", "app.git/config", "app/leak0/report"} <= docker.layouts[str(_root(launch))]
+        assert {".env", "app.git/config", "app/archive0/report"} <= docker.layouts[
+            str(_root(launch))
+        ]
 
 
-def test_the_scope_fixture_hands_over_a_tree_without_leak_links():
+def test_the_scope_fixture_hands_over_a_tree_without_report_links():
     docker = FakePlantingDocker()
 
     with filesystem_scope_env("img", given.a_spec_with_a_file_place(), docker=docker) as launch:
         handed_over = docker.layouts[str(_root(launch))]
         assert ".env" in handed_over
-        assert not any(path.startswith("app/leak") for path in handed_over)
+        assert not any(path.startswith("app/archive") for path in handed_over)
 
 
 def test_the_scope_fixture_launches_with_the_checkout_as_scope():

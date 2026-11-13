@@ -135,7 +135,7 @@ class DockerPlanting(PlantingDocker):
             time.sleep(_SENTINEL_PROBE_INTERVAL)
 
     def hand_over_layout(self, root: str) -> None:
-        # `-h`: a leak link points at a container path absent from the helper, never followed.
+        # `-h`: a seeded link points at a container path absent from the helper, never followed.
         owner = f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}"
         command = [*_layout_helper("CHOWN"), "-v", f"{root}:/srv", LAYOUT_HELPER_IMAGE]
         command += ["chown", "-hR", owner, "/srv"]

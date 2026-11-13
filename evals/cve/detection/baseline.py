@@ -23,6 +23,7 @@ from evals.cve import (
     proofs,
     public_stand_ins,
     report_units,
+    stand_in_defaults,
     units,
 )
 from evals.cve.detection import holdout_environments
@@ -58,6 +59,7 @@ ENVIRONMENT_PATHS = (
     Path(planting_docker.__file__),
     Path(endpoint_address.__file__),
     Path(public_stand_ins.__file__),
+    Path(stand_in_defaults.__file__),
     Path(planting_stand_ins.__file__),
     Path(closed_network.__file__),
 )

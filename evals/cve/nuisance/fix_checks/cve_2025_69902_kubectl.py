@@ -10,17 +10,35 @@ The witness sits in a container environment variable; each exploit's query trigg
 direct-kubectl branch, then chains an environment reader after a shell separator. On shell=True
 the reader runs and the nonce surfaces; on shell=False the tokens are inert kubectl arguments. The
 aim matches the reader, never the benign "get pods".
+
+kubectl reaches the run's backend, an upstream control plane stood for each launch
+(`evals.cve.backends.kubernetes`), whose admin.conf is mounted at kubectl's default path. The
+control plane joins the server as a second network beside the planting's, and carries the memory
+bound it carries in the run; the server keeps the suite's confinement without the memory bound, as
+every fix-check server does.
 """
 
 import re
+import secrets
+from collections.abc import Generator
+from contextlib import contextmanager
 
+from evals.cve.backends.kubernetes import ControlPlaneStand, stood_control_plane
 from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.kit.launch import command_injection_env
+from evals.cve.kit.launch import Launch, LaunchShape
+from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
-from evals.cve.planting import PlantingHost, SymbolicUser
-from evals.cve.planting_base import PublicNames
+from evals.cve.planting import (
+    PlantingDocker,
+    PlantingHost,
+    PlantingSpec,
+    SymbolicUser,
+    confinement_args,
+    planted,
+)
+from evals.cve.planting_docker import DOCKER_PLANTING
 
 _TOOL = "process_natural_language"
 _ENV_NAME = "CLUSTER_BOOTSTRAP_ID"
@@ -33,12 +51,34 @@ WITNESS = Place(
     coordinates=Coordinates(PlaceKind.ENV, name=_ENV_NAME),
 )
 AIM = re.compile(r"printenv")
-HOST = PlantingHost(
-    user=SymbolicUser.UNPRIVILEGED,
-    working_directory="/",
-    has_network=False,
-    public_names=PublicNames(stand_ins=("45.55.0.10",), trust=("SSL_CERT_FILE",)),
-)
+HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
+
+
+@contextmanager
+def kubectl_env(
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    docker: PlantingDocker = DOCKER_PLANTING,
+    stand: ControlPlaneStand = stood_control_plane,
+) -> Generator[Launch]:
+    name = f"mcp-auditor-kit-kube-control-plane-{secrets.token_hex(4)}"
+    with (
+        stand(name, memory_bound_args()) as control_plane,
+        planted(spec, image, docker) as args,
+    ):
+        yield Launch(
+            command="docker",
+            args=[
+                "run", "-i", "--rm",
+                *confinement_args(),
+                *args.run_args(),
+                "--network", control_plane.network,
+                *control_plane.mount_args(),
+                image,
+            ],
+        )  # fmt: skip
 
 
 def _exploit(payload: str):
@@ -63,7 +103,7 @@ FIXTURE = FixCheckFixture(
     aim=AIM,
     witness=WITNESS,
     planting_host=HOST,
-    builder=command_injection_env,
+    builder=kubectl_env,
     exploits=(
         _exploit(f"kubectl version --client ; printenv {_ENV_NAME}"),
         _exploit(f"kubectl version --client && printenv {_ENV_NAME}"),

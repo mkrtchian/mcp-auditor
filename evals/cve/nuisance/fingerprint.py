@@ -23,6 +23,7 @@ from evals.cve import (
     planting_spec,
     planting_stand_ins,
     public_stand_ins,
+    stand_in_defaults,
 )
 from evals.cve.detection.baseline import host_stand_in_files, planting_host_parts
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
@@ -47,6 +48,7 @@ _PUBLIC_NAME_SOURCES = (
     Path(planting_docker.__file__),
     Path(endpoint_address.__file__),
     Path(public_stand_ins.__file__),
+    Path(stand_in_defaults.__file__),
     Path(closed_network.__file__),
 )
 

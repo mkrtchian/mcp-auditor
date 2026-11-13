@@ -72,7 +72,7 @@ def filesystem_scope_env(
     *,
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
-    # filesystem_env without its leak<i>/report links: those lie inside the layout and lead to a
+    # filesystem_env without its archive<i>/report links: those lie inside the layout and lead to a
     # kept place, while the exploits of a scope-carrying server name each place by absolute path.
     with (
         owned_layout(docker, lambda root: materialise(root, spec, shape)) as root,

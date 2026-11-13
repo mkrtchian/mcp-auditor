@@ -1160,7 +1160,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "06fae014af94bb6368a79541e5cb27a6361362baf66b3ec0a1f733cc691b3152"
+            "holdout_fingerprint": "bc9633ec4d670a62f4959d0a7e67448d2e48ae1e70d0e8d115df093d3ad285cb"
           }
         },
         {
@@ -4445,7 +4445,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "1401f5efca71c44c4548b304080090bc81f16ce484c7867c8befc1289cd35ba1"
+            "holdout_fingerprint": "358384a7a5feb330563fa33ab4f59d7e91cf07468655626afb248a6728d71d3b"
           }
         },
         {
@@ -5376,7 +5376,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "434b137e1c479d4dfdce59a5e54da3f061412b65f9b0b2a3741f8e9acd4bc471"
+            "holdout_fingerprint": "2fcf3b0d8470aef3bf2e7204fcb468a840bec781c68bbc790d95f55775eafbe6"
           }
         }
       ],
@@ -5732,7 +5732,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "075108c4be64911f4305dd6f69594f0fdde79557ed253e46591fe2a2d1217890"
+            "holdout_fingerprint": "9d273cf24572775ba8a501ec646942cccc379b5fef8e98f5d81cb9eeba7afda6"
           }
         }
       ],
@@ -6422,7 +6422,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "c9748379802fec3dfa1af8a4f5600d34240b10a67e98dafeee554778f85e5765"
+            "holdout_fingerprint": "15f3bed4bb2ba6ceffa660266b1806647148e7d5fa665a5de0954e7e49862a35"
           }
         }
       ],
@@ -6937,7 +6937,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "6050a2ae171c564f16847ce991ebd4d067a79e546d60ee3a630009dec97df49c"
+            "holdout_fingerprint": "75249293bf7971379e20fee125c9ec4e7e7e1fc85d5c7c6f59405cebe6ad2caf"
           }
         },
         {
@@ -7503,7 +7503,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "21d7101b81ce5b70377cf2ffeb62743a43712672f12971b4234e49389c572844"
+            "holdout_fingerprint": "74448f03d295bffab38eeca6d50721bc0c2d30d39c7be3c90b789593e5c60625"
           }
         },
         {
@@ -7838,7 +7838,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "65ed14ca97118628202dc91bc925db08bbd896f72d6da51b8ac3927a84bf229c"
+            "holdout_fingerprint": "de7344d1df723c523947671a67b3555ba4744c4eb0b59fac14cc05e94bcb7cba"
           }
         }
       ],
@@ -9170,7 +9170,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "dfdfbab297ff64c277765787b0874c71b5d8199600bfad83079de88d7173b6de"
+            "holdout_fingerprint": "6222a88d264d3a4b79abbc53a7778c86cc2440770fbfb62f1bd806fe7da9a843"
           }
         }
       ],
@@ -9366,7 +9366,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "2626b7db031f97f136aceb89b16257e63dbeea32b44f63fac527380bc1d09a57"
+            "holdout_fingerprint": "543d3fac473a216c86cf754d2378b09241074dc93ebc351d066ee5fded5938d9"
           }
         }
       ],
@@ -9668,7 +9668,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "78e440beef8d35bcee8f751b62300aeea55a195c227884298a1240ef07f808ce"
+            "holdout_fingerprint": "27bd8c424708cfb9bbd938e4a56c7094ce3a17cb9c237006edb7fbae58e78959"
           }
         }
       ],
@@ -10359,7 +10359,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "85fb3c43a4001552b716aed8ac43010f0de1c3904ceaac67d1b693fe3b1a2116"
+            "holdout_fingerprint": "dfdb5a07bb30df8203e63f0d077c0d6a7a23aaa9b67d94254d438e4ab7aca24a"
           }
         }
       ],
@@ -10604,7 +10604,7 @@
             "patched_surfaces": false,
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
-            "holdout_fingerprint": "63d7022b1e0a95e4cb547c267c572016fd2ca521a53c518a38d8718c3a14e3fa",
+            "holdout_fingerprint": "1192ca8c4143cf5d76853935531c4adcf4884b0993407e0ba3a52890c0005743",
             "relies_on_relaying_stand_in": false
           }
         }
@@ -10935,7 +10935,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "d48b3c6f60ed99303dc840d3327f78da3342c4d482d0b0dbb4bd7628f2cf9caf"
+            "holdout_fingerprint": "ce33de88ba06d8990422327d3502cf9a83142398f263b53b261ced6ca54afe4e"
           }
         },
         {
@@ -10997,7 +10997,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "d48b3c6f60ed99303dc840d3327f78da3342c4d482d0b0dbb4bd7628f2cf9caf"
+            "holdout_fingerprint": "ce33de88ba06d8990422327d3502cf9a83142398f263b53b261ced6ca54afe4e"
           }
         }
       ],
@@ -11283,7 +11283,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "837a1374bc2cdb4c368bd148b2043e795e0aa39ef6d754b444ac091ba79afc05"
+            "holdout_fingerprint": "45842a15706007bfeb6ebb89f93a1ed7a18caa925fdc09b82f64fc50050aba4f"
           }
         },
         {
@@ -11582,7 +11582,7 @@
               "before": []
             }
           ],
-          "backend_need": "none",
+          "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "detection_holdout_calibration",
@@ -11595,7 +11595,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "4d4f54c43315d4be8739b702928f059e690e496255fea76e5d42086025243f3c"
+            "holdout_fingerprint": "c6421988da79b82ee68c670bb4ebb4777af38d61f0e48c55e89e0f1d24fe03be"
           }
         },
         {
@@ -11634,7 +11634,7 @@
               "before": []
             }
           ],
-          "backend_need": "none",
+          "backend_need": "fixture",
           "declared_function_is_effect": false,
           "fix_check": {
             "source": "fix_check",
@@ -11655,20 +11655,17 @@
       "host": {
         "user": "unprivileged",
         "working_directory": "/",
-        "has_network": false,
-        "public_names": {
-          "stand_ins": [
-            "45.55.0.10"
-          ],
-          "trust": [
-            "SSL_CERT_FILE"
-          ],
-          "ip_label_domains": []
-        }
+        "has_network": true
       },
       "launch": [],
       "service": "kubectl",
-      "backend": null,
+      "backend": {
+        "provisioner": "kubernetes",
+        "images": [
+          "mcp-auditor-cve-kube-control-plane:local"
+        ],
+        "network": "mcp-auditor-cve-kube-net"
+      },
       "agents": [
         {
           "role": "admitter",
@@ -11740,83 +11737,57 @@
           "server_package": "PyPI:kubectl-mcp-server",
           "flaw": null,
           "field": "host",
-          "value": "has_network false, public_names stand_ins [45.55.0.10], trust [SSL_CERT_FILE]",
-          "reason": "both records run the server unprivileged with no network; one ran kubectl against no cluster and declared no stand-in, the other declared the Kubernetes API stand-in at 45.55.0.10 trusted through SSL_CERT_FILE, and the stand-in fixture is kept, since the server's documentation assumes a cluster and the benign call needs kubectl to reach an API."
+          "value": "has_network true, no public names (until 2026-11-13: has_network false, public_names stand_ins [45.55.0.10], trust [SSL_CERT_FILE])",
+          "reason": "both records run the server unprivileged with no network; one ran kubectl against no cluster and declared no stand-in, the other declared the Kubernetes API stand-in at 45.55.0.10 trusted through SSL_CERT_FILE, and the stand-in fixture is kept, since the server's documentation assumes a cluster and the benign call needs kubectl to reach an API. On 2026-11-13 (nuisance suite rule v6), the stand-in was retired for the real software: an upstream Kubernetes control plane (v1.37.2, etcd 3.7.0) stood for each launch as the run's backend, within the memory bound, on a closed network of its own the server joins, its admin.conf generated by kubeadm and mounted at kubectl's default path; the stand-in's four routes were written by hand, with /apis listing no group and /api/v1 listing pods alone, so every command but 'get pods' failed where a real cluster answers."
         },
         {
           "server_package": "PyPI:kubectl-mcp-server",
           "flaw": null,
           "field": "stand_ins",
-          "value": "the Kubernetes API stand-in at 45.55.0.10, the committed holdout-twin capture reused",
-          "reason": "one record declared no stand-in and ran kubectl against no cluster, the other the Kubernetes API stand-in; the stand-in is kept because 'kubectl get pods' only runs the real software against an API, and the committed 45.55.0.10 capture of the holdout twin and its TLS leaf are reused unchanged."
+          "value": "none (until 2026-11-13: the Kubernetes API stand-in at 45.55.0.10, the committed holdout-twin capture reused)",
+          "reason": "one record declared no stand-in and ran kubectl against no cluster, the other the Kubernetes API stand-in; the stand-in is kept because 'kubectl get pods' only runs the real software against an API, and the committed 45.55.0.10 capture of the holdout twin and its TLS leaf are reused unchanged. On 2026-11-13 (nuisance suite rule v6), the stand-in was retired for the real software: an upstream Kubernetes control plane (v1.37.2, etcd 3.7.0) stood for each launch as the run's backend, within the memory bound, on a closed network of its own the server joins, its admin.conf generated by kubeadm and mounted at kubectl's default path; the stand-in's four routes were written by hand, with /apis listing no group and /api/v1 listing pods alone, so every command but 'get pods' failed where a real cluster answers."
         }
       ],
       "patched_version": "1.2.0",
-      "stand_ins": [
-        {
-          "replaces": "the Kubernetes API server the configured kubectl contacts, at the cluster endpoint https://45.55.0.10:443",
-          "reason": "the confined container has no Kubernetes cluster (the run joins a closed holder namespace with no cluster reachable), so a stand-in serves the API responses kubectl needs for 'kubectl get pods'; it is served under the endpoint's real address with a certificate chaining to the fixture authority kubectl trusts via SSL_CERT_FILE (ADR 034). It relays no flaw effect: the injected command's output comes back through the server's own subprocess, not through this stand-in.",
-          "file": "evals/docker/Dockerfile.stand-in",
-          "capture": "evals/stand_ins/45.55.0.10.json",
-          "outputs": [
-            {
-              "request": "GET /api?timeout=32s",
-              "source": "software_sources",
-              "citation": "APIVersions discovery response (versions: ['v1']); Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)",
-              "form_source": null,
-              "replacements": []
-            },
-            {
-              "request": "GET /apis?timeout=32s",
-              "source": "software_sources",
-              "citation": "APIGroupList discovery response with no API groups beyond core; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)",
-              "form_source": null,
-              "replacements": []
-            },
-            {
-              "request": "GET /api/v1?timeout=32s",
-              "source": "software_sources",
-              "citation": "core/v1 APIResourceList carrying the pods resource (verbs, shortName 'po') per the core/v1 Pod API reference; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)",
-              "form_source": null,
-              "replacements": []
-            },
-            {
-              "request": "GET /api/v1/namespaces/default/pods?limit=500",
-              "source": "software_sources",
-              "citation": "core/v1 PodList with empty items, the documented response for a namespace with no pods; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)",
-              "form_source": null,
-              "replacements": []
-            },
-            {
-              "request": "any other path (per-scheme default)",
-              "source": "software_sources",
-              "citation": "apimachinery meta/v1 Status with reason NotFound, code 404, the API's error for an unknown path; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)",
-              "form_source": null,
-              "replacements": []
-            }
-          ]
-        }
-      ],
+      "stand_ins": [],
       "seeds": [
         {
-          "item": "kubeconfig at /tmp/.kube/config ($HOME/.kube/config): a Config with one cluster (server https://45.55.0.10:443), a context and a user carrying a fixed bearer token; baked into both the patched and the vulnerable image",
-          "kind": "written",
-          "citation": "kubectl's default configuration file, written for the fixture so the real software (kubectl) runs in a deployment where it works and the benign call reaches the Kubernetes API stand-in; no project sample ships a kubeconfig. Carries no machine value, no witness-format value and no audit word.",
-          "pin": null
+          "item": "kubeconfig at /tmp/.kube/config ($HOME/.kube/config): the admin.conf kubeadm generates for each launch ('kubeadm init phase kubeconfig admin'), read out of the control plane into a host file of mode 0644 and mounted read-only. It names the API server by its address on the control plane's network and carries a client certificate of that launch's cluster authority. The patched and vulnerable images bake only the directory /tmp/.kube (mode 0777), so kubectl writes its discovery cache under the unprivileged account",
+          "kind": "generated",
+          "citation": "kubeadm's documentation, 'kubeadm init phase' (https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/), run by the control plane's entrypoint with the container's own address as the advertise address (evals/docker/Dockerfile.kube-control-plane); kubectl reads $HOME/.kube/config by default. Generated per launch, so nothing dated is baked and the fixture does not break when kubeadm's one-year certificates expire",
+          "pin": "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubeadm"
+        },
+        {
+          "item": "the cluster's own objects at start: the default, kube-system, kube-public and kube-node-lease namespaces, their default ServiceAccounts and kube-root-ca.crt configmaps, the kubernetes Service, and the kubeadm:cluster-admins ClusterRoleBinding; no node, no pod",
+          "kind": "generated",
+          "citation": "created by kube-apiserver and kube-controller-manager at start, and the binding by the entrypoint with super-admin.conf as 'kubeadm init' creates it (https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/); no kubelet runs, since it needs a container runtime and privileges the confinement does not give, so 'get nodes' is empty and a created pod stays Pending",
+          "pin": "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kube-apiserver"
         }
       ],
       "software_releases": [
         {
           "software": "kubectl",
           "release": "v1.37.2",
-          "day": "2026-11-05",
-          "source": "the server documentation names kubectl as a prerequisite with no version; v1.37.2 is the stable release per dl.k8s.io/release/stable.txt, the version the reused CVE-2025-65719 holdout calibration records; the CVE-2025-69902 fix check installs the same v1.37.2"
+          "day": "2026-11-13",
+          "source": "the server documentation names kubectl as a prerequisite with no version; v1.37.2 is the stable release per https://dl.k8s.io/release/stable.txt on 2026-11-13, fetched from dl.k8s.io and checked against its published SHA-256 in the run image and the fix check's vulnerable image"
         },
         {
-          "software": "Kubernetes API server",
+          "software": "Kubernetes (kube-apiserver, kube-controller-manager, kube-scheduler)",
           "release": "v1.37.2",
-          "day": "2026-11-05",
-          "source": "the server documentation names no cluster version; v1.37.2 matches the kubectl client and is the stable Kubernetes release the reused CVE-2025-65719 holdout calibration records; served by the stand-in as core/v1 API discovery and an empty PodList, stable across releases"
+          "day": "2026-11-13",
+          "source": "the server documentation names no Kubernetes distribution or version, so the control plane is upstream Kubernetes at the stable release https://dl.k8s.io/release/stable.txt gave on 2026-11-13, each binary fetched from dl.k8s.io and checked against its published SHA-256 (evals/docker/Dockerfile.kube-control-plane). It runs as a backend stood for each launch by evals/cve/backends/kubernetes.py, as 65534:65534 under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, since it binds the unprivileged port 6443 and writes only its tmpfs, and the memory bound --memory 4g --memory-swap 4g; its certificates, kubeconfigs, manifests and etcd data are on tmpfs. Measured on 2026-11-13: ready in about five seconds, a peak of 89 threads under 'get pods', 'get namespaces' and 'get nodes', well under the bound of 256, and about 410 MiB resident."
+        },
+        {
+          "software": "kubeadm",
+          "release": "v1.37.2",
+          "day": "2026-11-13",
+          "source": "the control plane's file phases run kubeadm of the same stable release as the components, checked against its published SHA-256"
+        },
+        {
+          "software": "etcd",
+          "release": "3.7.0",
+          "day": "2026-11-13",
+          "source": "the version build/dependencies.yaml of Kubernetes v1.37.2 names (also kubeadm's DefaultEtcdVersion at that release), read on 2026-11-13; the release tarball from github.com/etcd-io/etcd is checked against its SHA-256 (ADD --checksum)"
         }
       ]
     },

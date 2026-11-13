@@ -5,13 +5,8 @@ from pydantic import ValidationError
 
 import tests.unit.support.test_cve_public_stand_ins_given as given
 from evals.cve.planting_base import StandIn
-from evals.cve.public_stand_ins import (
-    StandInFiles,
-    body_quoting,
-    media_type,
-    stand_in,
-    stand_in_files,
-)
+from evals.cve.public_stand_ins import StandInFiles, stand_in, stand_in_files
+from evals.cve.stand_in_defaults import body_quoting, media_type
 
 
 def test_a_capture_loads_with_its_leaf_key_and_authority(tmp_path: Path):

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve import environments
-from evals.cve.backends import gitlab, gitlab_responder, node_sandbox_engine
+from evals.cve.backends import gitlab, gitlab_responder, kubernetes, node_sandbox_engine
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.responder import Responder
 from evals.cve.kit import launch as kit_launch
@@ -68,6 +68,15 @@ def _a_gitlab_with_no_container(name: str) -> Generator[gitlab.StoodGitLab]:
     yield gitlab.StoodGitLab(f"{gitlab.GITLAB_NETWORK}-quiet", "token-of-the-stand-up")
 
 
+@contextmanager
+def _a_control_plane_with_no_container(
+    name: str, memory_bound: Sequence[str]
+) -> Generator[kubernetes.StoodControlPlane]:
+    yield kubernetes.StoodControlPlane(
+        f"{kubernetes.CONTROL_PLANE_NETWORK}-quiet", Path("/tmp/kubeconfig-directory/config")
+    )
+
+
 def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
     # Each per-launch backend's own launch, with a stand-up that starts no container.
     match key:
@@ -75,6 +84,10 @@ def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
             launch = node_sandbox_engine.engine_launch(_a_socket_with_no_engine, _noop_remove)
         case "gitlab":
             launch = gitlab.gitlab_launch(_a_gitlab_with_no_container, _noop_remove)
+        case "kubernetes":
+            launch = kubernetes.control_plane_launch(
+                _a_control_plane_with_no_container, _noop_remove
+            )
         case _:
             raise AssertionError(f"give the per-launch backend {key} a quiet stand-up here")
     return PerLaunchBackend(key, launch)

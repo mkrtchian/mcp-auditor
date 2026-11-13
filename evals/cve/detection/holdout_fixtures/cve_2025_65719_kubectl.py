@@ -11,32 +11,34 @@ Every exploit prefixes the kubectl trigger, then chains a command after `;`: `ku
 the location it reads. The slim image carries no curl, so the HTTP-endpoint readers use python3.
 
 The benign call runs process_natural_language('get pods'), which the server translates to
-`kubectl get pods`. kubectl is the real software the server shells out to and it contacts the
-Kubernetes API, which cannot run in the closed fixture network, so the cluster endpoint is served
-by a stand-in under its real address (the IP literal 45.55.0.10) from a capture written from the
-Kubernetes API documentation; kubectl trusts the fixture authority through SSL_CERT_FILE and the
-stand-in's leaf carries that IP as a SAN. A kubeconfig is baked at kubectl's default location in
-both images, so the benign call returns an empty pod list for the default namespace with no error.
+`kubectl get pods`. kubectl is the real software the server shells out to, so it reaches a real
+Kubernetes control plane (`evals.cve.backends.kubernetes`): upstream v1.37.2, stood for each launch
+in its own network namespace on a closed network the namespace holder joins, never in the holder,
+whose loopback carries the link-local sentinels. kubeadm generates its certificates and its
+`admin.conf` per launch, and the builder mounts that kubeconfig read-only at kubectl's default path
+(`/tmp/.kube/config`, under `HOME=/tmp`), naming the API server by address. The cluster has no node,
+so the benign call returns an empty pod list for the default namespace with no error.
 """
 
 import json
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
+from evals.cve.backends import kubernetes, kubernetes_detection
+from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
+from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
 from evals.cve.detection.targets import Target
-from evals.cve.environments import command_injection_env
 from evals.cve.grammar import FlawClass
 from evals.cve.layout import PROJECT
 from evals.cve.places import Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
-from evals.cve.planting_base import PublicNames
 from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
 
 SERVICE = "holdout-2025-65719-kubectl"
 PATCHED = "holdout-2025-65719-kubectl-patched"
 WORKING_DIRECTORY = PROJECT  # /srv/app, the checkout; the flaw runs through the server's own shell
-STAND_IN_HOST = "45.55.0.10"  # the cluster endpoint the configured kubectl contacts
 TOOL = "process_natural_language"
 # The vulnerable branch fires only when the query begins with "kubectl "; the trigger exits with
 # --client, then `;` chains the reader. The benign username (a plain query) carries no `;`.
@@ -103,8 +105,8 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:
-    # process_natural_language('get pods') -> `kubectl get pods` against the stand-in cluster,
-    # which returns an empty pod list for the default namespace. `query` is required on v1.2.0.
+    # process_natural_language('get pods') -> `kubectl get pods` against the launch's control
+    # plane, which has no pod in the default namespace. `query` is required on v1.2.0.
     await client.call_tool(
         TOOL, {"args": json.dumps(["get pods"]), "kwargs": "{}", "query": "get pods"}
     )
@@ -117,16 +119,15 @@ TARGET = Target(
     aim=AIM,
     reaches=frozenset({"command_execution"}),
     kept_places=KEPT_PLACES,
-    images=(SERVICE, "sentinel", "stand-in"),
+    images=(SERVICE, "sentinel", CONTROL_PLANE_SERVICE),
     server_image=SERVICE,
     patched_image=PATCHED,
     planting_host=PlantingHost(
         SymbolicUser.UNPRIVILEGED,
         WORKING_DIRECTORY,
-        has_network=False,
-        public_names=PublicNames(stand_ins=(STAND_IN_HOST,), trust=("SSL_CERT_FILE",)),
+        has_network=True,
     ),
-    builder=command_injection_env,
+    builder=kubernetes_injection_env,
     exploits=tuple(_exploit(place_id) for place_id in KEPT_PLACES),
     benign=_benign,
     awaited_capability=None,
@@ -136,4 +137,5 @@ TARGET = Target(
         "executes an arbitrary command in the server's container."
     ),
     tools_filter=None,
+    backend_sources=(Path(kubernetes.__file__), Path(kubernetes_detection.__file__)),
 )

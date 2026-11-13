@@ -23,7 +23,7 @@ _SCOPED = RouteObservations(
     launch_command=("run", "--rm", "image", "/srv/app"),
     scope="/srv/app",
     tool_names=("list_directory", "read_file"),
-    responses=("leak0\nleak7\n", '[remote "origin"]\n\turl = /srv/app.git\n'),
+    responses=("archive0\narchive7\n", '[remote "origin"]\n\turl = /srv/app.git\n'),
     call_errored=(False, False),
     tools_list_succeeded=True,
 )

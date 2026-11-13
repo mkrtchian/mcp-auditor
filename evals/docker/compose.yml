@@ -57,7 +57,7 @@ services:
       context: .
       dockerfile: Dockerfile.kubernetes
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "97f1f2d4159ea00beb8e8c265bf5253135b4bfa773554d8ddd6cd303e8536b42"
+        org.mcp-auditor.dockerfile-fingerprint: "2764a09adbd77efc53ed4ce35241b428728faf2457139a609e6b00fc8d9a0801"
     image: mcp-auditor-cve-kubernetes:local
 
   kubernetes-patched:
@@ -65,7 +65,7 @@ services:
       context: .
       dockerfile: Dockerfile.kubernetes-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "995cf96bef57a5d2d03dbf0bf1713516d5041ec30791b83b1e79c064b593f84a"
+        org.mcp-auditor.dockerfile-fingerprint: "eca4d78a39feaa975d22ea7b1cbd9278da628e6d46ef5a8ee42293e4f76b7352"
     image: mcp-auditor-cve-kubernetes-patched:local
 
   fetch:
@@ -101,6 +101,16 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "d99c84bc549d81a2f0bbaeea57dcd43c578ff88634bde63cd665df6787f7d066"
     image: mcp-auditor-cve-stand-in:local
+
+  # The Kubernetes control plane the kubectl servers reach (see evals/cve/backends/kubernetes.py),
+  # outside the nuisance profile since detection targets build it.
+  kube-control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile.kube-control-plane
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "f32b5fddaa0fb52dab43b9758af434af698ced1f785629f2281cb9ab395bf0fd"
+    image: mcp-auditor-cve-kube-control-plane:local
 
   # Holdout targets (transplanted; see evals/cve/detection/holdout_targets.py).
   holdout-2026-4270-aws-api-mcp:
@@ -273,7 +283,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "82386344c6df9e708edb06b328ef4c0fc71422fd42f9e8839fdc1eba4f6f63c7"
+        org.mcp-auditor.dockerfile-fingerprint: "466567bb8d34b8895384a905f3bb49e2c716e241001274da8518947413ea07a2"
     image: mcp-auditor-cve-holdout-2026-5323-a11y:local
 
   holdout-2026-5323-a11y-patched:
@@ -281,7 +291,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-5323-a11y-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "ac5e087b40f0d8b6ea90fdfcc2ba7974a46088ae9948fe980b0b2e0238552322"
+        org.mcp-auditor.dockerfile-fingerprint: "61477766ae41b8c6e378927162a319717704dd2c5ba87e1451a7ce78b1c6b7c3"
     image: mcp-auditor-cve-holdout-2026-5323-a11y-patched:local
 
   # SSRF target: every CKAN tool fetches its caller-supplied server_url with no validation
@@ -567,7 +577,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-65719-kubectl
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "8b03df59c24950e9686aef3bfd29c36a2b76c830ba869a721c2774fda692129c"
+        org.mcp-auditor.dockerfile-fingerprint: "6b41cf8c02558da1fa35acd82b00fd90fa6cfff1e6186a449e79c2120bc4c282"
     image: mcp-auditor-cve-holdout-2025-65719-kubectl:local
 
   holdout-2025-65719-kubectl-patched:
@@ -575,7 +585,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2025-65719-kubectl-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "110b80b91b9cf5c33fbbc3685a7ddfa8fb82fbe31bea9ecabc73c84bec7fbc03"
+        org.mcp-auditor.dockerfile-fingerprint: "2598fb6ea56c735906ab16aa73234a35f70bfbfc422f0f968560c06c636bed8e"
     image: mcp-auditor-cve-holdout-2025-65719-kubectl-patched:local
 
   holdout-2026-5833-taskwarrior:
@@ -959,7 +969,7 @@ services:
       context: .
       dockerfile: Dockerfile.kubectl
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "110b80b91b9cf5c33fbbc3685a7ddfa8fb82fbe31bea9ecabc73c84bec7fbc03"
+        org.mcp-auditor.dockerfile-fingerprint: "2598fb6ea56c735906ab16aa73234a35f70bfbfc422f0f968560c06c636bed8e"
     image: mcp-auditor-nuisance-kubectl:local
     profiles: ["nuisance"]
 

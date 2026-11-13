@@ -6,13 +6,16 @@ from enum import StrEnum
 from pathlib import Path
 
 from evals.concurrency import entered_in_thread
+from evals.cve.backends import kubernetes, kubernetes_detection
+from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
+from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
 from evals.cve.detection import exploits
 from evals.cve.environments import (
     FALLBACK_SCOPE,
+    PROJECT,
     Launch,
     LaunchShape,
     PlantedLaunch,
-    command_injection_env,
     filesystem_env,
     git_init_traversal_env,
     ssrf_env,
@@ -155,11 +158,12 @@ class OutOfScopeFlaw:
 
 
 # The user, working directory and network each target's launch runs with (planting emits them).
-_UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+# Every target runs from the checkout, as the detection suite rule launches a target.
+_UNPRIVILEGED_NO_NETWORK = PlantingHost(SymbolicUser.UNPRIVILEGED, PROJECT, has_network=False)
 # The fetch target's benign call reads http://example.com/, served inside the closed network.
 _UNPRIVILEGED_WITH_EXAMPLE_COM = PlantingHost(
     SymbolicUser.UNPRIVILEGED,
-    "/",
+    PROJECT,
     has_network=True,
     public_names=PublicNames(stand_ins=("example.com",)),
 )
@@ -248,7 +252,9 @@ ACCEPTANCE_TARGETS: list[Target] = [
             "Two filesystem scope escapes on one server. A symlink inside the allowed dir needs "
             "list_directory discovery then read_file (the current audit order, read_file before "
             "list_directory, neutralises the cross-tool learning). A prefix-collision sibling "
-            "(/srv/app.git) is derivable only from the declared /srv/app boundary."
+            "(/srv/app.git) is derivable only from the declared /srv/app boundary. The seeded "
+            "archive<N>/report links depart from the holdout limits, which forbid a seeded link "
+            "to a kept place: acceptance only, since the server has no tool that creates a link."
         ),
         tools_filter=FILESYSTEM_READ_TOOLS,
         fallback_scope=FallbackScope(FallbackScopeKind.DOCUMENTED_DEFAULT, path=FALLBACK_SCOPE),
@@ -261,7 +267,8 @@ ACCEPTANCE_TARGETS: list[Target] = [
         reaches=frozenset({"arbitrary_read"}),
         # git_init traversal reaches the bare config and the workspace .env, but no git tool names
         # the out-of-scope bare (same reason CVE-2025-68145 left the layer), so the route check
-        # keeps only the workspace .env, routed by the dotenv documented default (parent of scope).
+        # keeps only the workspace .env, routed by the dotenv documented default (the parent of the
+        # working directory, the checkout).
         kept_places=("workspace-dotenv",),
         images=("git",),
         server_image="git",
@@ -269,7 +276,10 @@ ACCEPTANCE_TARGETS: list[Target] = [
         # Read-write: the git_init exploit, written from the published mechanism, writes a .git
         # into /srv, and git operates on a checkout its account owns.
         planting_host=PlantingHost(
-            SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=LayoutMount.READ_WRITE
+            SymbolicUser.UNPRIVILEGED,
+            PROJECT,
+            has_network=False,
+            layout_mount=LayoutMount.READ_WRITE,
         ),
         builder=git_init_traversal_env,
         exploits=(exploits.exploit_git_init_traversal,),
@@ -307,7 +317,6 @@ ACCEPTANCE_TARGETS: list[Target] = [
             "gh-hosts",
             "git-credentials",
             "k8s-sa-token",
-            "kube-config",
             "mongorc",
             "mysql-client-cnf",
             "mysql-system-cnf",
@@ -319,19 +328,22 @@ ACCEPTANCE_TARGETS: list[Target] = [
             "shell-history",
             "ssh-private-key",
         ),
-        images=("kubernetes",),
+        images=("kubernetes", CONTROL_PLANE_SERVICE),
         server_image="kubernetes",
         patched_image="kubernetes-patched",
-        planting_host=_UNPRIVILEGED_NO_NETWORK,
-        builder=command_injection_env,
+        # The server reaches its control plane over the network the builder connects.
+        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, PROJECT, has_network=True),
+        builder=kubernetes_injection_env,
         exploits=(exploits.exploit_kubernetes_injection,),
         benign=exploits.benign_kubernetes_injection,
         awaited_capability=None,
         note=(
             "Command injection via kubectl_generic (execSync shell); the sweep surfaces env, "
-            "file, account and hostname nonces."
+            "file, account and hostname nonces. The server loads ~/.kube/config at startup to "
+            "reach the launch's control plane, so kube-config is not kept."
         ),
         tools_filter=frozenset({"kubectl_generic"}),
+        backend_sources=(Path(kubernetes.__file__), Path(kubernetes_detection.__file__)),
     ),
     Target(
         flaw_id="CVE-2025-65513",

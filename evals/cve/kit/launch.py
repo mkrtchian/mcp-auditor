@@ -106,7 +106,7 @@ def filesystem_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     with (
-        owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
+        owned_layout(docker, lambda root: _materialise_with_links(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         yield _filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
@@ -184,14 +184,14 @@ def _materialise(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
         build_layout(root, spec.layout)
 
 
-def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+def _materialise_with_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
     _materialise(root, spec, shape)
     if shape is not LaunchShape.EMPTY_LAYOUT:
         checkout = root / _CHECKOUT
         for index, intent in enumerate(spec.files):
-            leak = checkout / f"leak{index}"
-            leak.mkdir()
-            os.symlink(intent.container_path, leak / "report")
+            directory = checkout / f"archive{index}"
+            directory.mkdir()
+            os.symlink(intent.container_path, directory / "report")
 
 
 def _layout_launch(layout: list[str], image: str, args: PlantedArgs) -> Launch:

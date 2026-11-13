@@ -27,6 +27,7 @@ from evals.cve.backends import (
     gravitino_seed,
     httpbin,
     jenkins,
+    kubernetes,
     mcp_ssh_sshd,
     n8n,
     node_sandbox_engine,
@@ -41,6 +42,11 @@ from evals.cve.backends.googleapis import GOOGLEAPIS_BRIDGE, GOOGLEAPIS_RESPONDE
 from evals.cve.backends.gravitino import GRAVITINO_BRIDGE, GRAVITINO_IMAGE, GRAVITINO_SERVICES
 from evals.cve.backends.httpbin import HTTPBIN_BRIDGE, HTTPBIN_IMAGE, HTTPBIN_PARTS
 from evals.cve.backends.jenkins import JENKINS_BRIDGE, JENKINS_RESPONDER_IMAGE, JENKINS_SERVICE
+from evals.cve.backends.kubernetes import (
+    CONTROL_PLANE_IMAGE,
+    CONTROL_PLANE_NETWORK,
+    CONTROL_PLANE_SERVICE,
+)
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.mcp_ssh_sshd import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
 from evals.cve.backends.n8n import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
@@ -171,6 +177,13 @@ BACKENDS: dict[str, RegisteredBackend] = {
         (ENGINE_IMAGE,),
         (ENGINE_SERVICE,),
         (Path(node_sandbox_engine.__file__), image_dockerfile(ENGINE_SERVICE)),
+    ),
+    "kubernetes": RegisteredBackend(
+        kubernetes.LIFECYCLE,
+        CONTROL_PLANE_NETWORK,
+        (CONTROL_PLANE_IMAGE,),
+        (CONTROL_PLANE_SERVICE,),
+        _served(kubernetes.__file__, CONTROL_PLANE_SERVICE),
     ),
 }
 

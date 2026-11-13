@@ -174,14 +174,14 @@ def filesystem_env(
     docker: PlantingDocker = DOCKER_PLANTING,
 ) -> Generator[Launch]:
     with (
-        owned_layout(docker, lambda root: _materialise_with_leak_links(root, spec, shape)) as root,
+        owned_layout(docker, lambda root: _materialise_with_links(root, spec, shape)) as root,
         planted(spec, image, docker) as args,
     ):
         yield filesystem_launch(layout_mount_args(root, spec.host.layout_mount), image, args)
 
 
-def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
-    # One leak<N>/report symlink inside the in-scope checkout per planted file place, pointing
+def _materialise_with_links(root: Path, spec: PlantingSpec, shape: LaunchShape) -> None:
+    # One archive<N>/report symlink inside the in-scope checkout per planted file place, pointing
     # (absolute) at the coordinate where the nonce is mounted. The flaw follows it out of scope;
     # the patched server does not. The exploit discovers them by listing the checkout. The
     # prefix-collision sibling needs no extra structure: app.git is in the tree. The reference arm
@@ -192,9 +192,9 @@ def _materialise_with_leak_links(root: Path, spec: PlantingSpec, shape: LaunchSh
     if shape is not LaunchShape.EMPTY_LAYOUT:
         checkout = root / CHECKOUT
         for index, intent in enumerate(spec.files):
-            leak = checkout / f"leak{index}"
-            leak.mkdir()
-            os.symlink(intent.container_path, leak / "report")
+            directory = checkout / f"archive{index}"
+            directory.mkdir()
+            os.symlink(intent.container_path, directory / "report")
 
 
 @contextmanager

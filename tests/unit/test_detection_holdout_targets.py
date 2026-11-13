@@ -5,7 +5,8 @@ from pathlib import Path
 
 import tests.unit.support.test_cve_planting_given as planting_given
 import tests.unit.support.test_detection_holdout_targets_given as given
-from evals.cve.backends import doris, n8n_instance
+from evals.cve.backends import doris, kubernetes, kubernetes_detection, n8n_instance
+from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
 from evals.cve.layout import PROJECT, WORK
@@ -60,11 +61,11 @@ def test_holdout_services_are_disjoint_from_the_acceptance_services():
     assert _services(HOLDOUT_TARGETS).isdisjoint(_services(ACCEPTANCE_TARGETS))
 
 
-# The sentinel and the stand-in are the fixture images targets share, so a holdout target may
-# list them.
+# The sentinel, the stand-in and the Kubernetes control plane are the fixture images targets share,
+# so a holdout target may list them.
 def _services(targets: Iterable[Target]) -> set[str]:
     services = {name for target in targets for name in (*target.images, target.patched_image)}
-    return services - {SENTINEL_SERVICE, STAND_IN_SERVICE}
+    return services - {SENTINEL_SERVICE, STAND_IN_SERVICE, CONTROL_PLANE_SERVICE}
 
 
 # A baked `/work` is a nuisance fix check's: detection suite rule v11 gives a target's `/work` the
@@ -131,6 +132,16 @@ def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
     target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "GHSA-8g7g-hmwm-6rv2")
 
     assert Path(n8n_instance.__file__) in target.backend_sources
+
+
+def test_the_kubectl_targets_fingerprint_the_modules_that_stand_their_control_plane():
+    for flaw_id in ("CVE-2025-65719", "CVE-2025-53355"):
+        target = next(t for t in (*HOLDOUT_TARGETS, *ACCEPTANCE_TARGETS) if t.flaw_id == flaw_id)
+
+        assert CONTROL_PLANE_SERVICE in target.images, flaw_id
+        assert {Path(kubernetes.__file__), Path(kubernetes_detection.__file__)} <= set(
+            target.backend_sources
+        ), flaw_id
 
 
 # The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration

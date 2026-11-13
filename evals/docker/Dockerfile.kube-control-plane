@@ -1,0 +1,72 @@
+# The Kubernetes control plane the kubectl servers reach (evals/cve/backends/kubernetes.py):
+# upstream Kubernetes v1.37.2, the stable release on 2026-11-13 (https://dl.k8s.io/release/stable.txt),
+# since kubectl-mcp-server's documentation names no distribution or version, and etcd 3.7.0, the
+# version build/dependencies.yaml names at that release. The five Kubernetes binaries come from
+# dl.k8s.io and etcd from its GitHub release tarball, each checked against its published SHA-256.
+# There is no kubelet, which needs a container runtime and privileges the confinement does not
+# give, so the control plane has no node. At each start the entrypoint runs kubeadm's file phases
+# (certificates, kubeconfigs, the static pod manifests) with the container's own address as the
+# advertise address and a CRI socket set so no detection runs, starts etcd, kube-apiserver,
+# kube-controller-manager and kube-scheduler with the command lines of the manifests kubeadm
+# wrote, waits for /readyz, and creates the kubeadm:cluster-admins binding with super-admin.conf,
+# as `kubeadm init` does, so admin.conf works. /etc/kubernetes and /var/lib/etcd are tmpfs the
+# launch mounts, so nothing dated is baked. No COPY/ADD from the build context.
+FROM debian:bookworm-slim@sha256:40b107342c492725bc7aacbe93a49945445191ae364184a6d24fedb28172f6f7
+
+ADD --chmod=0755 --checksum=sha256:b87e5a91107cf994bfa38c6c1b28eb39f01fc040734ec9942c22738bc8b8f34b https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kube-apiserver /usr/local/bin/kube-apiserver
+ADD --chmod=0755 --checksum=sha256:fb93284c0c8fe7f8ab87989ad6ee37eeb679a3595a36d8d0646d7cd52dc61b4e https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kube-controller-manager /usr/local/bin/kube-controller-manager
+ADD --chmod=0755 --checksum=sha256:6c8b5c11846f58fd88b59ce19dd1cf13d3dd85364936c548c841946d87656a9b https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kube-scheduler /usr/local/bin/kube-scheduler
+ADD --chmod=0755 --checksum=sha256:e621beed70d51a71d283d67c6a5fd6db93e641dfe2213883128200d9e52a937b https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubeadm /usr/local/bin/kubeadm
+ADD --chmod=0755 --checksum=sha256:c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4 https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+ADD --checksum=sha256:b05cb07f5686dab8f9cdab89986b44f0dd24aaf5c627176aff325e21fa56f9f0 https://github.com/etcd-io/etcd/releases/download/v3.7.0/etcd-v3.7.0-linux-amd64.tar.gz /tmp/etcd.tar.gz
+
+RUN tar -xzf /tmp/etcd.tar.gz -C /usr/local/bin --strip-components=1 etcd-v3.7.0-linux-amd64/etcd \
+ && rm /tmp/etcd.tar.gz
+
+RUN cat > /usr/local/bin/control-plane-entry <<'ENTRY' && chmod 755 /usr/local/bin/control-plane-entry
+#!/bin/bash
+set -euo pipefail
+address="$(hostname -i | cut -d' ' -f1)"
+config=/etc/kubernetes/kubeadm.yaml
+cat > "$config" <<CONFIG
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: ${address}
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: v1.37.2
+CONFIG
+for phase in "certs all" "kubeconfig admin" "kubeconfig super-admin" \
+    "kubeconfig controller-manager" "kubeconfig scheduler" "etcd local" \
+    "control-plane apiserver" "control-plane controller-manager" "control-plane scheduler"; do
+  # shellcheck disable=SC2086
+  kubeadm init phase $phase --config "$config"
+done
+manifest_command() {
+  # kubeadm writes the command as the first key of the pod's single container: `  - command:`.
+  awk '/^  - command:$/ {on = 1; next} on && /^    - / {sub(/^    - /, ""); print; next} on {exit}' "$1"
+}
+for component in etcd kube-apiserver kube-controller-manager kube-scheduler; do
+  mapfile -t command < <(manifest_command "/etc/kubernetes/manifests/${component}.yaml")
+  "${command[@]}" &
+done
+super_admin=/etc/kubernetes/super-admin.conf
+for _ in $(seq 1 240); do
+  if kubectl --kubeconfig "$super_admin" get --raw /readyz >/dev/null 2>&1; then
+    kubectl --kubeconfig "$super_admin" create clusterrolebinding kubeadm:cluster-admins \
+      --clusterrole=cluster-admin --group=kubeadm:cluster-admins
+    echo "control plane ready"
+    wait -n
+    exit 1
+  fi
+  sleep 0.5
+done
+echo "control plane not ready" >&2
+exit 1
+ENTRY
+
+ENTRYPOINT ["/usr/local/bin/control-plane-entry"]

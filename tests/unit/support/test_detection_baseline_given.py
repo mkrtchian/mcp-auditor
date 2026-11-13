@@ -27,8 +27,10 @@ KEPT_ENDPOINT_ID = "fict-endpoint"
 KEPT_FILE_ID = "fict-file"
 KEPT_LAYOUT_ID = "fict-layout"
 
-KUBERNETES_TARGET = next(
-    target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"
+# Its backend modules dropped, so a backend source a case declares is the target's only one.
+KUBERNETES_TARGET = dataclasses.replace(
+    next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"),
+    backend_sources=(),
 )
 SYMLINK_TARGET = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
 RECORDED_COMMIT = "0123abc"

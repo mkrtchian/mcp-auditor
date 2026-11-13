@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 import yaml
 
+from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.detection.targets import image_tag
 from evals.cve.images import COMPOSE_FILE
 from evals.cve.nuisance import images as nuisance_images
@@ -32,10 +33,13 @@ BUILT_SERVICES = sorted(
 
 
 @pytest.mark.parametrize("service", BUILT_SERVICES)
-def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_stand_in(service: str):
+def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_detection_ones(
+    service: str,
+):
     compose_service = COMPOSE_SERVICES.get(service)
-    # The CI's bare build, which skips the nuisance profile, builds the stand-in.
-    profiles = None if service == STAND_IN_SERVICE else ["nuisance"]
+    # The CI's bare build, which skips the nuisance profile, builds the stand-in and the
+    # Kubernetes control plane, which detection targets run.
+    profiles = None if service in (STAND_IN_SERVICE, CONTROL_PLANE_SERVICE) else ["nuisance"]
 
     assert compose_service is not None, f"{service}: no service in {COMPOSE_FILE}"
     assert compose_service["image"] == image_tag(service)

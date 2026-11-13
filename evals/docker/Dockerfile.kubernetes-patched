@@ -3,9 +3,17 @@
 # the calibration check confirms the command-injection fix is present.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
+# kubectl v1.37.2, the stable release on 2026-11-13, checked against its published SHA-256: the
+# server's README names "kubectl installed and in your PATH", a kubeconfig and a cluster as
+# prerequisites, and no version.
+ADD --chmod=0755 --checksum=sha256:c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4 https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+
 RUN npm i -g mcp-server-kubernetes@2.5.0
 
-# No kubeconfig baked: the command injection surfaced the env nonce (-e supplied by the
-# environment) without a cluster. The server speaks MCP over stdio: keep stdout clean
-# (JSON-RPC only), so no ENTRYPOINT banner / echo.
+# No kubeconfig baked: the launch mounts the admin.conf its control plane generates at
+# /tmp/.kube/config, which the server loads at startup. The directory stays writable for
+# kubectl's discovery cache. The server speaks MCP over stdio: keep stdout clean (JSON-RPC
+# only), so no ENTRYPOINT banner / echo.
+RUN mkdir -p /tmp/.kube && chmod 0777 /tmp/.kube
+
 ENTRYPOINT ["mcp-server-kubernetes"]
