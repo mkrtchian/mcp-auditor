@@ -326,78 +326,58 @@
       "stand_ins": [
         {
           "replaces": "api.github.com, the GitHub GraphQL API the real gh 2.103.3 calls for every tool (the server never calls it directly). It replaces the committed /usr/local/bin/gh shell stub, which stood in for gh itself and returned a fixed issue JSON (titled 'stub issue') for any subcommand",
-          "reason": "gh runs in the container under the confinement, so it is installed for real. GitHub's API is a hosted service that needs an account and the Internet, which no closed fixture network reaches, so it alone is served by a stand-in under its real name (host.public_names, trust SSL_CERT_FILE, Go's documented CA-file override for gh). No capture of api.github.com is possible here: its GraphQL endpoint needs an authenticated account the dossier does not hold, so each output is copied from gh's own tests. The committed replay image keys a POST route on an AWS action or a form field only, while every gh request is a JSON POST to /graphql, so the proposed Dockerfile.stand-in also reads the action from the GraphQL operation name (the word after the first 'query' or 'mutation' keyword of the body's query, the position gh's tests match with `query IssueList\\b`): a fixed word at a fixed position, backward compatible since a body with no such route falls back to the action-less route as before",
+          "reason": "gh runs in the container under the confinement, so it is installed for real. GitHub's API is a hosted service that needs an account and the Internet, which no closed fixture network reaches, so it alone is served by a stand-in under its real name (host.public_names, trust SSL_CERT_FILE, Go's documented CA-file override for gh). No capture of api.github.com is possible here: its GraphQL endpoint needs an authenticated account the dossier does not hold, so each route body follows gh's own tests at v2.103.3, where it is what gh's HTTP mock returns, and is recorded as invented in the form of that body. The committed replay image keys a POST route on an AWS action or a form field only, while every gh request is a JSON POST to /graphql, so the proposed Dockerfile.stand-in also reads the action from the GraphQL operation name (the word after the first 'query' or 'mutation' keyword of the body's query, the position gh's tests match with `query IssueList\\b`): a fixed word at a fixed position, backward compatible since a body with no such route falls back to the action-less route as before",
           "file": "evals/docker/Dockerfile.stand-in",
           "capture": "evals/stand_ins/api.github.com.json",
           "outputs": [
             {
               "request": "POST https://api.github.com/graphql, GraphQL operation IssueList (gh issue list --repo octocat/Hello-World --json number,title,state,labels,assignees,createdAt,updatedAt --state open, from list_issues)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/list/fixtures/issueList.json, the fixture gh's IssueList tests serve (pkg/cmd/issue/list/list_test.go L126), copied whole",
-              "form_source": null,
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied whole.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/list/fixtures/issueList.json, the fixture gh's IssueList tests serve (pkg/cmd/issue/list/list_test.go L126)",
               "replacements": []
             },
             {
               "request": "POST https://api.github.com/graphql, GraphQL operation IssueRepositoryInfo (first request of gh issue create, from create_issue)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/create/create_test.go L555-560, the first IssueRepositoryInfo answer of the file",
-              "form_source": null,
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied as written.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/create/create_test.go L555-560, the first IssueRepositoryInfo answer of the file",
               "replacements": []
             },
             {
               "request": "POST https://api.github.com/graphql, GraphQL mutation IssueCreate (gh issue create, from create_issue)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/create/create_test.go L562-566, the first IssueCreate answer of the file",
-              "form_source": null,
-              "replacements": [
-                {
-                  "original": "OWNER/REPO",
-                  "replacement": "octocat/Hello-World"
-                },
-                {
-                  "original": "12",
-                  "replacement": "1"
-                }
-              ]
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied with OWNER/REPO replaced by octocat/Hello-World and the issue number 12 by 1.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/create/create_test.go L562-566, the first IssueCreate answer of the file",
+              "replacements": []
             },
             {
               "request": "POST https://api.github.com/graphql, GraphQL operation IssueByNumber (gh issue view <n> --json ..., and the issue lookups of gh issue edit and gh issue comment; from create_issue, update_issue, add_comment)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/view/view_test.go L125-130, the first IssueByNumber answer of gh issue view's tests (the command whose output the server returns); the one route also answers the lookups of edit and comment, the stand-in branching on the operation name only",
-              "form_source": null,
-              "replacements": [
-                {
-                  "original": "OWNER/REPO",
-                  "replacement": "octocat/Hello-World"
-                },
-                {
-                  "original": "123",
-                  "replacement": "1"
-                }
-              ]
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied with OWNER/REPO replaced by octocat/Hello-World and the issue number 123 by 1. The one route also answers the lookups of edit and comment, the stand-in branching on the operation name only, so any issue number gets issue 1.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/view/view_test.go L125-130, the first IssueByNumber answer of gh issue view's tests (the command whose output the server returns)",
+              "replacements": []
             },
             {
               "request": "POST https://api.github.com/graphql, GraphQL mutation IssueUpdate (gh issue edit 1 --title ..., from update_issue)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/edit/edit_test.go L777-778, the first IssueUpdate answer of the file",
-              "form_source": null,
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied as written.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/edit/edit_test.go L777-778, the first IssueUpdate answer of the file",
               "replacements": []
             },
             {
               "request": "POST https://api.github.com/graphql, GraphQL mutation CommentCreate (gh issue comment 1 --body-file ..., from add_comment)",
-              "source": "software_sources",
-              "citation": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/comment/comment_test.go L960-966 (mockCommentCreate), the CommentCreate answer of the file",
-              "form_source": null,
-              "replacements": [
-                {
-                  "original": "OWNER/REPO",
-                  "replacement": "octocat/Hello-World"
-                },
-                {
-                  "original": "123",
-                  "replacement": "1"
-                }
-              ]
+              "source": "invented",
+              "citation": "No answer of api.github.com gives this body: it is what gh's HTTP mock returns in gh's tests, so it is recorded as invented in the form of that body, copied with OWNER/REPO replaced by octocat/Hello-World and the issue number 123 by 1.",
+              "form_source": "cli/cli v2.103.3 (commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc) pkg/cmd/issue/comment/comment_test.go L960-966 (mockCommentCreate), the CommentCreate answer of the file",
+              "replacements": []
+            },
+            {
+              "request": "the headers Date, Server, X-GitHub-Media-Type and X-GitHub-Request-Id of every route, and Date, Server and X-GitHub-Media-Type of the https default",
+              "source": "invented",
+              "citation": "No cited source gives these headers or their values (`Date: Thu, 05 Nov 2026 00:00:00 GMT`, `Server: github.com`, `X-GitHub-Media-Type: github.v3; format=json`, `X-GitHub-Request-Id: 0000:000000:0000000:00000000:00000000`), so they are recorded as invented.",
+              "form_source": "the names of headers api.github.com sends, each with a fixed value written for the fixture",
+              "replacements": []
             },
             {
               "request": "any other request, a GraphQL operation no route names included (the https default)",
