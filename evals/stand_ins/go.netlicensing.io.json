@@ -1,10 +1,19 @@
 {
   "host": "go.netlicensing.io",
-  "address": "54.77.61.73",
+  "address": "54.229.24.139",
   "source": "capture",
-  "captured_at": "2026-11-07",
-  "command": "GET https://go.netlicensing.io/core/v2/rest/product/G36QQNFV-DEMO and an unknown path, Basic demo:demo (the server's built-in NETLICENSING_ALLOW_DEMO sandbox credentials); bodies are the NetLicensing sandbox responses verbatim",
-  "request_headers": [],
+  "captured_at": "2026-11-12T23:54:00Z",
+  "command": "uv run python -m evals.capture_stand_in --out evals/stand_ins/go.netlicensing.io.json --keep-default http --header 'Authorization: Basic ZGVtbzpkZW1v' --header 'Accept: application/json' https://go.netlicensing.io/core/v2/rest/product/G36QQNFV-DEMO https://go.netlicensing.io/core/v2/rest/product/NONEXISTENT",
+  "request_headers": [
+    [
+      "Authorization",
+      "Basic ZGVtbzpkZW1v"
+    ],
+    [
+      "Accept",
+      "application/json"
+    ]
+  ],
   "routes": [
     {
       "scheme": "https",
@@ -13,16 +22,173 @@
       "status": 200,
       "headers": [
         [
+          "Date",
+          "Thu, 12 Nov 2026 23:54:01 GMT"
+        ],
+        [
           "Content-Type",
           "application/json;charset=UTF-8"
+        ],
+        [
+          "Content-Length",
+          "1010"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALB=NcymXavfiIOf5rc2lJsfI/ol1TmYsuyLWyNrbBCw80yhttCDU/fJRyIMwfpUVlBI6ALArqPnxc7Hp+KuTN58Jgd6XNyEzYEHZ0s46/1duXV6/+RLxzB6+99uUHBr; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALBCORS=NcymXavfiIOf5rc2lJsfI/ol1TmYsuyLWyNrbBCw80yhttCDU/fJRyIMwfpUVlBI6ALArqPnxc7Hp+KuTN58Jgd6XNyEzYEHZ0s46/1duXV6/+RLxzB6+99uUHBr; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/; SameSite=None; Secure"
+        ],
+        [
+          "Server",
+          "NetLicensing"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          ""
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, DELETE, OPTIONS"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type, Accept, Authorization, X-Requested-With, NetLicensing-Origin"
+        ],
+        [
+          "Access-Control-Max-Age",
+          "3600"
+        ],
+        [
+          "Access-Control-Allow-Credentials",
+          "true"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, max-age=0, must-revalidate"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000 ; includeSubDomains"
+        ],
+        [
+          "X-XSS-Protection",
+          "0"
+        ],
+        [
+          "X-Frame-Options",
+          "DENY"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
         ]
       ],
       "body": "{\"signature\":null,\"infos\":{\"info\":[]},\"items\":{\"item\":[{\"property\":[{\"value\":\"G36QQNFV-DEMO\",\"name\":\"number\"},{\"value\":\"true\",\"name\":\"active\"},{\"value\":\"Pricing Table demo product\",\"name\":\"name\"},{\"value\":\"1.0\",\"name\":\"version\"},{\"value\":\"true\",\"name\":\"licenseeAutoCreate\"},{\"value\":\"Demo product configured using \\\"Pricing Table\\\" licensing model\",\"name\":\"description\"},{\"value\":\"Here you may put your EULA\",\"name\":\"licensingInfo\"},{\"value\":\"true\",\"name\":\"inUse\"},{\"value\":\"You may add arbitrary tags to your product, e.g. CRM or ERP reference\",\"name\":\"customTag\"}],\"list\":[{\"property\":[{\"value\":\"100.00\",\"name\":\"totalPrice\"},{\"value\":\"EUR\",\"name\":\"currency\"},{\"value\":\"10\",\"name\":\"amountPercent\"}],\"list\":[],\"name\":\"discount\"},{\"property\":[{\"value\":\"10.00\",\"name\":\"totalPrice\"},{\"value\":\"EUR\",\"name\":\"currency\"},{\"value\":\"1.00\",\"name\":\"amountFix\"}],\"list\":[],\"name\":\"discount\"}],\"type\":\"Product\"}],\"pagenumber\":null,\"itemsnumber\":null,\"totalpages\":null,\"totalitems\":null,\"hasnext\":null},\"id\":null,\"ttl\":null}"
+    },
+    {
+      "scheme": "https",
+      "method": "GET",
+      "request_target": "/core/v2/rest/product/NONEXISTENT",
+      "status": 400,
+      "headers": [
+        [
+          "Date",
+          "Thu, 12 Nov 2026 23:54:01 GMT"
+        ],
+        [
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        ],
+        [
+          "Content-Length",
+          "157"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALB=fgoVhac0uCaS+LfmTeew+y+9joPu4ciiYx8MTZIBmMxop1FZwavX8q+Srj7TQYccXyLWPAVcGjVJH+4bqkbxMTwXx9MS9rwgblbDr025ZBBOfw//yy5MBy6KRG3M; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALBCORS=fgoVhac0uCaS+LfmTeew+y+9joPu4ciiYx8MTZIBmMxop1FZwavX8q+Srj7TQYccXyLWPAVcGjVJH+4bqkbxMTwXx9MS9rwgblbDr025ZBBOfw//yy5MBy6KRG3M; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/; SameSite=None; Secure"
+        ],
+        [
+          "Server",
+          "NetLicensing"
+        ],
+        [
+          "Access-Control-Allow-Origin",
+          ""
+        ],
+        [
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, DELETE, OPTIONS"
+        ],
+        [
+          "Access-Control-Allow-Headers",
+          "Content-Type, Accept, Authorization, X-Requested-With, NetLicensing-Origin"
+        ],
+        [
+          "Access-Control-Max-Age",
+          "3600"
+        ],
+        [
+          "Access-Control-Allow-Credentials",
+          "true"
+        ],
+        [
+          "Cache-Control",
+          "no-cache, no-store, max-age=0, must-revalidate"
+        ],
+        [
+          "Pragma",
+          "no-cache"
+        ],
+        [
+          "Expires",
+          "0"
+        ],
+        [
+          "Strict-Transport-Security",
+          "max-age=31536000 ; includeSubDomains"
+        ],
+        [
+          "X-XSS-Protection",
+          "0"
+        ],
+        [
+          "X-Frame-Options",
+          "DENY"
+        ],
+        [
+          "X-Content-Type-Options",
+          "nosniff"
+        ]
+      ],
+      "body": "{\"signature\":null,\"infos\":{\"info\":[{\"value\":\"Requested product does not exist.\",\"id\":\"NotFoundException\",\"type\":\"ERROR\"}]},\"items\":null,\"id\":null,\"ttl\":null}"
     }
   ],
   "defaults": [
     {
-      "scheme": "https",
+      "scheme": "http",
       "probed_request_target": "/0123456789abcdef",
       "status": 403,
       "headers": [
@@ -35,16 +201,40 @@
       "path_form": null
     },
     {
-      "scheme": "http",
-      "probed_request_target": "/0123456789abcdef",
-      "status": 403,
+      "scheme": "https",
+      "probed_request_target": "/b2394e63a0056936",
+      "status": 404,
       "headers": [
         [
+          "Date",
+          "Thu, 12 Nov 2026 23:54:01 GMT"
+        ],
+        [
           "Content-Type",
-          "application/json;charset=UTF-8"
+          "text/html; charset=UTF-8"
+        ],
+        [
+          "Content-Length",
+          "145"
+        ],
+        [
+          "Connection",
+          "keep-alive"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALB=YLE97gha1E/eUa136RPQXOwo49lJe4DHE23+hsb+hZ1rnSfNlAr0cKHWza4S7J5Z8XjGIBiM6SfC8OzLRDdwjLwrCf5dYZVLxAdJyCylxbRQcCAlMnoSNfQ9BLPX; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/"
+        ],
+        [
+          "Set-Cookie",
+          "AWSALBCORS=YLE97gha1E/eUa136RPQXOwo49lJe4DHE23+hsb+hZ1rnSfNlAr0cKHWza4S7J5Z8XjGIBiM6SfC8OzLRDdwjLwrCf5dYZVLxAdJyCylxbRQcCAlMnoSNfQ9BLPX; Expires=Thu, 19 Nov 2026 23:54:01 GMT; Path=/; SameSite=None; Secure"
+        ],
+        [
+          "Server",
+          "NetLicensing"
         ]
       ],
-      "body": "{\"signature\":null,\"infos\":{\"info\":[{\"value\":\"Forbidden\",\"id\":\"403\",\"type\":\"ERROR\"}]},\"items\":null,\"id\":null,\"ttl\":null}",
+      "body": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta http-equiv=\"refresh\" content=\"0; url=https://netlicensing.io/\" />\n  </head>\n  <body>\n  </body>\n</html>\n",
       "path_form": null
     }
   ]

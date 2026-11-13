@@ -1,6 +1,7 @@
 """Capture what a public service answers, for its stand-in (`evals/stand_ins/<host>.json`).
 
     uv run python -m evals.capture_stand_in --out PATH URL [URL ...] [--header 'NAME: VALUE']
+        [--keep-default SCHEME]
 
 Every URL shares one host. A URL is fetched with GET, or with HEAD when prefixed `HEAD `
 (one argument, `'HEAD https://example.com/'`), for a server that checks a page before reading
@@ -23,7 +24,8 @@ path (`path_form`, decoded or raw). The stand-in serves that answer for any requ
 lack, quoting the request where the host quoted the probed path; an answer quoting it in another
 header than `Location`, in a body that is neither HTML nor JSON, or in an escaping the stand-in
 does not reproduce, is refused. A capture is written whole, never appended, so one file carries
-one date, and says so with `source` `capture`.
+one date, and says so with `source` `capture`. `--keep-default` is described in
+`evals/capture_defaults.py`.
 """
 
 import argparse
@@ -41,10 +43,17 @@ from typing import Any, Literal
 
 import httpx
 
+from evals.capture_defaults import (
+    SCHEMES,
+    CaptureRequest,
+    default_requests,
+    kept_defaults,
+    probed_schemes,
+    with_kept_defaults,
+)
 from evals.cve.public_stand_ins import QUOTING_MEDIA_TYPES, StandInDefault, body_quoting, media_type
 
 _COMMAND = "uv run python -m evals.capture_stand_in"
-FORM_SUFFIX = "%3Cx%3E%22%27"
 
 
 @dataclass(frozen=True)
@@ -54,14 +63,6 @@ class CaptureProvenance:
     captured_at: str
     command: str
     request_headers: tuple[tuple[str, str], ...]
-
-
-@dataclass(frozen=True)
-class CaptureRequest:
-    method: str
-    url: httpx.URL
-    body: str | None = None
-    form_field: str | None = None
 
 
 @dataclass(frozen=True)
@@ -183,15 +184,6 @@ def _text(response: CapturedResponse) -> str:
         ) from error
 
 
-def default_requests(host: str, probed_request_target: str) -> list[CaptureRequest]:
-    request_targets = (probed_request_target, probed_request_target + FORM_SUFFIX)
-    return [
-        CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{request_target}"))
-        for request_target in request_targets
-        for scheme in ("http", "https")
-    ]
-
-
 def parse_request(text: str) -> CaptureRequest:
     words = text.split()
     match words:
@@ -218,9 +210,11 @@ def _single_form_field(body: str) -> str | None:
     return fields[0][0]
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None, transport: httpx.BaseTransport | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     parsed = _parser().parse_args(arguments)
+    kept = kept_defaults(Path(parsed.out), parsed.keep_default)
+    schemes = probed_schemes(parsed.keep_default)
     requests = [parse_request(text) for text in parsed.urls]
     hosts = {request.url.host for request in requests}
     if len(hosts) != 1:
@@ -228,12 +222,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     headers = tuple(_header(text) for text in parsed.header)
     provenance = _provenance(hosts.pop(), arguments, headers)
     probed_request_target = f"/{secrets.token_hex(8)}"
-    fetched = _fetch_all(
-        [*requests, *default_requests(provenance.host, probed_request_target)], headers
-    )
-    plain, form = fetched[len(requests) : -2], fetched[-2:]
+    probes = default_requests(provenance.host, probed_request_target, schemes)
+    fetched = _fetch_all([*requests, *probes], headers, transport)
+    plain, form = fetched[len(requests) : -len(schemes)], fetched[-len(schemes) :]
     defaults = [ProbedDefault(*pair) for pair in zip(plain, form, strict=True)]
     record = capture_record(provenance, fetched[: len(requests)], defaults)
+    record = with_kept_defaults(record, kept)
     Path(parsed.out).write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
     return 0
 
@@ -254,6 +248,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=_COMMAND)
     parser.add_argument("--out", required=True)
     parser.add_argument("--header", action="append", default=[], metavar="'NAME: VALUE'")
+    parser.add_argument("--keep-default", choices=SCHEMES, metavar="SCHEME")
     parser.add_argument("urls", nargs="+", metavar="[HEAD |POST ]URL[ BODY]")
     return parser
 
@@ -270,10 +265,12 @@ def _first_ipv4(host: str) -> str:
 
 
 def _fetch_all(
-    requests: Sequence[CaptureRequest], headers: tuple[tuple[str, str], ...]
+    requests: Sequence[CaptureRequest],
+    headers: tuple[tuple[str, str], ...],
+    transport: httpx.BaseTransport | None,
 ) -> list[CapturedResponse]:
     sent = [("Accept-Encoding", "identity"), *headers]
-    with httpx.Client(follow_redirects=False, headers=sent) as client:
+    with httpx.Client(follow_redirects=False, headers=sent, transport=transport) as client:
         return [_fetch(client, request) for request in requests]
 
 

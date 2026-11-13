@@ -46,6 +46,7 @@ def test_writes_the_isolated_admission_dossier(tmp_path: Path):
         "confinement.md",
         "evals/cve/kit/benign_probe.py",
         "evals/capture_stand_in.py",
+        "evals/capture_defaults.py",
     ):
         assert (out / relative).exists(), relative
     assert (out / "nuisance-suite-rule.md").read_text() == NUISANCE_SUITE_RULE.read_text()

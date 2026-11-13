@@ -12219,15 +12219,29 @@
             {
               "request": "GET https /core/v2/rest/product/G36QQNFV-DEMO -> 200",
               "source": "capture",
-              "citation": "evals/stand_ins/go.netlicensing.io.json route: go.netlicensing.io's answer to GET https://go.netlicensing.io/core/v2/rest/product/G36QQNFV-DEMO, the demo sandbox product 'Pricing Table demo product', captured 2026-11-07 with the server's built-in demo credentials (demo:demo via NETLICENSING_ALLOW_DEMO); body and headers as captured.",
+              "citation": "evals/stand_ins/go.netlicensing.io.json route: go.netlicensing.io's answer to GET https://go.netlicensing.io/core/v2/rest/product/G36QQNFV-DEMO, the demo sandbox product 'Pricing Table demo product', captured 2026-11-12T23:54:00Z with evals/capture_stand_in and the request headers the server sends under NETLICENSING_ALLOW_DEMO (client.py of 0.1.8, _headers: Authorization: Basic ZGVtbzpkZW1v, the server's own demo:demo placeholder, and Accept: application/json); status, headers and body as captured.",
               "form_source": null,
               "replacements": []
             },
             {
-              "request": "any other path (per-scheme default) -> 403 Forbidden",
+              "request": "GET https /core/v2/rest/product/NONEXISTENT -> 400",
               "source": "capture",
-              "citation": "evals/stand_ins/go.netlicensing.io.json default: go.netlicensing.io's answer to an unknown path, a NetLicensing REST Forbidden envelope (status 403), captured 2026-11-07 from the demo sandbox; the http default mirrors the https one, the host serving TLS only.",
+              "citation": "evals/stand_ins/go.netlicensing.io.json route: go.netlicensing.io's answer to GET https://go.netlicensing.io/core/v2/rest/product/NONEXISTENT, a NetLicensing error envelope with the NotFoundException 'Requested product does not exist.' (status 400), captured 2026-11-12T23:54:00Z with the same request headers. NONEXISTENT is the product number the server's own tests give for a product that does not exist (tests/test_tools.py of 0.1.8, test_error_handling: get_product(\"NONEXISTENT\")), a fixed identifier of the fixture; any other unknown number gets the https default.",
               "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "https, any other request (default) -> 404",
+              "source": "capture",
+              "citation": "evals/stand_ins/go.netlicensing.io.json https default: go.netlicensing.io's answer to the generated unknown path /b2394e63a0056936, a 404 text/html page with a meta refresh to https://netlicensing.io/ that quotes no part of the request (path_form null), captured 2026-11-12T23:54:00Z with the same request headers.",
+              "form_source": null,
+              "replacements": []
+            },
+            {
+              "request": "http, any request (default) -> 403",
+              "source": "invented",
+              "citation": "the host answered nothing on port 80 (connect timeout on both addresses on 2026-11-12), so no http answer exists to copy, and the stand-in schema needs one default per scheme. The http default was written on 2026-11-07 as the https default of that day unchanged, a NetLicensing REST Forbidden envelope (status 403), and is carried over verbatim by the recapture's --keep-default http. It contains no part of any request, and the server only uses https.",
+              "form_source": "the https default of the capture of 2026-11-07 (403 Forbidden envelope, application/json;charset=UTF-8)",
               "replacements": []
             }
           ]
@@ -12238,8 +12252,8 @@
         {
           "software": "Labs64 NetLicensing REST API (core/v2)",
           "release": "go.netlicensing.io live SaaS, continuously deployed, no public version number",
-          "day": "2026-11-07",
-          "source": "https://go.netlicensing.io/core/v2/rest (Labs64 NetLicensing REST API v2), reached 2026-11-07; the server's documentation names this host and no pinned API version"
+          "day": "2026-11-12",
+          "source": "https://go.netlicensing.io/core/v2/rest (Labs64 NetLicensing REST API v2), captured 2026-11-12; the server's documentation names this host and no pinned API version"
         }
       ]
     },
