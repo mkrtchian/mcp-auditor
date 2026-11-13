@@ -6900,7 +6900,7 @@
               "arguments": {
                 "filepath": "/opt/markitdown/packages/markitdown/tests/test_files/test.jpg"
               },
-              "expect": "Author: AutoGen Authors",
+              "expect": "Converted content:",
               "before": []
             },
             {
@@ -7178,7 +7178,7 @@
           "server_package": "npm:mcp-markdownify-server",
           "flaw": "CVE-2025-58358",
           "field": "benign_calls",
-          "value": "record A's six converter calls, each reading its format's file of markitdown's test files seeded whole under /opt/markitdown and expecting a fixed text of the converted sample ('While there is contemporaneous exploration of multi-agent approaches', 'Author: AutoGen Authors', the transcript heading with '12345', '# Abstract', '## Sheet1', the first slide marker); no call for the three URL tools",
+          "value": "record A's six converter calls, each reading its format's file of markitdown's test files seeded whole under /opt/markitdown and expecting a fixed text of the converted sample ('While there is contemporaneous exploration of multi-agent approaches', the transcript heading with '12345', '# Abstract', '## Sheet1', the first slide marker), and for image-to-markdown, whose conversion of test.jpg is empty without ExifTool, the server's own 'Converted content:' line; no call for the three URL tools",
           "reason": "the benign calls follow the retained seed: record A's calls read the files of markitdown's repository taken whole at one commit, where record B's read the v0.0.1a3 test files with two files of a later commit and expect other texts of them. The calls of webpage-to-markdown, bing-search-to-markdown and youtube-to-markdown go with their tools: a counted tool that also carries an open flaw whose categories overlap leaves the count."
         },
         {
@@ -7206,8 +7206,8 @@
           "server_package": "npm:mcp-markdownify-server",
           "flaw": null,
           "field": "software_releases",
-          "value": "record A's: markitdown 0.0.1a3 and uv 0.13.7 from the holdout calibration card, ffmpeg 7:5.1.9-0+deb12u1 of Debian bookworm, ExifTool 13.55, the Google speech service and example.com as captured",
-          "reason": "a release is the latest stable release the software publishes: exiftool.org names 13.55 its most recent production release, later numbers being development releases, where record B installed 13.61; record B also placed uv at the server's default location without UV_PATH, a fixture choice the retained Dockerfile does not make."
+          "value": "record A's, without ExifTool: markitdown 0.0.1a3 and uv 0.13.7 from the holdout calibration card, ffmpeg 7:5.1.9-0+deb12u1 of Debian bookworm, the Google speech service and example.com as captured",
+          "reason": "the fixture follows markitdown's documented deployment: markitdown's own Dockerfile at 0.0.1a3 installs ffmpeg and no ExifTool, which only its tests name, and the server's own Dockerfile installs neither, so the ExifTool both records installed (13.55 in record A, 13.61 in record B) is not installed, reversing the settlement of 2026-11-08 that kept record A's 13.55; record B also placed uv at the server's default location without UV_PATH, a fixture choice the retained Dockerfile does not make."
         }
       ],
       "patched_version": "a31204de058b",
@@ -7267,12 +7267,6 @@
           "release": "7:5.1.9-0+deb12u1 (Debian bookworm package)",
           "day": "2026-11-07",
           "source": "markitdown v0.0.1a3's Dockerfile installs ffmpeg as its runtime dependency from its distribution ('apk add --no-cache ffmpeg', no version); the run image's distribution is Debian bookworm, whose current ffmpeg package on 2026-11-07 is 7:5.1.9-0+deb12u1 (qa.debian.org madison: bookworm and bookworm-security)."
-        },
-        {
-          "software": "ExifTool",
-          "release": "13.55",
-          "day": "2026-11-07",
-          "source": "markitdown's tests (test_markitdown_exiftool, tests/test_markitdown.py at v0.0.1a3 lines 25-36 and 234-245) and its converters' docstrings name exiftool without a version or channel; exiftool.org/history.html on 2026-11-07: 'The most recent production release is Version 13.55' (released Apr. 7, 2026), downloaded from the SourceForge link exiftool.org gives, sha256 5f4c81d3..."
         },
         {
           "software": "Google speech recognition service (www.google.com/speech-api/v2)",

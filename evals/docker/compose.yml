@@ -860,7 +860,7 @@ services:
       context: .
       dockerfile: Dockerfile.markdownify
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cf03fe6960d263c7d8f63f9f0131d0bec0dc688820d6332235b6b3b0c0acc37c"
+        org.mcp-auditor.dockerfile-fingerprint: "4aaa5677a44461f1f9ef0137909c2385f8af3e0418a699109853ee8a0e794f3d"
     image: mcp-auditor-nuisance-markdownify:local
     profiles: ["nuisance"]
 

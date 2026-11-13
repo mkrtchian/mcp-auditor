@@ -38,14 +38,6 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ffmpeg=7:5.1.9-0+deb12u1 \
  && rm -rf /var/lib/apt/lists/*
 
-# ExifTool, which markitdown runs for image and audio metadata (its tests' exiftool case), at
-# the latest production release, installed as exiftool.org/install.html describes.
-ADD --checksum=sha256:5f4c81d34ad406538c2871ad72dbfceb5d9b412b2f16cbbeb4d712d270846667 \
-    https://sourceforge.net/projects/exiftool/files/Image-ExifTool-13.55.tar.gz/download /usr/src/Image-ExifTool-13.55.tar.gz
-RUN cd /usr/src && tar -xzf Image-ExifTool-13.55.tar.gz \
- && cd Image-ExifTool-13.55 && perl Makefile.PL && make && make install \
- && cd /usr/src && rm -rf Image-ExifTool-13.55 Image-ExifTool-13.55.tar.gz
-
 # markitdown's published test files, the repository taken whole at the first commit whose
 # tests/test_files hold a sample of every format the six converters read.
 RUN git init -q /opt/markitdown && cd /opt/markitdown \
