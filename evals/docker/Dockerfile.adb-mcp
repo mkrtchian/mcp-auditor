@@ -91,10 +91,10 @@ const BANNER = 'device::ro.product.name=sdk_phone64_x86_64;ro.product.model=Andr
 // Captured stat_v2 fields: [dev, ino, mode, nlink, uid, gid, size, atime, mtime, ctime].
 const SDCARD = [42, 229379, 0o42770, 18, 1023, 1023, 4096, 1794602125, 1794602127, 1794602157];
 const LOCAL_TMP = [65030, 65538, 0o40771, 2, 2000, 2000, 4096, 1794602115, 1794602115, 1794602115];
-const DIRS = { '/sdcard': SDCARD, '/sdcard/': SDCARD, '/storage/emulated/0': SDCARD, '/storage/emulated/0/': SDCARD,
+const DIRS = { __proto__: null, '/sdcard': SDCARD, '/sdcard/': SDCARD, '/storage/emulated/0': SDCARD, '/storage/emulated/0/': SDCARD,
   '/data/local/tmp': LOCAL_TMP, '/data/local/tmp/': LOCAL_TMP };
 const HOSTS = Buffer.from('127.0.0.1       localhost\n::1             ip6-localhost\n');
-const SYSTEM_FILES = {
+const SYSTEM_FILES = { __proto__: null,
   '/system/etc/hosts': { stat: [65029, 753, 0o100644, 1, 0, 0, 56, 1791782088, 1791782088, 1791782088], data: HOSTS },
   '/system/build.prop': { stat: [65029, 686, 0o100600, 1, 0, 0, 5818, 1791782078, 1791782078, 1791782078], data: null },
 };

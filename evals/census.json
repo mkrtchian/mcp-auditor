@@ -143343,7 +143343,7 @@
             "option": "planting_host.has_network",
             "value": "true",
             "reason": "The exploit reaches a planted link-local sentinel through a public wildcard-DNS name (sslip.io) that resolves to it, which is the CVE's own mechanism; the closed network needs the namespace holder to carry the pinned name resolution.",
-            "documentation": "ssrf_env puts the server on the namespace holder's closed --internal network (ADR 034): the three sslip.io names, example.com and html.duckduckgo.com are pinned in the holder's /etc/hosts (--add-host) and the sentinel and stand-in addresses are bound on the holder's loopback, so no public resolver is used. A literal-IP URL is blocked on both versions by the lexical check, so the resolving name is what separates them."
+            "documentation": "searxng_env, as ssrf_env does, puts the server on the namespace holder's closed --internal network (ADR 034): the three sslip.io names, example.com and html.duckduckgo.com are pinned in the holder's /etc/hosts (--add-host) and the sentinel and stand-in addresses are bound on the holder's loopback, so no public resolver is used. A literal-IP URL is blocked on both versions by the lexical check, so the resolving name is what separates them."
           },
           {
             "option": "planting_host.user",
@@ -143422,7 +143422,7 @@
           },
           {
             "item": "Read-only mount of the frozen deployment layout at /srv (-v <layout root>:/srv:ro), with no scope argument",
-            "reason": "The layout the rule prescribes for every target. mcp-searxng takes no scope, so nothing is appended after the image (builder ssrf_env, already in launch_options).",
+            "reason": "The layout the rule prescribes for every target. mcp-searxng takes no scope, so nothing is appended after the image (builder searxng_env, already in launch_options).",
             "returned_by": [],
             "used_by_default_by": []
           },

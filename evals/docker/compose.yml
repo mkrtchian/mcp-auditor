@@ -871,7 +871,7 @@ services:
       context: .
       dockerfile: Dockerfile.android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "23f7c16c51301d9d63cd4bd72d443767c1d5674e6c04fd24e4840942765d5014"
+        org.mcp-auditor.dockerfile-fingerprint: "0b6693139b7e322c836320ecc9f25ba8bc5e520aec57442c90a2b13a375684c8"
     image: mcp-auditor-nuisance-android:local
     profiles: ["nuisance"]
 
@@ -1249,7 +1249,7 @@ services:
       context: .
       dockerfile: Dockerfile.adb-mcp
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "cac14449542591f35ba7503b9a62d56fcd6ea4e0eadc46515d2116856ce3c1c0"
+        org.mcp-auditor.dockerfile-fingerprint: "29d9a09d188d1adb4623c1ca89cf25e4df595bb16766d29b264e772d203f3bc6"
     image: mcp-auditor-nuisance-adb-mcp:local
     profiles: ["nuisance"]
 
