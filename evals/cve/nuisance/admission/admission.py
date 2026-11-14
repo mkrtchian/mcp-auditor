@@ -5,8 +5,9 @@ The schema is filled by the two blind admission agents and the maintainer who se
 disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every list
 is empty until the admission session. `admission_problems` holds the load validation, raised joined
 by `load_admission`, so a crafted admission can be checked without a file. The file is absent until
-the session, and `load_admission` says so. The fields defaulting to `None` are those rule v3 or v4
-added and not yet recorded, which `evals/cve/nuisance/admission/unrecorded.py` refuses at run.
+the session, and `load_admission` says so. The fields defaulting to `None` are those nuisance suite
+rule v3 or v4 added and not yet recorded, which `evals/cve/nuisance/admission/unrecorded.py`
+refuses at run.
 """
 
 from collections.abc import Mapping

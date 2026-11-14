@@ -1,7 +1,7 @@
-"""The benign call check of an admitted server on its patched image (rule v3, The benign call):
-every counted tool and every prerequisite tool is in the server's `tools/list`, each prerequisite
-call returns without error, and each counted tool's benign call returns without error and, when
-the admission records an expected text, with that text in its response."""
+"""The benign call check of an admitted server on its patched image (nuisance suite rule v3, The
+benign call): every counted tool and every prerequisite tool is in the server's `tools/list`, each
+prerequisite call returns without error, and each counted tool's benign call returns without error
+and, when the admission records an expected text, with that text in its response."""
 
 from evals.cve.nuisance.admission.admission import AdmittedServer, BenignCall, ToolCall
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
