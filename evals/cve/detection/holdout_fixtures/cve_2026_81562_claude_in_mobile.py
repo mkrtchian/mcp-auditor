@@ -10,11 +10,13 @@ execFileSync(adb, argv) (no host shell) and adds `&`, `${}`, `<()`, `>()` and ta
 so the call is refused.
 
 The real adb (Android SDK Platform-Tools) runs in the image; only the Android device is missing
-and is served by a device-side adb transport the real adb connects to (the stand-in). The
-host-side shell injection is independent of the device: the backgrounded
-`adb [-s <serial>] shell <decoy>` token returns at once while the foreground payload runs and its
-stdout is what the tool returns. The launch working directory is the deployment-layout checkout
-(/srv/app), the layout mounted read-only, as Deployment layout prescribes. The benign call is
+and is served by a device-side adb transport the real adb connects to (the stand-in), which
+answers with the outputs captured from the real device and gives any command it does not hold
+mksh's `inaccessible or not found`. The host-side shell injection is independent of the device:
+the backgrounded `adb [-s <serial>] shell <decoy>` token returns at once while the foreground
+payload runs and its stdout is what the tool returns. The launch working directory is the
+deployment-layout checkout (/srv/app), the layout mounted read-only, as Deployment layout
+prescribes. The benign call is
 `device_list` (which runs `adb devices -l`): the real adb lists the one attached device the
 transport presents, so it returns without error and surfaces no nonce on either version.
 """

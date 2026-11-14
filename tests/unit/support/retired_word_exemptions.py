@@ -356,6 +356,12 @@ ALLOWLIST = (
         "a frame of the stack trace the captured Android device prints, its own class name",
     ),
     AllowedLine(
+        "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile*",
+        "stub",
+        "IPackageManager$Stub.onTransact",
+        "the same captured stack frame, in the CVE-2026-81562 vulnerable and patched images",
+    ),
+    AllowedLine(
         "docs/detection-suite-rule.md",
         "stub",
         "`stub`, `calibration`",

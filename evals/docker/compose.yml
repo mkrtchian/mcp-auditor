@@ -699,7 +699,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "3e2c7c071af92ef259ea6b41c64c440dda47c09b2edc48dc70d763cb3440fcc9"
+        org.mcp-auditor.dockerfile-fingerprint: "09f26fec91007974dd037724b310bf715d2288fb77e4b13f2ef5bf8686acb16f"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile:local
 
   holdout-2026-81562-claude-in-mobile-patched:
@@ -707,7 +707,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-81562-claude-in-mobile-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "7b5e8cb44fc508ced9ead94ae7007e4bfb37de4186dad55eb4a0e9d66978b24d"
+        org.mcp-auditor.dockerfile-fingerprint: "a41c2ca381528c901a8ec5cd166d9beef62d3424c7311c960e84dd024e3849ef"
     image: mcp-auditor-cve-holdout-2026-81562-claude-in-mobile-patched:local
 
   holdout-2026-44717-calculate:
