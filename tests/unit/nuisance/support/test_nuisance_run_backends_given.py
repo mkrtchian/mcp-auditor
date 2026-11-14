@@ -1,0 +1,65 @@
+import dataclasses
+from collections.abc import Callable, Sequence
+
+import tests.unit.nuisance.support.test_nuisance_run_given as given
+from evals.cve.nuisance import images as nuisance_images
+from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.run import NuisanceDeps
+
+SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
+(CKAN_TAG,) = BACKENDS["ckan"].images
+CKAN_SERVICES = list(BACKENDS["ckan"].built_services)
+(DORIS_TAG,) = BACKENDS["doris"].images
+
+
+class DockerHost:
+    """The containers running per image tag. The benign call of a server on a backend starts the
+    backend's container when none runs, as its provisioner does."""
+
+    def __init__(self, running: dict[str, list[str]] | None = None) -> None:
+        self.containers = {tag: list(names) for tag, names in (running or {}).items()}
+        self.rebuilt: list[str] = []
+        self.running_at_rebuild: list[str] = []
+        self.removed: list[str] = []
+
+    def running(self, tags: Sequence[str]) -> list[str]:
+        return [name for tag in tags for name in self.containers.get(tag, [])]
+
+    def remove(self, names: Sequence[str]) -> None:
+        self.removed.extend(names)
+        for tag, running in self.containers.items():
+            self.containers[tag] = [name for name in running if name not in names]
+
+    def rebuild(self, services: Sequence[str]) -> None:
+        self.rebuilt.extend(services)
+        self.running_at_rebuild = [name for names in self.containers.values() for name in names]
+
+    async def benign_call(self, server: AdmittedServer) -> str | None:
+        if server.backend is None:
+            return None
+        for image in server.backend.images:
+            if not self.containers.get(image):
+                self.containers[image] = [f"{server.backend.provisioner}_started"]
+        return None
+
+
+@dataclasses.dataclass(frozen=True)
+class RemovalHost:
+    running_containers: Callable[[Sequence[str]], list[str]]
+    remove_containers: Callable[[Sequence[str]], None]
+
+
+def host_of(docker: DockerHost) -> RemovalHost:
+    return RemovalHost(docker.running, docker.remove)
+
+
+def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:
+    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
+    return dataclasses.replace(
+        given.deps_auditing(audit),
+        benign_call=host.benign_call,
+        rebuild=host.rebuild,
+        running_containers=host.running,
+        remove_containers=host.remove,
+    )

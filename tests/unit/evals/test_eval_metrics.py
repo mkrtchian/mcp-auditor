@@ -1,0 +1,444 @@
+import logging
+
+import pytest
+
+import tests.unit.evals.support.test_eval_metrics_given as given
+from evals.ground_truth import GroundTruth
+from evals.metrics import (
+    SessionThrottles,
+    ThrottledAudit,
+    UsageBreakdown,
+    VerdictMap,
+    aggregate_verdicts,
+    blocked_reasons,
+    build_run_detail,
+    compute_consistency,
+    compute_distribution_coverage,
+    compute_precision,
+    compute_recall,
+    label_scores,
+    quiet_throttle_waits,
+    raise_if_throttled,
+)
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict, MissCause, ProviderUsage
+
+FAIL = EvalVerdict.FAIL
+PASS = EvalVerdict.PASS
+INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
+ERROR_HANDLING = AuditCategory.ERROR_HANDLING
+INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
+INJECTION = AuditCategory.INJECTION
+RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
+ALL_CATEGORIES = list(AuditCategory)
+
+
+def test_aggregate_verdicts_worst_case():
+    report = given.a_report(
+        {
+            "get_user": [
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
+                given.a_result("get_user", INPUT_VALIDATION, FAIL),
+            ]
+        }
+    )
+
+    verdicts = aggregate_verdicts(report)
+
+    assert verdicts[("get_user", INPUT_VALIDATION)] == FAIL
+
+
+def test_aggregate_verdicts_all_pass():
+    report = given.a_report(
+        {
+            "get_user": [
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
+                given.a_result("get_user", INPUT_VALIDATION, PASS),
+            ]
+        }
+    )
+
+    verdicts = aggregate_verdicts(report)
+
+    assert verdicts[("get_user", INPUT_VALIDATION)] == PASS
+
+
+def test_aggregate_verdicts_chain_fail_overrides_single_step_pass():
+    report = given.a_report(
+        results_by_tool={
+            "user_dir": [
+                given.a_result("user_dir", INFO_LEAKAGE, PASS),
+                given.a_result("user_dir", INFO_LEAKAGE, PASS),
+            ]
+        },
+        chains_by_tool={
+            "user_dir": [given.a_chain("user_dir", INFO_LEAKAGE, FAIL)],
+        },
+    )
+
+    verdicts = aggregate_verdicts(report)
+
+    assert verdicts[("user_dir", INFO_LEAKAGE)] == FAIL
+
+
+def test_aggregate_verdicts_missing_pair():
+    report = given.a_report({"get_user": [given.a_result("get_user", INPUT_VALIDATION, PASS)]})
+
+    verdicts = aggregate_verdicts(report)
+
+    assert verdicts.get(("get_user", ERROR_HANDLING)) is None
+
+
+def test_recall_all_detected():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("b", INPUT_VALIDATION): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("b", INPUT_VALIDATION): PASS,
+    }
+
+    assert compute_recall(aggregated, ground_truth) == 1.0
+
+
+def test_recall_partial():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("a", INFO_LEAKAGE): FAIL,
+        ("a", INJECTION): FAIL,
+        ("a", RESOURCE_ABUSE): FAIL,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+        ("a", INFO_LEAKAGE): FAIL,
+        ("a", INJECTION): PASS,
+        ("a", RESOURCE_ABUSE): PASS,
+    }
+
+    assert compute_recall(aggregated, ground_truth) == 0.6
+
+
+def test_recall_none_detected():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
+    }
+
+    assert compute_recall(aggregated, ground_truth) == 0.0
+
+
+def test_recall_uncovered_counts_as_miss():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): None,
+    }
+
+    assert compute_recall(aggregated, ground_truth) == 0.5
+
+
+def test_precision_no_false_positives():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+
+    assert compute_precision(aggregated, ground_truth) == 1.0
+
+
+def test_precision_with_false_positive():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+    }
+
+    assert compute_precision(aggregated, ground_truth) == 0.5
+
+
+def test_precision_ignores_a_fail_outside_the_ground_truth():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("b", INJECTION): FAIL,
+    }
+
+    assert compute_precision(aggregated, ground_truth) == 1.0
+
+
+def test_precision_no_predictions():
+    ground_truth: GroundTruth = {
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    aggregated: VerdictMap = {
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): PASS,
+    }
+
+    assert compute_precision(aggregated, ground_truth) == 1.0
+
+
+def test_label_scores_average_recall_and_precision_per_run():
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    perfect_run: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    inverted_run: VerdictMap = {("a", INPUT_VALIDATION): PASS, ("a", ERROR_HANDLING): FAIL}
+
+    scores = label_scores([perfect_run, inverted_run], ground_truth)
+
+    assert scores == {"recall": 0.5, "precision": 0.5}
+
+
+def test_consistency_perfect():
+    run1: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    run2: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    run3: VerdictMap = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+
+    score, details = compute_consistency([run1, run2, run3], ground_truth)
+
+    assert score == 1.0
+    assert all(d.rate == 1.0 for d in details.values())
+
+
+def test_consistency_mixed():
+    run1: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): PASS,
+    }
+    run2: VerdictMap = {
+        ("a", INPUT_VALIDATION): FAIL,
+        ("a", ERROR_HANDLING): FAIL,
+    }
+    run3: VerdictMap = {
+        ("a", INPUT_VALIDATION): PASS,
+        ("a", ERROR_HANDLING): FAIL,
+    }
+
+    # ("a", INPUT_VALIDATION): 2 FAIL, 1 PASS -> agreement = 2/3
+    # ("a", ERROR_HANDLING): 1 PASS, 2 FAIL -> agreement = 2/3
+    # average = 2/3
+    expected = 2.0 / 3.0
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL, ("a", ERROR_HANDLING): PASS}
+    score, details = compute_consistency([run1, run2, run3], ground_truth)
+
+    assert abs(score - expected) < 1e-9
+    assert details["a/input_validation"].agree == 2
+    assert details["a/error_handling"].agree == 2
+
+
+def test_consistency_ignores_a_cell_outside_the_ground_truth():
+    runs: list[VerdictMap] = [
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): FAIL},
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): PASS},
+        {("a", INPUT_VALIDATION): FAIL, ("b", INJECTION): PASS},
+    ]
+    ground_truth: GroundTruth = {("a", INPUT_VALIDATION): FAIL}
+
+    score, details = compute_consistency(runs, ground_truth)
+
+    assert score == 1.0
+    assert set(details) == {"a/input_validation"}
+
+
+def test_distribution_full_coverage():
+    report = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
+    )
+
+    coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
+
+    assert coverage["get_user"] == 1.0
+
+
+def test_distribution_partial():
+    three_categories = [INPUT_VALIDATION, ERROR_HANDLING, INFO_LEAKAGE]
+    report = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in three_categories]}
+    )
+
+    coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
+
+    assert coverage["get_user"] == 3.0 / 5.0
+
+
+def test_a_blocked_case_leaves_verdict_metrics_untouched():
+    judged = given.a_report({"get_user": [given.a_result("get_user", INPUT_VALIDATION, FAIL)]})
+    with_a_block = given.and_a_blocked_case(judged, "get_user", INJECTION)
+
+    assert aggregate_verdicts(with_a_block) == aggregate_verdicts(judged)
+
+
+def test_distribution_coverage_drops_when_the_only_case_of_a_category_is_blocked():
+    judged_categories = [cat for cat in ALL_CATEGORIES if cat != INJECTION]
+    without_injection = given.a_report(
+        {"get_user": [given.a_result("get_user", cat, PASS) for cat in judged_categories]}
+    )
+    injection_blocked = given.and_a_blocked_case(without_injection, "get_user", INJECTION)
+
+    coverage = compute_distribution_coverage(injection_blocked, ALL_CATEGORIES)
+
+    assert coverage["get_user"] == 4.0 / 5.0
+
+
+def test_reports_no_blocked_payload_in_a_clean_report():
+    report = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+
+    assert blocked_reasons(report) == []
+
+
+def test_reports_the_reason_of_every_blocked_case_and_chain():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    report = given.and_a_blocked_case(clean, "search", INJECTION)
+    with_a_blocked_chain = given.and_a_blocked_chain(report, "search", INJECTION)
+
+    assert sorted(blocked_reasons(with_a_blocked_chain)) == [
+        "destructive SQL statement: drop table",
+        "destructive filesystem command: rm -rf",
+    ]
+
+
+def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
+    report = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+
+    detail = build_run_detail(0, aggregate_verdicts(report), report, {})
+
+    assert detail.missed_model_calls == []
+
+
+def test_a_run_detail_lists_each_missed_step_with_its_cause_tool_and_detail():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
+    report = given.and_a_missed_judgment(
+        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+    )
+
+    detail = build_run_detail(0, aggregate_verdicts(report), report, {})
+
+    assert detail.missed_model_calls == [
+        "Refused by the model provider, search: judgment, flagged by the usage policy",
+        "Unreadable answer from the model, search: judgment, no answer matched",
+    ]
+
+
+def test_session_throttles_count_each_report_and_keep_the_total():
+    throttles = SessionThrottles()
+
+    counts = [throttles.count(given.a_report_throttled(times)) for times in (2, 0)]
+
+    assert counts == [2, 0]
+    assert throttles.requests == 2
+
+
+def test_session_throttles_sum_the_tokens_of_every_counted_report_a_refused_one_included():
+    throttles = SessionThrottles()
+    refused = given.and_a_refused_judgment(given.a_report_billed(100, 10), "search", "flagged")
+
+    throttles.count(given.a_report_billed(200, 20))
+    throttles.count(refused)
+
+    assert (throttles.usage.input_tokens, throttles.usage.output_tokens) == (300, 30)
+
+
+def test_session_throttles_count_a_bare_usage():
+    throttles = SessionThrottles()
+
+    counted = throttles.count_usage(ProviderUsage(input_tokens=50, throttled_requests=3))
+
+    assert counted == 3
+    assert (throttles.requests, throttles.usage.input_tokens) == (3, 50)
+
+
+def test_session_throttles_count_a_report_without_a_target_billing_no_target():
+    throttles = SessionThrottles()
+
+    counted = throttles.count(given.a_report_throttled(2))
+
+    assert counted == 2
+    assert throttles.requests == 2
+    assert throttles.by_target == {}
+
+
+def test_session_throttles_bill_each_phase_of_a_report_to_its_target():
+    throttles = SessionThrottles()
+
+    throttles.count(given.a_report_by_phase(total=300, chain=100, judge=50), "CVE-1")
+
+    billed = throttles.by_target["CVE-1"]
+    assert (billed.total.input_tokens, billed.chain.input_tokens, billed.judge.input_tokens) == (
+        300,
+        100,
+        50,
+    )
+
+
+def test_phase_usage_add_sums_each_channel():
+    first = UsageBreakdown.from_report(given.a_report_by_phase(total=300, chain=100, judge=50))
+    second = UsageBreakdown.from_report(given.a_report_by_phase(total=30, chain=10, judge=5))
+
+    summed = first.add(second)
+
+    assert (summed.total.input_tokens, summed.chain.input_tokens, summed.judge.input_tokens) == (
+        330,
+        110,
+        55,
+    )
+
+
+def test_a_report_holding_a_throttled_step_raises_naming_it():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    report = given.and_a_missed_judgment(
+        clean, "search", MissCause.PROVIDER_THROTTLED, "300 s waited"
+    )
+
+    with pytest.raises(ThrottledAudit, match="search: judgment, 300 s waited"):
+        raise_if_throttled(report)
+
+
+def test_a_report_holding_only_refused_or_unreadable_steps_does_not_raise():
+    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
+    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
+    report = given.and_a_missed_judgment(
+        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+    )
+
+    raise_if_throttled(report)
+
+
+def test_quiet_throttle_waits_drops_a_wait_warning_and_keeps_an_error(
+    caplog: pytest.LogCaptureFixture, throttling_logger: logging.Logger
+):
+    quiet_throttle_waits()
+    throttling_logger.warning("waiting 10 s (retry 1)")
+    throttling_logger.error("something broke")
+
+    assert [record.getMessage() for record in caplog.records] == ["something broke"]
+
+
+@pytest.fixture
+def throttling_logger():
+    logger = logging.getLogger("mcp_auditor.throttling")
+    level = logger.level
+    yield logger
+    logger.setLevel(level)

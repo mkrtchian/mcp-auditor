@@ -7,7 +7,7 @@
 # has no patched image: it is not a server image.
 # Each service carries the label org.mcp-auditor.dockerfile-fingerprint, the SHA-256 of its
 # Dockerfile's instructions (comments and blank lines left out), so a tag holding another build
-# is told apart and rebuilt. After a Dockerfile edit, tests/unit/test_cve_compose_labels.py
+# is told apart and rebuilt. After a Dockerfile edit, tests/unit/cve/test_cve_compose_labels.py
 # prints the value to paste.
 # The images of the holdout targets are appended after the sentinel, two per transplanted target
 # (vulnerable and patched), named holdout-<year>-<num>-<service>; the same build command builds

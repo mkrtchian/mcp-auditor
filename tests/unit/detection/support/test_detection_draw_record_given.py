@@ -1,0 +1,255 @@
+from collections.abc import Sequence
+from datetime import date
+from typing import Literal
+
+import tests.unit.census.support.test_census_figures_given as figures
+import tests.unit.census.support.test_census_given as census_given
+from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery, draw_candidates
+from evals.cve.census.figures import compute_figures
+from evals.cve.census.grouping import READERS, ProofJudgment, gap_population, known_gap
+from evals.cve.census.sources import SourceName, SourceRecord
+from evals.cve.census.work import AgentRecord, AgentRole
+from evals.cve.detection.draw_record import (
+    CalibrationCard,
+    CardCheck,
+    CardStandIn,
+    DetectionWalkStep,
+    DrawRecord,
+    GiveUp,
+    GiveUpReason,
+)
+from evals.cve.fixture_provenance import (
+    SoftwareRelease,
+    SourceKind,
+    StandInOutput,
+    StandInRecord,
+)
+
+A_DRAWN_FLAW = "CVE-2025-0001"
+A_TWICE_GIVEN_UP_FLAW = "GHSA-dddd-eeee-ffff"
+
+
+def a_draw() -> DrawRecord:
+    return DrawRecord(
+        rule_commit="abc1234",
+        grammar_fingerprint="deadbeef",
+        settlements=[],
+        walk=[
+            DetectionWalkStep(identifier=A_DRAWN_FLAW, outcome="drawn", reason=""),
+            DetectionWalkStep(
+                identifier=A_TWICE_GIVEN_UP_FLAW,
+                outcome="given_up",
+                reason="no place reached on either calibration",
+            ),
+        ],
+        cards=[a_card(A_DRAWN_FLAW)],
+        card_checks=[
+            CardCheck(flaw=A_DRAWN_FLAW, reported_gaps=[], confirmed_gaps=[], rule_version=11)
+        ],
+        give_ups=[
+            GiveUp(
+                flaw=A_DRAWN_FLAW,
+                calibration=1,
+                reason=GiveUpReason.NO_PLACE_REACHED,
+                detail="the first fixture reached no place",
+                attempts=2,
+            ),
+            GiveUp(
+                flaw=A_TWICE_GIVEN_UP_FLAW,
+                calibration=1,
+                reason=GiveUpReason.NO_PLACE_REACHED,
+                detail="no place reached",
+                attempts=3,
+            ),
+            GiveUp(
+                flaw=A_TWICE_GIVEN_UP_FLAW,
+                calibration=2,
+                reason=GiveUpReason.EXPLOIT_CANNOT_REPRODUCE,
+                detail="the exploit never reproduced",
+                attempts=4,
+            ),
+        ],
+        drawn=[A_DRAWN_FLAW],
+    )
+
+
+def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
+    """`a_draw` with `flaw`, given up twice under no version, drawn again under `under`."""
+    draw = a_draw_stepping_again(flaw, outcome="drawn", under=under)
+    return draw.model_copy(
+        update={
+            "cards": [*draw.cards, a_card(flaw)],
+            "card_checks": [
+                *draw.card_checks,
+                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=11),
+            ],
+            "drawn": [*draw.drawn, flaw],
+        }
+    )
+
+
+def a_draw_stepping_again(
+    flaw: str, outcome: Literal["drawn", "skipped", "given_up", "excluded"], under: int | None
+) -> DrawRecord:
+    draw = a_draw()
+    step = DetectionWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
+    return draw.model_copy(update={"walk": [*draw.walk, step]})
+
+
+def with_give_ups_under(draw: DrawRecord, flaw: str, version: int) -> DrawRecord:
+    give_ups = [
+        give_up.model_copy(update={"rule_version": version}) if give_up.flaw == flaw else give_up
+        for give_up in draw.give_ups
+    ]
+    return draw.model_copy(update={"give_ups": give_ups})
+
+
+def a_card(flaw: str) -> CalibrationCard:
+    return CalibrationCard(
+        flaw=flaw,
+        mechanism="an arbitrary read through a path argument",
+        effect_class="read_outside_scope",
+        siblings=[],
+        kept=[],
+        unkept=[],
+        launch_options=[],
+        seeded_in_layout=[],
+        seeded_outside_layout=[],
+        stand_ins=[],
+        software_releases=[],
+        fallback_scope=None,
+        fallback_documentation=None,
+        exploit_calls=["read_file"],
+        benign_call="read_file",
+        patched_result="the patched server refuses the traversal",
+        attempts=3,
+    )
+
+
+def a_draw_carrying(*cards: CalibrationCard) -> DrawRecord:
+    return a_draw().model_copy(update={"cards": list(cards)})
+
+
+def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
+    return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]}))
+
+
+def a_card_stand_in(
+    file: str,
+    request: str,
+    *,
+    source: SourceKind = "software_sources",
+    replaces: str = "the vendor API",
+    returned_by: Sequence[str] = (),
+) -> CardStandIn:
+    output = StandInOutput(request=request, source=source, citation="API reference")
+    stand_in = StandInRecord(
+        replaces=replaces,
+        reason=f"{replaces} is a public host the closed network cannot reach",
+        file=file,
+        outputs=[output],
+    )
+    return CardStandIn(stand_in=stand_in, returned_by=list(returned_by), used_by_default_by=[])
+
+
+def a_card_with_a_stand_in(flaw: str, stand_in: CardStandIn) -> CalibrationCard:
+    return a_card(flaw).model_copy(update={"stand_ins": [stand_in]})
+
+
+def a_census_with_draw(draw: DrawRecord) -> Census:
+    census = census_given.a_census()
+    model = "claude-opus-4-8"
+    agents = [
+        *census.agents,
+        AgentRecord(role=AgentRole.CALIBRATOR, scope=A_DRAWN_FLAW, model=model),
+        AgentRecord(role=AgentRole.CALIBRATOR, scope=A_TWICE_GIVEN_UP_FLAW, model=model),
+        AgentRecord(role=AgentRole.CARD_CHECKER, scope=A_DRAWN_FLAW, model=model),
+        AgentRecord(role=AgentRole.CARD_CHECKER, scope=A_TWICE_GIVEN_UP_FLAW, model=model),
+    ]
+    return census.model_copy(update={"agents": agents, "draw": draw})
+
+
+def a_census_drawing(identifiers: list[str]) -> Census:
+    flaws = [_flaw(identifier) for identifier in identifiers]
+    classifications = {
+        classifier: [figures.a_classification(flaw=identifier) for identifier in identifiers]
+        for classifier in CLASSIFIERS
+    }
+    dates = {identifier: date(2025, 6, 10) for identifier in identifiers}
+    groupings: dict[str, list[ProofJudgment]] = {reader: [] for reader in READERS}
+    population = gap_population(classifications, draw_candidates(flaws))
+    calibration = [
+        AgentRecord(role=role, scope=identifier, model="m")
+        for identifier in identifiers
+        for role in (AgentRole.CALIBRATOR, AgentRole.CARD_CHECKER)
+    ]
+    return Census(
+        sources=census_given.a_provenance(),
+        agents=[
+            *(AgentRecord(role=AgentRole.READER, scope=reader, model="m") for reader in READERS),
+            *calibration,
+        ],
+        prefilter=[],
+        hits=[],
+        flaws=flaws,
+        vulnerablemcp=[],
+        classifications=classifications,
+        date_mismatches=[],
+        figures=compute_figures(classifications, dates, set()),
+        groupings=groupings,
+        known_gap=known_gap(groupings, population),
+        draw=_a_draw_of(identifiers),
+    )
+
+
+def _flaw(identifier: str) -> CensusFlaw:
+    record = SourceRecord(
+        source=SourceName.NVD,
+        id=identifier,
+        published=date(2025, 6, 10),
+        withdrawn=None,
+        rejected=False,
+    )
+    return CensusFlaw(
+        identifier=identifier,
+        no_census_identifier=False,
+        ids=[identifier],
+        records=[record],
+        disclosure_date=date(2025, 6, 10),
+        found_by=[Discovery.PREFILTER],
+    )
+
+
+def _a_draw_of(identifiers: list[str]) -> DrawRecord:
+    return DrawRecord(
+        rule_commit="abc1234",
+        grammar_fingerprint="deadbeef",
+        settlements=[],
+        walk=[
+            DetectionWalkStep(identifier=identifier, outcome="drawn", reason="")
+            for identifier in identifiers
+        ],
+        cards=[a_card(identifier) for identifier in identifiers],
+        card_checks=[
+            CardCheck(flaw=identifier, reported_gaps=[], confirmed_gaps=[], rule_version=11)
+            for identifier in identifiers
+        ],
+        give_ups=[],
+        drawn=identifiers,
+    )
+
+
+def with_a_walk_skipping(census: Census, flaw: str) -> Census:
+    """The census with a draw whose detection walk is one `skipped` step on `flaw`, which
+    `load_census` accepts with no card and no calibration agent."""
+    draw = DrawRecord(
+        rule_commit="abc1234",
+        grammar_fingerprint="deadbeef",
+        settlements=[],
+        walk=[DetectionWalkStep(identifier=flaw, outcome="skipped", reason="")],
+        cards=[],
+        card_checks=[],
+        give_ups=[],
+        drawn=[],
+    )
+    return census.model_copy(update={"draw": draw})

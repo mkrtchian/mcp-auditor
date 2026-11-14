@@ -127,8 +127,8 @@ _WHOLE_FILES = (
 _CODE_ROOTS = ("src", "evals", "tests")
 _WORKFLOWS = ".github/workflows"
 _SKIPPED = (
-    "tests/unit/test_glossary.py",
-    "tests/unit/support/test_glossary_given.py",
+    "tests/unit/project/test_glossary.py",
+    "tests/unit/project/support/test_glossary_given.py",
     "tests/unit/support/retired_words.py",
     "tests/unit/support/retired_word_exemptions.py",
 )

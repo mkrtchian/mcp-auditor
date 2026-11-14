@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-import tests.unit.support.test_cve_grammar_given as given
+import tests.unit.cve.support.test_cve_grammar_given as given
 from evals.cve.grammar import MissKind, RunGrade
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit, unit_of_exchanges

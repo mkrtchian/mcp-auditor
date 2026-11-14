@@ -4,7 +4,7 @@ import sys
 
 from rich.console import Console
 
-import tests.unit.support.test_graph_given as graph
+import tests.unit.auditor.support.test_graph_given as graph
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
 from mcp_auditor.config import Settings

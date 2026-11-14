@@ -1,0 +1,90 @@
+import dataclasses
+from collections.abc import Sequence
+from datetime import date
+
+from evals.cve.holdout_conditions import Cutoff
+from evals.cve.nuisance.report import ServerRunLine
+from evals.cve.nuisance.results import (
+    NotRunServer,
+    NuisanceRunResult,
+    NuisanceServerResult,
+    ServerExit,
+)
+from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+
+LUNA_CUTOFF = Cutoff(
+    date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
+)
+RECORDED_AT = "2026-10-22T09:30:00+00:00"
+RUNS = 3
+
+
+def a_run(
+    servers: Sequence[NuisanceServerResult],
+    *,
+    not_run: Sequence[NotRunServer] = (),
+    exits: Sequence[ServerExit] = (),
+    cutoffs: dict[str, Cutoff] | None = None,
+    throttled_requests: int = 0,
+    concurrency: int = 6,
+) -> NuisanceRunResult:
+    return NuisanceRunResult(
+        runs=RUNS,
+        budget=10,
+        provider="openai",
+        model="gpt-6-luna",
+        judge_model="gpt-6-luna",
+        reasoning="none",
+        judge_reasoning="none",
+        cutoffs={"gpt-6-luna": LUNA_CUTOFF} if cutoffs is None else cutoffs,
+        chain_budget=3,
+        max_chain_steps=5,
+        tool_call_timeout=30,
+        grammar_fingerprint="grammar-abc",
+        counter_fingerprint="counter-abc",
+        fixture_fingerprints={"npm:@acme/files": "fa"},
+        commit="deadbeef",
+        census_commit="cafe1234",
+        walk_record_commit="beef5678",
+        image_ids={"patched": "sha256:1"},
+        recorded_at=RECORDED_AT,
+        servers=tuple(servers),
+        not_run=tuple(not_run),
+        exits=tuple(exits),
+        incomplete_run_count=sum(server.incomplete_runs for server in servers),
+        total_cost=0.06,
+        prices_as_of=date(2026, 10, 15),
+        concurrency=concurrency,
+        throttled_requests=throttled_requests,
+    )
+
+
+def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
+    return ServerRunLine(
+        flagged=flagged,
+        split_flagged=False,
+        incomplete=incomplete,
+        non_protocol_lines=0,
+        lost_connection_responses=0,
+        missed_call_causes=[],
+    )
+
+
+def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
+    lost, refused, clean = server.statuses
+    return dataclasses.replace(
+        server,
+        statuses=(
+            dataclasses.replace(lost, non_protocol_lines=2, lost_connection_responses=1),
+            dataclasses.replace(
+                refused,
+                incomplete=True,
+                missed_call_causes=["provider_refusal", "unreadable_answer"],
+            ),
+            clean,
+        ),
+    )
+
+
+def a_run_with_incidents() -> NuisanceRunResult:
+    return a_run([with_incidents(a_server_result("A")), a_server_result("B")])

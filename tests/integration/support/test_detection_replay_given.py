@@ -11,7 +11,7 @@ import sys
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 
-import tests.unit.support.test_cve_grammar_given as grammar
+import tests.unit.cve.support.test_cve_grammar_given as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
