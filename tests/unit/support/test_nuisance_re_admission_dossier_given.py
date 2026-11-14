@@ -6,14 +6,14 @@ from pathlib import Path
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.nuisance.admission import AdmittedServer, BackendFixture, FlawRecord
-from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
-from evals.cve.nuisance.holdout_calibration_copies import copy_targets
-from evals.cve.nuisance.re_admission_dossier import (
+from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture, FlawRecord
+from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
+from evals.cve.nuisance.admission.re_admission_dossier import (
     fix_check_modules,
     holdout_target_references,
     write_re_admission_dossier,
 )
+from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
 from tests.unit.support.test_nuisance_committed_admission_given import (

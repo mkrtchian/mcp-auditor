@@ -4,7 +4,7 @@ import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.detection.draw_record import CalibrationCard, DrawRecord, Sibling
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 
 SERVER = admission_given.SERVER_PACKAGE
 COPIED_FLAW = admission_given.FIRST_FLAW

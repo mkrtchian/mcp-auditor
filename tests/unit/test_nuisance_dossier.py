@@ -17,8 +17,8 @@ import tests.unit.support.test_nuisance_unrecorded_given as unrecorded_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.nuisance.dossier import NUISANCE_SUITE_RULE, write_dossier
-from evals.cve.nuisance.re_admission_docs import admission_confinement_text
+from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
+from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
 
 

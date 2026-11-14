@@ -7,7 +7,7 @@ import tests.unit.support.test_nuisance_gate_baseline_given as given
 import tests.unit.support.test_nuisance_run_given as run_given
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     baseline_file_name,
     baseline_integrity,

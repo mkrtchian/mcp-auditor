@@ -6,7 +6,7 @@ from pathlib import Path
 from rich.text import Text
 
 from evals.cell_grid import retest_fraction
-from evals.cve.nuisance.gate_report import (
+from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
     NuisanceGateReport,
     render_conditions,

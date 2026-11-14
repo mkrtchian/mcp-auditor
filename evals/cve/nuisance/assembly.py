@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from evals.cve.census.draw_order import DrawEntry
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import NuisanceAudit, incomplete_causes, is_incomplete
 from evals.cve.nuisance.counter import fail_count_on, flagged_tools, raw_fail_count
 from evals.cve.nuisance.counting import (

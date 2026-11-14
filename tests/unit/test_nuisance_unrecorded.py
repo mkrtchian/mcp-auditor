@@ -3,8 +3,8 @@ from collections.abc import Callable
 import pytest
 
 import tests.unit.support.test_nuisance_unrecorded_given as given
-from evals.cve.nuisance.admission import AdmittedServer
-from evals.cve.nuisance.unrecorded import refuse_unrecorded, unrecorded_fields
+from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded, unrecorded_fields
 from evals.eval_session import Refused
 
 

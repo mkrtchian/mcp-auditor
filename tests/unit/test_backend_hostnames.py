@@ -11,7 +11,7 @@ from evals.cve.backends.mcp_ssh_sshd import (
     SSHD_PORT,
     singleton_run_args,
 )
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.docker_argv import carries, value_after
 
 _AUDIT_WORDS = ("mcp-auditor", "mcpaudit")

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_admission_given as given
-from evals.cve.nuisance.admission import NuisanceAdmission, load_admission
+from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] = [

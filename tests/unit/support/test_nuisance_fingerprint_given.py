@@ -6,7 +6,7 @@ import pytest
 import tests.unit.support.test_nuisance_admission_given as admission_given
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance import fingerprint as nuisance_fingerprint
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import RegisteredBackend
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 

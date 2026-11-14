@@ -17,7 +17,9 @@ from evals.baseline import BaselineStatus
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
-from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
+from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -28,29 +30,27 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
     write_report,
 )
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_RUNS,
     baseline_file_name,
     gate_conditions,
 )
-from evals.cve.nuisance.gate_console import print_nuisance_gate_summary
-from evals.cve.nuisance.gate_report import NuisanceGateReport, render_markdown, server_lines
-from evals.cve.nuisance.gate_session import (
+from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
+from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, render_markdown, server_lines
+from evals.cve.nuisance.gate.gate_session import (
     default_harness,
     gate_servers,
     not_admitted,
     outside_gate,
     run_gate,
 )
-from evals.cve.nuisance.gate_session_model import (
+from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
     NuisanceGateSession,
 )
 from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
-from evals.cve.nuisance.unrecorded import refuse_unrecorded
-from evals.cve.nuisance.walk import nuisance_acceptance_servers
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases

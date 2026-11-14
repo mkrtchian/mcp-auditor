@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 import tests.unit.support.test_nuisance_gate_console_given as given
-from evals.cve.nuisance.gate_console import print_nuisance_gate_summary
-from evals.cve.nuisance.gate_report import GATE_LEGEND
+from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
+from evals.cve.nuisance.gate.gate_report import GATE_LEGEND
 from evals.eval_display import print_outcome
 from tests.unit.support.test_nuisance_gate_report_given import (
     FLAGGED_IN_BASELINE,

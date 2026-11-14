@@ -9,8 +9,8 @@ from evals.cve import planting_base
 from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance import confinement
-from evals.cve.nuisance.admission import AdmissionSettlement, BackendFixture, ToolCall
-from evals.cve.nuisance.admission_records import SeedRecord
+from evals.cve.nuisance.admission.admission import AdmissionSettlement, BackendFixture, ToolCall
+from evals.cve.nuisance.admission.admission_records import SeedRecord
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.planting_base import PlantingHost, SymbolicUser

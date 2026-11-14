@@ -9,7 +9,7 @@ with no recorded fingerprint are never read (the last is `unrecorded`'s)."""
 from collections.abc import Iterable, Mapping, Sequence
 
 from evals.cve.detection.draw_record import DrawRecord
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.counting import counted_flaws
 
 

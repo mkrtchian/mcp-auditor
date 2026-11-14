@@ -26,7 +26,7 @@ from evals.cve.grammar import VALID_CATEGORIES
 from evals.cve.units import JudgeCategory
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer, FlawRecord, ToolRecord
+    from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord, ToolRecord
 
 
 def counted_flaws(server: AdmittedServer) -> list[FlawRecord]:

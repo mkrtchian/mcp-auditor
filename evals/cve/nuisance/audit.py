@@ -14,7 +14,7 @@ from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import single_container_launch_args
 from evals.cve.nuisance.counter import flagged_tools

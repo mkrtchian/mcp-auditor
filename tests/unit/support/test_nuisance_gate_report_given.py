@@ -1,8 +1,8 @@
 import itertools
 
-from evals.cve.nuisance.gate import NuisanceGateResult, ServerComparison, ServerOutcome, decide
-from evals.cve.nuisance.gate_report import NuisanceGateReport, server_lines
-from evals.cve.nuisance.gate_session_model import GateAudit, NuisanceGateSession
+from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison, ServerOutcome, decide
+from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, server_lines
+from evals.cve.nuisance.gate.gate_session_model import GateAudit, NuisanceGateSession
 from evals.cve.nuisance.results import ServerExit
 from tests.unit.support.test_nuisance_gate_baseline_given import conditions
 from tests.unit.support.test_nuisance_gate_session_given import (

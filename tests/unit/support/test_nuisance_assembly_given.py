@@ -1,6 +1,6 @@
 import tests.unit.support.test_nuisance_admission_given as admission
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.test_nuisance_run_given import (
     FIRST_FLAW,
     LUNA_PRICE,

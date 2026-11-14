@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.baseline import BaselineStatus
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
-from evals.cve.nuisance.gate import NuisanceGateResult
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate import NuisanceGateResult
+from evals.cve.nuisance.gate.gate_baseline import (
     NuisanceGateConditions,
     NuisanceServerBaseline,
     baseline_file_name,

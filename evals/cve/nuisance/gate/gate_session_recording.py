@@ -5,21 +5,26 @@ write of one file per server once the gate has decided, the mirror of
 from pathlib import Path
 
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
-from evals.cve.nuisance.gate import NuisanceGateResult
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate import NuisanceGateResult
+from evals.cve.nuisance.gate.gate_baseline import (
     WHOLE_RESET,
     baseline_integrity,
     condition_mismatches,
     load_baselines,
     write_baseline,
 )
-from evals.cve.nuisance.gate_recording import (
+from evals.cve.nuisance.gate.gate_recording import (
     ServerRecording,
     decide_recording,
     decide_recordings,
     leaves_gated_set,
 )
-from evals.cve.nuisance.gate_session_model import Baselines, OpenedGate, ServerRuns, WrittenBaseline
+from evals.cve.nuisance.gate.gate_session_model import (
+    Baselines,
+    OpenedGate,
+    ServerRuns,
+    WrittenBaseline,
+)
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState, tree_drift
 from evals.recording import RecordingRefused
 

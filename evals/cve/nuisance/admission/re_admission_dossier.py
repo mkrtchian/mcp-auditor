@@ -22,14 +22,15 @@ from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
 from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.nuisance import fix_checks, re_admission_docs
-from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance import fix_checks
+from evals.cve.nuisance.admission import re_admission_docs
+from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance.admission.dossier import write_dossier
+from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
+from evals.cve.nuisance.admission.holdout_target_reference import holdout_targets_among
+from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.dossier import write_dossier
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
-from evals.cve.nuisance.holdout_calibration_copies import copy_targets
-from evals.cve.nuisance.holdout_target_reference import holdout_targets_among
-from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.eval_session import Refused
 

@@ -2,7 +2,7 @@ import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.census.census import Census
 from evals.cve.census.classification import Criterion
 from evals.cve.detection.draw_record import Settlement
-from evals.cve.nuisance.walk_record import (
+from evals.cve.nuisance.admission.walk_record import (
     IdentitySettlement,
     NuisanceWalkRecord,
     WalkInputs,

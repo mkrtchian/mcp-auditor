@@ -5,7 +5,7 @@ the run and the gate share this one list."""
 import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.run_interruption import first_failure
 
 # Two reasons put a server here. First, magento2-dev-mcp bounds each magerun2 command at 30 s,

@@ -1,6 +1,6 @@
 from collections.abc import Collection, Sequence
 
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.test_nuisance_solo_given import InFlight
 
 

@@ -23,7 +23,7 @@ from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance import images as nuisance_images
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.assembly import assemble_server
 from evals.cve.nuisance.audit import (
     DroppedRun,

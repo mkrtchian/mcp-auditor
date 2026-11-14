@@ -1,8 +1,8 @@
 import pytest
 
 import tests.unit.support.test_nuisance_gate_given as given
-from evals.cve.nuisance.gate import ServerOutcome, apply_retests, compare_server, decide
-from evals.cve.nuisance.gate_baseline import WHOLE_RESET
+from evals.cve.nuisance.gate.gate import ServerOutcome, apply_retests, compare_server, decide
+from evals.cve.nuisance.gate.gate_baseline import WHOLE_RESET
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 

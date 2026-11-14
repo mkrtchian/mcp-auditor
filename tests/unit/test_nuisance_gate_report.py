@@ -1,7 +1,7 @@
 import dataclasses
 
 import tests.unit.support.test_nuisance_gate_report_given as given
-from evals.cve.nuisance.gate_report import GATE_LEGEND, render_markdown, server_lines
+from evals.cve.nuisance.gate.gate_report import GATE_LEGEND, render_markdown, server_lines
 from tests.unit.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES
 from tests.unit.support.test_nuisance_run_given import COUNTED_TOOL
 

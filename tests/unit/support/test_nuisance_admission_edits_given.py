@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from evals.cve.nuisance.admission import (
+from evals.cve.nuisance.admission.admission import (
     AdmittedServer,
     BackendFixture,
     FlawRecord,

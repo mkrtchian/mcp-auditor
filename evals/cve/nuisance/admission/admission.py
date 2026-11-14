@@ -6,7 +6,7 @@ disagreements, on the model of the draw record of `evals/cve/detection/draw_reco
 is empty until the admission session. `admission_problems` holds the load validation, raised joined
 by `load_admission`, so a crafted admission can be checked without a file. The file is absent until
 the session, and `load_admission` says so. The fields defaulting to `None` are those rule v3 or v4
-added and not yet recorded, which `evals/cve/nuisance/unrecorded.py` refuses at run.
+added and not yet recorded, which `evals/cve/nuisance/admission/unrecorded.py` refuses at run.
 """
 
 from collections.abc import Mapping
@@ -22,11 +22,15 @@ from evals.cve.fixture_provenance import SoftwareRelease, StandInRecord
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance import backend_registry
 from evals.cve.nuisance import images as nuisance_images
-from evals.cve.nuisance import walk as nuisance_walk
-from evals.cve.nuisance.admission_records import RealSoftwareRecord, SeedRecord, record_problems
-from evals.cve.nuisance.admission_walk import walk_problems
+from evals.cve.nuisance.admission import walk as nuisance_walk
+from evals.cve.nuisance.admission.admission_records import (
+    RealSoftwareRecord,
+    SeedRecord,
+    record_problems,
+)
+from evals.cve.nuisance.admission.admission_walk import walk_problems
+from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
-from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
 

@@ -6,8 +6,8 @@ from collections.abc import Mapping
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.cve.nuisance.gate import ServerComparison, ServerOutcome
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
+from evals.cve.nuisance.gate.gate_baseline import (
     WHOLE_RESET,
     NuisanceGateConditions,
     NuisanceServerBaseline,

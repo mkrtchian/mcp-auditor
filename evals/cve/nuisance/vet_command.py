@@ -15,7 +15,9 @@ from evals.concurrency import bounded, positive_int
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
-from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
+from evals.cve.nuisance.admission.walk import acceptance_target_servers, nuisance_population
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -34,9 +36,7 @@ from evals.cve.nuisance.run_containers import (
     run_images,
     sweep_run_containers,
 )
-from evals.cve.nuisance.unrecorded import unrecorded_fields
 from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
-from evals.cve.nuisance.walk import acceptance_target_servers, nuisance_population
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,

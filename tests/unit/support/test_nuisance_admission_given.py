@@ -13,7 +13,7 @@ from evals.cve.census.classification import Classification
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection import baseline as detection_baseline
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance.admission import (
+from evals.cve.nuisance.admission.admission import (
     AdmissionSettlement,
     AdmittedServer,
     BackendFixture,
@@ -25,9 +25,9 @@ from evals.cve.nuisance.admission import (
     ToolRecord,
     admission_problems,
 )
-from evals.cve.nuisance.admission_records import RealSoftwareRecord
+from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
+from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import RegisteredBackend
-from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
 
 OTHER_PACKAGE = "PyPI:context-forge"

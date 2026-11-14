@@ -12,7 +12,7 @@ from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVER
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import DetectionWalkStep, DrawRecord, Settlement
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.nuisance.walk_record import (
+from evals.cve.nuisance.admission.walk_record import (
     Addition,
     IdentitySettlement,
     NuisanceWalkRecord,

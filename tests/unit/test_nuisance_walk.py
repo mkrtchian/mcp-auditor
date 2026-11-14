@@ -3,7 +3,7 @@ import pytest
 import tests.unit.support.test_nuisance_walk_given as given
 from evals.cve.census.classification import Criterion
 from evals.cve.census.draw_order import draw_order
-from evals.cve.nuisance.walk import (
+from evals.cve.nuisance.admission.walk import (
     ServerMark,
     acceptance_target_servers,
     candidate_counted_flaws,
@@ -11,7 +11,7 @@ from evals.cve.nuisance.walk import (
     nuisance_population,
     server_of,
 )
-from evals.cve.nuisance.walk_record import normalized_package, reached_identifiers
+from evals.cve.nuisance.admission.walk_record import normalized_package, reached_identifiers
 
 
 def test_reached_identifiers_raises_without_a_draw():

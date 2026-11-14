@@ -11,7 +11,7 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.kit import benign_probe
 from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.cve.kit.client import KitResponse, KitTool
-from evals.cve.nuisance.admission import AdmittedServer, BackendFixture
+from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.planting_base import PlantingHost
 from tests.fakes import FakeKitClient
 

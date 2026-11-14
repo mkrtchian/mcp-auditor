@@ -8,7 +8,7 @@ import pytest
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
-from evals.cve.nuisance.admission import BackendFixture
+from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint

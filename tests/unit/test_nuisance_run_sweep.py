@@ -7,7 +7,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_admission_given as admission
 import tests.unit.support.test_nuisance_run_given as given
-from evals.cve.nuisance.admission import BackendFixture
+from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
 from evals.eval_session import Refused, TreeState

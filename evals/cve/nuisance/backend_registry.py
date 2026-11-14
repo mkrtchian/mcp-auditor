@@ -55,7 +55,7 @@ from evals.cve.detection.targets import image_tag
 from evals.cve.docker_paths import image_dockerfile
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer
+    from evals.cve.nuisance.admission.admission import AdmittedServer
 
 
 @dataclass(frozen=True)

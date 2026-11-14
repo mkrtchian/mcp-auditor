@@ -7,7 +7,7 @@ import tests.unit.support.test_nuisance_admission_given as admission
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import NuisanceRunResult, ServerExit

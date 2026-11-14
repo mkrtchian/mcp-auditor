@@ -6,12 +6,12 @@ import pytest
 
 import tests.unit.support.test_nuisance_gate_session_given as given
 from evals.baseline import BaselineStatus
-from evals.cve.nuisance.admission import AdmittedServer, BackendFixture
+from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import GateRun
-from evals.cve.nuisance.gate import ServerComparison, ServerOutcome
-from evals.cve.nuisance.gate_baseline import load_baselines, write_baseline
-from evals.cve.nuisance.gate_session import run_gate
-from evals.cve.nuisance.gate_session_model import NuisanceGateSession
+from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
+from evals.cve.nuisance.gate.gate_baseline import load_baselines, write_baseline
+from evals.cve.nuisance.gate.gate_session import run_gate
+from evals.cve.nuisance.gate.gate_session_model import NuisanceGateSession
 from evals.eval_session import RECORDING_REFUSED, Refused, TreeState
 from evals.gate_outcome import GateOutcome
 from tests.fakes import FakeContainerSweep

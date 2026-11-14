@@ -24,7 +24,7 @@ from evals.gate import RetestRule
 from mcp_auditor.config import Settings
 
 NUISANCE_GATE_RUNS = 3
-NUISANCE_GATE_BASELINE_DIRECTORY = Path(__file__).parents[2] / "baselines" / "nuisance"
+NUISANCE_GATE_BASELINE_DIRECTORY = Path(__file__).parents[3] / "baselines" / "nuisance"
 _BASELINE_DIRECTORY = "evals/baselines/nuisance"
 WHOLE_RESET = (
     f"Reset the whole baseline: delete {_BASELINE_DIRECTORY}/ in a commit of its own, "

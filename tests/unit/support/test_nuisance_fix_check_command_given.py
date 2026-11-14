@@ -7,7 +7,7 @@ import tests.unit.support.test_detection_draw_record_given as draw_given
 import tests.unit.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult
-from evals.cve.nuisance.admission import BackendFixture, FixCheckRecord, NuisanceAdmission
+from evals.cve.nuisance.admission.admission import BackendFixture, FixCheckRecord, NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fix_check_command import FixCheckDeps
 

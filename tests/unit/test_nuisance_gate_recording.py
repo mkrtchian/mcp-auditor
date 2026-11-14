@@ -2,9 +2,9 @@ import pytest
 
 import tests.unit.support.test_nuisance_gate_recording_given as given
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.cve.nuisance.gate import ServerOutcome
-from evals.cve.nuisance.gate_baseline import NuisanceServerBaseline
-from evals.cve.nuisance.gate_recording import (
+from evals.cve.nuisance.gate.gate import ServerOutcome
+from evals.cve.nuisance.gate.gate_baseline import NuisanceServerBaseline
+from evals.cve.nuisance.gate.gate_recording import (
     ServerRecording,
     decide_recording,
     decide_recordings,

@@ -7,9 +7,9 @@ import tests.unit.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_vet_given as vet_given
 from evals.concurrency import bounded
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
-from evals.cve.nuisance.gate_session_model import NuisanceGateHarness
+from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness
 from evals.cve.nuisance.run import NuisanceDeps
 from evals.cve.nuisance.vet_command import VetDeps
 from tests.unit.support.test_nuisance_run_backends_given import DockerHost

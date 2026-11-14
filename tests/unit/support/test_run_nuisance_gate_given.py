@@ -12,12 +12,12 @@ import tests.unit.support.test_nuisance_admission_records_given as records_given
 import tests.unit.support.test_nuisance_walk_given as walk_given
 from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
-from evals.cve.nuisance import gate_command as nuisance_gate_command
-from evals.cve.nuisance import gate_console as nuisance_gate_console
-from evals.cve.nuisance.admission import NuisanceAdmission
-from evals.cve.nuisance.gate import NuisanceGateResult
-from evals.cve.nuisance.gate_baseline import NuisanceGateConditions
-from evals.cve.nuisance.gate_session_model import (
+from evals.cve.nuisance.admission.admission import NuisanceAdmission
+from evals.cve.nuisance.gate import gate_command as nuisance_gate_command
+from evals.cve.nuisance.gate import gate_console as nuisance_gate_console
+from evals.cve.nuisance.gate.gate import NuisanceGateResult
+from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
+from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
     NuisanceGateSession,

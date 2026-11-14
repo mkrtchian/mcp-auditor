@@ -20,7 +20,7 @@ from evals.cve.planting_base import LABEL
 
 if TYPE_CHECKING:
     from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
-    from evals.cve.nuisance.admission import AdmittedServer
+    from evals.cve.nuisance.admission.admission import AdmittedServer
 
 type BackendProvisioner = Callable[[AdmittedServer], AbstractContextManager[Launch]]
 

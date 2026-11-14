@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-import evals.cve.nuisance.re_admission_dossier as re_admission
+import evals.cve.nuisance.admission.re_admission_dossier as re_admission
 import tests.unit.support.kit_isolation as iso
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 import tests.unit.support.test_nuisance_admission_given as admission_given
@@ -20,19 +20,19 @@ from evals.cve.docker_paths import image_dockerfile
 from evals.cve.dossier_closure import import_closure
 from evals.cve.kit import benign_probe
 from evals.cve.kit.fix_check import check_fix
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
-from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
-from evals.cve.nuisance.dossier import NUISANCE_SUITE_RULE
-from evals.cve.nuisance.holdout_target_reference import holdout_fixture_file
-from evals.cve.nuisance.re_admission_docs import confinement_text, re_admission_readme
-from evals.cve.nuisance.re_admission_dossier import (
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE
+from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
+from evals.cve.nuisance.admission.re_admission_docs import confinement_text, re_admission_readme
+from evals.cve.nuisance.admission.re_admission_dossier import (
     closure_roots,
     fix_check_modules,
     holdout_target_references,
     re_admission_dockerfiles,
     write_re_admission_dossier,
 )
+from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.eval_session import Refused
 from tests.unit.support.test_nuisance_committed_admission_given import (

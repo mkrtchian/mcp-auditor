@@ -27,7 +27,7 @@ from pydantic import BaseModel
 import tests.unit.support.test_graph_given as graph
 from evals.cve.census.classification import Classification
 from evals.cve.detection.draw_record import CalibrationCard
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.judge.fixture import load_fixture
 from evals.probe.corpus import SCHEMA_NAMES, schema_for
 from evals.run_judge_eval import FIXTURES_PATH, judge_one_case

@@ -7,7 +7,7 @@ import shlex
 from collections.abc import Mapping, Sequence
 
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import (
     memory_bound_args,

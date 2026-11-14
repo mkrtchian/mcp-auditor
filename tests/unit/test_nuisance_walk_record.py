@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.support.test_nuisance_walk_record_given as given
 from evals.cve.census.classification import Criterion
-from evals.cve.nuisance.walk_record import load_walk_record, walk_record_problems
+from evals.cve.nuisance.admission.walk_record import load_walk_record, walk_record_problems
 
 
 def test_an_empty_record_has_no_problem():

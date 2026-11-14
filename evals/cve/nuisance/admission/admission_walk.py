@@ -8,11 +8,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from evals.cve.nuisance import walk as nuisance_walk
-from evals.cve.nuisance.walk_record import WalkInputs
+from evals.cve.nuisance.admission import walk as nuisance_walk
+from evals.cve.nuisance.admission.walk_record import WalkInputs
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
+    from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 
 
 def walk_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list[str]:

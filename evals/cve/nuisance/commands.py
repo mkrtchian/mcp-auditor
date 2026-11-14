@@ -8,8 +8,8 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals.cve.census.census import load_census
-from evals.cve.nuisance.admission import NuisanceAdmission, load_admission
-from evals.cve.nuisance.walk_record import WalkInputs, load_walk_record
+from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
+from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 

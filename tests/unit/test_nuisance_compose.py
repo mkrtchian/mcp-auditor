@@ -9,7 +9,7 @@ from evals.cve.backends.mcp_ssh_sshd import SSHD_SERVICE
 from evals.cve.detection.targets import image_tag
 from evals.cve.images import COMPOSE_FILE
 from evals.cve.nuisance import images as nuisance_images
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.planting_base import STAND_IN_SERVICE
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission

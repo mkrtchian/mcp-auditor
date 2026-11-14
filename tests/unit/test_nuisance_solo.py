@@ -10,8 +10,8 @@ import tests.unit.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.support.test_nuisance_run_given as run_given
 import tests.unit.support.test_nuisance_solo_given as given
 import tests.unit.support.test_nuisance_solo_then as then
-from evals.cve.nuisance.admission import AdmittedServer
-from evals.cve.nuisance.gate_session import run_gate
+from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
 from evals.gate_outcome import GateOutcome
 

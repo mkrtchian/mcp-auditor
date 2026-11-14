@@ -4,7 +4,7 @@ from dataclasses import replace
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.nuisance.admission import AdmittedServer, BackendFixture
+from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind

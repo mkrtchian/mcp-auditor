@@ -26,7 +26,7 @@ from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve.run_images import refuse_running_containers, sweep_containers
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer
+    from evals.cve.nuisance.admission.admission import AdmittedServer
 
 
 class ContainerHost(Protocol):

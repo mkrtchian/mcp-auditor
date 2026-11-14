@@ -8,7 +8,7 @@ never read. The run and the gate refuse while one is missing; the vet only count
 
 from collections.abc import Sequence
 
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.benign_call import benign_calls
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
 from evals.eval_session import Refused

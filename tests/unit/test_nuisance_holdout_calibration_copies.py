@@ -1,5 +1,5 @@
 import tests.unit.support.test_nuisance_holdout_calibration_copies_given as given
-from evals.cve.nuisance.holdout_calibration_copies import (
+from evals.cve.nuisance.admission.holdout_calibration_copies import (
     copy_targets,
     stale_holdout_calibration_copies,
 )

@@ -18,7 +18,7 @@ from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.images import ComposeImageStore, ensure_images
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
-from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer, FixCheckRecord
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, FixCheckRecord
 from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,

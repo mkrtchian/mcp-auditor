@@ -1,7 +1,7 @@
 """Which admitted servers the nuisance gate audits, and which it names as left out."""
 
 import tests.unit.support.test_nuisance_gate_selection_given as given
-from evals.cve.nuisance.gate_session import gate_servers, not_admitted, outside_gate
+from evals.cve.nuisance.gate.gate_session import gate_servers, not_admitted, outside_gate
 from evals.cve.nuisance.results import ServerExit
 from tests.unit.support.test_nuisance_admission_edits_given import without_stdio
 from tests.unit.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES

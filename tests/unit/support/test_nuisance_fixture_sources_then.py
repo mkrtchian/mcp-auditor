@@ -9,7 +9,7 @@ from evals.cve.fixture_sources import (
     unsourced_copies,
 )
 from evals.cve.images import dockerfile_instructions
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.fingerprint import fingerprinted_files
 from evals.honeypots import REPO_ROOT
 

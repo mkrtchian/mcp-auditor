@@ -3,7 +3,7 @@ every counted tool and every prerequisite tool is in the server's `tools/list`, 
 call returns without error, and each counted tool's benign call returns without error and, when
 the admission records an expected text, with that text in its response."""
 
-from evals.cve.nuisance.admission import AdmittedServer, BenignCall, ToolCall
+from evals.cve.nuisance.admission.admission import AdmittedServer, BenignCall, ToolCall
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
 from mcp_auditor.domain.ports import MCPClientPort
 

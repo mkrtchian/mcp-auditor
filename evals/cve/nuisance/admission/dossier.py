@@ -25,11 +25,11 @@ from evals.cve.detection.calibration_dossier import (
     acceptance_services,
     copy_kit_sources,
 )
-from evals.cve.nuisance import holdout_target_reference
-from evals.cve.nuisance import walk as nuisance_walk
-from evals.cve.nuisance.admission import AdmittedServer, FlawRecord
-from evals.cve.nuisance.re_admission_docs import admission_confinement_text
-from evals.cve.nuisance.walk_record import WalkInputs, normalized_package
+from evals.cve.nuisance.admission import holdout_target_reference
+from evals.cve.nuisance.admission import walk as nuisance_walk
+from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
+from evals.cve.nuisance.admission.walk_record import WalkInputs, normalized_package
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASS_DEFINITIONS

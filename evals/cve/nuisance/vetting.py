@@ -8,7 +8,7 @@ from evals.concurrency import entered_in_thread
 from evals.cve.detection.calibration_check import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.environments import connect
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
 from evals.cve.nuisance.benign_call import benign_call_failure
 from evals.cve.nuisance.results import NotRunCause, NotRunServer

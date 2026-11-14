@@ -15,8 +15,8 @@ from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import image_ids
 from evals.cve.nuisance import vetting as nuisance_vetting
-from evals.cve.nuisance.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission_walk import standing_exit
+from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
+from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.audit import (
     GateRun,
     NuisanceAuditor,
@@ -25,7 +25,7 @@ from evals.cve.nuisance.audit import (
     nuisance_audit,
 )
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
-from evals.cve.nuisance.gate import (
+from evals.cve.nuisance.gate.gate import (
     NuisanceGateResult,
     ServerCandidate,
     ServerComparison,
@@ -35,13 +35,13 @@ from evals.cve.nuisance.gate import (
     decide,
     exit_code,
 )
-from evals.cve.nuisance.gate_baseline import (
+from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NuisanceGateConditions,
     NuisanceServerBaseline,
     condition_mismatches,
 )
-from evals.cve.nuisance.gate_session_model import (
+from evals.cve.nuisance.gate.gate_session_model import (
     GateAudit,
     NuisanceGateHarness,
     NuisanceGateOptions,
@@ -49,7 +49,7 @@ from evals.cve.nuisance.gate_session_model import (
     OpenedGate,
     ServerRuns,
 )
-from evals.cve.nuisance.gate_session_recording import load_checked, record, recording_tree
+from evals.cve.nuisance.gate.gate_session_recording import load_checked, record, recording_tree
 from evals.cve.nuisance.images import backend_image_ids, image_tag
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.run_containers import (

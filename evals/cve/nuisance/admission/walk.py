@@ -25,7 +25,7 @@ from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVER
 from evals.cve.census.grouping import DRAW_ORDER_CRITERIA
 from evals.cve.detection.draw_record import Settlement
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.nuisance.walk_record import (
+from evals.cve.nuisance.admission.walk_record import (
     WalkInputs,
     normalized_package,
     reached_identifiers,

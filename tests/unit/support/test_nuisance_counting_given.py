@@ -1,7 +1,7 @@
 import tests.unit.support.test_nuisance_admission_given as admission
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance.admission import FixCheckRecord, FlawRecord, ToolRecord
-from evals.cve.nuisance.admission_records import RealSoftwareRecord
+from evals.cve.nuisance.admission.admission import FixCheckRecord, FlawRecord, ToolRecord
+from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
 
 
 def a_fix_check(**overrides: object) -> FixCheckRecord:

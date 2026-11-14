@@ -32,8 +32,21 @@ from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.cve.nuisance.admission import ADMISSION_PATH, AdmittedServer
-from evals.cve.nuisance.admission_walk import addition_entries
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.admission_walk import addition_entries
+from evals.cve.nuisance.admission.dossier import write_dossier
+from evals.cve.nuisance.admission.holdout_calibration_copies import (
+    copy_targets,
+    stale_holdout_calibration_copies,
+)
+from evals.cve.nuisance.admission.re_admission_dossier import write_re_admission_dossier
+from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
+from evals.cve.nuisance.admission.walk import (
+    NuisanceServer,
+    acceptance_target_servers,
+    nuisance_population,
+)
+from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -44,16 +57,10 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
     write_report,
 )
-from evals.cve.nuisance.dossier import write_dossier
 from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
-from evals.cve.nuisance.gate_command import add_gate_arguments
-from evals.cve.nuisance.holdout_calibration_copies import (
-    copy_targets,
-    stale_holdout_calibration_copies,
-)
+from evals.cve.nuisance.gate.gate_command import add_gate_arguments
 from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
 from evals.cve.nuisance.markdown import render_markdown
-from evals.cve.nuisance.re_admission_dossier import write_re_admission_dossier
 from evals.cve.nuisance.report import build_report
 from evals.cve.nuisance.results import NuisanceRunResult
 from evals.cve.nuisance.run import (
@@ -65,10 +72,7 @@ from evals.cve.nuisance.run import (
     nuisance_overrides,
     run_nuisance,
 )
-from evals.cve.nuisance.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.vet_command import add_vet_arguments
-from evals.cve.nuisance.walk import NuisanceServer, acceptance_target_servers, nuisance_population
-from evals.cve.nuisance.walk_record import WalkInputs
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result

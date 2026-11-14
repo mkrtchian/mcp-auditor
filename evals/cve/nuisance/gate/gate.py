@@ -13,7 +13,7 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
-from evals.cve.nuisance.gate_baseline import WHOLE_RESET, NuisanceServerBaseline, server_reset
+from evals.cve.nuisance.gate.gate_baseline import WHOLE_RESET, NuisanceServerBaseline, server_reset
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 

@@ -5,7 +5,7 @@ import pytest
 import tests.unit.support.test_export_given as given
 import tests.unit.support.test_export_then as then
 from evals.cve.detection.session_model import DetectionAudit
-from evals.cve.nuisance.gate_session_model import GateAudit
+from evals.cve.nuisance.gate.gate_session_model import GateAudit
 from evals.export import (
     export_detection_judged_cases,
     export_judged_cases,

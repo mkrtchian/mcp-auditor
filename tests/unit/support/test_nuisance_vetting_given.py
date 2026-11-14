@@ -6,7 +6,7 @@ import pytest
 
 from evals.cve.environments import Launch
 from evals.cve.nuisance import vetting as nuisance_vetting
-from evals.cve.nuisance.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient

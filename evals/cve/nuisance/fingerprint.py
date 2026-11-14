@@ -33,7 +33,7 @@ from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer, BenignCall
+    from evals.cve.nuisance.admission.admission import AdmittedServer, BenignCall
 
 CONFINEMENT_SOURCE = Path(confinement.__file__)
 # What a backend-less server with public names is launched through besides the confinement: the

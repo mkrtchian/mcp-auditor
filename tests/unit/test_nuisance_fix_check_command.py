@@ -12,7 +12,7 @@ from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance import fix_check_command
-from evals.cve.nuisance.admission import NuisanceAdmission
+from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.commands import CRASHED_EXIT, UNKNOWN_SERVER_EXIT
 from evals.cve.nuisance.fix_check_command import check_fixes, fix_check_mismatches

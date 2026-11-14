@@ -2,7 +2,7 @@ from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
-from evals.cve.nuisance.gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
+from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
 from evals.gate import RetestRule
 
 SERVER_PACKAGE = "npm:@modelcontextprotocol/server-filesystem"

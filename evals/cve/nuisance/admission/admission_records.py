@@ -20,7 +20,7 @@ from evals.cve.fixture_provenance import software_release_problems, stand_in_pro
 from evals.cve.nuisance.counting import counted_flaws
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission import AdmittedServer, BenignCall
+    from evals.cve.nuisance.admission.admission import AdmittedServer, BenignCall
 
 
 class RealSoftwareRecord(BaseModel):
