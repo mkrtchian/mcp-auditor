@@ -41,7 +41,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **processed cases**: every test case an audit handled, blocked and unjudged ones included.
 - **attack chain**: a sequence of tool calls the auditor plans toward one goal, each step observed before the next is planned. Defined by: ADR 010.
 - **chain step**: one tool call inside an attack chain.
-- **attack context**: what the auditor learned on earlier tools and carries to the next ones. Defined by: ADR 009.
+- **attack context**: what the auditor learned on earlier tools and carries to the next ones. Defined by: ADR 009, ADR 035.
 - **judge**: the model call that rules PASS or FAIL on a test case or a chain. A judgment is its answer: the verdict, a justification and a severity.
 - **judge result**: a judgment with the identity and arguments of its case. Code: `judge_result` in the JSON report.
 - **verdict**: PASS or FAIL. Code: `EvalVerdict`, a name sent to the model in the judge's schema, so it stays.
