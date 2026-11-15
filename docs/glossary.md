@@ -45,7 +45,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **judge**: the model call that rules PASS or FAIL on a test case or a chain. A judgment is its answer: the verdict, a justification and a severity.
 - **judge result**: a judgment with the identity and arguments of its case. Code: `judge_result` in the JSON report.
 - **verdict**: PASS or FAIL. Code: `EvalVerdict`, a name sent to the model in the judge's schema, so it stays.
-- **finding**: a FAIL in the audit report. Not: the "findings" the context-extraction prompt asks for, which are what the auditor learned.
+- **finding**: a FAIL in the audit report.
 - **severity**: how serious a finding is, from low to critical.
 - **judge criteria**: what the judge prompt tells the judge to check. They are written to match the labeling rubric. Not: labeling rubric.
 - **model call kind**: the kind of request an audit sends to a model: test generation, judgment, context extraction, chain planning, chain step observation, chain step planning, chain judgment. Not: the README's phases (discover, generate, execute, judge, chains), which are prose and have no identifier.

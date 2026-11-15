@@ -3,6 +3,7 @@ from typing import Any
 
 from langgraph.graph import END  # type: ignore[import-untyped]
 
+from mcp_auditor.domain.attack_context import merge_attack_context
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.coverage import completion_size, find_coverage_gap
 from mcp_auditor.domain.models import (
@@ -224,8 +225,9 @@ def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
         answer = await call_model(llm, call)
         if isinstance(answer, Missed):
             return {"attack_context": existing_context, **answer.state_update()}
-        new_context, usage = answer
-        return {"attack_context": new_context, "provider_usage": [usage]}
+        reported_context, usage = answer
+        merged = merge_attack_context(existing_context, reported_context, tool_report.tool.name)
+        return {"attack_context": merged, "provider_usage": [usage]}
 
     return extract_attack_context
 

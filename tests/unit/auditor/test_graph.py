@@ -86,6 +86,20 @@ async def test_attack_context_populated_after_audit():
     assert result["attack_context"].db_engine == "sqlite"
 
 
+async def test_an_item_reported_on_one_tool_survives_a_later_answer_that_omits_it():
+    tools = [given.a_tool(name="get_user"), given.a_tool(name="delete_user")]
+    fake_llm = given.a_fake_llm_for_two_tool_audit_extracting(
+        AttackContext(exposed_internals=["users table"]),
+        AttackContext(exposed_internals=["/srv/app/config.yaml"]),
+    )
+    graph = given.a_graph(fake_llm, FakeMCPClient(tools))
+    state = given.an_initial_state(test_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    assert result["attack_context"].exposed_internals == ["users table", "/srv/app/config.yaml"]
+
+
 async def test_chain_budget_zero_skips_chains():
     tool = given.a_tool(name="get_user")
     fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)

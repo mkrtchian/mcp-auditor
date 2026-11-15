@@ -282,7 +282,7 @@ def _full_context() -> AttackContext:
         language="Python",
         exposed_internals=["/srv/app/db.sqlite", "users table"],
         effective_payloads=["UNION SELECT"],
-        observations="errors quote the query",
+        observations="get_user: errors quote the query\nlist_users: pages are capped at 50 rows",
     )
 
 

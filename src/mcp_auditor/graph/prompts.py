@@ -1,5 +1,6 @@
 import json
 
+from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_NOTE_LENGTH
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.domain.models import (
     AttackContext,
@@ -143,7 +144,11 @@ Extract any intelligence about the server from these results. Look for:
 - Which attack patterns were effective
 - Any other observations about the server's behavior
 
-Preserve all previous findings and add new ones. Do not lose information from earlier audits."""
+Report only what these results show. A later step adds your answer to what is already known, so do not copy an item these results do not show. When these results confirm an item listed above, repeat it in the same words.
+Write one fact per item, in one short sentence of at most {MAX_ITEM_LENGTH} characters.
+In observations, write one short note about this tool, of at most {MAX_NOTE_LENGTH} characters.
+Leave a field empty when these results show nothing for it.
+Set the database engine, the framework or the language only when these results show it, in a few words. The values listed above are the current ones."""
 
 
 def _format_cases_for_extraction(tool_report: ToolReport) -> str:
@@ -167,10 +172,26 @@ def _format_cases_for_extraction(tool_report: ToolReport) -> str:
 
 
 def _format_existing_context(existing_context: AttackContext) -> str:
-    rendered = format_attack_context(existing_context)
-    if not rendered:
+    if existing_context.is_empty:
         return ""
-    return f"\nWhat we already know:\n{rendered}\n"
+    lines = ["What we already know:"]
+    scalars = [
+        ("Database engine", existing_context.db_engine),
+        ("Framework", existing_context.framework),
+        ("Language", existing_context.language),
+    ]
+    lines.extend(f"- {label}: {value}" for label, value in scalars if value is not None)
+    lines.extend(_format_known_items("Exposed internals", existing_context.exposed_internals))
+    lines.extend(_format_known_items("Effective patterns", existing_context.effective_payloads))
+    notes = [note for note in existing_context.observations.splitlines() if note.strip()]
+    lines.extend(_format_known_items("Observations", notes))
+    return "\n" + "\n".join(lines) + "\n"
+
+
+def _format_known_items(label: str, items: list[str]) -> list[str]:
+    if not items:
+        return []
+    return [f"- {label}:", *(f"  - {item}" for item in items)]
 
 
 def build_judge_prompt(

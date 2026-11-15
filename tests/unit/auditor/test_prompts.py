@@ -1,5 +1,6 @@
 import tests.unit.auditor.support.test_prompts_given as given
 from mcp_auditor.domain import AttackContext, AuditCategory
+from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_NOTE_LENGTH
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
@@ -219,6 +220,41 @@ class TestContextExtractionPrompt:
         prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
 
         assert "What we already know" not in prompt
+
+    def test_shows_each_carried_item_on_its_own_line_under_what_we_already_know(self):
+        existing = AttackContext(
+            db_engine="sqlite",
+            language="Python",
+            exposed_internals=["/srv/app/config.yaml", "users table"],
+            observations="read_file: echoes the path\nlist_users: paginates",
+        )
+
+        prompt = build_context_extraction_prompt(given.a_tool_report(), existing)
+
+        known = prompt.split("What we already know:", 1)[1]
+        lines = [line.strip() for line in known.splitlines()]
+        for value in ("sqlite", "Python"):
+            assert any(value in line for line in lines)
+        for item in ("/srv/app/config.yaml", "users table", "read_file: echoes the path"):
+            assert any(line.endswith(item) for line in lines)
+        assert "/srv/app/config.yaml, users table" not in prompt
+
+    def test_asks_to_repeat_a_confirmed_item_in_the_same_words(self):
+        prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
+
+        assert "same words" in prompt
+
+    def test_states_the_length_bounds(self):
+        prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
+
+        assert str(MAX_ITEM_LENGTH) in prompt
+        assert str(MAX_NOTE_LENGTH) in prompt
+
+    def test_no_longer_asks_to_preserve_previous_findings(self):
+        prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
+
+        assert "Preserve all previous findings" not in prompt
+        assert "findings" not in prompt
 
 
 class TestJudgePrompt:

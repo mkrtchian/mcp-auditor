@@ -80,7 +80,7 @@ class BlockedPayload:
 
 
 class AttackContext(BaseModel):
-    """Accumulated intelligence from previous tool audits."""
+    """What tool audits show about the server."""
 
     db_engine: str | None = None
     framework: str | None = None

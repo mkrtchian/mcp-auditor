@@ -115,6 +115,21 @@ class TestExtractAttackContext:
 
         assert result["attack_context"] == AttackContext(db_engine="sqlite")
 
+    async def test_merges_the_answer_into_the_carried_context(self):
+        carried = AttackContext(exposed_internals=["/srv/app/config.yaml"])
+        answer = AttackContext(exposed_internals=["users table"], observations="echoes the path")
+        node = make_extract_attack_context(FakeLLM([answer]))
+        state = {
+            "tool_reports": [given.a_tool_report(tool_name="read_file")],
+            "attack_context": carried,
+        }
+
+        result = await node(state)
+
+        context = result["attack_context"]
+        assert context.exposed_internals == ["/srv/app/config.yaml", "users table"]
+        assert context.observations == "read_file: echoes the path"
+
     async def test_records_the_usage_of_the_extraction(self):
         report = given.a_tool_report()
         llm = FakeLLM([AttackContext(db_engine="sqlite")])

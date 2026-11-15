@@ -59,11 +59,21 @@ def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
 
 
 def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
+    return _a_fake_llm_extracting([(num_cases, AttackContext()) for num_cases in cases_per_tool])
+
+
+def a_fake_llm_for_two_tool_audit_extracting(
+    first_answer: AttackContext, second_answer: AttackContext
+) -> FakeLLM:
+    return _a_fake_llm_extracting([(1, first_answer), (1, second_answer)])
+
+
+def _a_fake_llm_extracting(tools: list[tuple[int, AttackContext]]) -> FakeLLM:
     responses: list[BaseModel] = []
-    for num_cases in cases_per_tool:
+    for num_cases, extraction_answer in tools:
         batch = a_complete_batch(num_cases)
         judgments = [a_judgment() for _ in range(num_cases)]
-        responses.extend([batch, *judgments, AttackContext()])
+        responses.extend([batch, *judgments, extraction_answer])
     return FakeLLM(responses)
 
 
