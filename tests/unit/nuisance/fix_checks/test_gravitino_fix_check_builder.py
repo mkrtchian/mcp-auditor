@@ -13,7 +13,7 @@ def test_the_server_points_at_the_per_launch_stack_not_the_run_singleton():
     assert args[args.index("--gravitino-uri") + 1] == f"http://gravitino:{GRAVITINO_PORT}"
 
 
-def test_the_server_runs_under_the_holdout_confinement():
+def test_the_server_runs_under_the_confinement_of_the_cve_benchmark():
     args = gravitino.server_args("img", "net")
 
     assert "--cap-drop" in args and "ALL" in args

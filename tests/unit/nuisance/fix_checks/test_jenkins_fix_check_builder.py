@@ -13,7 +13,7 @@ def test_the_per_launch_controller_runs_on_the_jenkins_bridge():
     assert args[args.index("--ip") + 1] == _ADDRESS
 
 
-def test_the_per_launch_controller_keeps_the_holdout_confinement():
+def test_the_per_launch_controller_runs_under_the_confinement_of_the_cve_benchmark():
     args = jenkins.controller_args("c", _ADDRESS)
 
     for option in confinement_args():
