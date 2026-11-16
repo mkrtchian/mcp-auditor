@@ -20,9 +20,8 @@ from dataclasses import dataclass
 
 from evals.cve.environments import Launch, LaunchShape, materialise
 from evals.cve.layout import layout_mount_args, owned_layout
-from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.planting import PlantingDocker, PlantingSpec, confinement_args, planted
-from evals.cve.planting_base import LABEL
+from evals.cve.planting_base import LABEL, memory_bound_args
 from evals.cve.planting_docker import DOCKER_PLANTING
 from evals.cve.public_stand_ins import stand_in_files
 

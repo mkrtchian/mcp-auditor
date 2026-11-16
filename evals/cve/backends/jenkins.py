@@ -6,7 +6,7 @@ official image pinned by digest), not a responder: its image installs the plugin
 suggests at that release with their required dependencies (92, each pinned at the version the
 update center for core 2.580.2 gave on 2026-11-13), then seeds the job `MyJob`, its first build and
 the admin account with a fixed API token at build time, with those plugins loaded. It listens on its
-default port 8080 as the image's own user, under the nuisance confinement, memory bound included,
+default port 8080 as the image's own user, under the confinement, memory bound included,
 with no added capability: with the plugins it peaks at 103 processes, under the confinement's
 bound of 256. Its state lives in the container only (its home in the anonymous volume Docker fills
 from the image at each creation), so a stand-up after its removal starts from the seed. It is a
@@ -33,13 +33,8 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, own_network_args
 
 JENKINS_SERVICE = "jenkins-responder"  # the compose service building the controller image
 JENKINS_RESPONDER_IMAGE = f"mcp-auditor-cve-{JENKINS_SERVICE}:local"
@@ -64,7 +59,7 @@ def singleton_run_args() -> list[str]:
         "--label", LABEL,
         *own_network_args(JENKINS_BRIDGE),
         "--ip", JENKINS_RESPONDER_IP,
-        *nuisance_confinement_args(),
+        *confinement_args(),
         JENKINS_RESPONDER_IMAGE,
     ]  # fmt: skip
 
@@ -74,7 +69,7 @@ def jenkins_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(JENKINS_BRIDGE),

@@ -20,11 +20,11 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
   exactly as the acceptance launch emits it, so it is reused here rather than rewritten; the
   `/work` tmpfs comes the same way. `driver.check_target` reports a launch running as any
   other account, so a builder that sets its own `--user` is caught.
-- `--tmpfs /home/audit:exec,uid=,gid=` and `--memory-swap` are the auditor's OWN confined-run
-  container flags (mcp_auditor.adapters.server_launch.container_argv), not this declared-container
-  launch. The detection suite's and the kit's launch set HOME=/tmp and no memory bound
-  (planting.confinement_args), so these two are deliberately absent here, matching
-  evals.cve.environments.
+- `--tmpfs /home/audit:exec,uid=,gid=` is the auditor's OWN confined-run container flag
+  (mcp_auditor.adapters.server_launch.container_argv), not this declared-container launch. The
+  detection suite's and the kit's launch set HOME=/tmp, so it is deliberately absent here,
+  matching evals.cve.environments. Their memory bound, `--memory` with an equal `--memory-swap`,
+  comes with planting.confinement_args.
 """
 
 import os

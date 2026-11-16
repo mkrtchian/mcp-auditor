@@ -141176,7 +141176,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "Container confinement on the target and the sentinels: --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256 (confinement_args), the sentinels adding NET_BIND_SERVICE. The CKAN stack's parts run under the nuisance suite's confinement (nuisance_confinement_args), as they do for the nuisance suite.",
+            "item": "Container confinement on the target and the sentinels: --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g (confinement_args), the sentinels adding NET_BIND_SERVICE. The CKAN stack's parts run under the same confinement (confinement_args), as they do for the nuisance suite.",
             "reason": "The suite's confinement profile, the same for every target: the image is deliberately exploitable and the container is the only barrier to the host.",
             "returned_by": [],
             "used_by_default_by": []
@@ -141864,7 +141864,7 @@
             ]
           },
           {
-            "item": "Confinement launch flags --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256",
+            "item": "Confinement launch flags --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g",
             "reason": "The suite's standard confinement launch shape, independent of the flaw. No tool returns or branches on it.",
             "returned_by": [],
             "used_by_default_by": []
@@ -142586,7 +142586,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "Launch values of the suite's confinement: -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 (confinement_args)",
+            "item": "Launch values of the suite's confinement: -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 4g --memory-swap 4g (confinement_args)",
             "reason": "The confinement every target is launched under, not chosen for this flaw.",
             "returned_by": [],
             "used_by_default_by": []
@@ -142882,7 +142882,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "Confinement: -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 (confinement_args)",
+            "item": "Confinement: -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 4g --memory-swap 4g (confinement_args)",
             "reason": "The confinement profile common to every container of the bench.",
             "returned_by": [],
             "used_by_default_by": []
@@ -143574,7 +143574,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "Launch values of the suite's confinement: --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, -i --rm",
+            "item": "Launch values of the suite's confinement: --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g, -i --rm",
             "reason": "The confinement every target is launched under (confinement_args), not chosen for this flaw.",
             "returned_by": [],
             "used_by_default_by": []
@@ -144506,7 +144506,7 @@
             "used_by_default_by": []
           },
           {
-            "item": "launch confinement flags --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, -e HOME=/tmp",
+            "item": "launch confinement flags --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g, -e HOME=/tmp",
             "reason": "the shared container confinement profile applied to every target (evals/cve/planting_base.py::confinement_args / unprivileged_user_args).",
             "returned_by": [],
             "used_by_default_by": []
@@ -144959,7 +144959,7 @@
             ]
           },
           {
-            "item": "Container confinement profile (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256).",
+            "item": "Container confinement profile (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g).",
             "reason": "The kit's universal container profile, identical for every target (confinement_args); no capability is needed to read a file or create a symlink.",
             "returned_by": [],
             "used_by_default_by": []
@@ -145548,7 +145548,7 @@
             ]
           },
           {
-            "item": "OpenSSH sshd container (image mcp-auditor-cve-mcp-ssh-sshd, evals/docker/Dockerfile.mcp-ssh-sshd): OpenSSH 10.6p2 built from the portable tarball, stood for each launch by evals/cve/backends/mcp_ssh_sshd.py (stood_sshd) under the network alias prod.example.com on port 22, with the account deploy holding the public half of id_production in .ssh/authorized_keys and the README's section 3 server lines on top of the release's default sshd_config, which keeps the sftp subsystem scp uses. It runs as deploy under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, binding port 22 since a container's own network namespace sets net.ipv4.ip_unprivileged_port_start to 0",
+            "item": "OpenSSH sshd container (image mcp-auditor-cve-mcp-ssh-sshd, evals/docker/Dockerfile.mcp-ssh-sshd): OpenSSH 10.6p2 built from the portable tarball, stood for each launch by evals/cve/backends/mcp_ssh_sshd.py (stood_sshd) under the network alias prod.example.com on port 22, with the account deploy holding the public half of id_production in .ssh/authorized_keys and the README's section 3 server lines on top of the release's default sshd_config, which keeps the sftp subsystem scp uses. It runs as deploy under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g) with no capability added, binding port 22 since a container's own network namespace sets net.ipv4.ip_unprivileged_port_start to 0",
             "reason": "The real software the server's ssh and scp reach: the README's sections 2 to 6 set up a remote OpenSSH server for the client entry. It runs in its own network namespace, never in the namespace holder, whose loopback carries the link-local sentinels, so a remote shell reaches none of them; on its own network it reaches nothing of the target. It holds no nonce and surfaces none. Limit: with a working remote, uploadFile of a standard path followed by runRemoteCommand surfaces a kept file through declared functions, on both versions, so the replay strikes any such credit",
             "returned_by": [
               "runRemoteCommand",
@@ -149303,7 +149303,7 @@
             ]
           },
           {
-            "item": "Launch command: docker run -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --user 65534:65534 -w /srv/app -e HOME=/tmp --network container:<holder> -v <layout root>:/srv:ro <image>, image tagged from the service name holdout-2026-5323-a11y (patched: holdout-2026-5323-a11y-patched), ENTRYPOINT [\"a11y-mcp\"], no argument after the image",
+            "item": "Launch command: docker run -i --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 4g --memory-swap 4g --user 65534:65534 -w /srv/app -e HOME=/tmp --network container:<holder> -v <layout root>:/srv:ro <image>, image tagged from the service name holdout-2026-5323-a11y (patched: holdout-2026-5323-a11y-patched), ENTRYPOINT [\"a11y-mcp\"], no argument after the image",
             "reason": "The ssrf_env builder's launch: the confinement profile every benchmark container runs under, the planting layer's user, working directory, environment and network, the read-only layout mount, then the global bin a11y-mcp (the README's npm install -g a11y-mcp route; its MCP configuration gives npx a11y-mcp). The working directory -w /srv/app is the checkout the Deployment layout prescribes (outside the fixture limits), not an option set for the flaw. The image tag is the service name the fixture's author chose.",
             "returned_by": [],
             "used_by_default_by": [
@@ -149321,7 +149321,7 @@
             ]
           },
           {
-            "item": "Confinement profile --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256 on the server container (and on the holder, address setup, sentinel and stand-in containers, which add NET_ADMIN or NET_BIND_SERVICE)",
+            "item": "Confinement profile --cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g on the server container (and on the holder, address setup, sentinel and stand-in containers, which add NET_ADMIN or NET_BIND_SERVICE)",
             "reason": "confinement_args(): the container is the only barrier between a successful exploit and the machine that runs the benchmark. Chromium runs inside it with the --no-sandbox flag a11y-mcp passes.",
             "returned_by": [],
             "used_by_default_by": [
@@ -151586,7 +151586,7 @@
             ]
           },
           {
-            "item": "Kubernetes control plane container (image mcp-auditor-cve-kube-control-plane, evals/docker/Dockerfile.kube-control-plane): upstream kube-apiserver, kube-controller-manager and kube-scheduler v1.37.2 and etcd 3.7.0, stood for each launch by evals/cve/backends/kubernetes.py. Its entrypoint runs kubeadm's file phases (certs, kubeconfigs, static pod manifests) with the container's address as the advertise address, starts the four components with the manifests' command lines, waits for /readyz and creates the kubeadm:cluster-admins binding with super-admin.conf, as `kubeadm init` does. No kubelet runs, so the cluster has no node: `get nodes` is empty and a created pod stays Pending. It runs as 65534:65534 under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, its certificates, manifests and etcd data on tmpfs",
+            "item": "Kubernetes control plane container (image mcp-auditor-cve-kube-control-plane, evals/docker/Dockerfile.kube-control-plane): upstream kube-apiserver, kube-controller-manager and kube-scheduler v1.37.2 and etcd 3.7.0, stood for each launch by evals/cve/backends/kubernetes.py. Its entrypoint runs kubeadm's file phases (certs, kubeconfigs, static pod manifests) with the container's address as the advertise address, starts the four components with the manifests' command lines, waits for /readyz and creates the kubeadm:cluster-admins binding with super-admin.conf, as `kubeadm init` does. No kubelet runs, so the cluster has no node: `get nodes` is empty and a created pod stays Pending. It runs as 65534:65534 under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256, --memory 4g --memory-swap 4g) with no capability added, its certificates, manifests and etcd data on tmpfs",
             "reason": "The real software the server's kubectl talks to: docs/INSTALLATION.md lists a configured kubectl, so the deployment reaches a cluster. kubelet needs a container runtime and privileges the confinement does not give, a limit the confinement sets. It runs in its own network namespace, never in the namespace holder, since the API server can be made to fetch addresses and the holder's loopback carries the link-local sentinels; on its own network it reaches nothing of the target. It holds no nonce and surfaces none",
             "returned_by": [
               "process_natural_language",

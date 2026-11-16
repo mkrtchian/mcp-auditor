@@ -13,9 +13,9 @@ aim matches the reader, never the benign "get pods".
 
 kubectl reaches the run's backend, an upstream control plane stood for each launch
 (`evals.cve.backends.kubernetes`), whose admin.conf is mounted at kubectl's default path. The
-control plane joins the server as a second network beside the planting's, and carries the memory
-bound it carries in the run; the server keeps the suite's confinement without the memory bound, as
-every fix-check server does.
+control plane joins the server as a second network beside the planting's. The control plane and
+the server run under the confinement of the CVE benchmark, memory bound included, as they do in the
+run.
 """
 
 import re
@@ -28,7 +28,6 @@ from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import (
     PlantingDocker,
@@ -65,7 +64,7 @@ def kubectl_env(
 ) -> Generator[Launch]:
     name = f"mcp-auditor-kit-kube-control-plane-{secrets.token_hex(4)}"
     with (
-        stand(name, memory_bound_args()) as control_plane,
+        stand(name) as control_plane,
         planted(spec, image, docker) as args,
     ):
         yield Launch(

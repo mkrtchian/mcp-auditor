@@ -8,7 +8,6 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve import planting_base
 from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance import confinement
 from evals.cve.nuisance.admission.admission import AdmissionSettlement, BackendFixture, ToolCall
 from evals.cve.nuisance.admission.admission_records import SeedRecord
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -253,7 +252,9 @@ def test_the_fingerprint_moves_when_the_confinement_code_changes(
     before = nuisance_fixture_fingerprint(server, tmp_path)
 
     confinement.write_text(
-        confinement.read_text().replace('MEMORY_BOUND = "4g"', 'MEMORY_BOUND = "8g"')
+        confinement.read_text().replace(
+            'LAUNCH_LABEL = f"{LABEL}-launch"', 'LAUNCH_LABEL = f"{LABEL}-start"'
+        )
     )
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != before
@@ -278,9 +279,9 @@ def test_the_fingerprint_moves_when_the_confinement_options_change(
     given.written_dockerfile(tmp_path)
     server = admission_given.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, tmp_path)
-    options = [*confinement.nuisance_confinement_args(), "--pids-limit", "512"]
+    options = [*planting_base.confinement_args(), "--pids-limit", "512"]
 
-    monkeypatch.setattr(confinement, "nuisance_confinement_args", lambda: options)
+    monkeypatch.setattr(planting_base, "confinement_args", lambda: options)
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != before
 

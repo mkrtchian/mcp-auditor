@@ -1,5 +1,7 @@
 from evals.cve.backends.gravitino import GRAVITINO_PORT
 from evals.cve.nuisance.fix_checks import cve_2026_41041_gravitino as gravitino
+from evals.cve.planting_base import memory_bound_args
+from tests.unit.support.docker_argv import carries
 
 
 def test_the_server_points_at_the_per_launch_stack_not_the_run_singleton():
@@ -11,21 +13,21 @@ def test_the_server_points_at_the_per_launch_stack_not_the_run_singleton():
     assert args[args.index("--gravitino-uri") + 1] == f"http://gravitino:{GRAVITINO_PORT}"
 
 
-def test_the_server_runs_under_the_holdout_confinement_without_the_memory_bound():
+def test_the_server_runs_under_the_holdout_confinement():
     args = gravitino.server_args("img", "net")
 
     assert "--cap-drop" in args and "ALL" in args
-    assert "--memory" not in args
+    assert carries(args, memory_bound_args())
     assert "--user" in args
 
 
-def test_each_part_joins_the_per_launch_network_under_its_alias_without_the_memory_bound():
+def test_each_part_joins_the_per_launch_network_under_its_alias():
     args = gravitino.part_args("c", "net", "postgresql", "mcp-auditor-cve-gravitino-db:local")
 
     assert args[args.index("--network") + 1] == "net"
     assert args[args.index("--network-alias") + 1] == "postgresql"
     assert "--cap-drop" in args and "ALL" in args
-    assert "--memory" not in args
+    assert carries(args, memory_bound_args())
     assert args[-1] == "mcp-auditor-cve-gravitino-db:local"
 
 

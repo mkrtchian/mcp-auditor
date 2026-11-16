@@ -3,7 +3,7 @@
 The server's CKAN tools call a CKAN portal's Action API (`{server_url}/api/3/action/<action>`),
 and its MQA tools call dati.gov.it's `package_show` then data.europa.eu's MQA cache and metrics.
 CKAN runs here: the stack CKAN's Docker Compose install (ckan-docker) brings up, PostgreSQL,
-Solr, Redis and CKAN 2.12.1, each in its own container under the nuisance confinement, behind an
+Solr, Redis and CKAN 2.12.1, each in its own container under the confinement, behind an
 HTTPS front that serves it under the real names the benign calls use (www.dati.gov.it under
 /opendata, where the server rewrites every dati.gov.it alias, and demo.ckan.org at its root).
 data.europa.eu (piveau's MQA, fed by the EU portal's harvest of dati.gov.it) cannot run here:
@@ -34,13 +34,14 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import (
+    LABEL,
+    STAND_IN_SERVICE,
+    PlantingHost,
+    confinement_args,
+    own_network_args,
 )
-from evals.cve.planting_base import LABEL, STAND_IN_SERVICE, PlantingHost, own_network_args
 from evals.cve.public_stand_ins import stand_in_files
 
 CKAN_BRIDGE = "mcp-auditor-cve-ckan-bridge"
@@ -78,7 +79,7 @@ class BackendPart:
             *own_network_args(CKAN_BRIDGE),
             "--ip", self.ip,
             *(["--network-alias", self.alias] if self.alias else []),
-            *nuisance_confinement_args(),
+            *confinement_args(),
             *(
                 arg
                 for host_path, container_path in self.mounts
@@ -136,7 +137,7 @@ def ckan_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(CKAN_BRIDGE),

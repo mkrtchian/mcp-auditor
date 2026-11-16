@@ -51,6 +51,19 @@ def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
     then.no_search_domain_nor_audit_name(identity)
 
 
+def test_the_holder_and_the_target_run_under_the_memory_bound_with_no_swap():
+    spec = given.a_launch_of_shape("holder")
+    docker = given.RecordingPlanting()
+
+    with planted(spec, SENTINEL_IMAGE, docker) as args:
+        [holder] = docker.holders
+        holder_bound = given.inspected_memory_bound(holder)
+        target_bound = given.memory_max_as_target(args)
+
+    assert holder_bound == "4294967296 4294967296"
+    assert target_bound == "4294967296"
+
+
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():
     spec = given.spec_of(given.IP_LITERAL, "/fict/secret")
 

@@ -4,8 +4,8 @@ The backend is n8n itself (`Dockerfile.n8n-instance`, the image n8n distributes 
 digest), not a responder: it serves the public API (`/api/v1/...`) and the webhooks of its active
 workflows. It is a singleton on a fixed public-range (TEST-NET-1) address of its own closed
 bridge, so n8n-mcp's default `strict` SSRF gate, which since 2.50.2 also covers N8N_API_URL,
-passes it without `WEBHOOK_SECURITY_MODE` being changed. It runs under the nuisance confinement,
-memory bound included, with no added capability (n8n listens on 5678, its default port). Stood
+passes it without `WEBHOOK_SECURITY_MODE` being changed. It runs under the confinement, memory
+bound included, with no added capability (n8n listens on 5678, its default port). Stood
 once and reused across a server's concurrent nuisance runs, it is reaped by the generic orphan
 sweep, so no lock is held across the yield.
 
@@ -29,13 +29,8 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, own_network_args
 
 N8N_SERVICE = "n8n-instance"  # the compose service building the instance image
 N8N_IMAGE = f"mcp-auditor-cve-{N8N_SERVICE}:local"
@@ -66,7 +61,7 @@ def singleton_run_args() -> list[str]:
         "--label", LABEL,
         *own_network_args(N8N_BRIDGE),
         "--ip", N8N_IP,
-        *nuisance_confinement_args(),
+        *confinement_args(),
         N8N_IMAGE,
     ]  # fmt: skip
 
@@ -76,7 +71,7 @@ def n8n_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(N8N_BRIDGE),

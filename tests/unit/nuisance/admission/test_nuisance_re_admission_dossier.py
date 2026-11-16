@@ -32,8 +32,8 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
     write_re_admission_dossier,
 )
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
-from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
+from evals.cve.nuisance.confinement import user_args
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinement_args
 from evals.eval_session import Refused
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
@@ -154,7 +154,7 @@ def test_a_detection_holdout_server_with_its_own_fix_check_carries_its_reference
 def test_the_confinement_names_every_option_the_run_sets(server: AdmittedServer):
     confinement = confinement_text(server)
 
-    for option in (*nuisance_confinement_args(), *user_args(server.host.user)):
+    for option in (*confinement_args(), *user_args(server.host.user)):
         assert option in confinement, option
     if server.backend is not None:
         assert server.backend.network in confinement
@@ -226,7 +226,7 @@ def test_the_confinement_of_a_server_on_a_per_launch_backend_points_at_its_launc
     assert "`evals/cve/backends/fake_per_launch.py`" in confinement
     assert "stood for each launch" in confinement
     assert f"`{given.PER_LAUNCH_NETWORK_PREFIX}`" in confinement
-    for option in nuisance_confinement_args():
+    for option in confinement_args():
         assert option in confinement, option
 
 

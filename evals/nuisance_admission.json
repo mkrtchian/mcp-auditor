@@ -1160,7 +1160,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "bc9633ec4d670a62f4959d0a7e67448d2e48ae1e70d0e8d115df093d3ad285cb"
+            "holdout_fingerprint": "75092f7d05f69a6f8e670a5f922686c13f3daf915dd14afd4316587dfe024f3d"
           }
         },
         {
@@ -4445,7 +4445,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "2c5ecf993cd68034c518e2c8901b3e2636ed964b2b8371c938ce2ec2baa26e9a"
+            "holdout_fingerprint": "b9546f328acad9699ecc5906bfc7e1ff33e767968d27701e88d5dbd76d236d40"
           }
         },
         {
@@ -5376,7 +5376,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "2fcf3b0d8470aef3bf2e7204fcb468a840bec781c68bbc790d95f55775eafbe6"
+            "holdout_fingerprint": "a3414fb25c6ac62d9ab4eb86023fd22fc2e68353dda08aa62b1b4f1a57c7ca27"
           }
         }
       ],
@@ -5732,7 +5732,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "9d273cf24572775ba8a501ec646942cccc379b5fef8e98f5d81cb9eeba7afda6"
+            "holdout_fingerprint": "9581f4ed007e12497a8a248b888a38accdb30f386fee744ad733e9ac41f7b1e1"
           }
         }
       ],
@@ -6422,7 +6422,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "42f591f2a9a123236bce93ed316256f74359e0cdfee16ce7e4f53d341778ab72"
+            "holdout_fingerprint": "5d6cfd8fc3f4f3298dbded713b0810ff52d815879311efe01954a341bee27b25"
           }
         }
       ],
@@ -6903,7 +6903,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "75249293bf7971379e20fee125c9ec4e7e7e1fc85d5c7c6f59405cebe6ad2caf"
+            "holdout_fingerprint": "faf40db3e89ccadc64749db58f96ff22069d26fef2d820994c668e238f0e6040"
           }
         },
         {
@@ -7469,7 +7469,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "74448f03d295bffab38eeca6d50721bc0c2d30d39c7be3c90b789593e5c60625"
+            "holdout_fingerprint": "f5c8fa4ac9ac827b9f656dc5add849f2a0c3528cc41fb16ea1970b8ec5efa75f"
           }
         },
         {
@@ -7804,7 +7804,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "de7344d1df723c523947671a67b3555ba4744c4eb0b59fac14cc05e94bcb7cba"
+            "holdout_fingerprint": "7d7763995e94e2130ede8d6404273f8976cef5b410e7e8281f579fd800d7cda2"
           }
         }
       ],
@@ -9136,7 +9136,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "6222a88d264d3a4b79abbc53a7778c86cc2440770fbfb62f1bd806fe7da9a843"
+            "holdout_fingerprint": "be4fad51794374889cdd73f6743c7551e66fc84beb7bcd5ca724148df68bf326"
           }
         }
       ],
@@ -9332,7 +9332,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "543d3fac473a216c86cf754d2378b09241074dc93ebc351d066ee5fded5938d9"
+            "holdout_fingerprint": "ca3a43f6f9263545f2f4941b0c6b3ce57ce5fb27f0de120206ed93e5c09c2cb7"
           }
         }
       ],
@@ -9634,7 +9634,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "27bd8c424708cfb9bbd938e4a56c7094ce3a17cb9c237006edb7fbae58e78959"
+            "holdout_fingerprint": "2d081082d517c874556ebe05e3f6a8e621ec432f7125d78babaf793ffe8cb90e"
           }
         }
       ],
@@ -10325,7 +10325,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "dfdb5a07bb30df8203e63f0d077c0d6a7a23aaa9b67d94254d438e4ab7aca24a"
+            "holdout_fingerprint": "9be82218602cc3f4a3971ddc5f4d1704bc0a83845d6eb25a10f882a72eb8887a"
           }
         }
       ],
@@ -10570,7 +10570,7 @@
             "patched_surfaces": false,
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
-            "holdout_fingerprint": "1192ca8c4143cf5d76853935531c4adcf4884b0993407e0ba3a52890c0005743",
+            "holdout_fingerprint": "07f5f1a2dbf2773668ebaded7a48f34b0937cf7440f6fbccdb81f24bba64e48b",
             "relies_on_relaying_stand_in": false
           }
         }
@@ -10901,7 +10901,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "ce33de88ba06d8990422327d3502cf9a83142398f263b53b261ced6ca54afe4e"
+            "holdout_fingerprint": "addc614bfcb1115d05f37b43d1bdd7a292edaf6a2cc93bacaa3464d768a7ed8e"
           }
         },
         {
@@ -10963,7 +10963,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "ce33de88ba06d8990422327d3502cf9a83142398f263b53b261ced6ca54afe4e"
+            "holdout_fingerprint": "addc614bfcb1115d05f37b43d1bdd7a292edaf6a2cc93bacaa3464d768a7ed8e"
           }
         }
       ],
@@ -11249,7 +11249,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "45842a15706007bfeb6ebb89f93a1ed7a18caa925fdc09b82f64fc50050aba4f"
+            "holdout_fingerprint": "9fd1e699cfccedd7237cc3e9d840e8f0ebda1c2c05ff3a062d540bb520f28b27"
           }
         },
         {
@@ -11561,7 +11561,7 @@
             "server_patched_surfaces": null,
             "patched_benign_errored": false,
             "relies_on_relaying_stand_in": false,
-            "holdout_fingerprint": "16a9964b8534ae5de8d19827240688c76bcec9771da199bf52fc513866a338a1"
+            "holdout_fingerprint": "a5eb8151093253ccb9b7f304f1044661353f38f246795800b8733f795cce250b"
           }
         },
         {

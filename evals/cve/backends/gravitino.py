@@ -4,7 +4,7 @@ the PostgreSQL and the Kafka its relational and messaging catalogs manage.
 Gravitino's MCP server is a thin client of Gravitino's REST API (`--gravitino-uri`), scoped to one
 metalake (`--metalake`). Gravitino 1.2.1 runs here by its digest, PostgreSQL 16 under its
 jdbc-postgresql catalog and Kafka 4.4.0 under its kafka catalog, each a built part whose Dockerfile
-pins its image, each in its own container under the nuisance confinement with no added capability,
+pins its image, each in its own container under the confinement with no added capability,
 on one closed labeled bridge (no route to the host or the Internet) at a fixed address. The
 server reaches Gravitino under the alias `gravitino`, and Gravitino reaches the other two under
 `postgresql` (the Gravitino Playground's service name) and `kafka`.
@@ -38,13 +38,8 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, own_network_args
 
 GRAVITINO_BRIDGE = "mcp-auditor-cve-gravitino-bridge"
 GRAVITINO_SUBNET = "198.18.7.0/24"  # RFC 2544: overlaps no other backend's subnet
@@ -81,7 +76,7 @@ class GravitinoPart:
             *own_network_args(GRAVITINO_BRIDGE),
             "--ip", self.ip,
             "--network-alias", self.alias,
-            *nuisance_confinement_args(),
+            *confinement_args(),
             self.image,
         ]  # fmt: skip
 
@@ -101,7 +96,7 @@ def gravitino_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(GRAVITINO_BRIDGE),

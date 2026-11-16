@@ -16,10 +16,10 @@ The backend is the real Jenkins controller. The shared singleton cannot carry th
 check_fix plants a fresh random nonce per exercise: the builder stands its own Jenkins of the same
 image on the backend's bridge, writes the nonce into that Jenkins's `userContent` tree (served by
 Jenkins itself at `/userContent/`, outside every job), and reaps it when the launch ends. The
-per-launch controller keeps the suite's confinement without the memory bound, as every per-launch
-fix-check container does. The server's `JENKINS_URL` is overridden to that Jenkins with a `-e`,
-which wins over the image's baked `ENV`. Jenkins is not the server and carries neither the flaw nor
-the fix.
+per-launch controller runs under the confinement of the CVE benchmark, memory bound included, as
+every per-launch fix-check container does. The server's `JENKINS_URL` is overridden to that
+Jenkins with a `-e`, which wins over the image's baked `ENV`. Jenkins is not the server and carries
+neither the flaw nor the fix.
 """
 
 import re
@@ -82,8 +82,8 @@ _LAST_PER_LAUNCH_HOST = 250
 
 
 def controller_args(name: str, address: str) -> list[str]:
-    # The per-launch Jenkins the witness is planted in: the backend image, the suite's confinement
-    # without the memory bound, no capability, its own address on the backend's bridge.
+    # The per-launch Jenkins the witness is planted in: the backend image, the confinement, no
+    # capability, its own address on the backend's bridge.
     return [
         "run", "-d",
         "--name", name,

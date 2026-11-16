@@ -22,7 +22,7 @@ from evals.cve.backends.n8n import N8N_IP, n8n_server_args, singleton_run_args
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.backend_registry import BACKENDS, backend_problems
-from evals.cve.nuisance.confinement import memory_bound_args
+from evals.cve.planting_base import memory_bound_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,

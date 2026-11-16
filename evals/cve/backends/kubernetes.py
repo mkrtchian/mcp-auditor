@@ -16,12 +16,12 @@ a holder's loopback carries a target's link-local sentinels. The server reaches 
 host file of mode 0644, which the server's unprivileged account reads at kubectl's default path
 under `HOME=/tmp`.
 
-The control plane runs as the unprivileged account under the detection suite's confinement (every
-capability dropped, no new privileges, the process bound) with no capability added: measured on
-2026-11-13, it is ready in about five seconds and peaks at 89 threads under `get pods`,
-`get namespaces` and `get nodes`, well under the bound of 256, and holds about 410 MiB. As a
-nuisance backend it also takes the memory bound. The control plane's state changes with the
-auditor's calls, so each launch stands its own and removes it with its server.
+The control plane runs as the unprivileged account under the confinement of the CVE benchmark
+(every capability dropped, no new privileges, the process bound, the memory bound) with no
+capability added, on both suites: measured on 2026-11-13, it is ready in about five seconds and
+peaks at 89 threads under `get pods`, `get namespaces` and `get nodes`, well under the bound of 256,
+and holds about 410 MiB. The control plane's state changes with the auditor's calls, so each launch
+stands its own and removes it with its server.
 
 This module imports nothing of `mcp_auditor`: the re-admission dossier copies its import closure.
 """
@@ -39,7 +39,7 @@ from pathlib import Path
 from evals.cve.backends.lifecycle import LaunchedServerArgs, PerLaunchBackend
 from evals.cve.closed_network import create_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import memory_bound_args, nuisance_confinement_args, user_args
+from evals.cve.nuisance.confinement import user_args
 from evals.cve.planting_base import (
     LABEL,
     UNPRIVILEGED_GID,
@@ -69,8 +69,8 @@ class StoodControlPlane:
         return ["-v", f"{self.kubeconfig}:{KUBECONFIG}:ro"]
 
 
-# (control plane name, memory bound) -> the stood control plane
-type ControlPlaneStand = Callable[[str, Sequence[str]], AbstractContextManager[StoodControlPlane]]
+# control plane name -> the stood control plane
+type ControlPlaneStand = Callable[[str], AbstractContextManager[StoodControlPlane]]
 
 
 def control_plane_launch(
@@ -80,7 +80,7 @@ def control_plane_launch(
     def launch(
         name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
     ) -> Generator[list[str]]:
-        with stand(f"{name}-kube", memory_bound_args()) as control_plane:
+        with stand(f"{name}-kube") as control_plane:
             try:
                 yield server_run_args(name, image, host, server_launch, control_plane)
             finally:
@@ -98,7 +98,7 @@ def server_run_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(control_plane.network),
@@ -111,15 +111,13 @@ def server_run_args(
 
 
 @contextmanager
-def stood_control_plane(
-    name: str, memory_bound: Sequence[str] = ()
-) -> Generator[StoodControlPlane]:
+def stood_control_plane(name: str) -> Generator[StoodControlPlane]:
     ensure_control_plane_image()
     network = f"{CONTROL_PLANE_NETWORK}-{secrets.token_hex(6)}"
     create_closed_network(network)
     directory = Path(tempfile.mkdtemp(prefix=f"{LABEL}-kubeconfig-"))
     try:
-        _run("docker", *control_plane_run_args(name, network, memory_bound))
+        _run("docker", *control_plane_run_args(name, network))
         wait_until_ready(name)
         kubeconfig = directory / "config"
         kubeconfig.write_text(_run("docker", "exec", name, "cat", _ADMIN_CONF).stdout)
@@ -131,14 +129,13 @@ def stood_control_plane(
         shutil.rmtree(directory, ignore_errors=True)
 
 
-def control_plane_run_args(name: str, network: str, memory_bound: Sequence[str]) -> list[str]:
+def control_plane_run_args(name: str, network: str) -> list[str]:
     return [
         "run", "-d",
         "--name", name,
         "--label", LABEL,
         *own_network_args(network),
         *confinement_args(),
-        *memory_bound,
         *unprivileged_user_args(),
         # kubeadm writes the certificates, kubeconfigs and manifests, and etcd its data, per launch.
         "--tmpfs", f"/etc/kubernetes:{_OWNED_TMPFS},mode=0755",

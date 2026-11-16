@@ -371,6 +371,27 @@ def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
         assert args.network == tuple(no_network_args())
 
 
+# --- the memory bound ----------------------------------------------------------------
+
+
+def test_the_confinement_bounds_memory_with_no_swap():
+    assert then.memory_bound_in(confinement_args()) == ("4g", "4g")
+
+
+def test_the_holder_and_a_sentinel_run_under_the_memory_bound():
+    spec = given.spec_of(
+        [given.endpoint_place(host="198.51.100.5")],
+        host=given.unprivileged_host(has_network=True),
+    )
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker):
+        holder = docker.holders[given.only(docker.holders)]
+        sentinel = docker.sentinels[given.only(docker.sentinels)]
+        assert then.memory_bound_in(holder) == ("4g", "4g")
+        assert then.memory_bound_in(sentinel) == ("4g", "4g")
+
+
 # --- account materialisation and file mode ----------------------------------------------
 
 

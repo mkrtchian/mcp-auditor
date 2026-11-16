@@ -269,7 +269,7 @@ def doris_db_env(
             # The server options are the nuisance suite's launch, DORIS_SERVER_LAUNCH: the two
             # launches carry the same server options, diverging only in the docker run options
             # (this one mounts the /srv layout and runs unprivileged, the nuisance one mounts no
-            # layout, reads its admission host's user and takes the nuisance memory bound).
+            # layout and reads its admission host's user).
             yield Launch(
                 command="docker",
                 args=[

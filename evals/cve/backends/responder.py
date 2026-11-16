@@ -5,9 +5,8 @@ A responder is a singleton container on a fixed public-range IP of its own close
 runs, reaped by the generic orphan sweep. `remove`, which every built backend's lifecycle shares,
 runs `docker rm -f -v`: a container goes with its anonymous volumes, never a bind mount.
 
-The server argv and the singleton both carry the nuisance confinement, memory bound included (the
-singleton also when a fix check ensures it), while a fix check's own per-launch responder container
-keeps the acceptance confinement.
+The server argv, the singleton (also when a fix check ensures it) and a fix check's own per-launch
+responder container all carry the confinement, memory bound included.
 """
 
 import subprocess
@@ -18,13 +17,8 @@ from pathlib import Path
 
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, own_network_args
 
 
 @dataclass(frozen=True)
@@ -47,7 +41,7 @@ class Responder:
     ) -> list[str]:
         return [
             "run", "-i", "--rm",
-            *nuisance_confinement_args(),
+            *confinement_args(),
             "--name", name,
             "--label", LABEL,
             *own_network_args(self.bridge),
@@ -65,7 +59,7 @@ class Responder:
             "--label", LABEL,
             *own_network_args(self.bridge),
             "--ip", self.ip,
-            *nuisance_confinement_args(),
+            *confinement_args(),
             "--cap-add", "NET_BIND_SERVICE",  # root behind cap-drop ALL still binds 80/443
             *self.run_args,
             self.image,

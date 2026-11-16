@@ -7,9 +7,10 @@ key `~/.ssh/id_production`. The backend is OpenSSH 10.6p2 built from the portabl
 (`Dockerfile.mcp-ssh-sshd`), which bakes the public half in `deploy`'s `authorized_keys`, listens
 on the default port 22 as that account, takes the README's section 3 server lines on top of the
 release's default configuration and serves the sftp subsystem `scp` uses, with the `sample.txt`
-the benign download reads. It runs under the nuisance confinement (every capability dropped, no
-new privileges, the process bound) with no capability added back, on its own closed labeled bridge
-(no route to the host or the Internet) at a fixed address and under the alias `prod.example.com`.
+the benign download reads. It runs under the confinement (every capability dropped, no new
+privileges, the process bound, the memory bound) with no capability added back, on its own closed
+labeled bridge (no route to the host or the Internet) at a fixed address and under the alias
+`prod.example.com`.
 
 The backend's state lives in its container only (a benign upload writes a file in its home), so
 a stand-up after its removal starts from the image. It carries no witness: a fix check stands its
@@ -45,12 +46,7 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import create_closed_network, ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
 from evals.cve.planting_base import (
     LABEL,
     UNPRIVILEGED_GID,
@@ -93,7 +89,7 @@ def singleton_run_args() -> list[str]:
         *own_network_args(SSHD_BRIDGE),
         "--ip", SSHD_IP,
         "--network-alias", SSHD_ALIAS,
-        *nuisance_confinement_args(),
+        *confinement_args(),
         SSHD_IMAGE,
     ]  # fmt: skip
 
@@ -103,7 +99,7 @@ def sshd_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(SSHD_BRIDGE),

@@ -13,8 +13,8 @@ Each launch makes a host directory, mounted at the engine's `/run`, where the en
 opens its socket and gives it mode 0666, so the server's unprivileged account connects. The server
 mounts that socket at `/var/run/docker.sock`, the launch the server's README documents, so no
 `DOCKER_HOST` is set. Both containers run with no network. The engine runs as root inside its
-container, as the sandbox of a real daemon does, under the nuisance confinement (every capability
-dropped, no new privileges, the process bound) and the memory bound, with no capability added back.
+container, as the sandbox of a real daemon does, under the confinement (every capability dropped,
+no new privileges, the process bound, the memory bound), with no capability added back.
 The directory is made writable by every account, since that root holds no capability that would
 let it write into a directory the host's user owns.
 """
@@ -30,8 +30,8 @@ from pathlib import Path
 
 from evals.cve.backends.lifecycle import LaunchedServerArgs, PerLaunchBackend
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import nuisance_confinement_args, user_args
-from evals.cve.planting_base import LABEL, PlantingHost, no_network_args
+from evals.cve.nuisance.confinement import user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, no_network_args
 
 ENGINE_SERVICE = "node-sandbox-engine"  # the compose service building the engine image
 ENGINE_IMAGE = f"mcp-auditor-cve-{ENGINE_SERVICE}:local"
@@ -64,7 +64,7 @@ def server_run_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *no_network_args(),
@@ -104,7 +104,7 @@ def engine_run_args(name: str, directory: Path) -> list[str]:
         "--name", name,
         "--label", LABEL,
         *no_network_args(),
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "-v", f"{directory}:{ENGINE_SOCKET_DIRECTORY}",
         ENGINE_IMAGE,
     ]  # fmt: skip

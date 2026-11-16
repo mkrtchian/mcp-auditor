@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
@@ -29,5 +29,5 @@ def the_kubernetes_target_without_docker() -> Target:
 
 
 @contextmanager
-def _a_stood_control_plane(name: str, memory_bound: Sequence[str]) -> Generator[StoodControlPlane]:
+def _a_stood_control_plane(name: str) -> Generator[StoodControlPlane]:
     yield StoodControlPlane(CONTROL_PLANE_NETWORK, Path("/host/kubeconfig"))

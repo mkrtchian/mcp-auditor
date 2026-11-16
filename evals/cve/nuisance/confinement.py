@@ -1,8 +1,9 @@
-"""The container options every nuisance server runs with (nuisance suite rule v3, Eligibility, The
-real software): the confinement of the detection suite plus the memory bound, which only the
-nuisance suite sets, on its server containers and on every backend container (the shared Doris
-cluster included). A persistent backend container carries the digest of its launch, so one started
-with another launch is recreated once.
+"""How the nuisance suite launches its containers (nuisance suite rule v3, Eligibility, The real
+software). The suite runs its servers under the confinement of the CVE benchmark
+(`confinement_args`), memory bound included, and every backend container under the memory bound at
+least (the shared Doris cluster included). This module holds what is the suite's own: the launch
+digest of a persistent backend container, so one started with another launch is recreated once,
+the user arguments and the single-container launch.
 
 A server with no backend runs with no network. When its admission declares public names, the hosts
 it needs are served under their real names the way a detection launch serves them (ADR 034): the
@@ -31,19 +32,7 @@ from evals.cve.planting_base import (
 from evals.cve.planting_docker import DOCKER_PLANTING
 from evals.cve.public_stand_ins import STAND_INS_DIRECTORY
 
-# arcadedb's fixed 2 GiB ZGC heap plus an audit's load; the product's regime uses 2g (ADR 018)
-MEMORY_BOUND = "4g"
 LAUNCH_LABEL = f"{LABEL}-launch"
-
-
-def memory_bound_args() -> list[str]:
-    # --memory-swap equal to --memory, so the bound bites: Docker otherwise grants as much swap
-    # again.
-    return ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND]
-
-
-def nuisance_confinement_args() -> list[str]:
-    return [*confinement_args(), *memory_bound_args()]
 
 
 def labelled_run_args(run_args: Sequence[str]) -> list[str]:
@@ -101,7 +90,7 @@ def single_container_launch_args(
             "run",
             "-i",
             "--rm",
-            *nuisance_confinement_args(),
+            *confinement_args(),
             *args.run_args(),
             image,
             *server_launch,
@@ -113,7 +102,7 @@ def single_container_run_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         *user_args(host.user),
         "-w", host.working_directory,
         *no_network_args(),

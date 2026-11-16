@@ -6,7 +6,11 @@ import tests.unit.cve.support.test_cve_planting_stand_ins_given as given
 import tests.unit.cve.support.test_cve_planting_stand_ins_then as then
 from evals.cve.planting import PlantingFailed, planted
 from evals.cve.planting_base import STAND_IN_IMAGE, own_network_args
-from tests.unit.cve.support.test_cve_planting_then import nothing_left_alive, resolver_options_in
+from tests.unit.cve.support.test_cve_planting_then import (
+    memory_bound_in,
+    nothing_left_alive,
+    resolver_options_in,
+)
 
 
 def test_a_launch_with_a_stand_in_joins_a_holder_pinning_the_name_to_its_set_up_address(
@@ -53,6 +57,16 @@ def test_the_stand_in_serves_its_capture_leaf_and_key_inside_the_holder_on_its_a
         assert capture == given.capture_text(directory)
         assert then.mounted_content(docker, stand_in, "/stand-in/cert.pem") == given.CERTIFICATE
         assert then.mounted_content(docker, stand_in, "/stand-in/key.pem") == given.KEY
+
+
+def test_the_stand_in_runs_under_the_memory_bound(tmp_path: Path):
+    directory = given.a_stand_ins_directory(tmp_path)
+    spec = given.a_spec_with_the_stand_in()
+    docker = given.FakePlantingDocker()
+
+    with planted(spec, "image:tag", docker, stand_ins_directory=directory):
+        stand_in = docker.stand_ins[given.only(docker.stand_ins)]
+        assert memory_bound_in(stand_in) == ("4g", "4g")
 
 
 def test_a_stand_in_on_the_address_of_a_bound_sentinel_is_refused_before_any_container(

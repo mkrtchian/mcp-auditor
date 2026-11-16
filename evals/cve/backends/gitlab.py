@@ -20,7 +20,7 @@ GitLab's Omnibus image runs its services as root and as their own accounts, so t
 take the server's confinement: it runs under no new privileges with every capability dropped but
 the six Omnibus was measured to need (CHOWN, DAC_OVERRIDE and FOWNER for its data directories,
 SETGID and SETUID to switch accounts, KILL for runit to signal them), a process bound of 4096
-(its peak is about 275), and the memory bound. The server keeps the nuisance confinement and
+(its peak is about 275), and the memory bound. The server keeps the confinement and
 takes the token the seed created with `-e`, which wins over the README value its image bakes.
 """
 
@@ -35,8 +35,14 @@ from evals.cve.backends.gitlab_seed import GITLAB_TOKEN, SEED_PROJECTS, START_RU
 from evals.cve.backends.lifecycle import LaunchedServerArgs, PerLaunchBackend
 from evals.cve.closed_network import create_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import memory_bound_args, nuisance_confinement_args, user_args
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import user_args
+from evals.cve.planting_base import (
+    LABEL,
+    PlantingHost,
+    confinement_args,
+    memory_bound_args,
+    own_network_args,
+)
 
 GITLAB_SERVICE = "gitlab-backend"  # the compose service building the GitLab CE image
 GITLAB_IMAGE = f"mcp-auditor-cve-{GITLAB_SERVICE}:local"
@@ -98,7 +104,7 @@ def server_run_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(gitlab.network),

@@ -3,9 +3,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from evals.cve.backends.kubernetes import CONTROL_PLANE_IMAGE, CONTROL_PLANE_NETWORK, KUBECONFIG
-from evals.cve.nuisance.confinement import memory_bound_args
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import WITNESS
-from evals.cve.planting_base import confinement_args, unprivileged_user_args
+from evals.cve.planting_base import confinement_args, memory_bound_args, unprivileged_user_args
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.cve.backends.support.test_kubernetes_backend_given import (
     ADMIN_CONF,
@@ -84,7 +83,3 @@ def carries_the_witness_in_the_servers_environment(server: Sequence[str]) -> Non
     assert any(
         value.startswith(f"{WITNESS.coordinates.name}=") for value in values_after(server, "-e")
     )
-
-
-def the_control_plane_was_stood_within_the_memory_bound(control_plane: FakeControlPlane) -> None:
-    assert control_plane.memory_bounds == [tuple(memory_bound_args())]

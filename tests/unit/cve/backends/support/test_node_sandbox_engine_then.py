@@ -1,8 +1,7 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.node_sandbox_engine import ENGINE_IMAGE, ENGINE_SOCKET_DIRECTORY
-from evals.cve.nuisance.confinement import memory_bound_args
-from evals.cve.planting_base import unprivileged_user_args
+from evals.cve.planting_base import memory_bound_args, unprivileged_user_args
 from tests.unit.cve.backends.support.test_node_sandbox_engine_given import FakeEngineDocker
 from tests.unit.support.docker_argv import carries, count, environment, mount_of, value_after
 

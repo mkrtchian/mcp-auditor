@@ -34,19 +34,14 @@ from uuid import uuid4
 
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.closed_network import ensure_closed_network
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    memory_bound_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
 from evals.cve.planting import confinement_args
 from evals.cve.planting_base import (
     LABEL,
     SENTINEL_IMAGE,
     PlantingHost,
     SentinelIntent,
+    memory_bound_args,
     own_network_args,
 )
 
@@ -109,7 +104,7 @@ def doris_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(DORIS_BRIDGE),

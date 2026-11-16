@@ -44,6 +44,6 @@ def kubernetes_injection_env(
         # Docker connects no network to a container on `none`, the holder's or the server's.
         raise ValueError("a kubectl target's planting host needs has_network=True")
     name = f"{LABEL}-kube-control-plane-{secrets.token_hex(6)}"
-    backend = BackendStand(lambda: control_plane.stand(name, ()), control_plane.connect)
+    backend = BackendStand(lambda: control_plane.stand(name), control_plane.connect)
     with launch_beside_backend(image, spec, shape, docker=docker, backend=backend) as launch:
         yield launch

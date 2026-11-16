@@ -155,6 +155,24 @@ def identity_as_target(args: PlantedArgs) -> dict[str, str]:
     return dict(section.split("\n", 1) for section in sections)
 
 
+def memory_max_as_target(args: PlantedArgs) -> str:
+    """The cgroup v2 memory limit a container started with the target's own options reads."""
+    command = TargetCommand(SENTINEL_IMAGE, "/bin/cat", ("/sys/fs/cgroup/memory.max",))
+    return run_as_target(args, command).stdout.strip()
+
+
+def inspected_memory_bound(container: str) -> str:
+    """The container's memory and memory-plus-swap limits, in bytes, as Docker records them."""
+    result = subprocess.run(
+        ["docker", "inspect", "-f", "{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}}", container],
+        capture_output=True,
+        text=True,
+        timeout=_READ_TIMEOUT,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
 @dataclass(frozen=True)
 class WorkObservation:
     at_start: str  # `ls -A /work` before the write
@@ -218,6 +236,7 @@ class RecordingPlanting(DockerPlanting):
     def __init__(self) -> None:
         self.networks: list[str] = []
         self.containers: list[str] = []
+        self.holders: list[str] = []
         self.stand_ins: list[str] = []
 
     def create_network(self) -> str:
@@ -228,6 +247,7 @@ class RecordingPlanting(DockerPlanting):
     def start_holder(self, run_args: Sequence[str]) -> str:
         name = super().start_holder(run_args)
         self.containers.append(name)
+        self.holders.append(name)
         return name
 
     def start_sentinel(self, run_args: Sequence[str]) -> str:

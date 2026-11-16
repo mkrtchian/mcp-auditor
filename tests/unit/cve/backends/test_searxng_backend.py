@@ -3,7 +3,7 @@ import pytest
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
 from evals.cve.backends.searxng import SEARXNG_IMAGE
 from evals.cve.layout import WORKSPACE
-from evals.cve.nuisance.confinement import memory_bound_args
+from evals.cve.planting_base import memory_bound_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, environment, mount_of, value_after

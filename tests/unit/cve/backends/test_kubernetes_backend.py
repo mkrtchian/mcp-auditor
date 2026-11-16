@@ -138,5 +138,3 @@ def test_the_fix_check_launch_takes_the_bounded_control_planes_network_and_its_k
         )
         then.mounts_the_kubeconfig_read_only(launch.args)
         then.carries_the_witness_in_the_servers_environment(launch.args)
-
-    then.the_control_plane_was_stood_within_the_memory_bound(control_plane)

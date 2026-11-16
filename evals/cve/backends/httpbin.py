@@ -13,7 +13,7 @@ the front at that address, since the gateway's SSRF guard refuses a private or l
 The server joins the bridge, reaches the front through an `--add-host` entry and trusts its leaf
 through SSL_CERT_FILE, the fixture authority mounted read-only. The backend is a singleton, stood
 once and reused across a server's concurrent nuisance runs, reaped by the generic orphan sweep, so
-no lock is held across the yield. Both parts run under the nuisance confinement with no capability
+no lock is held across the yield. Both parts run under the confinement with no capability
 added back: httpbin binds 8080 as its uid 10001 and nginx-unprivileged binds 80 and 443 as uid 101,
 a container's net.ipv4.ip_unprivileged_port_start being 0.
 """
@@ -29,13 +29,8 @@ from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.backends.responder import remove
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.nuisance.confinement import (
-    labelled_run_args,
-    nuisance_confinement_args,
-    running_with_launch,
-    user_args,
-)
-from evals.cve.planting_base import LABEL, PlantingHost, own_network_args
+from evals.cve.nuisance.confinement import labelled_run_args, running_with_launch, user_args
+from evals.cve.planting_base import LABEL, PlantingHost, confinement_args, own_network_args
 from evals.cve.public_stand_ins import stand_in_files
 
 HTTPBIN_BRIDGE = "mcp-auditor-cve-httpbin-bridge"
@@ -73,7 +68,7 @@ class HttpbinPart:
             *own_network_args(HTTPBIN_BRIDGE),
             "--ip", self.ip,
             *(["--network-alias", self.alias] if self.alias else []),
-            *nuisance_confinement_args(),
+            *confinement_args(),
             *(arg for mount in self.mounts for arg in _read_only(*mount)),
             self.image,
         ]  # fmt: skip
@@ -103,7 +98,7 @@ def httpbin_server_args(
 ) -> list[str]:
     return [
         "run", "-i", "--rm",
-        *nuisance_confinement_args(),
+        *confinement_args(),
         "--name", name,
         "--label", LABEL,
         *own_network_args(HTTPBIN_BRIDGE),

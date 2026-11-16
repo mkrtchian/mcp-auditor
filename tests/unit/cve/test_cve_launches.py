@@ -34,7 +34,7 @@ from evals.cve.planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_out
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.support.docker_argv import mount_of
+from tests.unit.support.docker_argv import carries, mount_of
 
 
 def _root(launch: Launch) -> Path:
@@ -86,6 +86,12 @@ def test_every_builder_mounts_the_tree_read_write_under_a_read_write_host(builde
 
     with builder("img", spec, docker=FakePlantingDocker()) as launch:
         assert mount_of(launch.args, "/srv").endswith(":/srv")
+
+
+@pytest.mark.parametrize("builder", _LAYOUT_BUILDERS.values(), ids=list(_LAYOUT_BUILDERS))
+def test_every_builder_runs_its_server_under_the_memory_bound(builder: given.Builder):
+    with builder("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
+        assert carries(launch.args, ["--memory", "4g", "--memory-swap", "4g"])
 
 
 def test_an_empty_spec_still_materialises_the_universal_tree_with_neutral_content():

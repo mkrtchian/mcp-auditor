@@ -94,12 +94,10 @@ class FakeControlPlane:
         self.stood: list[str] = []
         self.connected: list[tuple[str, str]] = []
         self.holders_at_removal: list[list[str]] = []
-        self.memory_bounds: list[tuple[str, ...]] = []
 
     @contextmanager
-    def stand(self, name: str, memory_bound: Sequence[str]) -> Generator[StoodControlPlane]:
+    def stand(self, name: str) -> Generator[StoodControlPlane]:
         self.stood.append(name)
-        self.memory_bounds.append(tuple(memory_bound))
         yield StoodControlPlane(f"kube-net-{len(self.stood)}", self.kubeconfig)
         if self.planting is not None:
             self.holders_at_removal.append(list(self.planting.holders))

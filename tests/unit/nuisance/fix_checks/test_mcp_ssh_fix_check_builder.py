@@ -1,6 +1,7 @@
 import tests.unit.nuisance.fix_checks.support.test_mcp_ssh_fix_check_builder_given as given
 from evals.cve.backends.mcp_ssh_sshd import SSHD_ALIAS, SSHD_IMAGE, sshd_args
 from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
+from evals.cve.planting_base import memory_bound_args
 from tests.fakes import FakeKitClient
 from tests.unit.support.docker_argv import carries, value_after
 
@@ -13,14 +14,14 @@ def test_the_per_launch_sshd_joins_its_network_under_the_run_host_alias():
     assert args[-1] == SSHD_IMAGE
 
 
-def test_the_per_launch_sshd_runs_hardened_without_the_memory_bound():
+def test_the_per_launch_sshd_runs_hardened():
     args = sshd_args("c", "net")
 
     assert carries(args, ["--cap-drop", "ALL"])
     assert "--cap-add" not in args
     assert carries(args, ["--security-opt", "no-new-privileges"])
     assert 0 < int(value_after(args, "--pids-limit")) <= 256
-    assert "--memory" not in args
+    assert carries(args, memory_bound_args())
 
 
 def test_the_server_joins_the_per_launch_network_not_the_singleton_bridge():
@@ -28,7 +29,7 @@ def test_the_server_joins_the_per_launch_network_not_the_singleton_bridge():
 
     assert args[args.index("--network") + 1] == "net"
     assert "mcp-auditor-cve-mcp-ssh-sshd-bridge" not in args
-    assert "--memory" not in args
+    assert carries(args, memory_bound_args())
     assert "--user" in args
 
 

@@ -62,9 +62,9 @@ def nuisance_fixture_fingerprint(
     moves (the rule's Run conditions section).
 
     In: the patched Dockerfile's instructions (comments and blank lines out), the launch, the
-    host's user, working directory and network stance, the confinement module (the bound, the
-    user arguments and the single-container argv, AST fingerprint), the confinement's options
-    (`nuisance_confinement_args()`, the acceptance confinement included), the resolver option
+    host's user, working directory and network stance, the confinement module (the launch
+    digest, the user arguments and the single-container argv, AST fingerprint), the confinement's
+    options (`confinement_args()`, the memory bound included), the resolver option
     (`resolver_args()`), the backend fixture
     (provisioner, pinned images, network), what its backend serves (each Dockerfile by its
     instructions, each Python module by its code, any other file by its bytes), for a server
@@ -83,7 +83,7 @@ def nuisance_fixture_fingerprint(
         server.launch,
         planting_host_parts(server.host),
         fingerprint_sources([CONFINEMENT_SOURCE.read_text()]),
-        confinement.nuisance_confinement_args(),
+        planting_base.confinement_args(),
         planting_base.resolver_args(),
         None if backend is None else backend.model_dump(),
         None if backend is None else backend_content(_served(server, backends)),

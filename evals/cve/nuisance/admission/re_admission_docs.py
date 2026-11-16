@@ -9,12 +9,13 @@ from collections.abc import Mapping, Sequence
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
-from evals.cve.nuisance.confinement import (
+from evals.cve.nuisance.confinement import single_container_run_args
+from evals.cve.planting_base import (
+    PlantingHost,
+    SymbolicUser,
+    confinement_args,
     memory_bound_args,
-    nuisance_confinement_args,
-    single_container_run_args,
 )
-from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 _IMAGE = "<image>"
 _NAME = "<name>"
@@ -23,7 +24,7 @@ _NAME = "<name>"
 def confinement_text(
     server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
 ) -> str:
-    options = "\n".join(f"- `{option}`" for option in _paired(nuisance_confinement_args()))
+    options = "\n".join(f"- `{option}`" for option in _paired(confinement_args()))
     backend = backends[server.backend.provisioner] if server.backend is not None else None
     return _CONFINEMENT.format(
         launch=_launch_text(server, backend),
@@ -33,7 +34,7 @@ def confinement_text(
 
 
 def admission_confinement_text() -> str:
-    options = "\n".join(f"- `{option}`" for option in _paired(nuisance_confinement_args()))
+    options = "\n".join(f"- `{option}`" for option in _paired(confinement_args()))
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "<working directory>", has_network=False)
     command = f"docker {shlex.join(single_container_run_args(_IMAGE, host, ['<launch>']))}"
     return _ADMISSION_CONFINEMENT.format(command=command, options=options)

@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from evals.cve.planting_base import resolver_args
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.docker_argv import value_after
 
 
 def nothing_left_alive(docker: FakePlantingDocker) -> None:
@@ -17,3 +18,7 @@ def resolver_options_in(argv: Sequence[str]) -> int:
     option = resolver_args()
     width = len(option)
     return sum(list(argv[i : i + width]) == option for i in range(len(argv) - width + 1))
+
+
+def memory_bound_in(argv: Sequence[str]) -> tuple[str, str]:
+    return value_after(argv, "--memory"), value_after(argv, "--memory-swap")

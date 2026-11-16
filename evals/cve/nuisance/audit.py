@@ -43,7 +43,7 @@ def nuisance_environment(
     server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
 ) -> Generator[Launch]:
     """The launch of one server on its patched image. With no backend fixture it is the
-    single-container launch under the nuisance confinement, with no mount and no network, its
+    single-container launch under the confinement, with no mount and no network, its
     public names served by a holder when it declares some; with one it delegates to the
     provisioner of the registered lifecycle, which brings the backend up, shared or for this
     launch alone, and yields the server launch wired to it. The lifecycle owns the closed network

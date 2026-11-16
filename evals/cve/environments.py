@@ -28,10 +28,17 @@ the profile and exits before the target starts, so no long-lived container holds
 it, and a server without network may join a namespace holder on `--network none`,
 which gives it the planted endpoint and still no egress.
 
-The profile carries no memory bound yet. A server killed on memory mid-audit
-would be counted as a missed detection and not as a skipped run, because the
-client turns a closed connection into an error response and nothing reads the
-container's kill state. The bound waits for that reader.
+The profile bounds memory, swap included, because the auditor sends
+resource-abuse payloads by design and one of them can make a server or a child
+of it grow without end. When a container reaches the bound the kernel kills its
+largest process, most often the one that grew, and the server itself when it
+holds a large share of the bound. When that process is the server, the client
+turns the closed connection into error responses, the audit goes on, and the
+target counts as missed in that run unless a nonce surfaced before: this is what
+the confined regime of the product gives a user (ADR 018). Nothing reads the
+container's kill state: a report counts the calls answered with a lost
+connection (`lost_connection_responses`, report-only) and does not say what
+ended the server.
 
 Building the layout tree and the planting code's setup (`docker network
 create`, a sidecar `run -d`) raise before the yield on any failure: the runner

@@ -8,7 +8,6 @@ from evals.cve.nuisance.confinement import (
     labelled_run_args,
     launch_digest,
     launch_matches,
-    nuisance_confinement_args,
     single_container_launch_args,
     single_container_run_args,
     user_args,
@@ -24,16 +23,6 @@ from evals.cve.planting_base import (
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
 LAUNCH = ["node", "dist/index.js"]
 BACKEND_RUN = ["run", "-d", "--name", "backend", "--memory", "4g", "backend:image"]
-
-
-def test_the_nuisance_confinement_is_the_acceptance_one_then_the_memory_bound():
-    assert nuisance_confinement_args() == [
-        *confinement_args(),
-        "--memory",
-        "4g",
-        "--memory-swap",
-        "4g",
-    ]
 
 
 def test_equal_launches_have_the_same_digest():
@@ -93,7 +82,7 @@ def test_the_single_container_run_ends_with_the_image_then_the_launch():
 def test_the_single_container_run_is_confined_bounded_and_without_network():
     args = single_container_run_args("image:local", HOST, LAUNCH)
 
-    assert _holds(args, nuisance_confinement_args())
+    assert _holds(args, confinement_args())
     assert _holds(args, no_network_args())
     assert _holds(args, user_args(HOST.user))
     assert _holds(args, ["-w", HOST.working_directory])
@@ -137,7 +126,7 @@ def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confi
         (holder,) = docker.holders
         assert len(docker.stand_ins) == 1
         assert args[:3] == ["run", "-i", "--rm"]
-        assert args[3 : 3 + len(nuisance_confinement_args())] == nuisance_confinement_args()
+        assert args[3 : 3 + len(confinement_args())] == confinement_args()
         assert args[args.index("--network") + 1] == f"container:{holder}"
         assert args[-3:] == ["image:local", *LAUNCH]
     assert (docker.holders, docker.stand_ins) == ({}, {})

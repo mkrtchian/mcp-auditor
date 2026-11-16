@@ -86,8 +86,7 @@ _BENIGN_ARGS: dict[str, dict[str, object]] = {
 def node_sandbox_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    # The server keeps the suite's confinement without the memory bound, as every fix-check server
-    # does; its engine is the run's, memory bound included.
+    # The server keeps the confinement, as every fix-check server does; its engine is the run's.
     with (
         stood_engine(f"mcp-auditor-kit-node-sandbox-engine-{secrets.token_hex(4)}") as socket,
         planted(spec, image, DockerPlanting()) as args,

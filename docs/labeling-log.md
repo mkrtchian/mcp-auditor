@@ -1261,3 +1261,15 @@ Commit: the one that adds this entry.
 **Fingerprint.** The counter fingerprint moves, since it hashes the syntax tree of `counting.py`, import statements included: `3db920de230d6cc963d6bee042d57903d7c295cea7f1aa0ac0ca1af50ef4dfa2` to `b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161`. The grammar fingerprint stays `58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1`. Printed before and after the change, the 4 acceptance and 37 holdout fixture fingerprints, the 65 nuisance fixture fingerprints and the 171 compose service Dockerfile fingerprints are identical.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the module path of a type its counting code names for the type checker only. No prompt, guard or default of the system under test moves, no label, and nothing the counter counts. (2) It was raised by the repository layout, a flat package grown past easy navigation, not by a measured value: no nuisance run exists. (3) A module path is none of what the counter counts, so the count is the same on any admission and any audit. It reads no measured value. (4) It applies to every admitted server alike, through the same counter. None is special-cased.
+
+### 2026-11-16, the confinement of the CVE benchmark carries the memory bound
+
+Commit: the one that adds this entry.
+
+**State.** No detection or nuisance baseline is stored (`evals/baselines/detection/` and `evals/baselines/nuisance/` are absent), so none is deleted and nothing resets. No holdout run, nuisance run or gate run exists. The honeypot ground truth is unchanged, and no label moves.
+
+**What changes.** `confinement_args()` (`evals/cve/planting_base.py`) carries the memory bound, `--memory 4g --memory-swap 4g`, moved from the nuisance confinement with its value unchanged, so every container of the CVE benchmark started under the confinement carries it, on both suites and both layers, the fix checks' containers included.
+
+**Fingerprint.** No grammar, counter, ground truth or judge inputs fingerprint moves. Every detection fixture fingerprint, on both layers, and every nuisance fixture fingerprint move, and the 17 holdout calibration copies are recorded again. The values the copies take are in the nuisance suite log, same day.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument: the confinement every CVE benchmark container runs under. No prompt, guard or default of the system under test moves in this commit, and the change to the destructive-payload guard, in a commit of its own, does not license it. (2) It was raised by the host running out of memory during a measurement run, a failure of the harness, not by a measured detection or alarm: no baseline of either suite exists. (3) An unbounded container lets one payload exhaust the host and every audit beside it. The value is the nuisance suite's, set by arcadedb's 2 GiB heap, and reads no outcome. (4) It applies to every container started under the confinement, on both suites and both layers, no target or server exempted.

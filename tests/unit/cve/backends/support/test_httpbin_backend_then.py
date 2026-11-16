@@ -1,8 +1,7 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.httpbin import HTTPBIN_BRIDGE
-from evals.cve.nuisance.confinement import nuisance_confinement_args
-from evals.cve.planting_base import unprivileged_user_args
+from evals.cve.planting_base import confinement_args, unprivileged_user_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,
@@ -19,7 +18,7 @@ _FILES = stand_in_files("httpbin.org")
 def joins_the_bridge_with_httpbin_org_at_the_front(server_args: Sequence[str]) -> None:
     assert value_after(server_args, "--network") == HTTPBIN_BRIDGE
     assert carries(server_args, ["--add-host", "httpbin.org:44.209.237.184"])
-    assert carries(server_args, nuisance_confinement_args())
+    assert carries(server_args, confinement_args())
 
 
 def runs_its_image_as_the_hosts_user(

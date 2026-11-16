@@ -42,7 +42,6 @@ def test_the_sshd_runs_confined_in_its_own_namespace_under_the_readme_hostname()
     assert value_after(args, "--network-alias") == SSHD_ALIAS
     assert carries(args, confinement_args())
     assert "--cap-add" not in args
-    assert "--memory" not in args
     assert args[-1] == SSHD_IMAGE
 
 

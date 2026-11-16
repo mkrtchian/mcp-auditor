@@ -69,9 +69,7 @@ def _a_gitlab_with_no_container(name: str) -> Generator[gitlab.StoodGitLab]:
 
 
 @contextmanager
-def _a_control_plane_with_no_container(
-    name: str, memory_bound: Sequence[str]
-) -> Generator[kubernetes.StoodControlPlane]:
+def _a_control_plane_with_no_container(name: str) -> Generator[kubernetes.StoodControlPlane]:
     yield kubernetes.StoodControlPlane(
         f"{kubernetes.CONTROL_PLANE_NETWORK}-quiet", Path("/tmp/kubeconfig-directory/config")
     )

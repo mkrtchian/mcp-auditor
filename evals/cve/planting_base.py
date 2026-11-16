@@ -36,6 +36,8 @@ UNPRIVILEGED_UID = 65534
 UNPRIVILEGED_GID = 65534
 LAYOUT_PREFIX = "mcp-auditor-layout-"  # the outer directory holding a layout, in the temp dir
 LAYOUT_ROOT = "srv"  # the layout root's name inside its outer directory
+# arcadedb's fixed 2 GiB ZGC heap plus an audit's load; the product's regime uses 2g (ADR 018)
+MEMORY_BOUND = "4g"
 
 
 class SymbolicUser(StrEnum):
@@ -220,9 +222,21 @@ def quiet(action: object, *args: object) -> None:
 
 def confinement_args() -> list[str]:
     # The process bound is about twenty times what these servers run at rest, and it fails
-    # gracefully: fork returns EAGAIN and the server survives, so the bound cannot turn a run
-    # into a false miss the way a memory kill would.
-    return ["--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--pids-limit", "256"]
+    # gracefully: fork returns EAGAIN and the server survives. The memory bound does not: the
+    # kernel kills a process of the container, and how that is counted is in the docstring of
+    # `evals/cve/environments.py`.
+    return [
+        "--cap-drop", "ALL",
+        "--security-opt", "no-new-privileges",
+        "--pids-limit", "256",
+        *memory_bound_args(),
+    ]  # fmt: skip
+
+
+def memory_bound_args() -> list[str]:
+    # --memory-swap equal to --memory, so the bound bites: Docker otherwise grants as much swap
+    # again.
+    return ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND]
 
 
 def no_network_args() -> list[str]:

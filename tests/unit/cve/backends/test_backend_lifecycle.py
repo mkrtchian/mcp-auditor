@@ -9,10 +9,15 @@ from evals.cve.backends import ckan, doris, gravitino, jenkins, mcp_ssh_sshd
 from evals.cve.backends.responder import Responder
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.confinement import MEMORY_BOUND, memory_bound_args
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
-from evals.cve.planting_base import LABEL, confinement_args, resolver_args
+from evals.cve.planting_base import (
+    LABEL,
+    MEMORY_BOUND,
+    confinement_args,
+    memory_bound_args,
+    resolver_args,
+)
 from tests.unit.support.docker_argv import carries, count, value_after
 from tests.unit.support.recorded_subprocess import recorded_commands
 
