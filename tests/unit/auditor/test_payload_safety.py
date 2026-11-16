@@ -1,3 +1,5 @@
+import pytest
+
 from mcp_auditor.domain.payload_safety import (
     DESTRUCTIVE_CONSTRUCTS,
     destructive_reason,
@@ -69,6 +71,33 @@ def test_blocks_shutdown_with_an_argument():
 
 def test_blocks_fork_bomb():
     assert destructive_reason({"cmd": ":(){ :|:& };:"}) == "fork bomb: :(){"
+
+
+ENDLESS_DEVICES = ("/dev/zero", "/dev/urandom", "/dev/random", "/dev/full")
+
+
+@pytest.mark.parametrize("device", ENDLESS_DEVICES)
+def test_blocks_an_endless_device_named_as_a_path(device: str):
+    assert destructive_reason({"path": device}) == f"read of an endless device: {device}"
+
+
+@pytest.mark.parametrize("device", ENDLESS_DEVICES)
+def test_blocks_an_endless_device_read_by_a_command(device: str):
+    assert destructive_reason({"cmd": f"cat {device}"}) == f"read of an endless device: {device}"
+
+
+def test_known_permitted_false_block_of_a_bounded_device_read():
+    assert (
+        destructive_reason({"cmd": "head -c 16 /dev/urandom"})
+        == "read of an endless device: /dev/urandom"
+    )
+
+
+def test_a_disk_write_from_an_endless_device_keeps_its_disk_reason():
+    assert (
+        destructive_reason({"cmd": "dd if=/dev/zero of=/dev/sda"})
+        == "destructive disk operation: of=/dev/"
+    )
 
 
 def test_matching_is_case_insensitive():

@@ -130,6 +130,10 @@ DESTRUCTIVE_CONSTRUCTS: tuple[DestructiveConstruct, ...] = (
         reason="fork bomb",
         patterns=(":(){", ":|:&", ":(){:|:&};:"),
     ),
+    DestructiveConstruct(
+        reason="read of an endless device",
+        patterns=("/dev/zero", "/dev/urandom", "/dev/random", "/dev/full"),
+    ),
 )
 
 

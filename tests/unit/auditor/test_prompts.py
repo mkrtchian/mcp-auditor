@@ -129,6 +129,7 @@ class TestNonDestructiveConstraint:
         assert "runlevel" in NON_DESTRUCTIVE_CONSTRAINT
         assert "PID 1" in NON_DESTRUCTIVE_CONSTRAINT
         assert "fork bomb" in NON_DESTRUCTIVE_CONSTRAINT
+        assert "/dev/zero" in NON_DESTRUCTIVE_CONSTRAINT
         assert "echo mcp-auditor-probe" in NON_DESTRUCTIVE_CONSTRAINT
         assert "whoami" in NON_DESTRUCTIVE_CONSTRAINT
         assert "UNION SELECT" in NON_DESTRUCTIVE_CONSTRAINT
