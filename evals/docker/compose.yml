@@ -507,7 +507,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "825c2cf48d5e48ab3e93192cb99c8ebba0eba84b8d13756d007b62ecbf8bbd4e"
+        org.mcp-auditor.dockerfile-fingerprint: "2aff4ccb2af87e3760b51858badbdd1452642b85f296146cbed91c2c41e898fd"
     image: mcp-auditor-cve-holdout-2026-19978-android:local
 
   holdout-2026-19978-android-patched:
@@ -515,7 +515,7 @@ services:
       context: .
       dockerfile: Dockerfile.holdout-2026-19978-android-patched
       labels:
-        org.mcp-auditor.dockerfile-fingerprint: "a42ec350a07da7174e04cf975e6a9c0100304bd8c639b0d5afe923c12628a9e8"
+        org.mcp-auditor.dockerfile-fingerprint: "70edd00b9090e24c6d630d8ce1da5e9b487033fdc0bcceee70439675bc37818c"
     image: mcp-auditor-cve-holdout-2026-19978-android-patched:local
 
   holdout-2026-55581-mcp-shell:

@@ -374,6 +374,12 @@ ALLOWLIST = (
         "the same captured stack frame, in the CVE-2026-81562 vulnerable and patched images",
     ),
     AllowedLine(
+        "evals/docker/Dockerfile.holdout-2026-19978-android*",
+        "stub",
+        "IPackageManager$Stub.onTransact",
+        "the same captured stack frame, in the CVE-2026-19978 vulnerable and patched images",
+    ),
+    AllowedLine(
         "docs/detection-suite-rule.md",
         "stub",
         "`stub`, `calibration`",
