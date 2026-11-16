@@ -55,6 +55,8 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **relaunch**: starting the audited server again from the same server command during an audit, after it stopped answering or was taken as stuck. The auditor first ends the old server where it can. The report names each relaunch with the call that preceded it. Not: resume, which continues an interrupted audit, or a retry, which makes the whole audit again. Defined by: ADR 036.
 - **taken as stuck**: said of an audited server that answers the ping while the calls of two tools in a row keep timing out. The auditor relaunches it. Defined by: ADR 036.
 - **taken as down**: said of an audited server whose relaunch failed. The auditor sends it no further call and writes the report, where the tools it did not finish have a coverage gap. Defined by: ADR 036.
+- **control ping**: the ping the auditor sends the audited server after each handshake. Its answer decides whether a timeout is followed by a ping. Code: `control_ping_answered`.
+- **call not sent**: a tool call the auditor withholds because the tool is stopped or the server taken as down. It is counted in the tool's coverage gap. Code: `UnsentPayload`, `UnsentCause`, `unsent_cases`, `unsent_chains`. Not: blocked payload, which the guard stops, or missed model call.
 - **destructive-payload guard**: the guard that stops a payload able to destroy data from reaching the server. Defined by: ADR 013.
 - **blocked payload**: a payload the guard stopped.
 - **relayed environment**: the variables an audit passes to the audited server with `--env` and `--env-plain`. Defined by: ADR 026.

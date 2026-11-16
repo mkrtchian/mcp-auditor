@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, computed_field
 
+from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
+
 
 @dataclass(frozen=True)
 class OwaspMapping:
@@ -187,6 +189,7 @@ class AttackChain(BaseModel):
     steps: list[ChainStep]
     judge_result: JudgeResult | None = None
     blocked_reason: str | None = None
+    cut_by_relaunch: bool = False
 
 
 class ProviderUsage(BaseModel):
@@ -227,6 +230,9 @@ class CoverageGap(BaseModel):
     requested_cases: int
     received_cases: int
     missing_categories: list[AuditCategory]
+    unsent_cases: int = 0
+    unsent_chains: int = 0
+    unsent_cause: UnsentCause | None = None
 
 
 class ToolReport(BaseModel):
@@ -349,6 +355,7 @@ class AuditReport(BaseModel):
     chain_usage: ProviderUsage = ProviderUsage()  # the chain judgment counts here and as judge
     execution: ExecutionRecord | None = None
     missed_model_calls: list[MissedModelCall] = []
+    relaunches: list[Relaunch] = []
 
     @property
     def generator_usage(self) -> ProviderUsage:

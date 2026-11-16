@@ -476,6 +476,9 @@ def test_json_carries_the_coverage_gap():
         "requested_cases": 10,
         "received_cases": 7,
         "missing_categories": ["injection", "resource_abuse"],
+        "unsent_cases": 0,
+        "unsent_chains": 0,
+        "unsent_cause": None,
     }
     assert tool_reports[1]["coverage_gap"] is None
 

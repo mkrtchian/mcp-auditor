@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 from mcp_auditor.domain import (
@@ -76,4 +77,29 @@ def a_refused_call(kind: ModelCallKind = ModelCallKind.JUDGMENT) -> MissedModelC
 def a_coverage_gap() -> CoverageGap:
     return CoverageGap(
         requested_cases=10, received_cases=6, missing_categories=[AuditCategory.INJECTION]
+    )
+
+
+def a_report_written_before_relaunches() -> str:
+    gap: dict[str, object] = {
+        "requested_cases": 10,
+        "received_cases": 6,
+        "missing_categories": ["injection"],
+    }
+    chain: dict[str, object] = {
+        "goal": {
+            "description": "escalate",
+            "category": "injection",
+            "first_step": {"category": "injection", "description": "probe", "arguments": {}},
+        },
+        "steps": [],
+    }
+    tool_report: dict[str, object] = {
+        "tool": {"name": "test_tool", "input_schema": {}},
+        "cases": [],
+        "chains": [chain],
+        "coverage_gap": gap,
+    }
+    return json.dumps(
+        {"server_command": "test", "tool_reports": [tool_report], "provider_usage": {}}
     )

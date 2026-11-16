@@ -172,6 +172,17 @@ class TestAuditReportCompleteness:
 
         assert rebuilt.missed_model_calls == report.missed_model_calls
 
+    def test_a_report_written_before_relaunches_loads_with_none_and_no_call_not_sent(self):
+        report = AuditReport.model_validate_json(given.a_report_written_before_relaunches())
+
+        tool_report = report.tool_reports[0]
+        assert report.relaunches == []
+        assert tool_report.coverage_gap is not None
+        assert tool_report.coverage_gap.unsent_cases == 0
+        assert tool_report.coverage_gap.unsent_chains == 0
+        assert tool_report.coverage_gap.unsent_cause is None
+        assert tool_report.chains[0].cut_by_relaunch is False
+
 
 class TestOrderToolsForAudit:
     def test_read_like_tools_sort_before_others(self):
