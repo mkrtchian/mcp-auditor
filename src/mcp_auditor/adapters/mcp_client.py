@@ -6,8 +6,10 @@ from typing import IO, Any, Self
 import anyio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import get_default_environment, stdio_client
+from mcp.shared.exceptions import McpError
 from mcp.shared.session import RequestResponder
 from mcp.types import (
+    CONNECTION_CLOSED,
     ClientResult,
     PaginatedRequestParams,
     ServerNotification,
@@ -18,6 +20,7 @@ from mcp.types import (
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
+from mcp_auditor.domain.server_watch import PING_TIMEOUT_SECONDS
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
@@ -89,6 +92,19 @@ class StdioMCPClient:
             return ToolResponse(content=str(exc), is_error=True, error_type=type(exc).__name__)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
         return ToolResponse(content=text, is_error=bool(result.isError))
+
+    async def ping(self) -> bool:
+        try:
+            async with asyncio.timeout(PING_TIMEOUT_SECONDS):
+                await self._session.send_ping()
+        except McpError as error:
+            return error.error.code != CONNECTION_CLOSED
+        except (TimeoutError, anyio.ClosedResourceError, anyio.BrokenResourceError):
+            return False
+        return True
+
+    async def relaunch(self) -> bool:
+        return False
 
     async def _open_session(
         self, stack: AsyncExitStack, launch: ServerLaunch, errlog: IO[str] | None

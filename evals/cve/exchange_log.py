@@ -28,3 +28,9 @@ class ExchangeLog:
         response = await self._inner.call_tool(name, args)
         self.exchanges.append((name, args, response))
         return response
+
+    async def ping(self) -> bool:
+        return await self._inner.ping()
+
+    async def relaunch(self) -> bool:
+        return await self._inner.relaunch()

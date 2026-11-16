@@ -2,9 +2,11 @@ import pathlib
 import time
 
 import pytest
+from mcp.types import INTERNAL_ERROR
 
 import tests.integration.support.test_mcp_client_transport_given as given
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.domain.server_watch import is_timeout
 
 
 async def test_a_server_logging_its_shutdown_to_stdout_is_left_cleanly() -> None:
@@ -53,3 +55,43 @@ async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its
     assert report.is_complete
     assert [t.tool.name for t in report.tool_reports] == ["read"]
     assert len(report.tool_reports[0].cases) == 1
+
+
+async def test_a_ping_right_after_the_handshake_is_answered() -> None:
+    async with StdioMCPClient.connect(given.a_stalling_server()) as client:
+        assert await client.ping()
+
+
+async def test_a_ping_is_answered_while_a_timed_out_call_runs_on_and_the_next_call_is_served() -> (
+    None
+):
+    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+        stalled = await client.call_tool("wait_forever", {})
+
+        assert is_timeout(stalled)
+        assert await client.ping()
+        assert (await client.call_tool("echo", {})).content == "ok"
+
+
+async def test_a_ping_goes_unanswered_once_a_call_blocked_the_server_loop() -> None:
+    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+        blocked = await client.call_tool("block_loop", {})
+
+        assert is_timeout(blocked)
+        assert not await client.ping()
+
+
+async def test_a_ping_the_server_ignores_goes_unanswered() -> None:
+    async with StdioMCPClient.connect(given.a_stalling_server("--ignore-ping")) as client:
+        assert not await client.ping()
+
+
+async def test_an_error_response_to_the_ping_is_an_answer() -> None:
+    assert await given.the_ping_error_code("--error-ping") == INTERNAL_ERROR
+    async with StdioMCPClient.connect(given.a_stalling_server("--error-ping")) as client:
+        assert await client.ping()
+
+
+async def test_the_client_does_not_relaunch_its_server() -> None:
+    async with StdioMCPClient.connect(given.a_stalling_server()) as client:
+        assert not await client.relaunch()

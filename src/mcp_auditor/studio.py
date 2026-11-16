@@ -26,6 +26,12 @@ class _StudioMCPPlaceholder:
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         raise _studio_mcp_not_available("tool execution")
 
+    async def ping(self) -> bool:
+        return False
+
+    async def relaunch(self) -> bool:
+        return False
+
 
 def _studio_mcp_not_available(operation: str) -> NotImplementedError:
     return NotImplementedError(

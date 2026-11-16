@@ -6,12 +6,17 @@ from mcp_auditor.domain.models import ProviderUsage, ToolDefinition, ToolRespons
 
 
 class MCPClientPort(Protocol):
-    """Lifecycle (connect/disconnect) is managed by the adapter via an async
-    context manager. The port only exposes business operations.
+    """The adapter opens the first session and closes the last one. `relaunch` ends the server
+    and opens another session on a new one. Neither `ping` nor `relaunch` raises.
     """
 
     async def list_tools(self) -> list[ToolDefinition]: ...
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse: ...
+    async def ping(self) -> bool:
+        """True on any response, an error response included."""
+        ...
+
+    async def relaunch(self) -> bool: ...
 
 
 class UnparseableOutput(ValueError):

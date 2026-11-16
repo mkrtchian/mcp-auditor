@@ -2,6 +2,9 @@ import io
 import pathlib
 import sys
 
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from mcp.shared.exceptions import McpError
 from rich.console import Console
 
 import tests.unit.auditor.support.test_graph_given as graph
@@ -15,10 +18,33 @@ from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from tests.fakes import FakeContainerRuntime, FakeLLM
 
 READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
+STALLING_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "stalling_server.py"
 
 
 def a_read_server(*flags: str) -> ServerLaunch:
     return ServerLaunch.unconfined(sys.executable, [str(READ_SERVER_PATH), *flags])
+
+
+def a_stalling_server(*flags: str) -> ServerLaunch:
+    return ServerLaunch.unconfined(sys.executable, [str(STALLING_SERVER_PATH), *flags])
+
+
+async def the_ping_error_code(*flags: str) -> int | None:
+    """The code of the JSON-RPC error the stalling server answers a ping with, None on a plain
+    answer, read on a bare SDK session so the client under test plays no part."""
+    parameters = StdioServerParameters(
+        command=sys.executable, args=[str(STALLING_SERVER_PATH), *flags]
+    )
+    async with (
+        stdio_client(parameters) as (read_stream, write_stream),
+        ClientSession(read_stream, write_stream) as session,
+    ):
+        await session.initialize()
+        try:
+            await session.send_ping()
+        except McpError as error:
+            return error.error.code
+    return None
 
 
 def an_audit_of(launch: ServerLaunch) -> Audit:

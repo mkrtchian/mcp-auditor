@@ -207,6 +207,12 @@ class GatedClient:
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         return ToolResponse(content="ok")
 
+    async def ping(self) -> bool:
+        return True
+
+    async def relaunch(self) -> bool:
+        return False
+
 
 def a_faulted_audit_losing_detections(clients: dict[str, GatedClient]) -> FaultedAudit:
     """Every case is judged a detection, so the loss drawn at each audit index shows."""

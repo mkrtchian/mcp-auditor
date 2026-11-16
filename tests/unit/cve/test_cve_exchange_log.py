@@ -25,3 +25,15 @@ async def test_recording_client_keeps_the_calls_in_order():
         ("first", {"a": 1}),
         ("second", {"b": 2}),
     ]
+
+
+async def test_recording_client_forwards_ping_and_relaunch_and_records_neither():
+    client = FakeMCPClient(tools=[], ping_answers=[False], relaunch_answers=[False])
+    recorder = ExchangeLog(client)
+
+    pinged = await recorder.ping()
+    relaunched = await recorder.relaunch()
+
+    assert (pinged, relaunched) == (False, False)
+    assert (client.pings, client.relaunches) == (1, 1)
+    assert recorder.exchanges == []
