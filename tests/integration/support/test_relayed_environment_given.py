@@ -32,6 +32,6 @@ async def echoed_through_the_audit_boundaries(request: RelayRequest) -> Echo:
             payload = AuditPayload(
                 category=AuditCategory.INFO_LEAKAGE, description="echo", arguments={"name": NAME}
             )
-            response = await server.attempt(tools[0], payload)
+            response = (await server.attempt(tools[0], payload)).outcome
         assert isinstance(response, ToolResponse)
         return Echo(response.content, stderr.text())

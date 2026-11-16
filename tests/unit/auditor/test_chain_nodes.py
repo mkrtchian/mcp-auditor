@@ -14,6 +14,7 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ModelCallKind
+from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.chain_nodes import (
     abandon_chain,
     make_execute_step,
@@ -29,6 +30,7 @@ from mcp_auditor.graph.chain_nodes import (
     route_after_planning,
     route_to_chains_or_report,
 )
+from mcp_auditor.graph.unsent_calls import count_unsent_chain
 from tests.fakes import FakeLLM
 
 
@@ -89,6 +91,16 @@ class TestPrepareChain:
         result = prepare_chain(state)
 
         assert result["chain_model_call_missed"] is False
+
+    def test_clears_a_relaunch_and_a_step_not_sent_from_the_previous_chain(self):
+        state = given.a_chain_audit_state(
+            pending_chains=[given.a_chain_goal()], chain_cut_by_relaunch=True
+        )
+
+        result = prepare_chain(state)
+
+        assert result["chain_cut_by_relaunch"] is False
+        assert result["unsent_step_cause"] is None
 
 
 class TestMakeExecuteStep:
@@ -170,6 +182,55 @@ class TestMakeExecuteStep:
         assert chain.steps == [executed]
         assert judged["blocked_step_reason"] is None
         assert client.calls == []
+
+    async def test_a_step_not_sent_after_steps_were_made_judges_them(self):
+        server, client = await given.a_server_taken_as_down()
+        executed = given.a_chain_step()
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[executed],
+            current_step_payload=given.a_payload(),
+        )
+
+        result = await make_execute_step(server)(state)
+
+        assert result["unsent_cause"] is UnsentCause.SERVER_DOWN
+        assert route_after_execute_step({**state, **result}) == "judge_chain"
+        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **result})
+        [chain] = judged["completed_chains"]
+        assert (chain.steps, chain.blocked_reason) == ([executed], None)
+        assert len(client.calls) == 1
+
+    async def test_a_first_step_not_sent_records_no_chain_and_counts_it(self):
+        server, _ = await given.a_server_taken_as_down()
+        state = given.a_chain_audit_state(
+            pending_chains=[given.a_chain_goal()],
+            current_chain_goal=given.a_chain_goal(),
+            current_step_payload=given.a_payload(),
+        )
+
+        result = await make_execute_step(server)(state)
+        assert route_after_execute_step({**state, **result}) == "count_unsent_chain"
+        counted = count_unsent_chain({**state, **result})
+
+        assert counted["unsent_chains"] == 1
+        assert "completed_chains" not in counted
+        assert route_after_judge({**state, **result, **counted}) == "prepare_chain"
+
+    async def test_a_step_followed_by_a_relaunch_ends_the_chain_unobserved(self):
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(), current_step_payload=given.a_payload()
+        )
+
+        result = await make_execute_step(given.a_server_losing_its_connection())(state)
+
+        [relaunch] = result["relaunches"]
+        assert relaunch.tool_name == given.DEFAULT_TOOL_NAME
+        assert route_after_execute_step({**state, **result}) == "judge_chain"
+        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **result})
+        [chain] = judged["completed_chains"]
+        assert chain.cut_by_relaunch
+        assert len(chain.steps) == 1
 
 
 class TestMakeObserveStep:

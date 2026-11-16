@@ -17,8 +17,10 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolResponse,
 )
+from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 from tests.fakes import FakeMCPClient
+from tests.fakes.mcp_client import a_lost_connection_response
 
 DEFAULT_TOOL_NAME = "file_manager"
 
@@ -92,6 +94,22 @@ def a_fake_mcp_client(
     return FakeMCPClient(tools or [a_tool()], responses)
 
 
+def a_server_losing_its_connection() -> AuditedServer:
+    return AuditedServer(
+        a_fake_mcp_client(responses={DEFAULT_TOOL_NAME: a_lost_connection_response()})
+    )
+
+
+async def a_server_taken_as_down() -> tuple[AuditedServer, FakeMCPClient]:
+    """A server whose connection was lost on a first call, and whose relaunch failed."""
+    client = FakeMCPClient(
+        [a_tool()], {DEFAULT_TOOL_NAME: a_lost_connection_response()}, relaunch_answers=(False,)
+    )
+    server = AuditedServer(client)
+    await server.attempt(a_tool(), a_payload())
+    return server, client
+
+
 def a_judgment(
     verdict: EvalVerdict = EvalVerdict.FAIL,
     severity: Severity = Severity.HIGH,
@@ -142,6 +160,7 @@ def a_chain_audit_state(
     completed_chains: list[AttackChain] | None = None,
     blocked_step_reason: str | None = None,
     chain_model_call_missed: bool = False,
+    chain_cut_by_relaunch: bool = False,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
@@ -157,6 +176,7 @@ def a_chain_audit_state(
         "completed_chains": completed_chains or [],
         "blocked_step_reason": blocked_step_reason,
         "chain_model_call_missed": chain_model_call_missed,
+        "chain_cut_by_relaunch": chain_cut_by_relaunch,
         "provider_usage": [],
     }
 

@@ -25,6 +25,7 @@ from mcp_auditor.domain.models import (
     order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort
+from mcp_auditor.domain.server_liveness import UnsentPayload
 from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
@@ -32,6 +33,7 @@ from mcp_auditor.graph.prompts import (
     build_judge_prompt,
     with_redaction_notice,
 )
+from mcp_auditor.graph.unsent_calls import case_not_sent
 
 
 def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | None = None):
@@ -47,7 +49,13 @@ def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | No
 async def prepare_tool(state: dict[str, Any]) -> dict[str, Any]:
     index = len(state.get("tool_reports", []))
     current = state["discovered_tools"][index]
-    return {"current_tool": current, "coverage_gap": None}
+    return {
+        "current_tool": current,
+        "coverage_gap": None,
+        "unsent_cases": 0,
+        "unsent_chains": 0,
+        "unsent_cause": None,
+    }
 
 
 @dataclass(frozen=True)
@@ -154,7 +162,10 @@ def make_execute_tool(server: AuditedServer):
         pending = list(state["pending_cases"])
         case = pending.pop(0)
         tool = state["current_tool"]
-        outcome = await server.attempt(tool, case.payload)
+        attempt = await server.attempt(tool, case.payload)
+        outcome = attempt.outcome
+        if isinstance(outcome, UnsentPayload):
+            return case_not_sent(state, outcome, pending)
         if isinstance(outcome, BlockedPayload):
             blocked = case.model_copy(update={"blocked_reason": outcome.reason})
             return {"processed_cases": [blocked], "current_case": None, "pending_cases": pending}
@@ -162,7 +173,10 @@ def make_execute_tool(server: AuditedServer):
             case = case.model_copy(update={"error": outcome.content, "response": None})
         else:
             case = case.model_copy(update={"response": outcome.content})
-        return {"current_case": case, "pending_cases": pending}
+        update: dict[str, Any] = {"current_case": case, "pending_cases": pending}
+        if attempt.relaunch is not None:
+            update["relaunches"] = [attempt.relaunch]
+        return update
 
     return execute_tool
 

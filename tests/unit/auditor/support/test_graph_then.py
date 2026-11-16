@@ -31,7 +31,7 @@ def report_has_judged_chains(report: ToolReport, expected_count: int) -> None:
     assert all(chain.judge_result is not None for chain in report.chains)
 
 
-def one_case_blocked_unjudged_and_unsent(report: ToolReport, client: FakeMCPClient) -> None:
+def one_case_blocked_unjudged_and_not_called(report: ToolReport, client: FakeMCPClient) -> None:
     [blocked] = [case for case in report.cases if case.blocked_reason is not None]
     assert blocked.judge_result is None
     assert len([case for case in report.cases if case.judge_result is not None]) == 1

@@ -18,6 +18,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
 )
+from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
 
 
 class GraphState(TypedDict):
@@ -37,6 +38,10 @@ class GraphState(TypedDict):
     max_chain_steps: int
     completed_chains: list[AttackChain]
     coverage_gap: CoverageGap | None
+    relaunches: Annotated[list[Relaunch], operator.add]
+    unsent_cases: int
+    unsent_chains: int
+    unsent_cause: UnsentCause | None
 
 
 class AuditToolState(TypedDict):
@@ -50,6 +55,9 @@ class AuditToolState(TypedDict):
     missed_model_calls: Annotated[list[MissedModelCall], operator.add]
     attack_context: AttackContext
     coverage_gap: CoverageGap | None
+    relaunches: Annotated[list[Relaunch], operator.add]
+    unsent_cases: int
+    unsent_cause: UnsentCause | None
 
 
 class AuditToolInput(TypedDict):
@@ -76,6 +84,11 @@ class ChainAuditState(TypedDict):
     judge_usage: Annotated[list[ProviderUsage], operator.add]
     chain_usage: Annotated[list[ProviderUsage], operator.add]
     missed_model_calls: Annotated[list[MissedModelCall], operator.add]
+    relaunches: Annotated[list[Relaunch], operator.add]
+    unsent_cause: UnsentCause | None
+    unsent_chains: int
+    unsent_step_cause: UnsentCause | None
+    chain_cut_by_relaunch: bool
 
 
 class ChainAuditInput(TypedDict):

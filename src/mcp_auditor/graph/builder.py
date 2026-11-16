@@ -44,6 +44,7 @@ from mcp_auditor.graph.state import (
     ChainAuditState,
     GraphState,
 )
+from mcp_auditor.graph.unsent_calls import count_unsent_chain
 
 
 def build_graph(
@@ -120,6 +121,7 @@ def _build_chain_audit_subgraph(
     builder.add_node("plan_step", make_plan_step(llm, redacting))
     builder.add_node("judge_chain", make_judge_chain(judge_llm, redacting))
     builder.add_node("abandon_chain", abandon_chain)
+    builder.add_node("count_unsent_chain", count_unsent_chain)
     builder.add_edge(START, "plan_chains")
     builder.add_conditional_edges("plan_chains", route_after_planning)
     builder.add_edge("prepare_chain", "execute_step")
@@ -130,6 +132,7 @@ def _build_chain_audit_subgraph(
             "observe_step": "observe_step",
             "judge_chain": "judge_chain",
             "abandon_chain": "abandon_chain",
+            "count_unsent_chain": "count_unsent_chain",
         },
     )
     builder.add_conditional_edges("observe_step", route_after_observe)
@@ -140,6 +143,7 @@ def _build_chain_audit_subgraph(
     )
     builder.add_conditional_edges("judge_chain", route_after_judge)
     builder.add_conditional_edges("abandon_chain", route_after_judge)
+    builder.add_conditional_edges("count_unsent_chain", route_after_judge)
     return builder.compile()
 
 

@@ -15,6 +15,7 @@ from mcp_auditor.domain.models import (
     StepObservation,
 )
 from mcp_auditor.domain.ports import LLMPort
+from mcp_auditor.domain.server_liveness import UnsentPayload
 from mcp_auditor.graph.chain_prompts import (
     build_chain_judge_prompt,
     build_chain_planning_prompt,
@@ -58,6 +59,8 @@ def prepare_chain(state: dict[str, Any]) -> dict[str, Any]:
         "current_step_payload": goal.first_step,
         "blocked_step_reason": None,
         "chain_model_call_missed": False,
+        "unsent_step_cause": None,
+        "chain_cut_by_relaunch": False,
     }
 
 
@@ -65,15 +68,20 @@ def make_execute_step(server: AuditedServer):
     async def execute_step(state: dict[str, Any]) -> dict[str, Any]:
         payload: AuditPayload = state["current_step_payload"]
         tool = state["current_tool"]
-        outcome = await server.attempt(tool, payload)
+        attempt = await server.attempt(tool, payload)
+        outcome = attempt.outcome
+        if isinstance(outcome, UnsentPayload):
+            return {"unsent_step_cause": outcome.cause, "unsent_cause": outcome.cause}
         if isinstance(outcome, BlockedPayload):
             return {"blocked_step_reason": outcome.reason}
         if outcome.is_error:
             step = ChainStep.from_error(payload, outcome.content)
         else:
             step = ChainStep.from_response(payload, outcome.content)
-        steps = [*state["current_chain_steps"], step]
-        return {"current_chain_steps": steps}
+        update: dict[str, Any] = {"current_chain_steps": [*state["current_chain_steps"], step]}
+        if attempt.relaunch is not None:
+            update |= {"relaunches": [attempt.relaunch], "chain_cut_by_relaunch": True}
+        return update
 
     return execute_step
 
@@ -139,6 +147,7 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
             goal=state["current_chain_goal"],
             steps=state["current_chain_steps"],
             blocked_reason=state["blocked_step_reason"],
+            cut_by_relaunch=state.get("chain_cut_by_relaunch", False),
         )
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
         if redacting:
@@ -203,6 +212,11 @@ route_after_judge = _route_to_next_chain_or_end
 
 
 def route_after_execute_step(state: dict[str, Any]) -> str:
+    if state.get("unsent_step_cause") is not None:
+        return "judge_chain" if state["current_chain_steps"] else "count_unsent_chain"
+    if state.get("chain_cut_by_relaunch", False):
+        # The relaunched server lost what the chain built, so the chain ends on its steps.
+        return "judge_chain"
     if state["blocked_step_reason"] is None:
         return "observe_step"
     if state["current_chain_steps"]:

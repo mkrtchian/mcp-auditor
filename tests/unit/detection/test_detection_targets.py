@@ -114,7 +114,7 @@ async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv()
     tool = ToolDefinition(name="git", description="git", input_schema={"type": "object"})
 
     for _name, args in client.calls:
-        outcome = await guard.attempt(tool, _a_payload(args))
+        outcome = (await guard.attempt(tool, _a_payload(args))).outcome
         assert not isinstance(outcome, BlockedPayload), args
 
 

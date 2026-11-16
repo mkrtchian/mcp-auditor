@@ -14,6 +14,7 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ModelCallKind, filter_tools
+from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.graph.nodes import (
     build_tool_report,
     make_discover_tools,
@@ -29,6 +30,7 @@ from mcp_auditor.graph.nodes import (
 )
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
+from tests.fakes.mcp_client import a_lost_connection_response
 
 
 class TestFilterTools:
@@ -97,12 +99,14 @@ class TestPrepareTools:
 
         assert result["current_tool"] == tools[1]
 
-    async def test_resets_the_coverage_gap(self):
+    async def test_resets_the_coverage_gap_and_the_calls_not_sent(self):
         tools = [given.a_tool(name="t1")]
 
         result = await prepare_tool({"discovered_tools": tools, "tool_reports": []})
 
         assert result["coverage_gap"] is None
+        assert (result["unsent_cases"], result["unsent_chains"]) == (0, 0)
+        assert result["unsent_cause"] is None
 
 
 class TestExtractAttackContext:
@@ -209,6 +213,53 @@ class TestExecuteTool:
         assert blocked.response is None
         assert blocked.error is None
         assert result["current_case"] is None
+
+    async def test_a_case_not_sent_is_counted_apart_and_not_judged(self):
+        tool = given.a_tool(name="read_file")
+        server, client = await given.a_server_taken_as_down(tool)
+        node = make_execute_tool(server)
+        state: dict[str, Any] = {"pending_cases": [given.a_test_case()], "current_tool": tool}
+
+        result = await node(state)
+
+        assert "processed_cases" not in result
+        assert result["unsent_cases"] == 1
+        assert result["unsent_cause"] is UnsentCause.SERVER_DOWN
+        assert route_after_execute({**state, **result}) == END
+        assert len(client.calls) == 1
+
+    async def test_a_case_followed_by_a_relaunch_is_judged_and_the_relaunch_kept(self):
+        tool = given.a_tool(name="read_file")
+        client = FakeMCPClient([tool], responses={"read_file": a_lost_connection_response()})
+        node = make_execute_tool(AuditedServer(client))
+        case = given.a_test_case()
+        state: dict[str, Any] = {"pending_cases": [case], "current_tool": tool}
+
+        result = await node(state)
+
+        assert result["relaunches"] == [
+            Relaunch(
+                tool_name="read_file",
+                arguments=case.payload.arguments,
+                cause=RelaunchCause.LOST_CONNECTION,
+                succeeded=True,
+            )
+        ]
+        then.current_case_has_error(result, "Connection closed")
+        assert route_after_execute({**state, **result}) == "judge_response"
+
+    async def test_a_case_that_is_sent_leaves_the_cause_of_calls_not_sent_as_it_was(self):
+        tool = given.a_tool(name="read_file")
+        node = make_execute_tool(AuditedServer(FakeMCPClient([tool])))
+        state: dict[str, Any] = {
+            "pending_cases": [given.a_test_case()],
+            "current_tool": tool,
+            "unsent_cause": UnsentCause.TOOL_TIMING_OUT,
+        }
+
+        result = await node(state)
+
+        assert {**state, **result}["unsent_cause"] is UnsentCause.TOOL_TIMING_OUT
 
 
 class TestJudgeResponse:

@@ -184,7 +184,7 @@ async def test_destructive_payload_is_blocked_and_never_sent():
 
     report = then.tool_report_at(result, 0)
     then.report_has_cases(report, 2)
-    then.one_case_blocked_unjudged_and_unsent(report, fake_mcp_client)
+    then.one_case_blocked_unjudged_and_not_called(report, fake_mcp_client)
 
 
 async def test_a_batch_still_short_after_retry_is_flagged_on_its_tool_only():
