@@ -19,6 +19,11 @@ def each_played_alone_after_the_others(
     assert in_flight.starts[0][0] not in packages
 
 
+def played_beside_another_server(in_flight: InFlight, server: AdmittedServer) -> None:
+    package = server.server_package
+    assert any(package in now and set(now) != {package} for _, now in in_flight.starts)
+
+
 def played_together(in_flight: InFlight, packages: Collection[str], peak: int) -> None:
     """The packages' calls overlapped up to `peak` at once."""
     seen = [len(now) for started, now in in_flight.starts if started in packages]
