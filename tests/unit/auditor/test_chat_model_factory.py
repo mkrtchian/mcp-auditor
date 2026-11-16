@@ -53,7 +53,7 @@ class TestMakeChatModel:
         assert getattr(chat_model, "model", None) == model
         assert getattr(chat_model, "reasoning_effort", "unset") == settings.resolve_reasoning(model)
         assert getattr(chat_model, "thinking", "unset") is None
-        assert getattr(chat_model, "max_tokens", None) == 8192
+        assert getattr(chat_model, "max_tokens", None) == 16384
         assert getattr(chat_model, "default_request_timeout", None) == 120
 
     def test_anthropic_at_reasoning_none_disables_thinking(self, monkeypatch: pytest.MonkeyPatch):

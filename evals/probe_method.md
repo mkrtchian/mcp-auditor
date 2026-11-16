@@ -58,7 +58,7 @@ Prices are the list prices of 2026-10-15 (`PRICES_DATE`), per million tokens (in
 
 The two GLM 5.3 rows are OpenRouter's per-token list prices for the pinned endpoint, read as net of the 0.375 discount OpenRouter's endpoint listing shows on DeepInfra. OpenRouter also charges a 5.5 % fee on credit purchases by card, which the prices leave out, so the report's cost for these two candidates is about 5 % below what they cost.
 
-An OpenAI, Anthropic, Fireworks, Alibaba or OpenRouter answer cut by the 8,192-token output cap counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and counts as a parse failure anyway.
+An OpenAI, Anthropic, Fireworks, Alibaba or OpenRouter answer cut by the output cap (8,192 tokens, 16,384 on Anthropic, which counts thinking in it) counts as a parse failure, not as a parsed call: LangChain would otherwise repair the truncated JSON. A call that fails to parse costs the usage of all its attempts, truncated ones included, and counts as a parse failure anyway.
 
 **Once, after the first run:** compare the cost the report computes for each provider, Anthropic included, with that provider's billing console over the run's time window, OpenRouter's activity page for the GLM 5.3 candidates, which also shows the host that answered each call. A gap means the token accounting or the prices are wrong, and the cost cannot be read until it is explained.
 
