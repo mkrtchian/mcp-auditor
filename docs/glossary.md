@@ -51,7 +51,10 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **model call kind**: the kind of request an audit sends to a model: test generation, judgment, context extraction, chain planning, chain step observation, chain step planning, chain judgment. Not: the README's phases (discover, generate, execute, judge, chains), which are prose and have no identifier.
 - **missed model call**: a model call that gave no usable answer, through a provider refusal, an unreadable answer, or throttling that lasted past every retry. The report lists it with its cause, beside the coverage gaps. Like a coverage gap, it makes the audit incomplete, and `--ci` exits 3. Code: `missed_model_calls` in the JSON report.
 - **provider refusal**: the model provider declined to answer.
-- **coverage gap**: a tool the audit could not cover in full, such as fewer test cases than the budget asked.
+- **coverage gap**: a tool the audit could not cover in full, such as fewer test cases than the budget asked, or test cases and chains never sent because the auditor stopped calling the tool or took its server as down.
+- **relaunch**: starting the audited server again from the same server command during an audit, after it stopped answering or was taken as stuck. The auditor first ends the old server where it can. The report names each relaunch with the call that preceded it. Not: resume, which continues an interrupted audit, or a retry, which makes the whole audit again. Defined by: ADR 036.
+- **taken as stuck**: said of an audited server that answers the ping while the calls of two tools in a row keep timing out. The auditor relaunches it. Defined by: ADR 036.
+- **taken as down**: said of an audited server whose relaunch failed. The auditor sends it no further call and writes the report, where the tools it did not finish have a coverage gap. Defined by: ADR 036.
 - **destructive-payload guard**: the guard that stops a payload able to destroy data from reaching the server. Defined by: ADR 013.
 - **blocked payload**: a payload the guard stopped.
 - **relayed environment**: the variables an audit passes to the audited server with `--env` and `--env-plain`. Defined by: ADR 026.
@@ -155,7 +158,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **credit**: a nonce found in a FAIL, which counts toward a detection. Defined by: ADR 030.
   - A **struck credit** is one the replay reproduced on the patched version, so it cannot be tied to the flaw the first patched release fixed. It counts as not detected. The replay errs both ways: it strikes a credit earned through an incomplete patch, and keeps one earned on a sibling flaw.
   - An **unchecked credit** is one the replay could not check. It is kept and reported. A gate outcome that would change if it were struck is not comparable.
-- **replay**: sending the recorded calls of a detecting run again, without an LLM, to a fresh container of the patched version, to strike the credits it reproduces. Not: retest. Defined by: ADR 030.
+- **replay**: sending the recorded calls of a detecting run again, without an LLM, to a fresh container of the patched version, to strike the credits it reproduces. It relaunches the patched version after the same calls as the run. Not: retest. Defined by: ADR 030, ADR 036.
 - **status**: what the oracle reports per target and run: detected, reached but judged pass (a nonce surfaced in a unit the judge ruled PASS), or missed.
 - **tools filter**: the set of tools a target's graded run on the acceptance layer audits, taken from its calibration exploits. A holdout run has none. Not: the user's `--tools`.
 - **measurement run**: a `--no-baseline` run that forces on every target the chain settings, tool call timeout or absence of tools filter its flags name, and reports usage and cost. It never gates.
@@ -218,7 +221,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 
 Each sense is defined above or by its gloss here. Write the qualified form.
 
-- **attempt**: parse attempt (reading a model answer), send attempt (a tool call), audit attempt (one audit of a run, made again after a missed model call or a provider error).
+- **attempt**: parse attempt (reading a model answer), send attempt (a tool call), audit attempt (one audit of a run, made again after a missed model call or a provider error), replay attempt (one replay of a detecting run, made again when it fails).
 - **budget**: test budget (`--budget`, test cases per tool) or chain budget (`--chains`, chains per tool).
 - **candidate**: candidate run (compared to a baseline), candidate model (in the model probe), draw-order candidate (a flaw in the draw order), candidate place (in a survey).
 - **case**: test case (the auditor's) or judge case (the judge eval's).
@@ -233,7 +236,7 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **flaw**: census flaw, planted flaw, sibling flaw, counted flaw.
 - **gap**: coverage gap, known gap, or a gap a card check reports (a defect the card checker finds in a card).
 - **host**: the machine that runs the suite, a public host name, or a planting host.
-- **launch**: one start of a server or a fixture (per-launch). The command an audit starts is the server command.
+- **launch**: one start of a server or a fixture (per-launch). The command an audit starts is the server command. A relaunch starts the audited server again inside one audit, and a per-launch backend stays through it.
 - **miss / missed**: a miss (a known flaw not found in a run), or a missed model call.
 - **patched version**: a target's patched version, a flaw's own patched version, or a nuisance server's patched version (the first release that fixes every counted flaw).
 - **probe**: model probe or benign probe (the command that plays a re-admitted server's benign calls). As a verb, "probe" describes what the auditor does to the audited server.
