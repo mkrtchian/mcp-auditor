@@ -61,7 +61,7 @@ _REQUEST_TIMEOUT_SECONDS = 120
 # medium reasoning was seen near 3,000 tokens.
 _MAX_OUTPUT_TOKENS = 8192
 # Anthropic counts thinking in the cap: at high effort claude-haiku-5-5 was seen spending 6,264
-# output tokens on one batch of test cases, 4,928 of them thinking. It writes about 375 tokens
+# output tokens on one batch of payloads, 4,928 of them thinking. It writes about 375 tokens
 # a second, so an answer at this cap still ends well inside the request timeout.
 _ANTHROPIC_MAX_OUTPUT_TOKENS = 16384
 
