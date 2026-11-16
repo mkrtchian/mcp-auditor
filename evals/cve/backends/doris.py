@@ -171,10 +171,15 @@ def _provision_doris_schema() -> None:
         created = _doris_sql(_SAMPLE_SCHEMA)
         counted = _doris_sql("SELECT COUNT(*) FROM demo.mytable;")
         if created.returncode == 0 and counted.returncode == 0:
-            if counted.stdout.split()[-1:] == ["4"]:
-                return
-            if counted.stdout.split()[-1:] == ["0"]:
-                _doris_sql(_SAMPLE_ROWS)
+            # Ready at any count but zero: an earlier audit of the command may have inserted rows,
+            # and the cluster is reset only when a command starts.
+            match counted.stdout.split()[-1:]:
+                case ["0"]:
+                    _doris_sql(_SAMPLE_ROWS)
+                case [rows] if rows.isdigit():
+                    return
+                case _:
+                    pass
         time.sleep(3)
     raise RuntimeError("Doris backend did not become query-ready")
 
