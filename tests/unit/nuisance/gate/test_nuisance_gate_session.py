@@ -90,6 +90,22 @@ async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tm
     assert session.exit_code == 3
 
 
+async def test_a_server_answering_its_second_benign_call_is_audited_and_compared(
+    tmp_path: Path,
+):
+    given.a_gated_file(tmp_path, FILESYSTEM)
+    audit = given.scripted({FILESYSTEM.server_package: given.clean_runs()})
+    harness = given.a_harness(
+        tmp_path, audit, benign_call={FILESYSTEM.server_package: ["boom", None]}
+    )
+
+    session = await run_gate(given.options([FILESYSTEM]), harness)
+
+    assert session.not_run == {}
+    _the_one_server_ends(session, ServerOutcome.HELD, GateOutcome.GREEN)
+    assert session.exit_code == 0
+
+
 async def test_the_session_announces_the_runs_of_the_servers_the_benign_call_let_through(
     tmp_path: Path,
 ):
@@ -125,6 +141,20 @@ async def test_a_failing_benign_call_refuses_a_recording_before_any_audit(tmp_pa
 
     assert refused.value.title == RECORDING_REFUSED
     assert refused.value.reasons == [f"{FILESYSTEM.server_package}: no answer"]
+
+
+async def test_a_server_failing_both_benign_calls_refuses_a_recording(tmp_path: Path):
+    harness = given.a_harness(
+        tmp_path,
+        given.scripted({}),
+        benign_call={FILESYSTEM.server_package: ["first", "second"]},
+    )
+
+    with pytest.raises(Refused) as refused:
+        await run_gate(given.options([FILESYSTEM], record=True), harness)
+
+    assert refused.value.title == RECORDING_REFUSED
+    assert refused.value.reasons == [f"{FILESYSTEM.server_package}: second"]
 
 
 async def test_a_dirty_tree_refuses_a_recording_before_any_audit(tmp_path: Path):

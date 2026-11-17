@@ -1,9 +1,9 @@
 """One nuisance gate run on the nuisance acceptance servers (nuisance-suite-rule.md, Run conditions
 and statistic, under ADR 024): the benign call of every gate server, then its runs, the gate and the
 retests of a gated server's alarm, with git, Docker, the clock, the audit and the baseline
-directory injected. A server whose benign call fails is not audited, reads not_run and leaves the
-gate not comparable. The value objects live in `gate_session_model`, the recording in
-`gate_session_recording`."""
+directory injected. A server whose benign call fails on both passes of the vet is not audited,
+reads not_run and leaves the gate not comparable. The value objects live in `gate_session_model`,
+the recording in `gate_session_recording`."""
 
 import asyncio
 import functools
@@ -161,16 +161,14 @@ def _open(options: NuisanceGateOptions, harness: NuisanceGateHarness) -> OpenedG
 
 
 async def _vetted(opened: OpenedGate) -> dict[str, str]:
-    """The benign call gathered over every server before any audit. Under --record-baseline a
-    failing server refuses the recording."""
+    """The benign call of every server before any audit, with the vet's second pass. Under
+    --record-baseline a server failing both passes refuses the recording."""
     servers = opened.options.servers
     opened.harness.rebuild(list(dict.fromkeys(server.service for server in servers)))
-    failures = await gathered_then_alone(servers, opened.harness.benign_call)
-    not_run = {
-        server.server_package: failure
-        for server, failure in zip(servers, failures, strict=True)
-        if failure is not None
-    }
+    vetted = await nuisance_vetting.drop_failing_servers(
+        servers, opened.harness.benign_call, opened.harness.sweep
+    )
+    not_run = {entry.server_package: entry.reason for entry in vetted.not_run}
     if opened.options.record_baseline and not_run:
         reasons = [f"{package}: {failure}" for package, failure in not_run.items()]
         raise Refused(RECORDING_REFUSED, reasons)

@@ -58,21 +58,28 @@ def a_harness(
     directory: Path,
     audit: GateAuditCall,
     *,
-    benign_call: Mapping[str, str] | None = None,
+    benign_call: Mapping[str, str | Sequence[str | None]] | None = None,
     tree: TreeState = CLEAN_TREE,
     tree_after_runs: TreeState | None = None,
     announce: Callable[[int], None] = lambda _: None,
     throttled_requests: int = 0,
     containers: FakeContainerSweep | None = None,
 ) -> NuisanceGateHarness:
-    """`benign_call` maps a package to its failure. `tree_after_runs` is what every read of the
-    tree after the first returns, `tree` by default."""
+    """`benign_call` maps a package to its failure, a string on every call, a sequence one reason
+    per successive call. `tree_after_runs` is what every read of the tree after the first
+    returns, `tree` by default."""
     failures = benign_call or {}
     docker = containers or FakeContainerSweep()
     reads: list[TreeState] = []
+    calls: dict[str, int] = {}
 
     async def call(server: AdmittedServer) -> str | None:
-        return failures.get(server.server_package)
+        package = server.server_package
+        calls[package] = calls.get(package, 0) + 1
+        scripted = failures.get(package)
+        if scripted is None or isinstance(scripted, str):
+            return scripted
+        return scripted[calls[package] - 1]
 
     def read_tree() -> TreeState:
         state = tree if not reads else (tree_after_runs or tree)
