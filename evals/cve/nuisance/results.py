@@ -19,8 +19,10 @@ class NuisanceRunStatus:
     incomplete: bool  # a model call refused or unreadable
     raw_fail_count: int  # report-only, as the one below
     declared_function_fail_count: int  # the part on the tools left out by their declared function
-    non_protocol_lines: int  # report-only, as the two below
+    non_protocol_lines: int  # report-only, as the four below
     lost_connection_responses: int
+    relaunches: int
+    unsent_calls: int
     missed_call_causes: list[
         str
     ]  # the causes that make it incomplete, sorted, empty on a complete run
@@ -85,6 +87,14 @@ class NuisanceServerResult:
     @property
     def lost_connection_responses(self) -> int:
         return sum(status.lost_connection_responses for status in self.statuses)
+
+    @property
+    def relaunches(self) -> int:
+        return sum(status.relaunches for status in self.statuses)
+
+    @property
+    def unsent_calls(self) -> int:
+        return sum(status.unsent_calls for status in self.statuses)
 
 
 class NotRunCause(StrEnum):

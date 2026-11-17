@@ -80,5 +80,7 @@ def _run_status(audit: NuisanceAudit, counting: ServerCounting) -> NuisanceRunSt
         declared_function_fail_count=fail_count_on(report, counting.declared_function),
         non_protocol_lines=audit.health.non_protocol_lines,
         lost_connection_responses=audit.health.lost_connection_responses,
+        relaunches=audit.health.relaunches,
+        unsent_calls=audit.health.unsent_calls,
         missed_call_causes=sorted(cause.value for cause in incomplete_causes(report)),
     )

@@ -14,8 +14,6 @@ from evals.cve.detection.holdout_report import (
     MethodLine,
     RunCutoffModel,
     SideLine,
-    TargetLine,
-    TargetRunLine,
     build_report,
 )
 from evals.cve.detection.holdout_results import (
@@ -25,6 +23,7 @@ from evals.cve.detection.holdout_results import (
     NotRunCause,
     NotRunTarget,
 )
+from evals.cve.detection.holdout_target_line import TargetLine, TargetRunLine
 from evals.cve.holdout_conditions import Cutoff
 from evals.cve.holdout_statistic import Side
 
@@ -54,6 +53,8 @@ def _target(flaw_id: str, *, disclosure_date: date, detected_runs: int, incomple
                 incomplete=index >= RUNS - incomplete_runs,
                 non_protocol_lines=0,
                 lost_connection_responses=0,
+                relaunches=0,
+                unsent_calls=0,
                 unchecked_reason=None,
                 replay_attempt_failures=[],
                 missed_call_causes=["provider_refusal"] if index >= RUNS - incomplete_runs else [],
@@ -207,6 +208,8 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             incomplete=False,
             non_protocol_lines=0,
             lost_connection_responses=0,
+            relaunches=0,
+            unsent_calls=0,
             unchecked_reason=None,
             replay_attempt_failures=[],
             missed_call_causes=[],
@@ -219,6 +222,8 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             incomplete=False,
             non_protocol_lines=0,
             lost_connection_responses=0,
+            relaunches=0,
+            unsent_calls=0,
             unchecked_reason=None,
             replay_attempt_failures=[],
             missed_call_causes=[],
@@ -231,6 +236,8 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
             incomplete=True,
             non_protocol_lines=0,
             lost_connection_responses=0,
+            relaunches=0,
+            unsent_calls=0,
             unchecked_reason=None,
             replay_attempt_failures=[],
             missed_call_causes=["provider_refusal"],
@@ -247,6 +254,8 @@ def _with_incidents(target: HoldoutTargetResult) -> HoldoutTargetResult:
                 unchecked,
                 non_protocol_lines=2,
                 lost_connection_responses=1,
+                relaunches=1,
+                unsent_calls=3,
                 unchecked_reason="no_attempt_decided",
                 replay_attempt_failures=["launch_failed", "launch_failed"],
             ),
@@ -277,6 +286,8 @@ def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
     line = next(line for line in report.targets if line.flaw_id == "CVE-A")
 
     assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
+    assert (line.relaunches, line.unsent_calls) == (1, 3)
+    assert (line.per_run[0].relaunches, line.per_run[0].unsent_calls) == (1, 3)
     assert line.unchecked_runs_by_reason == {"no_attempt_decided": 1}
     assert line.replay_attempt_failures_by_cause == {"launch_failed": 2}
     assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
@@ -290,10 +301,22 @@ def test_the_markdown_names_each_target_with_a_health_count_or_a_replay_failure(
 
     assert (
         "## Server health and replay\n"
-        "- CVE-A: non-protocol lines 2, connection lost on 1 call(s),"
-        " replay unchecked: no_attempt_decided x1, replay attempt failures: launch_failed x2\n"
+        "- CVE-A: non-protocol lines 2, connection lost on 1 call(s), relaunched 1 time(s),"
+        " 3 call(s) not sent, replay unchecked: no_attempt_decided x1,"
+        " replay attempt failures: launch_failed x2\n"
     ) in markdown
     assert "- CVE-B: non-protocol" not in markdown
+
+
+def test_the_markdown_names_a_target_whose_server_was_only_relaunched():
+    run = _run_result()
+    first, second = run.targets
+    relaunched = dataclasses.replace(first.statuses[0], relaunches=2)
+    first = dataclasses.replace(first, statuses=(relaunched, *first.statuses[1:]))
+
+    markdown = render_markdown(build_report(dataclasses.replace(run, targets=(first, second))))
+
+    assert "## Server health and replay\n- CVE-A: relaunched 2 time(s)\n" in markdown
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():

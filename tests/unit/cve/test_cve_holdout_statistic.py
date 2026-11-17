@@ -57,6 +57,8 @@ def _result(
                 incomplete=False,
                 non_protocol_lines=0,
                 lost_connection_responses=0,
+                relaunches=0,
+                unsent_calls=0,
                 unchecked_reason=None,
                 replay_attempt_failures=[],
                 missed_call_causes=[],

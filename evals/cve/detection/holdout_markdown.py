@@ -8,8 +8,8 @@ from evals.cve.detection.holdout_report import (
     HoldoutReport,
     IntervalModel,
     RunCutoffModel,
-    TargetLine,
 )
+from evals.cve.detection.holdout_target_line import TargetLine
 
 
 def render_markdown(report: HoldoutReport) -> str:
@@ -87,6 +87,10 @@ def _health_facts(line: TargetLine) -> str:
         facts.append(f"non-protocol lines {line.non_protocol_lines}")
     if line.lost_connection_responses:
         facts.append(f"connection lost on {line.lost_connection_responses} call(s)")
+    if line.relaunches:
+        facts.append(f"relaunched {line.relaunches} time(s)")
+    if line.unsent_calls:
+        facts.append(f"{line.unsent_calls} call(s) not sent")
     if line.unchecked_runs_by_reason:
         facts.append(f"replay unchecked: {_by_cause(line.unchecked_runs_by_reason)}")
     if line.replay_attempt_failures_by_cause:

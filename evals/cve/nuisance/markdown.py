@@ -131,14 +131,24 @@ def _not_run_section(not_run: Sequence[NotRunLine], audited_servers: int) -> lis
 
 
 def _health_section(servers: Sequence[ServerLine]) -> list[str]:
-    """Report-only: one line per server that wrote non-protocol lines or lost its connection."""
+    """Report-only: one line per server with a non-zero health count."""
     lines = [
-        f"- {line.server_package}: non-protocol lines {line.non_protocol_lines},"
-        f" connection lost on {line.lost_connection_responses} call(s)"
-        for line in servers
-        if line.non_protocol_lines or line.lost_connection_responses
+        f"- {line.server_package}: {facts}" for line in servers if (facts := _health_facts(line))
     ]
     return ["## Server health", *lines, ""] if lines else []
+
+
+def _health_facts(line: ServerLine) -> str:
+    facts: list[str] = []
+    if line.non_protocol_lines:
+        facts.append(f"non-protocol lines {line.non_protocol_lines}")
+    if line.lost_connection_responses:
+        facts.append(f"connection lost on {line.lost_connection_responses} call(s)")
+    if line.relaunches:
+        facts.append(f"relaunched {line.relaunches} time(s)")
+    if line.unsent_calls:
+        facts.append(f"{line.unsent_calls} call(s) not sent")
+    return ", ".join(facts)
 
 
 _INCOMPLETE_RUNS = "Incomplete runs (a model call refused or unreadable)"

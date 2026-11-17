@@ -47,6 +47,8 @@ class ServerRunLine(BaseModel):
     incomplete: bool
     non_protocol_lines: int
     lost_connection_responses: int
+    relaunches: int
+    unsent_calls: int
     missed_call_causes: list[str]
 
 
@@ -61,10 +63,12 @@ class ServerLine(BaseModel):
     incomplete_runs: int
     counted_tools_count: int
     tools_count: int
-    raw_fail_per_run: list[int]  # report-only, never compared, as the four below
+    raw_fail_per_run: list[int]  # report-only, never compared, as the six below
     declared_function_fail_per_run: list[int]  # the raw count's part on those tools
     non_protocol_lines: int
     lost_connection_responses: int
+    relaunches: int
+    unsent_calls: int
     incomplete_runs_by_cause: dict[str, int]
     cost: float
     per_run: list[ServerRunLine]
@@ -239,6 +243,8 @@ def _server_line(server: NuisanceServerResult) -> ServerLine:
         declared_function_fail_per_run=server.declared_function_fail_per_run,
         non_protocol_lines=server.non_protocol_lines,
         lost_connection_responses=server.lost_connection_responses,
+        relaunches=server.relaunches,
+        unsent_calls=server.unsent_calls,
         incomplete_runs_by_cause=server.incomplete_runs_by_cause,
         cost=server.run_cost,
         per_run=[
@@ -248,6 +254,8 @@ def _server_line(server: NuisanceServerResult) -> ServerLine:
                 incomplete=status.incomplete,
                 non_protocol_lines=status.non_protocol_lines,
                 lost_connection_responses=status.lost_connection_responses,
+                relaunches=status.relaunches,
+                unsent_calls=status.unsent_calls,
                 missed_call_causes=status.missed_call_causes,
             )
             for status in server.statuses

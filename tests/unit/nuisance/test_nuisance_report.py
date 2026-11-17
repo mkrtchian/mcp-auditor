@@ -143,6 +143,8 @@ def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause()
     line = report.servers[0]
 
     assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
+    assert (line.relaunches, line.unsent_calls) == (1, 3)
+    assert (line.per_run[0].relaunches, line.per_run[0].unsent_calls) == (1, 3)
     assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
     assert line.per_run[0].non_protocol_lines == 2
     assert line.per_run[1].missed_call_causes == ["provider_refusal", "unreadable_answer"]
@@ -153,9 +155,16 @@ def test_the_markdown_names_each_server_with_a_health_count():
     markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
-        "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s)\n"
+        "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s),"
+        " relaunched 1 time(s), 3 call(s) not sent\n"
     ) in markdown
     assert "- B: non-protocol" not in markdown
+
+
+def test_the_markdown_names_a_server_that_was_only_relaunched():
+    markdown = render_markdown(build_report(given.a_run_with_a_server_only_relaunched()))
+
+    assert "## Server health\n- A: relaunched 2 time(s)\n" in markdown
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():

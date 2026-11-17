@@ -31,6 +31,8 @@ def a_server_result(
             declared_function_fail_count=1 if index < declared_function_fail_runs else 0,
             non_protocol_lines=0,
             lost_connection_responses=0,
+            relaunches=0,
+            unsent_calls=0,
             missed_call_causes=[],
         )
         for index in range(runs)
