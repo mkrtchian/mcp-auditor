@@ -87,8 +87,8 @@ async def audit_launch(launch: Launch, auditor: Auditor, shape: AuditShape) -> L
             )
             with one_audit():
                 result = await classified(graph.ainvoke(_graph_input(launch, auditor, shape)))
-            health = health_of(client, recorder.exchanges)
-    report: AuditReport = result["audit_report"]
+            report: AuditReport = result["audit_report"]
+            health = health_of(client, recorder.exchanges, report)
     # Read on the relaunches, not on a gap, so a relaunch that failed after the last call counts.
     if any(not relaunch.succeeded for relaunch in report.relaunches):
         raise ServerTakenAsDown("the auditor failed to relaunch the server")

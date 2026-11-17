@@ -66,12 +66,13 @@ async def test_an_incomplete_run_carries_the_server_health_of_its_attempt(
 ):
     display_given.a_captured_console(monkeypatch, holdout_audit_module)
     refused = frozenset({MissCause.PROVIDER_REFUSAL})
-    incomplete = IncompleteAttempt(grammar.a_report(), refused, ServerHealth(2, 1))
+    health = ServerHealth(2, 1, relaunches=1, unsent_calls=4)
+    incomplete = IncompleteAttempt(grammar.a_report(), refused, health)
 
     outcome = await holdout_audit(TARGET, _ScriptedAttempts([incomplete]))
 
     assert isinstance(outcome, IncompleteRun)
-    assert outcome.health == ServerHealth(2, 1)
+    assert outcome.health == health
 
 
 async def test_an_attempt_missing_steps_names_their_causes(monkeypatch: pytest.MonkeyPatch):

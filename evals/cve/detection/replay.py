@@ -40,10 +40,10 @@ from evals.cve.grammar import CreditCheck, PlantedTarget
 from evals.cve.places import Place
 from evals.cve.proofs import GradedRun, UnitPlace, struck_by_replay
 from evals.cve.report_units import units_of
-from evals.cve.server_health import lost_connection
 from evals.cve.units import Step, Unit
 from mcp_auditor.domain.models import AuditReport
 from mcp_auditor.domain.ports import MCPClientPort
+from mcp_auditor.domain.server_watch import is_lost_connection
 
 # Each recorded call keeps the vulnerable response it drew, so the replay can end where the
 # vulnerable run itself ended (a lost connection) instead of retrying a death it cannot outlive.
@@ -168,9 +168,9 @@ async def _sent_again(
     outputs: list[str] = []
     vulnerable_lost = False
     for name, args, vulnerable in calls:
-        vulnerable_lost = vulnerable_lost or lost_connection(vulnerable)
+        vulnerable_lost = vulnerable_lost or is_lost_connection(vulnerable)
         response = await client.call_tool(name, args)
-        if lost_connection(response):
+        if is_lost_connection(response):
             if not vulnerable_lost:
                 return ReplayAttemptFailure.LOST_CONNECTION
             return ReplayedRun(nonces, outputs, complete=False)

@@ -1,38 +1,35 @@
 """What the audited server did besides answering: the lines it wrote that the MCP client
-could not parse, and the calls it answered with a lost connection. Report-only, no statistic,
-gate or baseline reads them."""
+could not parse, the calls it answered with a lost connection, the times the auditor relaunched
+it, and the test cases and chains the auditor did not send once it stopped calling a tool or took
+the server as down (ADR 036). Report-only, no statistic, grading, retry, gate or baseline reads
+them."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from evals.cve.exchange_log import Exchange
-from mcp_auditor.domain.models import ToolResponse
-
-# A server gone mid-call looks like an ordinary error: SDK 1.30 turns a call in flight when the
-# server exits into an McpError reading "Connection closed", and the stdio transport surfaces a
-# closed or broken stream under anyio's own error names. Any other McpError (invalid params, a
-# removed tool) and a TimeoutError on a live server are ordinary responses.
-LOST_CONNECTION_RESPONSES: tuple[tuple[str, str | None], ...] = (
-    ("McpError", "Connection closed"),
-    ("ClosedResourceError", None),
-    ("BrokenResourceError", None),
-)
+from mcp_auditor.domain.models import AuditReport
+from mcp_auditor.domain.server_watch import is_lost_connection
 
 
 @dataclass(frozen=True)
 class ServerHealth:
     non_protocol_lines: int
     lost_connection_responses: int
+    relaunches: int = 0
+    unsent_calls: int = 0
 
     def __add__(self, other: "ServerHealth") -> "ServerHealth":
         return ServerHealth(
             self.non_protocol_lines + other.non_protocol_lines,
             self.lost_connection_responses + other.lost_connection_responses,
+            self.relaunches + other.relaunches,
+            self.unsent_calls + other.unsent_calls,
         )
 
 
-NO_INCIDENTS = ServerHealth(0, 0)
+NO_INCIDENTS = ServerHealth(0, 0, 0, 0)
 
 
 @runtime_checkable
@@ -41,15 +38,18 @@ class CountsNonProtocolLines(Protocol):
     def non_protocol_lines(self) -> int: ...
 
 
-def health_of(client: object, calls: Sequence[Exchange]) -> ServerHealth:
+def health_of(client: object, calls: Sequence[Exchange], report: AuditReport) -> ServerHealth:
     # `connect` yields an `MCPClientPort`, whose annotation is fingerprinted into every fixture,
     # so the count is read through the Protocol rather than a narrowed return type.
     lines = client.non_protocol_lines if isinstance(client, CountsNonProtocolLines) else 0
-    return ServerHealth(lines, sum(lost_connection(response) for _, _, response in calls))
-
-
-def lost_connection(response: ToolResponse) -> bool:
-    return response.is_error and any(
-        response.error_type == error_type and (content is None or response.content == content)
-        for error_type, content in LOST_CONNECTION_RESPONSES
+    return ServerHealth(
+        lines,
+        sum(is_lost_connection(response) for _, _, response in calls),
+        len(report.relaunches),
+        _unsent_calls(report),
     )
+
+
+def _unsent_calls(report: AuditReport) -> int:
+    gaps = [tool.coverage_gap for tool in report.tool_reports if tool.coverage_gap is not None]
+    return sum(gap.unsent_cases + gap.unsent_chains for gap in gaps)
