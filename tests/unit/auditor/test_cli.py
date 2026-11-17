@@ -50,6 +50,14 @@ def test_the_usage_names_the_server_command():
     assert "SERVER_COMMAND is the command to start the MCP server." in result.output
 
 
+def test_the_ci_help_names_the_calls_not_sent_among_the_causes_of_exit_3():
+    result = CliRunner().invoke(cli, ["run", "--help"])
+
+    assert "3 on an incomplete audit (a missed model call, a coverage gap or calls not sent)" in (
+        " ".join(result.output.split())
+    )
+
+
 def test_a_launcher_without_a_confinement_profile_stops_the_run():
     runner = CliRunner()
     result = runner.invoke(cli, ["run", "--", "python", "x.py"])
@@ -101,6 +109,16 @@ class TestCIExitCode:
 
     def test_a_coverage_gap_alone_exits_3(self):
         report = given.a_report(coverage_gap=True)
+
+        assert ci_exit_code(report, CI) == 3
+
+    def test_relaunches_alone_exit_0(self):
+        report = given.a_report(relaunched=True)
+
+        assert ci_exit_code(report, CI) == 0
+
+    def test_calls_not_sent_exit_3(self):
+        report = given.a_report(calls_not_sent=True)
 
         assert ci_exit_code(report, CI) == 3
 

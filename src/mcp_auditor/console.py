@@ -23,6 +23,7 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_id
+from mcp_auditor.domain.relaunch_rendering import describe_relaunch
 from mcp_auditor.domain.rendering import (
     MISS_CAUSE_LABELS,
     ToolSummary,
@@ -32,6 +33,7 @@ from mcp_auditor.domain.rendering import (
     render_summary,
     summarize_tools,
 )
+from mcp_auditor.domain.server_liveness import Relaunch
 from mcp_auditor.progress import CIProgress, ToolProgress
 
 
@@ -101,7 +103,10 @@ class AuditDisplay:
         if tool_report.coverage_gap is None:
             return
         gap = describe_coverage_gap(tool_report.coverage_gap)
-        self.print_warning(f"{tool_report.tool.name}: incomplete test batch, {gap}")
+        self.print_warning(f"{tool_report.tool.name}: coverage gap, {gap}")
+
+    def print_relaunch(self, relaunch: Relaunch) -> None:
+        self.print_warning(escape(f"{relaunch.tool_name}: {describe_relaunch(relaunch)}"))
 
     def print_missed_model_calls(self, missed_calls: list[MissedModelCall]) -> None:
         for missed in missed_calls:

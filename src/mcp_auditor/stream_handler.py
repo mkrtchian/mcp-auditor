@@ -4,7 +4,12 @@ from typing import Any
 
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import MissedModelCall, ProviderUsage, ToolDefinition
+from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
 from mcp_auditor.progress import CIProgress, ToolProgress
+
+# A subgraph hands its relaunches back to its parent: only the node that sent the call
+# reports one, so it is printed once.
+_CALLING_NODES = frozenset({"execute_tool", "execute_step"})
 
 
 class AuditProgressReporter:
@@ -22,6 +27,8 @@ class AuditProgressReporter:
             if not isinstance(state_update, dict):
                 continue
             self._warn_at_first_throttling(state_update)
+            if node_name in _CALLING_NODES:
+                self._report_relaunches(state_update)
             match _graph_level(namespace):
                 case _GraphLevel.ORCHESTRATOR:
                     self._on_orchestrator_event(node_name, state_update)
@@ -40,6 +47,11 @@ class AuditProgressReporter:
                 "the model provider is throttling requests (HTTP 429): "
                 "they are retried, the audit slows down"
             )
+
+    def _report_relaunches(self, state_update: dict[str, Any]) -> None:
+        relaunches: list[Relaunch] = state_update.get("relaunches", [])
+        for relaunch in relaunches:
+            self._display.print_relaunch(relaunch)
 
     def _on_orchestrator_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "discover_tools":
@@ -66,11 +78,7 @@ class AuditProgressReporter:
                 progress.start()
                 self._active_progress = progress
         elif node_name == "execute_tool":
-            processed = state_update.get("processed_cases", [])
-            if processed:
-                last_case = processed[-1]
-                if last_case.blocked_reason and self._active_progress:
-                    self._active_progress.advance_blocked(last_case.blocked_reason)
+            self._on_execute_tool(state_update)
         elif node_name == "judge_response":
             processed = state_update.get("processed_cases", [])
             if processed:
@@ -82,6 +90,16 @@ class AuditProgressReporter:
                 elif last_case.blocked_reason is None:
                     missed: list[MissedModelCall] = state_update["missed_model_calls"]
                     self._active_progress.advance_unjudged(missed[-1].cause)
+
+    def _on_execute_tool(self, state_update: dict[str, Any]) -> None:
+        if self._active_progress is None:
+            return
+        unsent_cause: UnsentCause | None = state_update.get("unsent_cause")
+        processed = state_update.get("processed_cases", [])
+        if unsent_cause is not None:
+            self._active_progress.advance_unsent(unsent_cause)
+        elif processed and processed[-1].blocked_reason:
+            self._active_progress.advance_blocked(processed[-1].blocked_reason)
 
     def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "plan_chains":

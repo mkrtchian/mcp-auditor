@@ -7,7 +7,9 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextC
 
 from mcp_auditor.domain.models import EvalVerdict, JudgeResult, MissCause, Severity
 from mcp_auditor.domain.owasp import category_with_owasp_id
+from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS
 from mcp_auditor.domain.rendering import format_severity_breakdown
+from mcp_auditor.domain.server_liveness import UnsentCause
 
 UNJUDGED_LINES = {
     MissCause.PROVIDER_REFUSAL: "  ? not judged, the model provider refused the judgment",
@@ -42,6 +44,10 @@ class CIProgress:
 
     def advance_unjudged(self, cause: MissCause) -> None:
         self._console.print(UNJUDGED_LINES[cause])
+
+    def advance_unsent(self, cause: UnsentCause) -> None:
+        if self._tracker.first_unsent_with(cause):
+            self._console.print(format_unsent_line(cause))
 
 
 class ToolProgress:
@@ -91,16 +97,29 @@ class ToolProgress:
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 
+    def advance_unsent(self, cause: UnsentCause) -> None:
+        if self._tracker.first_unsent_with(cause):
+            self._progress.console.print(format_unsent_line(cause))
+        if self._task_id is not None:
+            self._progress.advance(self._task_id)
+
 
 class _ResultTracker:
     def __init__(self) -> None:
         self.fail_count = 0
         self.failures: list[JudgeResult] = []
+        self._unsent_cause: UnsentCause | None = None
 
     def record(self, result: JudgeResult) -> None:
         if result.verdict == EvalVerdict.FAIL:
             self.fail_count += 1
             self.failures.append(result)
+
+    def first_unsent_with(self, cause: UnsentCause) -> bool:
+        """Every case after the first not sent is withheld too, so one line names them all."""
+        first = cause != self._unsent_cause
+        self._unsent_cause = cause
+        return first
 
 
 def format_failure_line(result: JudgeResult) -> str:
@@ -109,7 +128,11 @@ def format_failure_line(result: JudgeResult) -> str:
 
 
 def format_blocked_line(reason: str) -> str:
-    return f"  \u2298 blocked, not sent: {reason}"
+    return f"  \u2298 blocked by the guard: {reason}"
+
+
+def format_unsent_line(cause: UnsentCause) -> str:
+    return f"  \u2298 calls not sent from here on: {UNSENT_CAUSE_LABELS[cause]}"
 
 
 def format_tool_summary(fail_count: int, failures: list[JudgeResult]) -> str:

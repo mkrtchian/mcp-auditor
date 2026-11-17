@@ -11,9 +11,11 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
     TestCase,
 )
+from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.stream_handler import AuditProgressReporter
 
 TOOL_AUDIT_NAMESPACE = ("audit_tool:1",)
+CHAIN_AUDIT_NAMESPACE = ("chain_audit_tool:1",)
 BLOCKED_REASON = "destructive filesystem command: rm -rf"
 
 
@@ -102,6 +104,49 @@ def test_an_unthrottled_provider_is_not_warned_about():
     reporter.on_stream_event(_a_usage_event(TOOL_AUDIT_NAMESPACE, ProviderUsage()))
 
     assert buffer.getvalue() == ""
+
+
+def test_each_relaunch_is_reported_once_as_a_case_or_a_chain_step_records_it():
+    display, buffer = given.a_ci_display()
+    reporter = AuditProgressReporter(display)
+    lost = _a_relaunch(RelaunchCause.LOST_CONNECTION, succeeded=True)
+    stuck = _a_relaunch(RelaunchCause.STUCK, succeeded=False)
+
+    reporter.on_stream_event((TOOL_AUDIT_NAMESPACE, {"execute_tool": {"relaunches": [lost]}}))
+    reporter.on_stream_event((CHAIN_AUDIT_NAMESPACE, {"execute_step": {"relaunches": [stuck]}}))
+    reporter.on_stream_event(((), {"audit_tool": {"relaunches": [lost]}}))
+
+    warnings = [" ".join(chunk.split()) for chunk in buffer.getvalue().split("Warning: ")[1:]]
+    assert warnings == [
+        "run_command: the connection to the server was lost, the server was relaunched",
+        "run_command: the calls of two tools in a row kept timing out, "
+        "the server was taken as stuck, the relaunch failed and the server was taken as down",
+    ]
+
+
+def test_cases_not_sent_advance_the_progress_bar_to_its_end():
+    display, buffer = given.a_display()
+    reporter = AuditProgressReporter(display)
+    reporter.on_stream_event(_a_generation_event())
+
+    for _ in range(2):
+        reporter.on_stream_event(_a_case_not_sent_event(UnsentCause.TOOL_TIMING_OUT))
+    reporter.on_stream_event(((), {"build_tool_report": {}}))
+
+    output = Text.from_ansi(buffer.getvalue()).plain
+    assert "2/2" in output
+    assert output.count("calls not sent from here on: the tool timed out 3 times in a row") == 1
+
+
+def _a_relaunch(cause: RelaunchCause, succeeded: bool) -> Relaunch:
+    return Relaunch(
+        tool_name="run_command", arguments={"command": "ls"}, cause=cause, succeeded=succeeded
+    )
+
+
+def _a_case_not_sent_event(cause: UnsentCause) -> tuple[tuple[str, ...], dict[str, object]]:
+    update: dict[str, object] = {"pending_cases": [], "unsent_cases": 1, "unsent_cause": cause}
+    return (TOOL_AUDIT_NAMESPACE, {"execute_tool": update})
 
 
 def _a_usage_event(

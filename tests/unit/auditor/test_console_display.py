@@ -164,6 +164,20 @@ def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
     assert "incomplete" in warnings[1]
 
 
+def test_summary_warns_about_the_calls_not_sent_to_a_tool_as_a_coverage_gap():
+    report = given.a_report_with_calls_not_sent_on_get_user()
+    display, buffer = given.a_ci_display()
+
+    display.print_summary(report)
+
+    warnings = _warnings(buffer.getvalue())
+    assert warnings[0] == (
+        ": get_user: coverage gap, 10 cases generated for 10 requested, "
+        "2 cases not sent (the tool timed out 3 times in a row)"
+    )
+    assert "incomplete" in warnings[1]
+
+
 def test_summary_warns_about_a_refused_step_then_about_the_incomplete_audit():
     report = given.a_report_with_a_refused_step()
     display, buffer = given.a_ci_display()

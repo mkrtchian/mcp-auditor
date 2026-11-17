@@ -61,7 +61,10 @@ def cli() -> None:
     "--ci",
     is_flag=True,
     default=False,
-    help="CI mode: plain output, exit 1 on findings, 3 on an incomplete audit.",
+    help=(
+        "CI mode: plain output, exit 1 on findings, 3 on an incomplete audit "
+        "(a missed model call, a coverage gap or calls not sent)."
+    ),
 )
 @click.option(
     "--severity-threshold",

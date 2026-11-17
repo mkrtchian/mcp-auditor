@@ -18,6 +18,12 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 from mcp_auditor.domain.owasp import category_with_owasp_label
+from mcp_auditor.domain.relaunch_rendering import (
+    CUT_BY_RELAUNCH_LINE,
+    describe_unsent_calls,
+    render_relaunch_lines,
+    render_relaunch_summary_lines,
+)
 
 MISS_CAUSE_LABELS = {
     MissCause.PROVIDER_REFUSAL: "Refused by the model provider",
@@ -47,10 +53,7 @@ def render_markdown(report: AuditReport) -> str:
         _render_summary_section(report),
     ]
     for tool_report in report.tool_reports:
-        missed_calls = [
-            r for r in report.missed_model_calls if r.tool_name == tool_report.tool.name
-        ]
-        sections.append(_render_tool_section(tool_report, missed_calls))
+        sections.append(_render_tool_section(tool_report, report))
     return "\n".join(sections)
 
 
@@ -70,6 +73,7 @@ def _render_summary_section(report: AuditReport) -> str:
     lines.append(f"**Test cases**: {total_cases}")
     if blocked_count > 0:
         lines.append(f"**Blocked**: {blocked_count}")
+    lines.extend(render_relaunch_summary_lines(report))
     lines.extend(_render_completeness_lines(report))
     lines.append(f"**Findings**: {finding_count}")
     if finding_count > 0:
@@ -138,6 +142,7 @@ def _blocked_count(report: AuditReport) -> int:
 
 def describe_coverage_gap(gap: CoverageGap) -> str:
     description = f"{gap.received_cases} cases generated for {gap.requested_cases} requested"
+    description += describe_unsent_calls(gap)
     if gap.missing_categories:
         missing = ", ".join(category.value for category in gap.missing_categories)
         description += f", missing categories: {missing}"
@@ -148,11 +153,13 @@ def describe_missed_model_call(missed: MissedModelCall) -> str:
     return f'{missed.kind.replace("_", " ")}, "{missed.detail}"'
 
 
-def _render_tool_section(tool_report: ToolReport, missed_calls: list[MissedModelCall]) -> str:
-    lines = [f"\n## {tool_report.tool.name}\n"]
+def _render_tool_section(tool_report: ToolReport, report: AuditReport) -> str:
+    name = tool_report.tool.name
+    lines = [f"\n## {name}\n"]
     if tool_report.coverage_gap is not None:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
-    for missed in missed_calls:
+    lines.extend(render_relaunch_lines([r for r in report.relaunches if r.tool_name == name]))
+    for missed in (r for r in report.missed_model_calls if r.tool_name == name):
         label = MISS_CAUSE_LABELS[missed.cause]
         lines.append(f"**{label}**: {describe_missed_model_call(missed)}\n")
     for case in tool_report.cases:
@@ -210,6 +217,8 @@ def _render_chain_section(chain: AttackChain) -> str:
     ]
     if chain.blocked_reason:
         lines.append(f"**Blocked**: {chain.blocked_reason}")
+    if chain.cut_by_relaunch:
+        lines.append(CUT_BY_RELAUNCH_LINE)
     if chain.judge_result:
         lines.append(_render_chain_verdict(chain.judge_result))
     elif not chain.blocked_reason:
