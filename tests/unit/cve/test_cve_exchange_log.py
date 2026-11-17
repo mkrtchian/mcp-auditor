@@ -3,7 +3,7 @@ from mcp_auditor.domain import ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
 
 
-async def test_recording_client_passes_response_through_and_records_the_exchange():
+async def test_the_exchange_log_passes_response_through_and_records_the_exchange():
     flag_response = ToolResponse(content="the flag")
     client = FakeMCPClient(tools=[], responses={"git_diff_staged": flag_response})
     recorder = ExchangeLog(client)
@@ -14,7 +14,7 @@ async def test_recording_client_passes_response_through_and_records_the_exchange
     assert recorder.exchanges == [("git_diff_staged", {"repo_path": "/work/secret"}, flag_response)]
 
 
-async def test_recording_client_keeps_the_calls_in_order():
+async def test_the_exchange_log_keeps_the_calls_in_order():
     client = FakeMCPClient(tools=[])
     recorder = ExchangeLog(client)
 
@@ -27,7 +27,7 @@ async def test_recording_client_keeps_the_calls_in_order():
     ]
 
 
-async def test_recording_client_forwards_ping_and_relaunch_and_records_neither():
+async def test_the_exchange_log_forwards_ping_and_relaunch_and_records_neither():
     client = FakeMCPClient(tools=[], ping_answers=[False], relaunch_answers=[False])
     recorder = ExchangeLog(client)
 
@@ -39,7 +39,7 @@ async def test_recording_client_forwards_ping_and_relaunch_and_records_neither()
     assert recorder.exchanges == []
 
 
-async def test_recording_client_keeps_the_count_of_exchanges_at_each_relaunch():
+async def test_the_exchange_log_keeps_the_count_of_exchanges_at_each_relaunch():
     client = FakeMCPClient(tools=[], relaunch_answers=[True, False])
     recorder = ExchangeLog(client)
 

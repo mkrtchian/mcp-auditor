@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.test_audited_launch_names_given as given
-from mcp_auditor.domain.confinement import Undecidable, declared_container_name
+from mcp_auditor.domain.container_name import Undecidable, declared_container_name
 
 _NAMED = given.named_server_args()
 _UNNAMED = given.unnamed_launch_builders()

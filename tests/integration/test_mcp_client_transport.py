@@ -131,7 +131,7 @@ async def test_a_relaunch_whose_server_does_not_start_again_returns_false(
 
 async def test_a_teardown_past_its_bound_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(mcp_client, "TEARDOWN_TIMEOUT_SECONDS", 0.2)
-    teardown = given.RecordingTeardown(lasting_seconds=5)
+    teardown = given.FakeTeardown(lasting_seconds=5)
     async with StdioMCPClient.connect(given.a_stalling_server(), teardown=teardown) as client:
         assert not await client.relaunch()
 
@@ -151,7 +151,7 @@ async def test_a_named_declared_container_is_removed_before_the_injected_teardow
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
-    teardown = given.RecordingTeardown(seeing_removals_in=docker)
+    teardown = given.FakeTeardown(seeing_removals_in=docker)
     launch = given.a_declared_stalling_container("--name", "audited-stalling")
     async with StdioMCPClient.connect(launch, teardown=teardown) as client:
         assert await client.relaunch()

@@ -26,7 +26,7 @@ from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.confinement import Undecidable, declared_container_name
+from mcp_auditor.domain.container_name import Undecidable, declared_container_name
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph

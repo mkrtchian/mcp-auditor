@@ -8,7 +8,7 @@ from mcp_auditor.domain import (
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause, UnsentPayload
-from mcp_auditor.domain.server_watch import CallAttempt
+from mcp_auditor.domain.server_watch import SendAttempt
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
@@ -25,7 +25,7 @@ async def test_attempt_refuses_a_destructive_payload_without_touching_the_server
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "rm -rf /"}))
 
-    assert attempt == CallAttempt(BlockedPayload(reason="destructive filesystem command: rm -rf"))
+    assert attempt == SendAttempt(BlockedPayload(reason="destructive filesystem command: rm -rf"))
     assert client.calls == []
     assert client.pings == 0
 
@@ -48,7 +48,7 @@ async def test_attempt_returns_the_server_response_for_a_benign_payload():
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "echo mcp-auditor-probe"}))
 
-    assert attempt == CallAttempt(ToolResponse(content="mcp-auditor-probe"))
+    assert attempt == SendAttempt(ToolResponse(content="mcp-auditor-probe"))
 
 
 async def test_list_tools_returns_the_server_tools():
@@ -133,7 +133,7 @@ async def test_a_tool_timing_out_three_times_is_called_no_more():
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "ls"}))
 
-    assert attempt == CallAttempt(UnsentPayload(UnsentCause.TOOL_TIMING_OUT))
+    assert attempt == SendAttempt(UnsentPayload(UnsentCause.TOOL_TIMING_OUT))
     assert server.unsent_cause("run") is UnsentCause.TOOL_TIMING_OUT
     assert len(client.calls) == 3
     assert client.pings == 4  # the control ping, then one after each timeout
@@ -146,7 +146,7 @@ async def test_a_lost_connection_relaunches_the_server_after_the_call():
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "kill 1"}))
 
-    assert attempt == CallAttempt(
+    assert attempt == SendAttempt(
         lost,
         Relaunch(
             tool_name="run",
@@ -182,7 +182,7 @@ async def test_a_failed_relaunch_takes_the_server_as_down_and_sends_no_more_call
 
     assert first.relaunch is not None and not first.relaunch.succeeded
     assert server.taken_as_down
-    assert later == CallAttempt(UnsentPayload(UnsentCause.SERVER_DOWN))
+    assert later == SendAttempt(UnsentPayload(UnsentCause.SERVER_DOWN))
     assert len(client.calls) == 1
     assert client.pings == 1
 

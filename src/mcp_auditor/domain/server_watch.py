@@ -30,7 +30,7 @@ LOST_CONNECTION_RESPONSES: tuple[tuple[str, str | None], ...] = (
 
 
 @dataclass(frozen=True)
-class CallAttempt:
+class SendAttempt:
     outcome: ToolResponse | BlockedPayload | UnsentPayload
     relaunch: Relaunch | None = None
 

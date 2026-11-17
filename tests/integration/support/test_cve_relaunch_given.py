@@ -19,10 +19,10 @@ from evals.cve.units import unit_of_exchanges
 from evals.detection_preflight import expected_services
 from mcp_auditor.adapters.docker import DockerRuntime
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.confinement import declared_container_name
+from mcp_auditor.domain.container_name import declared_container_name
 from mcp_auditor.domain.models import AuditCategory, AuditPayload, ToolDefinition
 from mcp_auditor.domain.ports import MCPClientPort
-from mcp_auditor.domain.server_watch import CallAttempt
+from mcp_auditor.domain.server_watch import SendAttempt
 
 KUBERNETES = "CVE-2025-53355"
 FETCH = "CVE-2025-65513"  # its launch joins a namespace holder that carries its sentinels
@@ -75,7 +75,7 @@ class AuditedTarget:
     client: MCPClientPort
     tools: Mapping[str, ToolDefinition]
 
-    async def attempt(self, call: Call) -> CallAttempt:
+    async def attempt(self, call: Call) -> SendAttempt:
         payload = AuditPayload(
             category=AuditCategory.INPUT_VALIDATION,
             description="a call of the relaunch test",

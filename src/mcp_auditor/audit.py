@@ -97,20 +97,8 @@ class Audit:
         with RedactingStderr(redaction) as server_stderr, redacted_sdk_logging(redaction):
             try:
                 report = await self._probe_the_server(server_stderr)
-            except _FailedMidAudit as failure:
-                cause = failure.__cause__
-                self._give_up(f"MCP server failed: {cause}", server_stderr, failure)
-            except ConnectionError as exc:
-                self._give_up(f"could not connect to MCP server: {exc}", server_stderr, exc)
-            except OSError as exc:
-                self._give_up(str(exc), server_stderr, exc)
-            except BaseExceptionGroup as exc:
-                message = f"MCP server failed: {summarize_exception_group(exc)}"
-                self._give_up(message, server_stderr, exc)
-            except CheckpointFromEarlierVersion as exc:
-                self._give_up(str(exc), server_stderr, exc)
-            except Exception as exc:
-                self._give_up(f"MCP server failed: {exc}", server_stderr, exc)
+            except (Exception, BaseExceptionGroup) as exc:
+                self._give_up(_failure_message(exc), server_stderr, exc)
         if report is None:
             return None
         # The container's kill state is known only once the execution's block has exited.
@@ -224,6 +212,20 @@ class Audit:
         self._display.print_error(server_stderr.redaction.text(message))
         print_server_stderr(server_stderr.text(), self._display)
         raise SystemExit(1) from exc
+
+
+def _failure_message(exc: BaseException) -> str:
+    match exc:
+        case _FailedMidAudit():
+            return f"MCP server failed: {exc.__cause__}"
+        case ConnectionError():
+            return f"could not connect to MCP server: {exc}"
+        case OSError() | CheckpointFromEarlierVersion():
+            return str(exc)
+        case BaseExceptionGroup():
+            return f"MCP server failed: {summarize_exception_group(exc)}"
+        case _:
+            return f"MCP server failed: {exc}"
 
 
 class _FailedMidAudit(Exception):

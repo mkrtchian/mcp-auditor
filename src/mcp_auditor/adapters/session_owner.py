@@ -16,20 +16,6 @@ from mcp import ClientSession
 type SessionEntry = Callable[[AsyncExitStack], Awaitable[ClientSession]]
 
 
-class _RequestKind(Enum):
-    OPEN = "open"
-    REPLACE = "replace"
-    CLOSE = "close"
-
-
-@dataclass(frozen=True)
-class _Request:
-    kind: _RequestKind
-    answer: asyncio.Future[ClientSession | None] = field(
-        default_factory=lambda: asyncio.get_running_loop().create_future()
-    )
-
-
 class SessionOwner:
     """Opens, replaces and closes the session on behalf of any task, and hands back the open
     session or the exception of the opening, which a failed opening raises in the shape the
@@ -64,12 +50,12 @@ class SessionOwner:
             finally:
                 await asyncio.wait({self._task})
 
-    async def _session_from(self, kind: _RequestKind) -> ClientSession:
+    async def _session_from(self, kind: "_RequestKind") -> ClientSession:
         session = await self._answer(kind)
         assert session is not None
         return session
 
-    async def _answer(self, kind: _RequestKind) -> ClientSession | None:
+    async def _answer(self, kind: "_RequestKind") -> ClientSession | None:
         assert self._task is not None
         request = _Request(kind)
         self._requests.put_nowait(request)
@@ -94,7 +80,7 @@ class SessionOwner:
             with anyio.CancelScope(shield=True), suppress(Exception):
                 await self._close_session()
 
-    async def _next_request(self) -> _Request:
+    async def _next_request(self) -> "_Request":
         while True:
             try:
                 return await self._requests.get()
@@ -117,7 +103,7 @@ class SessionOwner:
         if not absorbed:
             raise cancellation  # not the session's cancellation: the owner itself is cancelled
 
-    async def _carried_out(self, kind: _RequestKind) -> ClientSession | None:
+    async def _carried_out(self, kind: "_RequestKind") -> ClientSession | None:
         if kind is not _RequestKind.OPEN:
             await self._close_session()
         if kind is _RequestKind.CLOSE:
@@ -150,6 +136,20 @@ class SessionOwner:
             # the SDK's stdout reader raise BrokenResourceError (mcp 1.30.0): not a failure.
             if not _only_broken_streams(group):
                 raise
+
+
+class _RequestKind(Enum):
+    OPEN = "open"
+    REPLACE = "replace"
+    CLOSE = "close"
+
+
+@dataclass(frozen=True)
+class _Request:
+    kind: _RequestKind
+    answer: asyncio.Future[ClientSession | None] = field(
+        default_factory=lambda: asyncio.get_running_loop().create_future()
+    )
 
 
 def _only_broken_streams(group: BaseExceptionGroup) -> bool:

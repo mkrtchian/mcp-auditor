@@ -50,7 +50,7 @@ def a_docker_on_the_host(directory: pathlib.Path, monkeypatch: pytest.MonkeyPatc
 
 
 @dataclass
-class RecordingTeardown:
+class FakeTeardown:
     """Ends no server: it waits `lasting_seconds`, and records the removals the Docker shim of
     `seeing_removals_in` logged by the time it is called."""
 

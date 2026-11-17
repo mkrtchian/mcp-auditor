@@ -23,7 +23,7 @@ from mcp.types import (
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.adapters.session_owner import SessionEntry, SessionOwner
-from mcp_auditor.domain.confinement import Undecidable, declared_container_name
+from mcp_auditor.domain.container_name import Undecidable, declared_container_name
 from mcp_auditor.domain.models import ExecutionRegime, ToolDefinition, ToolResponse
 from mcp_auditor.domain.server_watch import PING_TIMEOUT_SECONDS
 

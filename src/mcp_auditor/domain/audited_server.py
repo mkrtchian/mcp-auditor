@@ -5,7 +5,7 @@ from mcp_auditor.domain.payload_safety import destructive_reason, unsendable_rea
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause, UnsentPayload
-from mcp_auditor.domain.server_watch import CallAttempt, ServerWatch, WatchStep
+from mcp_auditor.domain.server_watch import SendAttempt, ServerWatch, WatchStep
 
 _NO_REDACTION = Redaction.none()
 
@@ -43,18 +43,18 @@ class AuditedServer:
         await self._send_control_ping()
         return redacted
 
-    async def attempt(self, tool: ToolDefinition, payload: AuditPayload) -> CallAttempt:
+    async def attempt(self, tool: ToolDefinition, payload: AuditPayload) -> SendAttempt:
         reason = destructive_reason(payload.arguments) or unsendable_reason(payload.arguments)
         if reason is not None:
-            return CallAttempt(BlockedPayload(reason=reason))
+            return SendAttempt(BlockedPayload(reason=reason))
         unsent = self._watch.unsent_cause(tool.name)
         if unsent is not None:
-            return CallAttempt(UnsentPayload(unsent))
+            return SendAttempt(UnsentPayload(unsent))
         await self._ready_for_a_call()
         original_name = (self._original_names or {}).get(tool.name, tool.name)
         response = await self._client.call_tool(original_name, payload.arguments)
         relaunch = await self._watched(tool.name, response, payload.arguments)
-        return CallAttempt(self._redaction.response(response), relaunch)
+        return SendAttempt(self._redaction.response(response), relaunch)
 
     async def _ready_for_a_call(self) -> None:
         # A resumed audit takes its tools from the checkpoint, never from list_tools.
