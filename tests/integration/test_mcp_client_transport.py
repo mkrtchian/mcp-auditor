@@ -248,3 +248,29 @@ async def test_a_caller_cancelled_while_a_relaunch_opens_ends_at_once(
     assert took < 10
     gc.collect()
     assert "never retrieved" not in caplog.text
+
+
+# Its line finds a session that stopped reading, and the SDK's task groups raise that error in
+# place of the cancellation of the owner.
+async def test_a_caller_cancelled_while_a_server_logging_its_shutdown_opens_ends_at_once() -> None:
+    launch = given.a_stalling_server("--silent-with-noisy-shutdown")
+    opening = asyncio.create_task(given.a_session_opened(launch))
+
+    took = await given.cancelled_after(1, opening)
+
+    assert opening.cancelled()
+    assert took < 10
+
+
+# The unwinding of a failed opening is what ends its server, so a close lets it finish.
+async def test_a_caller_cancelled_while_a_timed_out_opening_unwinds_leaves_no_server_process(
+    tmp_path: pathlib.Path,
+) -> None:
+    pid_file = tmp_path / "pid"
+    launch = given.a_silent_server_writing_its_pid(pid_file)
+    opening = asyncio.create_task(given.a_session_opened(launch, initialize_timeout=0.5))
+
+    took = await given.cancelled_after(1.5, opening)
+
+    assert took < 10
+    assert await given.the_process_ends(int(pid_file.read_text()))

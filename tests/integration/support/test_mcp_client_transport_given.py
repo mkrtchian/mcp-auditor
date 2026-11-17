@@ -69,8 +69,10 @@ class FakeTeardown:
 SLOW_OPENING_SECONDS = 60
 
 
-async def a_session_opened(launch: ServerLaunch) -> None:
-    async with StdioMCPClient.connect(launch, initialize_timeout=SLOW_OPENING_SECONDS):
+async def a_session_opened(
+    launch: ServerLaunch, initialize_timeout: float = SLOW_OPENING_SECONDS
+) -> None:
+    async with StdioMCPClient.connect(launch, initialize_timeout=initialize_timeout):
         pass
 
 
@@ -85,8 +87,14 @@ async def cancelled_after(seconds: float, caller: "asyncio.Task[None]") -> float
     await asyncio.sleep(seconds)
     started = time.monotonic()
     caller.cancel()
-    await asyncio.gather(caller, return_exceptions=True)
+    await asyncio.wait({caller}, timeout=SLOW_OPENING_SECONDS)  # a caller that hangs fails its test
     return time.monotonic() - started
+
+
+def a_silent_server_writing_its_pid(pid_file: pathlib.Path) -> ServerLaunch:
+    """Never answers `initialize`, and outlives the end of its stdin."""
+    script = "import os, sys, time; open(sys.argv[1], 'w').write(str(os.getpid())); time.sleep(120)"
+    return ServerLaunch.unconfined(sys.executable, ["-c", script, str(pid_file)])
 
 
 def a_command_not_found() -> ServerLaunch:

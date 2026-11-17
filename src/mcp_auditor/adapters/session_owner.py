@@ -21,7 +21,8 @@ class SessionOwner:
     session or the exception of the opening, which a failed opening raises in the shape the
     SDK's task groups give it. A session whose transport fails between two requests is lost:
     the owner unwinds it, so the error neither cancels the caller nor goes unseen. A close asked
-    while a session opens cancels the opening rather than waiting it out."""
+    while a session opens cancels the opening rather than waiting it out, and lets a failed
+    opening finish its unwinding, which ends the server."""
 
     def __init__(self, enter: SessionEntry, initialize_timeout: float) -> None:
         self._enter = enter
@@ -49,7 +50,10 @@ class SessionOwner:
         with anyio.CancelScope(shield=True):
             try:
                 if self._opening:
-                    self._task.cancel()  # the owner's end closes whatever the opening left
+                    self._task.cancel()
+                    # The SDK's task groups can raise an error of their own in place of the
+                    # cancellation, which leaves the owner running: this close then ends it.
+                    self._requests.put_nowait(_Request(_RequestKind.CLOSE))
                 else:
                     await self._answer(_RequestKind.CLOSE)
             finally:
@@ -123,28 +127,32 @@ class SessionOwner:
             await self._close_session()
         if request.kind is _RequestKind.CLOSE or request.answer.cancelled():
             return None  # a replace its caller abandoned opens nothing
-        self._opening = True
-        try:
-            return await self._open_session()
-        finally:
-            self._opening = False
+        return await self._open_session()
 
     async def _open_session(self) -> ClientSession:
         stack = AsyncExitStack()
         try:
-            session = await self._enter(stack)
-            async with asyncio.timeout(self._initialize_timeout):
-                await session.initialize()
-        except BaseException as error:
+            session = await self._initialized_session(stack)
+        except BaseException:
             # Unwound with the exception, so the caller reads the group the SDK's task groups
             # raise from it, and no half-open session stays.
-            if not await stack.__aexit__(*sys.exc_info()) or isinstance(
-                error, asyncio.CancelledError
-            ):
+            if not await stack.__aexit__(*sys.exc_info()):
                 raise
             raise ConnectionError("the MCP session ended while it opened") from None
         self._stack = stack
         return session
+
+    # All of an opening that a close may cancel: cut short, the unwinding of a failed opening
+    # waits for the server to exit by itself and never ends its process group.
+    async def _initialized_session(self, stack: AsyncExitStack) -> ClientSession:
+        self._opening = True
+        try:
+            session = await self._enter(stack)
+            async with asyncio.timeout(self._initialize_timeout):
+                await session.initialize()
+            return session
+        finally:
+            self._opening = False
 
     async def _close_session(self) -> None:
         stack, self._stack = self._stack, None

@@ -9,6 +9,8 @@ error. `--exit-before-initialize` and `--exit-on-list-tools` write `DYING_WORDS`
 before the handshake or while answering `tools/list`. `--serve-once PATH` serves the launch that
 finds no file at PATH and writes it, so a second launch exits before the handshake, and
 `--silent-once-served PATH` likewise, a second launch never answering `initialize`.
+`--silent-with-noisy-shutdown` never answers `initialize` and logs a line to stdout once its stdin
+closes.
 """
 
 import os
@@ -74,6 +76,12 @@ def _die() -> None:
     os._exit(3)
 
 
+def _log_shutdown_once_stdin_closes() -> None:
+    sys.stdin.read()
+    os.write(1, b"shutting down\n")
+    os._exit(0)
+
+
 def _orphan_holding_stdout() -> None:
     subprocess.Popen(
         [sys.executable, "-c", f"import time; time.sleep({ORPHAN_SECONDS})"],
@@ -109,6 +117,8 @@ async def main() -> None:
         pathlib.Path(sys.argv[sys.argv.index("--silent-once-served") + 1])
     ):
         time.sleep(BLOCKED_LOOP_SECONDS)
+    if "--silent-with-noisy-shutdown" in sys.argv[1:]:
+        _log_shutdown_once_stdin_closes()
     if "--ignore-ping" in sys.argv[1:]:
         server.request_handlers[PingRequest] = _never_answered
     if "--error-ping" in sys.argv[1:]:
