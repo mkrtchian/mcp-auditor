@@ -1,9 +1,11 @@
 import io
 import pathlib
+import sqlite3
 
 import pytest
 
 import tests.integration.support.test_audit_server_failures_given as given
+from mcp_auditor import audit
 from tests.integration.support.stalling_server import DYING_WORDS
 
 
@@ -59,3 +61,14 @@ async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
 
     assert exited.value.code == 1
     assert f"Error: MCP server failed: {given.PROVIDER_FAILURE}" in output.getvalue()
+
+
+# A failure of the auditor's own before the session opens is not the server's to answer for.
+async def test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_server(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    unopenable = str(tmp_path / "absent" / "checkpoints.db")
+    monkeypatch.setattr(audit, "checkpoint_db_path", lambda: unopenable)
+
+    with pytest.raises(sqlite3.OperationalError):
+        await given.an_audit_of(given.a_stalling_server(), io.StringIO()).run()

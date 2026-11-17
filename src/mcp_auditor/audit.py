@@ -97,7 +97,13 @@ class Audit:
         with RedactingStderr(redaction) as server_stderr, redacted_sdk_logging(redaction):
             try:
                 report = await self._probe_the_server(server_stderr)
-            except (Exception, BaseExceptionGroup) as exc:
+            # Any other error is the auditor's own, not the server's: it stays a traceback.
+            except (
+                _FailedMidAudit,
+                CheckpointFromEarlierVersion,
+                OSError,
+                BaseExceptionGroup,
+            ) as exc:
                 self._give_up(_failure_message(exc), server_stderr, exc)
         if report is None:
             return None
@@ -214,7 +220,12 @@ class Audit:
         raise SystemExit(1) from exc
 
 
-def _failure_message(exc: BaseException) -> str:
+type _AuditFailure = (
+    _FailedMidAudit | CheckpointFromEarlierVersion | OSError | BaseExceptionGroup[BaseException]
+)
+
+
+def _failure_message(exc: _AuditFailure) -> str:
     match exc:
         case _FailedMidAudit():
             return f"MCP server failed: {exc.__cause__}"
@@ -224,8 +235,6 @@ def _failure_message(exc: BaseException) -> str:
             return str(exc)
         case BaseExceptionGroup():
             return f"MCP server failed: {summarize_exception_group(exc)}"
-        case _:
-            return f"MCP server failed: {exc}"
 
 
 class _FailedMidAudit(Exception):

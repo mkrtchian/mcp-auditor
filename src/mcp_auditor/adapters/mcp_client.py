@@ -175,8 +175,8 @@ class _DeclaredContainer:
         return cls(name, launch.client_env or {})
 
     def remove(self) -> None:
-        # A non-zero exit fails nothing by itself: a --rm container whose server exited is
-        # already gone, and the opening of the next session decides.
+        # A non-zero exit (a removal already in progress, a daemon error) fails nothing by
+        # itself: the opening of the next session decides. A container already gone exits 0.
         subprocess.run(
             ["docker", "rm", "-f", "-v", self.name],
             env=os.environ | dict(self.client_env),

@@ -13,6 +13,7 @@ from mcp.shared.exceptions import McpError
 from rich.console import Console
 
 import tests.unit.auditor.support.test_graph_given as graph
+from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
 from mcp_auditor.config import Settings
@@ -62,6 +63,30 @@ class FakeTeardown:
         if self.seeing_removals_in is not None:
             self.removals_seen.append(removals(self.seeing_removals_in))
         await asyncio.sleep(self.lasting_seconds)
+
+
+# Long enough that a caller made to wait the opening out shows it.
+SLOW_OPENING_SECONDS = 60
+
+
+async def a_session_opened(launch: ServerLaunch) -> None:
+    async with StdioMCPClient.connect(launch, initialize_timeout=SLOW_OPENING_SECONDS):
+        pass
+
+
+async def a_relaunch_of(launch: ServerLaunch, relaunching: asyncio.Event) -> None:
+    async with StdioMCPClient.connect(launch, initialize_timeout=SLOW_OPENING_SECONDS) as client:
+        relaunching.set()
+        await client.relaunch()
+
+
+async def cancelled_after(seconds: float, caller: "asyncio.Task[None]") -> float:
+    """How long the caller took to end once cancelled, `seconds` into its run."""
+    await asyncio.sleep(seconds)
+    started = time.monotonic()
+    caller.cancel()
+    await asyncio.gather(caller, return_exceptions=True)
+    return time.monotonic() - started
 
 
 def a_command_not_found() -> ServerLaunch:

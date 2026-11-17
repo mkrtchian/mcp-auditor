@@ -7,7 +7,8 @@ open for `ORPHAN_SECONDS`, so the client sees no end of the stream and its next 
 reader. `--ignore-ping` leaves every ping unanswered, and `--error-ping` answers it with a JSON-RPC
 error. `--exit-before-initialize` and `--exit-on-list-tools` write `DYING_WORDS` to stderr and exit,
 before the handshake or while answering `tools/list`. `--serve-once PATH` serves the launch that
-finds no file at PATH and writes it, so a second launch exits before the handshake.
+finds no file at PATH and writes it, so a second launch exits before the handshake, and
+`--silent-once-served PATH` likewise, a second launch never answering `initialize`.
 """
 
 import os
@@ -65,7 +66,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
     return CallToolResult(content=[TextContent(type="text", text=text)])
 
 
-# `os._exit`, since the server's request loop catches the `SystemExit` a handler raises.
+# `os._exit`, so stderr carries `DYING_WORDS` alone: a `SystemExit` raised in a handler exits too,
+# but leaves through the request loop's task groups, which print a long traceback after it.
 def _die() -> None:
     sys.stderr.write(f"{DYING_WORDS}\n")
     sys.stderr.flush()
@@ -103,6 +105,10 @@ async def main() -> None:
         pathlib.Path(sys.argv[sys.argv.index("--serve-once") + 1])
     ):
         _die()
+    if "--silent-once-served" in sys.argv[1:] and _served_before(
+        pathlib.Path(sys.argv[sys.argv.index("--silent-once-served") + 1])
+    ):
+        time.sleep(BLOCKED_LOOP_SECONDS)
     if "--ignore-ping" in sys.argv[1:]:
         server.request_handlers[PingRequest] = _never_answered
     if "--error-ping" in sys.argv[1:]:

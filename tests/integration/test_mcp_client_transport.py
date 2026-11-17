@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import pathlib
 import time
 
@@ -216,3 +217,34 @@ async def test_a_cancelled_caller_leaves_no_server_process_running() -> None:
     await asyncio.gather(caller, return_exceptions=True)
 
     assert await given.the_process_ends(server_pid)
+
+
+# The abandoned opening's error has no reader left: it must not reach the asyncio logger, which
+# the redacting filter does not cover.
+async def test_a_caller_cancelled_while_the_session_opens_ends_at_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    opening = asyncio.create_task(given.a_session_opened(given.a_read_server("silent_initialize")))
+
+    took = await given.cancelled_after(1, opening)
+
+    assert opening.cancelled()
+    assert took < 10
+    gc.collect()
+    assert "never retrieved" not in caplog.text
+
+
+async def test_a_caller_cancelled_while_a_relaunch_opens_ends_at_once(
+    tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    launch = given.a_stalling_server("--silent-once-served", str(tmp_path / "served"))
+    relaunching = asyncio.Event()
+    caller = asyncio.create_task(given.a_relaunch_of(launch, relaunching))
+    await asyncio.wait_for(relaunching.wait(), timeout=30)
+
+    took = await given.cancelled_after(3, caller)
+
+    assert caller.cancelled()
+    assert took < 10
+    gc.collect()
+    assert "never retrieved" not in caplog.text
