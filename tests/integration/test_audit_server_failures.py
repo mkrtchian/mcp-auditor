@@ -63,7 +63,6 @@ async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
     assert f"Error: MCP server failed: {given.PROVIDER_FAILURE}" in output.getvalue()
 
 
-# A failure of the auditor's own before the session opens is not the server's to answer for.
 async def test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_server(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
