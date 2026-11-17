@@ -4,12 +4,14 @@ from dataclasses import dataclass
 
 import pytest
 
+import tests.unit.detection.support.test_detection_calibration_check_given as given
 from evals.cve.detection.calibration_check import (
+    check_target,
     not_fixed_reasons,
     not_live_reasons,
     passes_calibration_check,
 )
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, TargetVersion
 from evals.cve.grammar import FlawClass
 from evals.cve.units import unit_of_exchanges
 
@@ -37,6 +39,57 @@ async def test_an_unknown_kept_id_raises_out_of_the_calibration_check_before_any
 
     with pytest.raises(ValueError, match="no-such-place"):
         await passes_calibration_check(target, {})
+
+
+async def test_check_target_hands_the_ping_answer_of_each_version_to_its_callback(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    given.launches(monkeypatch, {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: False})
+    answers: list[tuple[TargetVersion, bool]] = []
+
+    reasons = await check_target(
+        given.a_target(),
+        given.a_places_mapping(),
+        on_ping=lambda version, answered: answers.append((version, answered)),
+    )
+
+    assert reasons == []
+    assert answers == [(TargetVersion.VULNERABLE, True), (TargetVersion.PATCHED, False)]
+
+
+async def test_check_target_without_a_callback_sends_no_ping(monkeypatch: pytest.MonkeyPatch):
+    launches = given.launches(monkeypatch)
+
+    reasons = await check_target(given.a_target(), given.a_places_mapping())
+
+    assert reasons == []
+    assert launches.pings == 0
+
+
+async def test_the_calibration_check_prints_whether_each_version_answers_the_ping(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.launches(monkeypatch, {TargetVersion.VULNERABLE: False, TargetVersion.PATCHED: True})
+
+    passes = await passes_calibration_check(given.a_target(), given.a_places_mapping())
+
+    output = capsys.readouterr().out
+    assert passes
+    assert f"{given.FLAW_ID} vulnerable version answers the ping: no" in output
+    assert f"{given.FLAW_ID} patched version answers the ping: yes" in output
+
+
+async def test_a_target_out_of_calibration_that_answers_the_ping_still_fails(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    given.launches(monkeypatch, exploit_surfaces_the_nonce=False)
+
+    passes = await passes_calibration_check(given.a_target(), given.a_places_mapping())
+
+    output = capsys.readouterr().out
+    assert not passes
+    assert f"{given.FLAW_ID} vulnerable version answers the ping: yes" in output
+    assert "exploit surfaces no nonce for fict-flag" in output
 
 
 @pytest.mark.parametrize(

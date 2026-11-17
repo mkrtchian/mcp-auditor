@@ -18,13 +18,17 @@ __all__ = ["COUNTED_TOOL", "a_server"]
 class FlakyLaunches:
     """Stands in for the server's launch and connection: the first `failing` connections fail,
     the last of them on a timeout, and the next ones list the counted tool and answer its benign
-    call with `answer`, then fail their teardown when `teardown_fails`."""
+    call with `answer` and the ping with `ping_answer`, then fail their teardown when
+    `teardown_fails`."""
 
-    def __init__(self, failing: int, answer: ToolResponse, teardown_fails: bool) -> None:
+    def __init__(
+        self, failing: int, answer: ToolResponse, teardown_fails: bool, ping_answer: bool
+    ) -> None:
         self.launches = 0
         self._failing = failing
         self._answer = answer
         self._teardown_fails = teardown_fails
+        self._ping_answer = ping_answer
 
     @contextmanager
     def environment(self, _server: AdmittedServer) -> Generator[Launch]:
@@ -40,7 +44,7 @@ class FlakyLaunches:
         if self.launches < self._failing:
             raise ConnectionError("Connection closed")
         listed = [ToolDefinition(name=COUNTED_TOOL, input_schema={})]
-        yield FakeMCPClient(listed, {COUNTED_TOOL: self._answer})
+        yield FakeMCPClient(listed, {COUNTED_TOOL: self._answer}, ping_answers=(self._ping_answer,))
         if self._teardown_fails:
             raise OSError("container removal failed")
 
@@ -50,9 +54,10 @@ def launches_failing(
     failing: int,
     answer: ToolResponse | None = None,
     teardown_fails: bool = False,
+    ping_answer: bool = True,
 ) -> FlakyLaunches:
     expected = ToolResponse(content=f"{COUNTED_TOOL} answered")
-    flaky = FlakyLaunches(failing, answer or expected, teardown_fails)
+    flaky = FlakyLaunches(failing, answer or expected, teardown_fails, ping_answer)
     monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
     monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
     return flaky

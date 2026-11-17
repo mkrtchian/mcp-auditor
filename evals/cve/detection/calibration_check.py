@@ -7,7 +7,8 @@ kept place surfaces in at least one exploit, every exploit reads as aimed, and i
 call inside the declared scope, surfaces no nonce and does not read as aimed. On the patched
 version no exploit surfaces a nonce and the benign call returns no error. The benign call runs
 first, so the negative control reads a state the exploits have not touched, and the patched launch
-starts only once the vulnerable one is torn down.
+starts only once the vulnerable one is torn down. The calibration check also prints whether each
+version answers a ping sent right after the handshake, which no verdict reads.
 """
 
 import asyncio
@@ -92,17 +93,22 @@ def not_fixed_reasons(
 
 
 async def check_target(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+    target: Target,
+    places: Places,
+    *,
+    report_detail: ReportDetail = FULL_DETAIL,
+    on_ping: Callable[[TargetVersion, bool], None] | None = None,
 ) -> list[str]:
     """The out-of-calibration reasons of a target on both versions, empty when it is live and
     fixed: the no-LLM check the pre-run check (`session`, `holdout_run`) and the calibration check
     share. It resolves the kept records and checks the spec before any launch, so a configuration
     error (an unknown kept id, a planting_spec refusal) propagates instead of reading out of
     calibration, then exercises the vulnerable version and, once it is torn down, the patched one.
-    `report_detail` sets how much server text the log shows."""
+    `report_detail` sets how much server text the log shows. `on_ping`, when given, gets whether
+    each launched version answers a ping sent right after its handshake."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    exercise = _Exercise(target, records, places, report_detail)
+    exercise = _Exercise(target, records, places, report_detail, on_ping)
     vulnerable = await first_launch(lambda: exercise.version(TargetVersion.VULNERABLE))
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
@@ -120,7 +126,11 @@ async def check_target(
 
 
 async def passes_calibration_check(target: Target, places: Places) -> bool:
-    return not await check_target(target, places)
+    def print_ping(version: TargetVersion, answered: bool) -> None:
+        answer = "yes" if answered else "no"
+        console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
+
+    return not await check_target(target, places, on_ping=print_ping)
 
 
 class NotLaunched(Exception):
@@ -161,6 +171,7 @@ class _Exercise:
     records: tuple[Place, ...]
     places: Places
     report_detail: ReportDetail
+    on_ping: Callable[[TargetVersion, bool], None] | None
 
     async def version(self, version: TargetVersion) -> _Exercised | None:
         # A failure before the server is up raises NotLaunched, for a retry. Any later failure
@@ -175,6 +186,8 @@ class _Exercise:
                     connect(planted.launch, server_stderr) as client,
                 ):
                     launched = True
+                    if self.on_ping is not None:
+                        self.on_ping(version, await client.ping())
                     benign, exploits = await self._calls(client)
             except Exception as exc:
                 _report_error(self.target.flaw_id, exc, server_stderr, self.report_detail)

@@ -20,14 +20,22 @@ SERVER_TAG = nuisance_images.image_tag("filesystem-nuisance")
 ACCEPTANCE = admission_given.ACCEPTANCE_PACKAGE
 
 
-def deps_on(host: DockerHost, failures: Mapping[str, str] | None = None) -> VetDeps:
+def deps_on(
+    host: DockerHost,
+    failures: Mapping[str, str] | None = None,
+    ping_answers: Mapping[str, bool] | None = None,
+) -> VetDeps:
     """Each benign call leaves its server's container running, as a server outliving its call
-    does, and fails with the reason `failures` gives its server."""
+    does, fails with the reason `failures` gives its server, and records the ping answer
+    `ping_answers` gives it, a server it does not name never connecting to a ping."""
+    recorded: dict[str, bool] = {}
 
     async def benign_call(server: AdmittedServer) -> str | None:
         await host.benign_call(server)
         tag = nuisance_images.image_tag(server.service)
         host.containers.setdefault(tag, []).append(f"{server.service}_left")
+        if server.server_package in (ping_answers or {}):
+            recorded[server.server_package] = (ping_answers or {})[server.server_package]
         return (failures or {}).get(server.server_package)
 
     return VetDeps(
@@ -36,6 +44,7 @@ def deps_on(host: DockerHost, failures: Mapping[str, str] | None = None) -> VetD
         remove_containers=host.remove,
         benign_call=benign_call,
         check_networks=lambda: None,
+        ping_answers=recorded,
     )
 
 

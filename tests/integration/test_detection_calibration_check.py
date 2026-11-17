@@ -58,6 +58,20 @@ async def test_a_target_whose_exploit_surfaces_the_nonce_and_whose_benign_call_i
 
 
 @pytest.mark.usefixtures("docker_on_the_host")
+async def test_the_calibration_check_prints_whether_each_version_answers_the_ping(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    all_live = await check_calibrations(
+        [given.a_live_target("CVE-LIVE")], _check(given.a_places_mapping(), 1)
+    )
+
+    output = capsys.readouterr().out
+    assert all_live
+    assert "CVE-LIVE vulnerable version answers the ping: yes" in output
+    assert "CVE-LIVE patched version answers the ping: yes" in output
+
+
+@pytest.mark.usefixtures("docker_on_the_host")
 async def test_a_benign_call_that_leaks_the_nonce_fails_the_negative_control(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

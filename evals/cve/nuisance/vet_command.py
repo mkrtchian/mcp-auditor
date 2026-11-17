@@ -7,8 +7,8 @@ import asyncio
 import functools
 import sys
 import traceback
-from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from evals.concurrency import bounded, positive_int
@@ -55,6 +55,8 @@ class VetDeps:
     remove_containers: Callable[[Sequence[str]], None]
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
     check_networks: Callable[[], None]
+    # Whether each server answered a ping after its handshake, by package, filled by benign_call.
+    ping_answers: dict[str, bool] = field(default_factory=dict[str, bool])
 
 
 @dataclass(frozen=True)
@@ -104,7 +106,7 @@ def vet(args: argparse.Namespace) -> int:
     except Exception:
         traceback.print_exc()
         return CRASHED_EXIT
-    _print_vet_results(servers, result)
+    _print_vet_results(servers, result, deps.ping_answers)
     _print_unrecorded(servers)
     return 0 if not result.not_run else 1
 
@@ -116,12 +118,19 @@ def _tool_call_timeout(args: argparse.Namespace) -> int:
 
 
 def default_vet_deps(tool_call_timeout: int, concurrency: int) -> VetDeps:
+    ping_answers: dict[str, bool] = {}
+
+    def record_ping(server: AdmittedServer, answered: bool) -> None:
+        ping_answers[server.server_package] = answered
+
+    call = functools.partial(benign_call, timeout=tool_call_timeout, on_ping=record_ping)
     return VetDeps(
         rebuild=rebuild_images,
         running_containers=running_containers,
         remove_containers=remove_containers,
-        benign_call=bounded(functools.partial(benign_call, timeout=tool_call_timeout), concurrency),
+        benign_call=bounded(call, concurrency),
         check_networks=check_closed_network_support,
+        ping_answers=ping_answers,
     )
 
 
@@ -140,11 +149,18 @@ async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetRe
         sweep_run_containers(deps, images)
 
 
-def _print_vet_results(servers: Sequence[AdmittedServer], result: VetResult) -> None:
+def _print_vet_results(
+    servers: Sequence[AdmittedServer], result: VetResult, ping_answers: Mapping[str, bool]
+) -> None:
     reasons = {entry.server_package: entry.reason for entry in result.not_run}
     for server in servers:
-        print(f"{server.server_package}: {reasons.get(server.server_package, 'ok')}")
+        package = server.server_package
+        ping = _PING_ANSWER[ping_answers.get(package)]
+        print(f"{package}: {reasons.get(package, 'ok')}, answers the ping: {ping}")
     print(f"{len(result.surviving)} of {len(servers)} servers answer their benign calls")
+
+
+_PING_ANSWER = {True: "yes", False: "no", None: "unknown"}  # None: the server never connected
 
 
 def _print_unrecorded(servers: Sequence[AdmittedServer]) -> None:

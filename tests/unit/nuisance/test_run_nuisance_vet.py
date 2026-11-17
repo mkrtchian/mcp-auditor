@@ -1,4 +1,5 @@
-"""The `vet` subcommand's options and the defaults it builds its dependencies with."""
+"""The `vet` subcommand's options, the defaults it builds its dependencies with, and its line on
+whether each server answers the ping."""
 
 from pathlib import Path
 
@@ -6,10 +7,12 @@ import pytest
 
 import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends
 import tests.unit.nuisance.support.test_nuisance_vet_given as given
+import tests.unit.nuisance.support.test_nuisance_vetting_given as vetting_given
 import tests.unit.nuisance.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.vet_command import default_vet_deps
 
 
 def test_vet_builds_its_deps_with_the_run_conditions_timeout_and_concurrency(
@@ -75,3 +78,52 @@ def test_vet_of_recorded_servers_prints_no_unrecorded_line(
     assert run_nuisance.main(["vet", *arguments]) == 0
 
     assert "not yet recorded" not in capsys.readouterr().out
+
+
+async def test_the_default_vet_deps_record_whether_each_server_answers_the_ping(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    vetting_given.launches_failing(monkeypatch, failing=0, ping_answer=False)
+    deps = default_vet_deps(tool_call_timeout=30, concurrency=1)
+
+    await deps.benign_call(vetting_given.a_server())
+
+    assert deps.ping_answers == {vetting_given.a_server().server_package: False}
+
+
+@pytest.mark.parametrize(
+    ("ping_answers", "answer"),
+    [({given.SERVER: True}, "yes"), ({given.SERVER: False}, "no"), ({}, "unknown")],
+    ids=["answered", "silent", "never_connected"],
+)
+def test_vet_prints_whether_each_server_answers_the_ping(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    ping_answers: dict[str, bool],
+    answer: str,
+):
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), ping_answers=ping_answers))
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    assert run_nuisance.main(["vet", *arguments]) == 0
+
+    assert f"{given.SERVER}: ok, answers the ping: {answer}" in capsys.readouterr().out
+
+
+def test_a_server_failing_its_benign_call_while_answering_the_ping_still_exits_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    failures = {run_given.QUEUE_SERVER: "benign call errored: ValueError"}
+    answers = {run_given.QUEUE_SERVER: True}
+    deps = given.deps_on(backends.DockerHost(), failures, ping_answers=answers)
+    given.VetHarness(monkeypatch, deps)
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    exit_code = run_nuisance.main(["vet", *arguments])
+
+    assert exit_code == 1
+    assert (
+        f"{run_given.QUEUE_SERVER}: benign call errored: ValueError, answers the ping: yes"
+        in capsys.readouterr().out
+    )

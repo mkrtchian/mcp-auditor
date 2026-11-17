@@ -29,11 +29,17 @@ async def drop_failing_servers(
     return not_run, [server for server, reason in paired if reason is None]
 
 
-async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
+async def benign_call(
+    server: AdmittedServer,
+    timeout: int,
+    on_ping: Callable[[AdmittedServer, bool], None] | None = None,
+) -> str | None:
     """The benign call's failure reason, or None when it answers. A launch or connection that
     fails is retried up to `PRE_RUN_LAUNCH_ATTEMPTS` launches and keeps the last reason. An answer
     that errors is an observation of a launch that ran, returned at once: retrying it would keep
-    the best of several tries, and so is a failure once connected, a teardown's included."""
+    the best of several tries, and so is a failure once connected, a teardown's included.
+    `on_ping`, when given, gets whether the server answers a ping sent right after the handshake,
+    and a server that never connects never calls it."""
     reason = ""
     for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
         connected = False
@@ -44,6 +50,8 @@ async def benign_call(server: AdmittedServer, timeout: int) -> str | None:
                     connect(launch, devnull, tool_call_timeout=timeout) as client,
                 ):
                     connected = True
+                    if on_ping is not None:
+                        on_ping(server, await client.ping())
                     return await benign_call_failure(server, client)
         except Exception as exc:
             reason = f"failed to connect for the benign call: {TYPES_ONLY.describe(exc)}"
