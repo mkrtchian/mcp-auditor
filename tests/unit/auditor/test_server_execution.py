@@ -240,6 +240,56 @@ async def test_an_unconfined_execution_reaches_no_runtime():
     assert execution.record.oom_killed is None
 
 
+async def test_ending_a_confined_server_removes_its_container_and_keeps_its_kill_state():
+    runtime = FakeContainerRuntime(oom_killed_in_turn=[True, False])
+    launch = decide_launch("npx", ["a-server"], given.a_context(runtime)).launch
+
+    execution = ServerExecution(launch, runtime)
+    async with execution:
+        await execution.end_server()
+        assert runtime.removed == [given.CONTAINER_NAME]
+
+    assert runtime.removed == [given.CONTAINER_NAME, given.CONTAINER_NAME]
+    assert execution.record is not None
+    assert execution.record.oom_killed is True
+
+
+@pytest.mark.parametrize(
+    ("answers", "oom_killed"),
+    [((None, False), False), ((False, True), True), ((None, None), None)],
+)
+async def test_the_kill_state_is_unknown_only_when_no_container_could_be_read(
+    answers: tuple[bool | None, ...], oom_killed: bool | None
+):
+    runtime = FakeContainerRuntime(oom_killed_in_turn=answers)
+    launch = decide_launch("npx", ["a-server"], given.a_context(runtime)).launch
+
+    execution = ServerExecution(launch, runtime)
+    async with execution:
+        await execution.end_server()
+
+    assert execution.record is not None
+    assert execution.record.oom_killed is oom_killed
+
+
+@pytest.mark.parametrize(
+    ("command", "args", "unconfined"),
+    [("python", ["server.py"], True), ("docker", ["run", "-i", "--name", "srv", "img"], False)],
+)
+async def test_ending_a_server_without_a_container_of_the_auditor_reaches_no_runtime(
+    command: str, args: list[str], unconfined: bool
+):
+    runtime = FakeContainerRuntime(untouchable=True)
+    launch = decide_launch(command, args, given.a_context(runtime, unconfined=unconfined)).launch
+
+    execution = ServerExecution(launch, runtime)
+    async with execution:
+        await execution.end_server()
+
+    assert execution.record is not None
+    assert execution.record.oom_killed is None
+
+
 DOCKER_STEERING_NAMES = ("HOME", "PATH", "DOCKER_HOST", "DOCKER_DEFAULT_PLATFORM")
 CONTAINER_TARGETS = (("npx", ["a-server"]), ("docker", ["run", "-i", "-e", "X", "an-image"]))
 

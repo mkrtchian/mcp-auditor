@@ -103,6 +103,10 @@ class Audit:
                 self._give_up(str(exc), server_stderr, exc)
             except BaseExceptionGroup as exc:
                 self._give_up(_group_failure(exc), server_stderr, exc)
+            except CheckpointFromEarlierVersion as exc:
+                self._give_up(str(exc), server_stderr, exc)
+            except Exception as exc:
+                self._give_up(f"MCP server failed: {exc}", server_stderr, exc)
         if report is None:
             return None
         # The container's kill state is known only once the execution's block has exited.
@@ -212,7 +216,8 @@ class Audit:
         raise SystemExit(1) from exc
 
 
-# The resume decision runs inside the MCP session, whose task group wraps what it raises.
+# What the graph raises, the resume decision included, reaches `run` wrapped when the MCP
+# session's task groups wrap it, and bare when they do not: both read alike.
 def _group_failure(exc: BaseExceptionGroup[BaseException]) -> str:
     earlier_version, _ = exc.split(CheckpointFromEarlierVersion)
     if earlier_version is not None:

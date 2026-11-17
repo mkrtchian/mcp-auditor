@@ -1,3 +1,6 @@
+from collections import deque
+from collections.abc import Sequence
+
 from mcp_auditor.adapters.docker import DockerError
 
 _DEFAULT_ENDPOINT = "unix:///var/run/docker.sock"
@@ -21,6 +24,7 @@ class FakeContainerRuntime:
         pull_error: str | None = None,
         pids_limit_enforced: bool | None = True,
         oom_killed: bool | None = False,
+        oom_killed_in_turn: Sequence[bool | None] = (),
     ):
         self._untouchable = untouchable
         self._available = available
@@ -29,6 +33,7 @@ class FakeContainerRuntime:
         self._pull_error = pull_error
         self._pids_limit_enforced = pids_limit_enforced
         self._oom_killed = oom_killed
+        self._oom_killed_in_turn = deque(oom_killed_in_turn)
         self.pulled: list[str] = []
         self.removed: list[str] = []
 
@@ -53,6 +58,8 @@ class FakeContainerRuntime:
 
     def oom_killed(self, container_name: str) -> bool | None:
         self._refuse_when_untouchable()
+        if self._oom_killed_in_turn:
+            return self._oom_killed_in_turn.popleft()
         return self._oom_killed
 
     def remove(self, container_name: str) -> None:

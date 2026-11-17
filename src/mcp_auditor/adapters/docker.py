@@ -70,7 +70,7 @@ class DockerRuntime:
         return state.stdout.strip() == "true"
 
     def remove(self, container_name: str) -> None:
-        removal = _docker("rm", "-f", container_name)
+        removal = _docker("rm", "-f", "-v", container_name)
         if removal.returncode != 0:
             logging.getLogger(__name__).warning(
                 "could not remove container %s: %s", container_name, removal.stderr.strip()

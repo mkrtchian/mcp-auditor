@@ -18,6 +18,13 @@ from tests.fakes import FakeContainerRuntime, FakeLLM
 
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent.parent / "honeypot_server.py"
 HONEYPOT = ServerLaunch.unconfined(sys.executable, [str(SERVER_PATH)])
+NOISY_SHUTDOWN_SERVER = ServerLaunch.unconfined(
+    sys.executable,
+    [
+        str(pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"),
+        "noisy_shutdown",
+    ],
+)
 
 
 async def a_checkpoint_from_an_earlier_version(launch: ServerLaunch) -> None:

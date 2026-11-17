@@ -1,6 +1,7 @@
 # The composition root of the audited server's execution: which regime a command runs under,
 # which image confines it, and the lifetime of the container it runs in. Outside the
 # hexagon, like `cli.py`, and it decides without printing anything.
+import asyncio
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -220,13 +221,17 @@ def _confined_warnings(plan: MountPlan, runtime: ContainerRuntime) -> tuple[str,
 class ServerExecution:
     """The container's lifetime around the connection to the audited server.
 
-    Whatever ends the block, the kill state is read and the container removed. Under the
-    two regimes without a container of the auditor's, nothing is touched.
+    Under the confined regime, ending the server reads its container's kill state and removes
+    the container: before a relaunch, which reuses the name, and when the block ends, however it
+    ends. The kill state is kept across the containers of the audit. Under the two other
+    regimes, ending the server reaches no runtime: a declared container is the client's to
+    remove.
     """
 
     def __init__(self, launch: ServerLaunch, runtime: ContainerRuntime):
         self.launch = launch
         self._runtime = runtime
+        self._oom_killed: bool | None = None
         self.record: ExecutionRecord | None = None
 
     async def __aenter__(self) -> "ServerExecution":
@@ -238,11 +243,21 @@ class ServerExecution:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        try:
+            await self.end_server()
+        finally:
+            self.record = self.launch.record(self._oom_killed)
+
+    async def end_server(self) -> None:
         profile = self.launch.profile
         if profile is None:
-            self.record = self.launch.record(None)
             return
+        name = profile.identity.name
         try:
-            self.record = self.launch.record(self._runtime.oom_killed(profile.identity.name))
+            self._keep(await asyncio.to_thread(self._runtime.oom_killed, name))
         finally:
-            self._runtime.remove(profile.identity.name)
+            await asyncio.to_thread(self._runtime.remove, name)
+
+    def _keep(self, oom_killed: bool | None) -> None:
+        if oom_killed is not None:
+            self._oom_killed = bool(self._oom_killed) or oom_killed

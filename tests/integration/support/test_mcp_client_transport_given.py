@@ -1,6 +1,9 @@
+import asyncio
 import io
+import os
 import pathlib
 import sys
+import time
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -27,6 +30,29 @@ def a_read_server(*flags: str) -> ServerLaunch:
 
 def a_stalling_server(*flags: str) -> ServerLaunch:
     return ServerLaunch.unconfined(sys.executable, [str(STALLING_SERVER_PATH), *flags])
+
+
+def a_command_not_found() -> ServerLaunch:
+    return ServerLaunch.unconfined("mcp-auditor-no-such-command", [])
+
+
+async def the_process_ends(pid: int, within_seconds: float = 10) -> bool:
+    deadline = time.monotonic() + within_seconds
+    while time.monotonic() < deadline:
+        if not _running(pid):
+            return True
+        await asyncio.sleep(0.1)
+    return False
+
+
+# A zombie is a process that ended and that its parent has not reaped yet.
+def _running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    stat = pathlib.Path(f"/proc/{pid}/stat")
+    return not (stat.exists() and stat.read_text().rsplit(")", 1)[1].split()[0] == "Z")
 
 
 async def the_ping_error_code(*flags: str) -> int | None:

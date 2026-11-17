@@ -1,8 +1,10 @@
+import asyncio
 import pathlib
 import time
 
 import pytest
-from mcp.types import INTERNAL_ERROR
+from mcp.shared.exceptions import McpError
+from mcp.types import CONNECTION_CLOSED, INTERNAL_ERROR
 
 import tests.integration.support.test_mcp_client_transport_given as given
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
@@ -95,3 +97,36 @@ async def test_an_error_response_to_the_ping_is_an_answer() -> None:
 async def test_the_client_does_not_relaunch_its_server() -> None:
     async with StdioMCPClient.connect(given.a_stalling_server()) as client:
         assert not await client.relaunch()
+
+
+async def test_a_command_not_found_raises_a_bare_os_error() -> None:
+    with pytest.raises(FileNotFoundError):
+        async with StdioMCPClient.connect(given.a_command_not_found()):
+            pass
+
+
+async def test_a_server_that_exits_before_initialize_closes_the_connection_inside_a_group() -> None:
+    with pytest.raises(ExceptionGroup) as raised:
+        async with StdioMCPClient.connect(given.a_stalling_server("--exit-before-initialize")):
+            pass
+
+    closed, _ = raised.value.split(
+        lambda error: isinstance(error, McpError) and error.error.code == CONNECTION_CLOSED
+    )
+    assert closed is not None
+
+
+async def test_a_cancelled_caller_leaves_no_server_process_running() -> None:
+    pid = asyncio.get_running_loop().create_future()
+
+    async def a_call_that_never_returns() -> None:
+        async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=3600) as c:
+            pid.set_result(int((await c.call_tool("pid", {})).content))
+            await c.call_tool("wait_forever", {})
+
+    caller = asyncio.create_task(a_call_that_never_returns())
+    server_pid = await asyncio.wait_for(pid, timeout=30)
+    caller.cancel()
+    await asyncio.gather(caller, return_exceptions=True)
+
+    assert await given.the_process_ends(server_pid)
