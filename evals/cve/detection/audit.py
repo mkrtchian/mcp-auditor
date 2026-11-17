@@ -116,6 +116,7 @@ async def attempt_once(
                 report=audit.report,
                 recorded_calls=audit.exchanges,
                 records=records,
+                relaunched_after=audit.relaunched_after,
             )
     except AuditFailed as failure:
         return _provider_error_attempt(target, failure)

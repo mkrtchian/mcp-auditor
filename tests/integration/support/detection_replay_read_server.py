@@ -4,7 +4,9 @@ detection_read_server.py.
 Each `PATH=NONCE` argument serves that nonce behind that path, `echo` makes a read return its own
 path argument (so a replay sent an old nonce in an argument sees it echoed back), and
 `exit_on_call=N` exits the process at the start of the N-th read, so a patched read server can be
-made to die while answering a call (N=1) or after answering an earlier one (N>1). `noisy_shutdown`
+made to die while answering a call (N=1) or after answering an earlier one (N>1). `hang_on_call=N`
+blocks the event loop from the N-th read on, so that read times out and no ping is answered. Both
+count the reads of one process, so a relaunched server counts from 1 again. `noisy_shutdown`
 logs a non-JSON line to stdout once its stdin closes, as a real server that logs its shutdown
 does, after the client has stopped reading messages. `noisy_mid_session` writes one non-JSON line
 to stdout before answering the first read, and `silent_initialize` never answers `initialize`.
@@ -21,6 +23,7 @@ app = FastMCP("detection-replay-read-server")
 _served: dict[str, str] = {}
 _echo = False
 _exit_on_call = 0
+_hang_on_call = 0
 _noisy_shutdown = False
 _noisy_mid_session = False
 _silent_initialize = False
@@ -36,6 +39,8 @@ for _arg in sys.argv[1:]:
         _silent_initialize = True
     elif _arg.startswith("exit_on_call="):
         _exit_on_call = int(_arg.removeprefix("exit_on_call="))
+    elif _arg.startswith("hang_on_call="):
+        _hang_on_call = int(_arg.removeprefix("hang_on_call="))
     else:
         _path, _, _nonce = _arg.partition("=")
         _served[_path] = _nonce
@@ -47,6 +52,8 @@ def read(path: str) -> str:
     _calls += 1
     if _exit_on_call and _calls >= _exit_on_call:
         os._exit(0)
+    if _hang_on_call and _calls >= _hang_on_call:
+        time.sleep(3600)  # a synchronous tool runs on the loop, so the ping goes unanswered too
     if _noisy_mid_session and _calls == 1:
         os.write(1, b"warming up the cache\n")
     if _echo:

@@ -6,6 +6,7 @@ whose builder serves the launch's fresh nonces on the command line, so each atte
 ones and an old nonce never fools the strike.
 """
 
+import dataclasses
 import pathlib
 import sys
 from collections.abc import Callable, Generator
@@ -175,7 +176,44 @@ def a_truncated_then_failed_attempts_run() -> RunToCheck:
     return _straddling_run(_dying_by_launch({PREP_PATH: FLAW_ID}, (2, 1, 1)))
 
 
+def a_lost_connection_at_a_relaunch_point_run() -> RunToCheck:
+    # The vulnerable server lost its connection at call 2 and the auditor relaunched it there.
+    # The patched server dies at call 2 too, and the relaunched one serves the declared path at
+    # call 3: struck.
+    lost = _a_response("McpError", "Connection closed")
+    return _relaunched_at_call_2_run(_serving({FLAW_PATH: FLAW_ID}, exit_on_call=2), lost)
+
+
+def a_timeout_at_a_relaunch_point_run() -> RunToCheck:
+    # As above, with the second call timing out on a server whose loop it blocks.
+    timed_out = _a_response("TimeoutError", "Tool call timed out after 2s")
+    return _relaunched_at_call_2_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=2), timed_out)
+
+
+def a_patched_server_stopping_answering_run() -> RunToCheck:
+    # The vulnerable run answered its one call. The patched server blocks its loop on it, so the
+    # call times out and the ping after it gets no answer.
+    return _single_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=1), (FLAW_ID,))
+
+
 # --- builders and run assembly ---
+
+
+def _relaunched_at_call_2_run(serve: Serve, second: ToolResponse) -> RunToCheck:
+    report = grammar.a_report(
+        cases=[
+            grammar.a_case(response="ok", arguments={"path": PREP_PATH}, verdict=grammar.PASS),
+            grammar.a_case(
+                response=second.content, arguments={"path": PREP_PATH}, verdict=grammar.PASS
+            ),
+            grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH}),
+        ]
+    )
+    calls = _calls(PREP_PATH)
+    calls.append(("read", {"path": PREP_PATH}, second))
+    calls.extend(_calls(FLAW_PATH))
+    run = _run(serve, (FLAW_ID,), report, calls, {FLAW_ID: OLD_FLAW})
+    return dataclasses.replace(run, relaunched_after=[2])
 
 
 def _straddling_run(serve: Serve) -> RunToCheck:
@@ -240,12 +278,18 @@ def _a_response(error_type: str | None, content: str) -> ToolResponse:
 
 
 def _serving(
-    paths_to_ids: dict[str, str], *, exit_on_call: int = 0, noisy_shutdown: bool = False
+    paths_to_ids: dict[str, str],
+    *,
+    exit_on_call: int = 0,
+    hang_on_call: int = 0,
+    noisy_shutdown: bool = False,
 ) -> Serve:
     def serve(spec: PlantingSpec) -> list[str]:
         args = [f"{path}={spec.nonces[place_id]}" for path, place_id in paths_to_ids.items()]
         if exit_on_call:
             args.append(f"exit_on_call={exit_on_call}")
+        if hang_on_call:
+            args.append(f"hang_on_call={hang_on_call}")
         if noisy_shutdown:
             args.append("noisy_shutdown")
         return args
