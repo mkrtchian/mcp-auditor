@@ -15,6 +15,7 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal
+from mcp_auditor.domain.server_liveness import UnsentCause
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response
 
@@ -101,6 +102,25 @@ def a_coverage_gap() -> CoverageGap:
     return CoverageGap(
         requested_cases=5, received_cases=3, missing_categories=[AuditCategory.RESOURCE_ABUSE]
     )
+
+
+def a_tool_state_with_calls_not_sent(
+    *,
+    unsent_cases: int,
+    unsent_chains: int,
+    coverage_gap: CoverageGap | None = None,
+    test_budget: int = 3,
+    sent_cases: int = 2,
+) -> dict[str, Any]:
+    return {
+        "current_tool": a_tool(),
+        "processed_cases": [a_judged_case(response="r") for _ in range(sent_cases)],
+        "test_budget": test_budget,
+        "coverage_gap": coverage_gap,
+        "unsent_cases": unsent_cases,
+        "unsent_chains": unsent_chains,
+        "unsent_cause": UnsentCause.TOOL_TIMING_OUT,
+    }
 
 
 def a_provider_refusal() -> ProviderRefusal:

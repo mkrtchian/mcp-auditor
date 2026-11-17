@@ -7,6 +7,7 @@ import tests.unit.auditor.support.test_graph_given as given
 import tests.unit.auditor.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.models import MissCause, ModelCallKind
+from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
@@ -335,3 +336,67 @@ async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
     then.report_has_judged_chains(report, 1)
     assert len(report.chains[0].steps) == 1
     then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_STEP_PLANNING)])
+
+
+async def test_a_tool_timing_out_three_times_is_stopped_and_the_next_tool_is_audited():
+    tools = [given.a_tool(name="stalls"), given.a_tool(name="answers")]
+    fake_llm = given.a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(num_cases=3)
+    graph = given.a_graph(fake_llm, given.a_server_timing_out_on(tools, "stalls"))
+    state = given.an_initial_state(test_budget=3, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    stopped = then.tool_report_at(result, 0)
+    then.report_has_no_chains(stopped)
+    then.report_has_unsent_calls(stopped, cases=0, chains=1, cause=UnsentCause.TOOL_TIMING_OUT)
+    next_tool = then.tool_report_at(result, 1)
+    then.report_has_cases(next_tool, 3)
+    then.report_has_judged_chains(next_tool, 1)
+    then.report_has_no_gap(next_tool)
+
+
+async def test_a_server_whose_relaunch_fails_ends_the_audit_with_the_tools_left_in_gaps():
+    tools = [given.a_tool(name="dies"), given.a_tool(name="second"), given.a_tool(name="third")]
+    fake_llm = given.a_fake_llm_for_a_tool_whose_server_goes_down(num_cases=2)
+    graph = given.a_graph(fake_llm, given.a_server_dying_on(tools, "dies", relaunches=False))
+    state = given.an_initial_state(test_budget=2, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    then.report_has_unsent_calls(
+        then.tool_report_at(result, 0), cases=1, chains=1, cause=UnsentCause.SERVER_DOWN
+    )
+    then.tools_left_in_server_down_gaps(result, ["second", "third"], test_budget=2, chains=1)
+    assert not result["audit_report"].is_complete
+
+
+async def test_a_relaunch_that_succeeds_is_reported_and_the_audit_is_complete():
+    tool = given.a_tool(name="dies")
+    fake_llm = given.a_fake_llm_for_single_tool_audit(num_cases=1)
+    graph = given.a_graph(fake_llm, given.a_server_dying_on([tool], "dies", relaunches=True))
+
+    result = await given.invoke_graph(graph, given.an_initial_state(test_budget=1))
+
+    assert result["audit_report"].relaunches == [
+        Relaunch(
+            tool_name="dies",
+            arguments=given.a_payload().arguments,
+            cause=RelaunchCause.LOST_CONNECTION,
+            succeeded=True,
+        )
+    ]
+    assert result["audit_report"].is_complete
+
+
+async def test_a_chain_cut_by_a_relaunch_leaves_its_tool_with_no_gap():
+    tool = given.a_tool(name="dies")
+    fake_llm = given.a_fake_llm_for_a_chain_cut_by_a_relaunch()
+    graph = given.a_graph(fake_llm, given.a_server_dying_on_its_first_chain_step(tool))
+    state = given.an_initial_state(test_budget=1, chain_budget=1)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    then.report_has_judged_chains(report, 1)
+    assert report.chains[0].cut_by_relaunch
+    then.report_has_no_gap(report)

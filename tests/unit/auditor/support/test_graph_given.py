@@ -24,6 +24,7 @@ from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import ModelFailure
+from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
 
 def a_tool(
@@ -339,3 +340,45 @@ def a_judgment(
         justification="test justification",
         severity=severity,
     )
+
+
+def a_server_timing_out_on(tools: list[ToolDefinition], tool_name: str) -> FakeMCPClient:
+    return FakeMCPClient(tools, {tool_name: a_timeout_response()})
+
+
+def a_server_dying_on(
+    tools: list[ToolDefinition], tool_name: str, relaunches: bool
+) -> FakeMCPClient:
+    """The first call to the tool loses its connection, and the relaunch succeeds or fails."""
+    responses = [a_lost_connection_response(), ToolResponse(content="ok")]
+    return FakeMCPClient(tools, {tool_name: responses}, relaunch_answers=(relaunches,))
+
+
+def a_server_dying_on_its_first_chain_step(tool: ToolDefinition) -> FakeMCPClient:
+    responses = [
+        ToolResponse(content="ok"),
+        a_lost_connection_response(),
+        ToolResponse(content="ok"),
+    ]
+    return FakeMCPClient([tool], {tool.name: responses})
+
+
+def a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(num_cases: int) -> FakeLLM:
+    judgments = [a_judgment() for _ in range(num_cases)]
+    stopped_tool = [a_complete_batch(num_cases), *judgments, AttackContext()]
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
+    stop_obs = StepObservation(observation="dead end", should_continue=False)
+    chain = [chain_plan, stop_obs, a_judgment()]
+    next_tool = [a_complete_batch(num_cases), *judgments, *chain, AttackContext()]
+    return FakeLLM([*stopped_tool, *next_tool])
+
+
+def a_fake_llm_for_a_tool_whose_server_goes_down(num_cases: int) -> FakeLLM:
+    """Only the case whose call lost the connection is judged: the others are not sent."""
+    return FakeLLM([a_complete_batch(num_cases), a_judgment(), AttackContext()])
+
+
+def a_fake_llm_for_a_chain_cut_by_a_relaunch() -> FakeLLM:
+    """The step cut by the relaunch is judged with no observation."""
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
+    return FakeLLM([a_complete_batch(1), a_judgment(), chain_plan, a_judgment(), AttackContext()])

@@ -22,15 +22,15 @@ from mcp_auditor.graph.chain_nodes import (
     make_observe_step,
     make_plan_chains,
     make_plan_step,
+    make_route_to_chains_or_report,
     prepare_chain,
     route_after_execute_step,
     route_after_judge,
     route_after_observe,
     route_after_plan_step,
     route_after_planning,
-    route_to_chains_or_report,
 )
-from mcp_auditor.graph.unsent_calls import count_unsent_chain
+from mcp_auditor.graph.unsent_calls import count_unsent_chain, make_count_chains_not_planned
 from tests.fakes import FakeLLM
 
 
@@ -442,9 +442,43 @@ class TestRouteAfterPlanning:
 
 class TestRouteToChainsOrReport:
     def test_routes_to_chains_when_budget_positive(self):
-        state: dict[str, Any] = {"chain_budget": 2}
-        assert route_to_chains_or_report(state) == "chain_audit_tool"
+        route = make_route_to_chains_or_report(AuditedServer(given.a_fake_mcp_client()))
+
+        assert route(given.a_chain_audit_state(chain_budget=2)) == "chain_audit_tool"
 
     def test_routes_to_report_when_budget_zero(self):
-        state: dict[str, Any] = {"chain_budget": 0}
-        assert route_to_chains_or_report(state) == "build_tool_report"
+        route = make_route_to_chains_or_report(AuditedServer(given.a_fake_mcp_client()))
+
+        assert route(given.a_chain_audit_state(chain_budget=0)) == "build_tool_report"
+
+    async def test_plans_no_chains_for_a_stopped_tool(self):
+        route = make_route_to_chains_or_report(await given.a_server_that_stopped(given.a_tool()))
+
+        assert route(given.a_chain_audit_state(chain_budget=2)) == "count_chains_not_planned"
+
+    async def test_plans_no_chains_on_a_server_taken_as_down(self):
+        server, _ = await given.a_server_taken_as_down()
+
+        route = make_route_to_chains_or_report(server)
+
+        assert route(given.a_chain_audit_state(chain_budget=2)) == "count_chains_not_planned"
+
+
+class TestCountChainsNotPlanned:
+    async def test_counts_the_chain_budget_with_the_cause(self):
+        count = make_count_chains_not_planned(await given.a_server_that_stopped(given.a_tool()))
+
+        result = count(given.a_chain_audit_state(chain_budget=3))
+
+        assert result["unsent_chains"] == 3
+        assert result["unsent_cause"] == UnsentCause.TOOL_TIMING_OUT
+
+    async def test_drops_the_chains_of_the_tool_audited_before(self):
+        server, _ = await given.a_server_taken_as_down()
+        state = given.a_chain_audit_state(chain_budget=2, completed_chains=[given.a_judged_chain()])
+
+        result = make_count_chains_not_planned(server)(state)
+
+        assert result["completed_chains"] == []
+        assert result["unsent_chains"] == 2
+        assert result["unsent_cause"] == UnsentCause.SERVER_DOWN

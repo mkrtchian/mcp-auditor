@@ -241,7 +241,13 @@ def route_after_plan_step(state: dict[str, Any]) -> str:
     return "execute_step"
 
 
-def route_to_chains_or_report(state: dict[str, Any]) -> str:
-    if state.get("chain_budget", 0) > 0:
-        return "chain_audit_tool"
-    return "build_tool_report"
+def make_route_to_chains_or_report(server: AuditedServer):
+    def route_to_chains_or_report(state: dict[str, Any]) -> str:
+        # A tool stopped at its last case is known here, before any chain is planned.
+        if server.unsent_cause(state["current_tool"].name) is not None:
+            return "count_chains_not_planned"
+        if state.get("chain_budget", 0) > 0:
+            return "chain_audit_tool"
+        return "build_tool_report"
+
+    return route_to_chains_or_report

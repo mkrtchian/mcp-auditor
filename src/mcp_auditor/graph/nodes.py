@@ -33,7 +33,7 @@ from mcp_auditor.graph.prompts import (
     build_judge_prompt,
     with_redaction_notice,
 )
-from mcp_auditor.graph.unsent_calls import case_not_sent
+from mcp_auditor.graph.unsent_calls import case_not_sent, coverage_gap_of_tool
 
 
 def make_discover_tools(server: AuditedServer, tools_filter: frozenset[str] | None = None):
@@ -221,8 +221,9 @@ async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     tool = state["current_tool"]
     cases = state["processed_cases"]
     chains = state.get("completed_chains", [])
-    gap = state.get("coverage_gap")
-    report = ToolReport(tool=tool, cases=cases, chains=chains, coverage_gap=gap)
+    report = ToolReport(
+        tool=tool, cases=cases, chains=chains, coverage_gap=coverage_gap_of_tool(state)
+    )
     return {"tool_reports": [report]}
 
 
@@ -256,6 +257,7 @@ async def generate_report(state: dict[str, Any]) -> dict[str, Any]:
         judge_usage=_sum_provider_usage(state.get("judge_usage", [])),
         chain_usage=_sum_provider_usage(state.get("chain_usage", [])),
         missed_model_calls=state.get("missed_model_calls", []),
+        relaunches=state.get("relaunches", []),
     )
     return {"audit_report": report}
 
@@ -285,7 +287,10 @@ def route_after_execute(state: dict[str, Any]) -> str:
     return "judge_response"
 
 
-def route_tools(state: dict[str, Any]) -> str:
-    if len(state["tool_reports"]) < len(state["discovered_tools"]):
-        return "prepare_tool"
-    return "generate_report"
+def make_route_tools(server: AuditedServer):
+    def route_tools(state: dict[str, Any]) -> str:
+        if len(state["tool_reports"]) == len(state["discovered_tools"]):
+            return "generate_report"
+        return "report_tools_left" if server.taken_as_down else "prepare_tool"
+
+    return route_tools

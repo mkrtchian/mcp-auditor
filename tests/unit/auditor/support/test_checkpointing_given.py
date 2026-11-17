@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
@@ -9,8 +10,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel
 
 import tests.unit.auditor.support.test_graph_given as graph_given
-from mcp_auditor.domain.models import MissCause, ToolDefinition, ToolResponse
-from tests.fakes import FakeMCPClient
+from mcp_auditor.domain import AttackContext
+from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolDefinition, ToolResponse
+from tests.fakes import FakeLLM, FakeMCPClient
 
 
 class ServerDyingOnCall(FakeMCPClient):
@@ -25,6 +27,63 @@ class ServerDyingOnCall(FakeMCPClient):
             self._dies_on_call = 0
             raise ConnectionError("server died mid-audit")
         return await super().call_tool(name, args)
+
+
+class Interrupted(Exception):
+    """Stands for whatever stops an audit midway: a crash, a kill, a Ctrl-C."""
+
+
+class InterruptedLLM(FakeLLM):
+    """Raises `Interrupted` once, on its nth call, then answers its script."""
+
+    def __init__(self, responses: Sequence[BaseModel], interrupted_on_call: int):
+        super().__init__(responses)
+        self._interrupted_on_call = interrupted_on_call
+
+    async def generate_structured[T: BaseModel](
+        self, prompt: str, output_schema: type[T]
+    ) -> tuple[T, ProviderUsage]:
+        if len(self.prompts) + 1 == self._interrupted_on_call:
+            self._interrupted_on_call = 0
+            raise Interrupted
+        return await super().generate_structured(prompt, output_schema)
+
+
+def an_llm_interrupted_on_the_first_judgment(cases_per_tool: list[int]) -> InterruptedLLM:
+    return _interrupted_on(cases_per_tool, call=2)
+
+
+def an_llm_interrupted_on_the_second_generation(cases_per_tool: list[int]) -> InterruptedLLM:
+    first_tool_calls = cases_per_tool[0] + 2
+    return _interrupted_on(cases_per_tool, call=first_tool_calls + 1)
+
+
+def _interrupted_on(cases_per_tool: list[int], call: int) -> InterruptedLLM:
+    script: list[BaseModel] = []
+    for num_cases in cases_per_tool:
+        judgments = [graph_given.a_judgment() for _ in range(num_cases)]
+        script.extend([graph_given.a_complete_batch(num_cases), *judgments, AttackContext()])
+    return InterruptedLLM(script, interrupted_on_call=call)
+
+
+# The keys the relaunch of a stopped server added to the graph state.
+RELAUNCH_KEYS = ("relaunches", "unsent_cases", "unsent_chains", "unsent_cause")
+
+
+async def a_latest_checkpoint_without(
+    checkpointer: InMemorySaver, thread_id: str, channels: Sequence[str]
+) -> None:
+    latest = await checkpointer.aget_tuple(
+        {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+    )
+    assert latest is not None
+    checkpoint = latest.checkpoint.copy()
+    checkpoint["id"] = str(uuid6())
+    # The saver rebuilds the values from the versions, so a channel leaves both.
+    for field in ("channel_values", "channel_versions"):
+        stored = checkpoint[field]
+        checkpoint[field] = {name: value for name, value in stored.items() if name not in channels}
+    await checkpointer.aput(latest.config, checkpoint, latest.metadata, {})
 
 
 async def a_crashed_audit(checkpointer: Any, thread_id: str):

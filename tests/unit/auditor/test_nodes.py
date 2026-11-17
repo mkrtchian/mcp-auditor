@@ -8,6 +8,7 @@ import tests.unit.auditor.support.test_nodes_then as then
 from mcp_auditor.domain import (
     AttackContext,
     AuditCategory,
+    CoverageGap,
     EvalVerdict,
     Severity,
     ToolResponse,
@@ -17,17 +18,19 @@ from mcp_auditor.domain.models import ModelCallKind, filter_tools
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.graph.nodes import (
     build_tool_report,
+    generate_report,
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
     make_generate_test_cases,
     make_judge_response,
+    make_route_tools,
     prepare_tool,
     route_after_discovery,
     route_after_execute,
     route_test_cases,
-    route_tools,
 )
+from mcp_auditor.graph.unsent_calls import report_tools_left
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 from tests.fakes.mcp_client import a_lost_connection_response
@@ -333,6 +336,44 @@ class TestFinalizeToolAudit:
 
         assert result["tool_reports"][0].coverage_gap is None
 
+    async def test_merges_a_short_generation_and_calls_not_sent_into_one_gap(self):
+        state = given.a_tool_state_with_calls_not_sent(
+            coverage_gap=given.a_coverage_gap(), unsent_cases=1, unsent_chains=2
+        )
+
+        result = await build_tool_report(state)
+
+        assert result["tool_reports"][0].coverage_gap == CoverageGap(
+            requested_cases=5,
+            received_cases=3,
+            missing_categories=[AuditCategory.RESOURCE_ABUSE],
+            unsent_cases=1,
+            unsent_chains=2,
+            unsent_cause=UnsentCause.TOOL_TIMING_OUT,
+        )
+
+    async def test_a_gap_of_calls_not_sent_keeps_what_generation_gave(self):
+        state = given.a_tool_state_with_calls_not_sent(
+            test_budget=4, sent_cases=3, unsent_cases=1, unsent_chains=0
+        )
+
+        result = await build_tool_report(state)
+
+        assert result["tool_reports"][0].coverage_gap == CoverageGap(
+            requested_cases=4,
+            received_cases=4,
+            missing_categories=[],
+            unsent_cases=1,
+            unsent_cause=UnsentCause.TOOL_TIMING_OUT,
+        )
+
+    async def test_a_tool_stopped_at_its_last_call_with_no_chain_budget_has_no_gap(self):
+        state = given.a_tool_state_with_calls_not_sent(unsent_cases=0, unsent_chains=0)
+
+        result = await build_tool_report(state)
+
+        assert result["tool_reports"][0].coverage_gap is None
+
 
 class TestRouteAfterDiscovery:
     def test_continues_when_tools_found(self):
@@ -373,15 +414,56 @@ class TestRouteAfterExecute:
 
 class TestRouteTools:
     def test_continues_when_tools_remain(self):
+        route = make_route_tools(AuditedServer(FakeMCPClient([])))
         state = {
             "tool_reports": [object()],
             "discovered_tools": [given.a_tool(), given.a_tool(), given.a_tool()],
         }
-        assert route_tools(state) == "prepare_tool"
+        assert route(state) == "prepare_tool"
 
     def test_ends_when_all_done(self):
+        route = make_route_tools(AuditedServer(FakeMCPClient([])))
         state = {
             "tool_reports": [object(), object()],
             "discovered_tools": [given.a_tool(), given.a_tool()],
         }
-        assert route_tools(state) == "generate_report"
+        assert route(state) == "generate_report"
+
+    async def test_reports_the_tools_left_once_the_server_is_taken_as_down(self):
+        server, _ = await given.a_server_taken_as_down(given.a_tool())
+        state = {"tool_reports": [object()], "discovered_tools": [given.a_tool(), given.a_tool()]}
+
+        assert make_route_tools(server)(state) == "report_tools_left"
+
+
+class TestReportToolsLeft:
+    def test_gives_each_tool_not_audited_a_server_down_gap(self):
+        tools = [given.a_tool(name="audited"), given.a_tool(name="left")]
+        state: dict[str, Any] = {
+            "discovered_tools": tools,
+            "tool_reports": [given.a_tool_report(tool_name="audited")],
+            "test_budget": 4,
+            "chain_budget": 2,
+        }
+
+        result = report_tools_left(state)
+
+        [left] = result["tool_reports"]
+        assert (left.tool.name, left.cases, left.chains) == ("left", [], [])
+        assert left.coverage_gap == CoverageGap(
+            requested_cases=4,
+            received_cases=0,
+            missing_categories=[],
+            unsent_chains=2,
+            unsent_cause=UnsentCause.SERVER_DOWN,
+        )
+
+
+class TestGenerateReport:
+    async def test_copies_the_relaunches(self):
+        relaunch = Relaunch(tool_name="t", arguments={}, cause=RelaunchCause.STUCK, succeeded=True)
+        state: dict[str, Any] = {"server_command": "python server.py", "relaunches": [relaunch]}
+
+        result = await generate_report(state)
+
+        assert result["audit_report"].relaunches == [relaunch]

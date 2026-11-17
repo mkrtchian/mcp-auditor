@@ -19,8 +19,9 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW
 from tests.fakes import FakeMCPClient
-from tests.fakes.mcp_client import a_lost_connection_response
+from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
 DEFAULT_TOOL_NAME = "file_manager"
 
@@ -108,6 +109,20 @@ async def a_server_taken_as_down() -> tuple[AuditedServer, FakeMCPClient]:
     server = AuditedServer(client)
     await server.attempt(a_tool(), a_payload())
     return server, client
+
+
+async def a_server_that_stopped(tool: ToolDefinition) -> AuditedServer:
+    """A server that answers the ping, on which the tool timed out three times in a row."""
+    server = AuditedServer(FakeMCPClient([tool], {tool.name: a_timeout_response()}))
+    for _ in range(TIMEOUTS_IN_A_ROW):
+        await server.attempt(tool, a_payload())
+    return server
+
+
+def a_judged_chain() -> AttackChain:
+    return AttackChain(
+        goal=a_chain_goal(), steps=[a_chain_step()], judge_result=a_fail_judge_result()
+    )
 
 
 def a_judgment(

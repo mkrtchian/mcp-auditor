@@ -14,13 +14,13 @@ from mcp_auditor.graph.chain_nodes import (
     make_observe_step,
     make_plan_chains,
     make_plan_step,
+    make_route_to_chains_or_report,
     prepare_chain,
     route_after_execute_step,
     route_after_judge,
     route_after_observe,
     route_after_plan_step,
     route_after_planning,
-    route_to_chains_or_report,
 )
 from mcp_auditor.graph.nodes import (
     build_tool_report,
@@ -31,11 +31,11 @@ from mcp_auditor.graph.nodes import (
     make_extract_attack_context,
     make_generate_test_cases,
     make_judge_response,
+    make_route_tools,
     prepare_tool,
     route_after_discovery,
     route_after_execute,
     route_test_cases,
-    route_tools,
 )
 from mcp_auditor.graph.state import (
     AuditToolInput,
@@ -44,7 +44,11 @@ from mcp_auditor.graph.state import (
     ChainAuditState,
     GraphState,
 )
-from mcp_auditor.graph.unsent_calls import count_unsent_chain
+from mcp_auditor.graph.unsent_calls import (
+    count_unsent_chain,
+    make_count_chains_not_planned,
+    report_tools_left,
+)
 
 
 def build_graph(
@@ -63,20 +67,28 @@ def build_graph(
     builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("audit_tool", audit_subgraph)
     builder.add_node("chain_audit_tool", chain_subgraph)
+    builder.add_node("count_chains_not_planned", make_count_chains_not_planned(server))
     builder.add_node("build_tool_report", build_tool_report)
     builder.add_node("extract_attack_context", make_extract_attack_context(llm, server.redacting))
+    builder.add_node("report_tools_left", report_tools_left)
     builder.add_node("generate_report", generate_report)
     builder.add_edge(START, "discover_tools")
     builder.add_conditional_edges("discover_tools", route_after_discovery)
     builder.add_edge("prepare_tool", "audit_tool")
     builder.add_conditional_edges(
         "audit_tool",
-        route_to_chains_or_report,
-        {"chain_audit_tool": "chain_audit_tool", "build_tool_report": "build_tool_report"},
+        make_route_to_chains_or_report(server),
+        {
+            "chain_audit_tool": "chain_audit_tool",
+            "count_chains_not_planned": "count_chains_not_planned",
+            "build_tool_report": "build_tool_report",
+        },
     )
     builder.add_edge("chain_audit_tool", "build_tool_report")
+    builder.add_edge("count_chains_not_planned", "build_tool_report")
     builder.add_edge("build_tool_report", "extract_attack_context")
-    builder.add_conditional_edges("extract_attack_context", route_tools)
+    builder.add_conditional_edges("extract_attack_context", make_route_tools(server))
+    builder.add_edge("report_tools_left", "generate_report")
     return builder.compile(checkpointer=checkpointer)
 
 
