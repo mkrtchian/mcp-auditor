@@ -17,10 +17,14 @@ from evals.cve.detection.audit import (
     audit_target,
     checked_grade,
 )
+from evals.cve.detection.holdout_audit import HOLDOUT_INFRA_ATTEMPTS, DroppedRun, holdout_audit
+from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.replay import ReplayAttemptFailure, ReplayOutcome, UncheckedReason
 from evals.cve.detection.session_model import GradedAudit
+from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.grammar import CreditCheck, MissKind, RunGrade, TargetStatus, grade_run
+from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.proofs import UnitPlace
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.report_units import units_of
@@ -357,6 +361,40 @@ async def test_a_server_failing_inside_the_graph_is_a_run_skipped(
 
     assert outcome is None
     assert f"{TARGET.flaw_id} run skipped" in output.getvalue()
+
+
+async def test_a_server_taken_as_down_is_a_run_skipped(monkeypatch: pytest.MonkeyPatch):
+    output = given.captured_console(monkeypatch)
+    auditor = given.an_audit_taking_the_server_as_down()
+
+    outcome = await attempt_once(given.a_target_launching(), auditor, SessionThrottles(), {})
+
+    assert outcome is None
+    assert f"{TARGET.flaw_id} run skipped" in output.getvalue()
+
+
+async def test_a_server_taken_as_down_on_a_holdout_run_is_a_launch_failure_retried(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    given.captured_console(monkeypatch)
+    auditor = given.an_audit_taking_the_server_as_down(audits=HOLDOUT_INFRA_ATTEMPTS)
+    target = given.a_target_launching()
+
+    outcome = await holdout_audit(
+        target, lambda: attempt_once(target, auditor, SessionThrottles(), {})
+    )
+
+    assert outcome == DroppedRun(NotRunCause.LAUNCH_FAILURE)
+
+
+async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    given.captured_console(monkeypatch)
+    target = given.a_target_launching(Launch("docker", ["run", "--an-unknown-option", "v", "x"]))
+
+    with pytest.raises(UndecidableLaunch):
+        await attempt_once(target, launch_given.an_auditor(), SessionThrottles(), {})
 
 
 @_SHAPES

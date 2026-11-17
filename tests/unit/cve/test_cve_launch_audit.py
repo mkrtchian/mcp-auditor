@@ -1,8 +1,15 @@
+import re
+
 import pytest
 from langchain_core.exceptions import ModelAPIError
 
 from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch
-from evals.cve.launch_audit import AuditShape, audit_launch
+from evals.cve.launch_audit import (
+    AuditShape,
+    ServerTakenAsDown,
+    UndecidableLaunch,
+    audit_launch,
+)
 from evals.cve.provider_errors import AuditFailed, ProviderErrorKind
 from evals.cve.server_health import ServerHealth
 from tests.unit.cve.support import test_cve_grammar_given as grammar
@@ -21,6 +28,99 @@ async def test_the_graph_audits_the_launch_on_the_auditor_budget_and_returns_its
     [graph_input] = graphs.graph_inputs
     assert graph_input["server_command"] == "docker run server"
     assert graph_input["test_budget"] == 10
+    assert audit.report is report
+
+
+async def test_the_audit_connects_to_the_launch_named_under_the_suite_label():
+    connect = given.FakeConnect()
+
+    await audit_launch(A_LAUNCH, given.an_auditor(connect=connect), THE_LAUNCH_OWN)
+
+    [launch] = connect.launches
+    assert launch.args[0] == "run" and launch.args[1] == "--name"
+    assert re.fullmatch(r"mcp-auditor-cve-audit-[0-9a-f]{12}", launch.args[2])
+    assert launch.args[3:] == A_LAUNCH.args[1:]
+
+
+async def test_two_audits_of_one_launch_name_their_containers_apart():
+    connect = given.FakeConnect()
+    auditor = given.an_auditor(
+        graphs=given.graph_reporting([grammar.a_report(), grammar.a_report()]), connect=connect
+    )
+
+    for _ in range(2):
+        await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
+
+    first, second = (launch.args[2] for launch in connect.launches)
+    assert first != second
+
+
+@pytest.mark.parametrize("spelling", [["--name", "doris-server"], ["--name=doris-server"]])
+async def test_a_launch_that_names_its_container_keeps_its_name(spelling: list[str]):
+    launch = Launch("docker", ["run", "-i", *spelling, "image"])
+    connect = given.FakeConnect()
+
+    await audit_launch(launch, given.an_auditor(connect=connect), THE_LAUNCH_OWN)
+
+    assert connect.launches == [launch]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [["run", "--an-unknown-option", "value", "image"], ["image"]],
+    ids=["an unknown option before the image", "not a docker run"],
+)
+async def test_a_launch_whose_name_cannot_be_read_is_refused_before_any_connection(
+    args: list[str],
+):
+    launch = Launch("docker", args)
+    connect = given.FakeConnect()
+
+    with pytest.raises(UndecidableLaunch):
+        await audit_launch(launch, given.an_auditor(connect=connect), THE_LAUNCH_OWN)
+
+    assert connect.launches == []
+
+
+async def test_the_graph_reads_the_server_command_without_the_added_name():
+    graphs = given.graph_reporting([grammar.a_report()])
+
+    await audit_launch(A_LAUNCH, given.an_auditor(graphs=graphs), THE_LAUNCH_OWN)
+
+    [graph_input] = graphs.graph_inputs
+    assert graph_input["server_command"] == "docker run server"
+
+
+async def test_an_audit_carries_the_exchanges_after_which_the_server_was_relaunched():
+    connect = given.FakeConnect(given.a_noisy_client())
+    auditor = given.an_auditor(graphs=given.graph_calling(lost_calls=1), connect=connect)
+
+    audit = await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
+
+    assert audit.relaunched_after == [1]
+
+
+async def test_a_relaunch_that_failed_takes_the_server_as_down():
+    graphs = given.graph_reporting([given.a_report_with_relaunches(True, False)])
+
+    with pytest.raises(ServerTakenAsDown):
+        await audit_launch(A_LAUNCH, given.an_auditor(graphs=graphs), THE_LAUNCH_OWN)
+
+
+async def test_a_relaunch_that_failed_after_the_last_call_takes_the_server_as_down():
+    connect = given.FakeConnect(given.a_client_whose_relaunch_fails())
+    auditor = given.an_auditor(graphs=given.graph_reporting_its_relaunches(1), connect=connect)
+
+    with pytest.raises(ServerTakenAsDown):
+        await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
+
+
+async def test_an_audit_whose_relaunches_all_succeeded_stands():
+    report = given.a_report_with_relaunches(True, True)
+    auditor = given.an_auditor(graphs=given.graph_reporting([report]))
+
+    audit = await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
+
     assert audit.report is report
 
 

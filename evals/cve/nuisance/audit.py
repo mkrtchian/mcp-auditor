@@ -13,7 +13,13 @@ from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_c
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
-from evals.cve.launch_audit import Auditor, AuditShape, audit_launch, print_lost_connections
+from evals.cve.launch_audit import (
+    Auditor,
+    AuditShape,
+    UndecidableLaunch,
+    audit_launch,
+    print_lost_connections,
+)
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import single_container_launch_args
@@ -96,7 +102,9 @@ async def audit_once(
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> NuisanceAudit | LaunchFailed | ProviderError:
-    """Raises `ProviderFatal` on a provider error no retry cures."""
+    """Raises `ProviderFatal` on a provider error no retry cures, and `UndecidableLaunch`, a
+    configuration error that stops the run as a `planting_spec` refusal does. A server taken as
+    down is a launch failure."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     overrides = auditor.overrides
@@ -110,6 +118,8 @@ async def audit_once(
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause
         return ProviderError(describe_provider_error(failure.cause))
+    except UndecidableLaunch:
+        raise
     except Exception as exc:
         return LaunchFailed(auditor.auditor.report_detail.describe(exc))
     auditor.throttles.count(audit.report)

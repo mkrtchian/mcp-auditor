@@ -9,8 +9,11 @@ from evals.cve import launch_audit
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.nuisance import audit as nuisance_audit_module
 from evals.cve.nuisance.audit import (
+    NUISANCE_INFRA_ATTEMPTS,
+    DroppedRun,
     LaunchFailed,
     NuisanceAudit,
     ProviderError,
@@ -19,6 +22,7 @@ from evals.cve.nuisance.audit import (
     nuisance_environment,
 )
 from evals.cve.nuisance.confinement import single_container_run_args
+from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
@@ -64,6 +68,36 @@ async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
 
     assert isinstance(outcome, LaunchFailed)
     assert "cluster never healthy" in outcome.reason
+
+
+async def test_a_server_taken_as_down_is_a_launch_failure():
+    outcome = await audit_once(an_admitted_server(), given.an_auditor_taking_the_server_as_down())
+
+    assert isinstance(outcome, LaunchFailed)
+    assert "failed to relaunch the server" in outcome.reason
+
+
+async def test_a_server_taken_as_down_at_every_attempt_drops_as_a_launch_failure(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    auditor = given.an_auditor_taking_the_server_as_down(audits=NUISANCE_INFRA_ATTEMPTS)
+    server = an_admitted_server()
+
+    outcome = await nuisance_audit(server, lambda: audit_once(server, auditor))
+
+    assert outcome == DroppedRun(NotRunCause.LAUNCH_FAILURE)
+
+
+async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run():
+    lifecycle = given.a_lifecycle_launching_an_unreadable_name()
+
+    with pytest.raises(UndecidableLaunch):
+        await audit_once(
+            given.a_server_backed_by(lifecycle),
+            given.an_auditor(),
+            backends=a_backend_registry(lifecycle),
+        )
 
 
 async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without_its_message():

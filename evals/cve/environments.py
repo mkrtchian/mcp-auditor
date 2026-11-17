@@ -32,13 +32,14 @@ The profile bounds memory, swap included, because the auditor sends
 resource-abuse payloads by design and one of them can make a server or a child
 of it grow without end. When a container reaches the bound the kernel kills its
 largest process, most often the one that grew, and the server itself when it
-holds a large share of the bound. When that process is the server, the client
-turns the closed connection into error responses, the audit goes on, and the
-target counts as missed in that run unless a nonce surfaced before: this is what
-the confined regime of the product gives a user (ADR 018). Nothing reads the
-container's kill state: a report counts the calls answered with a lost
-connection (`lost_connection_responses`, report-only) and does not say what
-ended the server.
+holds a large share of the bound. When that process is the server, the auditor
+relaunches it and the audit goes on (ADR 036): the client removes the container
+by the name its launch sets, the one the launch carries or the one the audit adds
+at audit time (`launch_audit.named`), and starts the same launch again, with its
+mounts and planted nonces. A relaunch that fails takes the server as down, which
+the suites read as a failure to launch. Nothing reads the container's kill state:
+a report counts the calls answered with a lost connection
+(`lost_connection_responses`, report-only) and does not say what ended the server.
 
 Building the layout tree and the planting code's setup (`docker network
 create`, a sidecar `run -d`) raise before the yield on any failure: the runner

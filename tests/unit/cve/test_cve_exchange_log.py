@@ -37,3 +37,16 @@ async def test_recording_client_forwards_ping_and_relaunch_and_records_neither()
     assert (pinged, relaunched) == (False, False)
     assert (client.pings, client.relaunches) == (1, 1)
     assert recorder.exchanges == []
+
+
+async def test_recording_client_keeps_the_count_of_exchanges_at_each_relaunch():
+    client = FakeMCPClient(tools=[], relaunch_answers=[True, False])
+    recorder = ExchangeLog(client)
+
+    await recorder.call_tool("first", {})
+    await recorder.relaunch()
+    await recorder.call_tool("second", {})
+    await recorder.call_tool("third", {})
+    await recorder.relaunch()
+
+    assert recorder.relaunched_after == [1, 3]

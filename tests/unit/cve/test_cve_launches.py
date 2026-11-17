@@ -32,6 +32,7 @@ from evals.cve.layout import NEUTRAL_TOKEN
 from evals.cve.planting import PlantingFailed
 from evals.cve.planting_base import LAYOUT_PREFIX, LayoutMount, check_layout_outer
 from mcp_auditor.adapters.server_launch import ServerLaunch
+from mcp_auditor.domain.confinement import Undecidable, declared_container_name
 from mcp_auditor.domain.models import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of
@@ -86,6 +87,13 @@ def test_every_builder_mounts_the_tree_read_write_under_a_read_write_host(builde
 
     with builder("img", spec, docker=FakePlantingDocker()) as launch:
         assert mount_of(launch.args, "/srv").endswith(":/srv")
+
+
+# The audit names the container a launch leaves unnamed, and refuses one whose name it cannot read.
+@pytest.mark.parametrize("builder", _LAYOUT_BUILDERS.values(), ids=list(_LAYOUT_BUILDERS))
+def test_every_builder_launches_a_container_whose_name_can_be_read(builder: given.Builder):
+    with builder("img", given.an_empty_spec(), docker=FakePlantingDocker()) as launch:
+        assert declared_container_name(launch.args) is not Undecidable.NAME
 
 
 @pytest.mark.parametrize("builder", _LAYOUT_BUILDERS.values(), ids=list(_LAYOUT_BUILDERS))

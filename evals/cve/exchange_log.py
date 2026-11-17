@@ -1,5 +1,5 @@
 """A client decorator that keeps each tool call and its response, shared by the calibration check
-and the replay.
+and the replay, and the number of calls kept at each relaunch it forwards.
 
 The calibration check grades what the server returned, so a target out of calibration can be
 post-mortemed from the exchanges (which call swallowed the proof, or what the benign call
@@ -20,6 +20,7 @@ class ExchangeLog:
     def __init__(self, inner: MCPClientPort) -> None:
         self._inner = inner
         self.exchanges: list[Exchange] = []
+        self.relaunched_after: list[int] = []
 
     async def list_tools(self) -> list[ToolDefinition]:
         return await self._inner.list_tools()
@@ -33,4 +34,5 @@ class ExchangeLog:
         return await self._inner.ping()
 
     async def relaunch(self) -> bool:
+        self.relaunched_after.append(len(self.exchanges))
         return await self._inner.relaunch()

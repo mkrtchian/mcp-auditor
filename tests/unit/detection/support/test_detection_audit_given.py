@@ -27,7 +27,7 @@ from mcp_auditor.domain.models import (
 from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 (TARGET,) = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109"]
-A_LAUNCH = Launch("x", [])
+A_LAUNCH = Launch("docker", ["run", "x"])
 
 
 def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
@@ -42,12 +42,12 @@ def an_auditor_reporting(
     return launch_given.an_auditor(report_detail, launch_given.graph_reporting(list(reports)))
 
 
-def a_target_launching() -> Target:
+def a_target_launching(launch: Launch = A_LAUNCH) -> Target:
     """A target planting nothing and launching no container."""
 
     @contextmanager
     def no_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
-        yield A_LAUNCH
+        yield launch
 
     return dataclasses.replace(TARGET, kept_places=(), builder=no_container)
 
@@ -68,6 +68,12 @@ def an_audit_on_a_noisy_server(*, non_protocol_lines: int, lost_calls: int) -> A
         graphs=launch_given.graph_calling(lost_calls),
         connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines)),
     )
+
+
+def an_audit_taking_the_server_as_down(audits: int = 1) -> Auditor:
+    """Each of the `audits` reports holds a relaunch that failed."""
+    reports = [launch_given.a_report_with_relaunches(False) for _ in range(audits)]
+    return launch_given.an_auditor(graphs=launch_given.graph_reporting(reports))
 
 
 def an_audit_raising(error: Exception, *, grouped: bool = True) -> Auditor:

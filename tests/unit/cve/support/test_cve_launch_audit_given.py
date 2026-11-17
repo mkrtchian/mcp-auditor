@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
@@ -16,6 +16,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolResponse,
 )
+from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.cve.support import test_cve_grammar_given as grammar
 
@@ -68,6 +69,31 @@ def graph_calling(lost_calls: int) -> FakeGraphs:
     return FakeGraphs(call)
 
 
+def graph_reporting_its_relaunches(calls: int) -> FakeGraphs:
+    """Each audit sends `calls` calls to the server, then returns a report holding the relaunches
+    they led to, as the graph records them."""
+
+    async def call(server: AuditedServer) -> AuditReport:
+        attempts = [await server.attempt(_READ, _A_PAYLOAD) for _ in range(calls)]
+        relaunches = [attempt.relaunch for attempt in attempts if attempt.relaunch is not None]
+        return grammar.a_report().model_copy(update={"relaunches": relaunches})
+
+    return FakeGraphs(call)
+
+
+def a_report_with_relaunches(*succeeded: bool) -> AuditReport:
+    relaunches = [
+        Relaunch(
+            tool_name="read",
+            arguments={"path": "/x"},
+            cause=RelaunchCause.LOST_CONNECTION,
+            succeeded=outcome,
+        )
+        for outcome in succeeded
+    ]
+    return grammar.a_report().model_copy(update={"relaunches": relaunches})
+
+
 def graph_raising(error: Exception) -> FakeGraphs:
     async def raise_error(_server: AuditedServer) -> AuditReport:
         raise error
@@ -84,12 +110,14 @@ class FakeConnect:
     client: FakeMCPClient = field(default_factory=lambda: FakeMCPClient([]))
     grouped: bool = True
     timeouts: list[int] = field(default_factory=list[int])
+    launches: list[Launch] = field(default_factory=list[Launch])
 
     @asynccontextmanager
     async def __call__(
-        self, _launch: Launch, _stderr: object, *, tool_call_timeout: int
+        self, launch: Launch, _stderr: object, *, tool_call_timeout: int
     ) -> AsyncGenerator[FakeMCPClient]:
         self.timeouts.append(tool_call_timeout)
+        self.launches.append(launch)
         try:
             yield self.client
         except Exception as exc:
@@ -104,10 +132,15 @@ def a_noisy_client(non_protocol_lines: int = 2) -> FakeMCPClient:
     return _NoisyClient(non_protocol_lines)
 
 
+def a_client_whose_relaunch_fails() -> FakeMCPClient:
+    """A client answering every call with a lost connection, whose every relaunch fails."""
+    return _NoisyClient(non_protocol_lines=0, relaunch_answers=(False,))
+
+
 class _NoisyClient(FakeMCPClient):
-    def __init__(self, non_protocol_lines: int) -> None:
+    def __init__(self, non_protocol_lines: int, relaunch_answers: Sequence[bool] = (True,)) -> None:
         lost = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
-        super().__init__([_READ], {"read": lost})
+        super().__init__([_READ], {"read": lost}, relaunch_answers=relaunch_answers)
         self.non_protocol_lines = non_protocol_lines
 
 

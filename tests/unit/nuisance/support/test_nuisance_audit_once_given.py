@@ -45,6 +45,21 @@ def an_auditor_raising(error: Exception, *, grouped: bool) -> NuisanceAuditor:
     )
 
 
+def an_auditor_taking_the_server_as_down(audits: int = 1) -> NuisanceAuditor:
+    """Each of the `audits` reports holds a relaunch that failed."""
+    reports = [launch_given.a_report_with_relaunches(False) for _ in range(audits)]
+    return an_auditor(graphs=launch_given.graph_reporting(reports))
+
+
+def a_lifecycle_launching_an_unreadable_name() -> BackendLifecycle:
+    """The server's `docker run` puts an option no table knows before the image."""
+
+    def unreadable(_name: str, _image: str, _host: object, _launch: object) -> list[str]:
+        return ["run", "--an-unknown-option", "value", "image"]
+
+    return replace(a_fake_lifecycle("unreadable"), server_args=unreadable)
+
+
 def a_server_backed_by(lifecycle: BackendLifecycle) -> AdmittedServer:
     """A server whose backend fixture names the lifecycle, as `a_backend_registry` registers it."""
     fixture = BackendFixture(

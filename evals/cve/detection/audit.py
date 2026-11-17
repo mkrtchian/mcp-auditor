@@ -26,6 +26,7 @@ from evals.cve.launch_audit import (
     Auditor,
     AuditShape,
     LaunchAudit,
+    UndecidableLaunch,
     audit_launch,
     print_lost_connections,
 )
@@ -93,8 +94,9 @@ async def attempt_once(
     overrides: RunOverrides | None = None,
 ) -> AttemptOutcome[GradedAudit]:
     """Raises `ProviderFatal` on a provider error no retry cures."""
-    # An unknown kept id or a planting_spec refusal is a configuration error: it is not
-    # caught here, so it crashes the run rather than reading as a skip the gate cannot compare.
+    # An unknown kept id, a planting_spec refusal or a launch whose container name cannot be read
+    # is a configuration error: it is not caught here, so it crashes the run rather than reading
+    # as a skip the gate cannot compare. A server taken as down reaches here as a `LaunchError`.
     records = kept_records(target.kept_places, places)
     run: RunToCheck | None = None
     health = NO_INCIDENTS
@@ -213,7 +215,7 @@ async def _audit(
     )
     try:
         return await audit_launch(launch, auditor, shape)
-    except AuditFailed:
+    except (AuditFailed, UndecidableLaunch):
         raise
     except Exception as exc:
         raise LaunchError(str(exc)) from exc

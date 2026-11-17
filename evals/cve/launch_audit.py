@@ -1,26 +1,46 @@
-"""One audit of one launch, shared by the detection suite and the nuisance suite: connect to the
-server, keep its exchanges, run the graph under the attempt's own throttle breaker and provider
-error classification, and read the server's health."""
+"""One audit of one launch, shared by the detection suite and the nuisance suite: name the
+server's container, connect to it, keep its exchanges and the points where the auditor relaunched
+it, run the graph under the attempt's own throttle breaker and provider error classification, and
+read the server's health.
+
+The container is named at audit time so that the auditor can remove a blocked server before it
+relaunches it (ADR 036): the client removes a declared container by the `--name` its `docker run`
+sets. The name is a random token under the suite's label: a container name resolves by DNS on a
+user-defined network, so it says nothing of the server or the flaw. A launch that already names
+its container keeps its name. A relaunch that failed takes the server as down, which the suites
+read as a failure to launch."""
 
 import os
+import secrets
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.planting_base import LABEL
 from evals.cve.provider_errors import audit_failures_unwrapped, classified
 from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.confinement import Undecidable, declared_container_name
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
 
 type Connect = Callable[..., AbstractAsyncContextManager[MCPClientPort]]
+
+
+class UndecidableLaunch(Exception):
+    """A launch whose container name cannot be read: a configuration error, never a failure to
+    launch, so it stops the run."""
+
+
+class ServerTakenAsDown(Exception):
+    """The auditor failed to relaunch the server: a failure to launch."""
 
 
 @dataclass(frozen=True)
@@ -48,13 +68,16 @@ class LaunchAudit:
     report: AuditReport
     exchanges: list[Exchange]
     health: ServerHealth
+    relaunched_after: list[int]  # the number of exchanges recorded at each relaunch
 
 
 async def audit_launch(launch: Launch, auditor: Auditor, shape: AuditShape) -> LaunchAudit:
-    """Raises `AuditFailed` bare on a provider error, whatever groups the client wraps it in."""
+    """Raises `AuditFailed` bare on a provider error, whatever groups the client wraps it in,
+    `UndecidableLaunch` before connecting, and `ServerTakenAsDown` once the graph returns."""
     timeout = _either(shape.tool_call_timeout, TOOL_CALL_TIMEOUT)
+    container = named(launch)
     with audit_failures_unwrapped(), open(os.devnull, "w") as devnull:
-        async with auditor.connect(launch, devnull, tool_call_timeout=timeout) as client:
+        async with auditor.connect(container, devnull, tool_call_timeout=timeout) as client:
             recorder = ExchangeLog(client)
             graph = auditor.build_graph(
                 auditor.llm,
@@ -65,7 +88,24 @@ async def audit_launch(launch: Launch, auditor: Auditor, shape: AuditShape) -> L
             with one_audit():
                 result = await classified(graph.ainvoke(_graph_input(launch, auditor, shape)))
             health = health_of(client, recorder.exchanges)
-            return LaunchAudit(result["audit_report"], recorder.exchanges, health)
+    report: AuditReport = result["audit_report"]
+    # Read on the relaunches, not on a gap, so a relaunch that failed after the last call counts.
+    if any(not relaunch.succeeded for relaunch in report.relaunches):
+        raise ServerTakenAsDown("the auditor failed to relaunch the server")
+    return LaunchAudit(report, recorder.exchanges, health, recorder.relaunched_after)
+
+
+def named(launch: Launch) -> Launch:
+    if launch.args[:1] != ["run"]:
+        raise UndecidableLaunch("the launch is not a docker run")
+    match declared_container_name(launch.args):
+        case Undecidable.NAME:
+            raise UndecidableLaunch("an option before the image hides the container name")
+        case str():
+            return launch
+        case None:
+            name = f"{LABEL}-audit-{secrets.token_hex(6)}"
+            return replace(launch, args=["run", "--name", name, *launch.args[1:]])
 
 
 def _graph_input(launch: Launch, auditor: Auditor, shape: AuditShape) -> dict[str, object]:
