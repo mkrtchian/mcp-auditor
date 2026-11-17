@@ -97,12 +97,16 @@ class Audit:
         with RedactingStderr(redaction) as server_stderr, redacted_sdk_logging(redaction):
             try:
                 report = await self._probe_the_server(server_stderr)
+            except _FailedMidAudit as failure:
+                cause = failure.__cause__
+                self._give_up(f"MCP server failed: {cause}", server_stderr, failure)
             except ConnectionError as exc:
                 self._give_up(f"could not connect to MCP server: {exc}", server_stderr, exc)
             except OSError as exc:
                 self._give_up(str(exc), server_stderr, exc)
             except BaseExceptionGroup as exc:
-                self._give_up(_group_failure(exc), server_stderr, exc)
+                message = f"MCP server failed: {summarize_exception_group(exc)}"
+                self._give_up(message, server_stderr, exc)
             except CheckpointFromEarlierVersion as exc:
                 self._give_up(str(exc), server_stderr, exc)
             except Exception as exc:
@@ -120,13 +124,19 @@ class Audit:
                 self._execution.launch,
                 errlog=server_stderr.writer,
                 tool_call_timeout=self._analysts.settings.tool_call_timeout,
+                teardown=self._execution,
             ) as mcp_client,
         ):
             server = AuditedServer(mcp_client, server_stderr.redaction)
-            if self._config.run_options.dry_run:
-                await self._show_payloads(server)
-                return None
-            return await self._audit(server, checkpointer)
+            try:
+                if self._config.run_options.dry_run:
+                    await self._show_payloads(server)
+                    return None
+                return await self._audit(server, checkpointer)
+            except CheckpointFromEarlierVersion:
+                raise
+            except Exception as exc:
+                raise _FailedMidAudit from exc
 
     async def _audit(self, server: AuditedServer, checkpointer: Any) -> AuditReport:
         graph = build_graph(
@@ -216,10 +226,8 @@ class Audit:
         raise SystemExit(1) from exc
 
 
-# What the graph raises, the resume decision included, reaches `run` wrapped when the MCP
-# session's task groups wrap it, and bare when they do not: both read alike.
-def _group_failure(exc: BaseExceptionGroup[BaseException]) -> str:
-    earlier_version, _ = exc.split(CheckpointFromEarlierVersion)
-    if earlier_version is not None:
-        return summarize_exception_group(earlier_version)
-    return f"MCP server failed: {summarize_exception_group(exc)}"
+class _FailedMidAudit(Exception):
+    """What the audit raised once the session was open, its cause chained. The session's owner
+    lets it out bare, and an OSError among it (a TimeoutError is one) is not a failure to open
+    the session, so `run` reads it apart from the opening's errors, which keep their types and
+    their groups."""

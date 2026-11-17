@@ -7,9 +7,10 @@ import tests.integration.support.test_resume_earlier_checkpoint_given as given
 from mcp_auditor.adapters.server_launch import ServerLaunch
 
 
-# The refusal is raised inside the MCP session, whose task group wraps it, or lets it out
-# bare when the server logs its shutdown to stdout: this pins that the operator still reads
-# the message alone, not a traceback, after an SDK upgrade.
+# The refusal is raised while the MCP session is open and leaves the client bare, whatever the
+# server writes at shutdown, since the session's task groups live in the task that owns the
+# session: this pins that the operator still reads the message alone, not a traceback, after an
+# SDK upgrade.
 @pytest.mark.parametrize("launch", [given.HONEYPOT, given.NOISY_SHUTDOWN_SERVER])
 async def test_resuming_a_checkpoint_from_an_earlier_version_stops_with_its_message(
     launch: ServerLaunch, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch

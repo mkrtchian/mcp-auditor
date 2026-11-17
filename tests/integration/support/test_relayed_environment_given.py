@@ -20,8 +20,11 @@ class Echo:
     stderr: str
 
 
-async def echoed_through_the_audit_boundaries(request: RelayRequest) -> Echo:
-    """The server echoes the variable on every channel, read the way `Audit.run` reads them."""
+async def echoed_through_the_audit_boundaries(
+    request: RelayRequest, *, relaunched: bool = False
+) -> Echo:
+    """The server echoes the variable on every channel, read the way `Audit.run` reads them,
+    and echoes it again after a relaunch when `relaunched`."""
     relayed = RelayedEnvironment.resolved(request, {NAME: VALUE})
     launch = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)], relayed=relayed)
     redaction = relayed.redaction()
@@ -33,5 +36,8 @@ async def echoed_through_the_audit_boundaries(request: RelayRequest) -> Echo:
                 category=AuditCategory.INFO_LEAKAGE, description="echo", arguments={"name": NAME}
             )
             response = (await server.attempt(tools[0], payload)).outcome
+            if relaunched:
+                assert await client.relaunch()
+                response = (await server.attempt(tools[0], payload)).outcome
         assert isinstance(response, ToolResponse)
         return Echo(response.content, stderr.text())

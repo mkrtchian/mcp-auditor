@@ -9,13 +9,20 @@ import tests.integration.support.test_confined_launch_then as then
 from mcp_auditor.adapters.docker import DockerRuntime
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.domain.relayed_environment import RelayRequest
-from mcp_auditor.server_execution import LaunchOptions, ServerExecution, decide_launch
+from mcp_auditor.domain.server_watch import is_timeout
+from mcp_auditor.server_execution import (
+    IMAGE_BY_LAUNCHER,
+    LaunchOptions,
+    ServerExecution,
+    decide_launch,
+)
 
 # Pinned, as the README pins the demo's: this test is the only instrument of the
 # confined path, so it must go red on a confinement regression and never on an
 # upstream rename.
 FILESYSTEM_SERVER = "@modelcontextprotocol/server-filesystem@2026.8.31"
 ENV_ECHO_SERVER = pathlib.Path(__file__).parent / "support" / "env_echo_server.py"
+STALLING_SERVER = pathlib.Path(__file__).parent / "support" / "stalling_server.py"
 
 
 @pytest.mark.skipif(not DockerRuntime().available(), reason="confined execution needs Docker")
@@ -67,3 +74,28 @@ async def test_a_relayed_variable_reaches_the_confined_server(
         echoed = await client.call_tool("echo", {"name": "MCP_AUDITOR_RELAYED"})
 
     assert echoed.content == "relayed-into-the-container"
+
+
+@pytest.mark.skipif(
+    not given.an_image_present(IMAGE_BY_LAUNCHER["uvx"]),
+    reason="needs Docker and the uvx image present locally, which this test never pulls",
+)
+async def test_a_blocked_confined_server_is_replaced_under_the_same_name() -> None:
+    context = given.a_confined_context(LaunchOptions(unconfined=False, image=None, mounts=()))
+    server_args = ["--with", "mcp==1.26.0", "python", str(STALLING_SERVER)]
+    launch = decide_launch("uvx", server_args, context).launch
+
+    execution = ServerExecution(launch, context.runtime)
+    async with (
+        execution,
+        StdioMCPClient.connect(launch, tool_call_timeout=5, teardown=execution) as client,
+    ):
+        assert is_timeout(await client.call_tool("block_loop", {}))
+        relaunched = await client.relaunch()
+        echoed = await client.call_tool("echo", {})
+
+    assert relaunched
+    assert echoed.content == "ok"
+    assert execution.record is not None
+    assert execution.record.oom_killed is False  # read on both containers, neither killed
+    then.no_container_is_left(context.container_name)

@@ -1,13 +1,18 @@
 """A server whose tools stall, for the ping tests of the client.
 
 `wait_forever` never returns but leaves the event loop free, `block_loop` blocks the loop,
-`echo` answers at once and `pid` answers with the server's process ID. `--ignore-ping` leaves
-every ping unanswered, and `--error-ping` answers it with a JSON-RPC error.
-`--exit-before-initialize` and `--exit-on-list-tools` write `DYING_WORDS` to stderr and exit,
-before the handshake or while answering `tools/list`.
+`echo` answers at once and `pid` answers with the server's process ID. `exit` exits without
+answering, and `exit_leaving_stdout_open` exits while a child of its own keeps the server's stdout
+open for `ORPHAN_SECONDS`, so the client sees no end of the stream and its next write finds no
+reader. `--ignore-ping` leaves every ping unanswered, and `--error-ping` answers it with a JSON-RPC
+error. `--exit-before-initialize` and `--exit-on-list-tools` write `DYING_WORDS` to stderr and exit,
+before the handshake or while answering `tools/list`. `--serve-once PATH` serves the launch that
+finds no file at PATH and writes it, so a second launch exits before the handshake.
 """
 
 import os
+import pathlib
+import subprocess
 import sys
 import time
 from typing import Any
@@ -28,10 +33,11 @@ from mcp.types import (
 )
 
 BLOCKED_LOOP_SECONDS = 3600
+ORPHAN_SECONDS = 10
 DYING_WORDS = "the stalling server is going away"
 TOOLS = [
     Tool(name=name, inputSchema={"type": "object"})
-    for name in ("wait_forever", "block_loop", "echo", "pid")
+    for name in ("wait_forever", "block_loop", "echo", "pid", "exit", "exit_leaving_stdout_open")
 ]
 
 server = Server("stalling")
@@ -50,6 +56,11 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
         await anyio.sleep_forever()
     if name == "block_loop":
         time.sleep(BLOCKED_LOOP_SECONDS)
+    if name == "exit":
+        os._exit(0)
+    if name == "exit_leaving_stdout_open":
+        _orphan_holding_stdout()
+        os._exit(0)
     text = str(os.getpid()) if name == "pid" else "ok"
     return CallToolResult(content=[TextContent(type="text", text=text)])
 
@@ -59,6 +70,21 @@ def _die() -> None:
     sys.stderr.write(f"{DYING_WORDS}\n")
     sys.stderr.flush()
     os._exit(3)
+
+
+def _orphan_holding_stdout() -> None:
+    subprocess.Popen(
+        [sys.executable, "-c", f"import time; time.sleep({ORPHAN_SECONDS})"],
+        stdin=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def _served_before(marker: pathlib.Path) -> bool:
+    if marker.exists():
+        return True
+    marker.touch()
+    return False
 
 
 async def _never_answered(request: PingRequest) -> ServerResult:
@@ -72,6 +98,10 @@ async def _answered_with_an_error(request: PingRequest) -> ServerResult:
 
 async def main() -> None:
     if "--exit-before-initialize" in sys.argv[1:]:
+        _die()
+    if "--serve-once" in sys.argv[1:] and _served_before(
+        pathlib.Path(sys.argv[sys.argv.index("--serve-once") + 1])
+    ):
         _die()
     if "--ignore-ping" in sys.argv[1:]:
         server.request_handlers[PingRequest] = _never_answered

@@ -77,9 +77,9 @@ def graph_raising(error: Exception) -> FakeGraphs:
 
 @dataclass
 class FakeConnect:
-    """Stands in for `connect`. An error leaving the client comes out wrapped in nested groups,
-    as the MCP SDK's task groups wrap it, or bare when `grouped` is off, as it leaves a server
-    noisy at shutdown."""
+    """Stands in for `connect`. An error leaving the client comes out bare when `grouped` is off,
+    as the session's owner lets it out, or wrapped in nested groups when it is on, the shape the
+    MCP SDK's task groups give the error of an opening."""
 
     client: FakeMCPClient = field(default_factory=lambda: FakeMCPClient([]))
     grouped: bool = True

@@ -46,3 +46,16 @@ async def test_an_exception_out_of_the_graph_stops_with_its_message(flags: tuple
 
     assert exited.value.code == 1
     assert f"Error: MCP server failed: {given.PROVIDER_FAILURE}" in output.getvalue()
+
+
+# An OSError the graph raises (a TimeoutError is one) is not a failure to open the session.
+async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
+    output = io.StringIO()
+    model = given.a_failing_model(ConnectionResetError(given.PROVIDER_FAILURE))
+    audit = given.an_audit_of(given.a_read_server(), output, model)
+
+    with pytest.raises(SystemExit) as exited:
+        await audit.run()
+
+    assert exited.value.code == 1
+    assert f"Error: MCP server failed: {given.PROVIDER_FAILURE}" in output.getvalue()

@@ -1,5 +1,6 @@
 import os
 import pathlib
+import subprocess
 from uuid import uuid4
 
 from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
@@ -27,3 +28,10 @@ def a_mount_hostile_directory(root: pathlib.Path, name: str, leaf: str) -> pathl
     directory = root / name / leaf
     directory.mkdir(parents=True)
     return directory
+
+
+def an_image_present(image: str) -> bool:
+    if not DockerRuntime().available():
+        return False
+    inspection = subprocess.run(["docker", "image", "inspect", image], capture_output=True)
+    return inspection.returncode == 0

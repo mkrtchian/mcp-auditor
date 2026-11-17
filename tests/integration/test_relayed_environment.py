@@ -36,6 +36,20 @@ async def test_the_sdk_logs_never_quote_a_redacted_value(
     assert all(MARKER in r.getMessage() for r in rejected)
 
 
+async def test_a_relaunch_writes_no_value_and_logs_no_exception_text(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    redacted = RelayRequest(redacted=(given.NAME,))
+
+    echo = await given.echoed_through_the_audit_boundaries(redacted, relaunched=True)
+
+    assert echo.response == MARKER
+    assert given.VALUE not in echo.stderr
+    assert given.VALUE not in caplog.text
+    assert not [r for r in caplog.records if r.exc_info or r.name.startswith("mcp_auditor")]
+
+
 async def test_a_plain_variable_comes_back_in_the_clear() -> None:
     echo = await given.echoed_through_the_audit_boundaries(RelayRequest(plain=(given.NAME,)))
 

@@ -76,8 +76,9 @@ async def classified[T](call: Awaitable[T]) -> T:
 
 @contextmanager
 def audit_failures_unwrapped() -> Generator[None]:
-    """Lets an `AuditFailed` out bare. It crosses the MCP client wrapped in nested exception
-    groups, or bare from a server noisy at shutdown, and `except*` reads both shapes."""
+    """Lets an `AuditFailed` out bare. It leaves the MCP client bare, since the session's task
+    groups live in the task that owns the session, and `except*` reads it bare or wrapped in
+    exception groups alike."""
     try:
         yield
     except* AuditFailed as group:

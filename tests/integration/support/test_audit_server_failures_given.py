@@ -43,5 +43,5 @@ def an_audit_of(launch: ServerLaunch, output: io.StringIO, llm: LLMPort | None =
     )
 
 
-def a_failing_model() -> RaisingLLM:
-    return RaisingLLM(RuntimeError(PROVIDER_FAILURE))
+def a_failing_model(error: Exception | None = None) -> RaisingLLM:
+    return RaisingLLM(error or RuntimeError(PROVIDER_FAILURE))

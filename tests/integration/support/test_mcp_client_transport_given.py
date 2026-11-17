@@ -4,7 +4,9 @@ import os
 import pathlib
 import sys
 import time
+from dataclasses import dataclass, field
 
+import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
@@ -19,6 +21,10 @@ from mcp_auditor.domain import AttackContext, TestCaseBatch
 from mcp_auditor.report_files import ReportPaths
 from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from tests.fakes import FakeContainerRuntime, FakeLLM
+from tests.integration.support.detection_fake_targets import (
+    a_docker_that_runs_its_command_on_the_host,
+    removals,
+)
 
 READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
 STALLING_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "stalling_server.py"
@@ -32,6 +38,32 @@ def a_stalling_server(*flags: str) -> ServerLaunch:
     return ServerLaunch.unconfined(sys.executable, [str(STALLING_SERVER_PATH), *flags])
 
 
+def a_declared_stalling_container(*docker_options: str) -> ServerLaunch:
+    args = ["run", *docker_options, sys.executable, str(STALLING_SERVER_PATH)]
+    return ServerLaunch.declared_container("docker", args, client_env={})
+
+
+def a_docker_on_the_host(directory: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
+    docker = a_docker_that_runs_its_command_on_the_host(directory)
+    monkeypatch.setenv("PATH", f"{docker}{os.pathsep}{os.environ['PATH']}")
+    return docker
+
+
+@dataclass
+class RecordingTeardown:
+    """Ends no server: it waits `lasting_seconds`, and records the removals the Docker shim of
+    `seeing_removals_in` logged by the time it is called."""
+
+    lasting_seconds: float = 0
+    seeing_removals_in: pathlib.Path | None = None
+    removals_seen: list[list[str]] = field(default_factory=list[list[str]])
+
+    async def end_server(self) -> None:
+        if self.seeing_removals_in is not None:
+            self.removals_seen.append(removals(self.seeing_removals_in))
+        await asyncio.sleep(self.lasting_seconds)
+
+
 def a_command_not_found() -> ServerLaunch:
     return ServerLaunch.unconfined("mcp-auditor-no-such-command", [])
 
@@ -40,6 +72,17 @@ async def the_process_ends(pid: int, within_seconds: float = 10) -> bool:
     deadline = time.monotonic() + within_seconds
     while time.monotonic() < deadline:
         if not _running(pid):
+            return True
+        await asyncio.sleep(0.1)
+    return False
+
+
+async def the_process_group_ends(pgid: int, within_seconds: float = 10) -> bool:
+    deadline = time.monotonic() + within_seconds
+    while time.monotonic() < deadline:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
             return True
         await asyncio.sleep(0.1)
     return False
@@ -73,8 +116,8 @@ async def the_ping_error_code(*flags: str) -> int | None:
     return None
 
 
-def an_audit_of(launch: ServerLaunch) -> Audit:
-    # One read case, judged and summarized by the same scripted model, no chain.
+def an_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
+    # One case per tool, judged and summarized by the same scripted model, no chain.
     batch = TestCaseBatch(cases=[graph.a_payload(arguments={"path": "/outside/flag"})])
     llm = FakeLLM([batch, graph.a_judgment(), AttackContext()])
     config = AuditConfig(
@@ -82,6 +125,7 @@ def an_audit_of(launch: ServerLaunch) -> Audit:
         report_paths=ReportPaths(),
         ci=CIOptions(),
         launch=LaunchOptions(unconfined=True, image=None, mounts=()),
+        tools_filter=tools,
     )
     return Audit(
         config=config,
