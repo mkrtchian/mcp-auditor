@@ -1,5 +1,5 @@
 """The `vet` subcommand's options, the defaults it builds its dependencies with, and its line on
-whether each server answers the ping."""
+whether each server answers the ping, on its first pass or its second."""
 
 from pathlib import Path
 
@@ -127,3 +127,20 @@ def test_a_server_failing_its_benign_call_while_answering_the_ping_still_exits_o
         f"{run_given.QUEUE_SERVER}: benign call errored: ValueError, answers the ping: yes"
         in capsys.readouterr().out
     )
+
+
+def test_vet_prints_a_server_answering_only_its_second_pass_with_its_first_pass_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    failures = {run_given.QUEUE_SERVER: ["boom", None]}
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    assert run_nuisance.main(["vet", *arguments]) == 0
+
+    out = capsys.readouterr().out
+    assert (
+        f"{run_given.QUEUE_SERVER}: ok, on its second pass (first pass: boom), answers the ping:"
+        in out
+    )
+    assert f"{given.SERVER}: ok, answers the ping:" in out

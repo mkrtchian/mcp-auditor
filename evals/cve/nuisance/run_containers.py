@@ -5,10 +5,12 @@ which its provisioner sends again, so no state an earlier command wrote reaches 
 swept at the end. Both removals run `docker rm -f -v`, so a container's anonymous volumes go with
 it. The pulled backend (the Doris cluster) is removed by its container name at that start too, since
 the counted SQL tools can write its state, and its provisioner stands it again from its image and
-its seed; the end sweep leaves it running, as the calibration check of a holdout target shares it. A
-backend-less server with public names launches a holder and stand-ins, whose images the run rebuilds
-but never sweeps by tag: the launch removes its own containers, and a calibration check may run
-containers of the same images."""
+its seed; the end sweep leaves it running, as the calibration check of a holdout target shares it.
+A server's own backend containers, the Doris cluster by name included, are removed again before
+that server's second pass of the vet (`vetting.drop_failing_servers`), so its provisioner stands
+them again for that pass. A backend-less server with public names launches a holder and
+stand-ins, whose images the run rebuilds but never sweeps by tag: the launch removes its own
+containers, and a calibration check may run containers of the same images."""
 
 from __future__ import annotations
 
@@ -80,8 +82,9 @@ def refuse_server_containers(host: ContainerHost, images: RunImages, refusal: st
 
 def remove_backend_containers(host: ContainerHost, images: RunImages) -> None:
     """Before the rebuild: after it, the tag names the new image and no longer matches a
-    container started from the previous build. A reset container is removed whether it runs or
-    not, the removal being unchecked."""
+    container started from the previous build. A removal after the rebuild (the vet's second pass)
+    finds the containers by tag, since they were started from the rebuilt image. A reset container
+    is removed whether it runs or not, the removal being unchecked."""
     running = host.running_containers(images.backend_tags) if images.backend_tags else []
     removed = [*running, *images.reset_containers]
     if removed:  # `docker rm -f` with no name fails

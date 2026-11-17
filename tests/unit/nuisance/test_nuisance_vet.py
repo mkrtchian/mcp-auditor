@@ -48,6 +48,34 @@ def test_a_server_failing_its_benign_call_exits_one_with_its_reason(
     assert "1 of 2 servers answer their benign calls" in out
 
 
+def test_a_server_answering_only_its_second_pass_exits_zero_among_the_answering_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    failures = {walk_given.QUEUE_SERVER: ["benign call errored: ValueError", None]}
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    exit_code = run_nuisance.main(["vet", *arguments])
+
+    assert exit_code == 0
+    assert "2 of 2 servers answer their benign calls" in capsys.readouterr().out
+
+
+def test_a_server_failing_both_passes_exits_one_with_its_second_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    failures = {walk_given.QUEUE_SERVER: ["first failure", "second failure"]}
+    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    exit_code = run_nuisance.main(["vet", *arguments])
+
+    out = capsys.readouterr().out
+    assert exit_code == 1
+    assert f"{walk_given.QUEUE_SERVER}: second failure, answers the ping:" in out
+    assert "first failure" not in out
+
+
 def test_a_server_container_running_at_start_refuses_with_nothing_rebuilt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

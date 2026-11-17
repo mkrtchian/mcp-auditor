@@ -28,7 +28,6 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
 )
 from evals.cve.nuisance.holdout_servers import run_population
-from evals.cve.nuisance.results import NotRunServer
 from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.run_containers import (
     refuse_server_containers,
@@ -36,7 +35,7 @@ from evals.cve.nuisance.run_containers import (
     run_images,
     sweep_run_containers,
 )
-from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
+from evals.cve.nuisance.vetting import VetResult, benign_call, drop_failing_servers
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,
@@ -57,12 +56,6 @@ class VetDeps:
     check_networks: Callable[[], None]
     # Whether each server answered a ping after its handshake, by package, filled by benign_call.
     ping_answers: dict[str, bool] = field(default_factory=dict[str, bool])
-
-
-@dataclass(frozen=True)
-class VetResult:
-    not_run: list[NotRunServer]
-    surviving: list[AdmittedServer]
 
 
 def add_vet_arguments(parser: argparse.ArgumentParser) -> None:
@@ -143,8 +136,7 @@ async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetRe
     deps.rebuild(images.services)
     refuse_server_containers(deps, images, _REFUSAL)
     try:
-        not_run, surviving = await drop_failing_servers(servers, deps.benign_call)
-        return VetResult(not_run, surviving)
+        return await drop_failing_servers(servers, deps.benign_call, deps)
     finally:
         sweep_run_containers(deps, images)
 
@@ -152,11 +144,17 @@ async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetRe
 def _print_vet_results(
     servers: Sequence[AdmittedServer], result: VetResult, ping_answers: Mapping[str, bool]
 ) -> None:
-    reasons = {entry.server_package: entry.reason for entry in result.not_run}
+    outcomes = {
+        **{
+            package: f"ok, on its second pass (first pass: {reason})"
+            for package, reason in result.second_pass.items()
+        },
+        **{entry.server_package: entry.reason for entry in result.not_run},
+    }
     for server in servers:
         package = server.server_package
         ping = _PING_ANSWER[ping_answers.get(package)]
-        print(f"{package}: {reasons.get(package, 'ok')}, answers the ping: {ping}")
+        print(f"{package}: {outcomes.get(package, 'ok')}, answers the ping: {ping}")
     print(f"{len(result.surviving)} of {len(servers)} servers answer their benign calls")
 
 

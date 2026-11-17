@@ -22,21 +22,30 @@ ACCEPTANCE = admission_given.ACCEPTANCE_PACKAGE
 
 def deps_on(
     host: DockerHost,
-    failures: Mapping[str, str] | None = None,
+    failures: Mapping[str, str | Sequence[str | None]] | None = None,
     ping_answers: Mapping[str, bool] | None = None,
 ) -> VetDeps:
     """Each benign call leaves its server's container running, as a server outliving its call
-    does, fails with the reason `failures` gives its server, and records the ping answer
-    `ping_answers` gives it, a server it does not name never connecting to a ping."""
+    does, fails with the reason `failures` gives its server (a string on every call, a sequence
+    one reason per successive call), and records the ping answer `ping_answers` gives it, a server
+    it does not name never connecting to a ping."""
     recorded: dict[str, bool] = {}
+    calls: dict[str, int] = {}
 
     async def benign_call(server: AdmittedServer) -> str | None:
         await host.benign_call(server)
+        package = server.server_package
         tag = nuisance_images.image_tag(server.service)
         host.containers.setdefault(tag, []).append(f"{server.service}_left")
-        if server.server_package in (ping_answers or {}):
-            recorded[server.server_package] = (ping_answers or {})[server.server_package]
-        return (failures or {}).get(server.server_package)
+        if package in (ping_answers or {}):
+            recorded[package] = (ping_answers or {})[package]
+        calls[package] = calls.get(package, 0) + 1
+        scripted = (failures or {}).get(package)
+        return (
+            scripted
+            if scripted is None or isinstance(scripted, str)
+            else scripted[calls[package] - 1]
+        )
 
     return VetDeps(
         rebuild=host.rebuild,

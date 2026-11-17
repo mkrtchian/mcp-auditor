@@ -145,9 +145,9 @@ async def run_nuisance(
 async def _run_surviving(
     population: RunPopulation, deps: NuisanceDeps, ctx: _RunContext, tree: TreeState
 ) -> NuisanceRunResult:
-    not_run, surviving = await drop_failing_servers(population.audited, deps.benign_call)
-    assembled, dropped, failure = await _run_all(surviving, deps, ctx)
-    all_not_run = [*not_run, *dropped]
+    vetted = await drop_failing_servers(population.audited, deps.benign_call, deps)
+    assembled, dropped, failure = await _run_all(vetted.surviving, deps, ctx)
+    all_not_run = [*vetted.not_run, *dropped]
     if failure is not None:
         partial = _assemble_run(ctx, deps, population, assembled, all_not_run, tree)
         raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
