@@ -150,7 +150,9 @@ async def _run_surviving(
     all_not_run = [*vetted.not_run, *dropped]
     if failure is not None:
         partial = _assemble_run(ctx, deps, population, assembled, all_not_run, tree)
-        raise RunInterrupted(dataclasses.replace(partial, partial=True), failure)
+        raise RunInterrupted(
+            dataclasses.replace(partial, partial=True, second_pass=vetted.second_pass), failure
+        )
     if not assembled:
         raise Refused(
             _REFUSAL,
@@ -159,7 +161,8 @@ async def _run_surviving(
                 *(entry.reason for entry in all_not_run),
             ],
         )
-    return _assemble_run(ctx, deps, population, assembled, all_not_run, tree)
+    result = _assemble_run(ctx, deps, population, assembled, all_not_run, tree)
+    return dataclasses.replace(result, second_pass=vetted.second_pass)
 
 
 def _refuse_tracing() -> None:
@@ -284,7 +287,7 @@ def _assemble_run(
         walk_record_commit=ctx.provenance.walk_record_commit,
         image_ids={
             **deps.image_ids(server_services(servers)),
-            **deps.backend_image_ids(_backend_images(servers)),
+            **deps.backend_image_ids(nuisance_images.backend_images(servers)),
         },
         recorded_at=deps.clock(),
         servers=results,
@@ -296,10 +299,3 @@ def _assemble_run(
         concurrency=ctx.concurrency,
         throttled_requests=deps.throttled_requests(),
     )
-
-
-def _backend_images(servers: Sequence[AdmittedServer]) -> list[str]:
-    images = (
-        image for server in servers if server.backend is not None for image in server.backend.images
-    )
-    return list(dict.fromkeys(images))

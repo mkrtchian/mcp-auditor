@@ -160,15 +160,23 @@ class InterruptingAudit:
 def deps_auditing(
     audit: Audit,
     *,
-    benign_call: dict[str, str | None] | None = None,
+    benign_call: Mapping[str, str | Sequence[str | None] | None] | None = None,
     throttled: int = 0,
     containers: FakeContainerSweep | None = None,
 ) -> NuisanceDeps:
+    """`benign_call` gives a server's failure reason, a string on every call, a sequence one
+    reason per successive call, a server it does not name answering every call."""
     reasons = benign_call or {}
     docker = containers or FakeContainerSweep()
+    calls: dict[str, int] = {}
 
     async def _benign_call(server: AdmittedServer) -> str | None:
-        return reasons.get(server.server_package)
+        package = server.server_package
+        calls[package] = calls.get(package, 0) + 1
+        scripted = reasons.get(package)
+        if scripted is None or isinstance(scripted, str):
+            return scripted
+        return scripted[calls[package] - 1]
 
     return NuisanceDeps(
         audit=audit,

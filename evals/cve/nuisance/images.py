@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from evals.cve.detection import calibration_dossier
 
 if TYPE_CHECKING:
-    from evals.cve.nuisance.admission.admission import NuisanceAdmission
+    from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 
 
 def image_tag(service: str) -> str:
@@ -33,6 +33,13 @@ def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
         if inspected.returncode == 0:
             ids[tag] = inspected.stdout.strip()
     return ids
+
+
+def backend_images(servers: Sequence[AdmittedServer]) -> list[str]:
+    images = (
+        image for server in servers if server.backend is not None for image in server.backend.images
+    )
+    return list(dict.fromkeys(images))
 
 
 def namespace_problems(admission: NuisanceAdmission) -> list[str]:

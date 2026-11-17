@@ -5,7 +5,7 @@ aggregates are computed from them, so no two fields can disagree."""
 
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 
@@ -155,6 +155,8 @@ class NuisanceRunResult:
     prices_as_of: date
     concurrency: int
     throttled_requests: int
+    # The servers run only after a clean second pass of the vet, to their first pass's reason.
+    second_pass: dict[str, str] = field(default_factory=dict[str, str])
     partial: bool = False  # a run stopped by an exception, its finished entries only
 
 

@@ -24,7 +24,7 @@ def render_markdown(report: NuisanceReport) -> str:
             *_servers_section(report.servers),
             *_raw_fail_section(report.servers),
             *_exits_section(report),
-            *_not_run_section(report.not_run, len(report.servers)),
+            *_not_run_section(report.not_run, len(report.servers), report.second_pass),
             *_health_section(report.servers),
             *_incomplete_runs_lines(report),
             *_throttled_lines(report),
@@ -107,14 +107,17 @@ def _exits_section(report: NuisanceReport) -> list[str]:
 _BENIGN_CALL_FAILED = "benign call failed before the runs"
 
 
-def _not_run_section(not_run: Sequence[NotRunLine], audited_servers: int) -> list[str]:
-    """The servers left out of N for this run only, unlike the exits: one row per
-    cause present, then every server with its reason. The two in-run causes are counted against
-    the servers launched, the benign-call failures plainly since they were never launched for the
-    runs. The rule's other exits (never fixed, no counted tool, spent by a reading, a fork of an
-    excluded server) have no row the code derives and live in the log."""
+def _not_run_section(
+    not_run: Sequence[NotRunLine], audited_servers: int, second_pass: dict[str, str]
+) -> list[str]:
+    """The servers left out of N for this run only, unlike the exits: one row per cause present,
+    then every server with its reason, closed by the servers that ran only after a clean solo
+    second pass of the vet, each with its first pass's reason. The two in-run causes are counted
+    against the servers launched, the benign-call failures plainly since they were never launched
+    for the runs. The rule's other exits (never fixed, no counted tool, spent by a reading, a fork
+    of an excluded server) have no row the code derives and live in the log."""
     if not not_run:
-        return ["## Not run", "- none", ""]
+        return ["## Not run", "- none", *_second_pass_lines(second_pass), ""]
     by_cause: dict[NotRunCause, list[str]] = {}
     for line in not_run:
         by_cause.setdefault(line.cause, []).append(line.server_package)
@@ -127,7 +130,14 @@ def _not_run_section(not_run: Sequence[NotRunLine], audited_servers: int) -> lis
     if benign := by_cause.get(NotRunCause.BENIGN_CALL_FAILED):
         counts.append(f"- {_BENIGN_CALL_FAILED}: {len(benign)} server(s): {', '.join(benign)}")
     servers = [f"- {line.server_package}: {line.reason}" for line in not_run]
-    return ["## Not run", *counts, *servers, ""]
+    return ["## Not run", *counts, *servers, *_second_pass_lines(second_pass), ""]
+
+
+def _second_pass_lines(second_pass: dict[str, str]) -> list[str]:
+    return [
+        f"- {package}: run after a clean solo second pass of the vet (first pass: {reason})"
+        for package, reason in second_pass.items()
+    ]
 
 
 def _health_section(servers: Sequence[ServerLine]) -> list[str]:

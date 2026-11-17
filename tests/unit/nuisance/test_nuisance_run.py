@@ -118,6 +118,31 @@ async def test_a_server_failing_its_benign_call_is_never_audited():
     assert server.runs == 3
 
 
+async def test_a_server_answering_only_its_second_pass_is_audited_with_its_first_reason():
+    flaky, steady = given.a_server("npm:flaky"), given.a_server("npm:steady")
+    audit = given.scripted(
+        {
+            package: [given.an_audit(False) for _ in range(3)]
+            for package in ("npm:flaky", "npm:steady")
+        }
+    )
+    deps = given.deps_auditing(audit, benign_call={"npm:flaky": ["boom", None]})
+
+    result = await given.run([flaky, steady], deps)
+
+    assert [server.server_package for server in result.servers] == ["npm:flaky", "npm:steady"]
+    assert result.not_run == []
+    assert result.second_pass == {"npm:flaky": "boom"}
+
+
+async def test_a_run_where_every_server_answers_its_first_pass_has_no_second_pass():
+    audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
+
+    result = await given.run([given.a_server("npm:first")], given.deps_auditing(audit))
+
+    assert result.second_pass == {}
+
+
 async def test_a_server_dropped_in_one_run_is_not_run():
     dropped, kept = given.a_server("npm:dropped"), given.a_server("npm:kept")
     audit = given.scripted(

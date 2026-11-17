@@ -100,6 +100,45 @@ def test_the_not_run_section_counts_the_in_run_drops_against_the_servers_launche
     assert f"- npm:throttled: {throttled}\n" in markdown
 
 
+_SECOND_PASS_LINE = (
+    "- npm:flaky: run after a clean solo second pass of the vet (first pass: boom)\n"
+)
+
+
+def test_the_not_run_section_closes_on_the_second_pass_servers_after_the_not_run_ones():
+    run = given.a_run(
+        [a_server_result("A")],
+        not_run=[
+            NotRunServer("npm:benign", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)
+        ],
+        second_pass={"npm:flaky": "boom"},
+    )
+
+    markdown = render_markdown(build_report(run))
+
+    assert f"- npm:benign: the benign call errored\n{_SECOND_PASS_LINE}" in markdown
+
+
+def test_the_second_pass_servers_follow_none_when_no_server_is_not_run():
+    run = given.a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
+
+    markdown = render_markdown(build_report(run))
+
+    assert f"## Not run\n- none\n{_SECOND_PASS_LINE}\n" in markdown
+
+
+def test_no_second_pass_line_when_every_server_answered_its_first_pass():
+    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+
+    assert "second pass" not in markdown
+
+
+def test_build_report_carries_each_second_pass_server_with_its_first_reason():
+    run = given.a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
+
+    assert build_report(run).second_pass == {"npm:flaky": "boom"}
+
+
 def test_the_raw_fail_count_is_reported_per_server_and_per_run():
     run = given.a_run([a_server_result("A", flagged_runs=2), a_server_result("B")])
 

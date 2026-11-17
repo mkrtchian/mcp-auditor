@@ -103,6 +103,7 @@ class NuisanceReport(BaseModel):
     conclusion: ConclusionLine | None
     servers: list[ServerLine]
     not_run: list[NotRunLine]
+    second_pass: dict[str, str]  # run only after a clean second pass of the vet, to its reason
     exits: list[ExitLine]
     incomplete_run_count: int
     incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
@@ -155,6 +156,7 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         conclusion=_conclusion_line(pair, run.runs),
         servers=[_server_line(server) for server in run.servers],
         not_run=[NotRunLine.of(server) for server in run.not_run],
+        second_pass=dict(run.second_pass),
         exits=[ExitLine.of(exit_row) for exit_row in run.exits],
         incomplete_run_count=run.incomplete_run_count,
         incomplete_runs_by_cause=dict(

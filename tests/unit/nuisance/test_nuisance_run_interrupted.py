@@ -43,3 +43,16 @@ async def test_any_other_exception_interrupts_the_run_the_same_way():
 
     assert interrupted.value.cause is bug
     assert [server.server_package for server in interrupted.value.partial.servers] == ["npm:done"]
+
+
+async def test_the_partial_result_names_the_servers_run_after_their_second_pass():
+    servers = [given.a_server(package) for package in ("npm:done", "npm:failing")]
+    audit = given.InterruptingAudit("npm:done", "npm:failing", KeyError("a bug in the run"))
+    deps = given.deps_auditing(audit, benign_call={"npm:done": ["boom", None]})
+
+    with pytest.raises(RunInterrupted) as interrupted:
+        await given.run(servers, deps)
+
+    partial = interrupted.value.partial
+    assert partial.partial
+    assert partial.second_pass == {"npm:done": "boom"}

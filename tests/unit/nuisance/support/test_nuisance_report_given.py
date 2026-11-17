@@ -27,6 +27,7 @@ def a_run(
     cutoffs: dict[str, Cutoff] | None = None,
     throttled_requests: int = 0,
     concurrency: int = 6,
+    second_pass: dict[str, str] | None = None,
 ) -> NuisanceRunResult:
     return NuisanceRunResult(
         runs=RUNS,
@@ -56,6 +57,7 @@ def a_run(
         prices_as_of=date(2026, 10, 15),
         concurrency=concurrency,
         throttled_requests=throttled_requests,
+        second_pass=second_pass or {},
     )
 
 
