@@ -1,6 +1,7 @@
 """One audit of one admitted server on its patched image, with the suite's retry policy: a
-refused or unreadable step is kept and counted downstream, a launch failure, a throttled attempt
-or a transient provider error is retried, and a fatal provider error stops the run."""
+refused or unreadable step, or one whose prompt was longer than the model's context window, is
+kept and counted downstream, a launch failure, a throttled attempt or a transient provider error
+is retried, and a fatal provider error stops the run."""
 
 from collections.abc import Awaitable, Callable, Generator, Mapping
 from contextlib import contextmanager
@@ -41,7 +42,9 @@ from mcp_auditor.domain.models import AuditReport, MissCause
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
 
-_INCOMPLETE_CAUSES = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
+_INCOMPLETE_CAUSES = frozenset(
+    {MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG}
+)
 
 
 @contextmanager

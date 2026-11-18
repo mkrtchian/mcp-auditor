@@ -210,7 +210,7 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
     markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
-        "Incomplete runs (a model call refused or unreadable): 1 (A)\n"
+        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (A)\n"
         "- provider_refusal: 1 run(s)\n"
         "- unreadable_answer: 1 run(s)\n"
     ) in markdown
@@ -283,7 +283,7 @@ def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurr
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
     assert (
-        "Incomplete runs (a model call refused or unreadable): 1 (A)\n"
+        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (A)\n"
         "Throttled by the model provider: 12 requests at concurrency 4\n"
     ) in markdown
 

@@ -161,7 +161,7 @@ def _health_facts(line: ServerLine) -> str:
     return ", ".join(facts)
 
 
-_INCOMPLETE_RUNS = "Incomplete runs (a model call refused or unreadable)"
+_INCOMPLETE_RUNS = "Incomplete runs (a model call missed: refused, unreadable or too long)"
 
 
 def _incomplete_runs_lines(report: NuisanceReport) -> list[str]:

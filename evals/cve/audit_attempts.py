@@ -9,9 +9,10 @@ from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
 from mcp_auditor.domain.models import AuditReport, MissCause
 
-# A missed model call (a policy refusal or an unreadable answer) leaves the run saying nothing of
-# detection. The generated prompts differ from one audit to the next, so a new attempt usually
-# passes the provider's filter and gets a readable answer.
+# A missed model call (a policy refusal, an unreadable answer or a prompt longer than the model's
+# context window) leaves the run saying nothing of detection. The generated prompts differ from one
+# audit to the next, so a new attempt usually passes the provider's filter and gets a readable
+# answer.
 INCOMPLETE_ATTEMPTS = 3
 
 
@@ -68,6 +69,7 @@ async def graded_despite_missed_model_calls[T](
 _CAUSE_WORDING = {
     MissCause.PROVIDER_REFUSAL: "refused by the model provider",
     MissCause.UNREADABLE_ANSWER: "unreadable model answer",
+    MissCause.PROMPT_TOO_LONG: "prompt longer than the model's context window",
 }
 
 

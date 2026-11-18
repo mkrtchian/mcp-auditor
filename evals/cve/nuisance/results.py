@@ -16,7 +16,7 @@ from evals.cve.holdout_conditions import Cutoff
 class NuisanceRunStatus:
     flagged: bool
     split_flagged: bool  # flagged through a counted tool of the split flaw
-    incomplete: bool  # a model call refused or unreadable
+    incomplete: bool  # a model call missed: refused, unreadable or too long
     raw_fail_count: int  # report-only, as the one below
     declared_function_fail_count: int  # the part on the tools left out by their declared function
     non_protocol_lines: int  # report-only, as the four below

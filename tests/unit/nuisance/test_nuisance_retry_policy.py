@@ -14,6 +14,7 @@ from evals.cve.nuisance.audit import (
     NuisanceAudit,
     ProviderError,
     gate_run,
+    incomplete_causes,
     is_incomplete,
     nuisance_audit,
 )
@@ -45,7 +46,10 @@ async def test_a_clean_report_stands_at_the_first_call():
     assert attempt.calls == 1
 
 
-@pytest.mark.parametrize("cause", [MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER])
+@pytest.mark.parametrize(
+    "cause",
+    [MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG],
+)
 async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
     audit = run_given.an_audit(False, missed=cause)
     attempt: Attempt = ScriptedCalls([audit])
@@ -62,13 +66,17 @@ async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
         (None, False),
         (MissCause.PROVIDER_REFUSAL, True),
         (MissCause.UNREADABLE_ANSWER, True),
+        (MissCause.PROMPT_TOO_LONG, True),
         (MissCause.PROVIDER_THROTTLED, False),
     ],
 )
-def test_only_a_refused_or_unreadable_step_makes_a_report_incomplete(
+def test_only_a_refused_unreadable_or_too_long_step_makes_a_report_incomplete(
     missed: MissCause | None, incomplete: bool
 ):
-    assert is_incomplete(run_given.a_report(False, missed=missed)) is incomplete
+    report = run_given.a_report(False, missed=missed)
+
+    assert is_incomplete(report) is incomplete
+    assert incomplete_causes(report) == ({missed} if incomplete else set())
 
 
 async def test_a_launch_failing_at_every_attempt_drops_the_run():
@@ -155,12 +163,13 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step():
     assert audits.calls == 1
 
 
+@pytest.mark.parametrize("cause", [MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG])
 async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
-    output: StringIO,
+    cause: MissCause, output: StringIO
 ):
-    unreadable = run_given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER)
+    incomplete = run_given.an_audit(False, missed=cause)
     clean = run_given.an_audit(False)
-    audits = ScriptedCalls[NuisanceAudit | DroppedRun]([unreadable, clean])
+    audits = ScriptedCalls[NuisanceAudit | DroppedRun]([incomplete, clean])
 
     run = await gate_run(run_given.a_server(), audits)
 

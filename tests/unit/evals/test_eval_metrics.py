@@ -416,11 +416,14 @@ def test_a_report_holding_a_throttled_step_raises_naming_it():
         raise_if_throttled(report)
 
 
-def test_a_report_holding_only_refused_or_unreadable_steps_does_not_raise():
+def test_a_report_holding_only_refused_unreadable_or_too_long_steps_does_not_raise():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
-    report = given.and_a_missed_judgment(
+    unreadable = given.and_a_missed_judgment(
         refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+    )
+    report = given.and_a_missed_judgment(
+        unreadable, "search", MissCause.PROMPT_TOO_LONG, "rejected as too long"
     )
 
     raise_if_throttled(report)

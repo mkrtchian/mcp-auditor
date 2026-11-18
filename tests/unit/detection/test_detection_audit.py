@@ -131,6 +131,23 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     assert "refused by the model provider and unreadable model answer" in printed
 
 
+async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    output = given.captured_console(monkeypatch)
+    too_long = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.PROMPT_TOO_LONG}))
+    graded = GradedAudit(a_detected_grade(), grammar.a_report())
+    attempt = given.ScriptedAttempts[GradedAudit]([too_long, graded])
+
+    await graded_despite_missed_model_calls(TARGET, attempt)
+
+    printed = " ".join(output.getvalue().split())
+    assert (
+        f"{TARGET.flaw_id}: attempt 1/{INCOMPLETE_ATTEMPTS}:"
+        " prompt longer than the model's context window, not graded"
+    ) in printed
+
+
 async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
     given.captured_console(monkeypatch)
     attempt = given.ScriptedAttempts[GradedAudit]([None])

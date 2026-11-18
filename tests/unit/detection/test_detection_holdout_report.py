@@ -122,7 +122,10 @@ def test_render_markdown_shows_the_number_ladder_controls_and_cost():
     assert "## Controls\n- clopper_pearson: " in markdown
     assert "- unchecked_as_misses_wilson: " in markdown
     assert "- CVE-C: out of calibration: patched: exploit 0 surfaces" in markdown
-    assert "Incomplete runs (a model call refused or unreadable): 1 (CVE-B)" in markdown
+    assert (
+        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (CVE-B)"
+        in markdown
+    )
     assert markdown.endswith("Total cost: $0.06")
 
 
@@ -151,7 +154,7 @@ def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
     assert (
-        "Incomplete runs (a model call refused or unreadable): 1 (CVE-B)\n"
+        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (CVE-B)\n"
         "- provider_refusal: 1 run(s)\n"
         "Throttled by the model provider: 12 requests at concurrency 4\n"
     ) in markdown
@@ -323,7 +326,7 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
     markdown = render_markdown(build_report(_run_with_incidents()))
 
     assert (
-        "Incomplete runs (a model call refused or unreadable): 2 (CVE-A, CVE-B)\n"
+        "Incomplete runs (a model call missed: refused, unreadable or too long): 2 (CVE-A, CVE-B)\n"
         "- provider_refusal: 2 run(s)\n"
         "- unreadable_answer: 1 run(s)\n"
     ) in markdown
