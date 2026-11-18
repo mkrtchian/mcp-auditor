@@ -130,7 +130,9 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.set_defaults(command=_run)
     run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
-    run.add_argument("--runs", type=positive_int, default=None, help="default 3, lowerable to 1")
+    run.add_argument(
+        "--runs", type=positive_int, default=None, help=f"default {NUISANCE_RUNS}, lowerable to 1"
+    )
     run.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
     run.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)

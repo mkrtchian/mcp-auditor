@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The benign probe, `python -m evals.cve.kit.benign_probe --record admission_record.json --image TAG`, run from a re-admission dossier, plays the record's benign calls (or those given with `--calls`) on the run's launch, its backend brought up as the run does, and exits `0` when every call's tool is listed, answers without error and holds its expected text, `1` otherwise.
 - `docs/glossary.md` defines the vocabulary the code, the docs and the rules share, one meaning per term, and `docs/glossary-log.md` maps the words of older ADRs and plans to the current terms.
 - The report counts, per tool, the responses shown cut to the model (`cut_responses` in the JSON report, a **Responses shown cut** line in the markdown report).
+- The nuisance run prints one status line per run of a server, with its progress: `flagged`, `not flagged` (either followed by `, incomplete` when a model call was refused, came back unreadable or was too long) or `run dropped` with its reason, and the runs done out of the total.
 
 ### Changed
 
@@ -170,6 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An `alibaba` answer cut at the output cap is retried as a truncated attempt, counted with its tokens, instead of failing the step with the `openai` SDK's `LengthFinishReasonError`.
 - The image rebuild before a holdout or nuisance run, `run_nuisance vet` and the nuisance gate, and the stale-image rebuild of the CVE benchmark preflight and the probe corpus capture, build their images through `docker compose build` in batches of eight, so a large rebuild no longer fails on a BuildKit `context deadline exceeded`. A failed batch stops the rebuild and names that batch's services.
 - Every tool response and error shown to a model is bounded at 20,000 characters, its middle cut and marked, so a huge response no longer ends the audit or costs a prompt of a million tokens, and a prompt the model provider still rejects for its length is a missed model call of cause `prompt_too_long`, where it used to end the audit.
+- `python -m evals.run_nuisance run --help` gives the default number of runs, 2, read from the code, where it said 3.
 
 ## [0.4.0] - 2026-10-05
 

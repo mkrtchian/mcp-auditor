@@ -148,3 +148,11 @@ def test_a_value_error_out_of_the_run_is_no_malformed_input(
 
     with pytest.raises(ValueError, match="a bug in the run"):
         run_nuisance.main(given.a_run_command(tmp_path))
+
+
+def test_run_help_gives_the_default_number_of_runs(capsys: pytest.CaptureFixture[str]):
+    with pytest.raises(SystemExit):
+        run_nuisance.main(["run", "--help"])
+
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "default 2, lowerable to 1" in help_text

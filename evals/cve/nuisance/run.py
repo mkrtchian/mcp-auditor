@@ -4,7 +4,8 @@ under the run conditions of a holdout run, keep no per-case trace, and assemble 
 A sibling of `holdout_run.run_holdout_targets`. The servers are passed in, so the tests hand it
 crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from
 the live settings by `default_deps`. The vet is `vetting`'s, the container hygiene
-`run_containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s.
+`run_containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s, the status line
+printed as each run finishes `run_status`'s.
 """
 
 import dataclasses
@@ -50,6 +51,7 @@ from evals.cve.nuisance.run_containers import (
     server_services,
     sweep_run_containers,
 )
+from evals.cve.nuisance.run_status import Audit, announcing, print_run_status
 from evals.cve.nuisance.solo import first_failure_then_alone, played_alone
 from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
 from evals.cve.run_images import (
@@ -73,8 +75,6 @@ _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCau
 # the holdout detection rate, whose budget is a constant, not a flag (detection-suite-rule.md, Run
 # conditions and statistic (A holdout run audits every target)), so no budget of its own here.
 
-type Audit = Callable[[AdmittedServer], Awaitable[NuisanceAudit | DroppedRun]]
-
 
 @dataclass(frozen=True)
 class NuisanceDeps:
@@ -86,6 +86,7 @@ class NuisanceDeps:
     read_tree: Callable[[], TreeState]
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     announce_audits: Callable[[int], None]
+    announce_run: Callable[[str], None]
     throttled_requests: Callable[[], int]
     running_containers: Callable[[Sequence[str]], list[str]]
     remove_containers: Callable[[Sequence[str]], None]
@@ -206,6 +207,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         read_tree,
         lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
+        print_run_status,
         lambda: throttles.requests,
         running_containers,
         remove_containers,
@@ -220,9 +222,11 @@ async def _run_all(
 ]:
     """The finished servers, assembled or dropped, and the exception that stopped the run, if
     any: a first exception out of a server's runs cancels every server still in flight."""
-    deps.announce_audits(len(surviving) * ctx.runs)
+    total = len(surviving) * ctx.runs
+    deps.announce_audits(total)
+    audit = announcing(deps.audit, deps.announce_run, total)
     finished, failure = await first_failure_then_alone(
-        surviving, lambda server: _run_server(server, deps.audit, ctx.runs)
+        surviving, lambda server: _run_server(server, audit, ctx.runs)
     )
     assembled: list[tuple[AdmittedServer, NuisanceServerResult]] = []
     dropped: list[NotRunServer] = []

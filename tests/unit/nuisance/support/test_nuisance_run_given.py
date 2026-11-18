@@ -163,10 +163,13 @@ def deps_auditing(
     benign_call: Mapping[str, str | Sequence[str | None] | None] | None = None,
     throttled: int = 0,
     containers: FakeContainerSweep | None = None,
+    announced: list[str] | None = None,
 ) -> NuisanceDeps:
     """`benign_call` gives a server's failure reason, a string on every call, a sequence one
-    reason per successive call, a server it does not name answering every call."""
+    reason per successive call, a server it does not name answering every call. `announced`
+    collects the status line of each finished run."""
     reasons = benign_call or {}
+    lines = announced if announced is not None else []
     docker = containers or FakeContainerSweep()
     calls: dict[str, int] = {}
 
@@ -187,6 +190,7 @@ def deps_auditing(
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
         clock=lambda: RECORDED_AT,
         announce_audits=lambda audits: None,
+        announce_run=lines.append,
         throttled_requests=lambda: throttled,
         running_containers=docker.running,
         remove_containers=docker.remove,
@@ -219,6 +223,9 @@ def deps_reaching_nothing() -> NuisanceDeps:
     def announce_audits(_audits: int) -> None:
         raise AssertionError("the audits were announced")
 
+    def announce_run(_line: str) -> None:
+        raise AssertionError("a run was announced")
+
     def throttled_requests() -> int:
         raise AssertionError("the throttled requests were read")
 
@@ -237,6 +244,7 @@ def deps_reaching_nothing() -> NuisanceDeps:
         read_tree,
         clock,
         announce_audits,
+        announce_run,
         throttled_requests,
         running_containers,
         remove_containers,

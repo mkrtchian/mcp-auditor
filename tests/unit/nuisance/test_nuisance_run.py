@@ -7,6 +7,7 @@ import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.support.test_nuisance_run_given as given
+import tests.unit.nuisance.support.test_nuisance_run_then as then
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
@@ -16,6 +17,7 @@ from evals.cve.nuisance.results import NotRunCause, ServerExit
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
+from tests.unit.nuisance.support.test_nuisance_solo_given import MAGENTO2
 
 
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
@@ -69,6 +71,53 @@ async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
     await given.run([failing, healthy], deps, runs=3)
 
     assert announced == [3]
+
+
+async def test_the_run_announces_each_finished_run_of_a_server_with_its_status():
+    flagged, dropped = given.a_server("npm:flagged"), given.a_server("npm:dropped")
+    audit = given.scripted(
+        {
+            "npm:flagged": [given.an_audit(True), given.an_audit(False)],
+            "npm:dropped": [DroppedRun(NotRunCause.LAUNCH_FAILURE), given.an_audit(False)],
+            MAGENTO2.server_package: [
+                given.an_audit(False),
+                given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+            ],
+        }
+    )
+    announced: list[str] = []
+
+    await given.run(
+        [MAGENTO2, flagged, dropped], given.deps_auditing(audit, announced=announced), runs=2
+    )
+
+    then.runs_announced(
+        announced,
+        together=[
+            "npm:flagged: flagged",
+            "npm:flagged: not flagged",
+            "npm:dropped: run dropped (a run failed to launch after retries)",
+            "npm:dropped: not flagged",
+        ],
+        alone=[
+            f"{MAGENTO2.server_package}: not flagged",
+            f"{MAGENTO2.server_package}: not flagged, incomplete",
+        ],
+    )
+
+
+async def test_a_run_with_no_surviving_server_announces_no_run():
+    announced: list[str] = []
+    deps = given.deps_auditing(
+        given.scripted({"npm:failing": []}),
+        benign_call={"npm:failing": "benign call errored"},
+        announced=announced,
+    )
+
+    with pytest.raises(Refused):
+        await given.run([given.a_server("npm:failing")], deps)
+
+    assert announced == []
 
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
