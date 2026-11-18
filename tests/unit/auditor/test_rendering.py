@@ -467,6 +467,18 @@ def test_markdown_has_no_coverage_gap_line_without_a_gap():
     assert "Coverage gap" not in result
 
 
+def test_markdown_tool_section_counts_its_responses_shown_cut():
+    report = given.a_report_with_a_cut_response_on_get_user()
+
+    result = render_markdown(report)
+
+    assert (
+        "**Responses shown cut**: 1 response(s) or error(s) over 20,000 characters, "
+        "shown to the model with their middle cut"
+    ) in then.tool_section(result, "get_user")
+    assert "Responses shown cut" not in then.tool_section(result, "list_items")
+
+
 def test_json_carries_the_coverage_gap():
     report = given.a_report_with_a_coverage_gap_on_get_user()
 

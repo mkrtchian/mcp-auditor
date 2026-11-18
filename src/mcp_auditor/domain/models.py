@@ -247,6 +247,14 @@ class ToolReport(BaseModel):
         chain_results = [ch.judge_result for ch in self.chains if ch.judge_result]
         return case_results + chain_results
 
+    @computed_field
+    @property
+    def cut_responses(self) -> int:
+        # Local import: domain.shown_response imports this module for ToolReport.
+        from mcp_auditor.domain.shown_response import cut_responses
+
+        return cut_responses(self)
+
 
 _READ_PREFIXES = (
     "get_",

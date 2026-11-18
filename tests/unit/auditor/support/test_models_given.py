@@ -15,6 +15,7 @@ from mcp_auditor.domain import (
     ToolReport,
 )
 from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
 
 def a_tool(
@@ -55,6 +56,11 @@ def a_report_with_finding(severity: Severity) -> AuditReport:
         tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
         provider_usage=ProviderUsage(),
     )
+
+
+def a_tool_report_with_a_cut_response() -> ToolReport:
+    case = TestCase(payload=a_payload(), response="x" * (MAX_SHOWN_LENGTH + 1))
+    return ToolReport(tool=a_tool(), cases=[case])
 
 
 def a_report(

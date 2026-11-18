@@ -24,6 +24,7 @@ from mcp_auditor.domain.relaunch_rendering import (
     render_relaunch_lines,
     render_relaunch_summary_lines,
 )
+from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
 MISS_CAUSE_LABELS = {
     MissCause.PROVIDER_REFUSAL: "Refused by the model provider",
@@ -162,6 +163,11 @@ def _render_tool_section(tool_report: ToolReport, report: AuditReport) -> str:
     for missed in (r for r in report.missed_model_calls if r.tool_name == name):
         label = MISS_CAUSE_LABELS[missed.cause]
         lines.append(f"**{label}**: {describe_missed_model_call(missed)}\n")
+    if tool_report.cut_responses > 0:
+        lines.append(
+            f"**Responses shown cut**: {tool_report.cut_responses} response(s) or error(s) over "
+            f"{MAX_SHOWN_LENGTH:,} characters, shown to the model with their middle cut\n"
+        )
     for case in tool_report.cases:
         lines.append(_render_case_section(case))
     for chain in tool_report.chains:

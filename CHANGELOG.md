@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `python -m evals.run_nuisance nuisance-dossier --server PKG --re-admission --out DIR` writes, outside the repository and free of any `mcp_auditor` import, the re-admission dossier of an admitted server: the admission dossier plus its committed record, the Dockerfiles of its run, its fix checks and its holdout target, its fix-check modules, its backend lifecycle and a `confinement.md` for its own launch. `--backend` is refused with it.
 - The benign probe, `python -m evals.cve.kit.benign_probe --record admission_record.json --image TAG`, run from a re-admission dossier, plays the record's benign calls (or those given with `--calls`) on the run's launch, its backend brought up as the run does, and exits `0` when every call's tool is listed, answers without error and holds its expected text, `1` otherwise.
 - `docs/glossary.md` defines the vocabulary the code, the docs and the rules share, one meaning per term, and `docs/glossary-log.md` maps the words of older ADRs and plans to the current terms.
+- The report counts, per tool, the responses shown cut to the model (`cut_responses` in the JSON report, a **Responses shown cut** line in the markdown report).
 
 ### Changed
 
@@ -168,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A generated payload holding a character that cannot be encoded as UTF-8 (a lone surrogate) is blocked before it is sent, with the argument named in the reason, instead of crashing the MCP transport and ending the audit.
 - An `alibaba` answer cut at the output cap is retried as a truncated attempt, counted with its tokens, instead of failing the step with the `openai` SDK's `LengthFinishReasonError`.
 - The image rebuild before a holdout or nuisance run, `run_nuisance vet` and the nuisance gate, and the stale-image rebuild of the CVE benchmark preflight and the probe corpus capture, build their images through `docker compose build` in batches of eight, so a large rebuild no longer fails on a BuildKit `context deadline exceeded`. A failed batch stops the rebuild and names that batch's services.
+- Every tool response and error shown to a model is bounded at 20,000 characters, its middle cut and marked, so a huge response no longer ends the audit or costs a prompt of a million tokens.
 
 ## [0.4.0] - 2026-10-05
 

@@ -61,6 +61,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **blocked payload**: a payload the guard stopped.
 - **relayed environment**: the variables an audit passes to the audited server with `--env` and `--env-plain`. Defined by: ADR 026.
 - **redacted variables**: the variables passed with `--env`. Code: `redacted_variables` in the JSON report.
+- **cut response**: a tool response or error longer than 20,000 characters, shown to a model with its middle replaced by a marker naming how many characters were cut. The report counts them per tool. Code: `cut_responses`, `[N characters cut by mcp-auditor]`.
 - **redaction marker**: `[value of NAME, redacted by mcp-auditor]`, the text that stands for a redacted value. Not: reflected marker.
 - **reflected marker**: what an injection payload makes the server print back, an echoed string or the output of `id` or `whoami`. It shows that the input took effect, and it says nothing about what the input reaches. Defined by: ADR 014. Not: redaction marker.
 - **dry run**: an audit that generates payloads and sends none.

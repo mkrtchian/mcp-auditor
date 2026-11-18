@@ -9,6 +9,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
 )
+from mcp_auditor.domain.shown_response import rendered_response, shown_to_model
 
 NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every payload you generate:
 - Never destroy state and never affect host availability: no deleting or overwriting files, no DROP, TRUNCATE or DELETE FROM, no recursive permission change, no disk or raw-device write (mkfs, dd of=, truncate -s), no forced version-control write, no shutdown, reboot, poweroff, runlevel change or kill of PID 1, no fork bomb, no read of a device that never ends (/dev/zero, /dev/urandom, /dev/random, /dev/full).
@@ -158,12 +159,9 @@ def _format_cases_for_extraction(tool_report: ToolReport) -> str:
             continue
         lines = [f"Case {i}: {case.payload.description}"]
         if case.response is not None:
-            response_text = (
-                json.dumps(case.response) if isinstance(case.response, dict) else str(case.response)
-            )
-            lines.append(f"  Response: {response_text}")
+            lines.append(f"  Response: {shown_to_model(rendered_response(case.response))}")
         if case.error is not None:
-            lines.append(f"  Error: {case.error}")
+            lines.append(f"  Error: {shown_to_model(case.error)}")
         if case.judge_result is not None:
             lines.append(f"  Verdict: {case.judge_result.verdict}")
             lines.append(f"  Justification: {case.judge_result.justification}")
@@ -232,14 +230,9 @@ def format_judging_criteria(category: AuditCategory) -> str:
 def _format_outcome(test_case: TestCase) -> str:
     parts: list[str] = []
     if test_case.response is not None:
-        response_text = (
-            json.dumps(test_case.response)
-            if isinstance(test_case.response, dict)
-            else str(test_case.response)
-        )
-        parts.append(f"Tool response:\n{response_text}")
+        parts.append(f"Tool response:\n{shown_to_model(rendered_response(test_case.response))}")
     if test_case.error is not None:
-        parts.append(f"Tool error:\n{test_case.error}")
+        parts.append(f"Tool error:\n{shown_to_model(test_case.error)}")
     if not parts:
         parts.append("The tool produced no response and no error.")
     return "\n\n".join(parts)

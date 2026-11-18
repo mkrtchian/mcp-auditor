@@ -19,6 +19,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
 )
+from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
 
 def an_empty_report() -> AuditReport:
@@ -240,6 +241,12 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
         received_cases=7,
         missing_categories=[AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE],
     )
+    return report
+
+
+def a_report_with_a_cut_response_on_get_user() -> AuditReport:
+    report = a_two_tool_report()
+    report.tool_reports[0].cases[0].response = "x" * (MAX_SHOWN_LENGTH + 1)
     return report
 
 

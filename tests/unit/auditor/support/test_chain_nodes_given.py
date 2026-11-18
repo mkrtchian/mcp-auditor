@@ -147,10 +147,11 @@ def a_fail_judge_result() -> JudgeResult:
     )
 
 
-def a_single_step_case(response: str = "ok") -> TestCase:
+def a_single_step_case(response: str = "ok", error: str | None = None) -> TestCase:
     return TestCase(
         payload=a_payload(),
         response=response,
+        error=error,
         judge_result=a_fail_judge_result(),
     )
 

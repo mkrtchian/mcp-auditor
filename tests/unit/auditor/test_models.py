@@ -10,6 +10,7 @@ from mcp_auditor.domain import (
     AuditReport,
     ProviderUsage,
     Severity,
+    ToolReport,
 )
 from mcp_auditor.domain.models import Judgment, ModelCallKind, order_tools_for_audit
 
@@ -182,6 +183,16 @@ class TestAuditReportCompleteness:
         assert tool_report.coverage_gap.unsent_chains == 0
         assert tool_report.coverage_gap.unsent_cause is None
         assert tool_report.chains[0].cut_by_relaunch is False
+
+
+class TestToolReportCutResponses:
+    def test_the_json_dump_carries_the_count_and_loads_back(self):
+        tool_report = given.a_tool_report_with_a_cut_response()
+
+        dump = tool_report.model_dump(mode="json")
+
+        assert dump["cut_responses"] == 1
+        assert ToolReport.model_validate(dump) == tool_report
 
 
 class TestOrderToolsForAudit:

@@ -8,6 +8,7 @@ from mcp_auditor.domain.models import (
     TestCase,
     ToolDefinition,
 )
+from mcp_auditor.domain.shown_response import rendered_response, shown_to_model
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
     build_context_section,
@@ -175,13 +176,11 @@ def _format_single_step_summary(cases: list[TestCase]) -> str:
             continue
         parts = [f"Case {i} [{case.payload.category}]"]
         if case.response is not None:
-            response_text = (
-                json.dumps(case.response) if isinstance(case.response, dict) else str(case.response)
-            )
+            response_text = rendered_response(case.response)
             snippet = response_text[:200] + "..." if len(response_text) > 200 else response_text
             parts.append(f"  Response: {snippet}")
         if case.error is not None:
-            parts.append(f"  Error: {case.error}")
+            parts.append(f"  Error: {shown_to_model(case.error)}")
         if case.judge_result is not None:
             parts.append(f"  Verdict: {case.judge_result.verdict}")
         lines.append("\n".join(parts))
@@ -197,9 +196,9 @@ def _format_chain_history(steps: list[ChainStep]) -> str:
         args_json = json.dumps(step.payload.arguments)
         parts.append(f"  Arguments: {args_json}")
         if step.response is not None:
-            parts.append(f"  Response: {step.response}")
+            parts.append(f"  Response: {shown_to_model(step.response)}")
         if step.error is not None:
-            parts.append(f"  Error: {step.error}")
+            parts.append(f"  Error: {shown_to_model(step.error)}")
         if step.observation:
             parts.append(f"  Observation: {step.observation}")
         lines.append("\n".join(parts))
@@ -209,9 +208,9 @@ def _format_chain_history(steps: list[ChainStep]) -> str:
 def _format_latest_outcome(response: str | None, error: str | None) -> str:
     parts: list[str] = []
     if response is not None:
-        parts.append(f"Response: {response}")
+        parts.append(f"Response: {shown_to_model(response)}")
     if error is not None:
-        parts.append(f"Error: {error}")
+        parts.append(f"Error: {shown_to_model(error)}")
     if not parts:
         return "No response and no error."
     return "\n".join(parts)
