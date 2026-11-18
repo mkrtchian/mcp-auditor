@@ -1,5 +1,6 @@
 from mcp_auditor.domain.models import AuditReport, CoverageGap, ToolResponse
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
+from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 
@@ -31,6 +32,14 @@ def a_report_with(relaunches: int, gaps: list[tuple[int, int]]) -> AuditReport:
     ]
     report = grammar.a_report_of_tools(grammar.a_tool_report("whole"), *tools)
     return report.model_copy(update={"relaunches": relaunched})
+
+
+def a_report_with_one_cut_response_on_each_of(tools: int) -> AuditReport:
+    cut = grammar.a_case(response="x" * (MAX_SHOWN_LENGTH + 1))
+    shown_whole = grammar.a_case(response="ok")
+    return grammar.a_report_of_tools(
+        *(grammar.a_tool_report(f"tool_{index}", [cut, shown_whole]) for index in range(tools))
+    )
 
 
 def _a_gap(unsent_cases: int, unsent_chains: int) -> CoverageGap:

@@ -80,20 +80,22 @@ def test_a_server_is_assembled_from_its_audits_in_run_order():
 
 def test_each_run_status_carries_its_server_health_and_missed_call_causes():
     audits = [
-        given.an_audit(False, health=ServerHealth(2, 1, 1, 4)),
-        given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3, 2, 0)),
+        given.an_audit(False, health=ServerHealth(2, 1, 1, 4, 2)),
+        given.an_audit(
+            False, missed=MissCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3, 2, 0, 1)
+        ),
         given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
     ]
 
     result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
 
     assert result.statuses == (
-        NuisanceRunStatus(False, False, False, 0, 0, 2, 1, 1, 4, []),
-        NuisanceRunStatus(False, False, True, 0, 0, 0, 3, 2, 0, ["provider_refusal"]),
-        NuisanceRunStatus(False, False, True, 0, 0, 0, 0, 0, 0, ["unreadable_answer"]),
+        NuisanceRunStatus(False, False, False, 0, 0, 2, 1, 1, 4, 2, []),
+        NuisanceRunStatus(False, False, True, 0, 0, 0, 3, 2, 0, 1, ["provider_refusal"]),
+        NuisanceRunStatus(False, False, True, 0, 0, 0, 0, 0, 0, 0, ["unreadable_answer"]),
     )
     assert (result.non_protocol_lines, result.lost_connection_responses) == (2, 4)
-    assert (result.relaunches, result.unsent_calls) == (3, 4)
+    assert (result.relaunches, result.unsent_calls, result.cut_responses) == (3, 4, 3)
     assert result.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
 
 

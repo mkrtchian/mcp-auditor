@@ -70,6 +70,7 @@ def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
         lost_connection_responses=0,
         relaunches=0,
         unsent_calls=0,
+        cut_responses=0,
         missed_call_causes=[],
     )
 
@@ -85,6 +86,7 @@ def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
                 lost_connection_responses=1,
                 relaunches=1,
                 unsent_calls=3,
+                cut_responses=1,
             ),
             dataclasses.replace(
                 refused,

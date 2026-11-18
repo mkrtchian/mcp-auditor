@@ -9,12 +9,16 @@ _NO_REPORT_INCIDENT = given.a_report_with(relaunches=0, gaps=[])
 
 
 def test_healths_add_up_count_by_count():
-    assert ServerHealth(2, 1, 1, 3) + ServerHealth(3, 0, 2, 0) == ServerHealth(5, 1, 3, 3)
-    assert NO_INCIDENTS + ServerHealth(1, 4, 2, 5) == ServerHealth(1, 4, 2, 5)
+    assert ServerHealth(2, 1, 1, 3, 1) + ServerHealth(3, 0, 2, 0, 2) == ServerHealth(5, 1, 3, 3, 3)
+    assert NO_INCIDENTS + ServerHealth(1, 4, 2, 5, 6) == ServerHealth(1, 4, 2, 5, 6)
 
 
 def test_no_incidents_counts_nothing():
-    assert (NO_INCIDENTS.relaunches, NO_INCIDENTS.unsent_calls) == (0, 0)
+    assert (NO_INCIDENTS.relaunches, NO_INCIDENTS.unsent_calls, NO_INCIDENTS.cut_responses) == (
+        0,
+        0,
+        0,
+    )
     assert NO_INCIDENTS + NO_INCIDENTS == NO_INCIDENTS
 
 
@@ -30,6 +34,12 @@ def test_the_health_reads_the_relaunches_and_the_calls_not_sent_from_the_report(
     health = health_of(object(), [], report)
 
     assert (health.relaunches, health.unsent_calls) == (2, 6)
+
+
+def test_the_health_counts_the_responses_shown_cut_on_every_tool_of_the_report():
+    report = given.a_report_with_one_cut_response_on_each_of(tools=2)
+
+    assert health_of(object(), [], report).cut_responses == 2
 
 
 def test_a_client_that_counts_no_line_reads_none():

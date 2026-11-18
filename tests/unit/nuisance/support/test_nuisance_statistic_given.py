@@ -33,6 +33,7 @@ def a_server_result(
             lost_connection_responses=0,
             relaunches=0,
             unsent_calls=0,
+            cut_responses=0,
             missed_call_causes=[],
         )
         for index in range(runs)

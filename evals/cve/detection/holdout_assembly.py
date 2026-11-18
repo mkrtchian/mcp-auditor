@@ -56,6 +56,7 @@ def _run_status(outcome: GradedAudit | IncompleteRun) -> HoldoutRunStatus:
         lost_connection_responses=outcome.health.lost_connection_responses,
         relaunches=outcome.health.relaunches,
         unsent_calls=outcome.health.unsent_calls,
+        cut_responses=outcome.health.cut_responses,
         unchecked_reason=None
         if outcome.unchecked_reason is None
         else outcome.unchecked_reason.value,
@@ -78,6 +79,7 @@ def _incomplete_status(run: IncompleteRun) -> HoldoutRunStatus:
         lost_connection_responses=run.health.lost_connection_responses,
         relaunches=run.health.relaunches,
         unsent_calls=run.health.unsent_calls,
+        cut_responses=run.health.cut_responses,
         unchecked_reason=None,
         replay_attempt_failures=[],
         missed_call_causes=sorted({missed.cause.value for missed in run.report.missed_model_calls}),

@@ -158,6 +158,8 @@ def _health_facts(line: ServerLine) -> str:
         facts.append(f"relaunched {line.relaunches} time(s)")
     if line.unsent_calls:
         facts.append(f"{line.unsent_calls} call(s) not sent")
+    if line.cut_responses:
+        facts.append(f"{line.cut_responses} response(s) shown cut")
     return ", ".join(facts)
 
 

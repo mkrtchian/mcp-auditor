@@ -27,6 +27,7 @@ class HoldoutRunStatus:
     lost_connection_responses: int
     relaunches: int
     unsent_calls: int
+    cut_responses: int
     unchecked_reason: str | None  # set on a graded run whose replay was left unchecked
     replay_attempt_failures: list[str]  # in attempt order, empty on an incomplete run
     missed_call_causes: list[str]  # an incomplete run's missed model call causes, sorted
@@ -97,6 +98,10 @@ class HoldoutTargetResult:
     @property
     def unsent_calls(self) -> int:
         return sum(status.unsent_calls for status in self.statuses)
+
+    @property
+    def cut_responses(self) -> int:
+        return sum(status.cut_responses for status in self.statuses)
 
     @property
     def unchecked_runs_by_reason(self) -> dict[str, int]:

@@ -19,6 +19,7 @@ class TargetRunLine(BaseModel):
     lost_connection_responses: int
     relaunches: int
     unsent_calls: int
+    cut_responses: int
     unchecked_reason: str | None
     replay_attempt_failures: list[str]
     missed_call_causes: list[str]
@@ -35,6 +36,7 @@ class TargetRunLine(BaseModel):
             lost_connection_responses=status.lost_connection_responses,
             relaunches=status.relaunches,
             unsent_calls=status.unsent_calls,
+            cut_responses=status.cut_responses,
             unchecked_reason=status.unchecked_reason,
             replay_attempt_failures=status.replay_attempt_failures,
             missed_call_causes=status.missed_call_causes,
@@ -59,6 +61,7 @@ class TargetLine(BaseModel):
     lost_connection_responses: int
     relaunches: int
     unsent_calls: int
+    cut_responses: int
     unchecked_runs_by_reason: dict[str, int]
     replay_attempt_failures_by_cause: dict[str, int]
     incomplete_runs_by_cause: dict[str, int]
@@ -84,6 +87,7 @@ class TargetLine(BaseModel):
             lost_connection_responses=target.lost_connection_responses,
             relaunches=target.relaunches,
             unsent_calls=target.unsent_calls,
+            cut_responses=target.cut_responses,
             unchecked_runs_by_reason=target.unchecked_runs_by_reason,
             replay_attempt_failures_by_cause=target.replay_attempt_failures_by_cause,
             incomplete_runs_by_cause=target.incomplete_runs_by_cause,

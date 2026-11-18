@@ -1,8 +1,8 @@
 """What the audited server did besides answering: the lines it wrote that the MCP client
 could not parse, the calls it answered with a lost connection, the times the auditor relaunched
-it, and the test cases and chains the auditor did not send once it stopped calling a tool or took
-the server as down (ADR 036). Report-only, no statistic, grading, retry, gate or baseline reads
-them."""
+it, the test cases and chains the auditor did not send once it stopped calling a tool or took
+the server as down (ADR 036), and the responses and errors shown cut to a model. Report-only, no
+statistic, grading, retry, gate or baseline reads them."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,6 +19,7 @@ class ServerHealth:
     lost_connection_responses: int
     relaunches: int = 0
     unsent_calls: int = 0
+    cut_responses: int = 0
 
     def __add__(self, other: "ServerHealth") -> "ServerHealth":
         return ServerHealth(
@@ -26,10 +27,11 @@ class ServerHealth:
             self.lost_connection_responses + other.lost_connection_responses,
             self.relaunches + other.relaunches,
             self.unsent_calls + other.unsent_calls,
+            self.cut_responses + other.cut_responses,
         )
 
 
-NO_INCIDENTS = ServerHealth(0, 0, 0, 0)
+NO_INCIDENTS = ServerHealth(0, 0, 0, 0, 0)
 
 
 @runtime_checkable
@@ -47,6 +49,7 @@ def health_of(client: object, calls: Sequence[Exchange], report: AuditReport) ->
         sum(is_lost_connection(response) for _, _, response in calls),
         len(report.relaunches),
         _unsent_calls(report),
+        sum(tool.cut_responses for tool in report.tool_reports),
     )
 
 

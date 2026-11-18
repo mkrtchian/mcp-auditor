@@ -91,6 +91,8 @@ def _health_facts(line: TargetLine) -> str:
         facts.append(f"relaunched {line.relaunches} time(s)")
     if line.unsent_calls:
         facts.append(f"{line.unsent_calls} call(s) not sent")
+    if line.cut_responses:
+        facts.append(f"{line.cut_responses} response(s) shown cut")
     if line.unchecked_runs_by_reason:
         facts.append(f"replay unchecked: {_by_cause(line.unchecked_runs_by_reason)}")
     if line.replay_attempt_failures_by_cause:

@@ -2,6 +2,7 @@
 no proof. The model carries no evidence, no judge input and no per-case verdict field."""
 
 import dataclasses
+import re
 from datetime import date
 
 import tests.unit.nuisance.support.test_nuisance_report_given as given
@@ -184,6 +185,7 @@ def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause()
     assert (line.non_protocol_lines, line.lost_connection_responses) == (2, 1)
     assert (line.relaunches, line.unsent_calls) == (1, 3)
     assert (line.per_run[0].relaunches, line.per_run[0].unsent_calls) == (1, 3)
+    assert (line.cut_responses, line.per_run[0].cut_responses) == (1, 1)
     assert line.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
     assert line.per_run[0].non_protocol_lines == 2
     assert line.per_run[1].missed_call_causes == ["provider_refusal", "unreadable_answer"]
@@ -195,7 +197,7 @@ def test_the_markdown_names_each_server_with_a_health_count():
 
     assert (
         "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s),"
-        " relaunched 1 time(s), 3 call(s) not sent\n"
+        " relaunched 1 time(s), 3 call(s) not sent, 1 response(s) shown cut\n"
     ) in markdown
     assert "- B: non-protocol" not in markdown
 
@@ -333,8 +335,9 @@ def test_the_report_holds_no_proof_text():
         exits=[ServerExit("npm:c", "the server of a current or dropped acceptance target")],
     )
 
-    markdown = render_markdown(build_report(run)).lower()
+    # The health line's count of cut responses names the word and quotes no response.
+    markdown = re.sub(r"\d+ response\(s\) shown cut", "", render_markdown(build_report(run)))
 
     for model in models:
         assert set(model.model_fields).isdisjoint(PROOF_WORDS)
-    assert not [word for word in PROOF_WORDS if word in markdown]
+    assert not [word for word in PROOF_WORDS if word in markdown.lower()]

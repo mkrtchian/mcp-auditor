@@ -82,5 +82,6 @@ def _run_status(audit: NuisanceAudit, counting: ServerCounting) -> NuisanceRunSt
         lost_connection_responses=audit.health.lost_connection_responses,
         relaunches=audit.health.relaunches,
         unsent_calls=audit.health.unsent_calls,
+        cut_responses=audit.health.cut_responses,
         missed_call_causes=sorted(cause.value for cause in incomplete_causes(report)),
     )

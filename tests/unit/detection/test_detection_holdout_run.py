@@ -104,26 +104,25 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     assert assembled.run_cost == pytest.approx(3 * call_cost(provider, given.LUNA_PRICE))
 
 
-async def test_each_run_status_carries_the_relaunches_and_the_calls_not_sent_of_its_server():
+async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_responses():
     target = given.a_target(given.KUBERNETES)
     detection = given.graded(
         TargetStatus.DETECTED, given.a_report(ProviderUsage(), ProviderUsage())
     )
-    relaunched = dataclasses.replace(detection, health=ServerHealth(0, 0, 1, 4))
+    relaunched = dataclasses.replace(detection, health=ServerHealth(0, 0, 1, 4, 2))
     refused = IncompleteRun(
-        given.a_report_missing(MissCause.PROVIDER_REFUSAL), ServerHealth(0, 0, 2, 0)
+        given.a_report_missing(MissCause.PROVIDER_REFUSAL), ServerHealth(0, 0, 2, 0, 1)
     )
     audit = given.scripted({target.flaw_id: [relaunched, refused, detection]})
 
     result = await given.run([target], given.deps_auditing(audit))
 
     (assembled,) = result.targets
-    assert [(status.relaunches, status.unsent_calls) for status in assembled.statuses] == [
-        (1, 4),
-        (2, 0),
-        (0, 0),
-    ]
-    assert (assembled.relaunches, assembled.unsent_calls) == (3, 4)
+    assert [
+        (status.relaunches, status.unsent_calls, status.cut_responses)
+        for status in assembled.statuses
+    ] == [(1, 4, 2), (2, 0, 1), (0, 0, 0)]
+    assert (assembled.relaunches, assembled.unsent_calls, assembled.cut_responses) == (3, 4, 3)
 
 
 async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss_causes():
