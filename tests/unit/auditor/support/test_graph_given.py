@@ -19,7 +19,12 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import MissCause
-from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
+from mcp_auditor.domain.ports import (
+    PromptTooLong,
+    ProviderRefusal,
+    ProviderThrottled,
+    UnparseableOutput,
+)
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
@@ -138,10 +143,15 @@ def a_provider_throttling() -> ProviderThrottled:
     return ProviderThrottled("slow down", 300.0, ProviderUsage(throttled_requests=8))
 
 
+def a_prompt_too_long() -> PromptTooLong:
+    return PromptTooLong(ProviderUsage(throttled_requests=2))
+
+
 MODEL_FAILURES = {
     MissCause.PROVIDER_REFUSAL: a_provider_refusal,
     MissCause.UNREADABLE_ANSWER: an_unreadable_answer,
     MissCause.PROVIDER_THROTTLED: a_provider_throttling,
+    MissCause.PROMPT_TOO_LONG: a_prompt_too_long,
 }
 
 

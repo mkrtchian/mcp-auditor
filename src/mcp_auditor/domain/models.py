@@ -348,6 +348,7 @@ class MissCause(StrEnum):
     PROVIDER_REFUSAL = "provider_refusal"
     UNREADABLE_ANSWER = "unreadable_answer"
     PROVIDER_THROTTLED = "provider_throttled"
+    PROMPT_TOO_LONG = "prompt_too_long"
 
 
 class MissedModelCall(BaseModel):

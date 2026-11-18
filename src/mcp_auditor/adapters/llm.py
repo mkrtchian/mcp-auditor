@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import openai
+from langchain_core.exceptions import ContextOverflowError
 from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
 from langchain_core.runnables import Runnable
 from openai.types.completion_usage import CompletionUsage
@@ -21,7 +22,12 @@ from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.adapters.throttling import counting_throttles, install_throttle_log_handler
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import Judgment, ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
+from mcp_auditor.domain.ports import (
+    PromptTooLong,
+    ProviderRefusal,
+    ProviderThrottled,
+    UnparseableOutput,
+)
 
 # Shared so the generator and the judge on one model fetch OpenRouter's listing once.
 _PROCESS_EFFORTS = OpenRouterEffortCatalog()
@@ -193,6 +199,9 @@ class LLM:
                 usage = _completion_usage(error.completion.usage, tally.requests)
                 return _Attempt(parsed=None, usage=usage, truncated=True, refusal=None)
             except Exception as error:
+                if isinstance(error, ContextOverflowError):
+                    usage = usage_so_far.add(ProviderUsage(throttled_requests=tally.requests))
+                    raise PromptTooLong(usage) from error
                 throttle = throttle_of(error)
                 if throttle is not None:
                     return _Throttled(throttle, str(error), tally.requests, error)

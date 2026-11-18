@@ -169,7 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A generated payload holding a character that cannot be encoded as UTF-8 (a lone surrogate) is blocked before it is sent, with the argument named in the reason, instead of crashing the MCP transport and ending the audit.
 - An `alibaba` answer cut at the output cap is retried as a truncated attempt, counted with its tokens, instead of failing the step with the `openai` SDK's `LengthFinishReasonError`.
 - The image rebuild before a holdout or nuisance run, `run_nuisance vet` and the nuisance gate, and the stale-image rebuild of the CVE benchmark preflight and the probe corpus capture, build their images through `docker compose build` in batches of eight, so a large rebuild no longer fails on a BuildKit `context deadline exceeded`. A failed batch stops the rebuild and names that batch's services.
-- Every tool response and error shown to a model is bounded at 20,000 characters, its middle cut and marked, so a huge response no longer ends the audit or costs a prompt of a million tokens.
+- Every tool response and error shown to a model is bounded at 20,000 characters, its middle cut and marked, so a huge response no longer ends the audit or costs a prompt of a million tokens, and a prompt the model provider still rejects for its length is a missed model call of cause `prompt_too_long`, where it used to end the audit.
 
 ## [0.4.0] - 2026-10-05
 

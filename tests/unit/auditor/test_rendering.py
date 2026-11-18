@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     ExecutionRecord,
     ExecutionRegime,
+    MissCause,
 )
 from mcp_auditor.domain.rendering import (
     describe_coverage_gap,
@@ -569,7 +570,9 @@ def test_markdown_tool_section_lists_its_unreadable_model_call():
 
 
 def test_markdown_names_a_throttled_model_call_in_the_summary_and_its_tool_section():
-    report = given.a_report_with_a_throttled_judgment_on_get_user()
+    report = given.a_report_with_one_missed_judgment_on_get_user(
+        MissCause.PROVIDER_THROTTLED, given.THROTTLE_MESSAGE
+    )
 
     summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]
 
@@ -577,6 +580,21 @@ def test_markdown_names_a_throttled_model_call_in_the_summary_and_its_tool_secti
     assert "**Audit complete**: no" in summary
     assert (
         f'**Throttled past every retry**: judgment, "{given.THROTTLE_MESSAGE}"' in get_user_section
+    )
+
+
+def test_markdown_names_a_prompt_too_long_in_the_summary_and_its_tool_section():
+    report = given.a_report_with_one_missed_judgment_on_get_user(
+        MissCause.PROMPT_TOO_LONG, given.PROMPT_TOO_LONG_MESSAGE
+    )
+
+    summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]
+
+    assert "**Prompt longer than the model's context window**: 1 model call\n" in summary
+    assert "**Audit complete**: no" in summary
+    assert (
+        "**Prompt longer than the model's context window**: judgment,"
+        f' "{given.PROMPT_TOO_LONG_MESSAGE}"' in get_user_section
     )
 
 

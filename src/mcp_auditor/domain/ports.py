@@ -51,6 +51,16 @@ class ProviderThrottled(Exception):
         self.usage = usage
 
 
+class PromptTooLong(Exception):
+    """The provider rejected the prompt as longer than the model's context window."""
+
+    def __init__(self, usage: ProviderUsage):
+        super().__init__(
+            "the model provider rejected the prompt as longer than the model's context window"
+        )
+        self.usage = usage
+
+
 class LLMPort(Protocol):
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]

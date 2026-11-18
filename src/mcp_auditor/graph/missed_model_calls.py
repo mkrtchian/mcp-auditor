@@ -13,6 +13,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.ports import (
     LLMPort,
+    PromptTooLong,
     ProviderRefusal,
     ProviderThrottled,
     UnparseableOutput,
@@ -61,6 +62,8 @@ async def call_model[T: BaseModel](
         return _missed(call, MissCause.UNREADABLE_ANSWER, detail, unreadable.usage)
     except ProviderThrottled as throttled:
         return _missed(call, MissCause.PROVIDER_THROTTLED, str(throttled), throttled.usage)
+    except PromptTooLong as too_long:
+        return _missed(call, MissCause.PROMPT_TOO_LONG, str(too_long), too_long.usage)
 
 
 def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:

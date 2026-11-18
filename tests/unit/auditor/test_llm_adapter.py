@@ -13,8 +13,8 @@ from mcp_auditor.domain.models import (
     StepObservation,
     TestCaseBatch,
 )
-from mcp_auditor.domain.ports import UnparseableOutput
-from tests.fakes.chat_model import Throttled, raw_response, truncated
+from mcp_auditor.domain.ports import PromptTooLong, UnparseableOutput
+from tests.fakes.chat_model import FakeChatModel, Throttled, raw_response, truncated
 
 
 class TestTokenAccumulationOnRetry:
@@ -249,6 +249,31 @@ class TestThrottledRequests:
         _, usage = await llm.generate_structured("prompt", given.Output)
 
         assert usage.throttled_requests == 2
+
+
+class TestPromptTooLong:
+    @pytest.mark.parametrize("provider", list(given.CONTEXT_OVERFLOWS))
+    async def test_a_context_overflow_raises_prompt_too_long_after_one_call(self, provider: str):
+        chat_model = FakeChatModel(
+            [given.CONTEXT_OVERFLOWS[provider], raw_response({"value": "ok"}, 100, 50)]
+        )
+        llm = given.an_llm_over(chat_model)
+
+        with pytest.raises(PromptTooLong) as raised:
+            await llm.generate_structured("prompt", given.Output)
+
+        assert chat_model.calls == 1
+        assert raised.value.usage == ProviderUsage()
+
+    async def test_a_throttled_overflow_carries_its_throttled_requests(self):
+        install_throttle_log_handler()
+        chat_model = FakeChatModel([Throttled(given.CONTEXT_OVERFLOWS["anthropic"])])
+        llm = given.an_llm_over(chat_model)
+
+        with pytest.raises(PromptTooLong) as raised:
+            await llm.generate_structured("prompt", given.Output)
+
+        assert raised.value.usage == ProviderUsage(throttled_requests=1)
 
 
 class TestStrictSchemas:

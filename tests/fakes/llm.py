@@ -5,11 +5,16 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
+from mcp_auditor.domain.ports import (
+    PromptTooLong,
+    ProviderRefusal,
+    ProviderThrottled,
+    UnparseableOutput,
+)
 
 FAKE_USAGE = ProviderUsage(input_tokens=10, output_tokens=5)
 
-type ModelFailure = ProviderRefusal | ProviderThrottled | UnparseableOutput
+type ModelFailure = PromptTooLong | ProviderRefusal | ProviderThrottled | UnparseableOutput
 
 
 class FakeLLM:
@@ -25,7 +30,9 @@ class FakeLLM:
     ) -> tuple[T, ProviderUsage]:
         self.prompts.append(prompt)
         response = self._responses.popleft()
-        if isinstance(response, ProviderRefusal | ProviderThrottled | UnparseableOutput):
+        if isinstance(
+            response, PromptTooLong | ProviderRefusal | ProviderThrottled | UnparseableOutput
+        ):
             self.total_usage = self.total_usage.add(response.usage)
             raise response
         if not isinstance(response, output_schema):

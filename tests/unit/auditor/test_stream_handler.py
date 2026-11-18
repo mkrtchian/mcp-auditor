@@ -72,6 +72,10 @@ def test_an_unjudged_case_advances_the_progress_bar():
             MissCause.PROVIDER_THROTTLED,
             "? not judged, the model provider throttled the judgment past every retry",
         ),
+        (
+            MissCause.PROMPT_TOO_LONG,
+            "? not judged, the prompt was longer than the model's context window",
+        ),
     ],
 )
 def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissCause, line: str):

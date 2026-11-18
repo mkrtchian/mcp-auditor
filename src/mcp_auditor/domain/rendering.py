@@ -30,6 +30,7 @@ MISS_CAUSE_LABELS = {
     MissCause.PROVIDER_REFUSAL: "Refused by the model provider",
     MissCause.UNREADABLE_ANSWER: "Unreadable answer from the model",
     MissCause.PROVIDER_THROTTLED: "Throttled past every retry",
+    MissCause.PROMPT_TOO_LONG: "Prompt longer than the model's context window",
 }
 
 

@@ -297,14 +297,16 @@ def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) ->
 THROTTLE_MESSAGE = "429 RESOURCE_EXHAUSTED"
 
 
-def a_report_with_a_throttled_judgment_on_get_user() -> AuditReport:
+PROMPT_TOO_LONG_MESSAGE = (
+    "the model provider rejected the prompt as longer than the model's context window"
+)
+
+
+def a_report_with_one_missed_judgment_on_get_user(cause: MissCause, detail: str) -> AuditReport:
     report = a_two_tool_report()
     report.missed_model_calls = [
         MissedModelCall(
-            tool_name="get_user",
-            kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROVIDER_THROTTLED,
-            detail=THROTTLE_MESSAGE,
+            tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail=detail
         )
     ]
     return report
