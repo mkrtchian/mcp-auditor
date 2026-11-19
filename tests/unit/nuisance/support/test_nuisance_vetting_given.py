@@ -62,12 +62,13 @@ class FlakyLaunches:
     """Stands in for the server's launch and connection: the first `failing` connections fail,
     the last of them on a timeout, and the next ones list the counted tool and answer its benign
     call with `answer` and the ping with `ping_answer`, then fail their teardown when
-    `teardown_fails`."""
+    `teardown_fails`. `connected` keeps every launch it was asked to connect."""
 
     def __init__(
         self, failing: int, answer: ToolResponse, teardown_fails: bool, ping_answer: bool
     ) -> None:
         self.launches = 0
+        self.connected: list[Launch] = []
         self._failing = failing
         self._answer = answer
         self._teardown_fails = teardown_fails
@@ -76,12 +77,13 @@ class FlakyLaunches:
     @contextmanager
     def environment(self, _server: AdmittedServer) -> Generator[Launch]:
         self.launches += 1
-        yield Launch("docker", [])
+        yield Launch("docker", ["run", "server-image"])
 
     @asynccontextmanager
     async def connect(
-        self, _launch: Launch, _stderr: IO[str], *, tool_call_timeout: int
+        self, launch: Launch, _stderr: IO[str], *, tool_call_timeout: int
     ) -> AsyncGenerator[MCPClientPort]:
+        self.connected.append(launch)
         if self.launches == self._failing:
             raise TimeoutError("initialize timed out")
         if self.launches < self._failing:

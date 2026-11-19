@@ -172,6 +172,29 @@ async def test_a_declared_container_with_no_name_is_relaunched_with_no_removal(
     assert removals(docker) == []
 
 
+async def test_a_named_declared_container_is_removed_when_its_session_ends(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
+    launch = given.a_declared_stalling_container("--name", "audited-stalling")
+    async with StdioMCPClient.connect(launch) as client:
+        assert (await client.call_tool("echo", {})).content == "ok"
+
+    assert removals(docker) == ["-f -v audited-stalling"]
+
+
+async def test_a_named_declared_container_is_removed_when_its_session_ends_on_an_error(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
+    launch = given.a_declared_stalling_container("--name", "audited-stalling")
+    with pytest.raises(ValueError, match=r"^body$"):
+        async with StdioMCPClient.connect(launch):
+            raise ValueError("body")
+
+    assert removals(docker) == ["-f -v audited-stalling"]
+
+
 async def test_an_audit_relaunches_its_server_from_a_graph_node(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

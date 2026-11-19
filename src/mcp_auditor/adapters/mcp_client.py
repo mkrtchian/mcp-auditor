@@ -81,7 +81,10 @@ class StdioMCPClient:
             with suppress(Exception):  # the opening's or the body's error is the one read
                 await client._owner.close()
             raise
-        await client._owner.close()
+        else:
+            await client._owner.close()
+        finally:
+            await client._remove_declared_container()
 
     @property
     def non_protocol_lines(self) -> int:
@@ -136,10 +139,15 @@ class StdioMCPClient:
     # and the confined container is the injected teardown's. The end of the session ends an
     # unconfined server's process group.
     async def _end_server(self) -> None:
-        if self._declared_container is not None:
-            await asyncio.to_thread(self._declared_container.remove)
+        await self._remove_declared_container()
         if self._teardown is not None:
             await self._teardown.end_server()
+
+    # Also at the end of the session: killing the Docker client does not stop a server, PID 1 of
+    # its container, that ignores the end of stdin and the SIGTERM the client proxies.
+    async def _remove_declared_container(self) -> None:
+        if self._declared_container is not None:
+            await asyncio.to_thread(self._declared_container.remove)
 
     def _session_entry(self, launch: ServerLaunch, errlog: IO[str] | None) -> SessionEntry:
         client_kwargs: dict[str, Any] = {"server": _server_parameters(launch)}

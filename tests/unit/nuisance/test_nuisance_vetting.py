@@ -36,6 +36,15 @@ async def test_a_benign_call_whose_connection_fails_three_times_keeps_the_last_r
     assert launches.launches == 3
 
 
+async def test_a_benign_call_launches_a_named_container(monkeypatch: pytest.MonkeyPatch):
+    launches = given.launches_failing(monkeypatch, failing=0)
+
+    await benign_call(given.a_server(), timeout=30)
+
+    (connected,) = launches.connected
+    assert connected.args[:2] == ["run", "--name"]
+
+
 async def test_a_benign_call_answering_with_an_error_is_not_retried(
     monkeypatch: pytest.MonkeyPatch,
 ):

@@ -14,6 +14,7 @@ from evals.concurrency import entered_in_thread
 from evals.cve.detection.calibration_check import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.environments import connect
 from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.launch_audit import named
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
 from evals.cve.nuisance.benign_call import benign_call_failure
@@ -84,7 +85,7 @@ async def benign_call(
             with open(os.devnull, "w") as devnull:
                 async with (
                     entered_in_thread(nuisance_environment(server)) as launch,
-                    connect(launch, devnull, tool_call_timeout=timeout) as client,
+                    connect(named(launch), devnull, tool_call_timeout=timeout) as client,
                 ):
                     connected = True
                     if on_ping is not None:
