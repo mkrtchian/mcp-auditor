@@ -39,8 +39,10 @@ def a_stalling_server(*flags: str) -> ServerLaunch:
     return ServerLaunch.unconfined(sys.executable, [str(STALLING_SERVER_PATH), *flags])
 
 
-def a_declared_stalling_container(*docker_options: str) -> ServerLaunch:
-    args = ["run", *docker_options, sys.executable, str(STALLING_SERVER_PATH)]
+def a_declared_stalling_container(
+    *docker_options: str, server_flags: tuple[str, ...] = ()
+) -> ServerLaunch:
+    args = ["run", *docker_options, sys.executable, str(STALLING_SERVER_PATH), *server_flags]
     return ServerLaunch.declared_container("docker", args, client_env={})
 
 

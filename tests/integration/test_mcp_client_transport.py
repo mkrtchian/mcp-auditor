@@ -195,6 +195,20 @@ async def test_a_named_declared_container_is_removed_when_its_session_ends_on_an
     assert removals(docker) == ["-f -v audited-stalling"]
 
 
+async def test_a_named_declared_container_is_removed_when_its_session_fails_to_open(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
+    launch = given.a_declared_stalling_container(
+        "--name", "audited-stalling", server_flags=("--exit-before-initialize",)
+    )
+    with pytest.raises(ExceptionGroup):
+        async with StdioMCPClient.connect(launch):
+            pass
+
+    assert removals(docker) == ["-f -v audited-stalling"]
+
+
 async def test_an_audit_relaunches_its_server_from_a_graph_node(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
