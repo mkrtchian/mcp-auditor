@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/glossary.md` defines the vocabulary the code, the docs and the rules share, one meaning per term, and `docs/glossary-log.md` maps the words of older ADRs and plans to the current terms.
 - The report counts, per tool, the responses shown cut to the model (`cut_responses` in the JSON report, a **Responses shown cut** line in the markdown report).
 - The nuisance run prints one status line per run of a server, with its progress: `flagged`, `not flagged` (either followed by `, incomplete` when a model call was refused, came back unreadable or was too long) or `run dropped` with its reason, and the runs done out of the total.
+- The README publishes the holdout detection rate and the holdout nuisance rate, both measured at commit `1765d9f`. The reports of their runs, and of an earlier holdout run at `90fa641`, are committed in `evals/cve/holdout_runs/`.
 
 ### Changed
 

@@ -1,0 +1,3635 @@
+{
+  "holdout_nuisance_rate": 0.4076923076923077,
+  "cited_interval": {
+    "low": 0.29664749528541257,
+    "high": 0.5290389412664995
+  },
+  "controls": {
+    "jeffreys": {
+      "low": 0.2943819982497674,
+      "high": 0.529021091046628
+    },
+    "clopper_pearson": {
+      "low": 0.28737613553567987,
+      "high": 0.5367026539424615
+    },
+    "hierarchical_gamma_1_1": {
+      "low": 0.30843690979148175,
+      "high": 0.5123906293510567
+    },
+    "hierarchical_gamma_2_2": {
+      "low": 0.3080771014795444,
+      "high": 0.5089379044169859
+    },
+    "incomplete_as_flagged_wilson": {
+      "low": 0.29664749528541257,
+      "high": 0.5290389412664995
+    }
+  },
+  "run_cutoff": {
+    "model": "claude-haiku-5-5",
+    "date": "2026-06-30",
+    "type": "reliable knowledge cutoff and training data cutoff, both June 2026, month only",
+    "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+    "note": "the last day of the month is taken, the vendor gives the month"
+  },
+  "sides": [
+    {
+      "side": "pre_cutoff",
+      "number": 0.3181818181818182,
+      "interval": {
+        "low": 0.19999307710853423,
+        "high": 0.4655689606218224
+      },
+      "servers": 44
+    },
+    {
+      "side": "post_cutoff",
+      "number": 0.525,
+      "interval": {
+        "low": 0.32048044451809127,
+        "high": 0.7214632975792679
+      },
+      "servers": 20
+    }
+  ],
+  "contrast": {
+    "low": -0.4360918301343538,
+    "high": 0.04527548793801739
+  },
+  "conclusion": {
+    "placement": "straddles",
+    "inconclusive": false,
+    "cited": {
+      "method": "newcombe",
+      "interval": {
+        "low": -0.4360918301343538,
+        "high": 0.04527548793801739
+      },
+      "placement": "straddles"
+    },
+    "disagreeing": []
+  },
+  "servers": [
+    {
+      "server_package": "npm:@sunwood-ai-labs/github-kanban-mcp-server",
+      "split_flaw": "CVE-2025-53818",
+      "split_disclosure_date": "2025-07-14",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 4,
+      "raw_fail_per_run": [
+        0,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.1019272,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "Maven:com.arcadedb:arcadedb-server",
+      "split_flaw": "CVE-2026-65831",
+      "split_disclosure_date": "2026-07-16",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 10,
+      "raw_fail_per_run": [
+        3,
+        1
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 12,
+      "lost_connection_responses": 4,
+      "relaunches": 4,
+      "unsent_calls": 6,
+      "cut_responses": 35,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.3015639,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 6,
+          "lost_connection_responses": 2,
+          "relaunches": 2,
+          "unsent_calls": 3,
+          "cut_responses": 18,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 6,
+          "lost_connection_responses": 2,
+          "relaunches": 2,
+          "unsent_calls": 3,
+          "cut_responses": 17,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@ooples/token-optimizer-mcp",
+      "split_flaw": "CVE-2026-55157",
+      "split_disclosure_date": "2026-08-14",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 74,
+      "raw_fail_per_run": [
+        124,
+        97
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 45,
+      "lost_connection_responses": 3,
+      "relaunches": 10,
+      "unsent_calls": 21,
+      "cut_responses": 7,
+      "incomplete_runs_by_cause": {},
+      "cost": 2.4944296,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 22,
+          "lost_connection_responses": 1,
+          "relaunches": 3,
+          "unsent_calls": 11,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 23,
+          "lost_connection_responses": 2,
+          "relaunches": 7,
+          "unsent_calls": 10,
+          "cut_responses": 4,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:awslabs-aws-api-mcp-server",
+      "split_flaw": "CVE-2026-4270",
+      "split_disclosure_date": "2026-03-16",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        1,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 25,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.08846129999999999,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 12,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 13,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@aborruso/ckan-mcp-server",
+      "split_flaw": "CVE-2026-73845",
+      "split_disclosure_date": "2026-08-14",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 20,
+      "raw_fail_per_run": [
+        7,
+        17
+      ],
+      "declared_function_fail_per_run": [
+        1,
+        2
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.5475599,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:mcp-contextforge-gateway",
+      "split_flaw": "CVE-2026-18905",
+      "split_disclosure_date": "2026-09-04",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 1,
+      "raw_fail_per_run": [
+        0,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0115761,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:doris-mcp-server",
+      "split_flaw": "CVE-2025-66335",
+      "split_disclosure_date": "2026-04-20",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 16,
+      "tools_count": 25,
+      "raw_fail_per_run": [
+        34,
+        39
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 2,
+      "lost_connection_responses": 2,
+      "relaunches": 6,
+      "unsent_calls": 35,
+      "cut_responses": 13,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.8065532,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 2,
+          "lost_connection_responses": 0,
+          "relaunches": 2,
+          "unsent_calls": 16,
+          "cut_responses": 6,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 2,
+          "relaunches": 4,
+          "unsent_calls": 19,
+          "cut_responses": 7,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:flyto-core",
+      "split_flaw": "CVE-2026-55787",
+      "split_disclosure_date": "2026-07-06",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 9,
+      "raw_fail_per_run": [
+        6,
+        3
+      ],
+      "declared_function_fail_per_run": [
+        1,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 38,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.3617475,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 18,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 20,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-maigret",
+      "split_flaw": "CVE-2026-2130",
+      "split_disclosure_date": "2026-02-08",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        8,
+        5
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0734919,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-nmap-server",
+      "split_flaw": "CVE-2026-3484",
+      "split_disclosure_date": "2026-03-03",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 1,
+      "raw_fail_per_run": [
+        5,
+        4
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.034322,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/jiantao88/android-mcp-server",
+      "split_flaw": "CVE-2026-19978",
+      "split_disclosure_date": "2026-08-17",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 25,
+      "tools_count": 30,
+      "raw_fail_per_run": [
+        125,
+        123
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 1,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 27,
+      "cut_responses": 17,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.0027729,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 1,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 11,
+          "cut_responses": 8,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 16,
+          "cut_responses": 9,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-markdownify-server",
+      "split_flaw": "CVE-2025-58358",
+      "split_disclosure_date": "2025-09-02",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 6,
+      "tools_count": 10,
+      "raw_fail_per_run": [
+        30,
+        31
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.31499390000000005,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@wonderwhy-er/desktop-commander",
+      "split_flaw": "CVE-2025-11489",
+      "split_disclosure_date": "2025-10-08",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 9,
+      "tools_count": 26,
+      "raw_fail_per_run": [
+        32,
+        26
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 5,
+      "relaunches": 5,
+      "unsent_calls": 0,
+      "cut_responses": 11,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.8047821000000001,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 3,
+          "relaunches": 3,
+          "unsent_calls": 0,
+          "cut_responses": 6,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 2,
+          "relaunches": 2,
+          "unsent_calls": 0,
+          "cut_responses": 5,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-server-taskwarrior",
+      "split_flaw": "CVE-2026-5833",
+      "split_disclosure_date": "2026-04-09",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 3,
+      "raw_fail_per_run": [
+        11,
+        10
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.09596469999999999,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:n8n-mcp",
+      "split_flaw": "GHSA-8g7g-hmwm-6rv2",
+      "split_disclosure_date": "2026-05-08",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 14,
+      "tools_count": 24,
+      "raw_fail_per_run": [
+        6,
+        9
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 12,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.7195148,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 8,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 4,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@coding-solo/godot-mcp",
+      "split_flaw": "CVE-2026-25546",
+      "split_disclosure_date": "2026-02-04",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 7,
+      "tools_count": 14,
+      "raw_fail_per_run": [
+        0,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.36310549999999997,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/akutishevsky/sf-mcp-server",
+      "split_flaw": "CVE-2026-26029",
+      "split_disclosure_date": "2026-02-11",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        5,
+        5
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0629161,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/RyuzakiShinji/biome-mcp-server",
+      "split_flaw": "CVE-2026-3680",
+      "split_disclosure_date": "2026-03-07",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        8,
+        9
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 2,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.06244960000000001,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@elgentos/magento2-dev-mcp",
+      "split_flaw": "CVE-2026-5603",
+      "split_disclosure_date": "2026-04-05",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        false,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 26,
+      "tools_count": 29,
+      "raw_fail_per_run": [
+        58,
+        51
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        1
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 61,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.0826148,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 29,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 32,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:awslabs-mysql-mcp-server",
+      "split_flaw": "CVE-2026-85788",
+      "split_disclosure_date": "2026-09-09",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        14,
+        16
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2101918,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:awslabs-postgres-mcp-server",
+      "split_flaw": "CVE-2026-85787",
+      "split_disclosure_date": "2026-09-04",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        17,
+        12
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.1981697,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/mwtcmi/frogman",
+      "split_flaw": null,
+      "split_disclosure_date": null,
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 219,
+      "raw_fail_per_run": [
+        198,
+        195
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 45,
+      "incomplete_runs_by_cause": {},
+      "cost": 6.641388900000001,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 24,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 21,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:kubectl-mcp-server",
+      "split_flaw": "CVE-2025-65719",
+      "split_disclosure_date": "2026-05-12",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 8,
+      "raw_fail_per_run": [
+        19,
+        17
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.24017719999999998,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "NuGet:RoslynCodeLens.Mcp",
+      "split_flaw": "CVE-2026-45555",
+      "split_disclosure_date": "2026-05-29",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 54,
+      "raw_fail_per_run": [
+        51,
+        44
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 6,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.4384026,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:netlicensing-mcp",
+      "split_flaw": "CVE-2026-57496",
+      "split_disclosure_date": "2026-06-18",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 60,
+      "raw_fail_per_run": [
+        101,
+        98
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.7868461999999998,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:knowns",
+      "split_flaw": "CVE-2026-86439",
+      "split_disclosure_date": "2026-09-07",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 12,
+      "raw_fail_per_run": [
+        14,
+        17
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.370972,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@bitbonsai/mcpvault",
+      "split_flaw": "CVE-2026-57442",
+      "split_disclosure_date": "2026-06-19",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 15,
+      "tools_count": 15,
+      "raw_fail_per_run": [
+        9,
+        10
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.4487287,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:vibe-trading-ai",
+      "split_flaw": "CVE-2026-58171",
+      "split_disclosure_date": "2026-06-30",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 54,
+      "raw_fail_per_run": [
+        79,
+        76
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.6151845,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:praisonai",
+      "split_flaw": "CVE-2026-47394",
+      "split_disclosure_date": "2026-05-29",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 86,
+      "raw_fail_per_run": [
+        297,
+        269
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 509,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 2.3469982,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 235,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 274,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:mcp-atlassian",
+      "split_flaw": "CVE-2026-77252",
+      "split_disclosure_date": "2026-09-22",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        false,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 4,
+      "tools_count": 90,
+      "raw_fail_per_run": [
+        111,
+        99
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 2.7708662000000004,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@apify/actors-mcp-server",
+      "split_flaw": "CVE-2026-46341",
+      "split_disclosure_date": "2026-05-19",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        0,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.168488,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/hekmon8/Jenkins-server-mcp",
+      "split_flaw": "CVE-2026-10276",
+      "split_disclosure_date": "2026-06-01",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 4,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        9,
+        9
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.1963432,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:mcp-neo4j-cypher",
+      "split_flaw": "CVE-2026-35402",
+      "split_disclosure_date": "2026-04-17",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        3,
+        5
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.055568900000000004,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@sylphxltd/filesystem-mcp",
+      "split_flaw": "CVE-2025-67366",
+      "split_disclosure_date": "2026-01-07",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 4,
+      "tools_count": 13,
+      "raw_fail_per_run": [
+        32,
+        30
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.3767199,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-server-siri-shortcuts",
+      "split_flaw": "CVE-2026-0758",
+      "split_disclosure_date": "2026-01-23",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 5,
+      "raw_fail_per_run": [
+        2,
+        3
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.120981,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:serverless",
+      "split_flaw": "CVE-2025-69256",
+      "split_disclosure_date": "2025-12-30",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 16,
+      "raw_fail_per_run": [
+        9,
+        6
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 515,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 5,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.4854456,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 307,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 208,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 2,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/ryanjoachim/mcp-rtfm",
+      "split_flaw": "CVE-2026-7728",
+      "split_disclosure_date": "2026-05-04",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 9,
+      "raw_fail_per_run": [
+        5,
+        4
+      ],
+      "declared_function_fail_per_run": [
+        1,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 1,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2629629,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:claude-faf-mcp",
+      "split_flaw": "GHSA-rr55-jp92-8wp2",
+      "split_disclosure_date": "2026-08-19",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 34,
+      "raw_fail_per_run": [
+        40,
+        43
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.9345804,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:grok-faf-mcp",
+      "split_flaw": "GHSA-cc2g-gq8c-r332",
+      "split_disclosure_date": "2026-08-19",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 24,
+      "raw_fail_per_run": [
+        20,
+        23
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 1,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.6585549,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "Go:github.com/googleapis/mcp-toolbox",
+      "split_flaw": "CVE-2026-11720",
+      "split_disclosure_date": "2026-06-29",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 1,
+      "raw_fail_per_run": [
+        0,
+        2
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0316798,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@zereight/mcp-gitlab",
+      "split_flaw": "CVE-2026-61462",
+      "split_disclosure_date": "2026-07-13",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 8,
+      "tools_count": 211,
+      "raw_fail_per_run": [
+        163,
+        239
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 9,
+      "incomplete_runs_by_cause": {},
+      "cost": 6.991874,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 6,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:ios-simulator-mcp",
+      "split_flaw": "CVE-2025-52573",
+      "split_disclosure_date": "2025-06-26",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 6,
+      "tools_count": 9,
+      "raw_fail_per_run": [
+        32,
+        31
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2566946,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:agentic-flow",
+      "split_flaw": "CVE-2026-58195",
+      "split_disclosure_date": "2026-06-19",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 9,
+      "tools_count": 15,
+      "raw_fail_per_run": [
+        25,
+        24
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 4,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.5228427,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 2,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 2,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-server-semgrep",
+      "split_flaw": "CVE-2026-7446",
+      "split_disclosure_date": "2026-04-30",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 6,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        12,
+        9
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2145471,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-package-docs",
+      "split_flaw": "CVE-2025-54073",
+      "split_disclosure_date": "2025-07-18",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 10,
+      "raw_fail_per_run": [
+        15,
+        13
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.3033499,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/hypermodel-labs/mcp-server-auto-commit",
+      "split_flaw": "CVE-2026-4198",
+      "split_disclosure_date": "2026-03-16",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 1,
+      "raw_fail_per_run": [
+        1,
+        2
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 34,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0324899,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 18,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 16,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:adb-mcp",
+      "split_flaw": "CVE-2025-59834",
+      "split_disclosure_date": "2025-09-24",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 10,
+      "raw_fail_per_run": [
+        35,
+        38
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2952774,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:node-code-sandbox-mcp",
+      "split_flaw": "CVE-2025-53372",
+      "split_disclosure_date": "2025-07-08",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        23,
+        15
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 1,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.20589800000000003,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/RestDB/codehooks-mcp-server",
+      "split_flaw": "CVE-2025-53100",
+      "split_disclosure_date": "2025-07-01",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 19,
+      "tools_count": 21,
+      "raw_fail_per_run": [
+        79,
+        70
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 6,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 20,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.6455616,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 3,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 10,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 3,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 10,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/UsamaK98/python-notebook-mcp",
+      "split_flaw": "CVE-2026-7810",
+      "split_disclosure_date": "2026-05-05",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 9,
+      "raw_fail_per_run": [
+        6,
+        10
+      ],
+      "declared_function_fail_per_run": [
+        4,
+        3
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.252537,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:scrapling-fetch-mcp",
+      "split_flaw": "CVE-2026-81848",
+      "split_disclosure_date": "2026-08-28",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        5,
+        3
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 1,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0547696,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/geekgod382/filesystem-mcp-server",
+      "split_flaw": "CVE-2026-7400",
+      "split_disclosure_date": "2026-04-29",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        false,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 10,
+      "tools_count": 10,
+      "raw_fail_per_run": [
+        7,
+        6
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.237674,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:faf-mcp",
+      "split_flaw": "GHSA-j4r7-8ph4-43g3",
+      "split_disclosure_date": "2026-08-19",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 2,
+      "tools_count": 31,
+      "raw_fail_per_run": [
+        39,
+        35
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 1,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.8624046,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@cyanheads/git-mcp-server",
+      "split_flaw": "CVE-2025-53107",
+      "split_disclosure_date": "2025-06-30",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 23,
+      "tools_count": 28,
+      "raw_fail_per_run": [
+        13,
+        27
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.8426288,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:fast-filesystem-mcp",
+      "split_flaw": "CVE-2026-5327",
+      "split_disclosure_date": "2026-04-02",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        false,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 25,
+      "raw_fail_per_run": [
+        55,
+        47
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 3,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.8068052,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/gomarble-ai/facebook-ads-mcp-server",
+      "split_flaw": "CVE-2026-19956",
+      "split_disclosure_date": "2026-08-16",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 21,
+      "raw_fail_per_run": [
+        46,
+        51
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 475,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.7738619999999999,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 227,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 248,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:figma-developer-mcp",
+      "split_flaw": "CVE-2025-15061",
+      "split_disclosure_date": "2025-09-30",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        1,
+        0
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.0623759,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:dbt-mcp",
+      "split_flaw": "CVE-2026-44968",
+      "split_disclosure_date": "2026-05-14",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 7,
+      "tools_count": 11,
+      "raw_fail_per_run": [
+        16,
+        9
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 1,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.33309639999999996,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/alexei-led/aws-mcp-server",
+      "split_flaw": "CVE-2025-5277",
+      "split_disclosure_date": "2025-05-28",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 2,
+      "raw_fail_per_run": [
+        1,
+        3
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 2,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.07067010000000001,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:skill-ninja-mcp-server",
+      "split_flaw": "CVE-2026-19328",
+      "split_disclosure_date": "2026-08-09",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        true,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 4,
+      "tools_count": 9,
+      "raw_fail_per_run": [
+        4,
+        4
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.24724859999999999,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "PyPI:excel-mcp-server",
+      "split_flaw": "CVE-2026-40576",
+      "split_disclosure_date": "2026-04-14",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 17,
+      "tools_count": 25,
+      "raw_fail_per_run": [
+        8,
+        6
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 1,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.7649338999999999,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@houtini/lm",
+      "split_flaw": "CVE-2026-82112",
+      "split_disclosure_date": "2026-08-28",
+      "flagged_share": 0.5,
+      "flagged_per_run": [
+        false,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 8,
+      "raw_fail_per_run": [
+        18,
+        16
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 7,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 5,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.2350854,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 4,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 2,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 3,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 3,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:mcp-memory-keeper",
+      "split_flaw": "CVE-2026-54561",
+      "split_disclosure_date": "2026-07-17",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 1,
+      "tools_count": 38,
+      "raw_fail_per_run": [
+        45,
+        45
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 2,
+      "unsent_calls": 0,
+      "cut_responses": 8,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.2145245999999998,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 6,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 1,
+          "unsent_calls": 0,
+          "cut_responses": 2,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "https://github.com/apache/gravitino",
+      "split_flaw": "CVE-2026-41041",
+      "split_disclosure_date": "2026-07-13",
+      "flagged_share": 1.0,
+      "flagged_per_run": [
+        true,
+        true
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 27,
+      "tools_count": 36,
+      "raw_fail_per_run": [
+        98,
+        92
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 0,
+      "incomplete_runs_by_cause": {},
+      "cost": 1.1451875,
+      "per_run": [
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": true,
+          "split_flagged": true,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 0,
+          "missed_call_causes": []
+        }
+      ]
+    },
+    {
+      "server_package": "npm:@aiondadotcom/mcp-ssh",
+      "split_flaw": "CVE-2025-9654",
+      "split_disclosure_date": "2025-08-29",
+      "flagged_share": 0.0,
+      "flagged_per_run": [
+        false,
+        false
+      ],
+      "incomplete_runs": 0,
+      "counted_tools_count": 3,
+      "tools_count": 7,
+      "raw_fail_per_run": [
+        7,
+        5
+      ],
+      "declared_function_fail_per_run": [
+        0,
+        0
+      ],
+      "non_protocol_lines": 0,
+      "lost_connection_responses": 0,
+      "relaunches": 0,
+      "unsent_calls": 0,
+      "cut_responses": 4,
+      "incomplete_runs_by_cause": {},
+      "cost": 0.1873306,
+      "per_run": [
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 1,
+          "missed_call_causes": []
+        },
+        {
+          "flagged": false,
+          "split_flagged": false,
+          "incomplete": false,
+          "non_protocol_lines": 0,
+          "lost_connection_responses": 0,
+          "relaunches": 0,
+          "unsent_calls": 0,
+          "cut_responses": 3,
+          "missed_call_causes": []
+        }
+      ]
+    }
+  ],
+  "not_run": [],
+  "second_pass": {},
+  "exits": [],
+  "incomplete_run_count": 0,
+  "incomplete_runs_by_cause": {},
+  "total_cost": 48.249667,
+  "prices_as_of": "2026-10-17",
+  "commit": "1765d9ff86cc17792425bc922af63af1098c40d9",
+  "census_commit": "80e6871b6b0a3974aa590bb28228bc16fd724eda",
+  "walk_record_commit": "8b7f2e8e7cf0bd25dd8d4934478285221a00d078",
+  "provider": "anthropic",
+  "model": "claude-haiku-5-5",
+  "judge_model": "claude-haiku-5-5",
+  "reasoning": "high",
+  "judge_reasoning": "high",
+  "runs": 2,
+  "budget": 10,
+  "cutoffs": {
+    "claude-haiku-5-5": {
+      "date": "2026-06-30",
+      "type": "reliable knowledge cutoff and training data cutoff, both June 2026, month only",
+      "source": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+      "note": "the last day of the month is taken, the vendor gives the month"
+    }
+  },
+  "chain_budget": 3,
+  "max_chain_steps": 3,
+  "tool_call_timeout": 60,
+  "grammar_fingerprint": "58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1",
+  "counter_fingerprint": "b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161",
+  "fixture_fingerprints": {
+    "npm:@sunwood-ai-labs/github-kanban-mcp-server": "e0642f829f935954e7952279425306da99d9f592f0556fb233b8ee411ee7e01a",
+    "Maven:com.arcadedb:arcadedb-server": "309026cf1a2a94603f09320b1afd43bbabeb30a967f92eadf67f09ae154bc566",
+    "npm:@ooples/token-optimizer-mcp": "7090fc5584a1ef531d4d49c6ea62915ca45cc4fc4e303f34f23d32a294d0a02d",
+    "PyPI:awslabs-aws-api-mcp-server": "5b3acb73bfc736a79ce5a18a566d77a0b37b6a0dea857e9901a6c86bb1908ae9",
+    "npm:@aborruso/ckan-mcp-server": "7f53f16c34380b8c3c3442b7d7243ed80d39adfe8b3c9e0194b4891c8879db22",
+    "PyPI:mcp-contextforge-gateway": "a12356481fb67d2d2e4cf9d072cf1428e5d00b379e908f0fbd99d1f722ba8e24",
+    "PyPI:doris-mcp-server": "d66751816d1ee4d3cb23c6e5a733781b7f0a8a26fa7ba953757873848b82b181",
+    "PyPI:flyto-core": "a238326946a66ae6b18a0cee9928d49e5514fcf4fe05eb9dc98247e77172cc05",
+    "npm:mcp-maigret": "b7ef0132eb3db9bdce1135734ba5a765ed3d2f328937228ee56db2d9bfa203ac",
+    "npm:mcp-nmap-server": "8f1b2fbd2f282fb995d44df8cc9cf84403217bdef397e8ea958293444bdb2195",
+    "https://github.com/jiantao88/android-mcp-server": "47939647b0107148d45eb74f7e76d8ba80ddfd93e31f52c714efdb24fb466074",
+    "npm:mcp-markdownify-server": "2308944eed1fa57b77b681e4235c7bf9d2ba27632eb7dee55b1c1b156c03c243",
+    "npm:@wonderwhy-er/desktop-commander": "e320a68f88325d927efccc624d9d62ab6cde977418f9121df3bb511d4e3b8c45",
+    "npm:mcp-server-taskwarrior": "8e861a57fcd66139aae1aae1104009154a6dc3651dba4973c421430c15910b68",
+    "npm:n8n-mcp": "4f4c03b0f6534c17134ed7bdc96cb770c99b0ebcac0cefb9b45fab9ac408c4dd",
+    "npm:@coding-solo/godot-mcp": "fc3ea01e2cc1cb1c6ed488e79568012653a9c18262336c6ac7a8644f7f736258",
+    "https://github.com/akutishevsky/sf-mcp-server": "d2da8a6f50df428403f6d39a8a8e81c0fbe4713442c3c99f7c17791ec934cf70",
+    "https://github.com/RyuzakiShinji/biome-mcp-server": "88927ab63c40f090678a386f08c36cb59545b9264fde9713610efc0ce8bf14d6",
+    "npm:@elgentos/magento2-dev-mcp": "82e3973e5be4589089ca41993eb78419273a1542a2d11103e72bdfad2a697f80",
+    "PyPI:awslabs-mysql-mcp-server": "c936c28779a89c70a263ce675bfee083a7e4fb4773658804ed0b01b2e895ee42",
+    "PyPI:awslabs-postgres-mcp-server": "6253747740bc3a0a2a6e564533690a800615607629a6bf83b6fb5685f3eea8a0",
+    "https://github.com/mwtcmi/frogman": "c378e37a4931a08f93b949b2137af95e1352053e3e4f6edfcc384bf08e5356d0",
+    "PyPI:kubectl-mcp-server": "2324a99486bced6c98996ae48bccbc8f9f1a46a8b6bf6d3da638a3ef2ec33ef8",
+    "NuGet:RoslynCodeLens.Mcp": "f1125d42a73a56e0574d7634076a0777cf92c73134b1105259141ded635f1393",
+    "PyPI:netlicensing-mcp": "336b8c17610f1d83fc31a1be77eca70acf40ca306e5081230c89c3bd10ff81b4",
+    "npm:knowns": "71f3e5e415fb993e365a0fb0cf2767e4e44bdeebe78a661095d0d3d93887b6ec",
+    "npm:@bitbonsai/mcpvault": "6059d581db7540dc26703b05b1b1a8676f32ff00c113a87003319d0f0b11f76c",
+    "PyPI:vibe-trading-ai": "a0c24068c4ec92cbca3757121afb7eacebe3fe17f29e997f0fa6b6e4a2fc4ae6",
+    "PyPI:praisonai": "34637ce269a4149cb8feabd43f8cff1270d3d5f19a6928452f5a99b6d6fe5b8d",
+    "PyPI:mcp-atlassian": "5338f4cd43cb0d62f378b598033a96f8c13c0ff1719ce4bea91844417b7549c6",
+    "npm:@apify/actors-mcp-server": "036ee1036a9052ce72d8fdc3971b60cf414204b1be5f99da70674a73ece0a8ed",
+    "https://github.com/hekmon8/Jenkins-server-mcp": "62b6982f69cfd1bf82c3cc58ab4cf3ec8b8ba3a49e69dc38f127e58341e21045",
+    "PyPI:mcp-neo4j-cypher": "4ccf481a5d0f4cbf3946fdb25730dc5b403c779dbb9a70075f366635255e973e",
+    "npm:@sylphxltd/filesystem-mcp": "5241d81ffb3311a80f30190b30b2188c1542843a79ec8a0861260597198efec3",
+    "npm:mcp-server-siri-shortcuts": "e03a303e494990505cd0d391e1c6da437028498296edaed61de458e1c2453300",
+    "npm:serverless": "cada1791015abed7c4935da4300cb664cf1e2a8f7ec0a5c29e802bc759241222",
+    "https://github.com/ryanjoachim/mcp-rtfm": "0ef07507578ef96b3e47577fd64fbbcd2c902c84ad3049e525b87179b81427e7",
+    "npm:claude-faf-mcp": "5cd5b55bd28479a5a0340cd2f3e714f14cde35b27356b85215ee4692442e9dc0",
+    "npm:grok-faf-mcp": "2658899619b1e1c9d4a208266c1ddba6b77735f8d6dc162225e8e6a3c0e6c701",
+    "Go:github.com/googleapis/mcp-toolbox": "97645bc212811c2229a27c29abd5a0cc8abc7a53e1da14df4117ad5cc33aa7dc",
+    "npm:@zereight/mcp-gitlab": "cd23168ceaf02e3b55f717987d25748a345daa4f035dca0c549628ef92ddaf74",
+    "npm:ios-simulator-mcp": "520c0f9d6882758580f4d5fb74b94627934b3b5dd422dec2cddf5bdb67aa649e",
+    "npm:agentic-flow": "3005e8e2c5ae9a283f143bb99d75d3e2bcf0efc1008c900d88cb24d534cf1d8f",
+    "npm:mcp-server-semgrep": "29f3e886285e10af493d279768f3e7964fd543813d57bbf31dea8ef1dfd2a2ca",
+    "npm:mcp-package-docs": "c3ecafa8b678c02e1dd6d4eb5574b767284e7ac7c464e555c0dd0ef5440a4461",
+    "https://github.com/hypermodel-labs/mcp-server-auto-commit": "b46160bced3d79f40eb8d6d980da444e068e2cef87a05539919713efb7ebeb59",
+    "npm:adb-mcp": "f46ef0826b91553ff3205985b4df2089f0aa7fb506f95dd20bea3649faa3630f",
+    "npm:node-code-sandbox-mcp": "64e95462a4759189f794a6abd5353905aa87d75cb16c5d5b7ce08c4512390bf4",
+    "https://github.com/RestDB/codehooks-mcp-server": "6262b3c4fb621ebf082dc9552526364671ef2dc6ee1956f50a2b528551307e8f",
+    "https://github.com/UsamaK98/python-notebook-mcp": "6885f3de8c0219e7026e98938cfab33a5f25653cd7f8c807fb7be8d6948f7c4a",
+    "PyPI:scrapling-fetch-mcp": "18e6a650a326975cd97eafe29b5a5cf5c0e6bfb1e7755cc432387f1cfaf2ea58",
+    "https://github.com/geekgod382/filesystem-mcp-server": "dbb7ea9306700cd1064c10cb23df72440725eb2de79a3d004e3d063adcf70d47",
+    "npm:faf-mcp": "fe116d6db0d3e33f3c2ed581992187f01d8b80684a0ec9ca16a36dc396a4edb1",
+    "npm:@cyanheads/git-mcp-server": "d3ccba5e212b6f961d68fe5b5542affa3805f09a6e6f88f048e3cb2dcc86ed99",
+    "npm:fast-filesystem-mcp": "1682d051b9c47b58af25c3d6f20b0ad95a15141ad5dc2da85a02b1689b70308c",
+    "https://github.com/gomarble-ai/facebook-ads-mcp-server": "e1d1468104d8a41cc505af01f4975958e9bd3ec940af210cb86858c7c11e97e8",
+    "npm:figma-developer-mcp": "b35a0f9f258c8d74c7fa49981375d9022c8c476cb130aceef0a18363fb4cf976",
+    "PyPI:dbt-mcp": "78df9f8a7afd3aa7bb73496df6ae6db83d58e7974460052b1660e360a132af6b",
+    "https://github.com/alexei-led/aws-mcp-server": "1691ebe867efe0a2de238a25466123b404c3c5bd8d5f121996c4edcf698ea8fe",
+    "npm:skill-ninja-mcp-server": "f86289c6f032cea9e57d107a4c94262ce1ba274856452c9df4ddc76e07e33d94",
+    "PyPI:excel-mcp-server": "533a4a57080c8df69ff5a4541464f871befab4a757583c3e222fb72031ac4bbc",
+    "npm:@houtini/lm": "a7ef89e9cb5de54eb399724992bd2e9e0da1ea126050d0c82bcffb65c09acc19",
+    "npm:mcp-memory-keeper": "1e7724a8485440d203cbd566892421af8eb7b6e70a8e8b4336f05c652f79c215",
+    "https://github.com/apache/gravitino": "aef5091a6a149c99703134af3ad344391969929180736b6e631244d644cda9f5",
+    "npm:@aiondadotcom/mcp-ssh": "f71310533f8c6b42acaad14dec73da521a938f8a0008217c2f76bcf66de15d5a"
+  },
+  "image_ids": {
+    "kanban": "sha256:0b179ae782ecb931220d2d617434252fdb5268578193748ffeed4bcb77882378",
+    "arcadedb": "sha256:07c96766019370db42b2579966561cc68470c07957dcf6ff85ec052e359f4dce",
+    "token-optimizer": "sha256:77f049825195b0d81c6dc85851bb45b854d0de73222276e8259c32c7b95d5b06",
+    "aws-api-mcp": "sha256:e97b787cf39dad612b47e429916739453e81dcaf8540487f17c181d46a0d93d4",
+    "ckan": "sha256:c31e102175dd31029c942992e34e972d2d76f05902cd2831d1f7e31858795b79",
+    "contextforge": "sha256:ee78d4fe2de331da97f6e1b07f032894df4d392494fb73e2ac83fdf14c4e071d",
+    "doris": "sha256:b1617f6711d599069f2d78a2dd95c8115ac4391111a21036c0730ad86061753f",
+    "flyto": "sha256:b31c93b90345a07adaeab1c7fd91fd05725001a43fb5e3da181a33f6f855f155",
+    "maigret": "sha256:068bd9706ca8e9a6751c18156cb0881587daf2a67a7c0e0d8c6307b16c3045f8",
+    "nmap": "sha256:608ff1b4f539f6b3be19587a8ce2ee50e646f00beafac2168386a0ad62089df2",
+    "android": "sha256:810233c8917063f1ea8cf586c3703ae02a77c69bea18299599b482feb1a377d0",
+    "markdownify": "sha256:7ec18226a4d4f51e665089d635e6f5321bba56f8192f9568be51da8a303d8bc6",
+    "desktop-commander": "sha256:64d227e0bc539deb1f2443ecee1aaa78b3e1ee42b64952ab29fae6a8df405bfb",
+    "taskwarrior": "sha256:1bdbf406eb3c31e1a8b4b9e6f49a8d904b32d6639a582328e0e4ec6a81d4f33a",
+    "n8n": "sha256:c8506ec23a6cc124e85f3b731ab937017cbce0b8af512793ff454a6cc3675d38",
+    "godot-mcp": "sha256:a0dc6e7f0c9855a9e2d41f41bdd8618e0db6031c5dcdf8bc0144ed8a26c12ac7",
+    "sf-mcp": "sha256:ecb6689986afbc2a833d7d0fc105ea8723e57bfa5b21939da6847405302a8974",
+    "biome": "sha256:bd807fd0630f39c76ff167ad8ee054912b532c9dc8cf1681f0825c60fdf1a01d",
+    "magento2": "sha256:afcf1e64cadd308809e82601517933d8a120609ef4ccdb43f24947c505a286fd",
+    "mysql": "sha256:c43731dee72c45b31ab49c13fd0cd9aed79bd8edbda6fa135a0d8b1482b683ab",
+    "postgres": "sha256:c1577c62a29cb02af76a3d70dedd4fc8b9e464e958f424778d3d3b8412df5abe",
+    "frogman": "sha256:e1a26cdb90b556f98d29e985a0e27bbb0fb7d6720e8491a70e8812197d72f95b",
+    "kubectl": "sha256:035068b58a0d2951e7db2d035ede84742ee02d90e0a6fe2724f8b7d2d0d06795",
+    "roslyncodelens": "sha256:5e183e803320be53b1308217d5df8947575049210f35aacd84bb2a3bd16d8d93",
+    "netlicensing": "sha256:57253c7ab5042243d330738eff6b39bcbcfd8afcc4dd8a17328ae61ed82e183f",
+    "knowns": "sha256:d62a05955657a7745f2fcec624cbb9a1ac96e16df52c9fdcdf05a7341aed9431",
+    "mcpvault": "sha256:ab00892baa1fd0a2a2b9302627ae826cf1fa12cf92a486f10144e32e6e1d5bfb",
+    "vibe-trading": "sha256:ad363719620c1b0689c3e1966129895a0046dd4cc5850af0ee29ea6a56d631ef",
+    "praisonai": "sha256:e405b866f9d95a8cc5c73835c42bb4f483cd9e071eeba41bc11dadb5dfd4b4d9",
+    "atlassian": "sha256:b73b6fbca45d506067e274646f4538a30e2ab6ebfde58724117ea65bb209e97f",
+    "apify": "sha256:22a44720ac1f88a891042d5df8d17076d99528e7adad5da11da33954f4c2eb77",
+    "jenkins": "sha256:6cb876833756055d5673323ec261f7f1d095cdc1f6f3f4517380593df60854ff",
+    "neo4j": "sha256:9690cad9c5077408e6312258cd312af0c0ab8a7af1b2812090c654928853755c",
+    "sylphxltd-filesystem": "sha256:6b5b79e6d2f274a7449d75240ee97db577c3d149821f69957559a40c72c77f41",
+    "siri-shortcuts": "sha256:e83c54e4f7cdbcb62b722942a826e0f2e92961219ebe26c6115edd8c3c572bc7",
+    "serverless": "sha256:f796873cd79da59f85a76eb279df37e322391328472fd491fc23484a8bcdb3ea",
+    "mcp-rtfm": "sha256:b5679d867d1553ebf7d9c6937c71afc3e7b98ff272fe408e120be21e300a6581",
+    "claude-faf": "sha256:efe2ba6ab19cf8b40ad926c7397687b33cf32d56a44d0fb27b4ae474b72213f8",
+    "grok-faf": "sha256:d3ff74a9c0b1977c99c6e07b8fdcd9732f9f46b64678891ecd2d3c68e46a3227",
+    "googleapis": "sha256:46707258f1d51459ddbb4a851359a720033a8cb0cef64b2c4598150a9621f872",
+    "gitlab": "sha256:8c74c2f56e2eaed35315791fe78dcd0199dcb1c3293a7a94e590fff4ad60bfbb",
+    "ios-simulator": "sha256:6a0d5fee76189247aa62d9b0983d8ef74d8c5ec09988a15f227b6406e0a82184",
+    "agentic-flow": "sha256:30c60044d011cbfa09e9bebb0ebee237c3312097a44eff5eafad0b0fd33b5f46",
+    "semgrep": "sha256:59956f5ff79d772163e3bd29cbf770d924c8d53d1a95b8be8731eca5474362b8",
+    "mcp-package-docs": "sha256:04031134eb3e8c7f67ffd1932432b96a2b599c3f75bb5015489d776ec7724c10",
+    "auto-commit": "sha256:2fea57a107c89a79a1a10b3f590e221efca5bd0de6956887c3d0932faed080cf",
+    "adb-mcp": "sha256:91720bb51a424160523f2a0b005b051e15aa7196b2eb6ad6bc1ecbeccd749cc2",
+    "node-sandbox": "sha256:ca6daa0733a318ddfdd2f4ec83d990642255ed59391f44e03b589c98f7a3d845",
+    "codehooks": "sha256:e74bf1351d199fc52fe90d03c6d412879df409c647a05b462a28c8dc51fd2e70",
+    "python-notebook": "sha256:e1f63b1ecfee0c3a1cddfcc5517a35640d523969293c62760108b3ef5833f1bf",
+    "scrapling": "sha256:048a8cdc79b13036d5049972412e3b4dee0ef4cee7751c42ac10982de01413fc",
+    "geekgod-fs": "sha256:76c64827eff97b2774d28b0e00ef95b6084e6462bab98c4c555f716aa9386580",
+    "faf-mcp": "sha256:f82f5030c143d93008e8d918d2bfe15dec47503f1937240bd320a4c16e15ae61",
+    "git-mcp": "sha256:4e854eb5c2289aee88e1a2232a0ea6e1496eae2deabd1ed4ab0a7cc4e75baea1",
+    "fast-filesystem": "sha256:485e4e6474a3dcd555c4c3ac0d28a24603c74832f25e5fc46d9bd07221c6cc31",
+    "facebook-ads": "sha256:fda00b64752898870575ad8b675e275d32d6ac085aaf7074551fe7d924865c25",
+    "figma": "sha256:e6c9d5b1992615170d03696dc8100c1ba961e176d23d3ba0bebdeb69276e499e",
+    "dbt": "sha256:55afdda4ea042592b075f558cca8bd1fe3f21f21fb69406f148b069ff1901dbc",
+    "aws-cli": "sha256:e8276895d3793ba95e556a50823b48ecf1b6303f035ae04ef51ba76e514d0af3",
+    "skill-ninja": "sha256:53d2e5f0f17254538c7ffbad94126eae12d3c130cb8c0d18f50faf69f8f2cea0",
+    "excel": "sha256:07ba6bfbe7cc4fddfcb1adf64dc5ca059216959272025a558de64d81bc34af1f",
+    "houtini": "sha256:0dff6e53d5e8017e04f94d84ceb57ef06e7368df2535b0a2d28f424984f0afc0",
+    "memory-keeper": "sha256:5c11171360766813dd73739dcca262adbfca059821cdd3efb4b212baad7e1a2c",
+    "gravitino": "sha256:a6c07a2ee4e32d8983c1817d2c1332b1e7e3a2cedf79c1faa0d59cffa76c99b8",
+    "mcp-ssh": "sha256:05b73a70b7308aacd0a3e40c0af431da46ec24c7f12dbe337c715d279e9dc9ba",
+    "mcp-auditor-cve-ckan-portal:local": "sha256:3b355ed8a9cf151490e7cff222490076d59247b0abcd039665f1e747440fcfca",
+    "mcp-auditor-cve-httpbin:local": "sha256:76eb13c11d29f28bbf003383022a89ede28a030af52f644ef058be55a350e04e",
+    "apache/doris:all-in-one-4.1.3@sha256:82a5cabc7900ebcd3d080412d636c0cebd6602799fffe2605c652b2ea7d42609": "sha256:5d45eb13bf5e5434c3a2a0fab73ca75a39a5504a6b5ae8dc153efcab60683464",
+    "mcp-auditor-cve-n8n-instance:local": "sha256:01c4b9526d365de4a6b9e055b7aa8d82b7f0aee4bdc22262306210da752f7329",
+    "mcp-auditor-cve-kube-control-plane:local": "sha256:9d73ec481a815acb4d201f7714dce72643c5dc399133bb7de08c7fa6f51c8a92",
+    "mcp-auditor-cve-atlassian-responder:local": "sha256:158035e566826e732404fc06df863fef7d13739bfb6aebd9f43566d2e34542e1",
+    "mcp-auditor-cve-jenkins-responder:local": "sha256:0cfc792e9021626442bbb38ec978fb536459a9cdfbe5fc5b1a87f91025e57715",
+    "mcp-auditor-cve-googleapis-responder:local": "sha256:12239e9cafbf00dfd715abccc4e6ab218e7065d6464e415316f15bc758df977b",
+    "mcp-auditor-cve-gitlab-backend:local": "sha256:25faf87e404942cc1c0176a4dd7732043f2789756627cc6a9f1d9d1473086aa0",
+    "mcp-auditor-cve-node-sandbox-engine:local": "sha256:4971c67778208ab24ba8b48e2cd0ac1a1a6e9fc1e983691c36619eb526faa341",
+    "mcp-auditor-cve-facebook-ads-responder:local": "sha256:a6fc9bc84feb8b87dab11b0c23f1b15e3f3bd38ba85cc37fc63afa3e294c509d",
+    "mcp-auditor-cve-gravitino-instance:local": "sha256:8816585f0dce91f7747e191837b4a1ab9494e54040b048049c8a14d5057785eb",
+    "mcp-auditor-cve-mcp-ssh-sshd:local": "sha256:4f7344f6a68b3f23f89099dcd75fdfa4497cee1dfc2eabcbd4e438bcc4582610"
+  },
+  "recorded_at": "2026-11-19T17:59:36.098640+00:00",
+  "concurrency": 8,
+  "throttled_requests": 0
+}
