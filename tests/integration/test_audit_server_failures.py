@@ -7,6 +7,11 @@ import pytest
 import tests.integration.support.test_audit_server_failures_given as given
 from mcp_auditor import audit
 from tests.integration.support.stalling_server import DYING_WORDS
+from tests.integration.support.support_servers import (
+    A_COMMAND_NOT_FOUND,
+    a_read_server,
+    a_stalling_server,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -18,7 +23,7 @@ async def test_a_command_not_found_stops_with_the_os_error_alone() -> None:
     output = io.StringIO()
 
     with pytest.raises(SystemExit) as exited:
-        await given.an_audit_of(given.COMMAND_NOT_FOUND, output).run()
+        await given.an_audit_of(A_COMMAND_NOT_FOUND, output).run()
 
     assert exited.value.code == 1
     assert "Error: [Errno 2] No such file or directory" in output.getvalue()
@@ -29,7 +34,7 @@ async def test_a_server_dying_under_list_tools_stops_with_the_lost_connection_an
     output = io.StringIO()
 
     with pytest.raises(SystemExit) as exited:
-        await given.an_audit_of(given.a_stalling_server("--exit-on-list-tools"), output).run()
+        await given.an_audit_of(a_stalling_server("--exit-on-list-tools"), output).run()
 
     assert exited.value.code == 1
     assert "Error: MCP server failed: Connection closed" in output.getvalue()
@@ -41,7 +46,7 @@ async def test_a_server_dying_under_list_tools_stops_with_the_lost_connection_an
 @pytest.mark.parametrize("flags", [(), ("noisy_shutdown",)])
 async def test_an_exception_out_of_the_graph_stops_with_its_message(flags: tuple[str, ...]) -> None:
     output = io.StringIO()
-    audit = given.an_audit_of(given.a_read_server(*flags), output, given.a_failing_model())
+    audit = given.an_audit_of(a_read_server(*flags), output, given.a_failing_model())
 
     with pytest.raises(SystemExit) as exited:
         await audit.run()
@@ -54,7 +59,7 @@ async def test_an_exception_out_of_the_graph_stops_with_its_message(flags: tuple
 async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
     output = io.StringIO()
     model = given.a_failing_model(ConnectionResetError(given.PROVIDER_FAILURE))
-    audit = given.an_audit_of(given.a_read_server(), output, model)
+    audit = given.an_audit_of(a_read_server(), output, model)
 
     with pytest.raises(SystemExit) as exited:
         await audit.run()
@@ -70,4 +75,4 @@ async def test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_ser
     monkeypatch.setattr(audit, "checkpoint_db_path", lambda: unopenable)
 
     with pytest.raises(sqlite3.OperationalError):
-        await given.an_audit_of(given.a_stalling_server(), io.StringIO()).run()
+        await given.an_audit_of(a_stalling_server(), io.StringIO()).run()

@@ -1,42 +1,23 @@
 import asyncio
-import io
 import os
 import pathlib
 import sys
 import time
 from dataclasses import dataclass, field
 
-import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
-from rich.console import Console
 
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
-from mcp_auditor.config import Settings
-from mcp_auditor.console import AuditDisplay
+from mcp_auditor.audit import Audit
 from mcp_auditor.domain import AttackContext, TestCaseBatch
-from mcp_auditor.report_files import ReportPaths
-from mcp_auditor.server_execution import LaunchOptions, ServerExecution
-from tests.fakes import FakeContainerRuntime, FakeLLM
-from tests.integration.support.detection_fake_targets import (
-    a_docker_that_runs_its_command_on_the_host,
-    removals,
-)
+from tests.fakes import FakeLLM
+from tests.integration.support.detection_fake_targets import removals
+from tests.integration.support.support_servers import STALLING_SERVER_PATH
+from tests.integration.support.unconfined_audit import AuditVariant, an_unconfined_audit
 from tests.unit.auditor.support.graph_builders import a_judgment, a_payload
-
-READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
-STALLING_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "stalling_server.py"
-
-
-def a_read_server(*flags: str) -> ServerLaunch:
-    return ServerLaunch.unconfined(sys.executable, [str(READ_SERVER_PATH), *flags])
-
-
-def a_stalling_server(*flags: str) -> ServerLaunch:
-    return ServerLaunch.unconfined(sys.executable, [str(STALLING_SERVER_PATH), *flags])
 
 
 def a_declared_stalling_container(
@@ -44,12 +25,6 @@ def a_declared_stalling_container(
 ) -> ServerLaunch:
     args = ["run", *docker_options, sys.executable, str(STALLING_SERVER_PATH), *server_flags]
     return ServerLaunch.declared_container("docker", args, client_env={})
-
-
-def a_docker_on_the_host(directory: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
-    docker = a_docker_that_runs_its_command_on_the_host(directory)
-    monkeypatch.setenv("PATH", f"{docker}{os.pathsep}{os.environ['PATH']}")
-    return docker
 
 
 @dataclass
@@ -97,10 +72,6 @@ def a_silent_server_writing_its_pid(pid_file: pathlib.Path) -> ServerLaunch:
     """Never answers `initialize`, and outlives the end of its stdin."""
     script = "import os, sys, time; open(sys.argv[1], 'w').write(str(os.getpid())); time.sleep(120)"
     return ServerLaunch.unconfined(sys.executable, ["-c", script, str(pid_file)])
-
-
-def a_command_not_found() -> ServerLaunch:
-    return ServerLaunch.unconfined("mcp-auditor-no-such-command", [])
 
 
 async def the_process_ends(pid: int, within_seconds: float = 10) -> bool:
@@ -152,19 +123,7 @@ async def the_ping_error_code(*flags: str) -> int | None:
 
 
 def an_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
-    # One case per tool, judged and summarized by the same scripted model, no chain.
+    # One case per tool, judged and summarized by the same scripted model.
     batch = TestCaseBatch(cases=[a_payload(arguments={"path": "/outside/flag"})])
     llm = FakeLLM([batch, a_judgment(), AttackContext()])
-    config = AuditConfig(
-        run_options=AuditRunOptions(budget=1, chains=0, resume=False, dry_run=False),
-        report_paths=ReportPaths(),
-        ci=CIOptions(),
-        launch=LaunchOptions(unconfined=True, image=None, mounts=()),
-        tools_filter=tools,
-    )
-    return Audit(
-        config=config,
-        execution=ServerExecution(launch, FakeContainerRuntime(untouchable=True)),
-        analysts=Analysts(llm=llm, judge=llm, settings=Settings()),
-        display=AuditDisplay(console=Console(file=io.StringIO(), width=200)),
-    )
+    return an_unconfined_audit(launch, AuditVariant(llm=llm, tools=tools))

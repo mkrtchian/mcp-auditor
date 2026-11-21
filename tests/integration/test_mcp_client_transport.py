@@ -13,10 +13,15 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.domain.server_liveness import RelaunchCause
 from mcp_auditor.domain.server_watch import is_lost_connection, is_timeout
 from tests.integration.support.detection_fake_targets import removals
+from tests.integration.support.support_servers import (
+    A_COMMAND_NOT_FOUND,
+    a_read_server,
+    a_stalling_server,
+)
 
 
 async def test_a_server_logging_its_shutdown_to_stdout_is_left_cleanly() -> None:
-    async with StdioMCPClient.connect(given.a_read_server("noisy_shutdown")) as client:
+    async with StdioMCPClient.connect(a_read_server("noisy_shutdown")) as client:
         response = await client.call_tool("read", {"path": "/any"})
 
     assert response.content == "ok"
@@ -24,13 +29,13 @@ async def test_a_server_logging_its_shutdown_to_stdout_is_left_cleanly() -> None
 
 async def test_a_body_error_survives_a_server_logging_its_shutdown_to_stdout() -> None:
     with pytest.raises(ValueError, match=r"^body$"):
-        async with StdioMCPClient.connect(given.a_read_server("noisy_shutdown")) as client:
+        async with StdioMCPClient.connect(a_read_server("noisy_shutdown")) as client:
             await client.call_tool("read", {"path": "/any"})
             raise ValueError("body")
 
 
 async def test_a_non_protocol_line_mid_session_is_counted_and_the_call_answers() -> None:
-    async with StdioMCPClient.connect(given.a_read_server("noisy_mid_session")) as client:
+    async with StdioMCPClient.connect(a_read_server("noisy_mid_session")) as client:
         response = await client.call_tool("read", {"path": "/any"})
 
         assert response.content == "ok"
@@ -41,7 +46,7 @@ async def test_a_server_that_never_answers_initialize_times_out() -> None:
     started = time.monotonic()
     with pytest.raises(ExceptionGroup) as raised:
         async with StdioMCPClient.connect(
-            given.a_read_server("silent_initialize"), initialize_timeout=0.5
+            a_read_server("silent_initialize"), initialize_timeout=0.5
         ):
             pass
 
@@ -55,7 +60,7 @@ async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
 
-    report = await given.an_audit_of(given.a_read_server("noisy_shutdown")).run()
+    report = await given.an_audit_of(a_read_server("noisy_shutdown")).run()
 
     assert report is not None
     assert report.is_complete
@@ -64,14 +69,14 @@ async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its
 
 
 async def test_a_ping_right_after_the_handshake_is_answered() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server()) as client:
+    async with StdioMCPClient.connect(a_stalling_server()) as client:
         assert await client.ping()
 
 
 async def test_a_ping_is_answered_while_a_timed_out_call_runs_on_and_the_next_call_is_served() -> (
     None
 ):
-    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+    async with StdioMCPClient.connect(a_stalling_server(), tool_call_timeout=1) as client:
         stalled = await client.call_tool("wait_forever", {})
 
         assert is_timeout(stalled)
@@ -80,7 +85,7 @@ async def test_a_ping_is_answered_while_a_timed_out_call_runs_on_and_the_next_ca
 
 
 async def test_a_ping_goes_unanswered_once_a_call_blocked_the_server_loop() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+    async with StdioMCPClient.connect(a_stalling_server(), tool_call_timeout=1) as client:
         blocked = await client.call_tool("block_loop", {})
 
         assert is_timeout(blocked)
@@ -88,18 +93,18 @@ async def test_a_ping_goes_unanswered_once_a_call_blocked_the_server_loop() -> N
 
 
 async def test_a_ping_the_server_ignores_goes_unanswered() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server("--ignore-ping")) as client:
+    async with StdioMCPClient.connect(a_stalling_server("--ignore-ping")) as client:
         assert not await client.ping()
 
 
 async def test_an_error_response_to_the_ping_is_an_answer() -> None:
     assert await given.the_ping_error_code("--error-ping") == INTERNAL_ERROR
-    async with StdioMCPClient.connect(given.a_stalling_server("--error-ping")) as client:
+    async with StdioMCPClient.connect(a_stalling_server("--error-ping")) as client:
         assert await client.ping()
 
 
 async def test_a_relaunch_after_a_blocked_loop_ends_the_old_process_group() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+    async with StdioMCPClient.connect(a_stalling_server(), tool_call_timeout=1) as client:
         old_pid = int((await client.call_tool("pid", {})).content)
         assert is_timeout(await client.call_tool("block_loop", {}))
 
@@ -110,7 +115,7 @@ async def test_a_relaunch_after_a_blocked_loop_ends_the_old_process_group() -> N
 
 
 async def test_a_relaunch_after_the_server_exits_serves_the_next_call() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server()) as client:
+    async with StdioMCPClient.connect(a_stalling_server()) as client:
         assert is_lost_connection(await client.call_tool("exit", {}))
 
         assert await client.relaunch()
@@ -121,7 +126,7 @@ async def test_a_relaunch_after_the_server_exits_serves_the_next_call() -> None:
 async def test_a_relaunch_whose_server_does_not_start_again_returns_false(
     tmp_path: pathlib.Path,
 ) -> None:
-    launch = given.a_stalling_server("--serve-once", str(tmp_path / "served"))
+    launch = a_stalling_server("--serve-once", str(tmp_path / "served"))
     async with StdioMCPClient.connect(launch) as client:
         assert is_lost_connection(await client.call_tool("exit", {}))
 
@@ -133,12 +138,12 @@ async def test_a_relaunch_whose_server_does_not_start_again_returns_false(
 async def test_a_teardown_past_its_bound_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(mcp_client, "TEARDOWN_TIMEOUT_SECONDS", 0.2)
     teardown = given.FakeTeardown(lasting_seconds=5)
-    async with StdioMCPClient.connect(given.a_stalling_server(), teardown=teardown) as client:
+    async with StdioMCPClient.connect(a_stalling_server(), teardown=teardown) as client:
         assert not await client.relaunch()
 
 
 async def test_a_write_to_a_dead_server_gives_a_lost_connection_and_spares_the_caller() -> None:
-    async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=1) as client:
+    async with StdioMCPClient.connect(a_stalling_server(), tool_call_timeout=1) as client:
         assert is_timeout(await client.call_tool("exit_leaving_stdout_open", {}))
         await client.call_tool("echo", {})  # its write finds no reader
 
@@ -149,10 +154,9 @@ async def test_a_write_to_a_dead_server_gives_a_lost_connection_and_spares_the_c
 
 
 async def test_a_named_declared_container_is_removed_before_the_injected_teardown_runs(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    docker_on_the_host: pathlib.Path,
 ) -> None:
-    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
-    teardown = given.FakeTeardown(seeing_removals_in=docker)
+    teardown = given.FakeTeardown(seeing_removals_in=docker_on_the_host)
     launch = given.a_declared_stalling_container("--name", "audited-stalling")
     async with StdioMCPClient.connect(launch, teardown=teardown) as client:
         assert await client.relaunch()
@@ -162,43 +166,39 @@ async def test_a_named_declared_container_is_removed_before_the_injected_teardow
 
 
 async def test_a_declared_container_with_no_name_is_relaunched_with_no_removal(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    docker_on_the_host: pathlib.Path,
 ) -> None:
-    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
     async with StdioMCPClient.connect(given.a_declared_stalling_container()) as client:
         assert await client.relaunch()
 
         assert (await client.call_tool("echo", {})).content == "ok"
-    assert removals(docker) == []
+    assert removals(docker_on_the_host) == []
 
 
 async def test_a_named_declared_container_is_removed_when_its_session_ends(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    docker_on_the_host: pathlib.Path,
 ) -> None:
-    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
     launch = given.a_declared_stalling_container("--name", "audited-stalling")
     async with StdioMCPClient.connect(launch) as client:
         assert (await client.call_tool("echo", {})).content == "ok"
 
-    assert removals(docker) == ["-f -v audited-stalling"]
+    assert removals(docker_on_the_host) == ["-f -v audited-stalling"]
 
 
 async def test_a_named_declared_container_is_removed_when_its_session_ends_on_an_error(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    docker_on_the_host: pathlib.Path,
 ) -> None:
-    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
     launch = given.a_declared_stalling_container("--name", "audited-stalling")
     with pytest.raises(ValueError, match=r"^body$"):
         async with StdioMCPClient.connect(launch):
             raise ValueError("body")
 
-    assert removals(docker) == ["-f -v audited-stalling"]
+    assert removals(docker_on_the_host) == ["-f -v audited-stalling"]
 
 
 async def test_a_named_declared_container_is_removed_when_its_session_fails_to_open(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    docker_on_the_host: pathlib.Path,
 ) -> None:
-    docker = given.a_docker_on_the_host(tmp_path, monkeypatch)
     launch = given.a_declared_stalling_container(
         "--name", "audited-stalling", server_flags=("--exit-before-initialize",)
     )
@@ -206,7 +206,7 @@ async def test_a_named_declared_container_is_removed_when_its_session_fails_to_o
         async with StdioMCPClient.connect(launch):
             pass
 
-    assert removals(docker) == ["-f -v audited-stalling"]
+    assert removals(docker_on_the_host) == ["-f -v audited-stalling"]
 
 
 async def test_an_audit_relaunches_its_server_from_a_graph_node(
@@ -214,7 +214,7 @@ async def test_an_audit_relaunches_its_server_from_a_graph_node(
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
 
-    report = await given.an_audit_of(given.a_stalling_server(), tools=frozenset({"exit"})).run()
+    report = await given.an_audit_of(a_stalling_server(), tools=frozenset({"exit"})).run()
 
     assert report is not None
     assert [(r.tool_name, r.cause, r.succeeded) for r in report.relaunches] == [
@@ -225,13 +225,13 @@ async def test_an_audit_relaunches_its_server_from_a_graph_node(
 
 async def test_a_command_not_found_raises_a_bare_os_error() -> None:
     with pytest.raises(FileNotFoundError):
-        async with StdioMCPClient.connect(given.a_command_not_found()):
+        async with StdioMCPClient.connect(A_COMMAND_NOT_FOUND):
             pass
 
 
 async def test_a_server_that_exits_before_initialize_closes_the_connection_inside_a_group() -> None:
     with pytest.raises(ExceptionGroup) as raised:
-        async with StdioMCPClient.connect(given.a_stalling_server("--exit-before-initialize")):
+        async with StdioMCPClient.connect(a_stalling_server("--exit-before-initialize")):
             pass
 
     closed, _ = raised.value.split(
@@ -244,7 +244,7 @@ async def test_a_cancelled_caller_leaves_no_server_process_running() -> None:
     pid = asyncio.get_running_loop().create_future()
 
     async def a_call_that_never_returns() -> None:
-        async with StdioMCPClient.connect(given.a_stalling_server(), tool_call_timeout=3600) as c:
+        async with StdioMCPClient.connect(a_stalling_server(), tool_call_timeout=3600) as c:
             pid.set_result(int((await c.call_tool("pid", {})).content))
             await c.call_tool("wait_forever", {})
 
@@ -261,7 +261,7 @@ async def test_a_cancelled_caller_leaves_no_server_process_running() -> None:
 async def test_a_caller_cancelled_while_the_session_opens_ends_at_once(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    opening = asyncio.create_task(given.a_session_opened(given.a_read_server("silent_initialize")))
+    opening = asyncio.create_task(given.a_session_opened(a_read_server("silent_initialize")))
 
     took = await given.cancelled_after(1, opening)
 
@@ -274,7 +274,7 @@ async def test_a_caller_cancelled_while_the_session_opens_ends_at_once(
 async def test_a_caller_cancelled_while_a_relaunch_opens_ends_at_once(
     tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    launch = given.a_stalling_server("--silent-once-served", str(tmp_path / "served"))
+    launch = a_stalling_server("--silent-once-served", str(tmp_path / "served"))
     relaunching = asyncio.Event()
     caller = asyncio.create_task(given.a_relaunch_of(launch, relaunching))
     await asyncio.wait_for(relaunching.wait(), timeout=30)
@@ -290,7 +290,7 @@ async def test_a_caller_cancelled_while_a_relaunch_opens_ends_at_once(
 # Its line finds a session that stopped reading, and the SDK's task groups raise that error in
 # place of the cancellation of the owner.
 async def test_a_caller_cancelled_while_a_server_logging_its_shutdown_opens_ends_at_once() -> None:
-    launch = given.a_stalling_server("--silent-with-noisy-shutdown")
+    launch = a_stalling_server("--silent-with-noisy-shutdown")
     opening = asyncio.create_task(given.a_session_opened(launch))
 
     took = await given.cancelled_after(1, opening)

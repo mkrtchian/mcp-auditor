@@ -16,13 +16,13 @@ from mcp_auditor.server_execution import (
     ServerExecution,
     decide_launch,
 )
+from tests.integration.support.support_servers import STALLING_SERVER_PATH
 
 # Pinned, as the README pins the demo's: this test is the only instrument of the
 # confined path, so it must go red on a confinement regression and never on an
 # upstream rename.
 FILESYSTEM_SERVER = "@modelcontextprotocol/server-filesystem@2026.8.31"
 ENV_ECHO_SERVER = pathlib.Path(__file__).parent / "support" / "env_echo_server.py"
-STALLING_SERVER = pathlib.Path(__file__).parent / "support" / "stalling_server.py"
 
 
 @pytest.mark.skipif(not DockerRuntime().available(), reason="confined execution needs Docker")
@@ -82,7 +82,7 @@ async def test_a_relayed_variable_reaches_the_confined_server(
 )
 async def test_a_blocked_confined_server_is_replaced_under_the_same_name() -> None:
     context = given.a_confined_context(LaunchOptions(unconfined=False, image=None, mounts=()))
-    server_args = ["--with", "mcp==1.26.0", "python", str(STALLING_SERVER)]
+    server_args = ["--with", "mcp==1.26.0", "python", str(STALLING_SERVER_PATH)]
     launch = decide_launch("uvx", server_args, context).launch
 
     execution = ServerExecution(launch, context.runtime)

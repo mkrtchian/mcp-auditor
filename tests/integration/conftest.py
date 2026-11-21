@@ -9,6 +9,7 @@ from tests.integration.support.detection_fake_targets import (
 
 
 @pytest.fixture
-def docker_on_the_host(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> None:
+def docker_on_the_host(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> pathlib.Path:
     docker_dir = a_docker_that_runs_its_command_on_the_host(tmp_path)
     monkeypatch.setenv("PATH", f"{docker_dir}{os.pathsep}{os.environ['PATH']}")
+    return docker_dir
