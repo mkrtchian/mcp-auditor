@@ -71,8 +71,9 @@ def test_a_confirmed_file_with_a_miss_does_not_gate():
     [
         ([DETECTED] * 3, TargetOutcome.HELD),
         ([DETECTED, MISSED, DETECTED], TargetOutcome.PENDING_RETEST),
+        ([MISSED] * 3, TargetOutcome.PENDING_RETEST),
     ],
-    ids=["detected", "missed once"],
+    ids=["detected", "missed once", "missed every run"],
 )
 def test_a_gated_target(runs: list[TargetStatus], outcome: TargetOutcome):
     comparison = compare_target(given.a_gated_baseline(), given.a_candidate(runs))
@@ -253,15 +254,3 @@ def test_green(outcomes: list[TargetOutcome]):
 )
 def test_exit_code(outcome: GateOutcome, code: int):
     assert exit_code(outcome) == code
-
-
-def test_a_gated_miss_waits_for_its_retests():
-    pending = compare_target(given.a_gated_baseline(), given.a_candidate([MISSED] * 3))
-
-    assert pending.model_dump(mode="json")["outcome"] == "pending_retest"
-
-
-def test_the_gate_outcome_is_the_shared_gate_outcome():
-    result = decide([given.a_comparison(TargetOutcome.HELD)], [])
-
-    assert result.outcome is GateOutcome.GREEN

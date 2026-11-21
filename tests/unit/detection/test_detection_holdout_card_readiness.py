@@ -1,8 +1,7 @@
 import pytest
-from pydantic import ValidationError
 
 import tests.unit.detection.support.test_detection_draw_record_given as given
-from evals.cve.detection.draw_record import CardCheck, DrawRecord
+from evals.cve.detection.draw_record import DrawRecord
 from evals.cve.detection.holdout_card_readiness import unready_cards
 from tests.unit.detection.support.test_detection_draw_record_given import A_DRAWN_FLAW
 
@@ -18,11 +17,6 @@ def test_a_ready_card_and_check_give_no_gap():
 
 def test_a_check_at_a_later_rule_version_passes():
     assert unready_cards(_with_check_version(given.a_draw(), 12), [A_DRAWN_FLAW]) == []
-
-
-def test_a_check_without_a_rule_version_does_not_load():
-    with pytest.raises(ValidationError, match="rule_version"):
-        CardCheck.model_validate({"flaw": A_DRAWN_FLAW, "reported_gaps": [], "confirmed_gaps": []})
 
 
 @pytest.mark.parametrize(

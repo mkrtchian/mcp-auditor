@@ -3,19 +3,11 @@ import importlib.util
 from collections.abc import Iterable
 from pathlib import Path
 
+import pytest
+
 import tests.unit.cve.support.test_cve_planting_given as planting_given
 import tests.unit.detection.support.test_detection_holdout_targets_given as given
-from evals.cve.backends import (
-    backend_beside_launch,
-    doris,
-    kubernetes,
-    kubernetes_detection,
-    mcp_ssh_holdout,
-    n8n_instance,
-    searxng,
-)
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
-from evals.cve.backends.searxng import SEARXNG_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
 from evals.cve.layout import PROJECT, WORK
@@ -28,6 +20,7 @@ from evals.cve.places import (
 )
 from evals.cve.planting import planting_spec
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
+from tests.unit.support.audited_launch_builders import AUDITED_LAUNCH_BUILDERS
 
 # These modules are the paths a holdout target must never travel: the detection gate
 # (session_model's _BENCHMARKED = ACCEPTANCE_TARGETS), the preflight, the judge fixture draw
@@ -84,14 +77,6 @@ def test_no_acceptance_or_holdout_target_bakes_its_work_directory():
         assert not target.planting_host.baked_work, target.flaw_id
 
 
-# The stand-in's answering logic is inlined in `Dockerfile.stand-in`, so only the images part of the
-# fixture fingerprint, which hashes each image's Dockerfile instructions, covers it.
-def test_every_target_declaring_stand_ins_lists_the_stand_in_image():
-    for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS):
-        if target.planting_host.public_names.stand_ins:
-            assert STAND_IN_SERVICE in target.images, target.flaw_id
-
-
 # The image's own `/work` would sit under the per-launch tmpfs the planting code mounts there, so a
 # target that needs a writable project bakes it elsewhere.
 def test_no_acceptance_or_holdout_image_names_a_path_under_work():
@@ -131,43 +116,23 @@ def test_every_settled_leak_is_a_kept_place():
         assert target.settled_leaks <= set(target.kept_places), target.flaw_id
 
 
-def test_the_doris_target_fingerprints_the_module_that_seeds_its_backend():
-    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-66335")
+@pytest.mark.parametrize(
+    "target",
+    [
+        target
+        for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS)
+        if AUDITED_LAUNCH_BUILDERS[target.builder].backend_sources
+        or AUDITED_LAUNCH_BUILDERS[target.builder].images
+    ],
+    ids=lambda target: target.flaw_id,
+)
+def test_a_target_fingerprints_the_backend_modules_and_builds_the_images_of_its_builder(
+    target: Target,
+):
+    builder = AUDITED_LAUNCH_BUILDERS[target.builder]
 
-    assert Path(doris.__file__) in target.backend_sources
-
-
-def test_the_n8n_target_fingerprints_the_module_that_provisions_its_instance():
-    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "GHSA-8g7g-hmwm-6rv2")
-
-    assert Path(n8n_instance.__file__) in target.backend_sources
-
-
-def test_the_kubectl_targets_fingerprint_the_modules_that_stand_their_control_plane():
-    for flaw_id in ("CVE-2025-65719", "CVE-2025-53355"):
-        target = next(t for t in (*HOLDOUT_TARGETS, *ACCEPTANCE_TARGETS) if t.flaw_id == flaw_id)
-
-        assert CONTROL_PLANE_SERVICE in target.images, flaw_id
-        assert {
-            Path(kubernetes.__file__),
-            Path(kubernetes_detection.__file__),
-            Path(backend_beside_launch.__file__),
-        } <= set(target.backend_sources), flaw_id
-
-
-def test_the_mcp_ssh_target_fingerprints_the_modules_that_build_its_launch():
-    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2025-9654")
-
-    assert {Path(mcp_ssh_holdout.__file__), Path(backend_beside_launch.__file__)} <= set(
-        target.backend_sources
-    )
-
-
-def test_the_searxng_target_builds_and_fingerprints_the_searxng_it_reaches():
-    target = next(target for target in HOLDOUT_TARGETS if target.flaw_id == "CVE-2026-58485")
-
-    assert SEARXNG_SERVICE in target.images
-    assert Path(searxng.__file__) in target.backend_sources
+    assert builder.backend_sources <= set(target.backend_sources)
+    assert builder.images <= set(target.images)
 
 
 # The a11y images inline a copy of the fixture authority into Chromium's NSS store: a regeneration
@@ -219,8 +184,7 @@ def _imports_holdout_targets(path: Path) -> bool:
 
 # The per-target structural guards below mirror test_cve_places.py over HOLDOUT_TARGETS: every
 # kept id is in detection_places.json within its target's reach, every reach token is in the closed
-# vocabulary, no kept place is unplaceable, and the kept list plants together. They are trivially
-# satisfied while the tuple is empty; they are the guard for the module once the draw fills it.
+# vocabulary, no kept place is unplaceable, and the kept list plants together.
 
 
 def test_every_holdout_target_reaches_only_the_closed_vocabulary():

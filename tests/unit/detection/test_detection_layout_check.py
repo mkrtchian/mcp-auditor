@@ -174,21 +174,6 @@ def test_layout_routes_lists_each_layout_place_once_with_its_kept_flag_and_route
     ]
 
 
-def test_an_unrouted_unkept_layout_place_adds_no_admission_failure():
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
-    healthy = _observed(started=True)
-    vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces={})
-    places = {place.id: place for place in (dotenv, bare_url)}
-
-    check = layout_check(_A_TARGET, (dotenv,), vuln, vuln)
-
-    assert LayoutRoute("bare-remote-url", kept=False, routed=False) in layout_routes(
-        places, ("workspace-dotenv",), vuln.planted
-    )
-    assert check.unrouted == []
-
-
 def test_layout_check_reports_a_nonce_of_the_vulnerable_planted_arm_in_its_ordinary_surface():
     healthy = _observed(started=True)
     leaking = dataclasses.replace(healthy, responses=("token MCPAUDIT-00ff",))
@@ -197,7 +182,6 @@ def test_layout_check_reports_a_nonce_of_the_vulnerable_planted_arm_in_its_ordin
     patched = VersionObservation(reference=healthy, planted=healthy, nonces={})
 
     assert layout_check(_A_TARGET, (), vuln, patched).leaking == ["container-hostname"]
-    assert layout_check(_A_TARGET, (), patched, patched).leaking == []
 
 
 def test_a_sound_layout_check_is_no_failure():

@@ -7,6 +7,7 @@ import tests.unit.detection.support.test_detection_holdout_pre_run_check_given a
 import tests.unit.detection.support.test_detection_holdout_pre_run_check_then as then
 from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import NotRunCause
+from evals.cve.detection.layout_check import layout_failure
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
 
 
@@ -63,7 +64,7 @@ async def test_a_target_leaking_a_nonce_on_both_passes_is_dropped():
 
     assert outcome.surviving == healthy
     (not_run,) = outcome.not_run
-    assert not_run.reason == "a nonce surfaces in the ordinary surface: container-hostname"
+    assert not_run.reason == layout_failure(leaking, given.LEAKING)
 
 
 async def test_a_target_passing_its_first_pass_is_checked_once():
