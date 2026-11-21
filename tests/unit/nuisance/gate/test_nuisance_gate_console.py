@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_console_given as given
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
 from evals.cve.nuisance.gate.gate_report import GATE_LEGEND
 from evals.eval_display import print_outcome
@@ -61,7 +62,8 @@ def test_the_summary_lists_the_servers_not_admitted_and_outside_the_gate(
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
     assert NOT_ADMITTED in output.getvalue()
-    assert f"{OUTSIDE.server_package}: does not run over stdio" in output.getvalue()
+    outside = f"{OUTSIDE.server_package}: {EXIT_REASON_TEXTS[OUTSIDE.reason]}"
+    assert outside in output.getvalue()
 
 
 def test_a_not_run_reason_holding_markup_prints_literally(monkeypatch: pytest.MonkeyPatch):

@@ -8,7 +8,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_admission_walk_given 
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.nuisance.admission.walk import nuisance_population
-from evals.cve.nuisance.exits import ExitReason
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 
 
 def test_an_admitted_server_the_walk_does_not_reach_is_refused():
@@ -86,7 +86,7 @@ def test_a_recorded_exit_for_a_server_whose_exit_the_walk_derives_is_refused():
     [problem] = admission_given.problems_of(admission, walk_inputs)
 
     assert problem.startswith("npm:bad: ")
-    assert "no counted flaw" in problem
+    assert EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW] in problem
 
 
 def test_a_recorded_exit_for_a_server_the_walk_marks_is_refused_naming_the_mark():
@@ -103,7 +103,7 @@ def test_a_recorded_exit_for_a_server_the_walk_marks_is_refused_naming_the_mark(
     [problem] = admission_given.problems_of(admission, walk_inputs)
 
     assert listed.server_package in problem
-    assert "an excluded server" in problem
+    assert EXIT_REASON_TEXTS[ExitReason.EXCLUDED_SERVER] in problem
 
 
 def test_two_recorded_exits_for_one_server_are_refused():
@@ -117,14 +117,8 @@ def test_two_recorded_exits_for_one_server_are_refused():
     assert admission_given.problems_of(admission) == [f"{package}: 2 recorded exits"]
 
 
-@pytest.mark.parametrize(
-    ("reason", "text"),
-    [
-        (ExitReason.NO_COUNTED_TOOL_LEFT, "no counted tool left"),
-        (ExitReason.SPENT_BY_A_READING, "spent by a reading"),
-    ],
-)
-def test_a_server_admitted_and_recorded_out_is_refused(reason: ExitReason, text: str):
+@pytest.mark.parametrize("reason", [ExitReason.NO_COUNTED_TOOL_LEFT, ExitReason.SPENT_BY_A_READING])
+def test_a_server_admitted_and_recorded_out_is_refused(reason: ExitReason):
     admission = given.recording(
         admission_given.an_admission(),
         given.a_recorded_exit(admission_given.SERVER_PACKAGE, reason),
@@ -133,7 +127,7 @@ def test_a_server_admitted_and_recorded_out_is_refused(reason: ExitReason, text:
     [problem] = admission_given.problems_of(admission)
 
     assert admission_given.SERVER_PACKAGE in problem
-    assert text in problem
+    assert EXIT_REASON_TEXTS[reason] in problem
 
 
 def test_a_recorded_acceptance_target_reason_is_refused():
@@ -143,7 +137,7 @@ def test_a_recorded_acceptance_target_reason_is_refused():
         given.a_recorded_exit(package, ExitReason.ACCEPTANCE_TARGET_SERVER),
     )
 
+    reason = EXIT_REASON_TEXTS[ExitReason.ACCEPTANCE_TARGET_SERVER]
     assert admission_given.problems_of(admission) == [
-        f"{package}: recorded exit for the reason 'the server of a current or dropped "
-        "acceptance target', which only the walk derives"
+        f"{package}: recorded exit for the reason '{reason}', which only the walk derives"
     ]

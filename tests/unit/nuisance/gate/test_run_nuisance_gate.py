@@ -10,6 +10,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_admission_records_giv
 import tests.unit.nuisance.gate.support.test_run_nuisance_gate_given as given
 from evals import run_nuisance
 from evals.baseline import BaselineStatus
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from tests.unit.support.test_nuisance_admission_edits_given import without_stdio
 
 
@@ -62,7 +63,7 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     assert exit_code == 0
     assert "no nuisance acceptance server is admitted" not in out
     assert "no admitted nuisance acceptance server can run in the gate" in out
-    assert f"{given.GATE_SERVER}: does not run over stdio" in out
+    assert f"{given.GATE_SERVER}: {EXIT_REASON_TEXTS[ExitReason.NOT_OVER_STDIO]}" in out
 
 
 def test_gate_on_a_server_outside_the_gate_set_exits_two(

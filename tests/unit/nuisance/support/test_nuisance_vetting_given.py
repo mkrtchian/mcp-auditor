@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Generator, Iterator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Generator, Mapping, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from typing import IO
 
@@ -10,7 +10,7 @@ from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
-from tests.fakes.mcp_client import FakeMCPClient
+from tests.fakes import FakeMCPClient, ScriptedBenignCall
 from tests.unit.nuisance.support.test_nuisance_run_backends_given import (
     CKAN_TAG,
     DockerHost,
@@ -24,10 +24,10 @@ __all__ = ["CKAN_TAG", "COUNTED_TOOL", "a_server"]
 
 
 class ScriptedVet:
-    """A benign call answering each package's successive calls with the reasons `scripted` gives
-    it, a package it does not name answering None on every call, beside a container host running
-    `running` per image tag. Both write to one event list, `("call", package)` per call and
-    `("removed", name)` per container removed, so the order of removals and calls reads off it."""
+    """A `ScriptedBenignCall` answering each package's successive calls with the reasons
+    `scripted` gives it, beside a container host running `running` per image tag. Both write to
+    one event list, `("call", package)` per call and `("removed", name)` per container removed,
+    so the order of removals and calls reads off it."""
 
     def __init__(
         self,
@@ -35,15 +35,13 @@ class ScriptedVet:
         running: dict[str, list[str]] | None = None,
     ) -> None:
         self.events: list[tuple[str, str]] = []
-        self._reasons: dict[str, Iterator[str | None]] = {
-            package: iter(reasons) for package, reasons in scripted.items()
-        }
+        self._benign_call = ScriptedBenignCall(scripted)
         self._docker = DockerHost(running)
         self.host = RemovalHost(self._docker.running, self._remove)
 
     async def benign_call(self, server: AdmittedServer) -> str | None:
         self.events.append(("call", server.server_package))
-        return next(self._reasons.get(server.server_package, iter(())), None)
+        return await self._benign_call(server)
 
     @property
     def calls(self) -> list[str]:

@@ -13,6 +13,7 @@ from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance import vet_command as nuisance_vet_command
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.vet_command import VetDeps
+from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.test_nuisance_run_backends_given import DockerHost
 
 SERVER = admission_given.SERVER_PACKAGE
@@ -26,11 +27,11 @@ def deps_on(
     ping_answers: Mapping[str, bool] | None = None,
 ) -> VetDeps:
     """Each benign call leaves its server's container running, as a server outliving its call
-    does, fails with the reason `failures` gives its server (a string on every call, a sequence
-    one reason per successive call), and records the ping answer `ping_answers` gives it, a server
-    it does not name never connecting to a ping."""
+    does, fails with the reason `failures` scripts for its server as `ScriptedBenignCall` reads
+    it, and records the ping answer `ping_answers` gives it, a server it does not name never
+    connecting to a ping."""
     recorded: dict[str, bool] = {}
-    calls: dict[str, int] = {}
+    scripted = ScriptedBenignCall(failures)
 
     async def benign_call(server: AdmittedServer) -> str | None:
         await host.benign_call(server)
@@ -39,13 +40,7 @@ def deps_on(
         host.containers.setdefault(tag, []).append(f"{server.service}_left")
         if package in (ping_answers or {}):
             recorded[package] = (ping_answers or {})[package]
-        calls[package] = calls.get(package, 0) + 1
-        scripted = (failures or {}).get(package)
-        return (
-            scripted
-            if scripted is None or isinstance(scripted, str)
-            else scripted[calls[package] - 1]
-        )
+        return await scripted(server)
 
     return VetDeps(
         rebuild=host.rebuild,

@@ -1,6 +1,7 @@
 import dataclasses
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_report_given as given
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_report import GATE_LEGEND, render_markdown, server_lines
 from tests.unit.nuisance.gate.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES
 from tests.unit.nuisance.support.test_nuisance_run_given import COUNTED_TOOL
@@ -24,7 +25,7 @@ def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lis
     assert COUNTED_TOOL not in held_row
     assert given.section(markdown, "## Not admitted") == [f"- {given.NOT_ADMITTED}"]
     assert given.section(markdown, "## Outside the gate") == [
-        f"- {given.OUTSIDE.server_package}: does not run over stdio"
+        f"- {given.OUTSIDE.server_package}: {EXIT_REASON_TEXTS[given.OUTSIDE.reason]}"
     ]
 
 

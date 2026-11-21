@@ -23,7 +23,7 @@ from mcp_auditor.domain.models import (
     ModelCallKind,
     ProviderUsage,
 )
-from tests.fakes import FakeContainerSweep
+from tests.fakes import FakeContainerSweep, ScriptedBenignCall
 
 FIRST_FLAW = admission.FIRST_FLAW
 SECOND_FLAW = admission.SECOND_FLAW
@@ -165,25 +165,13 @@ def deps_auditing(
     containers: FakeContainerSweep | None = None,
     announced: list[str] | None = None,
 ) -> NuisanceDeps:
-    """`benign_call` gives a server's failure reason, a string on every call, a sequence one
-    reason per successive call, a server it does not name answering every call. `announced`
-    collects the status line of each finished run."""
-    reasons = benign_call or {}
+    """`benign_call` scripts each server's failure reasons as `ScriptedBenignCall` reads them.
+    `announced` collects the status line of each finished run."""
     lines = announced if announced is not None else []
     docker = containers or FakeContainerSweep()
-    calls: dict[str, int] = {}
-
-    async def _benign_call(server: AdmittedServer) -> str | None:
-        package = server.server_package
-        calls[package] = calls.get(package, 0) + 1
-        scripted = reasons.get(package)
-        if scripted is None or isinstance(scripted, str):
-            return scripted
-        return scripted[calls[package] - 1]
-
     return NuisanceDeps(
         audit=audit,
-        benign_call=_benign_call,
+        benign_call=ScriptedBenignCall(benign_call),
         rebuild=lambda services: None,
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},

@@ -73,17 +73,15 @@ def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its
 
     markdown = render_markdown(build_report(run))
 
-    assert (
-        "## Exits\n"
-        "- no counted flaw: 1 server(s): npm:flawless\n"
-        "- a counted flaw never fixed: 0 server(s)\n"
-        "- no counted tool left: 0 server(s)\n"
-        "- does not run over stdio: 0 server(s)\n"
-        "- its patched version does not run under Docker: 0 server(s)\n"
-        "- an excluded server: 2 server(s): npm:excluded-one, npm:excluded-two\n"
-        "- the server of a current or dropped acceptance target: 0 server(s)\n"
-        "- spent by a reading: 0 server(s)\n\n"
-    ) in markdown
+    counts = {
+        ExitReason.NO_COUNTED_FLAW: "1 server(s): npm:flawless",
+        ExitReason.EXCLUDED_SERVER: "2 server(s): npm:excluded-one, npm:excluded-two",
+    }
+    rows = "".join(
+        f"- {EXIT_REASON_TEXTS[reason]}: {counts.get(reason, '0 server(s)')}\n"
+        for reason in ExitReason
+    )
+    assert f"## Exits\n{rows}\n" in markdown
 
 
 def test_with_no_exit_every_reason_reads_zero_and_the_not_run_section_reads_none():
@@ -99,8 +97,9 @@ def test_a_server_whose_admission_is_pending_closes_the_exits_section():
 
     markdown = render_markdown(build_report(run))
 
+    last_reason = EXIT_REASON_TEXTS[list(ExitReason)[-1]]
     assert (
-        "- spent by a reading: 0 server(s)\n"
+        f"- {last_reason}: 0 server(s)\n"
         "- admission pending (not an exit of the rule): 1 server(s): npm:pending\n\n"
     ) in markdown
 

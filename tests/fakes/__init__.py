@@ -1,3 +1,4 @@
+from tests.fakes.benign_call import ScriptedBenignCall
 from tests.fakes.container_runtime import FakeContainerRuntime
 from tests.fakes.container_sweep import FakeContainerSweep
 from tests.fakes.kit_client import FakeKitClient
@@ -13,5 +14,6 @@ __all__ = [
     "FakeLLM",
     "FakeMCPClient",
     "RaisingLLM",
+    "ScriptedBenignCall",
     "ScriptedDocker",
 ]

@@ -14,7 +14,7 @@ from evals.cve.nuisance.gate.gate_baseline import (
 )
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness, NuisanceGateOptions
 from evals.eval_session import TreeState
-from tests.fakes import FakeContainerSweep
+from tests.fakes import FakeContainerSweep, ScriptedBenignCall
 from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
     a_confirmed_baseline,
     a_gated_baseline,
@@ -65,21 +65,11 @@ def a_harness(
     throttled_requests: int = 0,
     containers: FakeContainerSweep | None = None,
 ) -> NuisanceGateHarness:
-    """`benign_call` maps a package to its failure, a string on every call, a sequence one reason
-    per successive call. `tree_after_runs` is what every read of the tree after the first
-    returns, `tree` by default."""
-    failures = benign_call or {}
+    """`benign_call` scripts each package's failure reasons as `ScriptedBenignCall` reads them.
+    `tree_after_runs` is what every read of the tree after the first returns, `tree` by
+    default."""
     docker = containers or FakeContainerSweep()
     reads: list[TreeState] = []
-    calls: dict[str, int] = {}
-
-    async def call(server: AdmittedServer) -> str | None:
-        package = server.server_package
-        calls[package] = calls.get(package, 0) + 1
-        scripted = failures.get(package)
-        if scripted is None or isinstance(scripted, str):
-            return scripted
-        return scripted[calls[package] - 1]
 
     def read_tree() -> TreeState:
         state = tree if not reads else (tree_after_runs or tree)
@@ -88,7 +78,7 @@ def a_harness(
 
     return NuisanceGateHarness(
         audit=audit,
-        benign_call=call,
+        benign_call=ScriptedBenignCall(benign_call),
         announce_audits=announce,
         throttled_requests=lambda: throttled_requests,
         rebuild=lambda services: None,
