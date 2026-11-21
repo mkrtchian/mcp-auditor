@@ -1,5 +1,5 @@
 from mcp_auditor.domain.models import ToolResponse
-from mcp_auditor.domain.server_watch import ServerWatch, WatchStep
+from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, ServerWatch, WatchStep
 
 TIMEOUT = ToolResponse(
     content="Tool call timed out after 30s", is_error=True, error_type="TimeoutError"
@@ -27,3 +27,8 @@ def timeouts_on(watch: ServerWatch, tool_name: str, count: int) -> WatchStep:
 def a_relaunch_from(watch: ServerWatch, tool_name: str) -> None:
     watch.after_response(tool_name, LOST_CONNECTION)
     watch.after_relaunch(tool_name, succeeded=True)
+
+
+def relaunches_in_a_row(watch: ServerWatch, tool_name: str) -> None:
+    for _ in range(RELAUNCHES_IN_A_ROW):
+        a_relaunch_from(watch, tool_name)

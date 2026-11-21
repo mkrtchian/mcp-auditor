@@ -112,7 +112,7 @@ async def a_server_taken_as_down() -> tuple[AuditedServer, FakeMCPClient]:
 
 
 async def a_server_that_stopped(tool: ToolDefinition) -> AuditedServer:
-    """A server that answers the ping, on which the tool timed out three times in a row."""
+    """A server that answers the ping, on which the tool timed out until it was stopped."""
     server = AuditedServer(FakeMCPClient([tool], {tool.name: a_timeout_response()}))
     for _ in range(TIMEOUTS_IN_A_ROW):
         await server.attempt(tool, a_payload())

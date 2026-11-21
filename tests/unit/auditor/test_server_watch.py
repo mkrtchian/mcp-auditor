@@ -5,6 +5,7 @@ from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.server_liveness import RelaunchCause, UnsentCause
 from mcp_auditor.domain.server_watch import (
     LOST_CONNECTION_RESPONSES,
+    TIMEOUTS_IN_A_ROW,
     ServerWatch,
     WatchStep,
     is_lost_connection,
@@ -47,16 +48,16 @@ def test_an_answered_ping_after_a_timeout_asks_for_nothing():
 def test_a_server_silent_to_the_control_ping_is_never_pinged_and_its_timeouts_count():
     watch = given.a_watch(control_ping_answered=False)
 
-    steps = [watch.after_response("read_file", given.TIMEOUT) for _ in range(3)]
+    steps = [watch.after_response("read_file", given.TIMEOUT) for _ in range(TIMEOUTS_IN_A_ROW)]
 
-    assert steps == [WatchStep.NOTHING] * 3
+    assert steps == [WatchStep.NOTHING] * TIMEOUTS_IN_A_ROW
     assert watch.unsent_cause("read_file") is UnsentCause.TOOL_TIMING_OUT
 
 
-def test_three_timeouts_in_a_row_stop_the_tool_and_no_other():
+def test_timeouts_in_a_row_stop_the_tool_and_no_other():
     watch = given.a_watch()
 
-    given.timeouts_on(watch, "read_file", 3)
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW)
 
     assert watch.unsent_cause("read_file") is UnsentCause.TOOL_TIMING_OUT
     assert watch.unsent_cause("list_files") is None
@@ -64,9 +65,9 @@ def test_three_timeouts_in_a_row_stop_the_tool_and_no_other():
 
 def test_a_second_tool_timing_out_after_a_stopped_one_takes_the_server_as_stuck():
     watch = given.a_watch()
-    given.timeouts_on(watch, "read_file", 3)
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW)
 
-    step = given.timeouts_on(watch, "list_files", 3)
+    step = given.timeouts_on(watch, "list_files", TIMEOUTS_IN_A_ROW)
 
     assert step is WatchStep.RELAUNCH
     assert watch.relaunch_cause() is RelaunchCause.STUCK
@@ -75,11 +76,11 @@ def test_a_second_tool_timing_out_after_a_stopped_one_takes_the_server_as_stuck(
 
 def test_after_a_stuck_relaunch_the_tool_timing_out_again_is_stopped_with_no_second_relaunch():
     watch = given.a_watch()
-    given.timeouts_on(watch, "read_file", 3)
-    given.timeouts_on(watch, "list_files", 3)
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW)
+    given.timeouts_on(watch, "list_files", TIMEOUTS_IN_A_ROW)
     watch.after_relaunch("list_files", succeeded=True)
 
-    step = given.timeouts_on(watch, "list_files", 3)
+    step = given.timeouts_on(watch, "list_files", TIMEOUTS_IN_A_ROW)
 
     assert step is WatchStep.NOTHING
     assert watch.unsent_cause("list_files") is UnsentCause.TOOL_TIMING_OUT
@@ -87,24 +88,23 @@ def test_after_a_stuck_relaunch_the_tool_timing_out_again_is_stopped_with_no_sec
 
 def test_a_relaunch_resets_the_timeout_count_of_its_tool_and_keeps_its_relaunch_count():
     watch = given.a_watch()
-    given.timeouts_on(watch, "read_file", 2)
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW - 1)
     watch.after_response("read_file", given.TIMEOUT)
     watch.after_ping("read_file", answered=False)
     watch.after_relaunch("read_file", succeeded=True)
 
-    given.timeouts_on(watch, "read_file", 2)
-    cause_after_two_more_timeouts = watch.unsent_cause("read_file")
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW - 1)
+    cause_short_of_the_timeouts_in_a_row = watch.unsent_cause("read_file")
     given.a_relaunch_from(watch, "read_file")
 
-    assert cause_after_two_more_timeouts is None
+    assert cause_short_of_the_timeouts_in_a_row is None
     assert watch.unsent_cause("read_file") is UnsentCause.RELAUNCHES_IN_A_ROW
 
 
-def test_two_relaunches_in_a_row_stop_the_tool():
+def test_relaunches_in_a_row_stop_the_tool():
     watch = given.a_watch()
 
-    given.a_relaunch_from(watch, "read_file")
-    given.a_relaunch_from(watch, "read_file")
+    given.relaunches_in_a_row(watch, "read_file")
 
     assert watch.unsent_cause("read_file") is UnsentCause.RELAUNCHES_IN_A_ROW
 
@@ -119,14 +119,24 @@ def test_a_timeout_on_a_server_that_answers_the_ping_does_not_reset_the_relaunch
     assert watch.unsent_cause("read_file") is UnsentCause.RELAUNCHES_IN_A_ROW
 
 
-def test_a_real_response_resets_the_counts_and_forgets_the_tool_stopped_before():
+def test_a_real_response_resets_the_timeout_count():
+    watch = given.a_watch()
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW - 1)
+    watch.after_response("read_file", given.ANSWER)
+
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW - 1)
+
+    assert watch.unsent_cause("read_file") is None
+
+
+def test_a_real_response_resets_the_relaunch_count_and_forgets_the_tool_stopped_before():
     watch = given.a_watch()
     given.a_relaunch_from(watch, "list_files")
-    given.timeouts_on(watch, "read_file", 3)
+    given.timeouts_on(watch, "read_file", TIMEOUTS_IN_A_ROW)
     watch.after_response("list_files", given.ANSWER)
     given.a_relaunch_from(watch, "list_files")
 
-    step = given.timeouts_on(watch, "search", 3)
+    step = given.timeouts_on(watch, "search", TIMEOUTS_IN_A_ROW)
 
     assert step is WatchStep.NOTHING
     assert watch.unsent_cause("search") is UnsentCause.TOOL_TIMING_OUT

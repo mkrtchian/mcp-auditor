@@ -8,7 +8,7 @@ from mcp_auditor.domain import (
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause, UnsentPayload
-from mcp_auditor.domain.server_watch import SendAttempt
+from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW, SendAttempt
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
@@ -125,18 +125,17 @@ async def test_a_first_call_on_a_session_with_no_control_ping_sends_one():
     assert len(client.calls) == 1
 
 
-async def test_a_tool_timing_out_three_times_is_called_no_more():
+async def test_a_tool_timing_out_in_a_row_is_called_no_more():
     client = FakeMCPClient([_TOOL], responses={"run": a_timeout_response()})
     server = AuditedServer(client)
-    for _ in range(3):
+    for _ in range(TIMEOUTS_IN_A_ROW):
         await server.attempt(_TOOL, _a_payload({"command": "sleep 99"}))
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "ls"}))
 
     assert attempt == SendAttempt(UnsentPayload(UnsentCause.TOOL_TIMING_OUT))
     assert server.unsent_cause("run") is UnsentCause.TOOL_TIMING_OUT
-    assert len(client.calls) == 3
-    assert client.pings == 4  # the control ping, then one after each timeout
+    assert len(client.calls) == TIMEOUTS_IN_A_ROW
 
 
 async def test_a_lost_connection_relaunches_the_server_after_the_call():

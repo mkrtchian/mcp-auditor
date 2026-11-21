@@ -8,6 +8,7 @@ import tests.unit.auditor.support.test_graph_then as then
 from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.models import MissCause, ModelCallKind
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
+from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
@@ -338,11 +339,13 @@ async def test_a_chain_step_planning_refusal_judges_the_chain_with_the_steps_it_
     then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_STEP_PLANNING)])
 
 
-async def test_a_tool_timing_out_three_times_is_stopped_and_the_next_tool_is_audited():
+async def test_a_tool_timing_out_in_a_row_is_stopped_and_the_next_tool_is_audited():
     tools = [given.a_tool(name="stalls"), given.a_tool(name="answers")]
-    fake_llm = given.a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(num_cases=3)
+    fake_llm = given.a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(
+        num_cases=TIMEOUTS_IN_A_ROW
+    )
     graph = given.a_graph(fake_llm, given.a_server_timing_out_on(tools, "stalls"))
-    state = given.an_initial_state(test_budget=3, chain_budget=1)
+    state = given.an_initial_state(test_budget=TIMEOUTS_IN_A_ROW, chain_budget=1)
 
     result = await given.invoke_graph(graph, state)
 
@@ -350,7 +353,7 @@ async def test_a_tool_timing_out_three_times_is_stopped_and_the_next_tool_is_aud
     then.report_has_no_chains(stopped)
     then.report_has_unsent_calls(stopped, cases=0, chains=1, cause=UnsentCause.TOOL_TIMING_OUT)
     next_tool = then.tool_report_at(result, 1)
-    then.report_has_cases(next_tool, 3)
+    then.report_has_cases(next_tool, TIMEOUTS_IN_A_ROW)
     then.report_has_judged_chains(next_tool, 1)
     then.report_has_no_gap(next_tool)
 

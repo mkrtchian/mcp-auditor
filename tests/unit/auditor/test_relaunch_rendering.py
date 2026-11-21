@@ -8,6 +8,7 @@ import tests.unit.auditor.support.test_rendering_then as then
 from mcp_auditor.domain.models import AuditCategory, CoverageGap
 from mcp_auditor.domain.rendering import describe_coverage_gap, render_json, render_markdown
 from mcp_auditor.domain.server_liveness import UnsentCause
+from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, TIMEOUTS_IN_A_ROW
 
 
 def test_markdown_summary_counts_the_relaunches():
@@ -62,8 +63,11 @@ def test_markdown_lists_each_relaunch_under_its_tool_with_the_call_before_it_and
 @pytest.mark.parametrize(
     ("cause", "why"),
     [
-        (UnsentCause.TOOL_TIMING_OUT, "the tool timed out 3 times in a row"),
-        (UnsentCause.RELAUNCHES_IN_A_ROW, "the tool's calls led to 2 relaunches in a row"),
+        (UnsentCause.TOOL_TIMING_OUT, f"the tool timed out {TIMEOUTS_IN_A_ROW} times in a row"),
+        (
+            UnsentCause.RELAUNCHES_IN_A_ROW,
+            f"the tool's calls led to {RELAUNCHES_IN_A_ROW} relaunches in a row",
+        ),
         (UnsentCause.SERVER_DOWN, "the server was taken as down"),
     ],
 )
@@ -86,7 +90,7 @@ def test_a_coverage_gap_names_its_calls_not_sent_before_its_missing_categories()
 
     assert describe_coverage_gap(gap) == (
         "7 cases generated for 10 requested, 1 case not sent "
-        "(the tool timed out 3 times in a row), missing categories: injection"
+        f"(the tool timed out {TIMEOUTS_IN_A_ROW} times in a row), missing categories: injection"
     )
 
 
