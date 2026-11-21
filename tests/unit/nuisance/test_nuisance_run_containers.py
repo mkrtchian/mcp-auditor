@@ -3,9 +3,9 @@ and the stand-in's images, which the run rebuilds but never sweeps by tag, since
 removes its own containers and a calibration may share those images. The removal at the start
 also resets the Doris cluster, a pulled backend, by its container name."""
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends_given
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.nuisance.run_containers import remove_backend_containers, run_images
@@ -23,7 +23,7 @@ SERVED = PlantingHost(
 
 
 def test_a_backend_less_server_with_public_names_rebuilds_the_holder_and_stand_in_images():
-    server = admission_given.with_host(run_given.a_server("npm:served"), SERVED)
+    server = mutations.with_host(run_given.a_server("npm:served"), SERVED)
 
     images = run_images([run_given.a_server("npm:plain"), server])
 
@@ -39,7 +39,7 @@ def test_servers_without_public_names_rebuild_no_shared_image():
 
 def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
     ckan = edits.on_the_ckan_backend(run_given.a_server("npm:ckan"))
-    served = admission_given.with_host(run_given.a_server("npm:served"), SERVED)
+    served = mutations.with_host(run_given.a_server("npm:served"), SERVED)
 
     images = run_images([ckan, served])
 

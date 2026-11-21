@@ -1,10 +1,5 @@
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
-from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import an_admission
-
-
-def admitting(*servers: AdmittedServer) -> NuisanceAdmission:
-    return an_admission().model_copy(update={"servers": list(servers)})
+from evals.cve.nuisance.admission.admission import AdmittedServer
 
 
 def a_server_outside_the_census(package: str) -> AdmittedServer:

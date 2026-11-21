@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.kit import benign_probe
 from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
@@ -37,7 +38,7 @@ def a_call(tool: str, **arguments: Any) -> dict[str, Any]:
 
 def a_record_with_a_backend() -> dict[str, Any]:
     backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
-    return the_record_of(admission_given.with_a_backend(a_server(), backend))
+    return the_record_of(mutations.with_a_backend(a_server(), backend))
 
 
 def a_fake_lifecycle_resolved_by_key(monkeypatch: pytest.MonkeyPatch) -> list[str]:

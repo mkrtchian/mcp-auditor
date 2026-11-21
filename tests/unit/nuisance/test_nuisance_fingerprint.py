@@ -4,6 +4,7 @@ import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.support.test_nuisance_fingerprint_given as given
+import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve import planting_base
 from evals.cve.fixture_provenance import StandInRecord
@@ -107,17 +108,17 @@ def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
     backend = BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
-        admission_given.with_a_backend(server, backend), tmp_path
+        mutations.with_a_backend(server, backend), tmp_path
     )
 
 
 def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     server = admission_given.an_admission().servers[0]
-    one = admission_given.with_a_backend(
+    one = mutations.with_a_backend(
         server, BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
     )
-    two = admission_given.with_a_backend(
+    two = mutations.with_a_backend(
         server, BackendFixture(provisioner="doris", images=["fake/backend:2.0"], network="net")
     )
 
@@ -148,7 +149,7 @@ def test_the_fingerprint_moves_when_a_host_field_changes(tmp_path: Path, host: P
     server = admission_given.an_admission().servers[0]
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != nuisance_fixture_fingerprint(
-        admission_given.with_host(server, host), tmp_path
+        mutations.with_host(server, host), tmp_path
     )
 
 
@@ -197,7 +198,7 @@ def test_the_fingerprint_moves_when_a_served_file_of_the_backend_changes(
 ):
     given.written_dockerfile(tmp_path)
     backends = given.a_registry_serving(tmp_path)
-    server = admission_given.with_a_backend(admission_given.an_admission().servers[0], FAKE_BACKEND)
+    server = mutations.with_a_backend(admission_given.an_admission().servers[0], FAKE_BACKEND)
     first = nuisance_fixture_fingerprint(server, tmp_path, backends)
 
     (tmp_path / name).write_text(after)

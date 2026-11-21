@@ -6,6 +6,7 @@ from evals.cve.census.draw_order import draw_digest
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.exits import ExitReason, RecordedExit
+from tests.unit.support.admission_mutations import admitting
 
 
 def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
@@ -44,7 +45,7 @@ def admitting_the_queue_servers() -> NuisanceAdmission:
         ).servers[0]
         for package in reversed(the_queue_packages())
     ]
-    return admission_given.an_admission().model_copy(update={"servers": servers})
+    return admitting(*servers)
 
 
 def a_recorded_exit(
@@ -55,7 +56,3 @@ def a_recorded_exit(
 
 def recording(admission: NuisanceAdmission, *exits: RecordedExit) -> NuisanceAdmission:
     return admission.model_copy(update={"exits": list(exits)})
-
-
-def admitting_no_server() -> NuisanceAdmission:
-    return admission_given.an_admission().model_copy(update={"servers": []})

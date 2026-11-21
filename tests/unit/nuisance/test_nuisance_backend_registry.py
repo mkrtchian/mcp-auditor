@@ -3,6 +3,7 @@ import re
 import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.gitlab import GITLAB_HOST
 from evals.cve.backends.googleapis import GOOGLEAPIS_RESPONDER_IP
 from evals.cve.backends.jenkins import JENKINS_URL
@@ -49,7 +50,7 @@ def test_a_recorded_backend_whose_image_list_differs_from_the_registered_one_is_
     recorded = BackendFixture(
         provisioner="fake", images=["fake/backend:1.0", "fake/extra:1.0"], network="fake-net"
     )
-    server = admission_given.with_a_backend(admission_given.an_admitted_server(), recorded)
+    server = mutations.with_a_backend(admission_given.an_admitted_server(), recorded)
 
     problems = backend_problems(server, admission_given.a_backend_registry())
 

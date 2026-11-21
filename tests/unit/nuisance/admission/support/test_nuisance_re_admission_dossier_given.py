@@ -7,6 +7,7 @@ from pathlib import Path
 
 import evals.cve.nuisance.fix_checks as fix_checks
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture, FlawRecord
@@ -37,7 +38,7 @@ def a_server_on_a_per_launch_backend() -> AdmittedServer:
     backend = BackendFixture(
         provisioner="fake_per_launch", images=["fake/engine:1.0"], network=PER_LAUNCH_NETWORK_PREFIX
     )
-    return admission_given.with_a_backend(admission_given.an_admitted_server(), backend)
+    return mutations.with_a_backend(admission_given.an_admitted_server(), backend)
 
 
 def _never_stood(

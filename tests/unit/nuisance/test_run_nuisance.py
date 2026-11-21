@@ -7,6 +7,7 @@ import tests.unit.detection.support.test_detection_draw_record_given as draw_giv
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_run_nuisance_given as run_given
+import tests.unit.support.admission_mutations as mutations
 from evals import run_nuisance
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from tests.unit.nuisance.admission.support import (
@@ -257,7 +258,7 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
 
 @pytest.mark.parametrize(
     "admitted",
-    [None, admission.an_admission().model_copy(update={"servers": []})],
+    [None, mutations.admitting()],
     ids=["absent", "no servers"],
 )
 def test_run_with_no_admitted_server_exits_zero_and_says_so(
@@ -301,7 +302,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     census = given.written(tmp_path, admission.a_census())
-    stale = admission.with_a_stale_grammar_fingerprint(admission.an_admission())
+    stale = mutations.with_a_stale_grammar_fingerprint(admission.an_admission())
     path = admission.written(tmp_path, stale)
 
     exit_code = run_nuisance.main(

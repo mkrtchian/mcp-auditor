@@ -13,8 +13,8 @@ from tests.unit.cve.support import test_cve_launch_audit_given as launch_given
 from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
     a_fake_lifecycle,
     an_admitted_server,
-    with_a_backend,
 )
+from tests.unit.support.admission_mutations import with_a_backend
 
 NO_OVERRIDES = RunOverrides(None, None, None)
 

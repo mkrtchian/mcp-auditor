@@ -5,8 +5,8 @@ import dataclasses
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.support.test_nuisance_run_given as given
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
@@ -90,7 +90,7 @@ async def test_the_sweep_runs_when_no_server_survives():
 
 
 async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
-    server = admission.with_a_backend(
+    server = mutations.with_a_backend(
         given.a_server(),
         BackendFixture(
             provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"

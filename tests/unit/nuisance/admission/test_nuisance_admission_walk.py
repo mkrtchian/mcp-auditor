@@ -9,6 +9,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_gi
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.nuisance.admission.walk import nuisance_population
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
+from tests.unit.support.admission_mutations import admitting
 
 
 def test_an_admitted_server_the_walk_does_not_reach_is_refused():
@@ -64,15 +65,13 @@ def test_queue_servers_within_the_addition_size_pass():
 
 
 def test_a_recorded_exit_for_a_listed_server_left_out_passes():
-    admission = given.recording(
-        given.admitting_no_server(), given.a_recorded_exit(admission_given.SERVER_PACKAGE)
-    )
+    admission = given.recording(admitting(), given.a_recorded_exit(admission_given.SERVER_PACKAGE))
 
     assert admission_given.problems_of(admission) == []
 
 
 def test_a_recorded_exit_for_a_server_the_walk_does_not_reach_is_refused():
-    admission = given.recording(given.admitting_no_server(), given.a_recorded_exit("npm:nowhere"))
+    admission = given.recording(admitting(), given.a_recorded_exit("npm:nowhere"))
 
     assert admission_given.problems_of(admission) == [
         "npm:nowhere: recorded exit for a server the walk does not reach"
@@ -81,7 +80,7 @@ def test_a_recorded_exit_for_a_server_the_walk_does_not_reach_is_refused():
 
 def test_a_recorded_exit_for_a_server_whose_exit_the_walk_derives_is_refused():
     walk_inputs = walk_given.a_walk_reaching_a_server_with_no_flaw_that_may_count()
-    admission = given.recording(given.admitting_no_server(), given.a_recorded_exit("npm:bad"))
+    admission = given.recording(admitting(), given.a_recorded_exit("npm:bad"))
 
     [problem] = admission_given.problems_of(admission, walk_inputs)
 
@@ -96,9 +95,7 @@ def test_a_recorded_exit_for_a_server_the_walk_marks_is_refused_naming_the_mark(
     )
     walk_inputs = walk_given.walk_inputs_of(census)
     [listed] = nuisance_population(walk_inputs)
-    admission = given.recording(
-        given.admitting_no_server(), given.a_recorded_exit(listed.server_package)
-    )
+    admission = given.recording(admitting(), given.a_recorded_exit(listed.server_package))
 
     [problem] = admission_given.problems_of(admission, walk_inputs)
 
@@ -109,7 +106,7 @@ def test_a_recorded_exit_for_a_server_the_walk_marks_is_refused_naming_the_mark(
 def test_two_recorded_exits_for_one_server_are_refused():
     package = admission_given.SERVER_PACKAGE
     admission = given.recording(
-        given.admitting_no_server(),
+        admitting(),
         given.a_recorded_exit(package),
         given.a_recorded_exit(package, ExitReason.NO_COUNTED_FLAW),
     )
@@ -133,7 +130,7 @@ def test_a_server_admitted_and_recorded_out_is_refused(reason: ExitReason):
 def test_a_recorded_acceptance_target_reason_is_refused():
     package = admission_given.SERVER_PACKAGE
     admission = given.recording(
-        given.admitting_no_server(),
+        admitting(),
         given.a_recorded_exit(package, ExitReason.ACCEPTANCE_TARGET_SERVER),
     )
 

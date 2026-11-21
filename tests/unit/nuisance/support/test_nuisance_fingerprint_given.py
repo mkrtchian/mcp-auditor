@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance import fingerprint as nuisance_fingerprint
 from evals.cve.nuisance.admission.admission import AdmittedServer
@@ -56,4 +57,4 @@ def written_public_name_dockerfiles(
 
 def serving_a_public_name(server: AdmittedServer) -> AdmittedServer:
     names = PublicNames(stand_ins=("example.com",))
-    return admission_given.with_host(server, replace(server.host, public_names=names))
+    return mutations.with_host(server, replace(server.host, public_names=names))

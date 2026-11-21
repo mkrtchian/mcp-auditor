@@ -21,6 +21,7 @@ from tests.unit.detection.support.test_run_detection_holdout_run_given import (
 from tests.unit.nuisance.admission.support import (
     test_nuisance_holdout_calibration_copies_given as copies_given,
 )
+from tests.unit.support.admission_mutations import admitting
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])
@@ -57,7 +58,7 @@ def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before
 ):
     given.a_run_refused_before_its_settings(monkeypatch)
     stale = copies_given.a_server_with_a_holdout_calibration_copy_at(copies_given.RECORDED)
-    admission = admission_given.an_admission().model_copy(update={"servers": [stale]})
+    admission = admitting(stale)
 
     exit_code = run_nuisance.main(given.a_run_command(tmp_path, admission))
 

@@ -5,9 +5,9 @@ import dataclasses
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.support.test_nuisance_run_given as given
 import tests.unit.nuisance.support.test_nuisance_run_then as then
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
@@ -139,7 +139,7 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
 
 
 async def test_a_backend_server_records_its_backend_image_beside_its_service():
-    server = admission.with_a_backend(
+    server = mutations.with_a_backend(
         given.a_server(),
         BackendFixture(
             provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
@@ -159,7 +159,7 @@ async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend(
     two_images = BackendFixture(
         provisioner="doris", images=["front:1.0", "back:1.0"], network="net"
     )
-    server = admission.with_a_backend(given.a_server(), two_images)
+    server = mutations.with_a_backend(given.a_server(), two_images)
     audit = given.scripted({server.server_package: [given.an_audit(False)] * 3})
 
     result = await given.run([server], given.deps_auditing(audit))
