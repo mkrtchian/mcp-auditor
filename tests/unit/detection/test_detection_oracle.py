@@ -96,7 +96,7 @@ def test_result_for_a_missed_resolution():
 
 
 def test_render_opens_with_the_run_conditions():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     conditions = markdown.splitlines()[0]
     assert "openai" in conditions
@@ -109,13 +109,13 @@ def test_render_opens_with_the_run_conditions():
 
 
 def test_render_states_the_concurrency_on_the_conditions_line():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     assert f"{given.CONCURRENCY} audits at once" in markdown.splitlines()[0]
 
 
 def test_render_states_the_throttled_requests_on_a_line_after_the_tally():
-    report = given.a_benchmark_report([]).model_copy(update={"throttled_requests": 4})
+    report = given.a_detection_report([]).model_copy(update={"throttled_requests": 4})
 
     markdown = render_markdown(report)
 
@@ -126,14 +126,14 @@ def test_render_states_the_throttled_requests_on_a_line_after_the_tally():
 
 
 def test_render_leaves_throttling_out_when_nothing_was_throttled():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     assert "throttled" not in markdown.lower()
 
 
 def test_render_states_the_billed_tokens_on_the_conditions_line():
     usage = ProviderUsage(input_tokens=12000, output_tokens=3400)
-    report = given.a_benchmark_report([]).model_copy(update={"provider_usage": usage})
+    report = given.a_detection_report([]).model_copy(update={"provider_usage": usage})
 
     conditions = render_markdown(report).splitlines()[0]
 
@@ -141,7 +141,7 @@ def test_render_states_the_billed_tokens_on_the_conditions_line():
 
 
 def test_render_header_names_the_ladder_columns():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     assert (
         "| Flaw | CVSS | Class | Status | Detected | Miss kind | Aimed | FAIL without proof "
@@ -150,7 +150,7 @@ def test_render_header_names_the_ladder_columns():
 
 
 def test_render_counts_runs_as_fractions():
-    result = given.a_cve_result(
+    result = given.a_target_result(
         "CVE-2025-53355",
         TargetStatus.MISSED,
         aimed_runs=2,
@@ -158,7 +158,7 @@ def test_render_counts_runs_as_fractions():
         miss_kind=MissKind.AIMED_NO_PROOF,
     )
 
-    markdown = render_markdown(given.a_benchmark_report([result]))
+    markdown = render_markdown(given.a_detection_report([result]))
 
     assert (
         "| CVE-2025-53355 | 9.1 CRITICAL | command_execution | missed | 0/3 | aimed_no_proof "
@@ -167,33 +167,33 @@ def test_render_counts_runs_as_fractions():
 
 
 def test_render_joins_a_union_target_classes_in_its_row():
-    result = given.a_cve_result(
+    result = given.a_target_result(
         "CVE-2025-0002",
         TargetStatus.MISSED,
         classes=(FlawClass.COMMAND_EXECUTION, FlawClass.READ_OUTSIDE_SCOPE),
     )
 
-    markdown = render_markdown(given.a_benchmark_report([result]))
+    markdown = render_markdown(given.a_detection_report([result]))
 
     assert "| CVE-2025-0002 | 9.1 CRITICAL | command_execution, read_outside_scope |" in markdown
 
 
 def test_render_shows_a_dash_for_a_target_with_no_class():
-    result = given.a_cve_result("CVE-2025-0002", TargetStatus.MISSED, classes=())
+    result = given.a_target_result("CVE-2025-0002", TargetStatus.MISSED, classes=())
 
-    markdown = render_markdown(given.a_benchmark_report([result]))
+    markdown = render_markdown(given.a_detection_report([result]))
 
     assert "| CVE-2025-0002 | 9.1 CRITICAL | - | missed |" in markdown
 
 
 def test_render_ends_with_the_status_tally():
     results = [
-        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
-        given.a_cve_result("CVE-2025-53110", TargetStatus.DETECTED, detected_runs=1),
-        given.a_cve_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
+        given.a_target_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
+        given.a_target_result("CVE-2025-53110", TargetStatus.DETECTED, detected_runs=1),
+        given.a_target_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
     ]
 
-    markdown = render_markdown(given.a_benchmark_report(results))
+    markdown = render_markdown(given.a_detection_report(results))
 
     assert markdown.endswith("Statuses: 2 detected, 1 missed.")
 
@@ -205,11 +205,11 @@ def test_render_tallies_the_ungraded_statuses_after_the_ladder():
     results = [
         *out_of_scope_results([out_of_scope]),
         not_run(given.FakeTarget()),
-        given.a_cve_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
-        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
+        given.a_target_result("CVE-2025-68143", TargetStatus.MISSED, miss_kind=MissKind.NOT_AIMED),
+        given.a_target_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
     ]
 
-    markdown = render_markdown(given.a_benchmark_report(results))
+    markdown = render_markdown(given.a_detection_report(results))
 
     assert markdown.endswith("Statuses: 1 detected, 1 missed, 1 not_run, 1 out_of_scope.")
 
@@ -217,10 +217,10 @@ def test_render_tallies_the_ungraded_statuses_after_the_ladder():
 def test_render_lists_the_not_run_reasons_in_a_section_after_the_table():
     results = [
         not_run(given.FakeTarget(), ["keeps no place", "exploit 0 not aimed"]),
-        given.a_cve_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
+        given.a_target_result("CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2),
     ]
 
-    markdown = render_markdown(given.a_benchmark_report(results))
+    markdown = render_markdown(given.a_detection_report(results))
 
     assert "Not run, pre-run check failed:" in markdown
     assert "- CVE-2025-0001: keeps no place, exploit 0 not aimed" in markdown
@@ -229,18 +229,18 @@ def test_render_lists_the_not_run_reasons_in_a_section_after_the_table():
 
 def test_render_lists_the_struck_and_unchecked_credits_after_the_table():
     results = [
-        given.a_cve_result(
+        given.a_target_result(
             "CVE-2025-53355",
             TargetStatus.MISSED,
             miss_kind=MissKind.NOT_AIMED,
             struck_places=[["alpha", "beta"], []],
         ),
-        given.a_cve_result(
+        given.a_target_result(
             "CVE-2025-53109", TargetStatus.DETECTED, detected_runs=2, unchecked_places=[["gamma"]]
         ),
     ]
 
-    markdown = render_markdown(given.a_benchmark_report(results))
+    markdown = render_markdown(given.a_detection_report(results))
 
     assert "Replay credits (place ids):" in markdown
     assert "- CVE-2025-53355: struck (alpha, beta)" in markdown
@@ -249,15 +249,15 @@ def test_render_lists_the_struck_and_unchecked_credits_after_the_table():
 
 
 def test_render_without_replay_credits_has_no_replay_section():
-    result = given.a_cve_result("CVE-X", TargetStatus.MISSED)
+    result = given.a_target_result("CVE-X", TargetStatus.MISSED)
 
-    markdown = render_markdown(given.a_benchmark_report([result]))
+    markdown = render_markdown(given.a_detection_report([result]))
 
     assert "Replay credits" not in markdown
 
 
 def test_render_appends_the_gate_outcome_and_a_row_per_target():
-    report = given.a_benchmark_report([]).model_copy(update={"gate": given.a_red_gate()})
+    report = given.a_detection_report([]).model_copy(update={"gate": given.a_red_gate()})
 
     markdown = render_markdown(report)
 
@@ -314,13 +314,13 @@ def test_render_escapes_a_pipe_in_a_not_run_detail():
 
 
 def test_render_without_a_gate_has_no_gate_section():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     assert "Gate" not in markdown
 
 
 def test_render_ends_with_the_reasons_a_recording_was_refused():
-    report = given.a_benchmark_report([]).model_copy(
+    report = given.a_detection_report([]).model_copy(
         update={"recording_refused": ["CVE-2025-53355: the gated target regressed"]}
     )
 
@@ -332,7 +332,7 @@ def test_render_ends_with_the_reasons_a_recording_was_refused():
 
 
 def test_render_shows_a_cost_row_per_costed_target_and_the_prices_date():
-    report = given.a_benchmark_report([]).model_copy(
+    report = given.a_detection_report([]).model_copy(
         update={"costs": [given.a_target_cost("CVE-2025-0001")], "prices_as_of": date(2026, 10, 17)}
     )
 
@@ -346,7 +346,7 @@ def test_render_shows_a_cost_row_per_costed_target_and_the_prices_date():
 
 def test_render_shows_the_forced_settings_of_a_measurement_run():
     measurement = MeasurementSettings(chains=3, chain_steps=None, tool_call_timeout=30)
-    report = given.a_benchmark_report([]).model_copy(update={"measurement": measurement})
+    report = given.a_detection_report([]).model_copy(update={"measurement": measurement})
 
     markdown = render_markdown(report)
 
@@ -358,7 +358,7 @@ def test_render_shows_the_forced_settings_of_a_measurement_run():
 
 def test_render_of_a_measurement_run_auditing_every_tool_does_not_claim_filtered_tools():
     measurement = MeasurementSettings(every_tool=True)
-    report = given.a_benchmark_report([]).model_copy(update={"measurement": measurement})
+    report = given.a_detection_report([]).model_copy(update={"measurement": measurement})
 
     markdown = render_markdown(report)
 
@@ -367,14 +367,14 @@ def test_render_of_a_measurement_run_auditing_every_tool_does_not_claim_filtered
 
 
 def test_render_without_costs_nor_measurement_has_neither_section():
-    markdown = render_markdown(given.a_benchmark_report([]))
+    markdown = render_markdown(given.a_detection_report([]))
 
     assert "Measurement run" not in markdown
     assert "Cost" not in markdown
 
 
 def test_a_report_json_written_before_costs_and_measurement_still_loads():
-    dumped = given.a_benchmark_report([]).model_dump(mode="json")
+    dumped = given.a_detection_report([]).model_dump(mode="json")
     for field in ("measurement", "costs", "prices_as_of"):
         dumped.pop(field)
 
@@ -384,7 +384,7 @@ def test_a_report_json_written_before_costs_and_measurement_still_loads():
 
 
 def test_a_report_writes_its_results_and_gate_under_the_glossary_keys():
-    report = given.a_benchmark_report([not_run(given.FakeTarget(), ["keeps no place"])])
+    report = given.a_detection_report([not_run(given.FakeTarget(), ["keeps no place"])])
     dumped = report.model_copy(update={"gate": given.a_red_gate()}).model_dump(mode="json")
 
     assert {"flaw_id", "not_run_reasons"} <= dumped["results"][0].keys()

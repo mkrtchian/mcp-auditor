@@ -113,7 +113,7 @@ def test_the_ckan_front_serves_each_front_name_from_its_mounted_leaf():
         assert mount_of(args, f"{tls}-key.pem") == f"{files.key}:{tls}-key.pem:ro"
 
 
-def test_the_data_europa_eu_stand_in_replays_its_capture_under_its_leaf():
+def test_the_data_europa_eu_stand_in_serves_its_capture_under_its_leaf():
     europa = next(part for part in CKAN_PARTS if part.container == "mcp-auditor-cve-ckan-europa")
     args = europa.run_args()
     files = stand_in_files("data.europa.eu")

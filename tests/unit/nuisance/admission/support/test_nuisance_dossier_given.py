@@ -9,7 +9,7 @@ from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.dossier import write_dossier
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
-    the_committed_census,
+    the_committed_walk_inputs,
 )
 
 SERVER = figures.a_classification().server_package
@@ -42,7 +42,7 @@ def its_holdout_targets(server: AdmittedServer) -> list[Target]:
 
 def a_written_dossier_of(tmp_path: Path, server: AdmittedServer) -> Path:
     out = tmp_path / "holdout-target-dossier"
-    write_dossier(the_committed_census(), server.server_package, out)
+    write_dossier(the_committed_walk_inputs(), server.server_package, out)
     return out
 
 

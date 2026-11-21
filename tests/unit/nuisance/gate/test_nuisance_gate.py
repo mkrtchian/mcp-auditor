@@ -31,8 +31,8 @@ def test_a_changed_fixture_leaves_the_comparison_with_the_server_reset():
     assert f"--server {given.SERVER_PACKAGE}" in comparison.detail
 
 
-def test_an_exploratory_file_does_not_gate_and_asks_to_be_confirmed_or_deleted():
-    comparison = compare_server(given.an_exploratory_baseline(), given.a_candidate(ONE_ALARM))
+def test_an_unconfirmed_file_does_not_gate_and_asks_to_be_confirmed_or_deleted():
+    comparison = compare_server(given.an_unconfirmed_baseline(), given.a_candidate(ONE_ALARM))
 
     assert comparison.outcome == ServerOutcome.NOT_GATED
     assert comparison.detail is not None
@@ -94,7 +94,7 @@ def test_an_alarm_reproduced_four_times_is_a_regression():
     assert settled.retests == [False, True, True, True, True]
 
 
-def test_an_alarm_cleared_by_its_replays_is_not_reproduced():
+def test_an_alarm_cleared_by_its_retests_is_not_reproduced():
     pending = given.a_comparison(ServerOutcome.PENDING_RETEST)
 
     settled = apply_retests(pending, [False, False], RetestRule())
@@ -102,7 +102,7 @@ def test_an_alarm_cleared_by_its_replays_is_not_reproduced():
     assert settled.outcome == ServerOutcome.ALARM_NOT_REPRODUCED
 
 
-def test_an_undecided_replay_keeps_the_alarm_pending():
+def test_an_undecided_retest_keeps_the_alarm_pending():
     pending = given.a_comparison(ServerOutcome.PENDING_RETEST)
 
     settled = apply_retests(pending, [True], RetestRule())
@@ -111,7 +111,7 @@ def test_an_undecided_replay_keeps_the_alarm_pending():
     assert settled.retests == [True]
 
 
-def test_a_replay_that_did_not_complete_leaves_the_server_incomplete():
+def test_a_retest_that_did_not_complete_leaves_the_server_incomplete():
     pending = given.a_comparison(ServerOutcome.PENDING_RETEST)
 
     settled = apply_retests(pending, [True, None], RetestRule())

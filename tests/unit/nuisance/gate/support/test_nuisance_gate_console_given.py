@@ -28,7 +28,7 @@ def a_not_gated_report() -> NuisanceGateReport:
 def a_report_that_recorded() -> NuisanceGateReport:
     return a_red_report().model_copy(
         update={
-            "written": [f"{KUBERNETES.server_package}: recorded (exploratory)"],
+            "written": [f"{KUBERNETES.server_package}: recorded (unconfirmed)"],
             "orphans": ["npm-gone.json"],
             "recording_refused": ["the tree changed during the runs"],
         }

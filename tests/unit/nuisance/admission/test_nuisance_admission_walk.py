@@ -21,7 +21,7 @@ def test_an_admitted_server_the_walk_does_not_reach_is_refused():
     assert problems == [f"{admission_given.OTHER_PACKAGE}: not reached by the walk"]
 
 
-def test_an_admitted_acceptance_server_outside_the_walk_passes():
+def test_an_admitted_nuisance_acceptance_server_outside_the_walk_passes():
     census = walk_given.walk_inputs_of(admission_given.a_census_with_an_acceptance_server())
 
     assert (

@@ -1,4 +1,4 @@
-"""The servers played alone: their benign calls, audits and replays run after the other
+"""The servers played alone: their benign calls, audits and retests run after the other
 servers', one at a time, while the others keep running together up to the concurrency bound.
 No Docker, no LLM."""
 
@@ -64,7 +64,7 @@ async def test_run_plays_the_solo_benign_call_and_audits_alone_after_the_others(
     ]
 
 
-async def test_gate_plays_the_solo_benign_call_audits_and_replays_alone(tmp_path: Path):
+async def test_gate_plays_the_solo_benign_call_audits_and_retests_alone(tmp_path: Path):
     others = given.others(2)
     servers = [given.MAGENTO2, *others]
     in_flight = given.InFlight()

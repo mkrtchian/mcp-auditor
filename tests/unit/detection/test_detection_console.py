@@ -16,7 +16,7 @@ def test_the_summary_shows_each_target_id_whole(monkeypatch: pytest.MonkeyPatch)
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
     lines = [line.lstrip() for line in output.getvalue().splitlines()]
-    assert sum(line.startswith(given.DETECTED_CVE) for line in lines) == 2  # results and gate rows
+    assert sum(line.startswith(given.DETECTED_FLAW) for line in lines) == 2  # results and gate rows
     assert sum(line.startswith("CVE-2025-53355") for line in lines) == 1  # gate row only
 
 
@@ -115,7 +115,7 @@ def test_a_no_baseline_summary_lists_the_targets_not_run(monkeypatch: pytest.Mon
     print_detection_summary(report, REPORT_PATH)
 
     assert "Not run, pre-run check failed:" in output.getvalue()
-    assert f"- {given.NOT_RUN_CVE}: exploit not aimed" in output.getvalue()
+    assert f"- {given.NOT_RUN_FLAW}: exploit not aimed" in output.getvalue()
 
 
 def test_a_gated_summary_leaves_the_targets_not_run_to_the_gate(monkeypatch: pytest.MonkeyPatch):

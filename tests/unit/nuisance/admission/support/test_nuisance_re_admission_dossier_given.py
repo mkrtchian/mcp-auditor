@@ -18,7 +18,7 @@ from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
-    the_committed_census,
+    the_committed_walk_inputs,
 )
 
 A_DRAWN_TARGET = "CVE-2026-85787"
@@ -55,7 +55,7 @@ def shared_backends() -> dict[str, RegisteredBackend]:
 
 def the_copy_resolution() -> dict[str, str]:
     return copy_targets(
-        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_census().census.draw
+        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_walk_inputs().census.draw
     )
 
 
@@ -93,7 +93,7 @@ def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:
     out = tmp_path / "dossier"
     write_re_admission_dossier(
-        the_committed_census(), the_committed_admission(), server_package, out
+        the_committed_walk_inputs(), the_committed_admission(), server_package, out
     )
     return out
 

@@ -57,12 +57,12 @@ def test_a_missing_directory_loads_as_no_baseline(tmp_path: Path):
     assert load_baselines(tmp_path / "missing") == {}
 
 
-def test_an_exploratory_baseline_holding_its_runs_is_whole():
-    assert baseline_integrity(given.an_exploratory_baseline([False] * 3)) == []
+def test_an_unconfirmed_baseline_holding_its_runs_is_whole():
+    assert baseline_integrity(given.an_unconfirmed_baseline([False] * 3)) == []
 
 
-def test_an_exploratory_baseline_short_of_its_runs_names_both_counts():
-    [problem] = baseline_integrity(given.an_exploratory_baseline([False] * 2))
+def test_an_unconfirmed_baseline_short_of_its_runs_names_both_counts():
+    [problem] = baseline_integrity(given.an_unconfirmed_baseline([False] * 2))
 
     assert given.SERVER_PACKAGE in problem
     assert "2" in problem and "3" in problem
@@ -77,7 +77,7 @@ def test_only_a_confirmed_baseline_with_no_alarm_is_gated():
     flagged_once = given.a_confirmed_baseline([False] * 5 + [True])
 
     assert given.a_gated_baseline().gated()
-    assert not given.an_exploratory_baseline().gated()
+    assert not given.an_unconfirmed_baseline().gated()
     assert not flagged_once.gated()
     assert flagged_once.alarmed()
 

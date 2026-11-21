@@ -166,7 +166,7 @@ async def test_a_dirty_tree_refuses_a_recording_before_any_audit(tmp_path: Path)
     assert refused.value.title == RECORDING_REFUSED
 
 
-async def test_two_recordings_at_one_commit_write_an_exploratory_then_a_confirmed_file(
+async def test_two_recordings_at_one_commit_write_an_unconfirmed_then_a_confirmed_file(
     tmp_path: Path,
 ):
     servers = [FILESYSTEM, KUBERNETES]
@@ -294,7 +294,7 @@ async def test_a_run_that_does_not_complete_refuses_the_recording_and_writes_not
     assert session.exit_code == 3
 
 
-async def test_a_replay_that_does_not_complete_is_incomplete(tmp_path: Path):
+async def test_a_retest_that_does_not_complete_is_incomplete(tmp_path: Path):
     given.a_gated_file(tmp_path, FILESYSTEM)
     script = [given.a_gate_run(True), *given.clean_runs(2), None]
     audit = given.scripted({FILESYSTEM.server_package: script})

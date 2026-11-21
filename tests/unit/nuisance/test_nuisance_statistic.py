@@ -27,7 +27,7 @@ from tests.unit.nuisance.support.test_nuisance_statistic_given import (
 RUNS = 3
 
 
-def test_figure_is_the_mean_flagged_share():
+def test_the_holdout_nuisance_rate_is_the_mean_flagged_share():
     results = [
         a_server_result("A", flagged_runs=3),
         a_server_result("B", flagged_runs=1),

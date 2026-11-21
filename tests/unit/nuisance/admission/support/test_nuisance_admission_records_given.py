@@ -59,19 +59,19 @@ def with_a_fix_check_record_carrying_a_holdout_fingerprint(
 
 
 def with_a_silent_tool_without_a_cause(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return _with_first_tool_verdict(
+    return _with_first_tool_real_software_record(
         admission, RealSoftwareRecord(answers=False, evidence="the run answers a stack trace")
     )
 
 
 def with_a_silent_tool_without_evidence(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return _with_first_tool_verdict(
+    return _with_first_tool_real_software_record(
         admission, RealSoftwareRecord(answers=False, cause="software_error")
     )
 
 
 def with_an_answering_tool_carrying_a_cause(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return _with_first_tool_verdict(
+    return _with_first_tool_real_software_record(
         admission, RealSoftwareRecord(answers=True, cause="not_distributed")
     )
 
@@ -80,7 +80,7 @@ def with_a_tool_recorded_on_one_flaw_only(admission: NuisanceAdmission) -> Nuisa
     return _with_the_first_tool_on_the_second_flaw(admission, None)
 
 
-def with_a_tool_given_two_verdicts(admission: NuisanceAdmission) -> NuisanceAdmission:
+def with_a_tool_given_two_real_software_records(admission: NuisanceAdmission) -> NuisanceAdmission:
     silent = RealSoftwareRecord(
         answers=False, cause="not_distributed", evidence="the package is yanked from PyPI"
     )
@@ -203,23 +203,23 @@ def with_every_new_field_unrecorded(admission: NuisanceAdmission) -> NuisanceAdm
 
 
 def _with_the_first_tool_on_the_second_flaw(
-    admission: NuisanceAdmission, verdict: RealSoftwareRecord | None
+    admission: NuisanceAdmission, record: RealSoftwareRecord | None
 ) -> NuisanceAdmission:
     def changed(server: AdmittedServer) -> AdmittedServer:
         first, second, *rest = server.flaws
-        tool = first.tools[0].model_copy(update={"real_software": verdict})
+        tool = first.tools[0].model_copy(update={"real_software": record})
         widened = second.model_copy(update={"tools": [*second.tools, tool]})
         return server.model_copy(update={"flaws": [first, widened, *rest]})
 
     return edits.with_the_server(admission, changed)
 
 
-def _with_first_tool_verdict(
-    admission: NuisanceAdmission, verdict: RealSoftwareRecord
+def _with_first_tool_real_software_record(
+    admission: NuisanceAdmission, record: RealSoftwareRecord
 ) -> NuisanceAdmission:
     def changed(flaw: FlawRecord) -> FlawRecord:
         first, *rest = flaw.tools
-        tools: list[ToolRecord] = [first.model_copy(update={"real_software": verdict}), *rest]
+        tools: list[ToolRecord] = [first.model_copy(update={"real_software": record}), *rest]
         return flaw.model_copy(update={"tools": tools})
 
     return edits.with_the_server(

@@ -54,7 +54,7 @@ def a_missed_grade(miss_kind: MissKind, fail_without_proof: bool = False) -> Run
     )
 
 
-def a_cve_result(
+def a_target_result(
     flaw_id: str,
     status: TargetStatus,
     detected_runs: int = 0,
@@ -84,7 +84,7 @@ def a_cve_result(
     )
 
 
-def a_benchmark_report(results: list[TargetResult]) -> DetectionReport:
+def a_detection_report(results: list[TargetResult]) -> DetectionReport:
     return DetectionReport(
         conditions=DetectionRunConditions(
             runs=3,
@@ -130,7 +130,7 @@ def a_red_gate() -> DetectionGateResult:
 
 def a_report_gated_on(*targets: TargetComparison) -> DetectionReport:
     gate = DetectionGateResult(outcome=GateOutcome.GREEN, reasons=[], targets=list(targets))
-    return a_benchmark_report([]).model_copy(update={"gate": gate})
+    return a_detection_report([]).model_copy(update={"gate": gate})
 
 
 def a_target_cost(flaw_id: str) -> TargetCost:

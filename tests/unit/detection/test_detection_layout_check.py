@@ -63,7 +63,7 @@ def _catalogue_place() -> Place:
     )
 
 
-def test_unrouted_kept_places_lists_only_the_unadmitted_layout_place():
+def test_unrouted_kept_places_lists_only_the_layout_place_without_a_route():
     catalogue = _catalogue_place()
     dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
     bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
@@ -73,7 +73,7 @@ def test_unrouted_kept_places_lists_only_the_unadmitted_layout_place():
     assert unrouted == [bare_url]
 
 
-def test_unrouted_kept_places_is_empty_when_every_kept_place_is_admitted():
+def test_unrouted_kept_places_is_empty_when_every_kept_place_has_a_route():
     catalogue = _catalogue_place()
     dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
 

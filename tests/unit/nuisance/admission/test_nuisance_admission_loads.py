@@ -17,7 +17,7 @@ from evals.run_census import CENSUS_PATH
 from tests.unit.support.test_nuisance_committed_admission_given import (
     current_copy_fingerprints,
     the_committed_admission,
-    the_committed_census,
+    the_committed_walk_inputs,
 )
 
 
@@ -56,7 +56,7 @@ def test_every_recorded_exit_is_dated_by_an_entry_of_the_nuisance_suite_log():
 
 
 def test_every_reached_server_is_audited_out_or_pending_exactly_once():
-    walk_inputs = the_committed_census()
+    walk_inputs = the_committed_walk_inputs()
     reached = reached_servers(walk_inputs)
     population = run_population(
         reached, the_committed_admission(), acceptance_target_servers(walk_inputs)

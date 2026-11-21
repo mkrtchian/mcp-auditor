@@ -28,7 +28,7 @@ def test_the_summary_states_the_commit_and_the_model(monkeypatch: pytest.MonkeyP
     )
 
 
-def test_the_table_shows_each_server_with_its_baseline_runs_and_replays(
+def test_the_table_shows_each_server_with_its_baseline_runs_and_retests(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = given.a_captured_console(monkeypatch)

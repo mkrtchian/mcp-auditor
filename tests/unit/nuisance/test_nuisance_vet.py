@@ -173,7 +173,7 @@ def test_the_server_option_naming_no_audited_server_exits_two_naming_it(
     assert host.rebuilt == []
 
 
-def test_an_acceptance_server_is_not_vetted(
+def test_a_nuisance_acceptance_server_is_not_vetted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     host = backends.DockerHost()

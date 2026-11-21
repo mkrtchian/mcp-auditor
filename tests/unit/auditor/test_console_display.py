@@ -12,7 +12,7 @@ from mcp_auditor.domain.models import (
 )
 
 
-def test_header_contains_target():
+def test_header_contains_the_server_command():
     display, buffer = given.a_display()
 
     display.print_header("python server.py", ExecutionRegime.UNCONFINED)

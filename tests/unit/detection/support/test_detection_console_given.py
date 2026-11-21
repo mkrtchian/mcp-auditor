@@ -11,8 +11,8 @@ from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedSt
 from evals.cve.grammar import TargetStatus
 from evals.gate_outcome import GateOutcome
 
-DETECTED_CVE = "CVE-2025-53109"
-NOT_RUN_CVE = "CVE-2025-68143"
+DETECTED_FLAW = "CVE-2025-53109"
+NOT_RUN_FLAW = "CVE-2025-68143"
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> StringIO:
@@ -20,8 +20,8 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> Str
 
 
 def a_gated_report(**update: object) -> DetectionReport:
-    report = oracle_given.a_benchmark_report(
-        [oracle_given.a_cve_result(DETECTED_CVE, TargetStatus.DETECTED, detected_runs=3)]
+    report = oracle_given.a_detection_report(
+        [oracle_given.a_target_result(DETECTED_FLAW, TargetStatus.DETECTED, detected_runs=3)]
     )
     return report.model_copy(update={"gate": oracle_given.a_red_gate(), **update})
 
@@ -32,7 +32,7 @@ def a_no_baseline_report(**update: object) -> DetectionReport:
 
 def a_not_run_result(reasons: list[str]) -> TargetResult:
     return TargetResult(
-        flaw_id=NOT_RUN_CVE,
+        flaw_id=NOT_RUN_FLAW,
         severity="7.5 HIGH",
         note="test note",
         status=UngradedStatus.NOT_RUN,
@@ -47,7 +47,7 @@ def a_report_with_a_not_run_target(reasons: list[str], gated: bool) -> Detection
 
 def a_report_gated_on_a_detail(detail: str) -> DetectionReport:
     comparison = TargetComparison(
-        flaw_id=NOT_RUN_CVE,
+        flaw_id=NOT_RUN_FLAW,
         outcome=TargetOutcome.NOT_RUN,
         candidate_runs=[],
         detail=detail,
@@ -58,5 +58,5 @@ def a_report_gated_on_a_detail(detail: str) -> DetectionReport:
 
 def a_priced_no_baseline_report() -> DetectionReport:
     return a_no_baseline_report(
-        costs=[oracle_given.a_target_cost(DETECTED_CVE)], prices_as_of=date(2026, 10, 1)
+        costs=[oracle_given.a_target_cost(DETECTED_FLAW)], prices_as_of=date(2026, 10, 1)
     )

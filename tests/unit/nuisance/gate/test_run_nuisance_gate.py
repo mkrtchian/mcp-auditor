@@ -122,7 +122,7 @@ def test_the_gate_audits_only_the_selected_servers(tmp_path: Path, monkeypatch: 
     assert seen.options.gate_packages == {given.GATE_SERVER, given.OTHER_GATE_SERVER}
 
 
-def test_an_exploratory_gate_recording_names_the_command_that_confirms_it(
+def test_an_unconfirmed_gate_recording_names_the_command_that_confirms_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)

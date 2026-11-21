@@ -6,7 +6,7 @@ from evals.cve.census.grouping import gap_population, grouped_flaws, known_gap
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS
 
 EXCLUDED_SERVER = "npm:mcp-fetch-server"
-A_BENCHMARK_FLAW = "CVE-2025-65513"
+AN_ACCEPTANCE_TARGET_FLAW = "CVE-2025-65513"
 
 
 def test_a_flaw_both_classifiers_place_outside_the_grammar_is_grouped():
@@ -60,10 +60,10 @@ def test_a_flaw_is_left_out_as_an_excluded_server_only_when_both_classifiers_nam
     assert population == {"CVE-2026-0001"}
 
 
-def test_a_flaw_that_is_or_was_a_benchmark_target_is_left_out():
-    classifications = given.classified(figures.agreed(A_BENCHMARK_FLAW))
+def test_a_flaw_that_is_or_was_an_acceptance_target_is_left_out():
+    classifications = given.classified(figures.agreed(AN_ACCEPTANCE_TARGET_FLAW))
 
-    assert gap_population(classifications, {A_BENCHMARK_FLAW}) == set()
+    assert gap_population(classifications, {AN_ACCEPTANCE_TARGET_FLAW}) == set()
 
 
 def test_a_flaw_outside_the_candidates_is_left_out():
@@ -72,7 +72,7 @@ def test_a_flaw_outside_the_candidates_is_left_out():
     assert gap_population(classifications, set()) == set()
 
 
-def test_every_current_and_dropped_benchmark_target_is_a_benchmark_flaw():
+def test_every_current_and_dropped_acceptance_target_is_an_acceptance_target_flaw():
     targets = {target.flaw_id for target in (*ACCEPTANCE_TARGETS, *OUT_OF_SCOPE_FLAWS)}
 
     assert targets <= ACCEPTANCE_TARGET_FLAWS

@@ -54,24 +54,26 @@ class TestShippedConstantsNameNoExcludedServerText:
 
     def test_an_echoed_auditor_marker_is_dropped_from_the_corpus(self):
         payload = "/work/sandbox/;echo mcp-auditor-probe"
-        case = given.a_cve_case(
+        case = given.a_detection_case(
             "CVE-2025-53109",
             error=f"Error: ENOENT: no such file or directory, scandir '{payload}'",
             arguments={"path": payload},
         )
 
-        corpus = given.server_corpus_of([case], given.servers_by_cve())
+        corpus = given.server_corpus_of([case], given.servers_by_flaw())
 
         assert all("mcp-auditor-probe" not in text and payload not in text for text in corpus)
 
-    def test_an_unclassified_cve_case_fails(self):
-        case = given.a_cve_case("CVE-0000-0000", tool_description="x")
+    def test_an_unclassified_detection_case_fails(self):
+        case = given.a_detection_case("CVE-0000-0000", tool_description="x")
 
         with pytest.raises(LookupError):
-            given.server_corpus_of([case], given.servers_by_cve())
+            given.server_corpus_of([case], given.servers_by_flaw())
 
     def test_a_non_excluded_server_case_is_absent_from_the_corpus(self):
-        case = given.a_cve_case("CVE-0000-0001", tool_description="distinctive server prose here")
+        case = given.a_detection_case(
+            "CVE-0000-0001", tool_description="distinctive server prose here"
+        )
         servers = {"CVE-0000-0001": "npm:some-unrelated-server"}
 
         assert given.server_corpus_of([case], servers) == set()

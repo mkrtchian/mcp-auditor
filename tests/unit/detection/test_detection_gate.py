@@ -144,13 +144,13 @@ def test_apply_retests_keeps_the_retests():
 
 
 def test_matching_conditions_have_no_mismatch():
-    baselines = {given.CVE_ID: given.a_gated_baseline()}
+    baselines = {given.FLAW_ID: given.a_gated_baseline()}
 
     assert condition_mismatches(baselines, given.conditions()) == []
 
 
 def test_a_condition_mismatch_is_not_comparable_and_names_the_file_and_field():
-    baselines = {given.CVE_ID: given.a_gated_baseline()}
+    baselines = {given.FLAW_ID: given.a_gated_baseline()}
     mismatches = condition_mismatches(baselines, given.conditions(budget=20))
 
     result = decide([given.a_comparison(TargetOutcome.HELD)], mismatches)
@@ -166,14 +166,14 @@ def test_a_gated_incomplete_target_is_not_comparable():
     result = decide([given.a_comparison(TargetOutcome.INCOMPLETE)], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.CVE_ID in reason for reason in result.reasons)
+    assert any(given.FLAW_ID in reason for reason in result.reasons)
 
 
 def test_a_not_run_target_is_not_comparable():
     result = decide([given.a_comparison(TargetOutcome.NOT_RUN)], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.CVE_ID in reason for reason in result.reasons)
+    assert any(given.FLAW_ID in reason for reason in result.reasons)
 
 
 @pytest.mark.parametrize(
@@ -207,7 +207,7 @@ def test_an_undecided_retest_is_not_comparable():
     result = decide([undecided], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.CVE_ID in reason for reason in result.reasons)
+    assert any(given.FLAW_ID in reason for reason in result.reasons)
 
 
 def test_a_no_baseline_incomplete_target_leaves_the_run_comparable():
@@ -226,7 +226,7 @@ def test_a_regression_is_red_and_named():
     result = decide(comparisons, [])
 
     assert result.outcome == GateOutcome.RED
-    assert any(given.CVE_ID in reason for reason in result.reasons)
+    assert any(given.FLAW_ID in reason for reason in result.reasons)
 
 
 @pytest.mark.parametrize(

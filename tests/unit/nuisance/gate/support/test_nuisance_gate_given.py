@@ -13,7 +13,7 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
     a_gated_baseline as a_gated_baseline,
 )
 from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
-    an_exploratory_baseline as an_exploratory_baseline,
+    an_unconfirmed_baseline as an_unconfirmed_baseline,
 )
 from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
     conditions as conditions,

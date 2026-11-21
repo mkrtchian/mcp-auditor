@@ -3,7 +3,7 @@ from datetime import date
 import tests.unit.census.support.test_census_draw_order_given as given
 from evals.cve.census.draw_order import DRAW_SALT, draw_digest, draw_order
 from tests.unit.census.support.test_census_draw_order_given import (
-    A_BENCHMARK_FLAW,
+    AN_ACCEPTANCE_TARGET_FLAW,
     AN_EXCLUDED_SERVER,
 )
 
@@ -42,7 +42,7 @@ def test_draw_order_keeps_only_the_draw_order_candidates():
         given.a_flaw("CVE-2026-0003", withdrawn=True),
         given.a_flaw("CVE-2026-0004", no_census_identifier=True),
         given.a_flaw("CVE-2026-0005"),
-        given.a_flaw(A_BENCHMARK_FLAW),
+        given.a_flaw(AN_ACCEPTANCE_TARGET_FLAW),
         given.a_flaw("CVE-2026-0007"),
     ]
     classifications = given.agreed_classifications(
@@ -52,7 +52,7 @@ def test_draw_order_keeps_only_the_draw_order_candidates():
             "CVE-2026-0003": {},
             "CVE-2026-0004": {},
             "CVE-2026-0005": {"server_package": AN_EXCLUDED_SERVER},
-            A_BENCHMARK_FLAW: {},
+            AN_ACCEPTANCE_TARGET_FLAW: {},
             "CVE-2026-0007": {"pinnable": False, "first_failed_criterion": "pinnable"},
         }
     )

@@ -50,15 +50,15 @@ def shipped_constants() -> list[tuple[Path, str]]:
 
 
 def excluded_server_corpus() -> set[str]:
-    return server_corpus_of(cve_cases(), servers_by_cve())
+    return server_corpus_of(detection_cases(), servers_by_flaw())
 
 
-def cve_cases() -> list[JudgeCase]:
+def detection_cases() -> list[JudgeCase]:
     fixture = load_fixture(_JUDGE_CASES)
     return [case for case in fixture.cases if case.source == CaseSource.CVE]
 
 
-def servers_by_cve() -> dict[str, str]:
+def servers_by_flaw() -> dict[str, str]:
     census = load_census(_CENSUS)
     return {
         classification.flaw: classification.server_package
@@ -79,7 +79,7 @@ def server_corpus_of(cases: list[JudgeCase], servers: dict[str, str]) -> set[str
     return corpus
 
 
-def a_cve_case(
+def a_detection_case(
     flaw_id: str,
     *,
     tool_description: str = "",

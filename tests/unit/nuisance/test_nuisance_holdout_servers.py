@@ -11,7 +11,7 @@ from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.results import ServerExit
 
 
-def test_each_standing_exit_keeps_its_server_outside_the_figure():
+def test_each_standing_exit_keeps_its_server_among_the_exits():
     walked = [
         _walked("npm:excluded", ServerMark.EXCLUDED),
         _walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER),
@@ -41,7 +41,7 @@ def test_an_unmarked_stdio_server_under_docker_is_audited():
     assert population.exits == []
 
 
-def test_an_admitted_server_marked_by_the_walk_is_outside_the_figure_once():
+def test_an_admitted_server_marked_by_the_walk_is_among_the_exits_once():
     marked = _admitted("npm:marked", runs_over_stdio=False)
 
     population = run_population(
@@ -52,7 +52,7 @@ def test_an_admitted_server_marked_by_the_walk_is_outside_the_figure_once():
     assert population.exits == [ServerExit("npm:marked", ExitReason.EXCLUDED_SERVER)]
 
 
-def test_an_admitted_acceptance_server_the_walk_did_not_mark_is_never_audited():
+def test_an_admitted_nuisance_acceptance_server_the_walk_did_not_mark_is_never_audited():
     accepted = _admitted("npm:accepted")
 
     population = run_population(_listing(), _admitting(accepted), {"npm:accepted"})
@@ -61,7 +61,7 @@ def test_an_admitted_acceptance_server_the_walk_did_not_mark_is_never_audited():
     assert population.exits == [ServerExit("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER)]
 
 
-def test_an_acceptance_server_also_marked_by_the_walk_is_outside_the_figure_once():
+def test_a_nuisance_acceptance_server_also_marked_by_the_walk_is_among_the_exits_once():
     accepted = _admitted("npm:accepted")
     walked = [_walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER)]
 
@@ -71,7 +71,7 @@ def test_an_acceptance_server_also_marked_by_the_walk_is_outside_the_figure_once
     assert population.exits == [ServerExit("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER)]
 
 
-def test_a_recorded_exit_keeps_its_server_outside_the_figure():
+def test_a_recorded_exit_keeps_its_server_among_the_exits():
     kept = _admitted("npm:kept")
     admitted = admission_walk.recording(
         _admitting(kept), admission_walk.a_recorded_exit("npm:out", ExitReason.NO_COUNTED_FLAW)

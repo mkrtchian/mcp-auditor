@@ -116,7 +116,7 @@ def test_a_no_baseline_run_with_priced_models_reports_a_cost_per_billed_target(
     given.exit_code_of(monkeypatch, "--no-baseline", "--report", str(report_path))
 
     report = json.loads(report_path.read_text())
-    assert [cost["flaw_id"] for cost in report["costs"]] == [given.BILLED_CVE]
+    assert [cost["flaw_id"] for cost in report["costs"]] == [given.BILLED_FLAW]
     assert report["prices_as_of"] is not None
     assert report["measurement"] is None
 
@@ -172,10 +172,10 @@ def test_a_maintainer_mode_removes_the_containers_left_running_even_when_it_rais
     mode(monkeypatch, raises=raises)
     flag = "--calibration-check" if mode is given.a_calibration else "--survey"
 
-    given.exit_code_of(monkeypatch, flag, "--flaw", given.RECORDED_CVE)
+    given.exit_code_of(monkeypatch, flag, "--flaw", given.RECORDED_FLAW)
 
     assert containers.removed == ["leftover_filesystem"]
-    assert containers.listed_tags == [_tags_of(given.RECORDED_CVE)]
+    assert containers.listed_tags == [_tags_of(given.RECORDED_FLAW)]
 
 
 def test_a_graded_run_removes_the_containers_of_its_images_left_running(
@@ -186,11 +186,11 @@ def test_a_graded_run_removes_the_containers_of_its_images_left_running(
     report = str(tmp_path / "r.json")
 
     given.exit_code_of(
-        monkeypatch, "--no-baseline", "--flaw", given.RECORDED_CVE, "--report", report
+        monkeypatch, "--no-baseline", "--flaw", given.RECORDED_FLAW, "--report", report
     )
 
     assert containers.removed == ["leftover_filesystem"]
-    assert containers.listed_tags == [_tags_of(given.RECORDED_CVE)]
+    assert containers.listed_tags == [_tags_of(given.RECORDED_FLAW)]
 
 
 def test_a_graded_run_that_crashes_still_removes_the_containers_left_running(
@@ -258,7 +258,7 @@ def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_
         monkeypatch,
         "--record-baseline",
         "--flaw",
-        given.RECORDED_CVE,
+        given.RECORDED_FLAW,
         "--runs",
         "5",
         "--report",
@@ -267,7 +267,7 @@ def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_
 
     assert (
         "Run uv run python -m evals.run_detection --record-baseline"
-        f" --flaw {given.RECORDED_CVE} --runs 5 again now"
+        f" --flaw {given.RECORDED_FLAW} --runs 5 again now"
     ) in output.getvalue()
 
 
@@ -311,7 +311,7 @@ def test_a_recording_prints_the_outcome_once_before_the_recorded_baselines(
 
 
 @pytest.mark.parametrize(
-    "flags", [["--calibration-check"], ["--calibration-check", "--flaw", given.RECORDED_CVE]]
+    "flags", [["--calibration-check"], ["--calibration-check", "--flaw", given.RECORDED_FLAW]]
 )
 def test_the_calibration_check_runs_on_every_target_or_on_the_flaws_named(
     monkeypatch: pytest.MonkeyPatch, flags: list[str]

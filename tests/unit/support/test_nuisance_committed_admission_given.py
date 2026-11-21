@@ -11,13 +11,13 @@ from evals.cve.places import DETECTION_PLACES, load_places
 
 
 @cache
-def the_committed_census() -> WalkInputs:
+def the_committed_walk_inputs() -> WalkInputs:
     return load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))
 
 
 @cache
 def the_committed_admission() -> NuisanceAdmission:
-    return load_admission(ADMISSION_PATH, the_committed_census())
+    return load_admission(ADMISSION_PATH, the_committed_walk_inputs())
 
 
 def current_copy_fingerprints() -> dict[str, str]:
@@ -26,5 +26,5 @@ def current_copy_fingerprints() -> dict[str, str]:
     places = load_places(DETECTION_PLACES)
     fingerprints = {t.flaw_id: fixture_fingerprint(t, places) for t in HOLDOUT_TARGETS}
     drawn = [target.flaw_id for target in HOLDOUT_TARGETS]
-    resolution = copy_targets(drawn, the_committed_census().census.draw)
+    resolution = copy_targets(drawn, the_committed_walk_inputs().census.draw)
     return {copy: fingerprints[target] for copy, target in resolution.items()}

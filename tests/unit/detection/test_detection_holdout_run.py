@@ -164,7 +164,7 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
     assert assembled.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
 
 
-async def test_a_target_dead_on_a_version_is_not_run():
+async def test_a_target_out_of_calibration_is_not_run():
     unfit, healthy = given.a_target(KUBERNETES), given.a_target(FILESYSTEM)
     audit = holdout_runs.scripted(
         {unfit.flaw_id: [], healthy.flaw_id: holdout_runs.three_detections()}

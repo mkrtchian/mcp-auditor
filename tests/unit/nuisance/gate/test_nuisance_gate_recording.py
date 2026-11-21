@@ -21,7 +21,7 @@ def test_an_incomplete_recording_is_refused():
     assert "every run its conditions claim" in decision.reasons[0]
 
 
-def test_no_file_gives_an_exploratory_baseline_of_the_recording():
+def test_no_file_gives_an_unconfirmed_baseline_of_the_recording():
     recording = given.a_recording([False, True, False])
 
     decision = decide_recording(None, recording, None)
@@ -39,8 +39,8 @@ def test_no_file_gives_an_exploratory_baseline_of_the_recording():
     )
 
 
-def test_an_exploratory_file_is_confirmed_at_its_own_commit_with_both_recordings_runs():
-    existing = given.an_exploratory_baseline([False] * 3)
+def test_an_unconfirmed_file_is_confirmed_at_its_own_commit_with_both_recordings_runs():
+    existing = given.an_unconfirmed_baseline([False] * 3)
     recording = given.a_recording([True, False, False])
 
     decision = decide_recording(existing, recording, given.a_comparison(ServerOutcome.NOT_GATED))
@@ -63,11 +63,11 @@ def test_an_exploratory_file_is_confirmed_at_its_own_commit_with_both_recordings
     ],
     ids=["other commit", "other fixture", "other conditions"],
 )
-def test_an_exploratory_file_differing_from_the_recording_is_refused_naming_the_difference(
+def test_an_unconfirmed_file_differing_from_the_recording_is_refused_naming_the_difference(
     recording: ServerRecording, difference: str
 ):
     decision = decide_recording(
-        given.an_exploratory_baseline(), recording, given.a_comparison(ServerOutcome.NOT_GATED)
+        given.an_unconfirmed_baseline(), recording, given.a_comparison(ServerOutcome.NOT_GATED)
     )
 
     assert isinstance(decision, RecordingRefused)
@@ -178,8 +178,8 @@ def test_a_recording_that_keeps_a_gated_server_gated_does_not_leave_the_gated_se
 
 
 def test_every_decided_server_is_written_when_none_is_refused():
-    first = given.an_exploratory_baseline(package="npm:first")
-    second = given.an_exploratory_baseline(package="npm:second")
+    first = given.an_unconfirmed_baseline(package="npm:first")
+    second = given.an_unconfirmed_baseline(package="npm:second")
 
     decision = decide_recordings({"npm:first": first, "npm:second": second})
 
@@ -187,7 +187,7 @@ def test_every_decided_server_is_written_when_none_is_refused():
 
 
 def test_one_refused_server_means_no_baseline_to_write():
-    written = given.an_exploratory_baseline(package="npm:first")
+    written = given.an_unconfirmed_baseline(package="npm:first")
     refused = RecordingRefused(reasons=["the gate saw a regression"])
 
     decision = decide_recordings({"npm:first": written, "npm:second": refused})

@@ -8,7 +8,7 @@ from evals.cve.census.figures import compute_figures
 from evals.cve.census.sources import SourceName, SourceRecord
 
 AN_EXCLUDED_SERVER = "npm:mcp-fetch-server"
-A_BENCHMARK_FLAW = "CVE-2025-65513"
+AN_ACCEPTANCE_TARGET_FLAW = "CVE-2025-65513"
 
 
 def a_flaw(

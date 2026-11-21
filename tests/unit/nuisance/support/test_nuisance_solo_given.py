@@ -81,7 +81,7 @@ def run_deps(in_flight: InFlight, servers: list[AdmittedServer]) -> NuisanceDeps
 def gate_harness_with_alarms(
     directory: Path, in_flight: InFlight, servers: list[AdmittedServer]
 ) -> NuisanceGateHarness:
-    """Every server gated, each raising an alarm on its first run that its replays do not
+    """Every server gated, each raising an alarm on its first run that its retests do not
     reproduce."""
     for server in servers:
         gate_given.a_gated_file(directory, server)

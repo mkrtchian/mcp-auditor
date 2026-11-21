@@ -34,12 +34,12 @@ def a_gated_baseline(package: str = SERVER_PACKAGE) -> NuisanceServerBaseline:
 
 def a_confirmed_baseline(runs: list[bool], package: str = SERVER_PACKAGE) -> NuisanceServerBaseline:
     first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-10-22T09:00:00+00:00")
-    return an_exploratory_baseline(runs, package).model_copy(
+    return an_unconfirmed_baseline(runs, package).model_copy(
         update={"status": BaselineStatus.CONFIRMED, "confirms": first}
     )
 
 
-def an_exploratory_baseline(
+def an_unconfirmed_baseline(
     runs: list[bool] | None = None,
     package: str = SERVER_PACKAGE,
     commit: str = RECORDED_COMMIT,

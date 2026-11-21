@@ -77,7 +77,7 @@ def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_prob
     then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
 
 
-def test_a_planted_stand_in_replays_the_captured_headers_without_the_connection_ones(
+def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_ones(
     tmp_path: Path,
 ):
     directory = given.a_stand_ins_directory(tmp_path)

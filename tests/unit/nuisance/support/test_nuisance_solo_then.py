@@ -9,7 +9,7 @@ def each_played_alone_after_the_others(
 ) -> None:
     """Each solo server's calls ran with no other call in flight, its own included, and no other
     call started beside them, while a server played together made the first call. A command
-    plays its servers phase by phase (benign calls, audits, replays), so a solo server's call
+    plays its servers phase by phase (benign calls, audits, retests), so a solo server's call
     follows the other servers' calls of its phase, not every call of the command."""
     packages = [server.server_package for server in solo]
     for package in packages:

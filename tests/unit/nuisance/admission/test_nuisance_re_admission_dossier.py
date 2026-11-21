@@ -37,7 +37,7 @@ from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinem
 from evals.eval_session import Refused
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
-    the_committed_census,
+    the_committed_walk_inputs,
 )
 
 type DossierOf = Callable[[AdmittedServer], Path]
@@ -291,6 +291,6 @@ def test_a_closure_reaching_the_auditor_is_refused_before_writing(
 
     with pytest.raises(ValueError, match="mcp_auditor"):
         write_re_admission_dossier(
-            the_committed_census(), the_committed_admission(), server.server_package, out
+            the_committed_walk_inputs(), the_committed_admission(), server.server_package, out
         )
     assert not out.exists()

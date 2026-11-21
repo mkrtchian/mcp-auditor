@@ -20,9 +20,9 @@ from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
 from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
 
-BILLED_CVE = "CVE-billed"
+BILLED_FLAW = "CVE-billed"
 PRICED_MODEL = "gpt-6-luna"
-RECORDED_CVE = "CVE-2025-53109"
+RECORDED_FLAW = "CVE-2025-53109"
 
 
 def exit_code_of(monkeypatch: pytest.MonkeyPatch, *flags: str) -> object:
@@ -96,7 +96,7 @@ def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: Baselin
             gate=DetectionGateResult(outcome=GateOutcome.GREEN, reasons=[], targets=[]),
             not_run={},
             orphans=[],
-            written=[WrittenBaseline(RECORDED_CVE, status, leaves_gated_set=False)],
+            written=[WrittenBaseline(RECORDED_FLAW, status, leaves_gated_set=False)],
             recording_refused=[],
             exit_code=0,
         )
@@ -109,7 +109,7 @@ def a_billing_audit_target(
 ) -> AuditTarget:
     usage = ProviderUsage(input_tokens=500, output_tokens=50)
     throttles.count(
-        AuditReport(server_command="test", tool_reports=[], provider_usage=usage), BILLED_CVE
+        AuditReport(server_command="test", tool_reports=[], provider_usage=usage), BILLED_FLAW
     )
 
     async def audit(target: object) -> None:

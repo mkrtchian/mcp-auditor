@@ -5,12 +5,12 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
     RECORDED_COMMIT,
     SERVER_PACKAGE,
     a_gated_baseline,
-    an_exploratory_baseline,
+    an_unconfirmed_baseline,
     conditions,
 )
 from tests.unit.nuisance.gate.support.test_nuisance_gate_given import a_comparison
 
-__all__ = ["a_comparison", "a_gated_baseline", "an_exploratory_baseline", "conditions"]
+__all__ = ["a_comparison", "a_gated_baseline", "an_unconfirmed_baseline", "conditions"]
 
 RECORDING_TIME = "2026-10-22T11:00:00+00:00"
 

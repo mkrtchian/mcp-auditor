@@ -339,7 +339,7 @@ async def test_a_run_skipped_on_a_holdout_run_prints_the_error_type_without_its_
     assert "secret-nonce" not in printed
 
 
-async def test_a_run_skipped_on_the_acceptance_gate_prints_the_error_message(
+async def test_a_run_skipped_on_the_acceptance_layer_prints_the_error_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = given.captured_console(monkeypatch)

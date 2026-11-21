@@ -22,7 +22,7 @@ KEPT_FLAG_ID = "fict-flag"
 KEPT = (KEPT_FLAG_ID,)
 OUTSIDE_ID = "fict-outside"
 INSIDE_ID = "fict-inside"
-GIT_CVE_ID = "CVE-2025-68143"
+GIT_FLAW_ID = "CVE-2025-68143"
 
 
 def a_places_mapping() -> Places:
@@ -207,7 +207,7 @@ def _serve_args(spec: PlantingSpec) -> list[str]:
 
 
 def the_git_target() -> Target:
-    return next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == GIT_CVE_ID)
+    return next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == GIT_FLAW_ID)
 
 
 def the_detection_places() -> Places:

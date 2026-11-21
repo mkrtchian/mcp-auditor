@@ -2,9 +2,9 @@ from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.recording import TargetRecording
 from evals.cve.grammar import TargetStatus
 from tests.unit.detection.support.test_detection_gate_given import (
-    CVE_ID,
     DETECTED,
     FIXTURE,
+    FLAW_ID,
     MISSED,
     RECORDED_COMMIT,
     a_comparison,
@@ -14,8 +14,8 @@ from tests.unit.detection.support.test_detection_gate_given import (
 )
 
 __all__ = [
-    "CVE_ID",
     "DETECTED",
+    "FLAW_ID",
     "MISSED",
     "RECORDED_COMMIT",
     "a_comparison",
@@ -35,7 +35,7 @@ def a_recording(
     completed: bool = True,
 ) -> TargetRecording:
     return TargetRecording(
-        flaw_id=CVE_ID,
+        flaw_id=FLAW_ID,
         conditions=recording_conditions or conditions(),
         fixture_fingerprint=fixture,
         commit=commit,
