@@ -113,14 +113,13 @@ def test_two_launches_of_one_backend_are_open_at_once(launch_through: given.Laun
             assert given.name_of(second.args) != given.name_of(first.args)
 
 
-@pytest.mark.parametrize("key", given.shared_keys())
-def test_every_backend_server_joins_its_registered_bridge_confined_as_the_hosts_user(key: str):
-    args = given.shared_lifecycle_of(key).server_args(
-        "server-name", "image", given.a_host(), ["serve"]
-    )
+@pytest.mark.parametrize("key", sorted(BACKENDS))
+def test_every_backend_server_joins_its_registered_network_confined_as_the_hosts_user(key: str):
+    with given.through_the_kit(given.a_lifecycle_without_side_effects(key)) as launch:
+        args = launch.args
 
-    assert value_after(args, "--network") == BACKENDS[key].network
-    assert value_after(args, "--name") == "server-name"
+    assert value_after(args, "--network").startswith(BACKENDS[key].network)
+    assert given.name_of(args).startswith(f"{LABEL}-{key}-server-")
     assert value_after(args, "--label") == LABEL
     assert "--rm" in args
     assert value_after(args, "--cap-drop") == "ALL"
@@ -129,9 +128,10 @@ def test_every_backend_server_joins_its_registered_bridge_confined_as_the_hosts_
     assert args[-2:] == ["image", "serve"]
 
 
-@pytest.mark.parametrize("key", given.shared_keys())
+@pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_option(key: str):
-    args = given.shared_lifecycle_of(key).server_args("name", "image", given.a_host(), ["serve"])
+    with given.through_the_kit(given.a_lifecycle_without_side_effects(key)) as launch:
+        args = launch.args
 
     assert carries(args, ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND])
     assert count(args, resolver_args()) == 1

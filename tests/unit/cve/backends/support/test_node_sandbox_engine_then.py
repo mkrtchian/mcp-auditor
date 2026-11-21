@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.node_sandbox_engine import ENGINE_IMAGE, ENGINE_SOCKET_DIRECTORY
-from evals.cve.planting_base import memory_bound_args, unprivileged_user_args
+from evals.cve.planting_base import memory_bound_args
 from tests.unit.cve.backends.support.test_node_sandbox_engine_given import FakeEngineDocker
 from tests.unit.support.docker_argv import carries, count, environment, mount_of, value_after
 
@@ -15,16 +15,8 @@ def the_server_mounts_the_socket_of_the_engine(
     assert source == str(engine.socket_directories[-1] / "docker.sock")
 
 
-def the_server_has_no_network_and_no_docker_host(server_args: Sequence[str]) -> None:
-    assert value_after(server_args, "--network") == "none"
+def the_server_has_no_docker_host(server_args: Sequence[str]) -> None:
     assert "DOCKER_HOST" not in environment(server_args)
-
-
-def the_server_runs_its_image_as_the_hosts_user(
-    server_args: Sequence[str], image: str, server_launch: list[str]
-) -> None:
-    assert carries(server_args, unprivileged_user_args())
-    assert list(server_args[-1 - len(server_launch) :]) == [image, *server_launch]
 
 
 def the_engine_is_confined_and_bounded_as_root_with_no_network(engine_args: Sequence[str]) -> None:

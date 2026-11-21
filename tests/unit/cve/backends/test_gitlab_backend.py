@@ -17,14 +17,13 @@ def test_the_backend_carries_the_memory_bound_the_hardening_and_the_gitlab_examp
     then.the_backend_is_bounded_hardened_and_named_gitlab_example_com(docker.started()[0])
 
 
-def test_the_server_joins_the_closed_network_of_its_backend_confined_as_the_hosts_user(
+def test_the_server_joins_the_closed_network_of_its_backend(
     monkeypatch: pytest.MonkeyPatch,
 ):
     docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server:
         then.the_server_joins_the_closed_network_created_for_its_backend(docker, server)
-        then.the_server_is_confined_as_the_hosts_user(server, "image", ["serve"])
 
 
 def test_the_token_the_stand_up_created_reaches_the_server(monkeypatch: pytest.MonkeyPatch):

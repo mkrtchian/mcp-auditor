@@ -1,12 +1,7 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.gitlab import GITLAB_HOST, GITLAB_IMAGE, GITLAB_NETWORK
-from evals.cve.planting_base import (
-    confinement_args,
-    memory_bound_args,
-    resolver_args,
-    unprivileged_user_args,
-)
+from evals.cve.planting_base import memory_bound_args, resolver_args
 from tests.fakes import ScriptedDocker
 from tests.unit.support.docker_argv import carries, environment, value_after, values_after
 
@@ -35,14 +30,6 @@ def the_server_joins_the_closed_network_created_for_its_backend(
     assert network.startswith(f"{GITLAB_NETWORK}-")
     assert docker.created_networks() == [network]
     assert value_after(docker.started()[0], "--network") == network
-
-
-def the_server_is_confined_as_the_hosts_user(
-    server: Sequence[str], image: str, server_launch: list[str]
-) -> None:
-    assert carries(server, confinement_args())
-    assert carries(server, unprivileged_user_args())
-    assert list(server[-1 - len(server_launch) :]) == [image, *server_launch]
 
 
 def the_server_takes_the_token_the_seed_created(

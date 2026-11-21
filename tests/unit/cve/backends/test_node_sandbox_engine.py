@@ -5,15 +5,14 @@ import tests.unit.cve.backends.support.test_node_sandbox_engine_then as then
 from evals.cve.backends.node_sandbox_engine import LIFECYCLE, engine_run_args
 
 
-def test_the_server_mounts_the_backends_socket_at_the_docker_socket_and_has_no_network(
+def test_the_server_reaches_the_backend_through_its_socket_mounted_at_the_docker_socket(
     monkeypatch: pytest.MonkeyPatch,
 ):
     engine = given.a_docker_whose_engine_opens_its_socket(monkeypatch)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server_args:
         then.the_server_mounts_the_socket_of_the_engine(server_args, engine)
-        then.the_server_has_no_network_and_no_docker_host(server_args)
-        then.the_server_runs_its_image_as_the_hosts_user(server_args, "image", ["serve"])
+        then.the_server_has_no_docker_host(server_args)
 
 
 def test_the_backend_carries_the_confinement_and_the_memory_bound_as_root_with_no_network(

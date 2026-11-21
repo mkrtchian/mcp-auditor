@@ -7,7 +7,6 @@ def test_the_server_joins_the_bridge_with_httpbin_org_at_the_front():
     server_args = httpbin_server_args("server", "image", given.a_host(), ["serve"])
 
     then.joins_the_bridge_with_httpbin_org_at_the_front(server_args)
-    then.runs_its_image_as_the_hosts_user(server_args, "image", ["serve"])
 
 
 def test_the_server_trusts_the_fixture_authority_mounted_read_only():

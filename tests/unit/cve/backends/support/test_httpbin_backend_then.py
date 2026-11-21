@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.httpbin import HTTPBIN_BRIDGE
-from evals.cve.planting_base import confinement_args, unprivileged_user_args
+from evals.cve.planting_base import confinement_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,
@@ -19,13 +19,6 @@ def joins_the_bridge_with_httpbin_org_at_the_front(server_args: Sequence[str]) -
     assert value_after(server_args, "--network") == HTTPBIN_BRIDGE
     assert carries(server_args, ["--add-host", "httpbin.org:44.209.237.184"])
     assert carries(server_args, confinement_args())
-
-
-def runs_its_image_as_the_hosts_user(
-    server_args: Sequence[str], image: str, server_launch: list[str]
-) -> None:
-    assert carries(server_args, unprivileged_user_args())
-    assert list(server_args[-1 - len(server_launch) :]) == [image, *server_launch]
 
 
 def trusts_the_fixture_authority_through_ssl_cert_file(server_args: Sequence[str]) -> None:
