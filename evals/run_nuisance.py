@@ -286,19 +286,23 @@ def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
 def _refuse_stale_holdout_calibration_copies(
     servers: Sequence[AdmittedServer], draw: DrawRecord | None
 ) -> None:
-    places = load_places(DETECTION_PLACES)
-    fingerprints = {
-        target.flaw_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
-    }
-    resolution = copy_targets([target.flaw_id for target in HOLDOUT_TARGETS], draw)
-    current = {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
-    stale = stale_holdout_calibration_copies(servers, current)
+    stale = stale_holdout_calibration_copies(servers, current_copy_fingerprints(draw))
     if stale:
         reason = (
             "holdout calibration copies taken from a fixture that has since changed"
             " or left the detection holdout layer"
         )
         raise Refused("nuisance run refused", [reason, *stale])
+
+
+def current_copy_fingerprints(draw: DrawRecord | None) -> dict[str, str]:
+    """The fixture fingerprint of the drawn target each copyable flaw's copy resolves to."""
+    places = load_places(DETECTION_PLACES)
+    fingerprints = {
+        target.flaw_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
+    }
+    resolution = copy_targets([target.flaw_id for target in HOLDOUT_TARGETS], draw)
+    return {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
 
 
 def _refuse_tracing() -> None:

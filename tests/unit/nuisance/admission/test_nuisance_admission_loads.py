@@ -13,8 +13,8 @@ from evals.cve.nuisance.commands import WALK_RECORD_PATH
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.honeypots import REPO_ROOT
+from evals.run_nuisance import current_copy_fingerprints
 from tests.unit.support.test_nuisance_committed_admission_given import (
-    current_copy_fingerprints,
     the_committed_admission,
     the_committed_walk_inputs,
 )
@@ -26,8 +26,9 @@ def test_the_committed_admission_loads():
 
 def test_every_holdout_calibration_copy_is_recorded_at_its_targets_current_fingerprint():
     servers = the_committed_admission().servers
+    current = current_copy_fingerprints(the_committed_walk_inputs().census.draw)
 
-    assert stale_holdout_calibration_copies(servers, current_copy_fingerprints()) == []
+    assert stale_holdout_calibration_copies(servers, current) == []
 
 
 def test_the_committed_admission_records_every_field_the_rule_adds():
