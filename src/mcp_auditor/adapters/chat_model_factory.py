@@ -63,7 +63,7 @@ _MAX_OUTPUT_TOKENS = 8192
 # Anthropic counts thinking in the cap: at high effort claude-haiku-5-5 was seen spending 6,264
 # output tokens on one batch of payloads, 4,928 of them thinking. It writes about 375 tokens
 # a second, so an answer at this cap still ends well inside the request timeout.
-_ANTHROPIC_MAX_OUTPUT_TOKENS = 16384
+ANTHROPIC_MAX_OUTPUT_TOKENS = 16384
 
 
 def _make_anthropic_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
@@ -74,7 +74,7 @@ def _make_anthropic_model(model: str, reasoning: str | None) -> BaseChatModel:  
     return ChatAnthropic(
         model=model,  # pyright: ignore[reportCallIssue]
         max_retries=3,
-        max_tokens=_ANTHROPIC_MAX_OUTPUT_TOKENS,  # pyright: ignore[reportCallIssue]
+        max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,  # pyright: ignore[reportCallIssue]
         timeout=_REQUEST_TIMEOUT_SECONDS,
         **_anthropic_thinking(reasoning),
     )

@@ -16,6 +16,8 @@ from mcp_auditor.graph.prompts import (
     format_tool_header,
 )
 
+RESPONSE_SNIPPET_LENGTH = 200
+
 
 def build_chain_planning_prompt(
     tool: ToolDefinition,
@@ -177,7 +179,11 @@ def _format_single_step_summary(cases: list[TestCase]) -> str:
         parts = [f"Case {i} [{case.payload.category}]"]
         if case.response is not None:
             response_text = rendered_response(case.response)
-            snippet = response_text[:200] + "..." if len(response_text) > 200 else response_text
+            snippet = (
+                response_text[:RESPONSE_SNIPPET_LENGTH] + "..."
+                if len(response_text) > RESPONSE_SNIPPET_LENGTH
+                else response_text
+            )
             parts.append(f"  Response: {snippet}")
         if case.error is not None:
             parts.append(f"  Error: {shown_to_model(case.error)}")

@@ -2,6 +2,7 @@ import tests.unit.auditor.support.test_shown_response_then as shown_then
 from mcp_auditor.domain import AttackChain, AttackContext, AuditCategory
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.chain_prompts import (
+    RESPONSE_SNIPPET_LENGTH,
     build_chain_judge_prompt,
     build_chain_planning_prompt,
     build_step_observation_prompt,
@@ -103,7 +104,7 @@ class TestChainPlanningPrompt:
             chain_budget=3,
         )
 
-        assert f"Response: {response[:200]}..." in prompt
+        assert f"Response: {response[:RESPONSE_SNIPPET_LENGTH]}..." in prompt
         shown_then.shows_cut(prompt, error)
 
     def test_includes_chain_budget(self):
