@@ -2,8 +2,8 @@ import pytest
 
 import tests.unit.cve.backends.support.test_gitlab_backend_given as given
 import tests.unit.cve.backends.support.test_gitlab_backend_then as then
-from evals.cve.backends.gitlab import LIFECYCLE
-from tests.unit.support.docker_argv import value_after
+from evals.cve.backends.gitlab import GITLAB_HOST, LIFECYCLE
+from tests.unit.support.docker_argv import carries, value_after
 
 
 def test_the_backend_carries_its_hardening_and_the_gitlab_example_com_host(
@@ -68,3 +68,10 @@ def test_a_failed_reconfigure_is_refused_and_its_backend_removed(
         pass
 
     assert value_after(docker.started()[0], "--name") in docker.removed()
+
+
+# The fix check's responder answers where the run image sends the server, which its `-e` overrides.
+def test_the_gitlab_responder_answers_at_the_host_its_run_image_bakes():
+    responder = given.the_gitlab_responder()
+
+    assert carries(responder.singleton_run_args(), ["--network-alias", GITLAB_HOST])

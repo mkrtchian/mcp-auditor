@@ -155,6 +155,22 @@ async def test_a_backend_server_records_its_backend_image_beside_its_service():
     }
 
 
+async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend():
+    two_images = BackendFixture(
+        provisioner="doris", images=["front:1.0", "back:1.0"], network="net"
+    )
+    server = admission.with_a_backend(given.a_server(), two_images)
+    audit = given.scripted({server.server_package: [given.an_audit(False)] * 3})
+
+    result = await given.run([server], given.deps_auditing(audit))
+
+    assert result.image_ids == {
+        "filesystem-patched": "sha256:filesystem-patched",
+        "front:1.0": "sha256:front:1.0",
+        "back:1.0": "sha256:back:1.0",
+    }
+
+
 async def test_a_server_failing_its_benign_call_is_never_audited():
     failing, kept = given.a_server("npm:failing"), given.a_server("npm:kept")
     audit = given.scripted(
