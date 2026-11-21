@@ -1,26 +1,22 @@
-import re
+import dataclasses
 
 import pytest
 
 import tests.unit.detection.support.test_detection_replay_given as given
 import tests.unit.detection.support.test_detection_replay_then as then
 from evals.cve.detection.replay import (
-    REPLAY_ATTEMPTS,
     RecordedCall,
     ReplayAttemptFailure,
-    RunToCheck,
     UncheckedReason,
     arguments_agree,
     replay_with_causes,
     replayed_units,
 )
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.grammar import CreditCheck, FlawClass, PlantedTarget
+from evals.cve.grammar import CreditCheck
 from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.report_units import units_of
+from mcp_auditor.domain.container_name import declared_container_name
 from mcp_auditor.domain.models import AuditReport
-
-AIM = re.compile(r"^/outside/")
 
 
 def _agree(report: AuditReport, calls: list[RecordedCall]) -> bool:
@@ -58,23 +54,15 @@ def test_an_argument_mismatch_counts_as_a_disagreement():
 
 
 async def test_an_argument_mismatch_makes_the_run_unchecked_without_launching():
-    # The mismatch short-circuits before any patched launch, so ACCEPTANCE_TARGETS[0] never
-    # launches.
-    run = RunToCheck(
-        target=ACCEPTANCE_TARGETS[0],
-        run_target=PlantedTarget(
-            frozenset({FlawClass.READ_OUTSIDE_SCOPE}), AIM, {"planted": "nonce"}
-        ),
-        report=given.a_case_report(),
-        recorded_calls=given.calls("/outside/wrong"),
-        records=(),
-    )
+    run = dataclasses.replace(given.a_detecting_run(), recorded_calls=given.calls("/outside/wrong"))
+    patched = given.APatchedVersion([])
 
-    outcome = await replay_with_causes(run)
+    outcome = await replay_with_causes(run, connect=patched)
 
     assert outcome.check == CreditCheck(frozenset(), unchecked=True)
     assert outcome.unchecked_reason is UncheckedReason.ARGUMENTS_DISAGREE
     assert outcome.attempt_failures == ()
+    assert patched.launches == []
 
 
 async def test_the_patched_version_is_relaunched_after_the_calls_the_run_was_and_nowhere_else():
@@ -94,7 +82,7 @@ async def test_the_patched_launch_carries_a_container_name():
     await replay_with_causes(run, connect=patched)
 
     (launch,) = patched.launches
-    assert launch.args[:2] == ["run", "--name"]
+    assert isinstance(declared_container_name(launch.args), str)
 
 
 async def test_a_lost_connection_at_a_relaunch_point_is_kept_and_the_next_call_sent():
@@ -123,9 +111,7 @@ async def test_a_timeout_elsewhere_on_a_version_that_stops_answering_the_ping_fa
 
     outcome = await replay_with_causes(run, connect=patched)
 
-    then.the_credit_is_left_unchecked(
-        outcome, ReplayAttemptFailure.STOPPED_ANSWERING, REPLAY_ATTEMPTS
-    )
+    then.the_credit_is_left_unchecked(outcome, ReplayAttemptFailure.STOPPED_ANSWERING)
 
 
 async def test_a_timeout_followed_by_an_answered_ping_is_left_as_answered():
@@ -154,7 +140,7 @@ async def test_a_relaunch_that_fails_fails_the_attempt_as_a_launch():
 
     outcome = await replay_with_causes(run, connect=patched)
 
-    then.the_credit_is_left_unchecked(outcome, ReplayAttemptFailure.LAUNCH_FAILED, REPLAY_ATTEMPTS)
+    then.the_credit_is_left_unchecked(outcome, ReplayAttemptFailure.LAUNCH_FAILED)
 
 
 async def test_a_loss_at_a_relaunch_point_does_not_truncate_after_it():
@@ -165,9 +151,7 @@ async def test_a_loss_at_a_relaunch_point_does_not_truncate_after_it():
 
     outcome = await replay_with_causes(run, connect=patched)
 
-    then.the_credit_is_left_unchecked(
-        outcome, ReplayAttemptFailure.LOST_CONNECTION, REPLAY_ATTEMPTS
-    )
+    then.the_credit_is_left_unchecked(outcome, ReplayAttemptFailure.LOST_CONNECTION)
 
 
 async def test_a_relaunch_point_resets_the_losses_the_truncation_reads():
@@ -179,9 +163,7 @@ async def test_a_relaunch_point_resets_the_losses_the_truncation_reads():
 
     outcome = await replay_with_causes(run, connect=patched)
 
-    then.the_credit_is_left_unchecked(
-        outcome, ReplayAttemptFailure.LOST_CONNECTION, REPLAY_ATTEMPTS
-    )
+    then.the_credit_is_left_unchecked(outcome, ReplayAttemptFailure.LOST_CONNECTION)
 
 
 async def test_a_launch_whose_container_name_cannot_be_read_stops_the_replay():

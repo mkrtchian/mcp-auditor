@@ -20,6 +20,7 @@ from evals.cve.detection.targets import (
 )
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.exchange_log import ExchangeLog
+from evals.cve.layout import PROJECT
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import PlantingSpec
 from evals.cve.planting_base import LayoutMount
@@ -31,6 +32,7 @@ from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
+from tests.unit.support.docker_argv import value_after, values_after
 
 SSRF_TARGET = an_acceptance_target("CVE-2025-65513")
 COMPOSE_PATH = Path(__file__).resolve().parents[3] / "evals" / "docker" / "compose.yml"
@@ -267,7 +269,7 @@ def test_only_the_git_target_declares_a_read_write_layout():
     "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
 )
 def test_every_acceptance_target_runs_from_the_checkout(target: Target):
-    assert target.planting_host.working_directory == "/srv/app"
+    assert target.planting_host.working_directory == PROJECT
 
 
 def test_an_empty_spec_plants_no_nonce():
@@ -286,10 +288,8 @@ def test_an_env_place_is_planted_through_arguments_with_no_docker():
         assert planted.nonces == {"fict-env": "MCPAUDIT-fakenonce"}
         assert "FICT=MCPAUDIT-fakenonce" in args
         assert "65534:65534" in args
-        assert args[args.index("-w") + 1] == "/srv/app"
-        assert args[args.index("--network", args.index("--network") + 1) + 1] == (
-            given.CONTROL_PLANE_NETWORK
-        )
+        assert value_after(args, "-w") == PROJECT
+        assert given.CONTROL_PLANE_NETWORK in values_after(args, "--network")
 
 
 @pytest.mark.parametrize(

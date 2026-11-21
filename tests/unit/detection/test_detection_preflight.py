@@ -121,10 +121,12 @@ def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out
 
 
 def test_expected_services_carry_the_stand_in_only_while_a_target_declares_one():
-    without_fetch = [target for target in ACCEPTANCE_TARGETS if target.flaw_id != FETCH_ID]
+    without_stand_in = [
+        target for target in ACCEPTANCE_TARGETS if not target.planting_host.public_names.stand_ins
+    ]
 
     assert STAND_IN_SERVICE in expected_services(ACCEPTANCE_TARGETS)
-    assert STAND_IN_SERVICE not in expected_services(without_fetch)
+    assert STAND_IN_SERVICE not in expected_services(without_stand_in)
 
 
 def test_the_printed_services_are_compose_services_and_no_holdout_one(

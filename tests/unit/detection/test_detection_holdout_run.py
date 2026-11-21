@@ -113,9 +113,21 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
     detection = holdout_runs.graded(
         TargetStatus.DETECTED, holdout_runs.a_report(ProviderUsage(), ProviderUsage())
     )
-    relaunched = dataclasses.replace(detection, health=ServerHealth(0, 0, 1, 4, 2))
+    relaunched = dataclasses.replace(
+        detection,
+        health=ServerHealth(
+            non_protocol_lines=0,
+            lost_connection_responses=0,
+            relaunches=1,
+            unsent_calls=4,
+            cut_responses=2,
+        ),
+    )
     refused = IncompleteRun(
-        given.a_report_missing(MissCause.PROVIDER_REFUSAL), ServerHealth(0, 0, 2, 0, 1)
+        given.a_report_missing(MissCause.PROVIDER_REFUSAL),
+        ServerHealth(
+            non_protocol_lines=0, lost_connection_responses=0, relaunches=2, cut_responses=1
+        ),
     )
     audit = holdout_runs.scripted({target.flaw_id: [relaunched, refused, detection]})
 

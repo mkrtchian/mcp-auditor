@@ -60,11 +60,7 @@ def _a_chain(first: str, second: str) -> AttackChain:
 
 
 def calls(*paths: str) -> list[RecordedCall]:
-    return [("read", {"path": path}, a_response(None, "ok")) for path in paths]
-
-
-def a_response(error_type: str | None, content: str) -> ToolResponse:
-    return ToolResponse(content=content, is_error=error_type is not None, error_type=error_type)
+    return [("read", {"path": path}, OK) for path in paths]
 
 
 # --- a detecting run and the patched version it is replayed on ---
