@@ -20,6 +20,7 @@ from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
 from tests.unit.cve.support import test_cve_grammar_given as grammar
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 RECORDED_AT = "2026-10-28T09:30:00+00:00"
@@ -27,6 +28,12 @@ SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reaso
 
 type Outcome = GradedAudit | IncompleteRun | DroppedRun
 type Audit = Callable[[Target], Awaitable[Outcome]]
+
+
+def a_target(flaw_id: str = FILESYSTEM, **changes: Any) -> Target:
+    """A real target, since run_holdout_targets plants its kept places and fingerprints its
+    fixture."""
+    return an_acceptance_target(flaw_id, **{"tools_filter": None, **changes})
 
 
 def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:

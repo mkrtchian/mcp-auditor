@@ -4,6 +4,7 @@ no proof. The model carries no evidence, no judge input and no per-case verdict 
 import dataclasses
 from datetime import date
 
+import tests.unit.detection.support.test_detection_holdout_report_given as given
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_not_run import NotRunLine
 from evals.cve.detection.holdout_report import (
@@ -16,97 +17,14 @@ from evals.cve.detection.holdout_report import (
     SideLine,
     build_report,
 )
-from evals.cve.detection.holdout_results import (
-    HoldoutRunResult,
-    HoldoutRunStatus,
-    HoldoutTargetResult,
-    NotRunCause,
-    NotRunTarget,
-)
+from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
 from evals.cve.detection.holdout_target_line import TargetLine, TargetRunLine
-from evals.cve.holdout_conditions import Cutoff
 from evals.cve.holdout_statistic import Side
-
-LUNA_CUTOFF = Cutoff(
-    date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
-)
-RUNS = 3
-RECORDED_AT = "2026-10-28T09:30:00+00:00"
-
-
-def _target(flaw_id: str, *, disclosure_date: date, detected_runs: int, incomplete_runs: int = 0):
-    return HoldoutTargetResult(
-        flaw_id=flaw_id,
-        disclosure_date=disclosure_date,
-        class_labels=("command_execution", "read_outside_scope"),
-        tools_count=5,
-        ran_in_fallback=False,
-        statuses=tuple(
-            HoldoutRunStatus(
-                detected=index < detected_runs,
-                detected_if_unchecked_missed=index < detected_runs,
-                surfaced_places=["srv_config"] if index < detected_runs else [],
-                struck_places=[],
-                unchecked_places=[],
-                aimed=index < detected_runs,
-                fail_without_proof=False,
-                incomplete=index >= RUNS - incomplete_runs,
-                non_protocol_lines=0,
-                lost_connection_responses=0,
-                relaunches=0,
-                unsent_calls=0,
-                cut_responses=0,
-                unchecked_reason=None,
-                replay_attempt_failures=[],
-                missed_call_causes=["provider_refusal"] if index >= RUNS - incomplete_runs else [],
-            )
-            for index in range(RUNS)
-        ),
-        run_cost=0.02,
-    )
-
-
-def _run_result() -> HoldoutRunResult:
-    targets = [
-        _target("CVE-A", disclosure_date=date(2026, 1, 1), detected_runs=3),
-        _target("CVE-B", disclosure_date=date(2026, 12, 1), detected_runs=1, incomplete_runs=1),
-    ]
-    return HoldoutRunResult(
-        runs=RUNS,
-        budget=10,
-        provider="openai",
-        model="gpt-6-luna",
-        judge_model="gpt-6-luna",
-        reasoning="none",
-        judge_reasoning="none",
-        cutoffs={"gpt-6-luna": LUNA_CUTOFF},
-        chain_budget=3,
-        max_chain_steps=5,
-        tool_call_timeout=30,
-        grammar_fingerprint="grammar-abc",
-        fixture_fingerprints={"CVE-A": "fa", "CVE-B": "fb"},
-        commit="deadbeef",
-        census_commit="cafe1234",
-        image_ids={"vuln": "sha256:1"},
-        recorded_at=RECORDED_AT,
-        targets=tuple(targets),
-        not_run=(
-            NotRunTarget(
-                flaw_id="CVE-C",
-                reason="out of calibration: patched: exploit 0 surfaces",
-                cause=NotRunCause.PRE_RUN_CHECK,
-            ),
-        ),
-        incomplete_run_count=1,
-        total_cost=0.06,
-        prices_as_of=date(2026, 10, 15),
-        concurrency=6,
-        throttled_requests=0,
-    )
+from tests.unit.detection.support.holdout_report_runs import RECORDED_AT, RUNS, a_run_result
 
 
 def test_build_report_carries_the_holdout_detection_rate_and_the_split():
-    report = build_report(_run_result())
+    report = build_report(a_run_result())
     assert report.holdout_detection_rate == (1.0 + 1 / 3) / 2
     sides = {line.side: line for line in report.sides}
     assert set(sides) == {Side.PRE_CUTOFF, Side.POST_CUTOFF}
@@ -114,7 +32,7 @@ def test_build_report_carries_the_holdout_detection_rate_and_the_split():
 
 
 def test_render_markdown_shows_the_number_ladder_controls_and_cost():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert "Holdout detection rate: 0.667 (95% Wilson " in markdown
     assert "## Ladder\n- 3 detecting run(s): 1 target(s)\n- 1 detecting run(s): 1 target(s)\n" in (
@@ -123,15 +41,12 @@ def test_render_markdown_shows_the_number_ladder_controls_and_cost():
     assert "## Controls\n- clopper_pearson: " in markdown
     assert "- unchecked_as_misses_wilson: " in markdown
     assert "- CVE-C: out of calibration: patched: exploit 0 surfaces" in markdown
-    assert (
-        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (CVE-B)"
-        in markdown
-    )
+    assert f"{given.INCOMPLETE_RUNS}: 1 (CVE-B)" in markdown
     assert markdown.endswith("Total cost: $0.06")
 
 
 def test_render_markdown_names_the_targets_run_after_a_solo_second_pre_run_pass():
-    run = dataclasses.replace(_run_result(), second_pass=("CVE-B",))
+    run = dataclasses.replace(a_run_result(), second_pass=("CVE-B",))
 
     markdown = render_markdown(build_report(run))
 
@@ -142,27 +57,27 @@ def test_render_markdown_names_the_targets_run_after_a_solo_second_pre_run_pass(
 
 
 def test_render_markdown_names_no_second_pass_when_every_target_passed_the_first():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert "second pass" not in markdown
 
 
 def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs():
-    run = dataclasses.replace(_run_result(), throttled_requests=12, concurrency=4)
+    run = dataclasses.replace(a_run_result(), throttled_requests=12, concurrency=4)
 
     report = build_report(run)
     markdown = render_markdown(report)
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
     assert (
-        "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (CVE-B)\n"
+        f"{given.INCOMPLETE_RUNS}: 1 (CVE-B)\n"
         "- provider_refusal: 1 run(s)\n"
         "Throttled by the model provider: 12 requests at concurrency 4\n"
     ) in markdown
 
 
 def test_render_markdown_leaves_throttling_out_when_nothing_was_throttled():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert "Throttled" not in markdown
 
@@ -172,7 +87,7 @@ def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targe
     throttled = "throttled by the model provider past every retry"
     launch_failure = "a run failed to launch after retries"
     run = dataclasses.replace(
-        _run_result(),
+        a_run_result(),
         not_run=(
             pre_run,
             NotRunTarget("CVE-D", throttled, NotRunCause.THROTTLED),
@@ -191,105 +106,27 @@ def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targe
 
 
 def test_the_not_run_section_counts_nothing_when_no_target_dropped_during_the_run():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert "target(s) launched" not in markdown
 
 
 def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
-    report = build_report(_run_result())
+    report = build_report(a_run_result())
 
     line = next(line for line in report.targets if line.flaw_id == "CVE-B")
 
     assert line.disclosure_date == date(2026, 12, 1)
     assert line.class_labels == ["command_execution", "read_outside_scope"]
-    assert line.per_run == [
-        TargetRunLine(
-            detected=True,
-            detected_if_unchecked_missed=True,
-            aimed=True,
-            fail_without_proof=False,
-            incomplete=False,
-            non_protocol_lines=0,
-            lost_connection_responses=0,
-            relaunches=0,
-            unsent_calls=0,
-            cut_responses=0,
-            unchecked_reason=None,
-            replay_attempt_failures=[],
-            missed_call_causes=[],
-        ),
-        TargetRunLine(
-            detected=False,
-            detected_if_unchecked_missed=False,
-            aimed=False,
-            fail_without_proof=False,
-            incomplete=False,
-            non_protocol_lines=0,
-            lost_connection_responses=0,
-            relaunches=0,
-            unsent_calls=0,
-            cut_responses=0,
-            unchecked_reason=None,
-            replay_attempt_failures=[],
-            missed_call_causes=[],
-        ),
-        TargetRunLine(
-            detected=False,
-            detected_if_unchecked_missed=False,
-            aimed=False,
-            fail_without_proof=False,
-            incomplete=True,
-            non_protocol_lines=0,
-            lost_connection_responses=0,
-            relaunches=0,
-            unsent_calls=0,
-            cut_responses=0,
-            unchecked_reason=None,
-            replay_attempt_failures=[],
-            missed_call_causes=["provider_refusal"],
-        ),
-    ]
-
-
-def _with_incidents(target: HoldoutTargetResult) -> HoldoutTargetResult:
-    unchecked, refused, clean = target.statuses
-    return dataclasses.replace(
-        target,
-        statuses=(
-            dataclasses.replace(
-                unchecked,
-                non_protocol_lines=2,
-                lost_connection_responses=1,
-                relaunches=1,
-                unsent_calls=3,
-                cut_responses=1,
-                unchecked_reason="no_attempt_decided",
-                replay_attempt_failures=["launch_failed", "launch_failed"],
-            ),
-            dataclasses.replace(
-                refused,
-                detected=False,
-                detected_if_unchecked_missed=False,
-                surfaced_places=[],
-                incomplete=True,
-                missed_call_causes=["provider_refusal", "unreadable_answer"],
-            ),
-            clean,
-        ),
-    )
-
-
-def _run_with_incidents() -> HoldoutRunResult:
-    run = _run_result()
-    first, second = run.targets
-    return dataclasses.replace(
-        run, targets=(_with_incidents(first), second), incomplete_run_count=2
-    )
+    assert [
+        (run.detected, run.detected_if_unchecked_missed, run.aimed, run.incomplete)
+        for run in line.per_run
+    ] == [(True, True, True, False), (False, False, False, False), (False, False, False, True)]
+    assert [run.missed_call_causes for run in line.per_run] == [[], [], ["provider_refusal"]]
 
 
 def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
-    report = build_report(_run_with_incidents())
+    report = build_report(given.a_run_with_incidents())
 
     line = next(line for line in report.targets if line.flaw_id == "CVE-A")
 
@@ -306,7 +143,7 @@ def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
 
 
 def test_the_markdown_names_each_target_with_a_health_count_or_a_replay_failure():
-    markdown = render_markdown(build_report(_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
         "## Server health and replay\n"
@@ -318,7 +155,7 @@ def test_the_markdown_names_each_target_with_a_health_count_or_a_replay_failure(
 
 
 def test_the_markdown_names_a_target_whose_server_was_only_relaunched():
-    run = _run_result()
+    run = a_run_result()
     first, second = run.targets
     relaunched = dataclasses.replace(first.statuses[0], relaunches=2)
     first = dataclasses.replace(first, statuses=(relaunched, *first.statuses[1:]))
@@ -329,23 +166,23 @@ def test_the_markdown_names_a_target_whose_server_was_only_relaunched():
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():
-    markdown = render_markdown(build_report(_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents()))
 
     assert (
-        "Incomplete runs (a model call missed: refused, unreadable or too long): 2 (CVE-A, CVE-B)\n"
+        f"{given.INCOMPLETE_RUNS}: 2 (CVE-A, CVE-B)\n"
         "- provider_refusal: 2 run(s)\n"
         "- unreadable_answer: 1 run(s)\n"
     ) in markdown
 
 
 def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert "## Server health and replay" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
-    markdown = render_markdown(build_report(_run_result()))
+    markdown = render_markdown(build_report(a_run_result()))
 
     assert f"Recorded at: {RECORDED_AT}\n" in markdown
 
@@ -366,12 +203,12 @@ def test_the_report_holds_no_proof_text_fields():
     ]
     for model in models:
         assert set(model.model_fields).isdisjoint(forbidden)
-    markdown = render_markdown(build_report(_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents()))
     assert "evidence" not in markdown and "verdict" not in markdown
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
-    report = build_report(_run_result())
+    report = build_report(a_run_result())
     assert report.model == "gpt-6-luna"
     assert report.judge_model == "gpt-6-luna"
     assert report.reasoning == "none"
@@ -386,72 +223,3 @@ def test_build_report_carries_the_run_conditions_and_provenance():
     assert report.cutoffs["gpt-6-luna"] == CutoffModel(
         date=date(2026, 5, 18), type="training", source="https://example.test/luna", note=None
     )
-
-
-EARLIER = Cutoff(
-    date=date(2026, 1, 15), type="knowledge cutoff", source="https://a.test", note=None
-)
-LATER = Cutoff(
-    date=date(2026, 6, 30),
-    type="training data cutoff",
-    source="https://b.test",
-    note="the last day of the month is taken",
-)
-
-
-def test_the_run_cutoff_is_the_latest_cutoff_of_the_run_models():
-    run = dataclasses.replace(_run_result(), cutoffs={"a": EARLIER, "b": LATER})
-
-    report = build_report(run)
-
-    assert report.run_cutoff == RunCutoffModel(
-        model="b",
-        date=date(2026, 6, 30),
-        type="training data cutoff",
-        source="https://b.test",
-        note="the last day of the month is taken",
-    )
-
-
-def test_the_split_uses_the_run_cutoff_date():
-    targets = (
-        _target("CVE-A", disclosure_date=date(2026, 3, 1), detected_runs=3),
-        _target("CVE-B", disclosure_date=date(2026, 7, 1), detected_runs=1),
-    )
-    early_only = dataclasses.replace(_run_result(), targets=targets, cutoffs={"a": EARLIER})
-    both = dataclasses.replace(early_only, cutoffs={"a": EARLIER, "b": LATER})
-
-    assert {line.side: line.targets for line in build_report(early_only).sides} == {
-        Side.POST_CUTOFF: 2
-    }
-    assert {line.side: line.targets for line in build_report(both).sides} == {
-        Side.PRE_CUTOFF: 1,
-        Side.POST_CUTOFF: 1,
-    }
-
-
-def test_on_equal_cutoff_dates_the_first_model_of_the_run_is_named():
-    same_day = dataclasses.replace(LATER, type="other wording", source="https://c.test")
-    run = dataclasses.replace(_run_result(), cutoffs={"a": same_day, "b": LATER})
-
-    assert build_report(run).run_cutoff.model == "a"
-
-
-def test_the_split_section_opens_with_the_run_cutoff_line():
-    markdown = render_markdown(build_report(_run_result()))
-
-    assert (
-        "## Split by cutoff side\n"
-        "- run cutoff: 2026-05-18 (training), gpt-6-luna, https://example.test/luna\n"
-    ) in markdown
-
-
-def test_the_run_cutoff_line_carries_the_note_when_set():
-    run = dataclasses.replace(_run_result(), cutoffs={"b": LATER})
-
-    markdown = render_markdown(build_report(run))
-
-    assert (
-        "- run cutoff: 2026-06-30 (training data cutoff), b, https://b.test, "
-        "note: the last day of the month is taken\n"
-    ) in markdown
