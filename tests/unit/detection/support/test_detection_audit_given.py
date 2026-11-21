@@ -1,65 +1,12 @@
-import dataclasses
-from collections.abc import Awaitable, Callable, Generator
-from contextlib import contextmanager
-from io import StringIO
-
-import pytest
+from collections.abc import Awaitable, Callable
 
 import tests.unit.cve.support.test_cve_launch_audit_given as launch_given
-import tests.unit.evals.support.test_eval_display_given as display_given
-from evals.cve import audit_attempts, launch_audit
-from evals.cve.audit_attempts import AttemptOutcome
-from evals.cve.detection import audit as detection_audit
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck
-from evals.cve.detection.targets import Target
-from evals.cve.environments import Launch, LaunchShape
-from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import PlantedTarget
 from evals.cve.launch_audit import Auditor
-from evals.cve.planting_base import PlantingSpec
-from mcp_auditor.domain.models import (
-    AuditReport,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-)
+from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.unit.cve.support import test_cve_grammar_given as grammar
-from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
-
-TARGET = an_acceptance_target(FILESYSTEM)
-A_LAUNCH = Launch("docker", ["run", "x"])
-
-
-def captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(
-        monkeypatch, detection_audit, audit_attempts, launch_audit
-    )
-
-
-def an_auditor_reporting(
-    *reports: AuditReport, report_detail: ReportDetail = FULL_DETAIL
-) -> Auditor:
-    return launch_given.an_auditor(report_detail, launch_given.graph_reporting(list(reports)))
-
-
-def a_target_launching(launch: Launch = A_LAUNCH) -> Target:
-    """A target planting nothing and launching no container."""
-
-    @contextmanager
-    def no_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
-        yield launch
-
-    return dataclasses.replace(TARGET, kept_places=(), builder=no_container)
-
-
-def a_target_failing_to_launch(error: Exception) -> Target:
-    @contextmanager
-    def failing_container(_tag: str, _spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
-        raise error
-        yield A_LAUNCH
-
-    return dataclasses.replace(TARGET, kept_places=(), builder=failing_container)
+from tests.unit.detection.support.detection_audits import TARGET
 
 
 def an_audit_on_a_noisy_server(*, non_protocol_lines: int, lost_calls: int) -> Auditor:
@@ -69,32 +16,6 @@ def an_audit_on_a_noisy_server(*, non_protocol_lines: int, lost_calls: int) -> A
         graphs=launch_given.graph_calling(lost_calls),
         connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines)),
     )
-
-
-def an_audit_taking_the_server_as_down(audits: int = 1) -> Auditor:
-    """Each of the `audits` reports holds a relaunch that failed."""
-    reports = [launch_given.a_report_with_relaunches(False) for _ in range(audits)]
-    return launch_given.an_auditor(graphs=launch_given.graph_reporting(reports))
-
-
-def an_audit_raising(error: Exception, *, grouped: bool = True) -> Auditor:
-    return launch_given.an_auditor(
-        graphs=launch_given.graph_raising(error),
-        connect=launch_given.FakeConnect(grouped=grouped),
-    )
-
-
-def a_report_missing(*causes: MissCause) -> AuditReport:
-    missed = [
-        MissedModelCall(
-            tool_name="git_init",
-            kind=ModelCallKind.CHAIN_PLANNING,
-            cause=cause,
-            detail="Invalid prompt",
-        )
-        for cause in causes
-    ]
-    return grammar.a_report().model_copy(update={"missed_model_calls": missed})
 
 
 def a_report_throttled(times: int) -> AuditReport:
@@ -139,13 +60,3 @@ def a_replay_returning(
 def a_report_billed(input_tokens: int, output_tokens: int) -> AuditReport:
     usage = ProviderUsage(input_tokens=input_tokens, output_tokens=output_tokens)
     return grammar.a_report().model_copy(update={"provider_usage": usage})
-
-
-class ScriptedAttempts[T]:
-    def __init__(self, outcomes: list[AttemptOutcome[T]]) -> None:
-        self._outcomes = outcomes
-        self.calls = 0
-
-    async def __call__(self) -> AttemptOutcome[T]:
-        self.calls += 1
-        return self._outcomes.pop(0)
