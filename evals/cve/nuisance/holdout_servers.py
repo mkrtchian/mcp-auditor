@@ -47,12 +47,8 @@ def run_population(
             audited.append(server)
         else:
             outside.append(ServerExit(package, reason))
-    outside += _recorded_exits(admission)
+    outside += [ServerExit(row.server_package, row.reason) for row in admission.exits]
     return RunPopulation(audited, outside, _pending(reached, admission))
-
-
-def _recorded_exits(admission: NuisanceAdmission) -> list[ServerExit]:
-    return [ServerExit(row.server_package, row.reason) for row in admission.exits]
 
 
 def _pending(reached: ReachedServers, admission: NuisanceAdmission) -> list[str]:
