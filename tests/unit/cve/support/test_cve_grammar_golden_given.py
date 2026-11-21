@@ -18,9 +18,9 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import tests.unit.cve.support.cve_grammar_golden_corpus as corpus
 import tests.unit.cve.support.test_cve_grammar_given as given
 import tests.unit.cve.support.test_cve_strike_given as strike
-import tests.unit.support.cve_grammar_golden_corpus as corpus
 from evals.cve.detection.calibration_check import not_fixed_reasons, not_live_reasons
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.grammar import CreditCheck, GradedTarget, grade_run, resolve

@@ -19,6 +19,7 @@ from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
 from tests.unit.cve.support import test_cve_grammar_given as grammar
+from tests.unit.detection.support.layouts import SOUND_LAYOUT
 
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 RECORDED_AT = "2026-10-28T09:30:00+00:00"
@@ -67,9 +68,7 @@ def deps_auditing(
         return checks.get(target.flaw_id, [])
 
     async def _layout(target: Target) -> LayoutCheck:
-        return layouts.get(
-            target.flaw_id, LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
-        )
+        return layouts.get(target.flaw_id, SOUND_LAYOUT)
 
     return HoldoutDeps(
         audit=audit,

@@ -10,7 +10,6 @@ import tests.unit.detection.support.test_detection_holdout_pre_run_check_given a
 import tests.unit.detection.support.test_detection_holdout_run_given as given
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_results import NotRunCause, RunInterrupted
-from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode
@@ -21,6 +20,7 @@ from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
 from tests.fakes import FakeContainerSweep
+from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.support import holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
@@ -189,7 +189,7 @@ async def test_a_normal_target_the_layout_breaks_is_dropped():
     )
     deps = holdout_runs.deps_auditing(
         audit,
-        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])},
+        layout={broken.flaw_id: dataclasses.replace(SOUND_LAYOUT, breaks=True)},
     )
 
     result = await holdout_runs.run([broken, healthy], deps)
@@ -206,7 +206,7 @@ async def test_a_fallback_target_the_layout_breaks_is_kept():
     audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
     deps = holdout_runs.deps_auditing(
         audit,
-        layout={target.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])},
+        layout={target.flaw_id: dataclasses.replace(SOUND_LAYOUT, breaks=True)},
     )
 
     result = await holdout_runs.run([target], deps)
@@ -369,7 +369,7 @@ async def test_every_target_dropped_refuses_with_the_reasons():
     deps = holdout_runs.deps_auditing(
         holdout_runs.scripted({unfit.flaw_id: [], broken.flaw_id: []}),
         check={unfit.flaw_id: ["patched: exploit 0 still surfaces etc-shadow"]},
-        layout={broken.flaw_id: LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])},
+        layout={broken.flaw_id: dataclasses.replace(SOUND_LAYOUT, breaks=True)},
     )
 
     with pytest.raises(Refused, match="no target survived") as caught:

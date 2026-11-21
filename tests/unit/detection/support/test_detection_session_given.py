@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import tests.unit.support.acceptance_targets as acceptance
@@ -24,6 +24,7 @@ from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
 from tests.unit.cve.support.test_cve_grammar_given import a_report
+from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.detection.support.test_detection_gate_given import (
     a_gated_baseline,
     an_unconfirmed_baseline,
@@ -111,8 +112,7 @@ class ScriptedCheck:
         return self.conditions.get(target.flaw_id, [])
 
 
-SOUND_LAYOUT = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
-BROKEN_LAYOUT = LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])
+BROKEN_LAYOUT = replace(SOUND_LAYOUT, breaks=True)
 
 
 @dataclass

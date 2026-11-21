@@ -3,17 +3,17 @@ unit tests, and the judge cases drawn from detection suite runs, pinned by id. T
 (`test_cve_grammar_golden_given`) grades it and freezes the result."""
 
 from collections import defaultdict
-from pathlib import Path
 from typing import Any
 
 import tests.unit.cve.support.test_cve_grammar_given as given
 from evals.cve.grammar import MissKind, RunGrade
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit, unit_of_exchanges
+from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
-JUDGE_FIXTURE_PATH = Path(__file__).parents[3] / "evals" / "fixtures" / "judge_cases.json"
+JUDGE_FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
 NONCE = given.NONCE
 FAIL = given.FAIL
 PASS = given.PASS

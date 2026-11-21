@@ -8,7 +8,7 @@ from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AuditCategory
 
-_TESTS_DIR = Path(__file__).resolve().parents[3]
+_TESTS_DIR = REPO_ROOT / "tests"
 
 HONEYPOT_SERVERS = (
     _TESTS_DIR / "honeypot_server.py",

@@ -3,7 +3,6 @@ import json
 
 import tests.unit.detection.support.test_detection_layout_check_golden_given as given
 from evals.cve.detection.layout_check import (
-    LayoutCheck,
     LayoutRoute,
     LayoutSurface,
     VersionObservation,
@@ -17,6 +16,7 @@ from evals.cve.detection.layout_check import (
 from evals.cve.detection.route_check import RouteObservations
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, LaunchMode
 from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
+from tests.unit.detection.support.layouts import SOUND_LAYOUT
 
 _A_TARGET = ACCEPTANCE_TARGETS[0]
 
@@ -200,21 +200,18 @@ def test_layout_check_reports_a_nonce_of_the_vulnerable_planted_arm_in_its_ordin
     assert layout_check(_A_TARGET, (), patched, patched).leaking == []
 
 
-_SOUND = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
-
-
 def test_a_sound_layout_check_is_no_failure():
-    assert layout_failure(_A_TARGET, _SOUND) is None
+    assert layout_failure(_A_TARGET, SOUND_LAYOUT) is None
 
 
 def test_a_give_up_is_a_failure():
-    check = dataclasses.replace(_SOUND, gave_up="the container cannot run the server")
+    check = dataclasses.replace(SOUND_LAYOUT, gave_up="the container cannot run the server")
 
     assert layout_failure(_A_TARGET, check) == "the container cannot run the server"
 
 
 def test_a_break_under_the_normal_launch_is_a_failure():
-    check = dataclasses.replace(_SOUND, breaks=True)
+    check = dataclasses.replace(SOUND_LAYOUT, breaks=True)
 
     assert (
         layout_failure(_A_TARGET, check) == "the layout breaks the server under the normal launch"
@@ -224,11 +221,11 @@ def test_a_break_under_the_normal_launch_is_a_failure():
 def test_a_break_under_the_fallback_launch_is_no_failure():
     target = dataclasses.replace(_A_TARGET, launch_mode=LaunchMode.FALLBACK)
 
-    assert layout_failure(target, dataclasses.replace(_SOUND, breaks=True)) is None
+    assert layout_failure(target, dataclasses.replace(SOUND_LAYOUT, breaks=True)) is None
 
 
 def test_a_new_nonce_in_the_ordinary_surface_is_a_failure():
-    check = dataclasses.replace(_SOUND, leaking=["container-hostname", "workspace-dotenv"])
+    check = dataclasses.replace(SOUND_LAYOUT, leaking=["container-hostname", "workspace-dotenv"])
     target = dataclasses.replace(_A_TARGET, settled_leaks=frozenset({"container-hostname"}))
 
     assert (
@@ -238,14 +235,14 @@ def test_a_new_nonce_in_the_ordinary_surface_is_a_failure():
 
 
 def test_a_leak_its_calibration_settled_is_no_failure():
-    check = dataclasses.replace(_SOUND, leaking=["container-hostname"])
+    check = dataclasses.replace(SOUND_LAYOUT, leaking=["container-hostname"])
     target = dataclasses.replace(_A_TARGET, settled_leaks=frozenset({"container-hostname"}))
 
     assert layout_failure(target, check) is None
 
 
 def test_kept_layout_places_without_a_route_are_a_failure():
-    check = dataclasses.replace(_SOUND, unrouted=["bare-remote-url", "workspace-dotenv"])
+    check = dataclasses.replace(SOUND_LAYOUT, unrouted=["bare-remote-url", "workspace-dotenv"])
 
     assert (
         layout_failure(_A_TARGET, check)

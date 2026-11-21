@@ -16,8 +16,6 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-
 
 @dataclass(frozen=True)
 class RetiredWord:

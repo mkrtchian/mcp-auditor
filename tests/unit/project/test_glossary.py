@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.project.support.test_glossary_given as given
+from evals.honeypots import REPO_ROOT
 from tests.unit.support.retired_word_exemptions import EXEMPTIONS
 from tests.unit.support.retired_word_scan import (
-    REPO_ROOT,
     Exemptions,
     Scan,
     imports_the_glossary,

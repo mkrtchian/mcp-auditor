@@ -1,9 +1,10 @@
 import asyncio
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.targets import Target
+from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, KUBERNETES, an_acceptance_target
 
 # With no tools filter, which the holdout run refuses.
@@ -11,9 +12,8 @@ TARGETS = tuple(
     an_acceptance_target(flaw_id, tools_filter=None) for flaw_id in (FILESYSTEM, KUBERNETES, GIT)
 )
 LIVE: list[str] = []
-SOUND = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
-BROKEN = LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])
-LEAKING = LayoutCheck(gave_up=None, breaks=False, leaking=["container-hostname"], unrouted=[])
+BROKEN = replace(SOUND_LAYOUT, breaks=True)
+LEAKING = replace(SOUND_LAYOUT, leaking=["container-hostname"])
 
 
 @dataclass
@@ -38,7 +38,9 @@ class ScriptedChecks:
         )
 
     async def layout(self, target: Target) -> LayoutCheck:
-        observed = _nth(self.layouts.get(target.flaw_id, [SOUND]), self._passes[target.flaw_id])
+        observed = _nth(
+            self.layouts.get(target.flaw_id, [SOUND_LAYOUT]), self._passes[target.flaw_id]
+        )
         await self._step("end", target)
         return observed
 
