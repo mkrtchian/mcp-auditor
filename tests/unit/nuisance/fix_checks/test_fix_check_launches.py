@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 import pytest
 
-from evals.cve.planting_base import confinement_args, resolver_args
+from evals.cve.planting_base import confinement_args, resolver_args, unprivileged_user_args
 from tests.unit.nuisance.fix_checks.support.test_fix_check_launches_given import (
     HAND_BUILT_LAUNCHES,
 )
@@ -30,3 +30,5 @@ def test_every_hand_built_fix_check_container_carries_the_confinement(name: str)
     assert granted <= {"NET_BIND_SERVICE"}
     if name.endswith(("-server", "-part")):
         assert not granted
+    if name.endswith("-server"):
+        assert carries(args, unprivileged_user_args())
