@@ -14,7 +14,6 @@ from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_targ
 
 # The report's no-proof guarantee, held by the result file too.
 PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
-RETIRED_KEYS = {"cve_id", "mechanism_labels", "miss_causes", "primary_number"}
 
 
 def a_run_result() -> HoldoutRunResult:

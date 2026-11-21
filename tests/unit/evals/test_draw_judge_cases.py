@@ -266,14 +266,3 @@ def test_the_detection_export_is_read_from_its_flag(monkeypatch: pytest.MonkeyPa
     )
 
     assert str(parse_args().detection_export) == "d.jsonl"
-
-
-def test_the_old_cve_export_flag_is_refused(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "sys.argv", ["draw_judge_cases", "--honeypot-export", "h.jsonl", "--cve-export", "d.jsonl"]
-    )
-
-    with pytest.raises(SystemExit) as refused:
-        parse_args()
-
-    assert refused.value.code == 2

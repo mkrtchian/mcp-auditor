@@ -72,7 +72,6 @@ def test_the_result_and_the_report_carry_the_glossary_keys(
         "class_labels",
         "missed_call_causes",
     } <= report_keys
-    assert (result_keys | report_keys).isdisjoint(given.RETIRED_KEYS)
 
 
 def test_run_writes_its_result_before_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

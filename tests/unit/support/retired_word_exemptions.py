@@ -87,20 +87,8 @@ ALLOWLIST = (
     ),
     AllowedLine(
         "tests/unit/auditor/test_rendering.py",
-        "missed-steps",
-        '"missed_steps"',
-        "asserts that the product report carries none of the old keys",
-    ),
-    AllowedLine(
-        "tests/unit/auditor/test_rendering.py",
         "eval-result",
         '"eval_result"',
-        "asserts that the product report carries none of the old keys",
-    ),
-    AllowedLine(
-        "tests/unit/auditor/test_rendering.py",
-        "relayed-variables",
-        '"relayed_variables"',
         "asserts that the product report carries none of the old keys",
     ),
     AllowedLine(
@@ -126,36 +114,6 @@ ALLOWLIST = (
         "replay-retest",
         "replay_rule",
         "the tests that a committed baseline loads through the alias",
-    ),
-    AllowedLine(
-        "tests/unit/evals/test_run_*.py",
-        "ungated",
-        '"--ungated"',
-        "the CLI tests that the old flag is refused",
-    ),
-    AllowedLine(
-        "tests/unit/detection/test_run_*.py",
-        "ungated",
-        '"--ungated"',
-        "the CLI tests that the old flag is refused",
-    ),
-    AllowedLine(
-        "tests/unit/detection/test_run_*.py",
-        "cve-flag",
-        '"--cve"',
-        "the CLI tests that the old flag is refused",
-    ),
-    AllowedLine(
-        "tests/unit/nuisance/test_run_*.py",
-        "cve-flag",
-        '"--cve"',
-        "the CLI tests that the old flag is refused",
-    ),
-    AllowedLine(
-        "tests/unit/detection/test_run_*.py",
-        "calibrate-cmd",
-        '"--calibrate"',
-        "the CLI tests that the old flag is refused",
     ),
     AllowedLine(
         "CHANGELOG.md",
@@ -294,36 +252,6 @@ ALLOWLIST = (
         "cve-id",
         "VulnerableMcpEntry(cve_id=",
         "builds that record",
-    ),
-    AllowedLine(
-        "tests/unit/detection/support/test_run_detection_holdout_run_given.py",
-        "cve-id",
-        "RETIRED_KEYS = ",
-        "the old keys a holdout result and report no longer carry",
-    ),
-    AllowedLine(
-        "tests/unit/detection/support/test_run_detection_holdout_run_given.py",
-        "primary-number",
-        "RETIRED_KEYS = ",
-        "the old keys a holdout result and report no longer carry",
-    ),
-    AllowedLine(
-        "tests/unit/detection/support/test_run_detection_holdout_run_given.py",
-        "mechanism-class",
-        "RETIRED_KEYS = ",
-        "the old keys a holdout result and report no longer carry",
-    ),
-    AllowedLine(
-        "tests/unit/detection/support/test_run_detection_holdout_run_given.py",
-        "miss-causes",
-        "RETIRED_KEYS = ",
-        "the old keys a holdout result and report no longer carry",
-    ),
-    AllowedLine(
-        "tests/unit/nuisance/test_run_*.py",
-        "readmission",
-        '"--readmission"',
-        "the CLI tests that the old flag is refused",
     ),
     AllowedLine(
         "evals/cve/detection/holdout_fixtures/cve_2026_3484_nmap.py",

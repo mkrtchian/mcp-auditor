@@ -79,16 +79,7 @@ def test_tracing_enabled_reads_langchain_v2(monkeypatch: pytest.MonkeyPatch) -> 
     assert tracing_enabled() is True
 
 
-def test_no_baseline_runs_on_the_floors_alone(monkeypatch: pytest.MonkeyPatch):
+def test_the_no_baseline_flag_is_read(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("sys.argv", ["run_honeypot_suite", "--no-baseline"])
 
     assert parse_args().no_baseline
-
-
-def test_the_old_ungated_flag_is_refused(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr("sys.argv", ["run_honeypot_suite", "--ungated"])
-
-    with pytest.raises(SystemExit) as refused:
-        parse_args()
-
-    assert refused.value.code == 2

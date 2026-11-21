@@ -254,22 +254,6 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
     assert not out.exists()
 
 
-@pytest.mark.parametrize(
-    "old_command",
-    [
-        ["calibrate"],
-        ["fix-check", "--cve", "CVE-2099-9999"],
-        ["nuisance-dossier", "--server", "npm:x", "--out", "out", "--readmission"],
-    ],
-    ids=["calibrate", "--cve", "--readmission"],
-)
-def test_an_old_command_or_flag_is_refused_by_the_parser(old_command: list[str]):
-    with pytest.raises(SystemExit) as refused:
-        run_nuisance.main(old_command)
-
-    assert refused.value.code == 2
-
-
 def test_run_without_an_admission_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

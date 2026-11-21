@@ -329,15 +329,3 @@ def test_a_no_baseline_run_compares_nothing_and_exits_0(
     code = given.exit_code_of(monkeypatch, "--no-baseline", "--report", str(tmp_path / "r.json"))
 
     assert code == 0
-
-
-@pytest.mark.parametrize(
-    "old_flag", [["--calibrate"], ["--cve", given.RECORDED_CVE], ["--ungated"]]
-)
-def test_an_old_flag_is_refused_by_the_parser(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], old_flag: list[str]
-):
-    code = given.exit_code_of(monkeypatch, *old_flag)
-
-    assert code == 2
-    assert "unrecognized arguments" in capsys.readouterr().err

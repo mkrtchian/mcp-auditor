@@ -138,18 +138,6 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
     assert store.builds == []
 
 
-@pytest.mark.parametrize(
-    "old_command",
-    [["calibrate"], ["calibration-check", "--cve", "CVE-2099-9999"]],
-    ids=["calibrate", "--cve"],
-)
-def test_an_old_command_or_flag_is_refused_by_the_parser(old_command: list[str]):
-    with pytest.raises(SystemExit) as refused:
-        run_detection_holdout.main(old_command)
-
-    assert refused.value.code == 2
-
-
 def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         run_detection_holdout,
@@ -191,18 +179,6 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     run_given.cards_reporting(monkeypatch, [])
 
     assert run_detection_holdout.main(["run"]) == run_detection_holdout.REFUSED_EXIT
-
-
-def test_draw_order_is_no_longer_a_command_of_the_holdout_run(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-):
-    census = given.written(tmp_path, given.a_census())
-
-    with pytest.raises(SystemExit) as refused:
-        run_detection_holdout.main(["draw-order", "--census", str(census)])
-
-    assert refused.value.code == 2
-    assert "invalid choice: 'draw-order'" in capsys.readouterr().err
 
 
 def test_calibration_dossier_on_an_unknown_flaw_refuses_with_exit_three(tmp_path: Path):

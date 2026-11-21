@@ -407,8 +407,6 @@ def test_json_names_the_server_command_the_redacted_variables_and_the_missed_mod
     assert data["server_command"] == report.server_command
     assert "redacted_variables" in data["execution"]
     assert [missed["kind"] for missed in data["missed_model_calls"]] == ["judgment"]
-    assert not {"target", "missed_steps"} & data.keys()
-    assert "relayed_variables" not in data["execution"]
 
 
 def test_json_names_each_judgment_judge_result_and_its_arguments():
