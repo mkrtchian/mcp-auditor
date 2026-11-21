@@ -1,9 +1,6 @@
-import subprocess
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-
-import pytest
 
 from evals.cve.backends.mcp_ssh_holdout import SshdDocker
 from evals.cve.backends.mcp_ssh_sshd import StoodSshd
@@ -50,20 +47,3 @@ def an_sshd_watching_holders(tmp_path: Path, planting: FakePlantingDocker) -> Fa
     sshd = an_sshd(tmp_path)
     sshd.planting = planting
     return sshd
-
-
-class FakeDocker:
-    """Answers every Docker command with success and records it."""
-
-    def __init__(self) -> None:
-        self.commands: list[list[str]] = []
-
-    def run(self, args: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        self.commands.append(list(args))
-        return subprocess.CompletedProcess(list(args), 0, "", "")
-
-
-def a_docker(monkeypatch: pytest.MonkeyPatch) -> FakeDocker:
-    docker = FakeDocker()
-    monkeypatch.setattr(subprocess, "run", docker.run)
-    return docker

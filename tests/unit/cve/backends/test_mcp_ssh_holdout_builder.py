@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.backends.support.test_kubernetes_backend_given as specs
+import tests.unit.cve.backends.support.backend_launch_specs as specs
 import tests.unit.cve.backends.support.test_mcp_ssh_holdout_builder_given as given
 from evals.cve.backends.mcp_ssh_holdout import mcp_ssh_injection_env
 from evals.cve.backends.mcp_ssh_sshd import (
@@ -25,6 +25,7 @@ from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
 from evals.cve.planting_base import PlantingHost, SymbolicUser, confinement_args
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
+from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_the_sshd_module_carries_no_auditor_or_environment_module_into_a_dossier():
@@ -57,14 +58,14 @@ def test_known_hosts_names_the_sshd_by_the_hostname_the_config_entry_names():
 def test_known_hosts_is_installed_mode_0644_and_handed_to_its_owner_with_chown_alone(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    docker = given.a_docker(monkeypatch)
+    commands = recorded_commands(monkeypatch)
     path = tmp_path / "known_hosts"
 
     install_known_hosts(path, "prod.example.com ssh-ed25519 AAAA\n", ROOT)
 
     assert path.read_text() == "prod.example.com ssh-ed25519 AAAA\n"
     assert stat.S_IMODE(path.stat().st_mode) == 0o644
-    [chown] = docker.commands
+    [chown] = commands
     assert chown[-3:-1] == ["chown", ROOT]
     assert carries(chown, ["--cap-drop", "ALL", "--cap-add", "CHOWN"])
     assert value_after(chown, "--network") == "none"

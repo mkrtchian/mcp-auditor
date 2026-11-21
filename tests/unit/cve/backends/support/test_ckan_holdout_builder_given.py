@@ -1,9 +1,5 @@
-import subprocess
-from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
-
-import pytest
 
 from evals.cve.backends.ckan_holdout import CkanHoldoutDocker, ckan_ssrf_env
 from evals.cve.detection.holdout_fixtures.cve_2026_33060_ckan import KEPT_PLACES, TARGET
@@ -58,20 +54,3 @@ def a_launch() -> AbstractContextManager[Launch]:
     return ckan_ssrf_env(
         "img", the_targets_spec(), docker=FakePlantingDocker(), ckan=a_ckan_docker().docker()
     )
-
-
-class RecordedDocker:
-    """Answers every Docker command with success and records it."""
-
-    def __init__(self) -> None:
-        self.commands: list[list[str]] = []
-
-    def run(self, args: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        self.commands.append(list(args))
-        return subprocess.CompletedProcess(list(args), 0, "", "")
-
-
-def a_recorded_docker(monkeypatch: pytest.MonkeyPatch) -> RecordedDocker:
-    docker = RecordedDocker()
-    monkeypatch.setattr(subprocess, "run", docker.run)
-    return docker

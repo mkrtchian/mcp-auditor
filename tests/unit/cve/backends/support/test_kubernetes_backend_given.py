@@ -8,10 +8,8 @@ import pytest
 
 from evals.cve.backends.kubernetes import READY_LINE, StoodControlPlane
 from evals.cve.backends.kubernetes_detection import ControlPlaneDocker
-from evals.cve.planting import RANDOM_NONCES, PlantingSpec, planting_spec
 from evals.cve.planting_base import LABEL, PlantingHost, SymbolicUser
 from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.cve.support.test_cve_planting_given import endpoint_place
 
 API_SERVER = "https://192.0.2.10:6443"
 ADMIN_CONF = (
@@ -121,23 +119,3 @@ def a_control_plane_watching_holders(
     control_plane = a_control_plane(tmp_path)
     control_plane.planting = planting
     return control_plane
-
-
-def a_spec_with_a_holder() -> PlantingSpec:
-    # A link-local endpoint is bound inside a namespace holder the server joins.
-    place = endpoint_place(host="169.254.169.254", path="/latest/meta-data/")
-    spec = planting_spec((place,), a_host(), RANDOM_NONCES)
-    assert spec.needs_holder
-    return spec
-
-
-def a_spec_without_a_holder() -> PlantingSpec:
-    spec = planting_spec((), a_host(), RANDOM_NONCES)
-    assert not spec.needs_holder
-    return spec
-
-
-def a_spec_with_no_network() -> PlantingSpec:
-    return planting_spec(
-        (), PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False), RANDOM_NONCES
-    )

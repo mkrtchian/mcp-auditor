@@ -6,14 +6,19 @@ import tests.unit.cve.backends.support.test_doris_serialization_given as given
 from evals.concurrency import entered_in_thread
 from evals.cve.detection import holdout_environments
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.cve.backends.support.doris_launch import (
+    OverlapRecorder,
+    a_minimal_doris_spec,
+    doris_helpers_faked,
+)
 
 
 async def test_concurrent_doris_launches_never_overlap_in_the_critical_region(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    recorder = given.an_overlap_recorder()
-    given.doris_helpers_faked(monkeypatch, recorder)
-    spec = given.a_minimal_doris_spec()
+    recorder = OverlapRecorder()
+    doris_helpers_faked(monkeypatch, recorder)
+    spec = a_minimal_doris_spec()
 
     async def enter_once() -> None:
         async with entered_in_thread(
@@ -27,9 +32,9 @@ async def test_concurrent_doris_launches_never_overlap_in_the_critical_region(
 
 
 def test_a_cross_thread_enter_and_exit_complete_without_raising(monkeypatch: pytest.MonkeyPatch):
-    recorder = given.an_overlap_recorder()
-    given.doris_helpers_faked(monkeypatch, recorder)
-    spec = given.a_minimal_doris_spec()
+    recorder = OverlapRecorder()
+    doris_helpers_faked(monkeypatch, recorder)
+    spec = a_minimal_doris_spec()
     manager = holdout_environments.doris_db_env("image", spec, docker=FakePlantingDocker())
 
     crossing = given.enter_then_exit_on_separate_threads(manager)

@@ -9,6 +9,7 @@ from evals.cve.layout import WORKSPACE
 from evals.cve.planting_base import confinement_args, unprivileged_user_args
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after
+from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_the_server_joins_the_ckan_bridge_and_the_link_local_network():
@@ -52,11 +53,11 @@ def test_the_launch_removes_its_server_and_its_sentinels_on_exit():
 
 
 def test_no_ckan_part_runs_on_the_network_the_sentinels_take(monkeypatch: pytest.MonkeyPatch):
-    docker = given.a_recorded_docker(monkeypatch)
+    commands = recorded_commands(monkeypatch)
     [sentinel] = given.the_targets_spec().sentinels[:1]
 
     start_doris_sentinel(sentinel)
 
-    then.joins_networks(docker.commands[0], [LINK_LOCAL_NETWORK])
+    then.joins_networks(commands[0], [LINK_LOCAL_NETWORK])
     for part in CKAN_PARTS:
         then.joins_networks(part.run_args(), [CKAN_BRIDGE])

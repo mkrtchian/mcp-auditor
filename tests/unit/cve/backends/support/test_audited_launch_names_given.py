@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.cve.backends.support.backend_launch_specs as specs
+import tests.unit.cve.backends.support.doris_launch as doris
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as ckan
-import tests.unit.cve.backends.support.test_doris_serialization_given as doris
 import tests.unit.cve.backends.support.test_kubernetes_backend_given as kubernetes
 import tests.unit.cve.backends.support.test_mcp_ssh_holdout_builder_given as mcp_ssh
 import tests.unit.cve.backends.support.test_searxng_backend_given as searxng
@@ -99,7 +100,7 @@ def _ckan(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[list[s
 
 
 def _doris(_tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[list[str]]:
-    doris.doris_helpers_faked(monkeypatch, doris.an_overlap_recorder())
+    doris.doris_helpers_faked(monkeypatch, doris.OverlapRecorder())
     spec = doris.a_minimal_doris_spec()
     with holdout_environments.doris_db_env(_IMAGE, spec, docker=FakePlantingDocker()) as launch:
         yield launch.args
@@ -107,7 +108,7 @@ def _doris(_tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[list[s
 
 def _kubernetes(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[list[str]]:
     control_plane = kubernetes.a_control_plane(tmp_path).docker()
-    spec = kubernetes.a_spec_with_a_holder()
+    spec = specs.a_spec_with_a_holder()
     planting = FakePlantingDocker()
     with kubernetes_injection_env(
         _IMAGE, spec, docker=planting, control_plane=control_plane
@@ -117,7 +118,7 @@ def _kubernetes(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[l
 
 def _mcp_ssh(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[list[str]]:
     sshd = mcp_ssh.an_sshd(tmp_path).docker()
-    spec = kubernetes.a_spec_with_a_holder()
+    spec = specs.a_spec_with_a_holder()
     with mcp_ssh_injection_env(_IMAGE, spec, docker=FakePlantingDocker(), sshd=sshd) as launch:
         yield launch.args
 

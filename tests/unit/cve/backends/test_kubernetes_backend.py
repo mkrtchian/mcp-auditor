@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.cve.backends.support.backend_launch_specs as specs
 import tests.unit.cve.backends.support.test_kubernetes_backend_given as given
 import tests.unit.cve.backends.support.test_kubernetes_backend_then as then
 from evals.cve.backends.kubernetes import LIFECYCLE
@@ -73,7 +74,7 @@ def test_the_detection_launch_connects_its_holder_to_the_control_planes_network(
     planting = FakePlantingDocker()
 
     with kubernetes_injection_env(
-        "img", given.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
+        "img", specs.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
     ) as launch:
         then.the_holder_joins_the_control_planes_network(control_plane, planting, launch.args)
         then.mounts_the_kubeconfig_read_only(launch.args)
@@ -86,7 +87,7 @@ def test_the_detection_launch_without_a_holder_takes_the_control_planes_network_
 
     with kubernetes_injection_env(
         "img",
-        given.a_spec_without_a_holder(),
+        specs.a_spec_without_a_holder(),
         docker=FakePlantingDocker(),
         control_plane=control_plane.docker(),
     ) as launch:
@@ -101,7 +102,7 @@ def test_the_detection_launch_removes_its_holder_before_its_control_plane(tmp_pa
     control_plane = given.a_control_plane_watching_holders(tmp_path, planting)
 
     with kubernetes_injection_env(
-        "img", given.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
+        "img", specs.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
     ):
         pass
 
@@ -115,7 +116,7 @@ def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
         pytest.raises(ValueError, match="has_network"),
         kubernetes_injection_env(
             "img",
-            given.a_spec_with_no_network(),
+            specs.a_spec_with_no_network(),
             docker=FakePlantingDocker(),
             control_plane=control_plane.docker(),
         ),
