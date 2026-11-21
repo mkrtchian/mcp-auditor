@@ -86,7 +86,7 @@ ALLOWLIST = (
         "writes a checkpoint of an earlier version",
     ),
     AllowedLine(
-        "tests/unit/auditor/test_rendering.py",
+        "tests/unit/auditor/test_execution_rendering.py",
         "eval-result",
         '"eval_result"',
         "asserts that the product report carries none of the old keys",

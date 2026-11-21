@@ -2,8 +2,8 @@ import json
 
 import pytest
 
+import tests.unit.auditor.support.report_builders as reports
 import tests.unit.auditor.support.test_relaunch_rendering_given as given
-import tests.unit.auditor.support.test_rendering_given as rendering
 import tests.unit.auditor.support.test_rendering_then as then
 from mcp_auditor.domain.models import AuditCategory, CoverageGap
 from mcp_auditor.domain.rendering import describe_coverage_gap, render_json, render_markdown
@@ -37,7 +37,7 @@ def test_markdown_summary_counts_a_failed_relaunch_a_resumed_audit_followed_with
 
 
 def test_markdown_summary_has_no_relaunch_line_without_a_relaunch():
-    report = rendering.a_two_tool_report()
+    report = reports.a_two_tool_report()
 
     assert "Relaunch" not in render_markdown(report)
 
@@ -120,7 +120,7 @@ def test_markdown_labels_a_chain_cut_by_a_relaunch():
 
 
 def test_markdown_does_not_label_a_chain_the_server_answered_to_the_end():
-    report = rendering.a_report_with_chain_finding()
+    report = reports.a_report_with_chain_finding()
 
     assert "Cut by a relaunch" not in render_markdown(report)
 

@@ -3,23 +3,23 @@ from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
-    ChainGoal,
-    ChainStep,
-    CoverageGap,
-    EvalVerdict,
-    ExecutionRecord,
-    ExecutionRegime,
-    JudgeResult,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
-    ToolDefinition,
     ToolReport,
 )
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
+from tests.unit.auditor.support.report_builders import (
+    a_chain,
+    a_chain_fail_result,
+    a_fail_result,
+    a_pass_result,
+    a_report,
+    a_run_command_tool_report,
+    a_tool_definition,
+    a_tool_report,
+    a_two_tool_report,
+)
 
 
 def an_empty_report() -> AuditReport:
@@ -34,34 +34,6 @@ def a_report_with_low_then_critical() -> AuditReport:
     return a_report(
         server_command="python server.py",
         tool_reports=[a_tool_report("tool_a", results)],
-    )
-
-
-def a_two_tool_report() -> AuditReport:
-    get_user_results = [
-        a_fail_result(
-            "get_user",
-            AuditCategory.INPUT_VALIDATION,
-            Severity.HIGH,
-            justification="No input length validation",
-        ),
-        a_fail_result(
-            "get_user",
-            AuditCategory.INJECTION,
-            Severity.CRITICAL,
-            justification="SQL injection via user_id parameter",
-        ),
-    ]
-    list_items_results = [
-        a_pass_result("list_items", AuditCategory.ERROR_HANDLING),
-    ]
-    return a_report(
-        server_command="python honeypot_server.py",
-        tool_reports=[
-            a_tool_report("get_user", get_user_results),
-            a_tool_report("list_items", list_items_results),
-        ],
-        provider_usage=ProviderUsage(input_tokens=15234, output_tokens=8421),
     )
 
 
@@ -105,16 +77,6 @@ def a_report_with_mapped_pass() -> AuditReport:
     )
 
 
-def a_report_with_chain_finding() -> AuditReport:
-    chain = a_chain(judge_result=a_chain_fail_result())
-    tool_report = ToolReport(
-        tool=a_tool_definition(name="get_user"),
-        cases=[],
-        chains=[chain],
-    )
-    return a_report(server_command="python server.py", tool_reports=[tool_report])
-
-
 def a_report_with_chain_injection_finding() -> AuditReport:
     chain = a_chain(
         category=AuditCategory.INJECTION,
@@ -128,26 +90,6 @@ def a_report_with_chain_injection_finding() -> AuditReport:
     return a_report(server_command="python server.py", tool_reports=[tool_report])
 
 
-def a_report_with_pass_case_and_fail_chain() -> AuditReport:
-    pass_result = a_pass_result("get_user", AuditCategory.ERROR_HANDLING)
-    chain = a_chain(judge_result=a_chain_fail_result())
-    tool_report = ToolReport(
-        tool=a_tool_definition(name="get_user"),
-        cases=[
-            TestCase(
-                payload=AuditPayload(
-                    category=AuditCategory.ERROR_HANDLING,
-                    description="test",
-                    arguments={"input": "test"},
-                ),
-                judge_result=pass_result,
-            ),
-        ],
-        chains=[chain],
-    )
-    return a_report(server_command="python server.py", tool_reports=[tool_report])
-
-
 BLOCKED_CASE_REASON = "destructive filesystem command: rm -rf"
 BLOCKED_CHAIN_REASON = "destructive SQL statement: drop table"
 
@@ -155,14 +97,14 @@ BLOCKED_CHAIN_REASON = "destructive SQL statement: drop table"
 def a_report_with_a_blocked_case() -> AuditReport:
     return a_report(
         server_command="python server.py",
-        tool_reports=[_a_tool_report_with_blocked(cases=[a_blocked_case()])],
+        tool_reports=[a_run_command_tool_report(cases=[a_blocked_case()])],
     )
 
 
 def a_report_with_a_blocked_chain() -> AuditReport:
     return a_report(
         server_command="python server.py",
-        tool_reports=[_a_tool_report_with_blocked(chains=[a_blocked_chain()])],
+        tool_reports=[a_run_command_tool_report(chains=[a_blocked_chain()])],
     )
 
 
@@ -170,7 +112,7 @@ def a_report_with_a_blocked_case_and_a_blocked_chain() -> AuditReport:
     return a_report(
         server_command="python server.py",
         tool_reports=[
-            _a_tool_report_with_blocked(cases=[a_blocked_case()], chains=[a_blocked_chain()])
+            a_run_command_tool_report(cases=[a_blocked_case()], chains=[a_blocked_chain()])
         ],
     )
 
@@ -196,52 +138,12 @@ def a_report_with_an_unencodable_blocked_case() -> AuditReport:
         blocked_reason="argument q holds a character that cannot be encoded as UTF-8",
     )
     return a_report(
-        server_command="python server.py", tool_reports=[_a_tool_report_with_blocked([case])]
+        server_command="python server.py", tool_reports=[a_run_command_tool_report([case])]
     )
 
 
 def a_blocked_chain() -> AttackChain:
     return a_chain(blocked_reason=BLOCKED_CHAIN_REASON)
-
-
-def _a_tool_report_with_blocked(
-    cases: list[TestCase] | None = None,
-    chains: list[AttackChain] | None = None,
-) -> ToolReport:
-    return ToolReport(
-        tool=a_tool_definition(name="run_command"),
-        cases=cases or [],
-        chains=chains or [],
-    )
-
-
-FULL_DIGEST = "sha256:abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
-
-
-def a_confined_record(
-    image_digest: str | None = FULL_DIGEST,
-    writable_paths: list[str] | None = None,
-    read_only_paths: list[str] | None = None,
-    oom_killed: bool | None = False,
-) -> ExecutionRecord:
-    return ExecutionRecord(
-        regime=ExecutionRegime.CONFINED,
-        image="node:24-bookworm-slim",
-        image_digest=image_digest,
-        writable_paths=writable_paths if writable_paths is not None else ["/tmp/sandbox"],
-        read_only_paths=read_only_paths if read_only_paths is not None else [],
-        oom_killed=oom_killed,
-    )
-
-
-def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
-    report = a_two_tool_report()
-    report.tool_reports[0].coverage_gap = CoverageGap(
-        requested_cases=10,
-        received_cases=7,
-        missing_categories=[AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE],
-    )
-    return report
 
 
 def a_report_with_a_cut_response_on_get_user() -> AuditReport:
@@ -256,208 +158,3 @@ def a_report_throttled(throttled_requests: int) -> AuditReport:
         input_tokens=15234, output_tokens=8421, throttled_requests=throttled_requests
     )
     return report
-
-
-REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
-
-
-def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
-    report = a_two_tool_report()
-    report.missed_model_calls = [
-        MissedModelCall(
-            tool_name="get_user",
-            kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROVIDER_REFUSAL,
-            detail=REFUSAL_MESSAGE,
-        )
-    ]
-    return report
-
-
-UNREADABLE_DETAIL = (
-    "no answer matched the expected format after 3 attempts (1 cut at the output limit)"
-)
-
-
-def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) -> AuditReport:
-    report = a_two_tool_report()
-    causes = [MissCause.PROVIDER_REFUSAL] * refused + [MissCause.UNREADABLE_ANSWER] * unreadable
-    report.missed_model_calls = [
-        MissedModelCall(
-            tool_name="get_user",
-            kind=ModelCallKind.JUDGMENT,
-            cause=cause,
-            detail=REFUSAL_MESSAGE if cause == MissCause.PROVIDER_REFUSAL else UNREADABLE_DETAIL,
-        )
-        for cause in causes
-    ]
-    return report
-
-
-THROTTLE_MESSAGE = "429 RESOURCE_EXHAUSTED"
-
-
-PROMPT_TOO_LONG_MESSAGE = "prompt of 1048577 tokens over the limit"
-
-
-def a_report_with_one_missed_judgment_on_get_user(cause: MissCause, detail: str) -> AuditReport:
-    report = a_two_tool_report()
-    report.missed_model_calls = [
-        MissedModelCall(
-            tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail=detail
-        )
-    ]
-    return report
-
-
-def a_report_with_an_unjudged_case() -> AuditReport:
-    unjudged = TestCase(
-        payload=AuditPayload(
-            category=AuditCategory.INJECTION,
-            description="shell metacharacters",
-            arguments={"command": "ls; cat /etc/shadow"},
-        ),
-    )
-    return a_report(
-        server_command="python server.py",
-        tool_reports=[_a_tool_report_with_blocked(cases=[unjudged])],
-    )
-
-
-def a_report_with_an_unjudged_chain() -> AuditReport:
-    return a_report(
-        server_command="python server.py",
-        tool_reports=[_a_tool_report_with_blocked(chains=[a_chain()])],
-    )
-
-
-def a_report_with_execution(record: ExecutionRecord) -> AuditReport:
-    return a_report(server_command="npx server", tool_reports=[], execution=record)
-
-
-def a_report(
-    server_command: str,
-    tool_reports: list[ToolReport],
-    provider_usage: ProviderUsage | None = None,
-    execution: ExecutionRecord | None = None,
-) -> AuditReport:
-    return AuditReport(
-        server_command=server_command,
-        tool_reports=tool_reports,
-        provider_usage=provider_usage or ProviderUsage(),
-        execution=execution,
-    )
-
-
-def a_tool_report(
-    tool_name: str,
-    results: list[JudgeResult],
-) -> ToolReport:
-    cases = [
-        TestCase(
-            payload=AuditPayload(
-                category=r.category,
-                description="test",
-                arguments=r.arguments,
-            ),
-            judge_result=r,
-        )
-        for r in results
-    ]
-    return ToolReport(
-        tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
-        cases=cases,
-    )
-
-
-def a_chain(
-    description: str = "probe then exploit",
-    category: AuditCategory = AuditCategory.INJECTION,
-    judge_result: JudgeResult | None = None,
-    blocked_reason: str | None = None,
-) -> AttackChain:
-    goal = ChainGoal(
-        description=description,
-        category=category,
-        first_step=AuditPayload(
-            category=category,
-            description="probe",
-            arguments={"id": "1"},
-        ),
-    )
-    steps = [
-        ChainStep(
-            payload=goal.first_step,
-            response="user data with path /var/data",
-            observation="Found internal path",
-        ),
-        ChainStep(
-            payload=AuditPayload(
-                category=category,
-                description="exploit",
-                arguments={"id": "../../etc/passwd"},
-            ),
-            response="root:x:0:0",
-            observation="Path traversal succeeded",
-        ),
-    ]
-    return AttackChain(
-        goal=goal, steps=steps, judge_result=judge_result, blocked_reason=blocked_reason
-    )
-
-
-def a_fail_result(
-    tool_name: str,
-    category: AuditCategory,
-    severity: Severity,
-    justification: str = "Vulnerable to attack",
-) -> JudgeResult:
-    return JudgeResult(
-        tool_name=tool_name,
-        category=category,
-        arguments={"input": "malicious"},
-        verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
-    )
-
-
-def a_pass_result(
-    tool_name: str,
-    category: AuditCategory,
-) -> JudgeResult:
-    return JudgeResult(
-        tool_name=tool_name,
-        category=category,
-        arguments={"input": "test"},
-        verdict=EvalVerdict.PASS,
-        justification="Handled correctly",
-        severity=Severity.LOW,
-    )
-
-
-def a_tool_definition(
-    name: str = "test_tool",
-    description: str = "A test tool",
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
-        description=description,
-        input_schema={"type": "object", "properties": {}},
-    )
-
-
-def a_chain_fail_result(
-    tool_name: str = "get_user",
-    category: AuditCategory = AuditCategory.INJECTION,
-    severity: Severity = Severity.HIGH,
-    justification: str = "Chain exploited",
-) -> JudgeResult:
-    return JudgeResult(
-        tool_name=tool_name,
-        category=category,
-        arguments={"path": "/etc/passwd"},
-        verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
-    )
