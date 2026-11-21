@@ -19,6 +19,7 @@ from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.kit.backends import doris_backend_env
 from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
+from tests.integration.support.docker_prerequisites import skip_or_require
 
 _SERVICE = "holdout-2025-66335-doris-patched"
 
@@ -46,9 +47,7 @@ def _prerequisites() -> None:
         )
     missing = _missing_prerequisite()
     if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
+        skip_or_require(missing)
     try:
         ensure_images([_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:

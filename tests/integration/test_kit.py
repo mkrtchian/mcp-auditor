@@ -17,6 +17,7 @@ from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
+from tests.integration.support.docker_prerequisites import skip_or_require
 
 _SERVICE = "filesystem"
 _IMAGE = image_tag(_SERVICE)
@@ -39,9 +40,7 @@ def _docker(*args: str) -> int:
 def _prerequisites() -> None:
     missing = _missing_prerequisite()
     if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
+        skip_or_require(missing)
     try:
         ensure_images([_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:

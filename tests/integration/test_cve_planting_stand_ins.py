@@ -5,7 +5,6 @@
 # Skipped without Docker or openssl. `CVE_PLANTING_REQUIRED=1` turns that skip into a failure,
 # as in `test_cve_planting.py`.
 import logging
-import os
 from pathlib import Path
 
 import pytest
@@ -14,23 +13,15 @@ import tests.integration.support.test_cve_planting_given as planting
 import tests.integration.support.test_cve_planting_stand_ins_given as given
 import tests.integration.support.test_cve_planting_stand_ins_then as then
 from evals.cve import planting_docker
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.planting import DockerPlanting, planted
-from evals.cve.planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE, STAND_IN_SERVICE
+from evals.cve.planting_base import SENTINEL_IMAGE
+from tests.integration.support.docker_prerequisites import stand_in_prerequisites
 from tests.integration.support.test_cve_planting_then import nothing_it_made_outlives
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _stand_in_prerequisites() -> None:
-    missing = planting.missing_prerequisite() or given.missing_openssl()
-    if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
-    try:
-        ensure_images([SENTINEL_SERVICE, STAND_IN_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
+    stand_in_prerequisites()
 
 
 def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anything_else(

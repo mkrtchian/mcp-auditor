@@ -7,7 +7,6 @@
 # Skipped without Docker, failed under `CVE_PLANTING_REQUIRED=1`, as `test_cve_planting.py`. A
 # missing or foreign sentinel or git image is rebuilt through compose before the first case, and
 # the first case pulls the pinned busybox the hand-over and the removal run.
-import os
 
 import pytest
 
@@ -15,15 +14,14 @@ import tests.integration.support.test_cve_layout_mount_given as given
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.layout import build_empty_layout
 from evals.cve.planting_base import SENTINEL_SERVICE
+from tests.integration.support.docker_prerequisites import skip_or_require
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _docker_prerequisites() -> None:
     missing = given.missing_prerequisite()
     if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
+        skip_or_require(missing)
     try:
         ensure_images([SENTINEL_SERVICE, given.GIT_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:

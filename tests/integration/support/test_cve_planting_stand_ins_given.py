@@ -1,5 +1,4 @@
 import json
-import shutil
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -145,10 +144,6 @@ _FETCH = (
     "print(json.dumps({'status':response.status,'headers':headers,'header_list':header_list,"
     "'body':body}),end='')"
 )
-
-
-def missing_openssl() -> str | None:
-    return None if shutil.which("openssl") else "the planted stand-in needs openssl"
 
 
 def a_stand_in_spec() -> PlantingSpec:

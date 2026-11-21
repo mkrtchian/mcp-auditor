@@ -24,15 +24,14 @@ from evals.cve.planting_base import (
     UNPRIVILEGED_GID,
     UNPRIVILEGED_UID,
 )
+from tests.integration.support.docker_prerequisites import skip_or_require
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _planting_prerequisites() -> None:
     missing = given.missing_prerequisite()
     if missing is not None:
-        if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
-            pytest.fail(missing)
-        pytest.skip(missing)
+        skip_or_require(missing)
     try:
         ensure_images([SENTINEL_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
