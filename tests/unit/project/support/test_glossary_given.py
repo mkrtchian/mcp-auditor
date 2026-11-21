@@ -6,9 +6,18 @@ from tests.unit.support.retired_word_scan import AllowedLine, Exemptions, Retire
 
 THE_WORD = "oldterm"
 THE_WORD_ID = "fixture-word"
-FIXTURE_WORDS = (RetiredWord(THE_WORD_ID, rf"\b{THE_WORD}\b", re.IGNORECASE, "2"),)
+FIXTURE_WORDS = (RetiredWord(THE_WORD_ID, rf"\b{THE_WORD}\b", re.IGNORECASE),)
 NO_EXEMPTION = Exemptions()
 A_LINE_WITH_THE_WORD = f"A line that still says {THE_WORD}.\n"
+A_TEST_NAMED_WITH_THE_WORD = f"def test_the_{THE_WORD}_is_still_named():\n    pass\n"
+
+THE_ANDROID_DOCKERFILES = (
+    "evals/docker/Dockerfile.android",
+    "evals/docker/Dockerfile.holdout-2026-19978-android",
+    "evals/docker/Dockerfile.holdout-2026-19978-android-patched",
+    "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile",
+    "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile-patched",
+)
 
 
 @dataclass(frozen=True)

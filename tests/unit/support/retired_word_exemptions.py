@@ -2,10 +2,6 @@
 
 from tests.unit.support.retired_word_scan import AllowedLine, Exemptions
 
-NOT_YET_RENAMED: tuple[str, ...] = ()
-
-NOT_YET_MIGRATED: tuple[str, ...] = ()
-
 ALLOWLIST = (
     AllowedLine(
         "docs/glossary.md",
@@ -290,24 +286,6 @@ ALLOWLIST = (
         "npm's own word for the package, in Dockerfile.serverless and Dockerfile.serverless-vuln",
     ),
     AllowedLine(
-        "evals/docker/Dockerfile.android",
-        "stub",
-        "IPackageManager$Stub.onTransact",
-        "a frame of the stack trace the captured Android device prints, its own class name",
-    ),
-    AllowedLine(
-        "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile*",
-        "stub",
-        "IPackageManager$Stub.onTransact",
-        "the same captured stack frame, in the CVE-2026-81562 vulnerable and patched images",
-    ),
-    AllowedLine(
-        "evals/docker/Dockerfile.holdout-2026-19978-android*",
-        "stub",
-        "IPackageManager$Stub.onTransact",
-        "the same captured stack frame, in the CVE-2026-19978 vulnerable and patched images",
-    ),
-    AllowedLine(
         "docs/detection-suite-rule.md",
         "stub",
         "`stub`, `calibration`",
@@ -321,4 +299,4 @@ ALLOWLIST = (
     ),
 )
 
-EXEMPTIONS = Exemptions(NOT_YET_RENAMED, NOT_YET_MIGRATED, ALLOWLIST)
+EXEMPTIONS = Exemptions(ALLOWLIST)

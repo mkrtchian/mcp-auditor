@@ -6,9 +6,11 @@ import tests.unit.project.support.test_glossary_given as given
 from evals.honeypots import REPO_ROOT
 from tests.unit.support.retired_word_exemptions import EXEMPTIONS
 from tests.unit.support.retired_word_scan import (
+    AllowedLine,
     Exemptions,
     Scan,
     imports_the_glossary,
+    oversized_files,
     scan,
 )
 from tests.unit.support.retired_words import RETIRED_WORDS
@@ -28,6 +30,10 @@ def test_every_allowlist_entry_matches_a_line(repository_scan: Scan):
     assert repository_scan.stale_entries == ()
 
 
+def test_the_size_bound_skips_only_the_files_embedding_an_android_capture():
+    assert oversized_files(REPO_ROOT) == given.THE_ANDROID_DOCKERFILES
+
+
 def test_claude_md_imports_the_glossary():
     assert imports_the_glossary(REPO_ROOT)
 
@@ -38,6 +44,14 @@ def test_a_retired_word_fires_on_a_living_file(tmp_path: Path):
     result = scan(root, given.FIXTURE_WORDS, given.NO_EXEMPTION)
 
     assert given.hit_paths(result) == ["evals/module.py"]
+
+
+def test_a_retired_word_fires_inside_a_test_name(tmp_path: Path):
+    root = given.a_tree(tmp_path, {"tests/unit/test_module.py": given.A_TEST_NAMED_WITH_THE_WORD})
+
+    result = scan(root, given.FIXTURE_WORDS, given.NO_EXEMPTION)
+
+    assert given.hit_paths(result) == ["tests/unit/test_module.py"]
 
 
 def test_a_retired_word_fires_on_a_file_path(tmp_path: Path):
@@ -70,24 +84,6 @@ def test_a_retired_word_is_skipped_in_historical_text(
     assert result.violations == ()
 
 
-def test_a_word_not_yet_renamed_is_skipped(tmp_path: Path):
-    root = given.a_tree(tmp_path, {"src/module.py": given.A_LINE_WITH_THE_WORD})
-    exemptions = Exemptions(not_yet_renamed=(given.THE_WORD_ID,))
-
-    result = scan(root, given.FIXTURE_WORDS, exemptions)
-
-    assert result.violations == ()
-
-
-def test_a_file_not_yet_migrated_is_skipped(tmp_path: Path):
-    root = given.a_tree(tmp_path, {"docs/detection-suite-rule.md": given.A_LINE_WITH_THE_WORD})
-    exemptions = Exemptions(not_yet_migrated=("docs/detection-suite-rule.md",))
-
-    result = scan(root, given.FIXTURE_WORDS, exemptions)
-
-    assert result.violations == ()
-
-
 def test_an_allowlisted_line_passes(tmp_path: Path):
     root = given.a_tree(tmp_path, {"docs/glossary.md": given.A_LINE_WITH_THE_WORD})
     exemptions = Exemptions(allowlist=(given.an_entry_for("docs/*.md", "still says"),))
@@ -109,8 +105,10 @@ def test_an_allowlist_entry_matching_no_line_is_stale(tmp_path: Path):
 def test_an_unknown_pattern_id_in_the_exemptions_is_refused(tmp_path: Path):
     root = given.a_tree(tmp_path, {})
 
+    entry = AllowedLine("docs/*.md", "no-such-word", "a line", "an entry naming no pattern")
+
     with pytest.raises(ValueError, match="no-such-word"):
-        scan(root, given.FIXTURE_WORDS, Exemptions(not_yet_renamed=("no-such-word",)))
+        scan(root, given.FIXTURE_WORDS, Exemptions(allowlist=(entry,)))
 
 
 def test_a_claude_md_without_the_glossary_line_is_refused(tmp_path: Path):

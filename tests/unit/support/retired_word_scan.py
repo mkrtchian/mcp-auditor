@@ -5,8 +5,10 @@ CLAUDE.md, CONTRIBUTING.md, `.env.example`, the `[Unreleased]` section of CHANGE
 glossary, the two rules, the preambles of the three logs and `.github/workflows/`. Everything
 else is historical and never read: ADRs, plans, the glossary log, the published CHANGELOG
 sections, the dated log entries, and the committed records (every JSON file under the code
-roots), key files and binaries. The glossary test, its given module and the modules that hold
-the patterns and the exemptions are skipped too.
+roots), key files, binaries and the files above 100 KB under the code roots, which embed a
+device capture. The glossary test, its given module and the modules that hold the patterns and
+the exemptions are skipped too. A test name is also read with `_` as a space, so a retired word
+inside a snake_case name is found.
 """
 
 import bisect
@@ -22,7 +24,6 @@ class RetiredWord:
     id: str
     regex: str
     flags: re.RegexFlag
-    step: str  # the body step of the migration plan that removes the id from the exemptions
 
     def compiled(self) -> re.Pattern[str]:
         return re.compile(self.regex, self.flags)
@@ -45,8 +46,6 @@ class AllowedLine:
 
 @dataclass(frozen=True)
 class Exemptions:
-    not_yet_renamed: tuple[str, ...] = ()
-    not_yet_migrated: tuple[str, ...] = ()
     allowlist: tuple[AllowedLine, ...] = ()
 
 
@@ -68,11 +67,7 @@ def scan(root: Path, words: tuple[RetiredWord, ...], exemptions: Exemptions) -> 
     _refuse_unknown_ids(words, exemptions)
     hits = [hit for text in living_texts(root) for hit in _hits_in(text, words)]
     violations = tuple(
-        hit
-        for hit in hits
-        if hit.pattern_id not in exemptions.not_yet_renamed
-        and hit.path not in exemptions.not_yet_migrated
-        and not any(entry.allows(hit) for entry in exemptions.allowlist)
+        hit for hit in hits if not any(entry.allows(hit) for entry in exemptions.allowlist)
     )
     stale = tuple(
         entry for entry in exemptions.allowlist if not any(entry.allows(hit) for hit in hits)
@@ -87,7 +82,7 @@ def imports_the_glossary(root: Path) -> bool:
 
 def _refuse_unknown_ids(words: tuple[RetiredWord, ...], exemptions: Exemptions) -> None:
     known = {word.id for word in words}
-    named = set(exemptions.not_yet_renamed) | {entry.pattern_id for entry in exemptions.allowlist}
+    named = {entry.pattern_id for entry in exemptions.allowlist}
     if unknown := sorted(named - known):
         raise ValueError(f"exemptions name unknown pattern ids: {unknown}")
 
@@ -105,12 +100,15 @@ def living_texts(root: Path) -> Iterator[LivingText]:
         yield from _whole(root, relative, path_counts=False)
     for relative, cut in _CUT_FILES.items():
         yield from _cut(root, relative, cut)
-    for directory in _CODE_ROOTS:
-        for relative in _files_under(root, directory):
-            if relative not in _SKIPPED and not _is_record_or_key(relative):
-                yield from _whole(root, relative, path_counts=True)
+    for relative in _code_files(root):
+        if not _is_oversized(root / relative):
+            yield from _whole(root, relative, path_counts=True)
     for relative in _files_under(root, _WORKFLOWS):
         yield from _whole(root, relative, path_counts=False)
+
+
+def oversized_files(root: Path) -> tuple[str, ...]:
+    return tuple(relative for relative in _code_files(root) if _is_oversized(root / relative))
 
 
 _WHOLE_FILES = (
@@ -131,6 +129,18 @@ _SKIPPED = (
     "tests/unit/support/retired_word_exemptions.py",
 )
 _RECORD_AND_KEY_SUFFIXES = (".json", ".pem", ".key")
+_SIZE_BOUND = 100_000
+
+
+def _code_files(root: Path) -> Iterator[str]:
+    for directory in _CODE_ROOTS:
+        for relative in _files_under(root, directory):
+            if relative not in _SKIPPED and not _is_record_or_key(relative):
+                yield relative
+
+
+def _is_oversized(path: Path) -> bool:
+    return path.stat().st_size > _SIZE_BOUND
 
 
 def _is_record_or_key(relative: str) -> bool:
@@ -200,18 +210,23 @@ def _hits_in(text: LivingText, words: tuple[RetiredWord, ...]) -> Iterator[Hit]:
     line_starts = _line_starts(text.text)
     # In a path, `_`, `/`, `.` and `-` separate words, so the path is also read with spaces.
     path_forms = (text.path, re.sub(r"[_./-]", " ", text.path)) if text.path_counts else ()
+    test_names = _test_names(text.text)
     for word in words:
         pattern = word.compiled()
         if any(pattern.search(form) for form in path_forms):
             yield Hit(text.path, 0, word.id, text.path)
-        indexes = sorted(
-            {
-                bisect.bisect_right(line_starts, match.start()) - 1
-                for match in pattern.finditer(text.text)
-            }
-        )
+        offsets = [match.start() for match in pattern.finditer(text.text)]
+        offsets += [offset for offset, name in test_names if pattern.search(name)]
+        indexes = sorted({bisect.bisect_right(line_starts, offset) - 1 for offset in offsets})
         for index in indexes:
             yield Hit(text.path, text.first_line_number + index, word.id, lines[index])
+
+
+def _test_names(text: str) -> list[tuple[int, str]]:
+    return [
+        (match.start(), match.group(1).replace("_", " "))
+        for match in re.finditer(r"\bdef (test_\w+)", text)
+    ]
 
 
 def _line_starts(text: str) -> list[int]:

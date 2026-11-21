@@ -23,6 +23,8 @@ _OLD_TEST_STEMS = (
     "test_calibration_dossier_given",
     "test_census_draw",
     "test_census_draw_given",
+    "test_census_work",
+    "test_census_work_given",
     "test_closed_network",
     "test_closed_network_given",
     "test_closed_network_refusal",
@@ -81,6 +83,7 @@ _OLD_TEST_STEMS = (
     "test_failure_text",
     "test_fix_check",
     "test_fix_check_given",
+    "test_fix_check_resolver",
     "test_fixture_provenance",
     "test_fixture_sources",
     "test_holdout_audit",
@@ -107,6 +110,9 @@ _OLD_TEST_STEMS = (
     "test_holdout_vetting",
     "test_holdout_vetting_given",
     "test_holdout_vetting_then",
+    "test_mcp_client_transport_given",
+    "test_mcp_ssh_fix_check_builder_given",
+    "test_mcp_ssh_holdout_builder_given",
     "test_missed_steps",
     "test_nuisance_backends",
     "test_nuisance_backends_built",
@@ -133,26 +139,26 @@ _OLD_TEST_STEMS = (
     "test_run_holdout_run_given",
     "test_run_images",
     "test_run_images_given",
+    "test_server_execution_given",
     "test_server_health",
     "test_target_execution",
     "test_target_execution_given",
 )
 
 RETIRED_WORDS = (
-    RetiredWord("acceptance-gate", r"\bacceptance gates?\b", re.IGNORECASE, "5"),
-    RetiredWord("acceptance-test", r"\bacceptance tests?\b", re.IGNORECASE, "2"),
+    RetiredWord("acceptance-gate", r"\bacceptance gates?\b", re.IGNORECASE),
+    RetiredWord("acceptance-test", r"\bacceptance tests?\b", re.IGNORECASE),
     RetiredWord(
-        "bare-acceptance-server", r"(?<!nuisance )\bacceptance[ -]servers?\b", re.IGNORECASE, "5"
+        "bare-acceptance-server", r"(?<!nuisance )\bacceptance[ -]servers?\b", re.IGNORECASE
     ),
-    RetiredWord("twin", r"twins?\b|_twin|Twin", re.NOFLAG, "5"),
+    RetiredWord("twin", r"twins?\b|_twin|Twin", re.NOFLAG),
     RetiredWord(
         "admission-cve",
         r"admission_calibration|confirm_admission|AdmissionCalibration|admission (bars?|probe)",
         re.IGNORECASE,
-        "4",
     ),
     RetiredWord(
-        "alarm-tag", r'CellTag\.ALARM\b|\bALARM = "alarm"|PASS cell always flagged', re.NOFLAG, "3"
+        "alarm-tag", r'CellTag\.ALARM\b|\bALARM = "alarm"|PASS cell always flagged', re.NOFLAG
     ),
     RetiredWord(
         "audit-step",
@@ -161,7 +167,6 @@ RETIRED_WORDS = (
             r"describe_missed_step|print_missed_steps"
         ),
         re.NOFLAG,
-        "2",
     ),
     RetiredWord(
         "missed-steps",
@@ -170,7 +175,6 @@ RETIRED_WORDS = (
             r"step (was|is) missed|chain_step_missed"
         ),
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "calibrate-cmd",
@@ -179,10 +183,9 @@ RETIRED_WORDS = (
             r"calibrate_command"
         ),
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("calibration-gate", r"\bcalibration gate\b|\bCI gates?\b", re.IGNORECASE, "5"),
-    RetiredWord("workshop", r"\bworkshops?\b", re.IGNORECASE, "5"),
+    RetiredWord("calibration-gate", r"\bcalibration gate\b|\bCI gates?\b", re.IGNORECASE),
+    RetiredWord("workshop", r"\bworkshops?\b", re.IGNORECASE),
     RetiredWord(
         "capability",
         (
@@ -190,10 +193,9 @@ RETIRED_WORDS = (
             r"rate)"
         ),
         re.IGNORECASE,
-        "5",
     ),
-    RetiredWord("challenger", r"\bchallengers?\b", re.IGNORECASE, "5"),
-    RetiredWord("cve-family", r"\bCVE family\b", re.NOFLAG, "4"),
+    RetiredWord("challenger", r"\bchallengers?\b", re.IGNORECASE),
+    RetiredWord("cve-family", r"\bCVE family\b", re.NOFLAG),
     RetiredWord(
         "cve-x",
         (
@@ -201,7 +203,6 @@ RETIRED_WORDS = (
             r"validation benchmark|acceptance)\b"
         ),
         re.NOFLAG,
-        "5",
     ),
     RetiredWord(
         "cve-ident",
@@ -211,9 +212,8 @@ RETIRED_WORDS = (
             r"TEST_BUDGET|CONCURRENCY)\b|\bOutOfScopeCVE\b|\bOUT_OF_SCOPE_CVES\b"
         ),
         re.NOFLAG,
-        "4",
     ),
-    RetiredWord("cve-flag", r"--cve(?![-\w])", re.NOFLAG, "5"),
+    RetiredWord("cve-flag", r"--cve(?![-\w])", re.NOFLAG),
     RetiredWord(
         "dead",
         (
@@ -222,25 +222,23 @@ RETIRED_WORDS = (
             r"\btargets? dead\b|\bdead targets?\b|\bdead:"
         ),
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("dfie", r"\bdfie\b", re.IGNORECASE, "2"),
-    RetiredWord("distribution-label", r'"Distribution"', re.NOFLAG, "3"),
-    RetiredWord("e2e", r"\be2e\b|end-to-end evals?\b|honeypot_e2e", re.IGNORECASE, "5"),
-    RetiredWord("eval-result", r"\beval_results?\b|\bEvalResults?\b", re.NOFLAG, "4"),
-    RetiredWord("baselines-cve", r"baselines/cve\b", re.NOFLAG, "5"),
+    RetiredWord("dfie", r"\bdfie\b", re.IGNORECASE),
+    RetiredWord("distribution-label", r'"Distribution"', re.NOFLAG),
+    RetiredWord("e2e", r"\be2e\b|end-to-end evals?\b|honeypot_e2e", re.IGNORECASE),
+    RetiredWord("eval-result", r"\beval_results?\b|\bEvalResults?\b", re.NOFLAG),
+    RetiredWord("baselines-cve", r"baselines/cve\b", re.NOFLAG),
     RetiredWord(
         "holdout-census",
         r"holdout_census|HoldoutCensus|\bholdout census\b|holdout's census|HOLDOUT_CENSUS",
         re.IGNORECASE,
-        "5",
     ),
-    RetiredWord("holdout-kit", r"holdout_kit|holdout kit\b", re.IGNORECASE, "5"),
-    RetiredWord("holdout-places", r"holdout_places|HOLDOUT_PLACES", re.NOFLAG, "4"),
-    RetiredWord("run-cve-benchmark", r"run_cve_benchmark", re.NOFLAG, "5"),
-    RetiredWord("run-evals", r"\brun_evals\b", re.NOFLAG, "5"),
-    RetiredWord("run-holdout", r"\brun_holdout(\b|_run)", re.NOFLAG, "5"),
-    RetiredWord("execution-config", r"\bExecutionConfig\b", re.NOFLAG, "2"),
+    RetiredWord("holdout-kit", r"holdout_kit|holdout kit\b", re.IGNORECASE),
+    RetiredWord("holdout-places", r"holdout_places|HOLDOUT_PLACES", re.NOFLAG),
+    RetiredWord("run-cve-benchmark", r"run_cve_benchmark", re.NOFLAG),
+    RetiredWord("run-evals", r"\brun_evals\b", re.NOFLAG),
+    RetiredWord("run-holdout", r"\brun_holdout(\b|_run)", re.NOFLAG),
+    RetiredWord("execution-config", r"\bExecutionConfig\b", re.NOFLAG),
     RetiredWord(
         "exploratory-baseline",
         (
@@ -249,7 +247,6 @@ RETIRED_WORDS = (
             r"first recording is exploratory|exploratory_commit_refusal"
         ),
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "figure",
@@ -258,59 +255,50 @@ RETIRED_WORDS = (
             r"outside_figure|\bdef figure\b|figure=figure|\bfigure\("
         ),
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("fixed-tag", r'CellTag\.FIXED|FIXED = "fixed"', re.NOFLAG, "3"),
+    RetiredWord("fixed-tag", r'CellTag\.FIXED|FIXED = "fixed"', re.NOFLAG),
     RetiredWord(
         "version-setting",
         r"version-setting|\bsets? (the|its) version\b(?! of its server)",
         re.IGNORECASE,
-        "5",
     ),
-    RetiredWord("fresh-targets", r"\bfresh targets?\b", re.IGNORECASE, "5"),
+    RetiredWord("fresh-targets", r"\bfresh targets?\b", re.IGNORECASE),
     RetiredWord(
         "gate-verdict",
         r"\bGateVerdict|\bgate_verdict|\bgate verdicts?\b|verdict of the gate",
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "holdout-calibration",
         r"(?<!detection_)holdout_calibration(?!_cop)|\bholdout calibration\b(?! cop(?:y|ies)\b)",
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "holdout-rule-log",
         r"holdout-(rule|log)|\bholdout (rule|log)\b|HOLDOUT_(RULE|LOG)\b",
         re.IGNORECASE,
-        "after this plan",
     ),
     RetiredWord(
         "bare-holdout-server",
         r"(?<!detection )(?<!nuisance )\bholdout[ -]servers?\b",
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
-        "holdout-walk", r"\bholdout walk\b|holdout's draw order|holdout_walk", re.IGNORECASE, "5"
+        "holdout-walk", r"\bholdout walk\b|holdout's draw order|holdout_walk", re.IGNORECASE
     ),
-    RetiredWord(
-        "holdout-vetting", r"holdout_vetting|pre-run vetting|\bvet_all\b", re.IGNORECASE, "4"
-    ),
-    RetiredWord("judge-isolation", r"judge[ _]isolation", re.IGNORECASE, "5"),
-    RetiredWord("judged-cases", r"\bjudged_cases\b(?!\.jsonl)", re.NOFLAG, "2"),
-    RetiredWord("known-gap-holdout", r"known gap of the holdout", re.IGNORECASE, "4"),
-    RetiredWord("location-id", r"\blocation[ _]ids?\b", re.IGNORECASE, "4"),
-    RetiredWord("openrouter-hosts", r"OPENROUTER_HOSTS|openrouter_hosts", re.IGNORECASE, "5"),
-    RetiredWord("not-run-conditions", r"not_run_conditions", re.NOFLAG, "4"),
+    RetiredWord("holdout-vetting", r"holdout_vetting|pre-run vetting|\bvet_all\b", re.IGNORECASE),
+    RetiredWord("judge-isolation", r"judge[ _]isolation", re.IGNORECASE),
+    RetiredWord("judged-cases", r"\bjudged_cases\b(?!\.jsonl)", re.NOFLAG),
+    RetiredWord("known-gap-holdout", r"known gap of the holdout", re.IGNORECASE),
+    RetiredWord("location-id", r"\blocation[ _]ids?\b", re.IGNORECASE),
+    RetiredWord("openrouter-hosts", r"OPENROUTER_HOSTS|openrouter_hosts", re.IGNORECASE),
+    RetiredWord("not-run-conditions", r"not_run_conditions", re.NOFLAG),
     RetiredWord(
         "nuisance-rule-log",
         r"nuisance-(rule|log)\b|\bnuisance (rule|log)\b|NUISANCE_(RULE|LOG)\b",
         re.IGNORECASE,
-        "after this plan",
     ),
-    RetiredWord("oracle-version", r"\boracle versions?\b", re.IGNORECASE, "2"),
+    RetiredWord("oracle-version", r"\boracle versions?\b", re.IGNORECASE),
     RetiredWord(
         "payload-label",
         (
@@ -318,13 +306,11 @@ RETIRED_WORDS = (
             r"result\.payload\b"
         ),
         re.NOFLAG,
-        "5",
     ),
     RetiredWord(
         "replay-retest",
         r"pending_replay|replay_observations|\breplay_rule\b|\bReplayRule\b|\breplay rules?\b",
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "replay-retest-ident",
@@ -334,17 +320,15 @@ RETIRED_WORDS = (
             r"evals\.replay\b|\bReplays\b|\bReplaying\b|_replaying|replays alike|runs and replays"
         ),
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("planting-layer", r"\bplanting layer\b", re.IGNORECASE, "5"),
-    RetiredWord("readmission", r"readmission", re.IGNORECASE, "5"),
+    RetiredWord("planting-layer", r"\bplanting layer\b", re.IGNORECASE),
+    RetiredWord("readmission", r"readmission", re.IGNORECASE),
     RetiredWord(
         "refused-credit",
         r"\brefused (and the unchecked )?credits?\b|credits? the replay refused|the replay refused",
         re.IGNORECASE,
-        "5",
     ),
-    RetiredWord("relayed-variables", r"relayed_variables", re.NOFLAG, "2"),
+    RetiredWord("relayed-variables", r"relayed_variables", re.NOFLAG),
     RetiredWord(
         "replay-capture",
         (
@@ -352,15 +336,13 @@ RETIRED_WORDS = (
             r"answer|captured)|unreplayed_captures|replays? .{0,20}captured|_replay_the_seed"
         ),
         re.IGNORECASE,
-        "5",
     ),
     RetiredWord(
         "replay-corpus",
         r"replay(s|ed|ing)? (the|its|a|frozen) (frozen )?corpus|replay the corpus",
         re.IGNORECASE,
-        "5",
     ),
-    RetiredWord("replayed-walk", r"\breplayed walks?\b", re.IGNORECASE, "2"),
+    RetiredWord("replayed-walk", r"\breplayed walks?\b", re.IGNORECASE),
     RetiredWord(
         "replays-exploits",
         (
@@ -368,15 +350,12 @@ RETIRED_WORDS = (
             r"every) ?(hand-written )?(exploits?|fixture)"
         ),
         re.IGNORECASE,
-        "5",
     ),
+    RetiredWord("report-only-set", r"report-only (population|servers?|set|layer)", re.IGNORECASE),
     RetiredWord(
-        "report-only-set", r"report-only (population|servers?|set|layer)", re.IGNORECASE, "2"
+        "rubric-judge", r"judge'?s? rubric|rubric of the judge|judging rubric", re.IGNORECASE
     ),
-    RetiredWord(
-        "rubric-judge", r"judge'?s? rubric|rubric of the judge|judging rubric", re.IGNORECASE, "2"
-    ),
-    RetiredWord("selection-rule", r"\bselection rule\b", re.IGNORECASE, "2"),
+    RetiredWord("selection-rule", r"\bselection rule\b", re.IGNORECASE),
     RetiredWord(
         "sentinel-value",
         (
@@ -384,36 +363,32 @@ RETIRED_WORDS = (
             r"sentinels? (surfaces?|leaks?|appears?)\b)|\bSENTINEL\b"
         ),
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("sentinel-route", r"\bsentinel routes?\b", re.IGNORECASE, "4"),
-    RetiredWord("server-under-audit", r"\bservers? under audit\b", re.IGNORECASE, "5"),
-    RetiredWord("stub", r"\bstubs?\b|_stub\b|stub_", re.IGNORECASE, "4"),
+    RetiredWord("sentinel-route", r"\bsentinel routes?\b", re.IGNORECASE),
+    RetiredWord("server-under-audit", r"\bservers? under audit\b", re.IGNORECASE),
+    RetiredWord("stub", r"\bstubs?\b|_stub\b|stub_", re.IGNORECASE),
     RetiredWord(
         "target-product",
         r'\bTargetExecution\b|target_execution|launch\.target\b|report\.target\b|"target": ',
         re.NOFLAG,
-        "4",
     ),
-    RetiredWord("target-route", r"route\.target\b", re.NOFLAG, "2"),
-    RetiredWord("ungated", r"\bungated\b", re.IGNORECASE, "5"),
-    RetiredWord("unread-targets", r"\bunread targets?\b", re.IGNORECASE, "2"),
+    RetiredWord("target-route", r"route\.target\b", re.NOFLAG),
+    RetiredWord("ungated", r"\bungated\b", re.IGNORECASE),
+    RetiredWord("unread-targets", r"\bunread targets?\b", re.IGNORECASE),
     RetiredWord(
         "mechanism-class",
         r"\bMechanismClass\b|\.mechanisms\b|\bmechanisms=|\bmechanism_labels\b",
         re.NOFLAG,
-        "5",
     ),
-    RetiredWord("plant-kind", r"\bPlantKind\b", re.NOFLAG, "4"),
-    RetiredWord("miss-class", r"\bMissClass\b|\bmiss_class\b", re.NOFLAG, "4"),
+    RetiredWord("plant-kind", r"\bPlantKind\b", re.NOFLAG),
+    RetiredWord("miss-class", r"\bMissClass\b|\bmiss_class\b", re.NOFLAG),
     RetiredWord(
         "reachable-by",
         r"\bREACHABLE_BY\b|\.reachable_by\b|\breachable_by=|\b_reachable_by\b",
         re.NOFLAG,
-        "4",
     ),
-    RetiredWord("entry-id", r"\bentry_id\b", re.NOFLAG, "4"),
-    RetiredWord("cve-id", r"\bcve_ids?\b", re.NOFLAG, "4"),
+    RetiredWord("entry-id", r"\bentry_id\b", re.NOFLAG),
+    RetiredWord("cve-id", r"\bcve_ids?\b", re.NOFLAG),
     RetiredWord(
         "census-names",
         (
@@ -421,32 +396,26 @@ RETIRED_WORDS = (
             r"\bDrawWalkStep\b"
         ),
         re.NOFLAG,
-        "4",
     ),
-    RetiredWord("fix-check-target", r"\bFixCheckTarget\b|\bFIX_CHECK_TARGETS\b", re.NOFLAG, "4"),
+    RetiredWord("fix-check-target", r"\bFixCheckTarget\b|\bFIX_CHECK_TARGETS\b", re.NOFLAG),
     RetiredWord(
         "recording-names",
         r"\bRecordingClient\b|\bKitRecorder\b|\bRecordingLLM\b|cve_recording_client",
         re.NOFLAG,
-        "4",
     ),
     RetiredWord(
-        "verdict-names", r"\bConclusionVerdict\b|\bprint_verdict\b|_VERDICT_STYLES", re.NOFLAG, "4"
+        "verdict-names", r"\bConclusionVerdict\b|\bprint_verdict\b|_VERDICT_STYLES", re.NOFLAG
     ),
     RetiredWord(
         "acceptance-mark",
         r"ServerMark\.ACCEPTANCE\b|\bcurrent_acceptance_servers\b|\bacceptance_servers\(",
         re.NOFLAG,
-        "4",
     ),
-    RetiredWord("version-setting-ident", r"\bversion_setting\w*|\b_sets_version\b", re.NOFLAG, "4"),
-    RetiredWord("primary-number", r"\bprimary_number\b|\bprimary_controls\b", re.NOFLAG, "4"),
-    RetiredWord("miss-causes", r"\bmiss_causes\b|describe_miss_causes", re.NOFLAG, "5"),
+    RetiredWord("version-setting-ident", r"\bversion_setting\w*|\b_sets_version\b", re.NOFLAG),
+    RetiredWord("primary-number", r"\bprimary_number\b|\bprimary_controls\b", re.NOFLAG),
+    RetiredWord("miss-causes", r"\bmiss_causes\b|describe_miss_causes", re.NOFLAG),
     RetiredWord(
-        "stand-in-target",
-        r"\bprobed_target\b|\bStandInRoute\.target\b|r\['target'\]",
-        re.NOFLAG,
-        "4",
+        "stand-in-target", r"\bprobed_target\b|\bStandInRoute\.target\b|r\['target'\]", re.NOFLAG
     ),
     RetiredWord(
         "calibrate-ident",
@@ -456,21 +425,17 @@ RETIRED_WORDS = (
             r"\bcalibrate_fixtures\b|\bFixCheckCalibrationDeps\b"
         ),
         re.NOFLAG,
-        "4",
     ),
+    RetiredWord("eval-names", r"\bEval(?:Report|RunResult|Options|Session|Metrics)\b", re.NOFLAG),
+    RetiredWord("phase-usage", r"\bPhaseUsage\b", re.NOFLAG),
     RetiredWord(
-        "eval-names", r"\bEval(?:Report|RunResult|Options|Session|Metrics)\b", re.NOFLAG, "3"
+        "suite-enum", r"\bSuite\.(?:HONEYPOT|JUDGE)\b|\bdeclared_flips\.Suite\b", re.NOFLAG
     ),
-    RetiredWord("phase-usage", r"\bPhaseUsage\b", re.NOFLAG, "3"),
-    RetiredWord(
-        "suite-enum", r"\bSuite\.(?:HONEYPOT|JUDGE)\b|\bdeclared_flips\.Suite\b", re.NOFLAG, "3"
-    ),
-    RetiredWord("settle-gate", r"\bsettle\(|\b_settled\b", re.NOFLAG, "4"),
+    RetiredWord("settle-gate", r"\bsettle\(|\b_settled\b", re.NOFLAG),
     RetiredWord(
         "moved-module",
         r"evals[./](?:cve|holdout|nuisance|census)_[a-z_]+(?:\.py)?\b(?!\.(?:json|md))",
         re.NOFLAG,
-        "5",
     ),
     RetiredWord(
         "moved-module-other",
@@ -484,12 +449,10 @@ RETIRED_WORDS = (
             r"_subset)?(?:\.py\b|(?= import\b))"
         ),
         re.NOFLAG,
-        "5",
     ),
     RetiredWord(
         "moved-test",
         r"\b(?:" + "|".join(sorted(_OLD_TEST_STEMS, key=len, reverse=True)) + r")\b",
         re.NOFLAG,
-        "5",
     ),
 )
