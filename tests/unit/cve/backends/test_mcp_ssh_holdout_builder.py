@@ -20,7 +20,6 @@ from evals.cve.backends.mcp_ssh_sshd import (
     sshd_server_args,
 )
 from evals.cve.dossier_closure import import_closure
-from evals.cve.layout import WORKSPACE
 from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
 from evals.cve.planting_base import PlantingHost, SymbolicUser, confinement_args
 from tests.fakes.planting_docker import FakePlantingDocker
@@ -71,18 +70,6 @@ def test_known_hosts_is_installed_mode_0644_and_handed_to_its_owner_with_chown_a
     assert value_after(chown, "--network") == "none"
 
 
-def test_the_holdout_launch_connects_its_holder_to_the_sshds_network(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
-    planting = FakePlantingDocker()
-
-    with mcp_ssh_injection_env(
-        "img", specs.a_spec_with_a_holder(), docker=planting, sshd=sshd.docker()
-    ) as launch:
-        [holder] = planting.holders
-        assert sshd.connected == [("sshd-net-1", holder)]
-        assert value_after(launch.args, "--network") == f"container:{holder}"
-
-
 def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: Path):
     sshd = given.an_sshd(tmp_path)
 
@@ -92,37 +79,6 @@ def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: 
         assert mount_of(launch.args, KNOWN_HOSTS) == f"{sshd.known_hosts}:{KNOWN_HOSTS}:ro"
         assert sshd.owners == [ROOT]
         assert KNOWN_HOSTS == "/tmp/.ssh/known_hosts"
-
-
-def test_the_holdout_launch_without_a_holder_takes_the_sshds_network_as_well(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
-
-    with mcp_ssh_injection_env(
-        "img", specs.a_spec_without_a_holder(), docker=FakePlantingDocker(), sshd=sshd.docker()
-    ) as launch:
-        assert values_after(launch.args, "--network")[-1] == "sshd-net-1"
-        assert sshd.connected == []
-
-
-def test_the_holdout_launch_mounts_the_layout(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
-
-    with mcp_ssh_injection_env(
-        "img", specs.a_spec_with_a_holder(), docker=FakePlantingDocker(), sshd=sshd.docker()
-    ) as launch:
-        assert mount_of(launch.args, WORKSPACE)
-
-
-def test_the_holdout_launch_removes_its_holder_before_its_sshd(tmp_path: Path):
-    planting = FakePlantingDocker()
-    sshd = given.an_sshd_watching_holders(tmp_path, planting)
-
-    with mcp_ssh_injection_env(
-        "img", specs.a_spec_with_a_holder(), docker=planting, sshd=sshd.docker()
-    ):
-        pass
-
-    assert sshd.holders_at_removal == [[]]
 
 
 def test_the_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):

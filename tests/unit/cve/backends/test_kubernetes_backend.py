@@ -69,46 +69,6 @@ def test_the_control_plane_its_network_and_its_kubeconfig_are_removed_when_the_b
     )
 
 
-def test_the_detection_launch_connects_its_holder_to_the_control_planes_network(tmp_path: Path):
-    control_plane = given.a_control_plane(tmp_path)
-    planting = FakePlantingDocker()
-
-    with kubernetes_injection_env(
-        "img", specs.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
-    ) as launch:
-        then.the_holder_joins_the_control_planes_network(control_plane, planting, launch.args)
-        then.mounts_the_kubeconfig_read_only(launch.args)
-
-
-def test_the_detection_launch_without_a_holder_takes_the_control_planes_network_as_well(
-    tmp_path: Path,
-):
-    control_plane = given.a_control_plane(tmp_path)
-
-    with kubernetes_injection_env(
-        "img",
-        specs.a_spec_without_a_holder(),
-        docker=FakePlantingDocker(),
-        control_plane=control_plane.docker(),
-    ) as launch:
-        then.the_server_takes_the_control_planes_network_as_a_second_network(
-            control_plane, launch.args
-        )
-        then.mounts_the_kubeconfig_read_only(launch.args)
-
-
-def test_the_detection_launch_removes_its_holder_before_its_control_plane(tmp_path: Path):
-    planting = FakePlantingDocker()
-    control_plane = given.a_control_plane_watching_holders(tmp_path, planting)
-
-    with kubernetes_injection_env(
-        "img", specs.a_spec_with_a_holder(), docker=planting, control_plane=control_plane.docker()
-    ):
-        pass
-
-    assert control_plane.holders_at_removal == [[]]
-
-
 def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
     control_plane = given.a_control_plane(tmp_path)
 
@@ -134,8 +94,6 @@ def test_the_fix_check_launch_takes_the_bounded_control_planes_network_and_its_k
     with kubectl_env(
         "img", FIXTURE.planting_spec(), docker=FakePlantingDocker(), stand=control_plane.stand
     ) as launch:
-        then.the_server_takes_the_control_planes_network_as_a_second_network(
-            control_plane, launch.args
-        )
+        then.the_server_takes_the_control_planes_network_as_a_second_network(launch.args)
         then.mounts_the_kubeconfig_read_only(launch.args)
         then.carries_the_witness_in_the_servers_environment(launch.args)

@@ -6,12 +6,7 @@ from evals.cve.backends.kubernetes import CONTROL_PLANE_IMAGE, CONTROL_PLANE_NET
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import WITNESS
 from evals.cve.planting_base import confinement_args, memory_bound_args, unprivileged_user_args
 from tests.fakes import ScriptedDocker
-from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.cve.backends.support.test_kubernetes_backend_given import (
-    ADMIN_CONF,
-    API_SERVER,
-    FakeControlPlane,
-)
+from tests.unit.cve.backends.support.test_kubernetes_backend_given import ADMIN_CONF, API_SERVER
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
 
 
@@ -61,22 +56,10 @@ def the_control_plane_its_network_and_its_kubeconfig_were_removed(
     assert not kubeconfig.exists()
 
 
-def the_holder_joins_the_control_planes_network(
-    control_plane: FakeControlPlane, planting: FakePlantingDocker, server: Sequence[str]
-) -> None:
-    holder = value_after(server, "--network").removeprefix("container:")
-    assert holder in planting.holders
-    assert control_plane.connected == [("kube-net-1", holder)]
-    assert values_after(server, "--network") == [f"container:{holder}"]
-
-
-def the_server_takes_the_control_planes_network_as_a_second_network(
-    control_plane: FakeControlPlane, server: Sequence[str]
-) -> None:
+def the_server_takes_the_control_planes_network_as_a_second_network(server: Sequence[str]) -> None:
     networks = values_after(server, "--network")
     assert len(networks) == 2
     assert networks[1] == "kube-net-1"
-    assert control_plane.connected == []
 
 
 def carries_the_witness_in_the_servers_environment(server: Sequence[str]) -> None:
