@@ -7,28 +7,32 @@ from typing import Any
 import pytest
 
 from evals import run_detection_holdout
-from evals.cve.detection.holdout_results import HoldoutRunResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps
-from tests.unit.support import holdout_runs
+from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 # The report's no-proof guarantee, held by the result file too.
 PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
 
 
-def a_run_result() -> HoldoutRunResult:
+def a_run_result() -> DetectionHoldoutRunResult:
     target = an_acceptance_target(FILESYSTEM, tools_filter=None)
-    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
-    return asyncio.run(holdout_runs.run([target], holdout_runs.deps_auditing(audit)))
+    audit = detection_holdout_runs.scripted(
+        {target.flaw_id: detection_holdout_runs.three_detections()}
+    )
+    return asyncio.run(
+        detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
+    )
 
 
 def a_drawn_run_ending_in(
-    monkeypatch: pytest.MonkeyPatch, outcome: HoldoutRunResult | BaseException
+    monkeypatch: pytest.MonkeyPatch, outcome: DetectionHoldoutRunResult | BaseException
 ) -> None:
     """A drawn target whose run, past the CLI's own checks, returns or raises `outcome`, reaching
     no Docker and no LLM."""
 
-    async def orchestrator(*_: object, **__: object) -> HoldoutRunResult:
+    async def orchestrator(*_: object, **__: object) -> DetectionHoldoutRunResult:
         if isinstance(outcome, BaseException):
             raise outcome
         return outcome
@@ -37,7 +41,7 @@ def a_drawn_run_ending_in(
     a_drawn_target_with_a_ready_card(monkeypatch)
 
     def deps(*_: object) -> HoldoutDeps:
-        return holdout_runs.deps_reaching_nothing()
+        return detection_holdout_runs.deps_reaching_nothing()
 
     monkeypatch.setattr(run_detection_holdout, "default_deps", deps)
     monkeypatch.setattr(run_detection_holdout, "run_holdout_targets", orchestrator)

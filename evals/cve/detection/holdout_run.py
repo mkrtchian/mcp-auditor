@@ -1,5 +1,5 @@
-"""The holdout run orchestrator: audit every holdout target at one commit under the rule's run
-conditions, keep no per-case trace, and assemble the per-target and whole-run results.
+"""The detection holdout run orchestrator: audit every holdout target at one commit under the rule's
+run conditions, keep no per-case trace, and assemble the per-target and whole-run results.
 
 A sibling of the gated session of the acceptance layer (`evals.cve.detection.session`): no gate,
 no baseline, no judged-case export, the opposite missed model call policy (`holdout_audit`). The
@@ -28,7 +28,7 @@ from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout
 from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import (
     DROPPED_RUN_REASONS,
-    HoldoutRunResult,
+    DetectionHoldoutRunResult,
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
@@ -104,7 +104,7 @@ async def run_holdout_targets(
     runs: int = HOLDOUT_RUNS,
     concurrency: int = HOLDOUT_CONCURRENCY,
     deps: HoldoutDeps | None = None,
-) -> HoldoutRunResult:
+) -> DetectionHoldoutRunResult:
     _refuse_tracing()
     _refuse_tools_filter(targets)
     _refuse_missing_census(targets, disclosure_dates)
@@ -130,12 +130,12 @@ async def run_holdout_targets(
 
 
 def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
-    refuse_running_containers(deps.running_containers(tags), "holdout run refused")
+    refuse_running_containers(deps.running_containers(tags), "detection holdout run refused")
 
 
 async def _run_surviving(
     targets: Sequence[Target], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
-) -> HoldoutRunResult:
+) -> DetectionHoldoutRunResult:
     pre_run = await check_before_run(targets, deps.check, deps.layout)
     assembled, dropped, failure = await _run_all(pre_run.surviving, deps, ctx)
     all_not_run = [*pre_run.not_run, *dropped]
@@ -146,7 +146,7 @@ async def _run_surviving(
         )
     if not assembled:
         raise Refused(
-            "holdout run refused",
+            "detection holdout run refused",
             ["no target survived the pre-run check", *(entry.reason for entry in all_not_run)],
         )
     result = _assemble_run(ctx, deps, assembled, all_not_run, tree)
@@ -156,8 +156,11 @@ async def _run_surviving(
 def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            "holdout run refused",
-            ["LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; a holdout run keeps no trace"],
+            "detection holdout run refused",
+            [
+                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
+                "a detection holdout run keeps no trace"
+            ],
         )
 
 
@@ -165,7 +168,7 @@ def _refuse_tools_filter(targets: Sequence[Target]) -> None:
     filtered = [target.flaw_id for target in targets if target.tools_filter is not None]
     if filtered:
         raise Refused(
-            "holdout run refused",
+            "detection holdout run refused",
             [f"the rule runs with no tools filter, but {name} carries one" for name in filtered],
         )
 
@@ -174,7 +177,7 @@ def _refuse_missing_census(targets: Sequence[Target], dates: Mapping[str, date])
     missing = [target.flaw_id for target in targets if target.flaw_id not in dates]
     if missing:
         raise Refused(
-            "holdout run refused",
+            "detection holdout run refused",
             [f"{name} is drawn but absent from the census" for name in missing],
         )
 
@@ -187,14 +190,14 @@ def _refuse_unknown_places(targets: Sequence[Target], places: Places) -> None:
         except ValueError as exc:
             reasons.append(f"{target.flaw_id}: {exc}")
     if reasons:
-        raise Refused("holdout run refused", reasons)
+        raise Refused("detection holdout run refused", reasons)
 
 
 def _refuse_dirty_tree(tree: TreeState) -> None:
     if tree.dirty:
         raise Refused(
-            "holdout run refused",
-            ["the git tree is dirty: a holdout run publishes from a clean tree"],
+            "detection holdout run refused",
+            ["the git tree is dirty: a detection holdout run publishes from a clean tree"],
         )
 
 
@@ -276,12 +279,12 @@ def _assemble_run(
     assembled: Sequence[tuple[Target, HoldoutTargetResult]],
     not_run: list[NotRunTarget],
     tree: TreeState,
-) -> HoldoutRunResult:
+) -> DetectionHoldoutRunResult:
     settings = ctx.settings
     model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     targets = [target for target, _ in assembled]
     results = [result for _, result in assembled]
-    return HoldoutRunResult(
+    return DetectionHoldoutRunResult(
         runs=ctx.runs,
         budget=HOLDOUT_BUDGET,
         provider=settings.provider,

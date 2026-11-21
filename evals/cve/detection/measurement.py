@@ -1,5 +1,5 @@
 """A measurement run of the detection suite: chain settings, tool call timeout and tools filter
-forced on every target, so its cost says what a holdout run under those conditions costs.
+forced on every target, so its cost says what a detection holdout run under those conditions costs.
 It always reads no baseline: its conditions match none, and they are recorded here, never in
 `DetectionRunConditions`."""
 

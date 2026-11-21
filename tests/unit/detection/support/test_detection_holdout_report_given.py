@@ -1,12 +1,12 @@
 import dataclasses
 
-from evals.cve.detection.holdout_results import HoldoutRunResult, HoldoutTargetResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult, HoldoutTargetResult
 from tests.unit.detection.support.holdout_report_runs import a_run_result
 
 INCOMPLETE_RUNS = "Incomplete runs (a model call missed: refused, unreadable or too long)"
 
 
-def a_run_with_incidents() -> HoldoutRunResult:
+def a_run_with_incidents() -> DetectionHoldoutRunResult:
     run = a_run_result()
     first, second = run.targets
     return dataclasses.replace(

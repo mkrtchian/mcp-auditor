@@ -16,20 +16,20 @@ from evals.cve.server_health import ServerHealth
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
-from tests.unit.support import holdout_runs
+from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
 
 async def test_a_target_is_assembled_from_its_runs():
-    target = holdout_runs.a_target(KUBERNETES)  # command_execution, NORMAL
+    target = detection_holdout_runs.a_target(KUBERNETES)  # command_execution, NORMAL
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
     judge = ProviderUsage(input_tokens=100, output_tokens=200)
-    report = holdout_runs.a_report(provider, judge)
-    outcomes: list[holdout_runs.Outcome] = [
-        holdout_runs.graded(
+    report = detection_holdout_runs.a_report(provider, judge)
+    outcomes: list[detection_holdout_runs.Outcome] = [
+        detection_holdout_runs.graded(
             TargetStatus.DETECTED, report, surfaced_places=frozenset({"etc-shadow"}), aimed=True
         ),
-        holdout_runs.graded(
+        detection_holdout_runs.graded(
             TargetStatus.DETECTED,
             report,
             surfaced_places=frozenset({"etc-shadow"}),
@@ -37,11 +37,13 @@ async def test_a_target_is_assembled_from_its_runs():
             status_if_unchecked_missed=TargetStatus.MISSED,
             aimed=True,
         ),
-        holdout_runs.graded(TargetStatus.MISSED, report, aimed=True, fail_without_proof=True),
+        detection_holdout_runs.graded(
+            TargetStatus.MISSED, report, aimed=True, fail_without_proof=True
+        ),
     ]
-    audit = holdout_runs.scripted({target.flaw_id: outcomes})
+    audit = detection_holdout_runs.scripted({target.flaw_id: outcomes})
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     (assembled,) = result.targets
     assert assembled.detected_runs == 2
@@ -53,26 +55,32 @@ async def test_a_target_is_assembled_from_its_runs():
     assert assembled.incomplete_runs == 0
     assert assembled.tools_count == 1
     assert assembled.class_labels == ("command_execution",)
-    assert assembled.run_cost == pytest.approx(3 * call_cost(provider, holdout_runs.LUNA_PRICE))
+    assert assembled.run_cost == pytest.approx(
+        3 * call_cost(provider, detection_holdout_runs.LUNA_PRICE)
+    )
 
 
 async def test_a_union_target_is_assembled_with_its_class_labels_sorted():
-    target = holdout_runs.a_target(
+    target = detection_holdout_runs.a_target(
         classes=frozenset({FlawClass.READ_OUTSIDE_SCOPE, FlawClass.COMMAND_EXECUTION})
     )
-    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
+    audit = detection_holdout_runs.scripted(
+        {target.flaw_id: detection_holdout_runs.three_detections()}
+    )
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     (assembled,) = result.targets
     assert assembled.class_labels == ("command_execution", "read_outside_scope")
 
 
 async def test_a_target_records_its_backend_images_beside_its_services():
-    target = holdout_runs.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
-    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
+    target = detection_holdout_runs.a_target(backend_images=("apache/doris:all-in-one-4.1.3",))
+    audit = detection_holdout_runs.scripted(
+        {target.flaw_id: detection_holdout_runs.three_detections()}
+    )
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     assert result.image_ids == {
         "filesystem": "sha256:filesystem",
@@ -82,31 +90,35 @@ async def test_a_target_records_its_backend_images_beside_its_services():
 
 
 async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
-    target = holdout_runs.a_target(KUBERNETES)
+    target = detection_holdout_runs.a_target(KUBERNETES)
     provider = ProviderUsage(input_tokens=1000, output_tokens=2000)
-    refused_report = holdout_runs.a_report(provider, ProviderUsage())
-    outcomes: list[holdout_runs.Outcome] = [
-        holdout_runs.graded(
-            TargetStatus.DETECTED, holdout_runs.a_report(provider, ProviderUsage()), aimed=True
+    refused_report = detection_holdout_runs.a_report(provider, ProviderUsage())
+    outcomes: list[detection_holdout_runs.Outcome] = [
+        detection_holdout_runs.graded(
+            TargetStatus.DETECTED,
+            detection_holdout_runs.a_report(provider, ProviderUsage()),
+            aimed=True,
         ),
         IncompleteRun(refused_report),
         IncompleteRun(refused_report),
     ]
-    audit = holdout_runs.scripted({target.flaw_id: outcomes})
+    audit = detection_holdout_runs.scripted({target.flaw_id: outcomes})
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     (assembled,) = result.targets
     assert assembled.detected_runs == 1
     assert assembled.incomplete_runs == 2
     assert result.incomplete_run_count == 2
-    assert assembled.run_cost == pytest.approx(3 * call_cost(provider, holdout_runs.LUNA_PRICE))
+    assert assembled.run_cost == pytest.approx(
+        3 * call_cost(provider, detection_holdout_runs.LUNA_PRICE)
+    )
 
 
 async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_responses():
-    target = holdout_runs.a_target(KUBERNETES)
-    detection = holdout_runs.graded(
-        TargetStatus.DETECTED, holdout_runs.a_report(ProviderUsage(), ProviderUsage())
+    target = detection_holdout_runs.a_target(KUBERNETES)
+    detection = detection_holdout_runs.graded(
+        TargetStatus.DETECTED, detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
     )
     relaunched = dataclasses.replace(
         detection,
@@ -124,9 +136,9 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
             non_protocol_lines=0, lost_connection_responses=0, relaunches=2, cut_responses=1
         ),
     )
-    audit = holdout_runs.scripted({target.flaw_id: [relaunched, refused, detection]})
+    audit = detection_holdout_runs.scripted({target.flaw_id: [relaunched, refused, detection]})
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     (assembled,) = result.targets
     assert [
@@ -137,9 +149,9 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
 
 
 async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss_causes():
-    target = holdout_runs.a_target(KUBERNETES)
-    detection = holdout_runs.graded(
-        TargetStatus.DETECTED, holdout_runs.a_report(ProviderUsage(), ProviderUsage())
+    target = detection_holdout_runs.a_target(KUBERNETES)
+    detection = detection_holdout_runs.graded(
+        TargetStatus.DETECTED, detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
     )
     unchecked = GradedAudit(
         detection.grade,
@@ -152,9 +164,9 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
         given.a_report_missing(MissCause.UNREADABLE_ANSWER, MissCause.PROVIDER_REFUSAL),
         ServerHealth(non_protocol_lines=0, lost_connection_responses=3),
     )
-    audit = holdout_runs.scripted({target.flaw_id: [unchecked, refused, detection]})
+    audit = detection_holdout_runs.scripted({target.flaw_id: [unchecked, refused, detection]})
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
     (assembled,) = result.targets
     first, second, third = assembled.statuses
@@ -172,19 +184,24 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
 
 
 async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():
-    sick, healthy = holdout_runs.a_target(KUBERNETES), holdout_runs.a_target(FILESYSTEM)
-    report = holdout_runs.a_report(ProviderUsage(), ProviderUsage())
+    sick, healthy = (
+        detection_holdout_runs.a_target(KUBERNETES),
+        detection_holdout_runs.a_target(FILESYSTEM),
+    )
+    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
     launch_failure = DroppedRun(NotRunCause.LAUNCH_FAILURE)
-    sick_outcomes: list[holdout_runs.Outcome] = [
-        holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
+    sick_outcomes: list[detection_holdout_runs.Outcome] = [
+        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
         launch_failure,
         launch_failure,
     ]
-    audit = holdout_runs.scripted(
-        {sick.flaw_id: sick_outcomes, healthy.flaw_id: holdout_runs.three_detections()}
+    audit = detection_holdout_runs.scripted(
+        {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
     )
 
-    result = await holdout_runs.run([sick, healthy], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run(
+        [sick, healthy], detection_holdout_runs.deps_auditing(audit)
+    )
 
     assert [t.flaw_id for t in result.targets] == [healthy.flaw_id]
     (not_run,) = result.not_run
@@ -194,18 +211,23 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
 
 
 async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
-    sick, healthy = holdout_runs.a_target(KUBERNETES), holdout_runs.a_target(FILESYSTEM)
-    report = holdout_runs.a_report(ProviderUsage(), ProviderUsage())
-    sick_outcomes: list[holdout_runs.Outcome] = [
+    sick, healthy = (
+        detection_holdout_runs.a_target(KUBERNETES),
+        detection_holdout_runs.a_target(FILESYSTEM),
+    )
+    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
+    sick_outcomes: list[detection_holdout_runs.Outcome] = [
         DroppedRun(NotRunCause.LAUNCH_FAILURE),
         DroppedRun(NotRunCause.THROTTLED),
-        holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
+        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
     ]
-    audit = holdout_runs.scripted(
-        {sick.flaw_id: sick_outcomes, healthy.flaw_id: holdout_runs.three_detections()}
+    audit = detection_holdout_runs.scripted(
+        {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
     )
 
-    result = await holdout_runs.run([sick, healthy], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run(
+        [sick, healthy], detection_holdout_runs.deps_auditing(audit)
+    )
 
     (not_run,) = result.not_run
     assert not_run.flaw_id == sick.flaw_id
@@ -214,18 +236,23 @@ async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
 
 
 async def test_a_provider_error_wins_over_a_launch_failure():
-    sick, healthy = holdout_runs.a_target(KUBERNETES), holdout_runs.a_target(FILESYSTEM)
-    report = holdout_runs.a_report(ProviderUsage(), ProviderUsage())
-    sick_outcomes: list[holdout_runs.Outcome] = [
+    sick, healthy = (
+        detection_holdout_runs.a_target(KUBERNETES),
+        detection_holdout_runs.a_target(FILESYSTEM),
+    )
+    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
+    sick_outcomes: list[detection_holdout_runs.Outcome] = [
         DroppedRun(NotRunCause.LAUNCH_FAILURE),
         DroppedRun(NotRunCause.PROVIDER_ERROR),
-        holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
+        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
     ]
-    audit = holdout_runs.scripted(
-        {sick.flaw_id: sick_outcomes, healthy.flaw_id: holdout_runs.three_detections()}
+    audit = detection_holdout_runs.scripted(
+        {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
     )
 
-    result = await holdout_runs.run([sick, healthy], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run(
+        [sick, healthy], detection_holdout_runs.deps_auditing(audit)
+    )
 
     (not_run,) = result.not_run
     assert not_run.reason == "a run hit a provider error past every retry"
@@ -233,29 +260,34 @@ async def test_a_provider_error_wins_over_a_launch_failure():
 
 
 async def test_the_run_announces_the_audits_of_the_surviving_targets_only():
-    unfit, healthy = holdout_runs.a_target(KUBERNETES), holdout_runs.a_target(FILESYSTEM)
-    audit = holdout_runs.scripted(
-        {unfit.flaw_id: [], healthy.flaw_id: holdout_runs.three_detections()}
+    unfit, healthy = (
+        detection_holdout_runs.a_target(KUBERNETES),
+        detection_holdout_runs.a_target(FILESYSTEM),
+    )
+    audit = detection_holdout_runs.scripted(
+        {unfit.flaw_id: [], healthy.flaw_id: detection_holdout_runs.three_detections()}
     )
     announced: list[int] = []
     deps = dataclasses.replace(
-        holdout_runs.deps_auditing(
+        detection_holdout_runs.deps_auditing(
             audit, check={unfit.flaw_id: ["vulnerable: no exploit surfaces"]}
         ),
         announce_audits=announced.append,
     )
 
-    await holdout_runs.run([unfit, healthy], deps, runs=3)
+    await detection_holdout_runs.run([unfit, healthy], deps, runs=3)
 
     assert announced == [3]
 
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
-    target = holdout_runs.a_target(FILESYSTEM)
-    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
+    target = detection_holdout_runs.a_target(FILESYSTEM)
+    audit = detection_holdout_runs.scripted(
+        {target.flaw_id: detection_holdout_runs.three_detections()}
+    )
 
-    result = await holdout_runs.run(
-        [target], holdout_runs.deps_auditing(audit, throttled=7), concurrency=4
+    result = await detection_holdout_runs.run(
+        [target], detection_holdout_runs.deps_auditing(audit, throttled=7), concurrency=4
     )
 
     assert result.concurrency == 4
@@ -263,49 +295,56 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
 
 
 async def test_the_result_carries_the_run_timestamp():
-    target = holdout_runs.a_target(FILESYSTEM)
-    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
+    target = detection_holdout_runs.a_target(FILESYSTEM)
+    audit = detection_holdout_runs.scripted(
+        {target.flaw_id: detection_holdout_runs.three_detections()}
+    )
 
-    result = await holdout_runs.run([target], holdout_runs.deps_auditing(audit))
+    result = await detection_holdout_runs.run([target], detection_holdout_runs.deps_auditing(audit))
 
-    assert result.recorded_at == holdout_runs.RECORDED_AT
+    assert result.recorded_at == detection_holdout_runs.RECORDED_AT
 
 
 async def test_a_drawn_target_with_a_tools_filter_refuses_before_any_check():
-    target = holdout_runs.a_target(KUBERNETES, tools_filter=frozenset({"kubectl_generic"}))
+    target = detection_holdout_runs.a_target(
+        KUBERNETES, tools_filter=frozenset({"kubectl_generic"})
+    )
 
     with pytest.raises(Refused, match="tools filter"):
-        await holdout_runs.run([target], holdout_runs.deps_reaching_nothing())
+        await detection_holdout_runs.run([target], detection_holdout_runs.deps_reaching_nothing())
 
 
 async def test_tracing_refuses_before_any_container(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LANGSMITH_TRACING", "1")
 
     with pytest.raises(Refused, match="trace"):
-        await holdout_runs.run(
-            [holdout_runs.a_target(KUBERNETES)], holdout_runs.deps_reaching_nothing()
+        await detection_holdout_runs.run(
+            [detection_holdout_runs.a_target(KUBERNETES)],
+            detection_holdout_runs.deps_reaching_nothing(),
         )
 
 
 async def test_a_target_absent_from_the_census_refuses_before_any_dep():
-    target = holdout_runs.a_target(KUBERNETES)
+    target = detection_holdout_runs.a_target(KUBERNETES)
 
     with pytest.raises(Refused, match="census"):
-        await holdout_runs.run([target], holdout_runs.deps_reaching_nothing(), dates={})
+        await detection_holdout_runs.run(
+            [target], detection_holdout_runs.deps_reaching_nothing(), dates={}
+        )
 
 
 async def test_a_dirty_tree_refuses_before_rebuild_and_audit():
     deps = dataclasses.replace(
-        holdout_runs.deps_reaching_nothing(),
+        detection_holdout_runs.deps_reaching_nothing(),
         read_tree=lambda: TreeState(commit="c0ffee", dirty=True),
     )
 
     with pytest.raises(Refused, match="dirty"):
-        await holdout_runs.run([holdout_runs.a_target(KUBERNETES)], deps)
+        await detection_holdout_runs.run([detection_holdout_runs.a_target(KUBERNETES)], deps)
 
 
 async def test_a_target_with_an_unknown_kept_place_refuses_before_any_dep():
-    target = holdout_runs.a_target(KUBERNETES, kept_places=("no-such-place",))
+    target = detection_holdout_runs.a_target(KUBERNETES, kept_places=("no-such-place",))
 
     with pytest.raises(Refused, match="no such place"):
-        await holdout_runs.run([target], holdout_runs.deps_reaching_nothing())
+        await detection_holdout_runs.run([target], detection_holdout_runs.deps_reaching_nothing())

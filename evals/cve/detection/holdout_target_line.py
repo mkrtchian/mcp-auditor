@@ -6,7 +6,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.cve.detection.holdout_results import HoldoutRunStatus, HoldoutTargetResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, HoldoutTargetResult
 
 
 class TargetRunLine(BaseModel):
@@ -25,7 +25,7 @@ class TargetRunLine(BaseModel):
     missed_call_causes: list[str]
 
     @classmethod
-    def of(cls, status: HoldoutRunStatus) -> "TargetRunLine":
+    def of(cls, status: DetectionHoldoutRunStatus) -> "TargetRunLine":
         return cls(
             detected=status.detected,
             detected_if_unchecked_missed=status.detected_if_unchecked_missed,

@@ -1,8 +1,8 @@
 from datetime import date
 
 from evals.cve.detection.holdout_results import (
-    HoldoutRunResult,
-    HoldoutRunStatus,
+    DetectionHoldoutRunResult,
+    DetectionHoldoutRunStatus,
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
@@ -26,7 +26,7 @@ def a_target_result(
         tools_count=5,
         ran_in_fallback=False,
         statuses=tuple(
-            HoldoutRunStatus(
+            DetectionHoldoutRunStatus(
                 detected=index < detected_runs,
                 detected_if_unchecked_missed=index < detected_runs,
                 surfaced_places=["srv_config"] if index < detected_runs else [],
@@ -50,14 +50,14 @@ def a_target_result(
     )
 
 
-def a_run_result() -> HoldoutRunResult:
+def a_run_result() -> DetectionHoldoutRunResult:
     targets = [
         a_target_result("CVE-A", disclosure_date=date(2026, 1, 1), detected_runs=3),
         a_target_result(
             "CVE-B", disclosure_date=date(2026, 12, 1), detected_runs=1, incomplete_runs=1
         ),
     ]
-    return HoldoutRunResult(
+    return DetectionHoldoutRunResult(
         runs=RUNS,
         budget=10,
         provider="openai",

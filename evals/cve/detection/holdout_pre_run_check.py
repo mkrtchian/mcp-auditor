@@ -1,5 +1,5 @@
-"""The pre-run check of a holdout run: drop from N, before any audit, a target out of calibration
-or one the layout check fails (`layout_failure`).
+"""The pre-run check of a detection holdout run: drop from N, before any audit, a target out of
+calibration or one the layout check fails (`layout_failure`).
 
 A target the parallel pass would drop is checked once more, alone, once every first pass has
 finished, and runs if that second pass finds nothing. A fixture whose real software is slow or

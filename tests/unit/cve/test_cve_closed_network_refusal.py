@@ -15,7 +15,7 @@ import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
 from evals.eval_session import Refused
-from tests.unit.support import holdout_runs
+from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 
@@ -61,16 +61,18 @@ async def test_a_gate_refuses_before_any_rebuild(tmp_path: Path):
     assert rebuild.rebuilt == []
 
 
-async def test_a_holdout_run_refuses_before_any_rebuild():
+async def test_a_detection_holdout_run_refuses_before_any_rebuild():
     rebuild = given.CountingRebuild()
     deps = dataclasses.replace(
-        holdout_runs.deps_auditing(holdout_runs.scripted({})),
+        detection_holdout_runs.deps_auditing(detection_holdout_runs.scripted({})),
         rebuild=rebuild,
         check_networks=given.a_daemon_that_cannot_close_a_network,
     )
 
     with pytest.raises(Refused) as refused:
-        await holdout_runs.run([an_acceptance_target(FILESYSTEM, tools_filter=None)], deps)
+        await detection_holdout_runs.run(
+            [an_acceptance_target(FILESYSTEM, tools_filter=None)], deps
+        )
 
     then.refused_for_the_daemon(refused.value)
     assert rebuild.rebuilt == []

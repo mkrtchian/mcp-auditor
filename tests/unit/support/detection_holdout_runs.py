@@ -1,11 +1,12 @@
-"""A holdout run of the orchestrator on scripted audits and fake ports: no Docker, no LLM."""
+"""A detection holdout run of the orchestrator on scripted audits and fake ports: no Docker,
+no LLM."""
 
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 from typing import Any
 
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
-from evals.cve.detection.holdout_results import HoldoutRunResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps, run_holdout_targets
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
@@ -155,7 +156,7 @@ async def run(
     dates: dict[str, date] | None = None,
     runs: int = 3,
     concurrency: int = 6,
-) -> HoldoutRunResult:
+) -> DetectionHoldoutRunResult:
     """`dates=None` discloses every target on 2026-01-01."""
     if dates is None:
         dates = {target.flaw_id: date(2026, 1, 1) for target in targets}

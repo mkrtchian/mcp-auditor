@@ -1,8 +1,8 @@
-"""The result value objects of a holdout run, defined here so the statistic, the report and the
-orchestrator all import them without a cycle (holdout_run imports the statistic and the report,
-which both consume these, so they cannot live in holdout_run as the plan's prose placed them).
-The per-run facts of a target live in its run statuses and the aggregates are computed from them,
-so no two fields can disagree."""
+"""The result value objects of a detection holdout run, defined here so the statistic, the report
+and the orchestrator all import them without a cycle (holdout_run imports the statistic and the
+report, which both consume these, so they cannot live in holdout_run as the plan's prose placed
+them). The per-run facts of a target live in its run statuses and the aggregates are computed from
+them, so no two fields can disagree."""
 
 from collections import Counter
 from collections.abc import Sequence
@@ -14,7 +14,7 @@ from evals.cve.holdout_conditions import Cutoff
 
 
 @dataclass(frozen=True)
-class HoldoutRunStatus:
+class DetectionHoldoutRunStatus:
     detected: bool
     detected_if_unchecked_missed: bool
     surfaced_places: list[str]  # place ids only, empty on an incomplete run
@@ -40,7 +40,7 @@ class HoldoutTargetResult:
     class_labels: tuple[str, ...]  # sorted, empty for no class
     tools_count: int
     ran_in_fallback: bool
-    statuses: tuple[HoldoutRunStatus, ...]
+    statuses: tuple[DetectionHoldoutRunStatus, ...]
     run_cost: float  # dollars over its runs, incomplete runs included
 
     @property
@@ -146,7 +146,7 @@ class NotRunTarget:
 
 
 @dataclass(frozen=True)
-class HoldoutRunResult:
+class DetectionHoldoutRunResult:
     runs: int
     budget: int
     provider: str
@@ -178,7 +178,7 @@ class HoldoutRunResult:
 class RunInterrupted(Exception):
     """A run stopped by an exception out of one of its audits, with what had finished."""
 
-    def __init__(self, partial: HoldoutRunResult, cause: BaseException) -> None:
+    def __init__(self, partial: DetectionHoldoutRunResult, cause: BaseException) -> None:
         super().__init__(f"the run stopped on {type(cause).__name__}")
         self.partial = partial
         self.cause = cause

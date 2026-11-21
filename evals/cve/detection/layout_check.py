@@ -26,11 +26,11 @@ target already in the fallback launch-mode cannot start even that launch. It gat
 model.
 
 `layout_failure` is the one reading of the result that fails a target, shared by the calibration
-check and by the pre-run checks of a graded run and of a holdout run, which observe it through
-`observe_layout`: a give-up, a break under the normal launch (the maintainer sets the fallback
-launch-mode), a nonce in what the route procedure observes on a place whose leak was not settled at
-calibration, or a kept layout place without a route. These are the layout items of the check that
-proves a repair (detection-suite-log.md, version 13).
+check and by the pre-run checks of a graded run and of a detection holdout run, which observe it
+through `observe_layout`: a give-up, a break under the normal launch (the maintainer sets the
+fallback launch-mode), a nonce in what the route procedure observes on a place whose leak was not
+settled at calibration, or a kept layout place without a route. These are the layout items of the
+check that proves a repair (detection-suite-log.md, version 13).
 """
 
 import tempfile
@@ -79,10 +79,11 @@ class VersionObservation:
 @dataclass(frozen=True)
 class LayoutCheck:
     """The result `check_layouts_and_routes` computes inline, exposed so the pre-run checks of a
-    graded run and of a holdout run read it directly: the give-up reason (or None), whether the
-    layout breaks either version, the kept places whose nonce surfaces in the vulnerable version's
-    ordinary surface, and the kept layout places left without a route (detection-suite-rule.md,
-    Deployment layout (A place is kept for a target, A server the layout breaks))."""
+    graded run and of a detection holdout run read it directly: the give-up reason (or None),
+    whether the layout breaks either version, the kept places whose nonce surfaces in the vulnerable
+    version's ordinary surface, and the kept layout places left without a route
+    (detection-suite-rule.md, Deployment layout (A place is kept for a target, A server the layout
+    breaks))."""
 
     gave_up: str | None
     breaks: bool

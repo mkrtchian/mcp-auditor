@@ -1,6 +1,6 @@
 """The nuisance holdout run orchestrator: audit every admitted server on its patched image at one
-commit under the run conditions of a holdout run, keep no per-case trace, and assemble the run
-result.
+commit under the run conditions of a detection holdout run, keep no per-case trace, and assemble the
+run result.
 
 A sibling of `holdout_run.run_holdout_targets`. The servers are passed in, so the tests hand it
 crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from
@@ -72,9 +72,10 @@ NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance holdout run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
-# The budget is the holdout run's HOLDOUT_BUDGET: the rule reads the holdout nuisance rate beside
-# the holdout detection rate, whose budget is a constant, not a flag (detection-suite-rule.md, Run
-# conditions and statistic (A holdout run audits every target)), so no budget of its own here.
+# The budget is the detection holdout run's HOLDOUT_BUDGET: the rule reads the holdout nuisance rate
+# beside the holdout detection rate, whose budget is a constant, not a flag
+# (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)), so no
+# budget of its own here.
 
 
 @dataclass(frozen=True)

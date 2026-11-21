@@ -1,6 +1,6 @@
 """The holdout report model. It holds only the aggregated numbers and the proof-free per-target
-lines (place ids and counts), never evidence, judge input or a per-case verdict, so a holdout run
-cannot write proof text even by mistake."""
+lines (place ids and counts), never evidence, judge input or a per-case verdict, so a detection
+holdout run cannot write proof text even by mistake."""
 
 from collections import Counter
 from collections.abc import Mapping
@@ -9,7 +9,7 @@ from datetime import date
 from pydantic import BaseModel
 
 from evals.cve.detection.holdout_not_run import NotRunLine
-from evals.cve.detection.holdout_results import HoldoutRunResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_target_line import TargetLine
 from evals.cve.holdout_conditions import Cutoff
 from evals.cve.holdout_intervals import Interval
@@ -121,7 +121,7 @@ class HoldoutReport(BaseModel):
     throttled_requests: int
 
 
-def build_report(run: HoldoutRunResult) -> HoldoutReport:
+def build_report(run: DetectionHoldoutRunResult) -> HoldoutReport:
     model, cutoff = run_cutoff(run.cutoffs)
     split = split_by_side(run.targets, cutoff.date)
     pair = _two_sides(split)

@@ -1,5 +1,5 @@
-"""The holdout report model and its markdown: the structural guarantee that a holdout run keeps
-no proof. The model carries no evidence, no judge input and no per-case verdict field."""
+"""The holdout report model and its markdown: the structural guarantee that a detection holdout run
+keeps no proof. The model carries no evidence, no judge input and no per-case verdict field."""
 
 import dataclasses
 from datetime import date

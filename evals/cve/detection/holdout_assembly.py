@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from datetime import date
 
 from evals.cve.detection.holdout_audit import IncompleteRun
-from evals.cve.detection.holdout_results import HoldoutRunStatus, HoldoutTargetResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, HoldoutTargetResult
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
@@ -39,11 +39,11 @@ def assemble_target(
     )
 
 
-def _run_status(outcome: GradedAudit | IncompleteRun) -> HoldoutRunStatus:
+def _run_status(outcome: GradedAudit | IncompleteRun) -> DetectionHoldoutRunStatus:
     if isinstance(outcome, IncompleteRun):
         return _incomplete_status(outcome)
     grade = outcome.grade
-    return HoldoutRunStatus(
+    return DetectionHoldoutRunStatus(
         detected=grade.status in DETECTION_RUNGS,
         detected_if_unchecked_missed=_detected_if_unchecked_missed(grade),
         surfaced_places=sorted(grade.surfaced_places),
@@ -65,8 +65,8 @@ def _run_status(outcome: GradedAudit | IncompleteRun) -> HoldoutRunStatus:
     )
 
 
-def _incomplete_status(run: IncompleteRun) -> HoldoutRunStatus:
-    return HoldoutRunStatus(
+def _incomplete_status(run: IncompleteRun) -> DetectionHoldoutRunStatus:
+    return DetectionHoldoutRunStatus(
         detected=False,
         detected_if_unchecked_missed=False,
         surfaced_places=[],

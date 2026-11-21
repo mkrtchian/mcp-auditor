@@ -1,5 +1,5 @@
-"""Whether each drawn target's calibration card is ready for a holdout run: the card exists, and
-its second-agent check ran under rule v11 or later."""
+"""Whether each drawn target's calibration card is ready for a detection holdout run: the card
+exists, and its second-agent check ran under rule v11 or later."""
 
 from collections.abc import Sequence
 

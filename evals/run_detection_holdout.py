@@ -27,7 +27,7 @@ from evals.cve.detection.calibration_check_exit import (
 from evals.cve.detection.holdout_card_readiness import unready_cards
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_report import HoldoutReport, build_report
-from evals.cve.detection.holdout_results import HoldoutRunResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import (
     HOLDOUT_RUNS,
     HoldoutDeps,
@@ -136,7 +136,7 @@ def _calibration_dossier(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
-    refuse_existing_report(args.report, "holdout run refused")
+    refuse_existing_report(args.report, "detection holdout run refused")
     conditions = load_conditions(CONDITIONS_PATH)
     if not HOLDOUT_TARGETS:
         print("no holdout target is drawn")
@@ -161,21 +161,23 @@ def _refuse_unready_cards(census: Census) -> None:
     gaps = unready_cards(census.draw, drawn)
     if gaps:
         raise Refused(
-            "holdout run refused",
+            "detection holdout run refused",
             ["drawn targets whose card is not ready under detection suite rule v11", *gaps],
         )
 
 
 @dataclasses.dataclass(frozen=True)
 class _ReadyHoldoutRun:
-    """What a holdout run reads, once its cards and its conditions are checked ready."""
+    """What a detection holdout run reads, once its cards and its conditions are checked ready."""
 
     census: Census
     conditions: HoldoutConditions
     settings: Settings
 
 
-def _audit_drawn_targets(args: argparse.Namespace, ready: _ReadyHoldoutRun) -> HoldoutRunResult:
+def _audit_drawn_targets(
+    args: argparse.Namespace, ready: _ReadyHoldoutRun
+) -> DetectionHoldoutRunResult:
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in ready.census.flaws}
     places = load_places(DETECTION_PLACES)
     deps = default_deps(places, holdout_overrides(ready.conditions), args.concurrency)
@@ -249,8 +251,11 @@ async def _check_calibrations(
 def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            "holdout run refused",
-            ["LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; a holdout run keeps no trace"],
+            "detection holdout run refused",
+            [
+                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
+                "a detection holdout run keeps no trace"
+            ],
         )
 
 

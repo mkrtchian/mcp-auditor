@@ -1,6 +1,6 @@
-"""The pre-run check of a holdout run, with the calibration check and the layout observation
-scripted: a target the parallel pass would drop is checked once more, alone, and runs if that pass
-is clean.
+"""The pre-run check of a detection holdout run, with the calibration check and the layout
+observation scripted: a target the parallel pass would drop is checked once more, alone, and runs if
+that pass is clean.
 No Docker, no LLM."""
 
 import tests.unit.detection.support.test_detection_holdout_pre_run_check_given as given

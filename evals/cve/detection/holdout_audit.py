@@ -32,7 +32,8 @@ class IncompleteRun:
 
 @dataclass(frozen=True)
 class DroppedRun:
-    """A run that never produced a grade, which drops its target from the whole holdout run."""
+    """A run that never produced a grade, which drops its target from the whole detection holdout
+    run."""
 
     cause: NotRunCause
 

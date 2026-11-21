@@ -5,7 +5,7 @@ the crafted counts; nothing is fetched."""
 import math
 from datetime import date
 
-from evals.cve.detection.holdout_results import HoldoutRunStatus, HoldoutTargetResult
+from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, HoldoutTargetResult
 from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
 from evals.cve.holdout_intervals import Interval, clopper_pearson, jeffreys, newcombe, wilson
 from evals.cve.holdout_statistic import (
@@ -46,7 +46,7 @@ def _result(
         tools_count=4,
         ran_in_fallback=False,
         statuses=tuple(
-            HoldoutRunStatus(
+            DetectionHoldoutRunStatus(
                 detected=index < detected_runs,
                 detected_if_unchecked_missed=index < detected_runs_if_unchecked_missed,
                 surfaced_places=[],

@@ -1,5 +1,5 @@
-"""The attempt outcomes a holdout run drops a run on (a run skipped, a throttled attempt, a
-provider error), and what each prints under the report detail of either layer."""
+"""The attempt outcomes a detection holdout run drops a run on (a run skipped, a throttled attempt,
+a provider error), and what each prints under the report detail of either layer."""
 
 import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
@@ -31,7 +31,7 @@ from tests.unit.detection.support.detection_audits import (
 )
 
 
-async def test_a_run_skipped_on_a_holdout_run_prints_the_error_type_without_its_message(
+async def test_a_run_skipped_on_a_detection_holdout_run_prints_the_error_type_without_its_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = captured_console(monkeypatch)
@@ -56,7 +56,7 @@ async def test_a_run_skipped_on_the_acceptance_layer_prints_the_error_message(
     assert f"{target.flaw_id} run skipped: secret-nonce" in output.getvalue()
 
 
-async def test_a_missed_model_call_on_a_holdout_run_prints_its_cause_without_the_provider_message(
+async def test_a_missed_model_call_on_a_detection_holdout_run_shows_its_cause_not_the_provider_text(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = captured_console(monkeypatch)
@@ -96,7 +96,7 @@ async def test_a_server_taken_as_down_is_a_run_skipped(monkeypatch: pytest.Monke
     assert f"{TARGET.flaw_id} run skipped" in output.getvalue()
 
 
-async def test_a_server_taken_as_down_on_a_holdout_run_drops_the_run_as_a_launch_failure(
+async def test_a_server_taken_as_down_on_a_detection_holdout_run_drops_the_run_as_a_launch_failure(
     monkeypatch: pytest.MonkeyPatch,
 ):
     captured_console(monkeypatch)
