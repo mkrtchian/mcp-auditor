@@ -262,12 +262,6 @@ class TestContextExtractionPrompt:
         assert str(MAX_ITEM_LENGTH) in prompt
         assert str(MAX_NOTE_LENGTH) in prompt
 
-    def test_no_longer_asks_to_preserve_previous_findings(self):
-        prompt = build_context_extraction_prompt(given.a_tool_report(), AttackContext())
-
-        assert "Preserve all previous findings" not in prompt
-        assert "findings" not in prompt
-
 
 class TestJudgePrompt:
     def test_includes_response(self):

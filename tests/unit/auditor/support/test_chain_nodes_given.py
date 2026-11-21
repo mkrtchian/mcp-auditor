@@ -93,12 +93,6 @@ def a_fake_mcp_client(
     return FakeMCPClient(tools or [a_tool()], responses)
 
 
-def a_judged_chain() -> AttackChain:
-    return AttackChain(
-        goal=a_chain_goal(), steps=[a_chain_step()], judge_result=a_fail_judge_result()
-    )
-
-
 def a_judgment(
     verdict: EvalVerdict = EvalVerdict.FAIL,
     severity: Severity = Severity.HIGH,

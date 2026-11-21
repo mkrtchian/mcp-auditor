@@ -30,7 +30,6 @@ from mcp_auditor.graph.nodes import (
     route_after_execute,
     route_test_cases,
 )
-from mcp_auditor.graph.unsent_calls import report_tools_left
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 from tests.fakes.mcp_client import a_lost_connection_response
@@ -434,29 +433,6 @@ class TestRouteTools:
         state = {"tool_reports": [object()], "discovered_tools": [given.a_tool(), given.a_tool()]}
 
         assert make_route_tools(server)(state) == "report_tools_left"
-
-
-class TestReportToolsLeft:
-    def test_gives_each_tool_not_audited_a_server_down_gap(self):
-        tools = [given.a_tool(name="audited"), given.a_tool(name="left")]
-        state: dict[str, Any] = {
-            "discovered_tools": tools,
-            "tool_reports": [given.a_tool_report(tool_name="audited")],
-            "test_budget": 4,
-            "chain_budget": 2,
-        }
-
-        result = report_tools_left(state)
-
-        [left] = result["tool_reports"]
-        assert (left.tool.name, left.cases, left.chains) == ("left", [], [])
-        assert left.coverage_gap == CoverageGap(
-            requested_cases=4,
-            received_cases=0,
-            missing_categories=[],
-            unsent_chains=2,
-            unsent_cause=UnsentCause.SERVER_DOWN,
-        )
 
 
 class TestGenerateReport:

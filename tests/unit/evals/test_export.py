@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.auditor.support.test_export_given as given
-import tests.unit.auditor.support.test_export_then as then
+import tests.unit.evals.support.test_export_given as given
+import tests.unit.evals.support.test_export_then as then
 from evals.cve.detection.session_model import DetectionAudit
 from evals.cve.nuisance.gate.gate_session_model import GateAudit
 from evals.export import (

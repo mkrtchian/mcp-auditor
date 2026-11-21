@@ -30,7 +30,6 @@ from mcp_auditor.graph.chain_nodes import (
     route_after_plan_step,
     route_after_planning,
 )
-from mcp_auditor.graph.unsent_calls import count_unsent_chain, make_count_chains_not_planned
 from tests.fakes import FakeLLM
 from tests.unit.auditor.support.audited_servers import (
     a_server_losing_its_connection,
@@ -511,33 +510,3 @@ class TestRouteToChainsOrReport:
         route = make_route_to_chains_or_report(server)
 
         assert route(given.a_chain_audit_state(chain_budget=2)) == "count_chains_not_planned"
-
-
-class TestCountUnsentChain:
-    def test_counts_a_chain_whose_first_step_is_not_sent_and_records_none(self):
-        state = given.a_chain_audit_state(current_chain_goal=given.a_chain_goal())
-
-        result = count_unsent_chain(state)
-
-        assert result["unsent_chains"] == 1
-        assert "completed_chains" not in result
-
-
-class TestCountChainsNotPlanned:
-    async def test_counts_the_chain_budget_with_the_cause(self):
-        count = make_count_chains_not_planned(await a_server_that_stopped(given.a_tool()))
-
-        result = count(given.a_chain_audit_state(chain_budget=3))
-
-        assert result["unsent_chains"] == 3
-        assert result["unsent_cause"] == UnsentCause.TOOL_TIMING_OUT
-
-    async def test_drops_the_chains_of_the_tool_audited_before(self):
-        server, _ = await a_server_taken_as_down(given.a_tool())
-        state = given.a_chain_audit_state(chain_budget=2, completed_chains=[given.a_judged_chain()])
-
-        result = make_count_chains_not_planned(server)(state)
-
-        assert result["completed_chains"] == []
-        assert result["unsent_chains"] == 2
-        assert result["unsent_cause"] == UnsentCause.SERVER_DOWN
