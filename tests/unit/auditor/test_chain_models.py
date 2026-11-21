@@ -10,13 +10,14 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
+from tests.unit.auditor.support.chain_states import a_chain_goal, a_chain_step
 
 
 class TestAuditReportChainFindings:
     def test_includes_chain_fail_verdicts(self):
         chain = AttackChain(
-            goal=given.a_chain_goal(),
-            steps=[given.a_chain_step()],
+            goal=a_chain_goal(),
+            steps=[a_chain_step()],
             judge_result=given.a_fail_judge_result(),
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
@@ -39,8 +40,8 @@ class TestAuditReportChainFindings:
             severity=Severity.LOW,
         )
         chain = AttackChain(
-            goal=given.a_chain_goal(),
-            steps=[given.a_chain_step()],
+            goal=a_chain_goal(),
+            steps=[a_chain_step()],
             judge_result=pass_result,
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})

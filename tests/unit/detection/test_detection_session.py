@@ -25,13 +25,12 @@ from tests.unit.detection.support.detection_sessions import (
     audit_name,
     options,
 )
-from tests.unit.detection.support.test_detection_oracle_given import a_detected_grade
 
 
 async def test_a_gated_target_missed_once_is_replayed_until_the_miss_is_decided(tmp_path: Path):
     a_gated_file(tmp_path)
     miss = a_miss()
-    audit = ScriptedAudit({KUBERNETES.flaw_id: [miss, a_detected_grade(), miss, *[miss] * 5]})
+    audit = ScriptedAudit({KUBERNETES.flaw_id: [miss, given.a_detected_grade(), miss, *[miss] * 5]})
 
     result = await run_gated(options(), a_harness(audit, tmp_path))
 
@@ -153,7 +152,7 @@ async def test_a_run_with_no_unchecked_credits_stays_comparable(tmp_path: Path):
     # and the run is comparable. The "unchecked but status-preserving" case does not occur: a
     # replayed unchecked run's only proofs are its credits, so an unchecked credit always leaves
     # status_if_unchecked_missed at MISSED. No test constructs that unreachable case.
-    audit = ScriptedAudit({KUBERNETES.flaw_id: [a_detected_grade()] * 3})
+    audit = ScriptedAudit({KUBERNETES.flaw_id: [given.a_detected_grade()] * 3})
 
     result = await run_gated(options(), a_harness(audit, tmp_path))
 

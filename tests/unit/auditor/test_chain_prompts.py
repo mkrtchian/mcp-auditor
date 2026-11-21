@@ -14,12 +14,10 @@ from mcp_auditor.graph.prompts import (
     build_judge_prompt,
     format_attack_context,
 )
+from tests.unit.auditor.support.chain_states import a_chain_goal, a_chain_step, a_tool
 from tests.unit.auditor.support.test_chain_nodes_given import (
     a_blocked_single_step_case,
-    a_chain_goal,
-    a_chain_step,
     a_single_step_case,
-    a_tool,
 )
 from tests.unit.auditor.support.test_shown_response_given import a_long_text
 

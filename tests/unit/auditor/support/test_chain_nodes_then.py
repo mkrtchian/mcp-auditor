@@ -1,8 +1,6 @@
 from typing import Any
 
 from mcp_auditor.domain import AttackChain, AuditCategory, EvalVerdict
-from mcp_auditor.domain.models import MissCause, ModelCallKind
-from tests.unit.auditor.support.test_chain_nodes_given import DEFAULT_TOOL_NAME
 
 
 def chain_judge_result_is(
@@ -17,16 +15,3 @@ def chain_judge_result_is(
     assert chain.judge_result.category == category
     assert chain.judge_result.arguments == payload
     assert chain.judge_result.verdict == verdict
-
-
-def unreadable_call_recorded(result: dict[str, Any], kind: ModelCallKind) -> None:
-    _one_missed_call(result, kind, MissCause.UNREADABLE_ANSWER)
-
-
-def refused_call_recorded(result: dict[str, Any], kind: ModelCallKind) -> None:
-    _one_missed_call(result, kind, MissCause.PROVIDER_REFUSAL)
-
-
-def _one_missed_call(result: dict[str, Any], kind: ModelCallKind, cause: MissCause) -> None:
-    [missed] = result["missed_model_calls"]
-    assert (missed.tool_name, missed.kind, missed.cause) == (DEFAULT_TOOL_NAME, kind, cause)
