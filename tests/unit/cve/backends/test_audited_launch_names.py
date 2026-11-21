@@ -6,10 +6,20 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.test_audited_launch_names_given as given
-from mcp_auditor.domain.container_name import Undecidable, declared_container_name
+from evals.cve.environments import Launch
+from evals.cve.launch_audit import named
+from mcp_auditor.domain.container_name import declared_container_name
+from tests.unit.support.audited_launch_builders import (
+    AUDITED_LAUNCH_BUILDERS,
+    NUISANCE_LAUNCHES,
+    LaunchOnFakes,
+)
 
 _NAMED = given.named_server_args()
-_UNNAMED = given.unnamed_launch_builders()
+_AUDITED = {
+    **{builder.__name__: entry.launched for builder, entry in AUDITED_LAUNCH_BUILDERS.items()},
+    **NUISANCE_LAUNCHES,
+}
 
 
 @pytest.mark.parametrize("server_args", _NAMED.values(), ids=list(_NAMED))
@@ -19,9 +29,10 @@ def test_a_server_beside_its_backend_reads_to_the_name_it_was_given(
     assert declared_container_name(given.run_args_of(server_args)) == given.SERVER
 
 
-@pytest.mark.parametrize("builder", _UNNAMED.values(), ids=list(_UNNAMED))
-def test_every_other_audited_launch_reads_to_its_own_name_or_to_none(
-    builder: given.ArgvBuilder, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("launched", _AUDITED.values(), ids=list(_AUDITED))
+def test_every_other_audited_launch_reads_to_a_name_once_the_audit_names_it(
+    launched: LaunchOnFakes, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    with given.built(builder, tmp_path, monkeypatch) as args:
-        assert declared_container_name(args) is not Undecidable.NAME
+    with launched(tmp_path, monkeypatch) as built:
+        audited = named(Launch("docker", built.args))
+        assert isinstance(declared_container_name(audited.args), str)

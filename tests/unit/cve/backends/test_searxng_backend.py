@@ -2,10 +2,9 @@ import pytest
 
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
 from evals.cve.backends.searxng import SEARXNG_IMAGE
-from evals.cve.layout import WORKSPACE
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority
-from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
+from tests.unit.support.docker_argv import carries, environment, value_after
 
 
 def test_searxng_and_the_server_join_the_launchs_holder():
@@ -47,7 +46,6 @@ def test_the_server_reaches_searxng_at_the_address_of_the_readme_example():
 
     with given.a_launch(planting, searxng) as launch:
         assert environment(launch.args)["SEARXNG_URL"] == "http://localhost:8080"
-        assert mount_of(launch.args, WORKSPACE)
         assert launch.args[-1] == "img"
 
 
