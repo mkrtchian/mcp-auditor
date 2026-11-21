@@ -1,6 +1,7 @@
-# Nuisance run image of markdownify: a copy of Dockerfile.holdout-2025-58358-markdownify-patched,
-# its instructions unchanged but for uv pinned at the holdout card's release, with the programs
-# markitdown drives and the sample it converts added before its entrypoint. Pins the admission's patched version, commit a31204de058b.
+# The image the nuisance suite audits for markdownify: a copy of
+# Dockerfile.holdout-2025-58358-markdownify-patched, its instructions unchanged but for uv pinned at
+# the holdout card's release, with the programs markitdown drives and the sample it converts added
+# before its entrypoint. Pins the admission's patched version, commit a31204de058b.
 
 # mcp-markdownify-server, patched for CVE-2025-58358. Pinned to commit a31204d ("Advisory
 # fix 1"), the first version that fixes the command injection: _markitdown now uses

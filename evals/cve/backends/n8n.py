@@ -6,7 +6,7 @@ workflows. It is a singleton on a fixed public-range (TEST-NET-1) address of its
 bridge, so n8n-mcp's default `strict` SSRF gate, which since 2.50.2 also covers N8N_API_URL,
 passes it without `WEBHOOK_SECURITY_MODE` being changed. It runs under the confinement, memory
 bound included, with no added capability (n8n listens on 5678, its default port). Stood
-once and reused across a server's concurrent nuisance runs, it is reaped by the generic orphan
+once and reused across a server's concurrent runs, it is reaped by the generic orphan
 sweep, so no lock is held across the yield.
 
 At each stand-up `ensure_n8n_instance` runs the image's `/opt/n8n-setup/owner.mjs` through
@@ -17,7 +17,8 @@ data directory, so a reused singleton hands every launch the same key. `n8n_serv
 N8N_API_URL and that key to the server as `-e` options: the run image bakes no backend
 environment.
 
-This is the nuisance run's backend; `evals.cve.backends.n8n_instance` is the holdout target's.
+This is the nuisance holdout run's backend; `evals.cve.backends.n8n_instance` is the holdout
+target's.
 """
 
 import subprocess

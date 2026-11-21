@@ -4,7 +4,7 @@ A light HTTP stand-in for the Atlassian Server/DC instance an mcp-atlassian depl
 `JIRA_URL` and `CONFLUENCE_URL` at, serving the project PROJ and the space TEAM the server is
 configured with, and a DEMO project and space outside those filters. Like the other responders it
 is cheap to stand and a singleton on a fixed address: stood once and reused across a server's
-concurrent nuisance runs, reaped by the generic orphan sweep, so no lock is held across the yield.
+concurrent runs, reaped by the generic orphan sweep, so no lock is held across the yield.
 The singleton serves the DEMO items as copied, so it serves the run-phase calls only: a fix-check
 stands its own container of the same image with `DEMO_SUMMARY` set, on the bridge and subnet
 exported here.

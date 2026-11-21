@@ -22,7 +22,7 @@ are further relational catalogs, whose tools the PostgreSQL catalog already serv
 The backend's state lives in its containers only, so a stand-up after their removal starts from
 the images and the seed. The backend carries no witness: a fix check stands its own instance.
 
-The stack is a singleton, stood once and reused across a server's concurrent nuisance runs,
+The stack is a singleton, stood once and reused across a server's concurrent runs,
 reaped by the generic orphan sweep, so no lock is held across the yield.
 """
 

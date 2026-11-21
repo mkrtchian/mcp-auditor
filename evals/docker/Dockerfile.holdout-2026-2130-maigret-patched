@@ -3,8 +3,8 @@
 # array, so no shell parses the username/url.
 #
 # mcp-maigret runs maigret as `docker run --rm -v <reports>:/app/reports soxoj/maigret:latest ...`
-# through the Docker CLI (README: "Requirements: Docker"). As the nuisance run image
-# (Dockerfile.maigret) does, with the same Engine API stand-in:
+# through the Docker CLI (README: "Requirements: Docker"). As the image the nuisance suite
+# audits (Dockerfile.maigret) does, with the same Engine API stand-in:
 # - the real Docker CLI runs in the container, installed from Docker's static binaries (the
 #   "Install Docker Engine from binaries" channel of docs.docker.com/engine/install), 29.9.3;
 # - the Docker daemon cannot run under the confinement (it needs root and namespace/mount

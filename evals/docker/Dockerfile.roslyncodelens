@@ -1,6 +1,6 @@
-# Roslyn CodeLens MCP server, patched 1.17.0, over the .NET 10 SDK: the nuisance run image and
-# the fix check's patched arm. The seeded solution is clean, with no planted witness and no
-# untrusted analyzer; get_diagnostics and get_code_fixes drive the real Roslyn/MSBuild the SDK
+# Roslyn CodeLens MCP server, patched 1.17.0, over the .NET 10 SDK: the image the nuisance suite
+# audits and the fix check's patched arm. The seeded solution is clean, with no planted witness and
+# no untrusted analyzer; get_diagnostics and get_code_fixes drive the real Roslyn/MSBuild the SDK
 # ships. No COPY/ADD from the build context.
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e
 

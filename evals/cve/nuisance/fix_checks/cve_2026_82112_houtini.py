@@ -11,7 +11,7 @@ The model is the llama-server baked on each image's loopback endpoint, so the wi
 through the real model echoing the out-of-scope file, never through a stand-in. The server frames
 every call as an analysis "output as a markdown list", so the exploit asks for the file body three
 ways that fit that frame (a one-item list, a backtick quote, a fenced block): a copy slip on one
-phrasing leaves the others. The benign call reads a file inside the checkout. The nuisance run
+phrasing leaves the others. The benign call reads a file inside the checkout. The nuisance suite
 mounts no layout, so the checkout is baked into both images and the witness is the only planted
 place.
 """

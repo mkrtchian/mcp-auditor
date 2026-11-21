@@ -2,8 +2,8 @@
 # ALLOWED_PATHS check bypass issue"), the repository's fix tag, with no registry release.
 # is_path_allowed now resolves with os.path.realpath and anchors the prefix on the allowed root
 # plus os.sep, plus an exact-match branch, rejecting a sibling-prefix path or a symlink escape.
-# Doubles as the nuisance run image. The ten tools drive no software outside the server (Python's
-# os/shutil on the container's own filesystem). mcp follows the server's requirements.txt
+# Doubles as the image the nuisance suite audits. The ten tools drive no software outside the server
+# (Python's os/shutil on the container's own filesystem). mcp follows the server's requirements.txt
 # (mcp[cli]>=1.25), bounded below 2: mcp 2.x drops Server.call_tool, which src/tools.py uses, and
 # the server then fails to start. It floats within 1.x, as do the transitive dependencies.
 # File: README.md at 4536454, Example Usage "Create a new file called notes.txt with the content

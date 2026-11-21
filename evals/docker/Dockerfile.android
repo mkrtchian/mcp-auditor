@@ -1,10 +1,10 @@
-# Nuisance run image of android (rule v4): jiantao88/android-mcp-server at its patched version,
-# the fix commit 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a, driving the real adb client of Android
-# SDK Platform-Tools. Only the Android device, which cannot run under the confinement (the Android
-# Emulator needs /dev/kvm, and as a backend it does not fit the memory bound), is replaced: a
-# device-side adb transport on the local emulator port answers the adb client over the adb wire
-# protocol. Starting point: Dockerfile.holdout-2026-19978-android-patched (same base, Platform-Tools
-# release and server build).
+# The image the nuisance suite audits for android (rule v4): jiantao88/android-mcp-server at its
+# patched version, the fix commit 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a, driving the real adb
+# client of Android SDK Platform-Tools. Only the Android device, which cannot run under the
+# confinement (the Android Emulator needs /dev/kvm, and as a backend it does not fit the memory
+# bound), is replaced: a device-side adb transport on the local emulator port answers the adb client
+# over the adb wire protocol. Starting point: Dockerfile.holdout-2026-19978-android-patched (same
+# base, Platform-Tools release and server build).
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 # git fetches the pinned commit; curl and unzip fetch and unpack Platform-Tools and the sample APK.

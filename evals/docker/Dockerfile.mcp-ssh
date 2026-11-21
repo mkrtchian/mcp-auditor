@@ -1,8 +1,8 @@
-# @aiondadotcom/mcp-ssh 1.3.5, the nuisance run image: the first release patched for both of its
-# census flaws (CVE-2025-9654 since 1.0.4, GHSA-p4h8-56qp-hpgv in 1.3.5). Its ~/.ssh/config is the
-# README's `Host production` entry, reaching prod.example.com (the sshd backend,
-# Dockerfile.mcp-ssh-sshd) as deploy with the id_production key whose public half the sshd bakes.
-# No COPY/ADD from the build context; the server installs from npm by RUN.
+# @aiondadotcom/mcp-ssh 1.3.5, the image the nuisance suite audits: the first release patched for
+# both of its census flaws (CVE-2025-9654 since 1.0.4, GHSA-p4h8-56qp-hpgv in 1.3.5). Its
+# ~/.ssh/config is the README's `Host production` entry, reaching prod.example.com (the sshd
+# backend, Dockerfile.mcp-ssh-sshd) as deploy with the id_production key whose public half the sshd
+# bakes. No COPY/ADD from the build context; the server installs from npm by RUN.
 FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 
 # wget reaches an internal HTTP endpoint for a command-execution payload and fetches the OpenSSH

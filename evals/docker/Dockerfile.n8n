@@ -1,4 +1,4 @@
-# n8n-mcp 2.50.2: the shipped server the nuisance run audits, and the fix-check server-patched arm
+# n8n-mcp 2.50.2: the shipped server the nuisance suite audits, and the fix-check server-patched arm
 # for both counted flaws (the first release fixing CVE-2026-44694, the API client axios instance
 # now maxRedirects: 0; GHSA-8g7g was already fixed in 2.50.1). The real package is installed from
 # npm, unmodified, and runs over stdio at its documented defaults.

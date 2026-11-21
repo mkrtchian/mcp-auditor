@@ -17,7 +17,7 @@ a fixed address, so no part takes the address the server resolves another to. Th
 rejects a name that resolves to a private address, so the bridge is a public-range (TEST-NET-3)
 subnet, and the server reaches the front and the stand-in through `--add-host` entries. It trusts
 their leaves through NODE_EXTRA_CA_CERTS, the fixture authority mounted read-only (ADR 034). The
-stack is a singleton, stood once and reused across a server's concurrent nuisance runs, reaped by
+stack is a singleton, stood once and reused across a server's concurrent runs, reaped by
 the generic orphan sweep, so no lock is held across the yield. Every container binds its ports as
 its image's own user or, for the stand-in, as a root with no capability: a container's
 net.ipv4.ip_unprivileged_port_start is 0.

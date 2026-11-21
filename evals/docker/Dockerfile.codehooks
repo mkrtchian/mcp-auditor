@@ -2,8 +2,8 @@
 # GHSA-fhq6-jf5q-qxvq's fix 83db1d1b; package.json reads 0.1.0 at both tags, the package is
 # private and never published to npm). query_collection builds an argv array and runs
 # child_process.execFile('coho', [...]), so no shell re-parses an argument. Doubles as the
-# nuisance run image. No COPY/ADD from the build context; the repository is fetched by RUN from
-# the pinned tag and checked against its commit.
+# image the nuisance suite audits. No COPY/ADD from the build context; the repository is fetched by
+# RUN from the pinned tag and checked against its commit.
 # The real Codehooks CLI runs in the container, installed as the server's own Dockerfile
 # installs it (`npm install -g codehooks`), pinned at the stable release of the build day. The
 # Codehooks.io platform it calls cannot run under the confinement: the run serves its hosts

@@ -1,6 +1,6 @@
 # adb-mcp (CVE-2025-59834), patched npm release 0.1.1 (fix commit
 # 041729c0b25432df3199ff71b3163a307cf4c28c): runAdb uses execFile("adb", argv), so no shell
-# parses the device value. Nuisance run image.
+# parses the device value. The image the nuisance suite audits.
 #
 # Real software: Android SDK Platform-Tools r37.0.1 (adb 1.0.41, 37.0.1-15733141), the stable
 # channel-0 release of https://dl.google.com/android/repository/repository2-3.xml, installed by

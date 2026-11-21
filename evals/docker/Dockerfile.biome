@@ -1,5 +1,5 @@
-# Nuisance run image of biome: Dockerfile.holdout-2026-3680-biome-patched with one addition (the
-# checkout handed to the run user), pinning the admission's patched version, commit
+# The image the nuisance suite audits for biome: Dockerfile.holdout-2026-3680-biome-patched with one
+# addition (the checkout handed to the run user), pinning the admission's patched version, commit
 # 335e1727147efeef011f1ff8b05dd751d8a660be.
 
 # Patched biome-mcp-server (first fixed version of CVE-2026-3680): the fix swaps exec() for

@@ -11,7 +11,7 @@ with no added capability: with the plugins it peaks at 103 processes, under the 
 bound of 256. Its state lives in the container only (its home in the anonymous volume Docker fills
 from the image at each creation), so a stand-up after its removal starts from the seed. It is a
 singleton on a fixed address of its own closed bridge in the RFC 2544 benchmarking range, stood
-once and reused across a server's concurrent nuisance runs, reaped by the generic orphan sweep, so
+once and reused across a server's concurrent runs, reaped by the generic orphan sweep, so
 no lock is held across the yield. It carries no witness: a fix check stands its own container of
 the same image at another address of the bridge and subnet exported here.
 

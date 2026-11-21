@@ -1,4 +1,4 @@
-# Nuisance run image of sf-mcp, at the admission's patched version, commit
+# The image the nuisance suite audits for sf-mcp, at the admission's patched version, commit
 # 99fba0171b8c22b5ee3c0405053ccfd2910a066d (the fix that replaces exec(sfCommand) with
 # execFile("sf", args)).
 #

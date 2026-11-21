@@ -1,6 +1,6 @@
-# node-code-sandbox-mcp (CVE-2025-53372), patched npm release 1.3.0, the nuisance run image.
-# sandbox_stop sanitizes container_id and runs execFileSync('docker', ['rm', '-f', id]) with no
-# shell.
+# node-code-sandbox-mcp (CVE-2025-53372), patched npm release 1.3.0, the image the nuisance suite
+# audits. sandbox_stop sanitizes container_id and runs execFileSync('docker', ['rm', '-f', id]) with
+# no shell.
 # The Docker CLI is Debian's docker.io package, the channel the server's own Dockerfile installs
 # (v1.3.0 Dockerfile: apt-get install -y --no-install-recommends docker.io), pinned at the
 # release of the base image's distribution (bookworm). The Docker daemon it speaks to on

@@ -11,7 +11,7 @@ are encoded and the request stays inside `metalake_demo`. Every counted tool car
 unencoded interpolation, so each has an exploit that injects the traversal into its own identifier;
 only `get_list_of_schemas` lists schema names, so the planted nonce surfaces through it.
 
-The run singleton never carries the witness (it is where every nuisance run reads), so the builder
+The run singleton never carries the witness (it is where every run reads), so the builder
 stands its own Gravitino stack (the backend's three parts) on a per-launch closed network, seeds
 the run's `metalake_demo` metalake (the backend's seed) plus a sibling `hidden` metalake whose
 `secretcat` catalog holds one schema named the planted nonce, points the server's `--gravitino-uri`

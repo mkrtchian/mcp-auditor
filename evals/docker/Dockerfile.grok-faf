@@ -1,10 +1,10 @@
 # grok-faf-mcp (GHSA-cc2g-gq8c-r332) patched: npm grok-faf-mcp 1.5.3, the advisory's first
 # patched release. safe-path.ts's confineFileOp confines faf_read/faf_write to the process cwd plus
-# the OS temp dir (FAF_ALLOWED_ROOTS left unset, its documented default). Doubles as the nuisance
-# run image. The project directory /work holds the sample corpus the server's README links
-# (Wolfe-Jam/xai-faf-proof pilot/, pinned by commit and checksum) and the project.faf that faf-cli
-# (installed with the server) generates there with `faf auto`, as the README's "Get the CLI" gives
-# it. /work belongs to the run's unprivileged account, as a user's own project directory does.
+# the OS temp dir (FAF_ALLOWED_ROOTS left unset, its documented default). Doubles as the image
+# the nuisance suite audits. The project directory /work holds the sample corpus the server's README
+# links (Wolfe-Jam/xai-faf-proof pilot/, pinned by commit and checksum) and the project.faf that
+# faf-cli (installed with the server) generates there with `faf auto`, as the README's "Get the CLI"
+# gives it. /work belongs to the run's unprivileged account, as a user's own project directory does.
 # No COPY and no unpinned download.
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 WORKDIR /app

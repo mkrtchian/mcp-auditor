@@ -37,14 +37,14 @@ RUN apt-get update \
 
 RUN npm install -g @aiondadotcom/mcp-ssh@1.0.4
 
-# The README's sample (sections 1 and 6), as the nuisance run image seeds it: its `Host production`
-# entry in ~/.ssh/config, reaching prod.example.com (the sshd the launch stands,
-# evals/cve/backends/mcp_ssh_holdout.py) as deploy, and the id_production key pair its
-# `ssh-keygen -t ed25519 -f ~/.ssh/id_production -C "production-server"` makes with an empty
-# passphrase, baked as text. Root-owned and mode 0644, where section 4 sets the key to 600: the
-# launch runs the server under an account named after a nonce and the layout check's reference arm
-# under 65534, OpenSSH refuses a configuration owned by neither root nor the caller, and checks a
-# key's mode only when the caller owns it. uid 65534's passwd home is /tmp, so the client resolves
+# The README's sample (sections 1 and 6), as Dockerfile.mcp-ssh, the image the nuisance suite
+# audits, seeds it: its `Host production` entry in ~/.ssh/config, reaching prod.example.com (the
+# sshd the launch stands, evals/cve/backends/mcp_ssh_holdout.py) as deploy, and the id_production
+# key pair its `ssh-keygen -t ed25519 -f ~/.ssh/id_production -C "production-server"` makes with an
+# empty passphrase, baked as text. Root-owned and mode 0644, where section 4 sets the key to 600:
+# the launch runs the server under an account named after a nonce and the layout check's reference
+# arm under 65534, OpenSSH refuses a configuration owned by neither root nor the caller, and checks
+# a key's mode only when the caller owns it. uid 65534's passwd home is /tmp, so the client resolves
 # `~` where the confinement's HOME points. The launch mounts ~/.ssh/known_hosts.
 RUN sed -i 's#^nobody:x:65534:65534:nobody:/nonexistent:#nobody:x:65534:65534:nobody:/tmp:#' /etc/passwd \
  && mkdir -p /tmp/.ssh \

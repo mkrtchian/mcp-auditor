@@ -1,6 +1,6 @@
-# Nuisance run image of nmap: the instructions of Dockerfile.holdout-2026-3484-nmap-patched,
-# pinning the admission's patched version, commit 30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488,
-# and the Nmap release the holdout card records (7.993).
+# The image the nuisance suite audits for nmap: the instructions of
+# Dockerfile.holdout-2026-3484-nmap-patched, pinning the admission's patched version, commit
+# 30a6b9e1c7fa6146f51e28d6ab83a2568d9a3488, and the Nmap release the holdout card records (7.993).
 
 # Patched mcp-nmap-server: the fix commit for CVE-2026-3484 runs execFile('nmap', args) with no
 # shell and validates additionalFlags.

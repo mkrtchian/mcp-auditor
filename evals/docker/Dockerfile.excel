@@ -1,7 +1,7 @@
 # excel-mcp-server (PyPI:excel-mcp-server) 1.0.0, the release whose PathPolicy confines the
 # workbooks to the directories `--allow-dir` names over stdio, the option the fix of CVE-2026-40576
-# requires (0.1.8 does not confine on stdio). Doubles as the nuisance run image, launched
-# `stdio --allow-dir /data`.
+# requires (0.1.8 does not confine on stdio). Doubles as the image the nuisance suite
+# audits, launched `stdio --allow-dir /data`.
 #
 # The server drives openpyxl in process. The one seed is a workbook of two columns and three rows
 # (a header and two data rows) written at build time with openpyxl, no workbook being published for

@@ -37,7 +37,7 @@ RUN mkdir -p /opt/models \
 RUN npm install -g @houtini/lm@2.13.2
 
 # The in-scope project the benign call reads (HOUTINI_LM_FILE_ROOTS=/srv/app), baked on both
-# versions because the nuisance run mounts no layout: the "simplegit" sample project of git's book
+# versions because the nuisance suite mounts no layout: the "simplegit" sample project of git's book
 # (Pro Git, 2.3 Viewing the Commit History), cloned whole and reset to its pinned commit, made
 # world-readable so the unprivileged server account reads it. It comes after the model layers so
 # a change to it does not download the model again.

@@ -12,7 +12,7 @@ Both parts sit on one closed labeled bridge on the global /24 that holds httpbin
 the front at that address, since the gateway's SSRF guard refuses a private or link-local one.
 The server joins the bridge, reaches the front through an `--add-host` entry and trusts its leaf
 through SSL_CERT_FILE, the fixture authority mounted read-only. The backend is a singleton, stood
-once and reused across a server's concurrent nuisance runs, reaped by the generic orphan sweep, so
+once and reused across a server's concurrent runs, reaped by the generic orphan sweep, so
 no lock is held across the yield. Both parts run under the confinement with no capability
 added back: httpbin binds 8080 as its uid 10001 and nginx-unprivileged binds 80 and 443 as uid 101,
 a container's net.ipv4.ip_unprivileged_port_start being 0.

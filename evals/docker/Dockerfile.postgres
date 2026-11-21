@@ -1,5 +1,5 @@
-# CVE-2026-85787/87911 patched build: awslabs.postgres-mcp-server 1.1.7, the nuisance run image.
-# 1.1.7 folds quoted identifiers before matching (strip_quoted_identifiers)
+# CVE-2026-85787/87911 patched build: awslabs.postgres-mcp-server 1.1.7, the image the nuisance
+# suite audits. 1.1.7 folds quoted identifiers before matching (strip_quoted_identifiers)
 # and blocks the dblink family. Unlike the images of its holdout target
 # (Dockerfile.holdout-2026-85787-postgres*), which keep the dblink extension, the superuser role and
 # the listen and socket settings the reproduction needs, this image runs the engine at its

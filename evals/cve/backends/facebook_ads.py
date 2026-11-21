@@ -6,7 +6,7 @@ It answers the insights edge with the first example response of Meta's Ads Insig
 (extracted block sha256 4aa6b9ffc52591722ca701686facef70d604f8428a7fd0c8bab7ec8d3f53ab72) and any
 other request with the real Graph API's captured errors (`Dockerfile.facebook-ads-responder`). It
 is cheap to stand and a singleton on a fixed address: stood once and reused across a server's
-concurrent nuisance runs, reaped by the generic orphan sweep, so no lock is held across the yield.
+concurrent runs, reaped by the generic orphan sweep, so no lock is held across the yield.
 It carries no witness and serves no other name. The fix check of CVE-2026-19956 stands a sentinel
 of its own on the bridge and subnet exported here.
 

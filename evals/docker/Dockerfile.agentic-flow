@@ -1,8 +1,8 @@
 # agentic-flow, patched npm release 2.0.14 (PR #170 rewrites every call site to
-# execFileSync('npx', argv, { shell: false })). Doubles as the nuisance run image. No local
-# COPY/ADD. The programs the tools call through npx are installed at build time: agentdb (the
-# agentdb_* tools) at its current release, agent-booster at the 0.2.2 the server names in its
-# call, and the default embedding model agentdb loads, pinned by revision and checksum. npx
+# execFileSync('npx', argv, { shell: false })). Doubles as the image the nuisance suite
+# audits. No local COPY/ADD. The programs the tools call through npx are installed at build time:
+# agentdb (the agentdb_* tools) at its current release, agent-booster at the 0.2.2 the server names
+# in its call, and the default embedding model agentdb loads, pinned by revision and checksum. npx
 # resolves a versioned spec such as agent-booster@0.2.2 from the registry, which the run does not
 # serve, unless the working directory's own tree holds it: agent-booster is installed there.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0

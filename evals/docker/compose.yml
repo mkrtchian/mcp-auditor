@@ -15,9 +15,9 @@
 # The nuisance block closes the file: one patched image per admitted server, tagged
 # mcp-auditor-nuisance-<service>:local, then the backend images the fixtures build (the
 # responders, the CKAN stack and the n8n instance) under their backend modules' tags. Its services
-# carry the nuisance profile, so the build command above leaves them out, while the nuisance run
-# names its services and Compose enables the profile of a named service. Build the whole block
-# by hand with:
+# carry the nuisance profile, so the build command above leaves them out, while a nuisance command
+# names the services it builds and Compose enables the profile of a named service. Build the whole
+# block by hand with:
 #   docker compose -f evals/docker/compose.yml --profile nuisance build
 services:
   filesystem:
@@ -1372,7 +1372,8 @@ services:
 
   # Nuisance backends: the images the backend fixtures build (the responders, the CKAN stack, the
   # n8n instance, the Gravitino stack and the sshd), tagged as their backend modules tag them,
-  # rebuilt by the nuisance run with its server images.
+  # rebuilt with the server images by the nuisance holdout run and the vet, and by the fix check
+  # when their fingerprint label is stale.
 
   # The CKAN stack also stands behind the holdout target CVE-2026-33060, outside the nuisance
   # profile since that target builds it.

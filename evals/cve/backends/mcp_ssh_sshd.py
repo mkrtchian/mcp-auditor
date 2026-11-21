@@ -16,7 +16,7 @@ The backend's state lives in its container only (a benign upload writes a file i
 a stand-up after its removal starts from the image. It carries no witness: a fix check stands its
 own instance (`stood_sshd`), and so does each launch of the holdout target CVE-2025-9654
 (`mcp_ssh_holdout.py`). The run's is a singleton, stood once and reused across a server's
-concurrent nuisance runs, reaped by the generic orphan sweep, so no lock is held across the yield.
+concurrent runs, reaped by the generic orphan sweep, so no lock is held across the yield.
 
 Every launch mounts the client's `~/.ssh/known_hosts` read-only, the sshd's host keys under the
 hostname the client entry names, as the README's section 5 connection test writes it: the release

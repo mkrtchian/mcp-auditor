@@ -1,8 +1,8 @@
 # Patched @houtini/lm (CVE-2026-82112): code_task_files resolves each caller-supplied path with
 # realpath and confines it to HOUTINI_LM_FILE_ROOTS, refusing a path outside the roots. This is
-# the nuisance run image. The server is pinned at 3.1.0, the first npm release that contains the
-# fix commit 35d97bca (the advisory gives no patched version, affected up to 2.13.2). Installed
-# from the npm registry, the install channel the server documents.
+# the image the nuisance suite audits. The server is pinned at 3.1.0, the first npm release that
+# contains the fix commit 35d97bca (the advisory gives no patched version, affected up to 2.13.2).
+# Installed from the npm registry, the install channel the server documents.
 FROM ghcr.io/ggml-org/llama.cpp:server@sha256:c0a11067c72bb1eb330b8bddbf9869274c195e596bf4fae55fd527102e644b85
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -38,7 +38,7 @@ RUN mkdir -p /opt/models \
 RUN npm install -g @houtini/lm@3.1.0
 
 # The in-scope project the benign call reads (HOUTINI_LM_FILE_ROOTS=/srv/app), baked on both
-# versions because the nuisance run mounts no layout: the "simplegit" sample project of git's book
+# versions because the nuisance suite mounts no layout: the "simplegit" sample project of git's book
 # (Pro Git, 2.3 Viewing the Commit History), cloned whole and reset to its pinned commit, made
 # world-readable so the unprivileged server account reads it. It comes after the model layers so
 # a change to it does not download the model again.

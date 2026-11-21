@@ -1,6 +1,7 @@
-# Nuisance run image of taskwarrior: Dockerfile.holdout-2026-5833-taskwarrior-patched with
-# TaskWarrior pinned at the holdout card's release and its data set up at TaskWarrior's defaults,
-# pinning the admission's patched version, commit 1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2 (ARG COMMIT).
+# The image the nuisance suite audits for taskwarrior:
+# Dockerfile.holdout-2026-5833-taskwarrior-patched with TaskWarrior pinned at the holdout card's
+# release and its data set up at TaskWarrior's defaults, pinning the admission's patched version,
+# commit 1ee3d282debfa0a99afeb41d22c4b2fd5a3148f2 (ARG COMMIT).
 # The handler calls execFileSync('task', [...]): no shell, each argument passed literally.
 FROM node:22-bookworm@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd
 

@@ -1,6 +1,6 @@
 # skill-ninja-mcp-server (npm:skill-ninja-mcp-server) 0.1.1, the release that fixes CVE-2026-19328
-# (workspacePath path traversal): resolveTrustedWorkspacePath rejects a path outside
-# a trusted workspace root before any filesystem access. Doubles as the nuisance run image.
+# (workspacePath path traversal): resolveTrustedWorkspacePath rejects a path outside a trusted
+# workspace root before any filesystem access. Doubles as the image the nuisance suite audits.
 #
 # The server runs in its documented default, with no SKILL_NINJA_TRUSTED_WORKSPACES: its README
 # trusts the current working directory when it looks like a project root, and the run's -w

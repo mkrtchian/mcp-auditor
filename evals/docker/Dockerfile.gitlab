@@ -1,7 +1,7 @@
 # Patched: @zereight/mcp-gitlab 2.1.38, the version whose encodeGitLabPathSegment encodes the raw
 # jobId in the pipeline-job request paths (fix commit e2a81a0), so a traversal in job_id no longer
-# escapes /jobs/. Doubles as the nuisance run image. No COPY/ADD from the build context; the
-# install is a RUN fetch from npm.
+# escapes /jobs/. Doubles as the image the nuisance suite audits. No COPY/ADD from the build
+# context; the install is a RUN fetch from npm.
 FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
 RUN npm install -g @zereight/mcp-gitlab@2.1.38
 # GITLAB_API_URL: the self-managed GitLab instance the README's GITLAB_API_URL row names ("Your
