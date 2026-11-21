@@ -34,6 +34,7 @@ from mcp_auditor.graph.unsent_calls import report_tools_left
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 from tests.fakes.mcp_client import a_lost_connection_response
+from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
 
 
 class TestFilterTools:
@@ -219,7 +220,7 @@ class TestExecuteTool:
 
     async def test_a_case_not_sent_is_counted_apart_and_not_judged(self):
         tool = given.a_tool(name="read_file")
-        server, client = await given.a_server_taken_as_down(tool)
+        server, client = await a_server_taken_as_down(tool)
         node = make_execute_tool(server)
         state: dict[str, Any] = {"pending_cases": [given.a_test_case()], "current_tool": tool}
 
@@ -430,7 +431,7 @@ class TestRouteTools:
         assert route(state) == "generate_report"
 
     async def test_reports_the_tools_left_once_the_server_is_taken_as_down(self):
-        server, _ = await given.a_server_taken_as_down(given.a_tool())
+        server, _ = await a_server_taken_as_down(given.a_tool())
         state = {"tool_reports": [object()], "discovered_tools": [given.a_tool(), given.a_tool()]}
 
         assert make_route_tools(server)(state) == "report_tools_left"

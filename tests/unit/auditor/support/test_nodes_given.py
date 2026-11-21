@@ -13,11 +13,8 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal
 from mcp_auditor.domain.server_liveness import UnsentCause
-from tests.fakes import FakeMCPClient
-from tests.fakes.mcp_client import a_lost_connection_response
 
 
 def a_tool(
@@ -125,13 +122,3 @@ def a_tool_state_with_calls_not_sent(
 
 def a_provider_refusal() -> ProviderRefusal:
     return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
-
-
-async def a_server_taken_as_down(tool: ToolDefinition) -> tuple[AuditedServer, FakeMCPClient]:
-    """A server whose connection was lost on a first call, and whose relaunch failed."""
-    client = FakeMCPClient(
-        [tool], {tool.name: a_lost_connection_response()}, relaunch_answers=(False,)
-    )
-    server = AuditedServer(client)
-    await server.attempt(tool, a_payload())
-    return server, client

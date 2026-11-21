@@ -1,3 +1,5 @@
+import pytest
+
 from mcp_auditor.domain import (
     AuditCategory,
     AuditPayload,
@@ -11,6 +13,7 @@ from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCa
 from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW, SendAttempt
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
+from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
 
 _TOOL = ToolDefinition(name="run", description="Runs a command", input_schema={"type": "object"})
 
@@ -138,9 +141,10 @@ async def test_a_tool_timing_out_in_a_row_is_called_no_more():
     assert len(client.calls) == TIMEOUTS_IN_A_ROW
 
 
-async def test_a_lost_connection_relaunches_the_server_after_the_call():
+@pytest.mark.parametrize("relaunch_succeeds", [True, False])
+async def test_a_lost_connection_relaunches_the_server_after_the_call(relaunch_succeeds: bool):
     lost = a_lost_connection_response()
-    client = FakeMCPClient([_TOOL], responses={"run": lost})
+    client = FakeMCPClient([_TOOL], responses={"run": lost}, relaunch_answers=(relaunch_succeeds,))
     server = AuditedServer(client)
 
     attempt = await server.attempt(_TOOL, _a_payload({"command": "kill 1"}))
@@ -151,7 +155,7 @@ async def test_a_lost_connection_relaunches_the_server_after_the_call():
             tool_name="run",
             arguments={"command": "kill 1"},
             cause=RelaunchCause.LOST_CONNECTION,
-            succeeded=True,
+            succeeded=relaunch_succeeds,
         ),
     )
 
@@ -169,17 +173,10 @@ async def test_a_control_ping_follows_each_relaunch_at_once():
 
 async def test_a_failed_relaunch_takes_the_server_as_down_and_sends_no_more_call():
     other = ToolDefinition(name="list", description="Lists", input_schema={"type": "object"})
-    client = FakeMCPClient(
-        [_TOOL, other],
-        responses={"run": a_lost_connection_response()},
-        relaunch_answers=(False,),
-    )
-    server = AuditedServer(client)
+    server, client = await a_server_taken_as_down(_TOOL, other)
 
-    first = await server.attempt(_TOOL, _a_payload({"command": "kill 1"}))
     later = await server.attempt(other, _a_payload({"path": "."}))
 
-    assert first.relaunch is not None and not first.relaunch.succeeded
     assert server.taken_as_down
     assert later == SendAttempt(UnsentPayload(UnsentCause.SERVER_DOWN))
     assert len(client.calls) == 1

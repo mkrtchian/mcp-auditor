@@ -1,10 +1,9 @@
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, ServerWatch, WatchStep
+from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
-TIMEOUT = ToolResponse(
-    content="Tool call timed out after 30s", is_error=True, error_type="TimeoutError"
-)
-LOST_CONNECTION = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
+TIMEOUT = a_timeout_response()
+LOST_CONNECTION = a_lost_connection_response()
 ANSWER = ToolResponse(content="ok")
 
 

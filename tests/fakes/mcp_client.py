@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from mcp_auditor.domain import ToolDefinition, ToolResponse
+from mcp_auditor.domain.server_watch import LOST_CONNECTION_RESPONSES
 
 
 class FakeMCPClient:
@@ -54,7 +55,8 @@ def a_timeout_response(tool_call_timeout: int = 60) -> ToolResponse:
 
 
 def a_lost_connection_response() -> ToolResponse:
-    return ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
+    error_type, content = LOST_CONNECTION_RESPONSES[0]
+    return ToolResponse(content=content or "", is_error=True, error_type=error_type)
 
 
 def _next[T](answers: list[T]) -> T:

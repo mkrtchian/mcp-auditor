@@ -17,11 +17,8 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
-from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW
 from tests.fakes import FakeMCPClient
-from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 
 DEFAULT_TOOL_NAME = "file_manager"
 
@@ -93,30 +90,6 @@ def a_fake_mcp_client(
     responses: dict[str, ToolResponse] | None = None,
 ) -> FakeMCPClient:
     return FakeMCPClient(tools or [a_tool()], responses)
-
-
-def a_server_losing_its_connection() -> AuditedServer:
-    return AuditedServer(
-        a_fake_mcp_client(responses={DEFAULT_TOOL_NAME: a_lost_connection_response()})
-    )
-
-
-async def a_server_taken_as_down() -> tuple[AuditedServer, FakeMCPClient]:
-    """A server whose connection was lost on a first call, and whose relaunch failed."""
-    client = FakeMCPClient(
-        [a_tool()], {DEFAULT_TOOL_NAME: a_lost_connection_response()}, relaunch_answers=(False,)
-    )
-    server = AuditedServer(client)
-    await server.attempt(a_tool(), a_payload())
-    return server, client
-
-
-async def a_server_that_stopped(tool: ToolDefinition) -> AuditedServer:
-    """A server that answers the ping, on which the tool timed out until it was stopped."""
-    server = AuditedServer(FakeMCPClient([tool], {tool.name: a_timeout_response()}))
-    for _ in range(TIMEOUTS_IN_A_ROW):
-        await server.attempt(tool, a_payload())
-    return server
 
 
 def a_judged_chain() -> AttackChain:
