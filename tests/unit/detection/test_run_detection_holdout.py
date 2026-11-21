@@ -16,7 +16,7 @@ from evals.cve.run_images import target_services
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
-from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
+from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
 
 
 @pytest.fixture(autouse=True)
@@ -106,7 +106,18 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_daemon_that_cannot_c
     assert "Docker Engine 28.0 or later is required" in capsys.readouterr().out
 
 
-def test_the_calibration_check_takes_one_flaw(
+def test_the_calibration_check_takes_one_flaw(monkeypatch: pytest.MonkeyPatch):
+    _drawn_targets(monkeypatch, FILESYSTEM, GIT)
+    checked: list[str] = []
+    _a_calibration_check(monkeypatch, deps_with(checked=checked))
+
+    exit_code = run_detection_holdout.main(["calibration-check", "--flaw", FILESYSTEM])
+
+    assert exit_code == 0
+    assert checked == [FILESYSTEM]
+
+
+def test_the_calibration_check_on_a_flaw_not_drawn_exits_zero_and_says_so(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _a_drawn_target(monkeypatch)
@@ -122,7 +133,7 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
 ):
     _a_drawn_target(monkeypatch)
     stale, absent = target_services([an_acceptance_target(FILESYSTEM)])[:2]
-    labels = _current_labels() | {image_tag(stale): "an-older-fingerprint"}
+    labels = _current_labels(FILESYSTEM) | {image_tag(stale): "an-older-fingerprint"}
     del labels[image_tag(absent)]
     store = FakeImageStore(labels)
     monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", store)
@@ -139,17 +150,20 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
 
 
 def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        run_detection_holdout,
-        "HOLDOUT_TARGETS",
-        (an_acceptance_target(FILESYSTEM, tools_filter=None),),
-    )
+    _drawn_targets(monkeypatch, FILESYSTEM)
+
+
+def _drawn_targets(monkeypatch: pytest.MonkeyPatch, *flaw_ids: str) -> None:
+    """Drawn, with a closed network and current images for each."""
+    targets = tuple(an_acceptance_target(flaw_id, tools_filter=None) for flaw_id in flaw_ids)
+    monkeypatch.setattr(run_detection_holdout, "HOLDOUT_TARGETS", targets)
     monkeypatch.setattr(run_detection_holdout, "check_closed_network_support", lambda: None)
-    monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", FakeImageStore(_current_labels()))
+    labels = _current_labels(*flaw_ids)
+    monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", FakeImageStore(labels))
 
 
-def _current_labels() -> dict[str, str | None]:
-    services = target_services([an_acceptance_target(FILESYSTEM)])
+def _current_labels(*flaw_ids: str) -> dict[str, str | None]:
+    services = target_services([an_acceptance_target(flaw_id) for flaw_id in flaw_ids])
     return {image_tag(service): dockerfile_fingerprint(service) for service in services}
 
 

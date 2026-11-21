@@ -8,7 +8,7 @@ from evals import run_detection
 from evals.baseline import BaselineStatus
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.measurement import MEASUREMENT_NEEDS_NO_BASELINE, STEPS_WITHOUT_CHAINS
-from evals.cve.detection.targets import image_tag
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
 from evals.cve.run_images import target_services
 from tests.unit.detection.support import test_run_detection_given as given
 from tests.unit.support.acceptance_targets import an_acceptance_target
@@ -311,21 +311,28 @@ def test_a_recording_prints_the_outcome_once_before_the_recorded_baselines(
 
 
 @pytest.mark.parametrize(
-    "flags", [["--calibration-check"], ["--calibration-check", "--flaw", given.RECORDED_FLAW]]
+    ("flags", "expected"),
+    [
+        ([], [target.flaw_id for target in ACCEPTANCE_TARGETS]),
+        (["--flaw", given.RECORDED_FLAW], [given.RECORDED_FLAW]),
+    ],
 )
 def test_the_calibration_check_runs_on_every_target_or_on_the_flaws_named(
-    monkeypatch: pytest.MonkeyPatch, flags: list[str]
+    monkeypatch: pytest.MonkeyPatch, flags: list[str], expected: list[str]
 ):
-    given.a_calibration(monkeypatch)
+    checked: list[str] = []
+    given.a_calibration(monkeypatch, checked=checked)
 
-    assert given.exit_code_of(monkeypatch, *flags) == 0
+    code = given.exit_code_of(monkeypatch, "--calibration-check", *flags)
+
+    assert code == 0
+    assert checked == expected
 
 
-def test_a_no_baseline_run_compares_nothing_and_exits_0(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
-    given.a_session_under_priced_models(monkeypatch)
+def test_the_no_baseline_flag_reaches_the_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    received = given.a_session_recording_options(monkeypatch)
 
     code = given.exit_code_of(monkeypatch, "--no-baseline", "--report", str(tmp_path / "r.json"))
 
     assert code == 0
+    assert [options.no_baseline for options in received] == [True]

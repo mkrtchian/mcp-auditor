@@ -39,12 +39,15 @@ def a_sweep_finding(monkeypatch: pytest.MonkeyPatch, *running: str) -> FakeConta
     return containers
 
 
-def a_calibration(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> None:
-    """Past the preflight, every fixture admitted and live, or a configuration error."""
+def a_calibration(
+    monkeypatch: pytest.MonkeyPatch, *, raises: bool = False, checked: list[str] | None = None
+) -> None:
+    """Past the preflight, every fixture admitted and live, or a configuration error. The flaw
+    IDs it checks are appended to checked."""
     monkeypatch.setattr(run_detection, "preflight_ok", lambda: True)
 
     def default_calibration_check_deps(*_args: object, **_kwargs: object) -> CalibrationCheckDeps:
-        return deps_with(raises=raises)
+        return deps_with(raises=raises, checked=checked)
 
     monkeypatch.setattr(
         no_llm_modes, "default_calibration_check_deps", default_calibration_check_deps
@@ -75,6 +78,21 @@ def a_session_under_priced_models(
     monkeypatch.setattr(run_detection, "read_tree", lambda: TreeState("c0ffee", dirty=dirty))
     monkeypatch.setattr(run_detection, "audit_target", audit_target or a_billing_audit_target)
     monkeypatch.setattr(run_detection, "run_gated", a_session_auditing_nothing)
+
+
+def a_session_recording_options(monkeypatch: pytest.MonkeyPatch) -> list[DetectionOptions]:
+    """A graded session auditing nothing, under priced models, that keeps the options it gets."""
+    a_session_under_priced_models(monkeypatch)
+    received: list[DetectionOptions] = []
+
+    async def session(
+        options: DetectionOptions, harness: DetectionHarness
+    ) -> DetectionSessionResult:
+        received.append(options)
+        return await a_session_auditing_nothing(options, harness)
+
+    monkeypatch.setattr(run_detection, "run_gated", session)
+    return received
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:

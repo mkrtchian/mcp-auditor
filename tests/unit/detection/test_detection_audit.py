@@ -390,7 +390,7 @@ async def test_a_server_taken_as_down_is_a_run_skipped(monkeypatch: pytest.Monke
     assert f"{TARGET.flaw_id} run skipped" in output.getvalue()
 
 
-async def test_a_server_taken_as_down_on_a_holdout_run_is_a_launch_failure_retried(
+async def test_a_server_taken_as_down_on_a_holdout_run_drops_the_run_as_a_launch_failure(
     monkeypatch: pytest.MonkeyPatch,
 ):
     given.captured_console(monkeypatch)
