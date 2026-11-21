@@ -6,13 +6,12 @@ from pathlib import Path
 
 from evals.cve.backends.kubernetes import StoodControlPlane
 from evals.cve.backends.kubernetes_detection import ControlPlaneDocker, kubernetes_injection_env
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.detection.targets import Target
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.acceptance_targets import KUBERNETES, an_acceptance_target
 
 CONTROL_PLANE_NETWORK = "kube-net"
-KUBERNETES_TARGET = next(
-    target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"
-)
+KUBERNETES_TARGET = an_acceptance_target(KUBERNETES)
 
 
 def the_kubernetes_target_without_docker() -> Target:

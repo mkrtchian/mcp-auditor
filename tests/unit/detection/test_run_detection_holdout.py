@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import tests.unit.census.support.test_census_given as given
-import tests.unit.detection.support.test_detection_holdout_run_given as holdout_given
 import tests.unit.detection.support.test_run_detection_holdout_run_given as run_given
 import tests.unit.support.kit_isolation as iso
 from evals import run_detection_holdout
@@ -17,6 +16,7 @@ from evals.cve.run_images import target_services
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +121,7 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     _a_drawn_target(monkeypatch)
-    stale, absent = target_services([holdout_given.a_target(holdout_given.FILESYSTEM)])[:2]
+    stale, absent = target_services([an_acceptance_target(FILESYSTEM)])[:2]
     labels = _current_labels() | {image_tag(stale): "an-older-fingerprint"}
     del labels[image_tag(absent)]
     store = FakeImageStore(labels)
@@ -154,22 +154,19 @@ def _a_drawn_target(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         run_detection_holdout,
         "HOLDOUT_TARGETS",
-        (holdout_given.a_target(holdout_given.FILESYSTEM),),
+        (an_acceptance_target(FILESYSTEM, tools_filter=None),),
     )
     monkeypatch.setattr(run_detection_holdout, "check_closed_network_support", lambda: None)
     monkeypatch.setattr(run_detection_holdout, "IMAGE_STORE", FakeImageStore(_current_labels()))
 
 
 def _current_labels() -> dict[str, str | None]:
-    services = target_services([holdout_given.a_target(holdout_given.FILESYSTEM)])
+    services = target_services([an_acceptance_target(FILESYSTEM)])
     return {image_tag(service): dockerfile_fingerprint(service) for service in services}
 
 
 def _drawn_target_tags() -> list[str]:
-    return [
-        image_tag(service)
-        for service in target_services([holdout_given.a_target(holdout_given.FILESYSTEM)])
-    ]
+    return [image_tag(service) for service in target_services([an_acceptance_target(FILESYSTEM)])]
 
 
 def _cannot_close_a_network() -> None:

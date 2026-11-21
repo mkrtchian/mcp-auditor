@@ -6,10 +6,11 @@ from typing import Any
 
 import pytest
 
-import tests.unit.detection.support.test_detection_holdout_run_given as run_given
 from evals import run_detection_holdout
 from evals.cve.detection.holdout_results import HoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps
+from tests.unit.support import holdout_runs
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 # The report's no-proof guarantee, held by the result file too.
 PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
@@ -17,9 +18,9 @@ RETIRED_KEYS = {"cve_id", "mechanism_labels", "miss_causes", "primary_number"}
 
 
 def a_run_result() -> HoldoutRunResult:
-    target = run_given.a_target(run_given.FILESYSTEM)
-    audit = run_given.scripted({target.flaw_id: run_given.three_detections()})
-    return asyncio.run(run_given.run([target], run_given.deps_auditing(audit)))
+    target = an_acceptance_target(FILESYSTEM, tools_filter=None)
+    audit = holdout_runs.scripted({target.flaw_id: holdout_runs.three_detections()})
+    return asyncio.run(holdout_runs.run([target], holdout_runs.deps_auditing(audit)))
 
 
 def a_drawn_run_ending_in(
@@ -37,7 +38,7 @@ def a_drawn_run_ending_in(
     a_drawn_target_with_a_ready_card(monkeypatch)
 
     def deps(*_: object) -> HoldoutDeps:
-        return run_given.deps_reaching_nothing()
+        return holdout_runs.deps_reaching_nothing()
 
     monkeypatch.setattr(run_detection_holdout, "default_deps", deps)
     monkeypatch.setattr(run_detection_holdout, "run_holdout_targets", orchestrator)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, LaunchMode, Target
+from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.grammar import FlawClass, TargetStatus
 from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind, Places
@@ -19,6 +19,7 @@ from tests.unit.cve.support.test_cve_planting_stand_ins_given import HOST as STA
 from tests.unit.cve.support.test_cve_planting_stand_ins_given import (
     a_stand_ins_directory as a_stand_ins_directory,
 )
+from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES, an_acceptance_target
 
 type TargetChange = Callable[[Target, Places, Path], tuple[Target, Places]]
 type StandInChange = Callable[[Target, Path], Target]
@@ -28,11 +29,8 @@ KEPT_FILE_ID = "fict-file"
 KEPT_LAYOUT_ID = "fict-layout"
 
 # Its backend modules dropped, so a backend source a case declares is the target's only one.
-KUBERNETES_TARGET = dataclasses.replace(
-    next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355"),
-    backend_sources=(),
-)
-SYMLINK_TARGET = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
+KUBERNETES_TARGET = an_acceptance_target(KUBERNETES, backend_sources=())
+SYMLINK_TARGET = an_acceptance_target(FILESYSTEM)
 RECORDED_COMMIT = "0123abc"
 
 

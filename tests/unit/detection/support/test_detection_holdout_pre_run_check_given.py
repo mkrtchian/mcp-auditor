@@ -4,14 +4,12 @@ from dataclasses import dataclass, field
 
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.targets import Target
-from tests.unit.detection.support.test_detection_holdout_run_given import (
-    FILESYSTEM,
-    GIT,
-    KUBERNETES,
-    a_target,
-)
+from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, KUBERNETES, an_acceptance_target
 
-TARGETS = (a_target(FILESYSTEM), a_target(KUBERNETES), a_target(GIT))
+# With no tools filter, which the holdout run refuses.
+TARGETS = tuple(
+    an_acceptance_target(flaw_id, tools_filter=None) for flaw_id in (FILESYSTEM, KUBERNETES, GIT)
+)
 LIVE: list[str] = []
 SOUND = LayoutCheck(gave_up=None, breaks=False, leaking=[], unrouted=[])
 BROKEN = LayoutCheck(gave_up=None, breaks=True, leaking=[], unrouted=[])

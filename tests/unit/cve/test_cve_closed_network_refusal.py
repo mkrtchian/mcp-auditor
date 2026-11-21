@@ -8,7 +8,6 @@ import pytest
 
 import tests.unit.cve.support.test_cve_closed_network_refusal_given as given
 import tests.unit.cve.support.test_cve_closed_network_refusal_then as then
-import tests.unit.detection.support.test_detection_holdout_run_given as holdout_given
 import tests.unit.nuisance.gate.support.test_nuisance_gate_session_given as gate_given
 import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
@@ -16,6 +15,8 @@ import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
 from evals.eval_session import Refused
+from tests.unit.support import holdout_runs
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 
 async def test_a_nuisance_run_refuses_before_any_rebuild():
@@ -63,13 +64,13 @@ async def test_a_gate_refuses_before_any_rebuild(tmp_path: Path):
 async def test_a_holdout_run_refuses_before_any_rebuild():
     rebuild = given.CountingRebuild()
     deps = dataclasses.replace(
-        holdout_given.deps_auditing(holdout_given.scripted({})),
+        holdout_runs.deps_auditing(holdout_runs.scripted({})),
         rebuild=rebuild,
         check_networks=given.a_daemon_that_cannot_close_a_network,
     )
 
     with pytest.raises(Refused) as refused:
-        await holdout_given.run([holdout_given.a_target()], deps)
+        await holdout_runs.run([an_acceptance_target(FILESYSTEM, tools_filter=None)], deps)
 
     then.refused_for_the_daemon(refused.value)
     assert rebuild.rebuilt == []

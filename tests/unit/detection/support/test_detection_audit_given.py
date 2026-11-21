@@ -11,7 +11,7 @@ from evals.cve import audit_attempts, launch_audit
 from evals.cve.audit_attempts import AttemptOutcome
 from evals.cve.detection import audit as detection_audit
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import PlantedTarget
@@ -25,8 +25,9 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
 )
 from tests.unit.cve.support import test_cve_grammar_given as grammar
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
-(TARGET,) = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109"]
+TARGET = an_acceptance_target(FILESYSTEM)
 A_LAUNCH = Launch("docker", ["run", "x"])
 
 

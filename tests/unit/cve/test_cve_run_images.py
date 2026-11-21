@@ -6,19 +6,21 @@ from collections.abc import Sequence
 import pytest
 
 import tests.unit.cve.support.test_cve_run_images_given as given
-import tests.unit.detection.support.test_detection_holdout_run_given as targets
 from evals.cve.run_images import (
     rebuild_images,
     remove_containers,
     sweep_containers,
     target_services,
 )
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_target_services_dedups_images_and_patched_images():
-    first = targets.a_target(images=("app",), patched_image="app-patched")
-    second = targets.a_target(images=("app", "sentinel"), patched_image="other-patched")
+    first = an_acceptance_target(FILESYSTEM, images=("app",), patched_image="app-patched")
+    second = an_acceptance_target(
+        FILESYSTEM, images=("app", "sentinel"), patched_image="other-patched"
+    )
 
     services = target_services([first, second])
 

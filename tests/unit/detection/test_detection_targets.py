@@ -30,8 +30,9 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
+from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
 
-SSRF_TARGET = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-65513")
+SSRF_TARGET = an_acceptance_target("CVE-2025-65513")
 COMPOSE_PATH = Path(__file__).resolve().parents[3] / "evals" / "docker" / "compose.yml"
 
 ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
@@ -127,7 +128,7 @@ def test_four_targets_remain_and_the_prefix_collision_merged_into_the_symlink_ta
 
 
 def test_the_filesystem_target_aims_at_both_scope_escapes():
-    filesystem = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
+    filesystem = an_acceptance_target(FILESYSTEM)
 
     assert filesystem.aim.search("/srv/app/archive0/report")  # the symlink out of scope
     assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
@@ -233,7 +234,7 @@ def test_every_surviving_target_carries_a_fallback_scope_and_the_normal_launch_m
 
 
 def test_the_git_target_falls_back_to_no_scope_because_its_scope_is_optional():
-    git = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-68143")
+    git = an_acceptance_target(GIT)
 
     assert git.fallback_scope.kind is FallbackScopeKind.OPTIONAL
 

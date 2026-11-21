@@ -8,9 +8,10 @@ from evals import run_detection
 from evals.baseline import BaselineStatus
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.measurement import MEASUREMENT_NEEDS_NO_BASELINE, STEPS_WITHOUT_CHAINS
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
+from evals.cve.detection.targets import image_tag
 from evals.cve.run_images import target_services
 from tests.unit.detection.support import test_run_detection_given as given
+from tests.unit.support.acceptance_targets import an_acceptance_target
 
 
 @pytest.fixture(autouse=True)
@@ -206,8 +207,7 @@ def test_a_graded_run_that_crashes_still_removes_the_containers_left_running(
 
 
 def _tags_of(flaw_id: str) -> list[str]:
-    targets = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == flaw_id]
-    return [image_tag(service) for service in target_services(targets)]
+    return [image_tag(service) for service in target_services([an_acceptance_target(flaw_id)])]
 
 
 def test_a_concurrency_below_one_is_refused_by_the_parser(

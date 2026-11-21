@@ -3,6 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import tests.unit.support.acceptance_targets as acceptance
 from evals.cve.detection.baseline import (
     DetectionBaseline,
     DetectionRunConditions,
@@ -18,7 +19,7 @@ from evals.cve.detection.session_model import (
     GradedAudit,
     ObserveLayout,
 )
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.detection.targets import Target
 from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
@@ -38,8 +39,8 @@ __all__ = ["a_detected_grade", "conditions"]
 # The real loaded places, so the real targets' kept ids resolve (fixture_fingerprint and the
 # session both read them); no Docker, load_places only reads the frozen JSON.
 PLACES = load_places(DETECTION_PLACES)
-KUBERNETES = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53355")
-SYMLINK = next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109")
+KUBERNETES = acceptance.an_acceptance_target(acceptance.KUBERNETES)
+SYMLINK = acceptance.an_acceptance_target(acceptance.FILESYSTEM)
 COMMIT = "0123abc"
 RECORDED_AT = "2026-09-28T12:00:00+00:00"
 

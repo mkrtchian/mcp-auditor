@@ -3,7 +3,6 @@ stands in for `connect`. No Docker, no LLM: the target plants nothing on disk an
 container, and each launch of the patched version answers from a script.
 """
 
-import dataclasses
 import re
 from collections.abc import AsyncGenerator, Generator, Sequence
 from contextlib import asynccontextmanager, contextmanager
@@ -12,13 +11,14 @@ from typing import Any
 
 import tests.unit.cve.support.test_cve_grammar_given as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.grammar import FlawClass, PlantedTarget
 from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting_base import PlantingSpec
 from mcp_auditor.domain.models import AttackChain, AuditReport, ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient, a_lost_connection_response, a_timeout_response
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 FLAW_PATH = "/outside/flag"
 OTHER_PATH = "/outside/other"
@@ -112,13 +112,11 @@ _A_FILE_PLACE = Place(
 
 
 def _a_target_serving_its_nonce(launch_args: Sequence[str]) -> Target:
-    (target,) = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == "CVE-2025-53109"]
-
     @contextmanager
     def no_container(_tag: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
         yield Launch("docker", ["run", *launch_args, "patched", spec.nonces[PLACE_ID]])
 
-    return dataclasses.replace(target, kept_places=(PLACE_ID,), builder=no_container)
+    return an_acceptance_target(FILESYSTEM, kept_places=(PLACE_ID,), builder=no_container)
 
 
 @dataclass
