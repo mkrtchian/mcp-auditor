@@ -4,7 +4,7 @@ ADRs and plans keep the words of their date. This file maps those words to the c
 
 The table has one line per change of vocabulary, sorted by the older word. A rename keeps the concept and changes its word. A moved meaning keeps the word for another concept, so in an older text the word means something else. Its line ends with what the word means now. A retired word has no successor of its own, so its line says what it meant and a current text writes that out. A changed decision is not listed here: the ADR that supersedes it records it. The date is the day the older word stopped being the current one, and most lines date from the adoption of this glossary.
 
-The words whose meaning moved are the ones to watch, since a reader who thinks they know the word will not look it up: acceptance layer, acceptance server, admission, alarm, calibration, CVE benchmark, exploratory, fixed, holdout, holdout server, oracle, payload, replay, report-only, rubric, sentinel, target and vet. In an ADR or a plan, read them through their line below.
+The words whose meaning moved are the ones to watch, since a reader who thinks they know the word will not look it up: acceptance layer, acceptance server, admission, alarm, calibration, CVE benchmark, exploratory, fixed, holdout, holdout run, holdout server, oracle, payload, replay, report-only, rubric, sentinel, target and vet. In an ADR or a plan, read them through their line below.
 
 Some older words are kept on purpose in living code and data, since changing them would change a committed record, a hash or what a model reads: the salt literal `mcp-auditor-holdout:` of the draw order, the Docker label `mcp-auditor-cve`, the compose services `holdout-*` and their `Dockerfile.holdout-*` (the census cards cite them), the `replay_rule` key of the two committed baselines (read through an alias until their next re-recording), the data tokens `arbitrary_read`, `command_execution` and `internal_fetch` and every reach and class token, the `reachable_by` key of `evals/detection_places.json`, the `cve_id` values of the census (they are CVE IDs), `EvalVerdict` and the `cases` of `TestCaseBatch` (names sent to the model), and the historical words of every committed record (census cards and calibration records, the admission and walk records, baselines, stand-in captures, fixtures and the dated log entries).
 
@@ -80,6 +80,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `HoldoutCensus` | census (`Census`) | rename | 2026-11-11 |
 | holdout log (`docs/holdout-log.md`) | detection suite log (`docs/detection-suite-log.md`) | rename | 2026-11-11 |
 | holdout rule (`docs/holdout-rule.md`) | detection suite rule (`docs/detection-suite-rule.md`) | rename | 2026-11-11 |
+| holdout run (ADRs, the detection suite rule, nuisance suite rule v1 to v6, logs, plans, code: a run of the detection holdout layer alone) | detection holdout run. "Holdout run" now names a run of the holdout layer of either suite. | moved meaning | 2026-11-21 |
 | holdout server (the server of a holdout target) | detection holdout server. "Holdout server" is now always qualified by its suite. | moved meaning | 2026-11-11 |
 | holdout twin, drawn twin (nuisance rule, nuisance log, plans) | no successor: the holdout target of a nuisance server ("its holdout twin's calibration"), or that server itself, a detection holdout server ("the first admissions of holdout twins") | retired | 2026-11-11 |
 | holdout walk, holdout's draw order | detection walk, draw order | rename | 2026-11-11 |
@@ -96,6 +97,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `not_run_conditions` | `not_run_reasons` | rename | 2026-11-11 |
 | `NuisanceCensus` (the census with the walk record) | `WalkInputs` | rename | 2026-11-11 |
 | nuisance rule (`docs/nuisance-rule.md`), nuisance log (`docs/nuisance-log.md`) | nuisance suite rule (`docs/nuisance-suite-rule.md`), nuisance suite log (`docs/nuisance-suite-log.md`) | rename | 2026-11-11 |
+| nuisance run (ADR 034, nuisance suite rule v1 to v6, logs, plans, code: a run of the nuisance holdout layer) | nuisance holdout run | rename | 2026-11-21 |
 | oracle (ADR 015, CLAUDE.md: the grader of any instrument, the ground truth on the honeypot suite) | grader: the ground truth, the labels. "Oracle" now names only the detection suite's grader. | moved meaning | 2026-11-11 |
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
 | oracle version (plans: on the CVE benchmark) | grammar fingerprint | rename | 2026-09-28 |
