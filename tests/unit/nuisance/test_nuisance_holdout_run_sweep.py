@@ -83,7 +83,7 @@ async def test_the_sweep_runs_when_no_server_survives():
         containers=containers,
     )
 
-    with pytest.raises(Refused, match="nuisance run refused"):
+    with pytest.raises(Refused, match="nuisance holdout run refused"):
         await given.run([server], deps)
 
     assert containers.removed == ["stuck_one"]

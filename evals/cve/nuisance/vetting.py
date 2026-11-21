@@ -1,5 +1,5 @@
-"""The vet of a nuisance run: drop from the run, before any audit, a server whose benign call
-fails on its patched image. A server whose first pass fails gets a second pass, alone and on a
+"""The vet of a nuisance holdout run: drop from the run, before any audit, a server whose benign
+call fails on its patched image. A server whose first pass fails gets a second pass, alone and on a
 fresh launch once every first pass has finished, and is dropped only when that pass fails too: a
 fixture whose real software is slow or nondeterministic, or whose backend sets a state in the
 background, can fail one pass while sound, and a broken fixture fails both. Before its second

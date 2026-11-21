@@ -1,5 +1,5 @@
 """How much of a failure a run's log may show. The detection gate and the calibration check show
-it all, since repairing a fixture needs it. The holdout and nuisance runs show no text the server
+it all, since repairing a fixture needs it. Holdout runs show no text the server
 or the model wrote: exception types and missed model call causes only."""
 
 from collections.abc import Sequence

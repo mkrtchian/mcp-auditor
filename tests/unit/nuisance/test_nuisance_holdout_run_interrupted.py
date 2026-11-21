@@ -1,4 +1,4 @@
-"""A nuisance run stopped by an exception out of a server's runs: the pending servers are
+"""A nuisance holdout run stopped by an exception out of a server's runs: the pending servers are
 cancelled and the finished ones are kept in a partial result. No Docker, no LLM."""
 
 import pytest

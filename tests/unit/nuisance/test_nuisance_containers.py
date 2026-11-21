@@ -1,5 +1,5 @@
-"""The images a nuisance run rebuilds: a backend-less server with public names adds the holder's
-and the stand-in's images, which the run rebuilds but never sweeps by tag, since the launch
+"""The images a nuisance holdout run rebuilds: a backend-less server with public names adds the
+holder's and the stand-in's images, which the run rebuilds but never sweeps by tag, since the launch
 removes its own containers and a calibration may share those images. The removal at the start
 also resets the Doris cluster, a pulled backend, by its container name."""
 

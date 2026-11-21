@@ -1,4 +1,5 @@
-"""The status line the nuisance run prints as each run of a server finishes. No Docker, no LLM."""
+"""The status line the nuisance holdout run prints as each run of a server finishes. No Docker, no
+LLM."""
 
 import pytest
 

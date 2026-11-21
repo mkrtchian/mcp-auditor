@@ -1,4 +1,4 @@
-"""How the audits of a holdout or nuisance run stop together. A first exception out of a target's
+"""How the audits of a holdout run stop together. A first exception out of a target's
 runs cancels every target still in flight, and the run keeps what had finished, so a fatal
 provider error spends no more calls than were already sent."""
 

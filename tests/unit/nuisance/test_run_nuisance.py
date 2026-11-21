@@ -139,7 +139,7 @@ def test_run_refuses_tracing_before_reading_the_admission(
 
     out = capsys.readouterr().out
     assert exit_code == run_nuisance.REFUSED_EXIT
-    assert "nuisance run refused" in out
+    assert "nuisance holdout run refused" in out
     assert "malformed" not in out
 
 

@@ -1,4 +1,4 @@
-"""The files a holdout or nuisance run writes: its report, the report's markdown and the run
+"""The files a holdout run writes: its report, the report's markdown and the run
 result beside them. The result is written before the report is built, so an error building it
 loses no paid run, and a run never overwrites any of the three."""
 

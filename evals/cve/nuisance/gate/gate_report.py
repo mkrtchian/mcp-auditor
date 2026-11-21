@@ -1,5 +1,5 @@
-"""The report of a nuisance gate run. Unlike the nuisance run's report, it carries the flagged
-tool names and goes with a per-case export, because the gate's servers may be read
+"""The report of a nuisance gate run. Unlike the nuisance holdout run's report, it carries the
+flagged tool names and goes with a per-case export, because the gate's servers may be read
 (nuisance-suite-rule.md, Reading)."""
 
 from collections.abc import Sequence

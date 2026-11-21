@@ -1,4 +1,4 @@
-"""The built backend images of a nuisance run: rebuilt with the server images, their running
+"""The built backend images of a nuisance holdout run: rebuilt with the server images, their running
 containers replaced at the start and swept at the end. The pulled Doris cluster is removed by
 name at the start, never rebuilt nor swept. No Docker, no LLM."""
 

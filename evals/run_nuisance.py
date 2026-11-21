@@ -220,7 +220,7 @@ def _re_admission_dossier(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     _refuse_tracing()
-    refuse_existing_report(args.report, "nuisance run refused")
+    refuse_existing_report(args.report, "nuisance holdout run refused")
     conditions = load_conditions(CONDITIONS_PATH)
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
@@ -231,7 +231,7 @@ def _run(args: argparse.Namespace) -> int:
         population = run_population(
             reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
         )
-    refuse_unrecorded(population.audited, "nuisance run refused")
+    refuse_unrecorded(population.audited, "nuisance holdout run refused")
     _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
@@ -248,7 +248,7 @@ def _run(args: argparse.Namespace) -> int:
 
 @dataclass(frozen=True)
 class _ReadyRun:
-    """What a nuisance run reads, once its conditions are checked ready for its models."""
+    """What a nuisance holdout run reads, once its conditions are checked ready for its models."""
 
     walk_inputs: WalkInputs
     population: RunPopulation
@@ -292,7 +292,7 @@ def _refuse_stale_holdout_calibration_copies(
             "holdout calibration copies taken from a fixture that has since changed"
             " or left the detection holdout layer"
         )
-        raise Refused("nuisance run refused", [reason, *stale])
+        raise Refused("nuisance holdout run refused", [reason, *stale])
 
 
 def current_copy_fingerprints(draw: DrawRecord | None) -> dict[str, str]:
@@ -308,8 +308,11 @@ def current_copy_fingerprints(draw: DrawRecord | None) -> dict[str, str]:
 def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            "nuisance run refused",
-            ["LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; a nuisance run keeps no trace"],
+            "nuisance holdout run refused",
+            [
+                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
+                "a nuisance holdout run keeps no trace"
+            ],
         )
 
 

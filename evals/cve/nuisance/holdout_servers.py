@@ -1,8 +1,8 @@
-"""The admitted servers a nuisance run audits, the exits it records without auditing, and the
-reached servers whose admission is pending.
+"""The admitted servers a nuisance holdout run audits, the exits it records without auditing, and
+the reached servers whose admission is pending.
 
 A nuisance acceptance server, admitted outside the nuisance walk, is never audited by a nuisance
-run, since only the gate audits it (nuisance-suite-rule.md, Run conditions and statistic).
+holdout run, since only the gate audits it (nuisance-suite-rule.md, Run conditions and statistic).
 """
 
 from collections.abc import Sequence

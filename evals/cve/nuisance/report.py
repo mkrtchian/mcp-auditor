@@ -1,6 +1,6 @@
 """The nuisance report model. It holds only the aggregated numbers and the proof-free per-server
-lines (statuses and counts), never evidence, judge input or a per-case verdict, so a nuisance run
-cannot write proof text even by mistake."""
+lines (statuses and counts), never evidence, judge input or a per-case verdict, so a nuisance
+holdout run cannot write proof text even by mistake."""
 
 from collections import Counter
 from datetime import date

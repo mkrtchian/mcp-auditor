@@ -81,7 +81,7 @@ class ProviderError:
 
 @dataclass(frozen=True)
 class DroppedRun:
-    """A run that never produced a report, which drops its server from the nuisance run."""
+    """A run that never produced a report, which drops its server from the nuisance holdout run."""
 
     cause: NotRunCause
 
@@ -198,8 +198,9 @@ async def gate_run(
 ) -> GateRun | None:
     """One run of the nuisance gate, at most `INCOMPLETE_ATTEMPTS` audits: the detection gate's
     policy on an incomplete attempt, with an alarm in place of a detection, unlike the nuisance
-    run's. A counted alarm stands whatever model call was missed, an incomplete audit without one is
-    attempted again, and the run does not complete when every attempt stays incomplete."""
+    holdout run's. A counted alarm stands whatever model call was missed, an incomplete audit
+    without one is attempted again, and the run does not complete when every attempt stays
+    incomplete."""
     causes: frozenset[MissCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await audit()

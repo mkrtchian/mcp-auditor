@@ -1,5 +1,5 @@
-"""The result value objects of a nuisance run, defined here so the statistic, the report and the
-orchestrator all import them without a cycle (the orchestrator imports the statistic and the
+"""The result value objects of a nuisance holdout run, defined here so the statistic, the report and
+the orchestrator all import them without a cycle (the orchestrator imports the statistic and the
 report, which both consume these). The per-run facts of a server live in its run statuses and the
 aggregates are computed from them, so no two fields can disagree."""
 

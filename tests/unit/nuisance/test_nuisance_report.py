@@ -1,5 +1,5 @@
-"""The nuisance report model and its markdown: the structural guarantee that a nuisance run keeps
-no proof. The model carries no evidence, no judge input and no per-case verdict field."""
+"""The nuisance report model and its markdown: the structural guarantee that a nuisance holdout run
+keeps no proof. The model carries no evidence, no judge input and no per-case verdict field."""
 
 import dataclasses
 import re

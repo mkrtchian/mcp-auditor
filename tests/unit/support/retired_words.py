@@ -309,6 +309,9 @@ RETIRED_WORDS = (
         r"nuisance-(rule|log)\b|\bnuisance (rule|log)\b|NUISANCE_(RULE|LOG)\b",
         re.IGNORECASE,
     ),
+    RetiredWord(
+        "nuisance-run", r"(?i:\bnuisance runs?\b)|\bNuisanceRun(?:Result|Status)\b", re.NOFLAG
+    ),
     RetiredWord("oracle-version", r"\boracle versions?\b", re.IGNORECASE),
     RetiredWord(
         "payload-label",

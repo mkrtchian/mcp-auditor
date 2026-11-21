@@ -62,9 +62,9 @@ def test_refusal_lists_the_gaps():
     server = given.without_seeds(given.a_recorded_server())
 
     with pytest.raises(Refused) as refusal:
-        refuse_unrecorded([server], "nuisance run refused")
+        refuse_unrecorded([server], "nuisance holdout run refused")
 
-    assert refusal.value.title == "nuisance run refused"
+    assert refusal.value.title == "nuisance holdout run refused"
     assert refusal.value.reasons == [
         "fields nuisance suite rule v3 or v4 adds are not yet recorded",
         f"{given.SERVER}: seeds",
@@ -72,4 +72,4 @@ def test_refusal_lists_the_gaps():
 
 
 def test_no_refusal_without_a_gap():
-    refuse_unrecorded([given.a_recorded_server()], "nuisance run refused")
+    refuse_unrecorded([given.a_recorded_server()], "nuisance holdout run refused")
