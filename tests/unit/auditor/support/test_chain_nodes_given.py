@@ -18,6 +18,7 @@ from mcp_auditor.domain import (
     ToolResponse,
 )
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.server_liveness import UnsentCause
 from tests.fakes import FakeMCPClient
 
 DEFAULT_TOOL_NAME = "file_manager"
@@ -150,6 +151,7 @@ def a_chain_audit_state(
     blocked_step_reason: str | None = None,
     chain_model_call_missed: bool = False,
     chain_cut_by_relaunch: bool = False,
+    unsent_step_cause: UnsentCause | None = None,
 ) -> dict[str, Any]:
     return {
         "current_tool": tool or a_tool(),
@@ -166,6 +168,7 @@ def a_chain_audit_state(
         "blocked_step_reason": blocked_step_reason,
         "chain_model_call_missed": chain_model_call_missed,
         "chain_cut_by_relaunch": chain_cut_by_relaunch,
+        "unsent_step_cause": unsent_step_cause,
         "provider_usage": [],
     }
 

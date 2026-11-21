@@ -373,6 +373,17 @@ def a_server_dying_on_its_first_chain_step(tool: ToolDefinition) -> FakeMCPClien
     return FakeMCPClient([tool], {tool.name: responses})
 
 
+def a_server_going_down_on_its_second_chain_step(tool: ToolDefinition) -> FakeMCPClient:
+    """The case and the first chain step are answered, the second step loses the connection and
+    the relaunch fails."""
+    responses = [
+        ToolResponse(content="ok"),
+        ToolResponse(content="ok"),
+        a_lost_connection_response(),
+    ]
+    return FakeMCPClient([tool], {tool.name: responses}, relaunch_answers=(False,))
+
+
 def a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(num_cases: int) -> FakeLLM:
     judgments = [a_judgment() for _ in range(num_cases)]
     stopped_tool = [a_complete_batch(num_cases), *judgments, AttackContext()]
@@ -392,3 +403,12 @@ def a_fake_llm_for_a_chain_cut_by_a_relaunch() -> FakeLLM:
     """The step cut by the relaunch is judged with no observation."""
     chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
     return FakeLLM([a_complete_batch(1), a_judgment(), chain_plan, a_judgment(), AttackContext()])
+
+
+def a_fake_llm_for_two_chains_whose_server_goes_down_on_the_second_step() -> FakeLLM:
+    """The step that took the server down is judged with no observation, and the second chain
+    sends nothing."""
+    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit"), a_chain_goal("next")])
+    continue_obs = StepObservation(observation="promising", should_continue=True)
+    chain = [chain_plan, continue_obs, a_payload(), a_judgment()]
+    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])

@@ -62,7 +62,6 @@ class TestMakePlanChains:
         assert result["pending_chains"] == []
         then.refused_call_recorded(result, ModelCallKind.CHAIN_PLANNING)
         assert result["chain_usage"] == [refusal.usage]
-        assert route_after_planning({**state, **result}) == END
 
 
 class TestPrepareChain:
@@ -146,83 +145,38 @@ class TestMakeExecuteStep:
         assert step.error == "denied"
         assert step.response is None
 
-    async def test_first_step_blocked_abandons_an_empty_chain(self):
-        tool = given.a_tool()
+    async def test_a_blocked_step_records_its_reason_and_is_not_sent(self):
         payload = given.a_payload(arguments={"path": "/tmp; rm -rf /"})
         client = given.a_fake_mcp_client()
         node = make_execute_step(AuditedServer(client))
         state = given.a_chain_audit_state(
-            tool=tool,
-            current_chain_goal=given.a_chain_goal(first_step=payload),
-            current_step_payload=payload,
-        )
-
-        blocked = await node(state)
-        result = abandon_chain({**state, **blocked})
-
-        [chain] = result["completed_chains"]
-        assert chain.blocked_reason is not None
-        assert chain.steps == []
-        assert chain.judge_result is None
-        assert client.calls == []
-
-    async def test_mid_chain_block_judges_the_executed_prefix(self):
-        tool = given.a_tool()
-        executed = given.a_chain_step()
-        payload = given.a_payload(arguments={"path": "'; DROP TABLE users--"})
-        client = given.a_fake_mcp_client()
-        node = make_execute_step(AuditedServer(client))
-        state = given.a_chain_audit_state(
-            tool=tool,
             current_chain_goal=given.a_chain_goal(),
-            current_chain_steps=[executed],
+            current_chain_steps=[given.a_chain_step()],
             current_step_payload=payload,
         )
 
-        blocked = await node(state)
-        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **blocked})
+        result = await node(state)
 
-        chain = judged["completed_chains"][0]
-        assert chain.blocked_reason is not None
-        assert chain.steps == [executed]
-        assert judged["blocked_step_reason"] is None
+        assert result["blocked_step_reason"] is not None
+        assert "current_chain_steps" not in result
         assert client.calls == []
 
-    async def test_a_step_not_sent_after_steps_were_made_judges_them(self):
+    async def test_a_step_not_sent_records_its_cause_and_no_step(self):
         server, client = await a_server_taken_as_down(given.a_tool())
-        executed = given.a_chain_step()
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(),
-            current_chain_steps=[executed],
+            current_chain_steps=[given.a_chain_step()],
             current_step_payload=given.a_payload(),
         )
 
         result = await make_execute_step(server)(state)
 
+        assert result["unsent_step_cause"] is UnsentCause.SERVER_DOWN
         assert result["unsent_cause"] is UnsentCause.SERVER_DOWN
-        assert route_after_execute_step({**state, **result}) == "judge_chain"
-        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **result})
-        [chain] = judged["completed_chains"]
-        assert (chain.steps, chain.blocked_reason) == ([executed], None)
+        assert "current_chain_steps" not in result
         assert len(client.calls) == 1
 
-    async def test_a_first_step_not_sent_records_no_chain_and_counts_it(self):
-        server, _ = await a_server_taken_as_down(given.a_tool())
-        state = given.a_chain_audit_state(
-            pending_chains=[given.a_chain_goal()],
-            current_chain_goal=given.a_chain_goal(),
-            current_step_payload=given.a_payload(),
-        )
-
-        result = await make_execute_step(server)(state)
-        assert route_after_execute_step({**state, **result}) == "count_unsent_chain"
-        counted = count_unsent_chain({**state, **result})
-
-        assert counted["unsent_chains"] == 1
-        assert "completed_chains" not in counted
-        assert route_after_judge({**state, **result, **counted}) == "prepare_chain"
-
-    async def test_a_step_followed_by_a_relaunch_ends_the_chain_unobserved(self):
+    async def test_a_step_followed_by_a_relaunch_is_recorded_and_cuts_the_chain(self):
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(), current_step_payload=given.a_payload()
         )
@@ -231,11 +185,8 @@ class TestMakeExecuteStep:
 
         [relaunch] = result["relaunches"]
         assert relaunch.tool_name == given.DEFAULT_TOOL_NAME
-        assert route_after_execute_step({**state, **result}) == "judge_chain"
-        judged = await make_judge_chain(FakeLLM([given.a_judgment()]))({**state, **result})
-        [chain] = judged["completed_chains"]
-        assert chain.cut_by_relaunch
-        assert len(chain.steps) == 1
+        assert result["chain_cut_by_relaunch"] is True
+        assert len(result["current_chain_steps"]) == 1
 
 
 class TestMakeObserveStep:
@@ -268,7 +219,7 @@ class TestMakeObserveStep:
         result = await node(state)
 
         then.refused_call_recorded(result, ModelCallKind.CHAIN_STEP_OBSERVATION)
-        assert route_after_observe({**state, **result}) == "judge_chain"
+        assert result["chain_model_call_missed"] is True
 
     async def test_an_unreadable_observation_sends_the_chain_to_its_judgment(self):
         unreadable = given.an_unreadable_answer()
@@ -283,7 +234,7 @@ class TestMakeObserveStep:
         then.unreadable_call_recorded(result, ModelCallKind.CHAIN_STEP_OBSERVATION)
         assert result["provider_usage"] == [unreadable.usage]
         assert result["chain_usage"] == [unreadable.usage]
-        assert route_after_observe({**state, **result}) == "judge_chain"
+        assert result["chain_model_call_missed"] is True
 
 
 class TestMakePlanStep:
@@ -305,7 +256,6 @@ class TestMakePlanStep:
         result = await node(state)
 
         assert result["current_step_payload"] == next_payload
-        assert route_after_plan_step({**state, **result}) == "execute_step"
 
     async def test_a_chain_step_planning_refusal_sends_the_chain_to_its_judgment(self):
         node = make_plan_step(FakeLLM([given.a_provider_refusal()]))
@@ -318,7 +268,7 @@ class TestMakePlanStep:
         result = await node(state)
 
         then.refused_call_recorded(result, ModelCallKind.CHAIN_STEP_PLANNING)
-        assert route_after_plan_step({**state, **result}) == "judge_chain"
+        assert result["chain_model_call_missed"] is True
 
 
 class TestMakeJudgeChain:
@@ -368,6 +318,64 @@ class TestMakeJudgeChain:
         assert result["judge_usage"] == [refusal.usage]
         assert result["chain_usage"] == [refusal.usage]
 
+    async def test_judges_the_steps_made_before_a_blocked_step(self):
+        executed = given.a_chain_step()
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[executed],
+            blocked_step_reason="destructive SQL command: DROP TABLE",
+        )
+
+        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+
+        [chain] = result["completed_chains"]
+        assert (chain.steps, chain.blocked_reason) == (
+            [executed],
+            "destructive SQL command: DROP TABLE",
+        )
+        assert chain.judge_result is not None
+        assert result["blocked_step_reason"] is None
+
+    async def test_judges_the_steps_made_before_a_step_not_sent(self):
+        executed = given.a_chain_step()
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[executed],
+            unsent_step_cause=UnsentCause.SERVER_DOWN,
+        )
+
+        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+
+        [chain] = result["completed_chains"]
+        assert (chain.steps, chain.blocked_reason) == ([executed], None)
+        assert chain.judge_result is not None
+
+    async def test_records_a_chain_cut_by_a_relaunch(self):
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            current_chain_steps=[given.a_chain_step()],
+            chain_cut_by_relaunch=True,
+        )
+
+        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+
+        [chain] = result["completed_chains"]
+        assert chain.cut_by_relaunch
+
+
+class TestAbandonChain:
+    def test_records_a_chain_blocked_at_its_first_step_with_no_step_and_no_judgment(self):
+        state = given.a_chain_audit_state(
+            current_chain_goal=given.a_chain_goal(),
+            blocked_step_reason="destructive filesystem command: rm -rf",
+        )
+
+        result = abandon_chain(state)
+
+        [chain] = result["completed_chains"]
+        assert chain.blocked_reason == "destructive filesystem command: rm -rf"
+        assert (chain.steps, chain.judge_result) == ([], None)
+
 
 class TestRouteAfterObserve:
     def test_continues_when_should_continue_and_under_max(self):
@@ -401,6 +409,20 @@ class TestRouteAfterObserve:
         }
         assert route_after_observe(state) == "judge_chain"
 
+    def test_judges_the_chain_when_a_model_call_was_missed(self):
+        state: dict[str, Any] = {"chain_model_call_missed": True}
+        assert route_after_observe(state) == "judge_chain"
+
+
+class TestRouteAfterPlanStep:
+    def test_executes_the_planned_step(self):
+        state: dict[str, Any] = {"chain_model_call_missed": False}
+        assert route_after_plan_step(state) == "execute_step"
+
+    def test_judges_the_chain_when_a_model_call_was_missed(self):
+        state: dict[str, Any] = {"chain_model_call_missed": True}
+        assert route_after_plan_step(state) == "judge_chain"
+
 
 class TestRouteAfterExecuteStep:
     def test_observes_a_step_that_ran(self):
@@ -423,6 +445,28 @@ class TestRouteAfterExecuteStep:
             "current_chain_steps": [],
         }
         assert route_after_execute_step(state) == "abandon_chain"
+
+    def test_judges_the_steps_made_before_a_step_not_sent(self):
+        state: dict[str, Any] = {
+            "unsent_step_cause": UnsentCause.SERVER_DOWN,
+            "current_chain_steps": [given.a_chain_step()],
+        }
+        assert route_after_execute_step(state) == "judge_chain"
+
+    def test_counts_a_chain_whose_first_step_is_not_sent(self):
+        state: dict[str, Any] = {
+            "unsent_step_cause": UnsentCause.SERVER_DOWN,
+            "current_chain_steps": [],
+        }
+        assert route_after_execute_step(state) == "count_unsent_chain"
+
+    def test_judges_a_chain_cut_by_a_relaunch(self):
+        state: dict[str, Any] = {
+            "chain_cut_by_relaunch": True,
+            "blocked_step_reason": None,
+            "current_chain_steps": [given.a_chain_step()],
+        }
+        assert route_after_execute_step(state) == "judge_chain"
 
 
 class TestRouteAfterJudge:
@@ -467,6 +511,16 @@ class TestRouteToChainsOrReport:
         route = make_route_to_chains_or_report(server)
 
         assert route(given.a_chain_audit_state(chain_budget=2)) == "count_chains_not_planned"
+
+
+class TestCountUnsentChain:
+    def test_counts_a_chain_whose_first_step_is_not_sent_and_records_none(self):
+        state = given.a_chain_audit_state(current_chain_goal=given.a_chain_goal())
+
+        result = count_unsent_chain(state)
+
+        assert result["unsent_chains"] == 1
+        assert "completed_chains" not in result
 
 
 class TestCountChainsNotPlanned:

@@ -403,3 +403,18 @@ async def test_a_chain_cut_by_a_relaunch_leaves_its_tool_with_no_gap():
     then.report_has_judged_chains(report, 1)
     assert report.chains[0].cut_by_relaunch
     then.report_has_no_gap(report)
+
+
+async def test_a_server_going_down_mid_chain_judges_the_steps_made_and_counts_the_next_chain():
+    tool = given.a_tool(name="dies")
+    fake_llm = given.a_fake_llm_for_two_chains_whose_server_goes_down_on_the_second_step()
+    graph = given.a_graph(fake_llm, given.a_server_going_down_on_its_second_chain_step(tool))
+    state = given.an_initial_state(test_budget=1, chain_budget=2, max_chain_steps=3)
+
+    result = await given.invoke_graph(graph, state)
+
+    report = then.tool_report_at(result, 0)
+    then.report_has_judged_chains(report, 1)
+    assert len(report.chains[0].steps) == 2
+    then.report_has_unsent_calls(report, cases=0, chains=1, cause=UnsentCause.SERVER_DOWN)
+    assert not result["audit_report"].is_complete

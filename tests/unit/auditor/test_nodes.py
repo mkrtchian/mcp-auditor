@@ -229,10 +229,10 @@ class TestExecuteTool:
         assert "processed_cases" not in result
         assert result["unsent_cases"] == 1
         assert result["unsent_cause"] is UnsentCause.SERVER_DOWN
-        assert route_after_execute({**state, **result}) == END
+        assert (result["current_case"], result["pending_cases"]) == (None, [])
         assert len(client.calls) == 1
 
-    async def test_a_case_followed_by_a_relaunch_is_judged_and_the_relaunch_kept(self):
+    async def test_a_case_followed_by_a_relaunch_keeps_its_error_and_the_relaunch(self):
         tool = given.a_tool(name="read_file")
         client = FakeMCPClient([tool], responses={"read_file": a_lost_connection_response()})
         node = make_execute_tool(AuditedServer(client))
@@ -250,7 +250,6 @@ class TestExecuteTool:
             )
         ]
         then.current_case_has_error(result, "Connection closed")
-        assert route_after_execute({**state, **result}) == "judge_response"
 
     async def test_a_case_that_is_sent_leaves_the_cause_of_calls_not_sent_as_it_was(self):
         tool = given.a_tool(name="read_file")
@@ -263,7 +262,7 @@ class TestExecuteTool:
 
         result = await node(state)
 
-        assert {**state, **result}["unsent_cause"] is UnsentCause.TOOL_TIMING_OUT
+        assert "unsent_cause" not in result
 
 
 class TestJudgeResponse:
