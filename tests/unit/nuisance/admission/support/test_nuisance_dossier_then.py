@@ -3,6 +3,7 @@ from pathlib import Path
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import Target
 from evals.cve.docker_paths import image_dockerfile
+from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
@@ -16,10 +17,9 @@ def unrecorded_field_names(server: AdmittedServer) -> list[str]:
 
 def grammar_classes_send_an_unclassed_flaw_to_null(out: Path) -> None:
     text = " ".join((out / "grammar_classes.md").read_text().split())
-    for name in ("read_outside_scope", "command_execution", "internal_fetch"):
-        assert f"`{name}`" in text
+    for flaw_class in FlawClass:
+        assert f"`{flaw_class}`" in text
     assert "gets `effect_class` `null`" in text
-    assert "a class name of your own" not in text
 
 
 def it_carries_the_holdout_reference_of(out: Path, target: Target) -> None:

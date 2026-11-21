@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.nuisance.fix_checks.support.recorded_exchanges as recording
 import tests.unit.nuisance.fix_checks.support.test_nuisance_fix_checks_given as given
 from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.driver import unit_of
@@ -75,27 +76,29 @@ def test_every_counted_flaw_has_a_fix_check_fixture_unless_its_fix_check_is_a_co
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 async def test_every_exploit_reads_as_aimed_and_no_benign_call_does(fixture: FixCheckFixture):
     for exploit in fixture.exploits:
-        assert is_aimed(unit_of(await given.recorded(fixture, exploit)), fixture.aim)
-    assert not is_aimed(unit_of(await given.recorded(fixture, *fixture.benign_calls)), fixture.aim)
+        assert is_aimed(unit_of(await recording.recorded(fixture, exploit)), fixture.aim)
+    assert not is_aimed(
+        unit_of(await recording.recorded(fixture, *fixture.benign_calls)), fixture.aim
+    )
 
 
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 async def test_the_exploits_call_exactly_the_flaws_tools(fixture: FixCheckFixture):
-    exchanges = await given.recorded(fixture, *fixture.exploits)
+    exchanges = await recording.recorded(fixture, *fixture.exploits)
 
-    assert {name for name, _, _ in exchanges} == given.reached_tools(fixture)
+    assert {name for name, _, _ in exchanges} == recording.reached_tools(fixture)
 
 
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 def test_the_fixture_effect_class_is_the_flaws(fixture: FixCheckFixture):
-    assert fixture.effect_class == given.flaw_record(fixture).effect_class
+    assert fixture.effect_class == recording.flaw_record(fixture).effect_class
 
 
 @pytest.mark.parametrize(
     "fixture", [t for t in FIX_CHECK_FIXTURES if t.benign_calls], ids=lambda t: t.flaw
 )
 async def test_every_counted_tool_has_a_benign_call(fixture: FixCheckFixture):
-    exchanges = await given.recorded(fixture, *fixture.benign_calls)
+    exchanges = await recording.recorded(fixture, *fixture.benign_calls)
 
     assert given.counted_tools(fixture) <= {name for name, _, _ in exchanges}
 

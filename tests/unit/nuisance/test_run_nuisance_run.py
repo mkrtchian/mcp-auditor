@@ -12,6 +12,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_admission_records_giv
 import tests.unit.nuisance.support.test_run_nuisance_run_given as given
 from evals import run_nuisance
 from evals.cve.nuisance.results import RunInterrupted
+from evals.cve.nuisance.run import NUISANCE_RUNS
 from evals.cve.provider_errors import ProviderFatal
 from tests.unit.detection.support.test_run_detection_holdout_run_given import (
     PROOF_FIELDS,
@@ -156,4 +157,4 @@ def test_run_help_gives_the_default_number_of_runs(capsys: pytest.CaptureFixture
         run_nuisance.main(["run", "--help"])
 
     help_text = " ".join(capsys.readouterr().out.split())
-    assert "default 2, lowerable to 1" in help_text
+    assert f"default {NUISANCE_RUNS}, lowerable to 1" in help_text

@@ -3,15 +3,12 @@ from typing import Any
 import pytest
 import yaml
 
-from evals.cve.backends.ckan import CKAN_PARTS
-from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
-from evals.cve.backends.mcp_ssh_sshd import SSHD_SERVICE
-from evals.cve.detection.targets import image_tag
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
 from evals.cve.images import COMPOSE_FILE
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.planting_base import STAND_IN_SERVICE
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
@@ -29,21 +26,19 @@ def test_each_admitted_server_is_a_nuisance_profiled_compose_service(server: Adm
     assert compose_service.get("profiles") == ["nuisance"]
 
 
-BUILT_SERVICES = sorted(
-    {service for entry in BACKENDS.values() for service in entry.built_services}
-)
+BUILT_SERVICES = {service for entry in BACKENDS.values() for service in entry.built_services}
+# The CI's bare build, which skips the nuisance profile, builds what detection targets run.
+DETECTION_SERVICES = {
+    image for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS) for image in target.images
+} & BUILT_SERVICES
 
 
-@pytest.mark.parametrize("service", BUILT_SERVICES)
+@pytest.mark.parametrize("service", sorted(BUILT_SERVICES))
 def test_each_built_backend_is_a_compose_service_profiled_nuisance_but_the_detection_ones(
     service: str,
 ):
     compose_service = COMPOSE_SERVICES.get(service)
-    # The CI's bare build, which skips the nuisance profile, builds the stand-in, the Kubernetes
-    # control plane, the sshd and the CKAN stack, which detection targets run.
-    ckan_stack = tuple(part.service for part in CKAN_PARTS)
-    detection = (STAND_IN_SERVICE, CONTROL_PLANE_SERVICE, SSHD_SERVICE, *ckan_stack)
-    profiles = None if service in detection else ["nuisance"]
+    profiles = None if service in DETECTION_SERVICES else ["nuisance"]
 
     assert compose_service is not None, f"{service}: no service in {COMPOSE_FILE}"
     assert compose_service["image"] == image_tag(service)

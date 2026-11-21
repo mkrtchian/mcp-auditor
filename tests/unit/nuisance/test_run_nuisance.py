@@ -8,6 +8,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_admission_given as ad
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
+from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from tests.unit.nuisance.admission.support import (
     test_nuisance_re_admission_dossier_given as re_admission,
 )
@@ -254,31 +255,16 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
     assert not out.exists()
 
 
-def test_run_without_an_admission_exits_zero_and_says_so(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+@pytest.mark.parametrize(
+    "admitted",
+    [None, admission.an_admission().model_copy(update={"servers": []})],
+    ids=["absent", "no servers"],
+)
+def test_run_with_no_admitted_server_exits_zero_and_says_so(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], admitted: NuisanceAdmission | None
 ):
     census = given.written(tmp_path, admission.a_census())
-    missing = tmp_path / "absent.json"
-
-    exit_code = run_nuisance.main(
-        [
-            "run",
-            *walk_given.committed_census_arguments(tmp_path, census),
-            "--admission",
-            str(missing),
-        ]
-    )
-
-    assert exit_code == 0
-    assert "no server is admitted" in capsys.readouterr().out
-
-
-def test_run_on_an_admission_with_no_server_exits_zero_and_says_so(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-):
-    census = given.written(tmp_path, admission.a_census())
-    empty = admission.an_admission().model_copy(update={"servers": []})
-    path = admission.written(tmp_path, empty)
+    path = tmp_path / "absent.json" if admitted is None else admission.written(tmp_path, admitted)
 
     exit_code = run_nuisance.main(
         ["run", *walk_given.committed_census_arguments(tmp_path, census), "--admission", str(path)]
