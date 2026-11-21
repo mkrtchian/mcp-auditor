@@ -167,7 +167,7 @@ User-facing changes (new flags, behavior changes, notable fixes) should come wit
 
 ## Releasing (maintainers)
 
-Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds the package and publishes it to PyPI via trusted publishing. The manual steps are:
+Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds the package and publishes it to PyPI via trusted publishing. The build rewrites the README's relative links into absolute links on the tag `v` plus the `pyproject.toml` version (the `fancy-pypi-readme` hook in `pyproject.toml`), so the tag of step 7 must be exactly that, and the links in `README.md` stay relative. The manual steps are:
 
 1. Make sure `main` is green: `uv run pytest -n auto && uv run ruff check . && uv run pyright`.
 2. In `CHANGELOG.md`, rename the `[Unreleased]` section to the new version with today's date, add a fresh empty `[Unreleased]` section above it, and update the comparison links at the bottom.

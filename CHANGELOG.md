@@ -174,6 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The image rebuild before a detection or nuisance holdout run, `run_nuisance vet` and the nuisance gate, and the stale-image rebuild of the CVE benchmark preflight and the probe corpus capture, build their images through `docker compose build` in batches of eight, so a large rebuild no longer fails on a BuildKit `context deadline exceeded`. A failed batch stops the rebuild and names that batch's services.
 - Every tool response and error shown to a model is bounded at 20,000 characters, its middle cut and marked, so a huge response no longer ends the audit or costs a prompt of a million tokens, and a prompt the model provider still rejects for its length is a missed model call of cause `prompt_too_long`, where it used to end the audit.
 - `python -m evals.run_nuisance run --help` gives the default number of runs, 2, read from the code, where it said 3.
+- The README's links and demo GIF now work on the PyPI page: the package build points them at the release on GitHub.
 
 ## [0.4.0] - 2026-10-05
 
