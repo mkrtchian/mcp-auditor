@@ -24,8 +24,8 @@ from evals.cve.nuisance.gate.gate_session_model import (
     WrittenBaseline,
 )
 from evals.gate_outcome import GateOutcome
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
 from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import conditions
-from tests.unit.nuisance.gate.support.test_nuisance_gate_session_given import a_harness, scripted
 
 GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
 

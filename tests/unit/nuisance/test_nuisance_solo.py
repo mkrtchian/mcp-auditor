@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.gate.support.test_nuisance_gate_session_given as gate_given
+import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_solo_given as given
 import tests.unit.nuisance.support.test_nuisance_solo_then as then
@@ -71,7 +71,7 @@ async def test_gate_plays_the_solo_benign_call_audits_and_retests_alone(tmp_path
     in_flight = given.InFlight()
     harness = given.gate_harness_with_alarms(tmp_path, in_flight, servers)
 
-    session = await run_gate(gate_given.options(servers), harness)
+    session = await run_gate(gate_sessions.options(servers), harness)
 
     calls = 1 + len(given.GATE_AUDITS)
     then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=calls)

@@ -3,7 +3,7 @@ import dataclasses
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-import tests.unit.nuisance.gate.support.test_nuisance_gate_session_given as gate_given
+import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
 from evals.concurrency import bounded
@@ -24,7 +24,7 @@ HEAVY_BACKEND_SERVERS = [
 BOUND = 2
 RUNS = 3
 # An alarm on the first run that its retests do not reproduce.
-GATE_AUDITS: list[GateRun | None] = [gate_given.a_gate_run(True), *gate_given.clean_runs(4)]
+GATE_AUDITS: list[GateRun | None] = [gate_sessions.a_gate_run(True), *gate_sessions.clean_runs(4)]
 
 
 def others(count: int) -> list[AdmittedServer]:
@@ -91,7 +91,7 @@ def gate_harness_with_alarms(
 ) -> NuisanceGateHarness:
     """Every server gated, each audited along `GATE_AUDITS`."""
     for server in servers:
-        gate_given.a_gated_file(directory, server)
-    audit = gate_given.scripted({server.server_package: GATE_AUDITS for server in servers})
-    harness = gate_given.a_harness(directory, in_flight.bounded(audit))
+        gate_sessions.a_gated_file(directory, server)
+    audit = gate_sessions.scripted({server.server_package: GATE_AUDITS for server in servers})
+    harness = gate_sessions.a_harness(directory, in_flight.bounded(audit))
     return dataclasses.replace(harness, benign_call=in_flight.bounded(_answering))

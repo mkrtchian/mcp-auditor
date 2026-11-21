@@ -8,7 +8,7 @@ import pytest
 
 import tests.unit.cve.support.test_cve_closed_network_refusal_given as given
 import tests.unit.cve.support.test_cve_closed_network_refusal_then as then
-import tests.unit.nuisance.gate.support.test_nuisance_gate_session_given as gate_given
+import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
 import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
@@ -49,13 +49,13 @@ async def test_a_vet_refuses_before_any_rebuild():
 async def test_a_gate_refuses_before_any_rebuild(tmp_path: Path):
     rebuild = given.CountingRebuild()
     harness = dataclasses.replace(
-        gate_given.a_harness(tmp_path, gate_given.scripted({})),
+        gate_sessions.a_harness(tmp_path, gate_sessions.scripted({})),
         rebuild=rebuild,
         check_networks=given.a_daemon_that_cannot_close_a_network,
     )
 
     with pytest.raises(Refused) as refused:
-        await run_gate(gate_given.options([gate_given.FILESYSTEM]), harness)
+        await run_gate(gate_sessions.options([gate_sessions.FILESYSTEM]), harness)
 
     then.refused_for_the_daemon(refused.value)
     assert rebuild.rebuilt == []

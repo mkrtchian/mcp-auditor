@@ -4,7 +4,7 @@ import tests.unit.nuisance.gate.support.test_nuisance_gate_selection_given as gi
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.gate.gate_session import gate_servers, not_admitted, outside_gate
 from evals.cve.nuisance.results import ServerExit
-from tests.unit.nuisance.gate.support.test_nuisance_gate_session_given import FILESYSTEM, KUBERNETES
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import FILESYSTEM, KUBERNETES
 from tests.unit.support.admission_mutations import admitting
 from tests.unit.support.test_nuisance_admission_edits_given import without_stdio
 

@@ -5,12 +5,12 @@ import pytest
 import tests.unit.evals.support.test_eval_display_given as display_given
 from evals.cve.nuisance.gate import gate_console as nuisance_gate_console
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import KUBERNETES
 from tests.unit.nuisance.gate.support.test_nuisance_gate_report_given import (
     a_held_server_beside_a_regression,
     a_not_gated_server_with_an_alarm,
     a_report_of,
 )
-from tests.unit.nuisance.gate.support.test_nuisance_gate_session_given import KUBERNETES
 
 
 def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:

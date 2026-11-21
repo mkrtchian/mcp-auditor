@@ -8,17 +8,17 @@ import tests.unit.census.support.test_census_given as census_given
 import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
-import tests.unit.nuisance.support.test_nuisance_report_given as report_given
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
 from evals import run_nuisance
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.results import NuisanceRunResult
 from evals.cve.nuisance.run import NuisanceDeps, RunProvenance
+from tests.unit.nuisance.support.nuisance_report_runs import a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
 
 
 def a_run_result() -> NuisanceRunResult:
-    return report_given.a_run([a_server_result()])
+    return a_run([a_server_result()])
 
 
 def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:

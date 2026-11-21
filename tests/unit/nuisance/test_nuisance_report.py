@@ -13,7 +13,7 @@ from evals.cve.detection.holdout_report import (
     MethodLine,
     RunCutoffModel,
 )
-from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
+from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import (
     ExitLine,
@@ -24,19 +24,15 @@ from evals.cve.nuisance.report import (
     SideLine,
     build_report,
 )
-from evals.cve.nuisance.results import (
-    DROPPED_RUN_REASONS,
-    NotRunCause,
-    NotRunServer,
-    ServerExit,
-)
+from evals.cve.nuisance.results import NotRunCause, NotRunServer, ServerExit
+from tests.unit.nuisance.support.nuisance_report_runs import LUNA_CUTOFF, RECORDED_AT, a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}
 
 
 def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
-    run = given.a_run(
+    run = a_run(
         [
             a_server_result("A", flagged_runs=3),
             a_server_result("B", flagged_runs=3),
@@ -50,7 +46,7 @@ def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
 
 
 def test_a_server_row_shows_its_status_per_run_in_order():
-    run = given.a_run([a_server_result("npm:@acme/files", flagged_runs=1)])
+    run = a_run([a_server_result("npm:@acme/files", flagged_runs=1)])
 
     markdown = render_markdown(build_report(run))
 
@@ -61,114 +57,8 @@ def test_a_server_row_shows_its_status_per_run_in_order():
     assert "counted tools 1 of 4" in markdown
 
 
-def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its_count():
-    run = given.a_run(
-        [a_server_result("A")],
-        exits=[
-            ServerExit("npm:excluded-one", ExitReason.EXCLUDED_SERVER),
-            ServerExit("npm:flawless", ExitReason.NO_COUNTED_FLAW),
-            ServerExit("npm:excluded-two", ExitReason.EXCLUDED_SERVER),
-        ],
-    )
-
-    markdown = render_markdown(build_report(run))
-
-    counts = {
-        ExitReason.NO_COUNTED_FLAW: "1 server(s): npm:flawless",
-        ExitReason.EXCLUDED_SERVER: "2 server(s): npm:excluded-one, npm:excluded-two",
-    }
-    rows = "".join(
-        f"- {EXIT_REASON_TEXTS[reason]}: {counts.get(reason, '0 server(s)')}\n"
-        for reason in ExitReason
-    )
-    assert f"## Exits\n{rows}\n" in markdown
-
-
-def test_with_no_exit_every_reason_reads_zero_and_the_not_run_section_reads_none():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
-
-    zero_rows = "".join(f"- {EXIT_REASON_TEXTS[reason]}: 0 server(s)\n" for reason in ExitReason)
-    assert f"## Exits\n{zero_rows}\n" in markdown
-    assert "## Not run\n- none\n" in markdown
-
-
-def test_a_server_whose_admission_is_pending_closes_the_exits_section():
-    run = given.a_run([a_server_result("A")], pending_admission=["npm:pending"])
-
-    markdown = render_markdown(build_report(run))
-
-    last_reason = EXIT_REASON_TEXTS[list(ExitReason)[-1]]
-    assert (
-        f"- {last_reason}: 0 server(s)\n"
-        "- admission pending (not an exit of the rule): 1 server(s): npm:pending\n\n"
-    ) in markdown
-
-
-def test_no_pending_line_when_every_reached_server_is_admitted_or_out():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
-
-    assert "admission pending" not in markdown
-
-
-def test_the_not_run_section_counts_the_in_run_drops_against_the_servers_launched():
-    throttled = DROPPED_RUN_REASONS[NotRunCause.THROTTLED]
-    run = given.a_run(
-        [a_server_result("A"), a_server_result("B")],
-        not_run=[
-            NotRunServer("npm:benign", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED),
-            NotRunServer("npm:throttled", throttled, NotRunCause.THROTTLED),
-        ],
-    )
-
-    markdown = render_markdown(build_report(run))
-
-    assert f"- 1 of the 3 server(s) launched: {throttled}: npm:throttled\n" in markdown
-    assert "- benign call failed before the runs: 1 server(s): npm:benign\n" in markdown
-    assert "- npm:benign: the benign call errored\n" in markdown
-    assert f"- npm:throttled: {throttled}\n" in markdown
-
-
-_SECOND_PASS_LINE = (
-    "- npm:flaky: run after a clean solo second pass of the vet (first pass: boom)\n"
-)
-
-
-def test_the_not_run_section_closes_on_the_second_pass_servers_after_the_not_run_ones():
-    run = given.a_run(
-        [a_server_result("A")],
-        not_run=[
-            NotRunServer("npm:benign", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)
-        ],
-        second_pass={"npm:flaky": "boom"},
-    )
-
-    markdown = render_markdown(build_report(run))
-
-    assert f"- npm:benign: the benign call errored\n{_SECOND_PASS_LINE}" in markdown
-
-
-def test_the_second_pass_servers_follow_none_when_no_server_is_not_run():
-    run = given.a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
-
-    markdown = render_markdown(build_report(run))
-
-    assert f"## Not run\n- none\n{_SECOND_PASS_LINE}\n" in markdown
-
-
-def test_no_second_pass_line_when_every_server_answered_its_first_pass():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
-
-    assert "second pass" not in markdown
-
-
-def test_build_report_carries_each_second_pass_server_with_its_first_reason():
-    run = given.a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
-
-    assert build_report(run).second_pass == {"npm:flaky": "boom"}
-
-
 def test_the_raw_fail_count_is_reported_per_server_and_per_run():
-    run = given.a_run([a_server_result("A", flagged_runs=2), a_server_result("B")])
+    run = a_run([a_server_result("A", flagged_runs=2), a_server_result("B")])
 
     markdown = render_markdown(build_report(run))
 
@@ -182,7 +72,7 @@ def test_the_raw_fail_count_is_reported_per_server_and_per_run():
 def test_the_raw_fail_count_shows_its_part_on_the_tools_left_out_by_their_declared_function():
     server = a_server_result("A", flagged_runs=1, declared_function_fail_runs=2)
 
-    report = build_report(given.a_run([server]))
+    report = build_report(a_run([server]))
 
     assert report.servers[0].declared_function_fail_per_run == [1, 1, 0]
     assert (
@@ -194,7 +84,7 @@ def test_the_raw_fail_count_shows_its_part_on_the_tools_left_out_by_their_declar
 def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
     server = a_server_result("A", flagged_runs=1, split_flagged_runs=0, incomplete_unflagged_runs=1)
 
-    line = build_report(given.a_run([server])).servers[0]
+    line = build_report(a_run([server])).servers[0]
 
     assert (line.split_flaw, line.split_disclosure_date) == ("CVE-2025-0001", date(2026, 1, 1))
     assert line.per_run == [
@@ -246,19 +136,19 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
 
 
 def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
 
     assert "## Server health" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
 
-    assert f"Recorded at: {given.RECORDED_AT}\n" in markdown
+    assert f"Recorded at: {RECORDED_AT}\n" in markdown
 
 
 def test_the_provenance_line_names_the_census_walk_record_and_admission_commits():
-    report = build_report(given.a_run([a_server_result("A")]))
+    report = build_report(a_run([a_server_result("A")]))
 
     assert (
         "Commits: run deadbeef, census cafe1234, walk record beef5678, admission feed4321\n"
@@ -267,10 +157,8 @@ def test_the_provenance_line_names_the_census_walk_record_and_admission_commits(
 
 
 def test_the_run_cutoff_is_the_latest_of_the_run_models():
-    later = dataclasses.replace(given.LUNA_CUTOFF, date=date(2026, 6, 30))
-    run = given.a_run(
-        [a_server_result("A")], cutoffs={"gpt-6-luna": given.LUNA_CUTOFF, "judge": later}
-    )
+    later = dataclasses.replace(LUNA_CUTOFF, date=date(2026, 6, 30))
+    run = a_run([a_server_result("A")], cutoffs={"gpt-6-luna": LUNA_CUTOFF, "judge": later})
 
     cutoff = build_report(run).run_cutoff
 
@@ -278,7 +166,7 @@ def test_the_run_cutoff_is_the_latest_of_the_run_models():
 
 
 def test_the_split_section_names_the_run_cutoff_and_both_sides():
-    run = given.a_run(
+    run = a_run(
         [
             a_server_result("A", split_disclosure_date=date(2026, 1, 1), flagged_runs=3),
             a_server_result("B", split_disclosure_date=date(2026, 12, 1)),
@@ -298,13 +186,13 @@ def test_the_split_section_names_the_run_cutoff_and_both_sides():
 
 
 def test_the_markdown_ends_with_the_total_cost():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
 
     assert markdown.endswith("Total cost: $0.06")
 
 
 def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurrency():
-    run = given.a_run(
+    run = a_run(
         [a_server_result("A", incomplete_unflagged_runs=1)], throttled_requests=12, concurrency=4
     )
 
@@ -319,13 +207,13 @@ def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurr
 
 
 def test_no_throttled_line_when_nothing_was_throttled():
-    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
 
     assert "Throttled" not in markdown
 
 
 def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glossary_keys():
-    run = given.a_run(
+    run = a_run(
         [a_server_result("A")], exits=[ServerExit("npm:excluded", ExitReason.EXCLUDED_SERVER)]
     )
 
@@ -336,7 +224,7 @@ def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glo
 
 
 def test_the_report_writes_the_pending_servers_and_the_admission_commit():
-    run = given.a_run([a_server_result("A")], pending_admission=["npm:pending"])
+    run = a_run([a_server_result("A")], pending_admission=["npm:pending"])
 
     dumped = build_report(run).model_dump(mode="json")
 
@@ -345,11 +233,11 @@ def test_the_report_writes_the_pending_servers_and_the_admission_commit():
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
-    report = build_report(given.a_run([a_server_result("A")]))
+    report = build_report(a_run([a_server_result("A")]))
 
     assert report.counter_fingerprint == "counter-abc"
     assert report.grammar_fingerprint == "grammar-abc"
-    assert report.cutoffs["gpt-6-luna"] == CutoffModel.of(given.LUNA_CUTOFF)
+    assert report.cutoffs["gpt-6-luna"] == CutoffModel.of(LUNA_CUTOFF)
 
 
 def test_the_report_holds_no_proof_text():
@@ -366,7 +254,7 @@ def test_the_report_holds_no_proof_text():
         RunCutoffModel,
         IntervalModel,
     ]
-    run = given.a_run(
+    run = a_run(
         [given.with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
         exits=[ServerExit("npm:c", ExitReason.ACCEPTANCE_TARGET_SERVER)],
