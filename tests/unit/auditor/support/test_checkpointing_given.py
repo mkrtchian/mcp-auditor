@@ -9,10 +9,18 @@ from langgraph.checkpoint.base.id import uuid6
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel
 
-import tests.unit.auditor.support.test_graph_given as graph_given
 from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolDefinition, ToolResponse
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.unit.auditor.support.graph_builders import (
+    a_complete_batch,
+    a_fake_llm_for_multi_tool_audit,
+    a_graph_with_checkpointer,
+    a_judgment,
+    a_tool,
+    an_initial_state,
+    invoke_graph_with_config,
+)
 
 
 class ServerDyingOnCall(FakeMCPClient):
@@ -61,8 +69,8 @@ def an_llm_interrupted_on_the_second_generation(cases_per_tool: list[int]) -> In
 def _interrupted_on(cases_per_tool: list[int], call: int) -> InterruptedLLM:
     script: list[BaseModel] = []
     for num_cases in cases_per_tool:
-        judgments = [graph_given.a_judgment() for _ in range(num_cases)]
-        script.extend([graph_given.a_complete_batch(num_cases), *judgments, AttackContext()])
+        judgments = [a_judgment() for _ in range(num_cases)]
+        script.extend([a_complete_batch(num_cases), *judgments, AttackContext()])
     return InterruptedLLM(script, interrupted_on_call=call)
 
 
@@ -87,13 +95,11 @@ async def a_latest_checkpoint_without(
 
 
 async def a_crashed_audit(checkpointer: Any, thread_id: str):
-    client = ServerDyingOnCall([graph_given.a_tool("first")], dies_on_call=1)
-    graph = graph_given.a_graph_with_checkpointer(
-        graph_given.a_fake_llm_for_multi_tool_audit([1]), client, checkpointer
-    )
+    client = ServerDyingOnCall([a_tool("first")], dies_on_call=1)
+    graph = a_graph_with_checkpointer(a_fake_llm_for_multi_tool_audit([1]), client, checkpointer)
     with pytest.raises(ConnectionError):
-        await graph_given.invoke_graph_with_config(
-            graph, graph_given.an_initial_state(), {"configurable": {"thread_id": thread_id}}
+        await invoke_graph_with_config(
+            graph, an_initial_state(), {"configurable": {"thread_id": thread_id}}
         )
     return graph
 
@@ -118,8 +124,8 @@ async def a_latest_checkpoint_holding(
 async def a_thread_interrupted_before_its_first_checkpoint(
     checkpointer: InMemorySaver, thread_id: str, input_channel: str
 ) -> Any:
-    graph = graph_given.a_graph_with_checkpointer(
-        graph_given.a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
+    graph = a_graph_with_checkpointer(
+        a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
     )
     checkpoint = empty_checkpoint()
     checkpoint["channel_values"] = {"__start__": {input_channel: "python server.py"}}

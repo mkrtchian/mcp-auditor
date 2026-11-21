@@ -24,7 +24,6 @@ import pytest
 from langchain_anthropic import ChatAnthropic
 from pydantic import BaseModel
 
-import tests.unit.auditor.support.test_graph_given as graph
 from evals.cve.census.classification import Classification
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
@@ -51,6 +50,13 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.redaction import marker
 from mcp_auditor.graph import chain_prompts, prompts
 from tests.fakes import FakeLLM
+from tests.unit.auditor.support.graph_builders import (
+    a_fake_llm_for_single_tool_with_a_two_step_chain,
+    a_graph,
+    a_redacting_graph,
+    a_server_echoing,
+    invoke_graph,
+)
 from tests.unit.auditor.support.test_llm_adapter_given import the_openai_request_body
 
 GOLDEN_PATH = Path(__file__).parent / "model_inputs_golden.json"
@@ -154,12 +160,12 @@ async def _judge_eval_prompts() -> dict[str, str]:
 
 async def _audit_prompts() -> dict[str, str]:
     tool = _tool()
-    server = graph.a_server_echoing(tool, f"token={_SECRET}")
-    plain_llm = graph.a_fake_llm_for_single_tool_with_a_two_step_chain()
-    redacting_llm = graph.a_fake_llm_for_single_tool_with_a_two_step_chain()
-    await graph.invoke_graph(graph.a_graph(plain_llm, server), _initial_state())
-    await graph.invoke_graph(
-        graph.a_redacting_graph(redacting_llm, server, {"API_TOKEN": _SECRET}), _initial_state()
+    server = a_server_echoing(tool, f"token={_SECRET}")
+    plain_llm = a_fake_llm_for_single_tool_with_a_two_step_chain()
+    redacting_llm = a_fake_llm_for_single_tool_with_a_two_step_chain()
+    await invoke_graph(a_graph(plain_llm, server), _initial_state())
+    await invoke_graph(
+        a_redacting_graph(redacting_llm, server, {"API_TOKEN": _SECRET}), _initial_state()
     )
     return {
         **{f"audit/plain/{i:02d}": prompt for i, prompt in enumerate(plain_llm.prompts)},

@@ -6,7 +6,6 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[imp
 
 import tests.unit.auditor.support.test_checkpointing_given as given
 import tests.unit.auditor.support.test_checkpointing_then as then
-import tests.unit.auditor.support.test_graph_given as graph_given
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.checkpointing import (
     CheckpointFromEarlierVersion,
@@ -15,6 +14,14 @@ from mcp_auditor.checkpointing import (
 )
 from mcp_auditor.domain.relayed_environment import RelayedEnvironment, RelayedVariable
 from tests.fakes import FakeMCPClient
+from tests.unit.auditor.support.graph_builders import (
+    a_fake_llm_for_multi_tool_audit,
+    a_graph_with_checkpointer,
+    a_server_dying_on,
+    a_tool,
+    an_initial_state,
+    invoke_graph_with_config,
+)
 
 # Channels a graph of an earlier version declared, under names the graph no longer has.
 EARLIER_CHANNELS = [
@@ -28,81 +35,73 @@ EARLIER_CHANNELS = [
 
 
 async def test_resuming_a_crashed_audit_finishes_without_reauditing(tmp_path: Path):
-    client = given.ServerDyingOnCall(
-        [graph_given.a_tool("first"), graph_given.a_tool("second")], dies_on_call=2
-    )
-    fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
+    client = given.ServerDyingOnCall([a_tool("first"), a_tool("second")], dies_on_call=2)
+    fake_llm = a_fake_llm_for_multi_tool_audit([1, 1])
 
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
-        graph = graph_given.a_graph_with_checkpointer(fake_llm, client, checkpointer)
+        graph = a_graph_with_checkpointer(fake_llm, client, checkpointer)
         config = {"configurable": {"thread_id": "crashed-audit"}}
         assert not await resume_or_reset(graph, "crashed-audit", requested=False)
         with pytest.raises(ConnectionError):
-            await graph_given.invoke_graph_with_config(
-                graph, graph_given.an_initial_state(), config
-            )
+            await invoke_graph_with_config(graph, an_initial_state(), config)
         calls_before_crash = list(client.calls)
 
         assert await resume_or_reset(graph, "crashed-audit", requested=True)
-        result = await graph_given.invoke_graph_with_config(graph, None, config)
+        result = await invoke_graph_with_config(graph, None, config)
 
     then.each_tool_audited_once(result, ["first", "second"])
     assert len(client.calls) == len(calls_before_crash) + 1
 
 
 async def test_a_resumed_audit_of_a_server_taken_as_down_audits_the_tools_left(tmp_path: Path):
-    tools = [graph_given.a_tool("dies"), graph_given.a_tool("second")]
+    tools = [a_tool("dies"), a_tool("second")]
     fake_llm = given.an_llm_interrupted_on_the_first_judgment(cases_per_tool=[1, 1])
 
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
         config = {"configurable": {"thread_id": "taken-as-down"}}
-        down = graph_given.a_server_dying_on(tools, "dies", relaunches=False)
-        graph = graph_given.a_graph_with_checkpointer(fake_llm, down, checkpointer)
+        down = a_server_dying_on(tools, "dies", relaunches=False)
+        graph = a_graph_with_checkpointer(fake_llm, down, checkpointer)
         with pytest.raises(given.Interrupted):
-            await graph_given.invoke_graph_with_config(
-                graph, graph_given.an_initial_state(), config
-            )
+            await invoke_graph_with_config(graph, an_initial_state(), config)
 
-        resumed = graph_given.a_graph_with_checkpointer(
-            fake_llm, FakeMCPClient(tools), checkpointer
-        )
+        resumed = a_graph_with_checkpointer(fake_llm, FakeMCPClient(tools), checkpointer)
         assert await resume_or_reset(resumed, "taken-as-down", requested=True)
-        result = await graph_given.invoke_graph_with_config(resumed, None, config)
+        result = await invoke_graph_with_config(resumed, None, config)
 
     then.each_tool_audited_once(result, ["dies", "second"])
     then.no_tool_in_a_server_down_gap(result)
 
 
 async def test_relaunches_recorded_before_an_interruption_stay_in_the_report():
-    tools = [graph_given.a_tool("dies"), graph_given.a_tool("second")]
+    tools = [a_tool("dies"), a_tool("second")]
     fake_llm = given.an_llm_interrupted_on_the_second_generation(cases_per_tool=[1, 1])
     checkpointer = InMemorySaver()
-    graph = graph_given.a_graph_with_checkpointer(
-        fake_llm, graph_given.a_server_dying_on(tools, "dies", relaunches=True), checkpointer
+    graph = a_graph_with_checkpointer(
+        fake_llm, a_server_dying_on(tools, "dies", relaunches=True), checkpointer
     )
     config = {"configurable": {"thread_id": "relaunched"}}
     with pytest.raises(given.Interrupted):
-        await graph_given.invoke_graph_with_config(graph, graph_given.an_initial_state(), config)
+        await invoke_graph_with_config(graph, an_initial_state(), config)
 
     assert await resume_or_reset(graph, "relaunched", requested=True)
-    result = await graph_given.invoke_graph_with_config(graph, None, config)
+    result = await invoke_graph_with_config(graph, None, config)
 
     then.each_tool_audited_once(result, ["dies", "second"])
     assert [relaunch.tool_name for relaunch in result["audit_report"].relaunches] == ["dies"]
 
 
 async def test_a_checkpoint_without_the_keys_of_calls_not_sent_resumes_as_before():
-    tools = [graph_given.a_tool("first"), graph_given.a_tool("second")]
+    tools = [a_tool("first"), a_tool("second")]
     fake_llm = given.an_llm_interrupted_on_the_second_generation(cases_per_tool=[1, 1])
     checkpointer = InMemorySaver()
-    graph = graph_given.a_graph_with_checkpointer(fake_llm, FakeMCPClient(tools), checkpointer)
+    graph = a_graph_with_checkpointer(fake_llm, FakeMCPClient(tools), checkpointer)
     config = {"configurable": {"thread_id": "before-relaunch"}}
     with pytest.raises(given.Interrupted):
-        await graph_given.invoke_graph_with_config(graph, graph_given.an_initial_state(), config)
+        await invoke_graph_with_config(graph, an_initial_state(), config)
     await given.a_latest_checkpoint_without(checkpointer, "before-relaunch", given.RELAUNCH_KEYS)
 
     assert await resume_or_reset(graph, "before-relaunch", requested=True)
-    result = await graph_given.invoke_graph_with_config(graph, None, config)
+    result = await invoke_graph_with_config(graph, None, config)
 
     then.each_tool_audited_once(result, ["first", "second"])
     then.no_tool_has_a_gap(result)
@@ -110,45 +109,41 @@ async def test_a_checkpoint_without_the_keys_of_calls_not_sent_resumes_as_before
 
 
 async def test_resuming_a_completed_audit_runs_a_fresh_one(tmp_path: Path):
-    client = FakeMCPClient([graph_given.a_tool("first")])
-    fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
+    client = FakeMCPClient([a_tool("first")])
+    fake_llm = a_fake_llm_for_multi_tool_audit([1, 1])
 
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
-        graph = graph_given.a_graph_with_checkpointer(fake_llm, client, checkpointer)
+        graph = a_graph_with_checkpointer(fake_llm, client, checkpointer)
         config = {"configurable": {"thread_id": "completed-audit"}}
         assert not await resume_or_reset(graph, "completed-audit", requested=False)
-        await graph_given.invoke_graph_with_config(graph, graph_given.an_initial_state(), config)
+        await invoke_graph_with_config(graph, an_initial_state(), config)
 
         assert not await resume_or_reset(graph, "completed-audit", requested=True)
-        result = await graph_given.invoke_graph_with_config(
-            graph, graph_given.an_initial_state(), config
-        )
+        result = await invoke_graph_with_config(graph, an_initial_state(), config)
 
     then.each_tool_audited_once(result, ["first"])
 
 
 async def test_reauditing_the_same_server_does_not_accumulate_the_previous_report(tmp_path: Path):
-    client = FakeMCPClient([graph_given.a_tool("first")])
-    fake_llm = graph_given.a_fake_llm_for_multi_tool_audit([1, 1])
+    client = FakeMCPClient([a_tool("first")])
+    fake_llm = a_fake_llm_for_multi_tool_audit([1, 1])
 
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
-        graph = graph_given.a_graph_with_checkpointer(fake_llm, client, checkpointer)
+        graph = a_graph_with_checkpointer(fake_llm, client, checkpointer)
         config = {"configurable": {"thread_id": "same-server"}}
         await resume_or_reset(graph, "same-server", requested=False)
-        await graph_given.invoke_graph_with_config(graph, graph_given.an_initial_state(), config)
+        await invoke_graph_with_config(graph, an_initial_state(), config)
 
         await resume_or_reset(graph, "same-server", requested=False)
-        result = await graph_given.invoke_graph_with_config(
-            graph, graph_given.an_initial_state(), config
-        )
+        result = await invoke_graph_with_config(graph, an_initial_state(), config)
 
     then.each_tool_audited_once(result, ["first"])
 
 
 async def test_wiping_a_thread_on_a_database_that_was_never_written(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "virgin.db")) as checkpointer:
-        graph = graph_given.a_graph_with_checkpointer(
-            graph_given.a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
+        graph = a_graph_with_checkpointer(
+            a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
         )
 
         assert not await resume_or_reset(graph, "never-audited", requested=False)
@@ -172,8 +167,8 @@ async def test_an_unfinished_thread_is_wiped_when_resume_was_not_asked(tmp_path:
 
 async def test_a_thread_with_nothing_stored_is_not_resumable(tmp_path: Path):
     async with AsyncSqliteSaver.from_conn_string(str(tmp_path / "checkpoints.db")) as checkpointer:
-        graph = graph_given.a_graph_with_checkpointer(
-            graph_given.a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
+        graph = a_graph_with_checkpointer(
+            a_fake_llm_for_multi_tool_audit([]), FakeMCPClient([]), checkpointer
         )
 
         assert not await resume_or_reset(graph, "never-audited", requested=True)

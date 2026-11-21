@@ -12,7 +12,6 @@ from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
 from rich.console import Console
 
-import tests.unit.auditor.support.test_graph_given as graph
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
@@ -26,6 +25,7 @@ from tests.integration.support.detection_fake_targets import (
     a_docker_that_runs_its_command_on_the_host,
     removals,
 )
+from tests.unit.auditor.support.graph_builders import a_judgment, a_payload
 
 READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
 STALLING_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "stalling_server.py"
@@ -153,8 +153,8 @@ async def the_ping_error_code(*flags: str) -> int | None:
 
 def an_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
     # One case per tool, judged and summarized by the same scripted model, no chain.
-    batch = TestCaseBatch(cases=[graph.a_payload(arguments={"path": "/outside/flag"})])
-    llm = FakeLLM([batch, graph.a_judgment(), AttackContext()])
+    batch = TestCaseBatch(cases=[a_payload(arguments={"path": "/outside/flag"})])
+    llm = FakeLLM([batch, a_judgment(), AttackContext()])
     config = AuditConfig(
         run_options=AuditRunOptions(budget=1, chains=0, resume=False, dry_run=False),
         report_paths=ReportPaths(),

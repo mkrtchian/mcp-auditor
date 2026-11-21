@@ -1,57 +1,21 @@
-from typing import Any
-
 from pydantic import BaseModel
 
 from mcp_auditor.domain import (
     AttackContext,
     AuditCategory,
-    AuditPayload,
-    ChainGoal,
     ChainPlanBatch,
-    EvalVerdict,
     Judgment,
     ProviderUsage,
-    Severity,
     StepObservation,
     TestCaseBatch,
-    ToolDefinition,
-    ToolResponse,
 )
-from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import MissCause
-from mcp_auditor.domain.ports import (
-    PromptTooLong,
-    ProviderRefusal,
-    ProviderThrottled,
-    UnparseableOutput,
+from tests.fakes import FakeLLM
+from tests.unit.auditor.support.graph_builders import (
+    a_chain_goal,
+    a_complete_batch,
+    a_judgment,
+    a_payload,
 )
-from mcp_auditor.domain.redaction import Redaction
-from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
-from tests.fakes import FakeLLM, FakeMCPClient
-from tests.fakes.llm import ModelFailure
-from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
-
-
-def a_tool(
-    name: str = "test_tool",
-    description: str = "A test tool",
-    input_schema: dict[str, Any] | None = None,
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
-        description=description,
-        input_schema=input_schema or {"type": "object", "properties": {}},
-    )
-
-
-def a_fake_llm_for_single_tool_audit(
-    num_cases: int = 1,
-    extraction_response: AttackContext | None = None,
-) -> FakeLLM:
-    batch = a_complete_batch(num_cases)
-    judgments = [a_judgment() for _ in range(num_cases)]
-    context = extraction_response or AttackContext()
-    return FakeLLM([batch, *judgments, context])
 
 
 def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
@@ -64,23 +28,11 @@ def a_fake_llm_for_destructive_and_safe_case() -> FakeLLM:
     return FakeLLM([batch, a_judgment(), AttackContext()])
 
 
-def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
-    return _a_fake_llm_extracting([(num_cases, AttackContext()) for num_cases in cases_per_tool])
-
-
 def a_fake_llm_for_two_tool_audit_extracting(
     first_answer: AttackContext, second_answer: AttackContext
 ) -> FakeLLM:
-    return _a_fake_llm_extracting([(1, first_answer), (1, second_answer)])
-
-
-def _a_fake_llm_extracting(tools: list[tuple[int, AttackContext]]) -> FakeLLM:
-    responses: list[BaseModel] = []
-    for num_cases, extraction_answer in tools:
-        batch = a_complete_batch(num_cases)
-        judgments = [a_judgment() for _ in range(num_cases)]
-        responses.extend([batch, *judgments, extraction_answer])
-    return FakeLLM(responses)
+    first_tool = [a_complete_batch(1), a_judgment(), first_answer]
+    return FakeLLM([*first_tool, a_complete_batch(1), a_judgment(), second_answer])
 
 
 def a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool: int) -> FakeLLM:
@@ -96,63 +48,6 @@ def a_fake_llm_whose_first_tool_batch_stays_short(cases_per_tool: int) -> FakeLL
 def a_fake_dry_run_llm_whose_batch_stays_short(budget: int) -> FakeLLM:
     short = a_complete_batch(budget - 1)
     return FakeLLM([short, short, a_complete_batch(1)])
-
-
-def a_fake_llm_failing_the_first_of_two_judgments(failure: ModelFailure) -> FakeLLM:
-    return FakeLLM([a_complete_batch(2), failure, a_judgment(), AttackContext()])
-
-
-def a_fake_llm_failing_the_first_tool_generation(
-    failure: ModelFailure, cases_per_tool: int
-) -> FakeLLM:
-    judgments = [a_judgment() for _ in range(cases_per_tool)]
-    first_tool = [failure, AttackContext()]
-    second_tool = [a_complete_batch(cases_per_tool), *judgments, AttackContext()]
-    return FakeLLM([*first_tool, *second_tool])
-
-
-def a_fake_llm_refusing_the_chain_planning() -> FakeLLM:
-    return FakeLLM([a_complete_batch(1), a_judgment(), a_provider_refusal(), AttackContext()])
-
-
-def a_fake_llm_failing_the_first_chain_observation(failure: ModelFailure) -> FakeLLM:
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("first chain"), a_chain_goal("second chain")])
-    stop_obs = StepObservation(observation="dead end", should_continue=False)
-    first_chain = [failure, a_judgment()]
-    second_chain = [stop_obs, a_judgment()]
-    single_step = [a_complete_batch(1), a_judgment()]
-    return FakeLLM([*single_step, chain_plan, *first_chain, *second_chain, AttackContext()])
-
-
-def a_fake_llm_refusing_the_chain_step_planning() -> FakeLLM:
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
-    continue_obs = StepObservation(observation="promising", should_continue=True)
-    chain = [chain_plan, continue_obs, a_provider_refusal(), a_judgment()]
-    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
-
-
-def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
-
-
-def an_unreadable_answer() -> UnparseableOutput:
-    return UnparseableOutput(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))
-
-
-def a_provider_throttling() -> ProviderThrottled:
-    return ProviderThrottled("slow down", 300.0, ProviderUsage(throttled_requests=8))
-
-
-def a_prompt_too_long() -> PromptTooLong:
-    return PromptTooLong(ProviderUsage(throttled_requests=2))
-
-
-MODEL_FAILURES = {
-    MissCause.PROVIDER_REFUSAL: a_provider_refusal,
-    MissCause.UNREADABLE_ANSWER: an_unreadable_answer,
-    MissCause.PROVIDER_THROTTLED: a_provider_throttling,
-    MissCause.PROMPT_TOO_LONG: a_prompt_too_long,
-}
 
 
 class PerRoleBillingLLM(FakeLLM):
@@ -224,56 +119,6 @@ def a_fake_llm_billing_each_call_apart_with_a_two_step_chain() -> PerCallBilling
     return PerCallBillingLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
 
 
-# The graph wrappers below look trivial but are a typing seam: langgraph's
-# CompiledStateGraph is partially unknown under strict pyright, so tests go
-# through these Any-typed helpers instead of calling ainvoke directly.
-def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
-    return build_graph(fake_llm, AuditedServer(fake_mcp_client))
-
-
-def a_redacting_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, secrets: dict[str, str]):
-    return build_graph(fake_llm, AuditedServer(fake_mcp_client, Redaction(secrets)))
-
-
-def a_dry_run_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
-    return build_dry_run_graph(fake_llm, AuditedServer(fake_mcp_client))
-
-
-def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
-    return build_graph(fake_llm, AuditedServer(fake_mcp_client), checkpointer=checkpointer)
-
-
-async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
-    return await graph.ainvoke(state)
-
-
-async def invoke_graph_with_config(
-    graph: Any, state: dict[str, Any] | None, config: dict[str, Any]
-) -> dict[str, Any]:
-    return await graph.ainvoke(state, config=config)
-
-
-def an_initial_state(
-    test_budget: int = 1,
-    chain_budget: int = 0,
-    max_chain_steps: int = 3,
-) -> dict[str, Any]:
-    return {
-        "server_command": "python honeypot_server.py",
-        "discovered_tools": [],
-        "test_budget": test_budget,
-        "current_tool": None,
-        "processed_cases": [],
-        "tool_reports": [],
-        "provider_usage": [],
-        "audit_report": None,
-        "attack_context": AttackContext(),
-        "chain_budget": chain_budget,
-        "max_chain_steps": max_chain_steps,
-        "completed_chains": [],
-    }
-
-
 def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
     batch = a_complete_batch(num_cases)
     judgments = [a_judgment() for _ in range(num_cases)]
@@ -282,18 +127,6 @@ def a_fake_llm_for_single_tool_with_chain(num_cases: int = 1) -> FakeLLM:
     chain_judgment = a_judgment()
     context = AttackContext()
     return FakeLLM([batch, *judgments, chain_plan, step_obs, chain_judgment, context])
-
-
-def a_fake_llm_for_single_tool_with_a_two_step_chain() -> FakeLLM:
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
-    continue_obs = StepObservation(observation="promising", should_continue=True)
-    stop_obs = StepObservation(observation="dead end", should_continue=False)
-    chain = [chain_plan, continue_obs, a_payload(), stop_obs, a_judgment()]
-    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
-
-
-def a_server_echoing(tool: ToolDefinition, content: str) -> FakeMCPClient:
-    return FakeMCPClient([tool], {tool.name: ToolResponse(content=content)})
 
 
 def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
@@ -310,105 +143,3 @@ def a_fake_llm_for_single_tool_with_two_chains(num_cases: int = 1) -> FakeLLM:
     return FakeLLM(
         [batch, *judgments, chain_plan, stop_obs, a_judgment(), stop_obs, a_judgment(), context]
     )
-
-
-def a_complete_batch(num_cases: int) -> TestCaseBatch:
-    categories = list(AuditCategory)
-    return TestCaseBatch(
-        cases=[a_payload(category=categories[i % len(categories)]) for i in range(num_cases)]
-    )
-
-
-def a_chain_goal(
-    description: str,
-    category: AuditCategory = AuditCategory.INJECTION,
-) -> ChainGoal:
-    return ChainGoal(
-        description=description,
-        category=category,
-        first_step=a_payload(category=category),
-    )
-
-
-def a_payload(
-    category: AuditCategory = AuditCategory.INJECTION,
-    arguments: dict[str, Any] | None = None,
-) -> AuditPayload:
-    return AuditPayload(
-        category=category,
-        description="test payload",
-        arguments=arguments or {"input": "malicious"},
-    )
-
-
-def a_judgment(
-    verdict: EvalVerdict = EvalVerdict.FAIL,
-    severity: Severity = Severity.MEDIUM,
-) -> Judgment:
-    return Judgment(
-        verdict=verdict,
-        justification="test justification",
-        severity=severity,
-    )
-
-
-def a_server_timing_out_on(tools: list[ToolDefinition], tool_name: str) -> FakeMCPClient:
-    return FakeMCPClient(tools, {tool_name: a_timeout_response()})
-
-
-def a_server_dying_on(
-    tools: list[ToolDefinition], tool_name: str, relaunches: bool
-) -> FakeMCPClient:
-    """The first call to the tool loses its connection, and the relaunch succeeds or fails."""
-    responses = [a_lost_connection_response(), ToolResponse(content="ok")]
-    return FakeMCPClient(tools, {tool_name: responses}, relaunch_answers=(relaunches,))
-
-
-def a_server_dying_on_its_first_chain_step(tool: ToolDefinition) -> FakeMCPClient:
-    responses = [
-        ToolResponse(content="ok"),
-        a_lost_connection_response(),
-        ToolResponse(content="ok"),
-    ]
-    return FakeMCPClient([tool], {tool.name: responses})
-
-
-def a_server_going_down_on_its_second_chain_step(tool: ToolDefinition) -> FakeMCPClient:
-    """The case and the first chain step are answered, the second step loses the connection and
-    the relaunch fails."""
-    responses = [
-        ToolResponse(content="ok"),
-        ToolResponse(content="ok"),
-        a_lost_connection_response(),
-    ]
-    return FakeMCPClient([tool], {tool.name: responses}, relaunch_answers=(False,))
-
-
-def a_fake_llm_for_a_stopped_tool_then_a_tool_with_a_chain(num_cases: int) -> FakeLLM:
-    judgments = [a_judgment() for _ in range(num_cases)]
-    stopped_tool = [a_complete_batch(num_cases), *judgments, AttackContext()]
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
-    stop_obs = StepObservation(observation="dead end", should_continue=False)
-    chain = [chain_plan, stop_obs, a_judgment()]
-    next_tool = [a_complete_batch(num_cases), *judgments, *chain, AttackContext()]
-    return FakeLLM([*stopped_tool, *next_tool])
-
-
-def a_fake_llm_for_a_tool_whose_server_goes_down(num_cases: int) -> FakeLLM:
-    """Only the case whose call lost the connection is judged: the others are not sent."""
-    return FakeLLM([a_complete_batch(num_cases), a_judgment(), AttackContext()])
-
-
-def a_fake_llm_for_a_chain_cut_by_a_relaunch() -> FakeLLM:
-    """The step cut by the relaunch is judged with no observation."""
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
-    return FakeLLM([a_complete_batch(1), a_judgment(), chain_plan, a_judgment(), AttackContext()])
-
-
-def a_fake_llm_for_two_chains_whose_server_goes_down_on_the_second_step() -> FakeLLM:
-    """The step that took the server down is judged with no observation, and the second chain
-    sends nothing."""
-    chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit"), a_chain_goal("next")])
-    continue_obs = StepObservation(observation="promising", should_continue=True)
-    chain = [chain_plan, continue_obs, a_payload(), a_judgment()]
-    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
