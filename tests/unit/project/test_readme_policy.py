@@ -11,6 +11,8 @@ OVERCLAIMS = (
     "security boundary",
 )
 
+PROSE_WORD_CAP = 2500
+
 
 def test_the_payload_safety_bullet_links_adr_011_beside_adr_013():
     assert "ADR 011" in _safety_bullet()
@@ -21,6 +23,14 @@ def test_the_payload_safety_bullet_promises_no_property_the_guard_cannot_deliver
 
     for overclaim in OVERCLAIMS:
         assert overclaim not in bullet
+
+
+def test_the_readme_prose_stays_under_the_word_cap():
+    words = _prose_words(README.read_text())
+
+    assert words <= PROSE_WORD_CAP, (
+        f"README.md has {words} words of prose, the cap is {PROSE_WORD_CAP}"
+    )
 
 
 def _safety_bullet() -> str:
@@ -50,3 +60,15 @@ def _bullets(markdown: str) -> list[str]:
         elif bullets and line.startswith("  "):
             bullets[-1] += " " + line.strip()
     return bullets
+
+
+def _prose_words(markdown: str) -> int:
+    words = 0
+    in_block = False
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_block = not in_block
+        elif not in_block and not stripped.startswith("|"):
+            words += len(line.split())
+    return words

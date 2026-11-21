@@ -2,13 +2,13 @@
 
 Living text is the code under `src/`, `evals/` and `tests/` with its file paths, README.md,
 CLAUDE.md, CONTRIBUTING.md, `.env.example`, the `[Unreleased]` section of CHANGELOG.md, the
-glossary, the two rules, the preambles of the three logs and `.github/workflows/`. Everything
-else is historical and never read: ADRs, plans, the glossary log, the published CHANGELOG
-sections, the dated log entries, and the committed records (every JSON file under the code
-roots), key files, binaries and the files above 100 KB under the code roots, which embed a
-device capture. The glossary test, its given module and the modules that hold the patterns and
-the exemptions are skipped too. A test name is also read with `_` as a space, so a retired word
-inside a snake_case name is found.
+glossary, `docs/usage.md`, `docs/evals.md`, the two rules, the preambles of the three logs and
+`.github/workflows/`. Everything else is historical and never read: ADRs, plans, the glossary
+log, the published CHANGELOG sections, the dated log entries, and the committed records (every
+JSON file under the code roots), key files, binaries and the files above 100 KB under the code
+roots, which embed a device capture. The glossary test, its given module and the modules that
+hold the patterns and the exemptions are skipped too. A test name is also read with `_` as a
+space, so a retired word inside a snake_case name is found.
 """
 
 import bisect
@@ -117,6 +117,8 @@ _WHOLE_FILES = (
     "CONTRIBUTING.md",
     ".env.example",
     "docs/glossary.md",
+    "docs/usage.md",
+    "docs/evals.md",
     "docs/detection-suite-rule.md",
     "docs/nuisance-suite-rule.md",
 )

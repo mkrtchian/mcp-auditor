@@ -125,7 +125,7 @@ Governed by ADR 016, amended by ADR 020 for the honeypot suite (`docs/adr/016-ev
   - a term added, renamed or moved: `docs/glossary.md` and `docs/glossary-log.md`.
   - a user-facing change: the `[Unreleased]` section of `CHANGELOG.md`.
 
-  `README.md` is the short version of these pages: change it only when what it says becomes false, and keep its prose under 2,500 words, tables and code blocks aside. The pages listed above and `README.md` are the only Markdown that tracks the current state. Do **not** touch `plans/` or `docs/adr/` for this: they are immutable historical artifacts (a decision change is a new ADR, not an edit). A feature isn't done until the living docs match it.
+  `README.md` is the short version of these pages: change it only when what it says becomes false, and keep its prose under 2,500 words, tables and code blocks aside, which `tests/unit/project/test_readme_policy.py` checks. The pages listed above and `README.md` are the only Markdown that tracks the current state. Do **not** touch `plans/` or `docs/adr/` for this: they are immutable historical artifacts (a decision change is a new ADR, not an edit). A feature isn't done until the living docs match it.
 
 ## Landmines
 
