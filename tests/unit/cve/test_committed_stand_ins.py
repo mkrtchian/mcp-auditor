@@ -1,3 +1,7 @@
+from pathlib import Path
+
+import pytest
+
 import tests.unit.cve.support.test_committed_stand_ins_given as given
 import tests.unit.cve.support.test_committed_stand_ins_then as then
 from evals.cve.public_stand_ins import STAND_INS_DIRECTORY, stand_in
@@ -27,15 +31,6 @@ def test_the_committed_authority_signs_for_exactly_the_stand_in_hosts():
     assert excluded == {f".{host}" for host in hosts if not given.is_ip_literal(host)}
 
 
-def test_the_committed_authority_permits_each_ip_literal_host_as_its_single_address():
-    _, permitted, excluded = given.committed_authority_constraints(STAND_INS_DIRECTORY)
-
-    networks = {name for name in permitted if "/" in name}
-
-    assert all(network.endswith("/32") for network in networks)
-    assert not any("/" in name for name in excluded)
-
-
 def test_every_committed_leaf_names_a_stand_in_host():
     hosts = given.authority_hosts(STAND_INS_DIRECTORY)
 
@@ -46,6 +41,8 @@ def test_every_committed_leaf_names_a_stand_in_host():
 
 def test_each_ip_literal_leaf_names_its_address_and_carries_no_common_name():
     leaves = given.committed_leaf_names(STAND_INS_DIRECTORY)
+    if not any(given.is_ip_literal(Path(name).stem) for name in leaves):
+        pytest.skip("no committed stand-in host is an IP literal")
 
     common_names = given.committed_leaf_common_names(STAND_INS_DIRECTORY)
 

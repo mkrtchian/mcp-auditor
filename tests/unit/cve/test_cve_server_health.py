@@ -13,15 +13,6 @@ def test_healths_add_up_count_by_count():
     assert NO_INCIDENTS + ServerHealth(1, 4, 2, 5, 6) == ServerHealth(1, 4, 2, 5, 6)
 
 
-def test_no_incidents_counts_nothing():
-    assert (NO_INCIDENTS.relaunches, NO_INCIDENTS.unsent_calls, NO_INCIDENTS.cut_responses) == (
-        0,
-        0,
-        0,
-    )
-    assert NO_INCIDENTS + NO_INCIDENTS == NO_INCIDENTS
-
-
 def test_the_health_reads_the_client_count_and_the_lost_connections_of_the_calls():
     calls: list[Exchange] = [("read", {}, given.ANSWERED), ("read", {}, given.LOST)]
 

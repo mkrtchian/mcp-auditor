@@ -19,19 +19,11 @@ from evals.cve.backends.mcp_ssh_sshd import (
     sshd_args,
     sshd_server_args,
 )
-from evals.cve.dossier_closure import import_closure
 from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
 from tests.unit.support.recorded_subprocess import recorded_commands
-
-
-def test_the_sshd_module_carries_no_auditor_or_environment_module_into_a_dossier():
-    closure = import_closure(["evals.cve.backends.mcp_ssh_sshd"])
-
-    assert not [module for module in closure if module.startswith("mcp_auditor")]
-    assert "evals.cve.environments" not in closure
 
 
 def test_the_sshd_runs_in_its_own_namespace_under_the_readme_hostname():

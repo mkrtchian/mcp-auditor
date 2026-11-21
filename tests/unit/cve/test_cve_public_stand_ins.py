@@ -39,15 +39,6 @@ def test_an_address_that_is_not_global_unicast_is_refused(tmp_path: Path, addres
         stand_in(given.HOST, directory)
 
 
-def test_a_route_keyed_by_the_old_target_is_refused_naming_it(tmp_path: Path):
-    route = given.a_route("https")
-    route["target"] = route.pop("request_target")
-    directory = given.a_stand_in_directory(tmp_path, routes=[route])
-
-    with pytest.raises(ValidationError, match=r"(?s)request_target.*target"):
-        stand_in(given.HOST, directory)
-
-
 def test_a_route_scheme_other_than_http_or_https_is_refused(tmp_path: Path):
     directory = given.a_stand_in_directory(tmp_path, routes=[given.a_route("ftp")])
 

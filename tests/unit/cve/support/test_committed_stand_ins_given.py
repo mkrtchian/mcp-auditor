@@ -59,8 +59,6 @@ def host_subtree(host: str) -> str:
 def committed_authority_constraints(directory: Path) -> tuple[bool, set[str], set[str]]:
     """Critical flag, permitted and excluded subtrees (DNS names, IP networks in CIDR form)."""
     authority = directory / "tls" / "fixture-authority.pem"
-    if not authority.exists():
-        return True, set(), set()
     certificate = x509.load_pem_x509_certificate(authority.read_bytes())
     extension = certificate.extensions.get_extension_for_class(x509.NameConstraints)
     return (

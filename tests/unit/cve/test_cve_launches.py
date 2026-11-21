@@ -46,7 +46,7 @@ from tests.unit.support.audited_launch_builders import (
     SpecBuilder,
     an_empty_spec,
 )
-from tests.unit.support.docker_argv import carries, mount_of, value_after
+from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
 
 
 def _root(launch: Launch) -> Path:
@@ -169,10 +169,10 @@ def test_the_checkout_fixture_hands_over_an_empty_captures_directory_in_the_chec
 def test_the_houtini_fixture_puts_its_two_environment_variables_before_the_image():
     with houtini_lm_env("img", an_empty_spec(), docker=FakePlantingDocker()) as launch:
         image = launch.args.index("img")
-        before = launch.args[:image]
-        assert "-e" in before
-        assert "HOUTINI_LM_FILE_ROOTS=/srv/app" in before
-        assert "HOUTINI_LM_ENDPOINT_URL=http://127.0.0.1:1234" in before
+        assert environment(launch.args[:image]).items() >= {
+            ("HOUTINI_LM_FILE_ROOTS", "/srv/app"),
+            ("HOUTINI_LM_ENDPOINT_URL", "http://127.0.0.1:1234"),
+        }
 
 
 def test_no_handed_over_tree_remains_and_its_outer_directory_is_gone_after_the_launch():

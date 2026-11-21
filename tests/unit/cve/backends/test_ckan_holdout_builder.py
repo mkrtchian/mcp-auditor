@@ -21,17 +21,19 @@ def test_the_server_reaches_demo_ckan_org_on_the_front_and_trusts_the_fixture_au
 
 
 def test_the_launch_stands_the_stack_then_a_sentinel_per_kept_place_and_no_holder():
-    ckan = given.a_ckan_docker()
+    ckan = given.FakeCkanDocker()
     planting = FakePlantingDocker()
+    spec = given.the_targets_spec()
+    hosts = sorted(sentinel.host for sentinel in spec.sentinels)
 
-    with ckan_ssrf_env("img", given.the_targets_spec(), docker=planting, ckan=ckan.docker()):
-        assert ckan.events == ["stack", "link-local network", "sentinel", "sentinel", "sentinel"]
-        assert sorted(ckan.sentinel_hosts) == ["169.254.169.254", "169.254.170.2", "169.254.170.23"]
+    with ckan_ssrf_env("img", spec, docker=planting, ckan=ckan.docker()):
+        assert ckan.events == ["stack", "link-local network", *["sentinel"] * len(hosts)]
+        assert sorted(ckan.sentinel_hosts) == hosts
         assert planting.holders == {}
 
 
 def test_the_launch_removes_its_server_and_its_sentinels_on_exit():
-    ckan = given.a_ckan_docker()
+    ckan = given.FakeCkanDocker()
 
     with ckan_ssrf_env(
         "img", given.the_targets_spec(), docker=FakePlantingDocker(), ckan=ckan.docker()

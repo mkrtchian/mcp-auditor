@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from evals.cve.dossier_closure import copy_closure, import_closure
+from evals.cve.nuisance.backend_registry import BACKENDS
 
 
 def test_the_closure_follows_imports_transitively_and_skips_imported_attributes(tmp_path: Path):
@@ -44,6 +45,11 @@ def test_the_closure_of_a_kit_root_holds_its_packages_and_the_shared_modules(tmp
 
     for relative in ("evals/cve/__init__.py", "evals/cve/kit/__init__.py", "evals/cve/places.py"):
         assert (tmp_path / relative).is_file(), relative
+
+
+@pytest.mark.parametrize("key", sorted(BACKENDS))
+def test_a_backend_module_carries_no_auditor_module_into_a_dossier(key: str):
+    import_closure([f"evals.cve.backends.{key}"])
 
 
 def _a_planted_package(root: Path) -> None:

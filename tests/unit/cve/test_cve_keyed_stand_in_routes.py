@@ -73,10 +73,6 @@ def test_keyed_routes_beside_their_error_route_load(tmp_path: Path, routes: list
             [given.a_keyed_route(True, location="json_member"), given.an_error_route()],
             r"identifier\.value",
         ),
-        (
-            [given.a_keyed_route("app-cluster", form_field="q"), given.an_error_route()],
-            "action or a form field",
-        ),
     ],
     ids=[
         "no_action",
@@ -87,7 +83,6 @@ def test_keyed_routes_beside_their_error_route_load(tmp_path: Path, routes: list
         "one_value_twice",
         "integer_form_value",
         "boolean_value",
-        "beside_a_form_field",
     ],
 )
 def test_a_keyed_route_the_stand_in_could_not_serve_unambiguously_is_refused(

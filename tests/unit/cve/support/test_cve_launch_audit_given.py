@@ -22,6 +22,8 @@ from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 type _Invocation = Callable[[AuditedServer], Awaitable[AuditReport]]
 
+BUDGET = 10
+
 
 class FakeGraphs:
     """Stands in for `build_graph`, recording what each graph was built with and invoked on."""
@@ -158,7 +160,7 @@ def an_auditor(
     return Auditor(
         FakeLLM([]),
         FakeLLM([]),
-        budget=10,
+        budget=BUDGET,
         report_detail=report_detail,
         connect=connect or FakeConnect(),
         build_graph=graphs or graph_reporting([grammar.a_report()]),

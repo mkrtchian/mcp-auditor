@@ -12,9 +12,8 @@ def a_keyed_route(
     location: str = "form",
     name: str = "DBClusterIdentifier",
     action: str | None = ACTION,
-    form_field: str | None = None,
 ) -> dict[str, Any]:
-    route = a_route("https", "POST", action, form_field)
+    route = a_route("https", "POST", action)
     route["identifier"] = {"location": location, "name": name, "value": value}
     return route
 

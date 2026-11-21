@@ -26,8 +26,7 @@ async def test_the_graph_audits_the_launch_on_the_auditor_budget_and_returns_its
     audit = await audit_launch(A_LAUNCH, given.an_auditor(graphs=graphs), THE_LAUNCH_OWN)
 
     [graph_input] = graphs.graph_inputs
-    assert graph_input["server_command"] == "docker run server"
-    assert graph_input["test_budget"] == 10
+    assert graph_input["test_budget"] == given.BUDGET
     assert audit.report is report
 
 

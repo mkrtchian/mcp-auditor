@@ -115,7 +115,7 @@ def _doris(_tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltL
 @contextmanager
 def _ckan(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
     spec = ckan_given.the_targets_spec()
-    stack = ckan_given.a_ckan_docker().docker()
+    stack = ckan_given.FakeCkanDocker().docker()
     with ckan_ssrf_env(_IMAGE, spec, docker=FakePlantingDocker(), ckan=stack) as launch:
         yield BuiltLaunch(launch.args, spec.host)
 
@@ -142,7 +142,7 @@ def _mcp_ssh(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[Buil
 def _searxng(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
     spec = searxng_given.the_targets_spec()
     planting = FakePlantingDocker()
-    stand = searxng_given.a_searxng(planting).docker()
+    stand = searxng_given.FakeSearxng(planting).docker()
     with searxng_env(_IMAGE, spec, docker=planting, searxng=stand) as launch:
         yield BuiltLaunch(launch.args, spec.host)
 

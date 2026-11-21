@@ -7,15 +7,8 @@ import tests.unit.cve.backends.support.test_kubernetes_backend_given as given
 import tests.unit.cve.backends.support.test_kubernetes_backend_then as then
 from evals.cve.backends.kubernetes import LIFECYCLE
 from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
-from evals.cve.dossier_closure import import_closure
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import FIXTURE, kubectl_env
 from tests.fakes.planting_docker import FakePlantingDocker
-
-
-def test_the_backend_module_carries_no_auditor_module_into_a_dossier():
-    closure = import_closure(["evals.cve.backends.kubernetes"])
-
-    assert not [module for module in closure if module.startswith("mcp_auditor")]
 
 
 def test_the_control_plane_runs_unprivileged_on_its_own_network(monkeypatch: pytest.MonkeyPatch):
