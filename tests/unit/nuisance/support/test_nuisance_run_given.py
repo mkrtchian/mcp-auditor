@@ -111,7 +111,7 @@ def an_audit(
     return NuisanceAudit(a_report(flagged, missed=missed, provider=provider, judge=judge), health)
 
 
-def scripted(outcomes_by_package: Mapping[str, list[Outcome]]) -> Audit:
+def scripted(outcomes_by_package: Mapping[str, Sequence[Outcome]]) -> Audit:
     scripts = {package: list(outcomes) for package, outcomes in outcomes_by_package.items()}
 
     async def audit(server: AdmittedServer) -> Outcome:

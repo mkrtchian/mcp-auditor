@@ -160,13 +160,11 @@ def test_the_confinement_names_every_option_the_run_sets(server: AdmittedServer)
         assert server.backend.network in confinement
 
 
-def test_a_shared_helper_of_the_fix_check_package_is_no_flaws_fix_check_module():
-    n8n = next(s for s in the_committed_admission().servers if s.server_package == "npm:n8n-mcp")
+def test_no_committed_server_carries_a_shared_helper_of_the_fix_check_package():
+    helpers = set(given.the_fix_check_package_helpers())
 
-    assert fix_check_modules(n8n) == [
-        "evals.cve.nuisance.fix_checks.cve_2026_44694_n8n",
-        "evals.cve.nuisance.fix_checks.ghsa_8g7g_hmwm_6rv2_n8n",
-    ]
+    for server in the_committed_admission().servers:
+        assert helpers.isdisjoint(fix_check_modules(server)), server.server_package
 
 
 def test_the_readme_builds_the_run_image_and_names_the_fix_check_modules():
@@ -252,7 +250,8 @@ def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
 
     targets = holdout_target_references(server, given.the_copy_resolution())
 
-    assert [target.flaw_id for target in targets] == [given.A_DRAWN_TARGET]
+    drawn, _ = given.a_drawn_target_and_its_sibling()
+    assert [target.flaw_id for target in targets] == [drawn]
 
 
 def test_a_copied_flaw_no_target_carries_is_refused():

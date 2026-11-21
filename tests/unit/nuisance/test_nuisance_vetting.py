@@ -11,6 +11,7 @@ from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.results import NotRunCause, NotRunServer
 from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
+from mcp_auditor.domain.container_name import declared_container_name
 from mcp_auditor.domain.models import ToolResponse
 
 
@@ -42,7 +43,7 @@ async def test_a_benign_call_launches_a_named_container(monkeypatch: pytest.Monk
     await benign_call(given.a_server(), timeout=30)
 
     (connected,) = launches.connected
-    assert connected.args[:2] == ["run", "--name"]
+    assert isinstance(declared_container_name(connected.args), str)
 
 
 async def test_a_benign_call_answering_with_an_error_is_not_retried(

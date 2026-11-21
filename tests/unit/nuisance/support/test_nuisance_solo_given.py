@@ -11,15 +11,20 @@ from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness
 from evals.cve.nuisance.run import NuisanceDeps
+from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.cve.nuisance.vet_command import VetDeps
 from tests.unit.nuisance.support.test_nuisance_run_backends_given import DockerHost
 
-MAGENTO2 = run_given.a_server("npm:@elgentos/magento2-dev-mcp")
+(_SOLO_PACKAGE,) = SOLO_SERVERS
+SOLO_SERVER = run_given.a_server(_SOLO_PACKAGE)
 HEAVY_BACKEND_SERVERS = [
     run_given.a_server("PyPI:doris-mcp-server"),
     run_given.a_server("npm:@zereight/mcp-gitlab"),
 ]
 BOUND = 2
+RUNS = 3
+# An alarm on the first run that its retests do not reproduce.
+GATE_AUDITS: list[GateRun | None] = [gate_given.a_gate_run(True), *gate_given.clean_runs(4)]
 
 
 def others(count: int) -> list[AdmittedServer]:
@@ -69,7 +74,10 @@ def vet_deps(in_flight: InFlight) -> VetDeps:
 
 def run_deps(in_flight: InFlight, servers: list[AdmittedServer]) -> NuisanceDeps:
     audit = run_given.scripted(
-        {server.server_package: [run_given.an_audit(False) for _ in range(3)] for server in servers}
+        {
+            server.server_package: [run_given.an_audit(False) for _ in range(RUNS)]
+            for server in servers
+        }
     )
     return dataclasses.replace(
         run_given.deps_auditing(audit),
@@ -81,11 +89,9 @@ def run_deps(in_flight: InFlight, servers: list[AdmittedServer]) -> NuisanceDeps
 def gate_harness_with_alarms(
     directory: Path, in_flight: InFlight, servers: list[AdmittedServer]
 ) -> NuisanceGateHarness:
-    """Every server gated, each raising an alarm on its first run that its retests do not
-    reproduce."""
+    """Every server gated, each audited along `GATE_AUDITS`."""
     for server in servers:
         gate_given.a_gated_file(directory, server)
-    script: list[GateRun | None] = [gate_given.a_gate_run(True), *gate_given.clean_runs(4)]
-    audit = gate_given.scripted({server.server_package: list(script) for server in servers})
+    audit = gate_given.scripted({server.server_package: GATE_AUDITS for server in servers})
     harness = gate_given.a_harness(directory, in_flight.bounded(audit))
     return dataclasses.replace(harness, benign_call=in_flight.bounded(_answering))

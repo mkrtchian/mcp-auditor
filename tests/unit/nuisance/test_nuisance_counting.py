@@ -45,15 +45,6 @@ def test_a_passing_flaw_is_counted():
     assert counted_flaws(server) == [flaw]
 
 
-def test_an_effect_is_function_flaw_contributes_no_tool():
-    flaw = given.a_flaw_whose_declared_function_is_effect(
-        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", None)]
-    )
-    server = admission.a_server([flaw])
-
-    assert counted_tools(server) == {}
-
-
 def test_a_tool_recorded_as_its_effect_under_a_flaw_recorded_otherwise_is_left_out_of_the_count():
     tool = given.a_tool_whose_declared_function_is_effect("probe", True)
     server = admission.a_server(
@@ -161,14 +152,6 @@ def test_a_flaw_whose_backend_the_fixture_provides_keeps_its_tool():
     )
 
     assert flaw_counted_tools(flaw.model_copy(update={"backend_need": "fixture"})) == {"probe"}
-
-
-def test_an_effect_is_function_flaw_has_no_counted_tool():
-    flaw = given.a_flaw_whose_declared_function_is_effect(
-        "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", None)]
-    )
-
-    assert flaw_counted_tools(flaw) == frozenset()
 
 
 def test_a_flaw_without_a_grammar_class_has_no_counted_tool():

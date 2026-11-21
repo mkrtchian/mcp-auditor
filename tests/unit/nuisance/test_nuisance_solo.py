@@ -18,25 +18,26 @@ from evals.gate_outcome import GateOutcome
 
 async def test_vet_makes_the_solo_benign_call_alone_after_the_others():
     others = given.others(3)
-    servers = [given.MAGENTO2, *others]
+    servers = [given.SOLO_SERVER, *others]
     in_flight = given.InFlight()
 
     result = await vet_servers(servers, given.vet_deps(in_flight))
 
-    then.each_played_alone_after_the_others(in_flight, [given.MAGENTO2], calls=1)
+    then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=1)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)
     assert result.surviving == servers
 
 
+# Deliberate friction: the 2026-11-16 nuisance suite log decision plays heavy backends together.
 @pytest.mark.parametrize("heavy", given.HEAVY_BACKEND_SERVERS, ids=lambda s: s.server_package)
 async def test_vet_plays_a_heavy_backend_server_beside_the_others(heavy: AdmittedServer):
-    servers = [heavy, given.MAGENTO2, *given.others(2)]
+    servers = [heavy, given.SOLO_SERVER, *given.others(2)]
     in_flight = given.InFlight()
 
     result = await vet_servers(servers, given.vet_deps(in_flight))
 
     then.played_beside_another_server(in_flight, heavy)
-    then.each_played_alone_after_the_others(in_flight, [given.MAGENTO2], calls=1)
+    then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=1)
     assert result.surviving == servers
 
 
@@ -52,12 +53,12 @@ async def test_vet_without_a_solo_server_plays_every_server_together():
 
 async def test_run_plays_the_solo_benign_call_and_audits_alone_after_the_others():
     others = given.others(3)
-    servers = [given.MAGENTO2, *others]
+    servers = [given.SOLO_SERVER, *others]
     in_flight = given.InFlight()
 
-    result = await run_given.run(servers, given.run_deps(in_flight, servers), runs=3)
+    result = await run_given.run(servers, given.run_deps(in_flight, servers), runs=given.RUNS)
 
-    then.each_played_alone_after_the_others(in_flight, [given.MAGENTO2], calls=4)
+    then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=1 + given.RUNS)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)
     assert [server.server_package for server in result.servers] == [
         server.server_package for server in servers
@@ -66,12 +67,13 @@ async def test_run_plays_the_solo_benign_call_and_audits_alone_after_the_others(
 
 async def test_gate_plays_the_solo_benign_call_audits_and_retests_alone(tmp_path: Path):
     others = given.others(2)
-    servers = [given.MAGENTO2, *others]
+    servers = [given.SOLO_SERVER, *others]
     in_flight = given.InFlight()
     harness = given.gate_harness_with_alarms(tmp_path, in_flight, servers)
 
     session = await run_gate(gate_given.options(servers), harness)
 
-    then.each_played_alone_after_the_others(in_flight, [given.MAGENTO2], calls=6)
+    calls = 1 + len(given.GATE_AUDITS)
+    then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=calls)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)
     assert session.gate.outcome == GateOutcome.GREEN

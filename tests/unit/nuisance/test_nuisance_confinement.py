@@ -1,14 +1,13 @@
-import dataclasses
 from pathlib import Path
 
 import pytest
 
 import tests.unit.cve.support.test_cve_planting_stand_ins_given as stand_ins_given
+import tests.unit.nuisance.support.test_nuisance_confinement_given as given
 from evals.cve.nuisance.confinement import (
     labelled_run_args,
     launch_digest,
     launch_matches,
-    single_container_launch_args,
     single_container_run_args,
     user_args,
 )
@@ -20,9 +19,8 @@ from evals.cve.planting_base import (
     memory_bound_args,
     no_network_args,
 )
+from tests.unit.support.docker_argv import carries, environment, value_after
 
-HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
-LAUNCH = ["node", "dist/index.js"]
 BACKEND_RUN = ["run", "-d", "--name", "backend", *memory_bound_args(), "backend:image"]
 
 
@@ -74,93 +72,66 @@ def test_an_unprivileged_user_runs_as_nobody():
 
 
 def test_the_single_container_run_ends_with_the_image_then_the_launch():
-    args = single_container_run_args("image:local", HOST, LAUNCH)
+    args = single_container_run_args(given.IMAGE, given.HOST, given.LAUNCH)
 
     assert args[:3] == ["run", "-i", "--rm"]
-    assert args[-3:] == ["image:local", *LAUNCH]
+    assert args[-3:] == [given.IMAGE, *given.LAUNCH]
 
 
 def test_the_single_container_run_is_confined_bounded_and_without_network():
-    args = single_container_run_args("image:local", HOST, LAUNCH)
+    args = single_container_run_args(given.IMAGE, given.HOST, given.LAUNCH)
 
-    assert _holds(args, confinement_args())
-    assert _holds(args, no_network_args())
-    assert _holds(args, user_args(HOST.user))
-    assert _holds(args, ["-w", HOST.working_directory])
+    assert carries(args, confinement_args())
+    assert carries(args, no_network_args())
+    assert carries(args, user_args(given.HOST.user))
+    assert carries(args, ["-w", given.HOST.working_directory])
 
 
 def test_the_single_container_run_has_no_network_even_on_a_networked_host():
     networked = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
-    args = single_container_run_args("image:local", networked, LAUNCH)
+    args = single_container_run_args(given.IMAGE, networked, given.LAUNCH)
 
-    assert _holds(args, no_network_args())
+    assert carries(args, no_network_args())
     assert args.count("--network") == 1
-
-
-def _holds(args: list[str], segment: list[str]) -> bool:
-    return any(args[i : i + len(segment)] == segment for i in range(len(args)))
 
 
 def test_a_launch_with_no_public_names_is_the_single_container_argv_and_starts_nothing(
     tmp_path: Path,
 ):
-    docker = stand_ins_given.FakePlantingDocker()
-
-    with single_container_launch_args(
-        "image:local", HOST, LAUNCH, docker=docker, stand_ins_directory=tmp_path / "absent"
-    ) as args:
-        assert args == single_container_run_args("image:local", HOST, LAUNCH)
+    with given.a_launch_serving(tmp_path, PublicNames()) as launch:
+        assert launch.args == single_container_run_args(given.IMAGE, given.HOST, given.LAUNCH)
+        docker = launch.docker
         assert (docker.holders, docker.stand_ins, docker.host_files) == ({}, {}, {})
 
 
 def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confinement(
     tmp_path: Path,
 ):
-    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
-    docker = stand_ins_given.FakePlantingDocker()
-    host = dataclasses.replace(HOST, public_names=PublicNames(stand_ins=(stand_ins_given.HOST,)))
+    names = PublicNames(stand_ins=(stand_ins_given.HOST,))
 
-    with single_container_launch_args(
-        "image:local", host, LAUNCH, docker=docker, stand_ins_directory=directory
-    ) as args:
-        (holder,) = docker.holders
-        assert len(docker.stand_ins) == 1
-        assert args[:3] == ["run", "-i", "--rm"]
-        assert args[3 : 3 + len(confinement_args())] == confinement_args()
-        assert args[args.index("--network") + 1] == f"container:{holder}"
-        assert args[-3:] == ["image:local", *LAUNCH]
-    assert (docker.holders, docker.stand_ins) == ({}, {})
+    with given.a_launch_serving(tmp_path, names) as launch:
+        (holder,) = launch.docker.holders
+        assert len(launch.docker.stand_ins) == 1
+        assert launch.args[:3] == ["run", "-i", "--rm"]
+        assert launch.args[3 : 3 + len(confinement_args())] == confinement_args()
+        assert value_after(launch.args, "--network") == f"container:{holder}"
+        assert launch.args[-3:] == [given.IMAGE, *given.LAUNCH]
+    assert (launch.docker.holders, launch.docker.stand_ins) == ({}, {})
 
 
-def test_a_trust_setting_points_its_variable_at_the_mounted_fixture_authority(tmp_path: Path):
-    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
+def test_a_trust_setting_carries_its_variable(tmp_path: Path):
     names = PublicNames(stand_ins=(stand_ins_given.HOST,), trust=("NODE_EXTRA_CA_CERTS",))
-    host = dataclasses.replace(HOST, public_names=names)
 
-    with single_container_launch_args(
-        "image:local",
-        host,
-        LAUNCH,
-        docker=stand_ins_given.FakePlantingDocker(),
-        stand_ins_directory=directory,
-    ) as args:
-        assert any(arg.startswith("NODE_EXTRA_CA_CERTS=") for arg in args)
+    with given.a_launch_serving(tmp_path, names) as launch:
+        assert "NODE_EXTRA_CA_CERTS" in environment(launch.args)
 
 
 def test_a_launch_with_a_public_name_keeps_the_project_baked_into_its_work_directory(
     tmp_path: Path,
 ):
-    directory = stand_ins_given.a_stand_ins_directory(tmp_path)
     names = PublicNames(stand_ins=(stand_ins_given.HOST,))
-    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", has_network=False, public_names=names)
 
-    with single_container_launch_args(
-        "image:local",
-        host,
-        LAUNCH,
-        docker=stand_ins_given.FakePlantingDocker(),
-        stand_ins_directory=directory,
-    ) as args:
-        assert "--tmpfs" not in args
-        assert _holds(args, ["-w", "/work"])
+    with given.a_launch_serving(tmp_path, names, working_directory="/work") as launch:
+        assert "--tmpfs" not in launch.args
+        assert carries(launch.args, ["-w", "/work"])

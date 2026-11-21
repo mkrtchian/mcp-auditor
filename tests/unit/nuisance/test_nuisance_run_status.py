@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.nuisance.support.test_nuisance_run_given as run_given
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
-from evals.cve.nuisance.results import NotRunCause
+from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
 from evals.cve.nuisance.run_status import RunCount, run_status_line
 from mcp_auditor.domain.models import MissCause
 
@@ -22,7 +22,7 @@ SERVER = run_given.a_server("npm:pkg")
         ),
         (
             DroppedRun(NotRunCause.LAUNCH_FAILURE),
-            "npm:pkg: run dropped (a run failed to launch after retries) [1/4 runs]",
+            f"npm:pkg: run dropped ({DROPPED_RUN_REASONS[NotRunCause.LAUNCH_FAILURE]}) [1/4 runs]",
         ),
     ],
     ids=["flagged", "not flagged", "incomplete", "dropped"],

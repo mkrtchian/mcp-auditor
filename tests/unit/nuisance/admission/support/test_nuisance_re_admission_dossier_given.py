@@ -1,8 +1,11 @@
 import hashlib
+import importlib
+import pkgutil
 from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from pathlib import Path
 
+import evals.cve.nuisance.fix_checks as fix_checks
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
@@ -21,8 +24,6 @@ from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_walk_inputs,
 )
 
-A_DRAWN_TARGET = "CVE-2026-85787"
-ITS_SIBLING = "CVE-2026-87911"
 PER_LAUNCH_NETWORK_PREFIX = "fake-per-launch-net"
 
 
@@ -59,6 +60,21 @@ def the_copy_resolution() -> dict[str, str]:
     )
 
 
+def a_drawn_target_and_its_sibling() -> tuple[str, str]:
+    sibling, drawn = next(
+        (sibling, drawn) for sibling, drawn in the_copy_resolution().items() if sibling != drawn
+    )
+    return drawn, sibling
+
+
+def the_fix_check_package_helpers() -> list[str]:
+    """The modules of the fix-check package that define no fixture."""
+    names = [
+        f"{fix_checks.__name__}.{info.name}" for info in pkgutil.iter_modules(fix_checks.__path__)
+    ]
+    return [name for name in names if not hasattr(importlib.import_module(name), "FIXTURES")]
+
+
 def a_committed_server_with_fix_checks() -> AdmittedServer:
     return next(server for server in the_committed_admission().servers if fix_check_modules(server))
 
@@ -81,7 +97,7 @@ def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
 def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
     base = admission_given.an_admitted_server()
     first = base.flaws[0]
-    flaws = [_copying(first, A_DRAWN_TARGET), _copying(first, ITS_SIBLING)]
+    flaws = [_copying(first, flaw_id) for flaw_id in a_drawn_target_and_its_sibling()]
     return base.model_copy(update={"flaws": flaws})
 
 

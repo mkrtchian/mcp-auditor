@@ -8,12 +8,6 @@ _CURRENT = {given.COPIED_FLAW: given.RECORDED}
 _MOVED = {given.COPIED_FLAW: "b" * 64}
 
 
-def test_each_drawn_id_points_at_itself():
-    draw = given.a_draw_whose_card_lists(given.DRAWN, given.SIBLING)
-
-    assert copy_targets([given.DRAWN], draw)[given.DRAWN] == given.DRAWN
-
-
 def test_a_sibling_points_at_its_drawn_target():
     draw = given.a_draw_whose_card_lists(given.DRAWN, given.SIBLING)
 

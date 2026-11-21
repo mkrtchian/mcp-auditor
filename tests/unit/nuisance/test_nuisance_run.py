@@ -15,10 +15,10 @@ from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.results import NotRunCause, ServerExit
+from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
-from tests.unit.nuisance.support.test_nuisance_solo_given import MAGENTO2
 
 
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
@@ -90,34 +90,27 @@ async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
 
 async def test_the_run_announces_each_finished_run_of_a_server_with_its_status():
     flagged, dropped = given.a_server("npm:flagged"), given.a_server("npm:dropped")
+    (solo_package,) = SOLO_SERVERS
+    solo = given.a_server(solo_package)
+    flagged_runs = [given.an_audit(True), given.an_audit(False)]
+    dropped_runs = [DroppedRun(NotRunCause.LAUNCH_FAILURE), given.an_audit(False)]
+    solo_runs = [given.an_audit(False), given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER)]
     audit = given.scripted(
-        {
-            "npm:flagged": [given.an_audit(True), given.an_audit(False)],
-            "npm:dropped": [DroppedRun(NotRunCause.LAUNCH_FAILURE), given.an_audit(False)],
-            MAGENTO2.server_package: [
-                given.an_audit(False),
-                given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
-            ],
-        }
+        {"npm:flagged": flagged_runs, "npm:dropped": dropped_runs, solo_package: solo_runs}
     )
     announced: list[str] = []
 
     await given.run(
-        [MAGENTO2, flagged, dropped], given.deps_auditing(audit, announced=announced), runs=2
+        [solo, flagged, dropped], given.deps_auditing(audit, announced=announced), runs=2
     )
 
     then.runs_announced(
         announced,
         together=[
-            "npm:flagged: flagged",
-            "npm:flagged: not flagged",
-            "npm:dropped: run dropped (a run failed to launch after retries)",
-            "npm:dropped: not flagged",
+            *((flagged, outcome) for outcome in flagged_runs),
+            *((dropped, outcome) for outcome in dropped_runs),
         ],
-        alone=[
-            f"{MAGENTO2.server_package}: not flagged",
-            f"{MAGENTO2.server_package}: not flagged, incomplete",
-        ],
+        alone=[(solo, outcome) for outcome in solo_runs],
     )
 
 
