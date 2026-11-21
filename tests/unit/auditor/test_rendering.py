@@ -10,6 +10,7 @@ from mcp_auditor.domain.rendering import (
     render_summary,
     summarize_tools,
 )
+from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 from tests.unit.auditor.support.report_builders import (
     a_report_with_a_coverage_gap_on_get_user,
     a_report_with_chain_finding,
@@ -257,7 +258,7 @@ def test_markdown_tool_section_counts_its_responses_shown_cut():
     result = render_markdown(report)
 
     assert (
-        "**Responses shown cut**: 1 response(s) or error(s) over 20,000 characters, "
+        f"**Responses shown cut**: 1 response(s) or error(s) over {MAX_SHOWN_LENGTH:,} characters, "
         "shown to the model with their middle cut"
     ) in then.tool_section(result, "get_user")
     assert "Responses shown cut" not in then.tool_section(result, "list_items")

@@ -93,56 +93,56 @@ def test_a_plain_relay_steering_the_docker_client_is_refused():
 
 class TestCIExitCode:
     def test_an_incomplete_audit_without_findings_exits_3(self):
-        report = given.a_report(missed=MissCause.PROVIDER_REFUSAL)
+        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CI) == 3
 
     def test_an_audit_with_an_unreadable_answer_exits_3(self):
-        report = given.a_report(missed=MissCause.UNREADABLE_ANSWER)
+        report = given.a_report_with_a_missed_call(MissCause.UNREADABLE_ANSWER)
 
         assert ci_exit_code(report, CI) == 3
 
     def test_an_audit_with_a_throttled_model_call_exits_3(self):
-        report = given.a_report(missed=MissCause.PROVIDER_THROTTLED)
+        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_THROTTLED)
 
         assert ci_exit_code(report, CI) == 3
 
     def test_a_coverage_gap_alone_exits_3(self):
-        report = given.a_report(coverage_gap=True)
+        report = given.a_report_with_a_coverage_gap()
 
         assert ci_exit_code(report, CI) == 3
 
     def test_relaunches_alone_exit_0(self):
-        report = given.a_report(relaunched=True)
+        report = given.a_relaunched_report()
 
         assert ci_exit_code(report, CI) == 0
 
     def test_calls_not_sent_exit_3(self):
-        report = given.a_report(calls_not_sent=True)
+        report = given.a_report_with_calls_not_sent()
 
         assert ci_exit_code(report, CI) == 3
 
     def test_findings_at_the_threshold_exit_1_on_a_complete_audit(self):
-        report = given.a_report(finding=Severity.MEDIUM)
+        report = given.a_report_with_a_finding(Severity.MEDIUM)
 
         assert ci_exit_code(report, CI) == 1
 
     def test_findings_take_precedence_over_an_incomplete_audit(self):
-        report = given.a_report(finding=Severity.HIGH, missed=MissCause.PROVIDER_REFUSAL)
+        report = given.a_report_with_a_finding_and_a_missed_call(Severity.HIGH)
 
         assert ci_exit_code(report, CI) == 1
 
     def test_findings_below_the_threshold_on_a_complete_audit_exit_0(self):
-        report = given.a_report(finding=Severity.LOW)
+        report = given.a_report_with_a_finding(Severity.LOW)
 
         assert ci_exit_code(report, CI) == 0
 
     def test_a_complete_audit_without_findings_exits_0(self):
-        report = given.a_report()
+        report = given.a_complete_report()
 
         assert ci_exit_code(report, CI) == 0
 
     def test_an_incomplete_audit_exits_0_outside_ci(self):
-        report = given.a_report(missed=MissCause.PROVIDER_REFUSAL)
+        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CIOptions(enabled=False)) == 0

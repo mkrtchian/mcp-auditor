@@ -20,10 +20,11 @@ class TestShownToModel:
         assert shown_to_model(text) == text
 
     def test_cuts_one_character_past_the_bound_from_the_middle(self):
-        text = "h" * 10_000 + "m" + "t" * 10_000
+        half = MAX_SHOWN_LENGTH // 2
+        text = "h" * half + "m" + "t" * half
 
         assert shown_to_model(text) == (
-            "h" * 10_000 + "\n[1 character cut by mcp-auditor]\n" + "t" * 10_000
+            "h" * half + "\n[1 character cut by mcp-auditor]\n" + "t" * half
         )
 
     def test_names_how_many_characters_were_cut(self):
@@ -32,7 +33,6 @@ class TestShownToModel:
         shown = shown_to_model(text)
 
         then.shows_cut(shown, text)
-        assert "[30000 characters cut by mcp-auditor]" in shown
 
 
 class TestRenderedResponse:

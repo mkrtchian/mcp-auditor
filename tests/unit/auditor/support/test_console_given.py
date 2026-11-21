@@ -20,6 +20,7 @@ from mcp_auditor.domain.models import (
     ToolReport,
 )
 from mcp_auditor.domain.server_liveness import UnsentCause
+from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
 
 
 def a_display() -> tuple[AuditDisplay, StringIO]:
@@ -137,13 +138,7 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
 
 def a_report_with_calls_not_sent_on_get_user() -> AuditReport:
     report = a_report_with_two_tools()
-    report.tool_reports[0].coverage_gap = CoverageGap(
-        requested_cases=10,
-        received_cases=10,
-        missing_categories=[],
-        unsent_cases=2,
-        unsent_cause=UnsentCause.TOOL_TIMING_OUT,
-    )
+    report.tool_reports[0].coverage_gap = a_gap_with_calls_not_sent(UnsentCause.TOOL_TIMING_OUT)
     return report
 
 

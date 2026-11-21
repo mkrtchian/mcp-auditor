@@ -336,25 +336,22 @@ class TestFinalizeToolAudit:
         assert result["tool_reports"][0].coverage_gap is None
 
     async def test_merges_a_short_generation_and_calls_not_sent_into_one_gap(self):
-        state = given.a_tool_state_with_calls_not_sent(
+        state = given.a_tool_state(
             coverage_gap=given.a_coverage_gap(), unsent_cases=1, unsent_chains=2
         )
 
         result = await build_tool_report(state)
 
-        assert result["tool_reports"][0].coverage_gap == CoverageGap(
-            requested_cases=5,
-            received_cases=3,
-            missing_categories=[AuditCategory.RESOURCE_ABUSE],
-            unsent_cases=1,
-            unsent_chains=2,
-            unsent_cause=UnsentCause.TOOL_TIMING_OUT,
+        assert result["tool_reports"][0].coverage_gap == given.a_coverage_gap().model_copy(
+            update={
+                "unsent_cases": 1,
+                "unsent_chains": 2,
+                "unsent_cause": UnsentCause.TOOL_TIMING_OUT,
+            }
         )
 
     async def test_a_gap_of_calls_not_sent_keeps_what_generation_gave(self):
-        state = given.a_tool_state_with_calls_not_sent(
-            test_budget=4, sent_cases=3, unsent_cases=1, unsent_chains=0
-        )
+        state = given.a_tool_state(test_budget=4, sent_cases=3, unsent_cases=1, unsent_chains=0)
 
         result = await build_tool_report(state)
 
@@ -366,8 +363,8 @@ class TestFinalizeToolAudit:
             unsent_cause=UnsentCause.TOOL_TIMING_OUT,
         )
 
-    async def test_a_tool_stopped_at_its_last_call_with_no_chain_budget_has_no_gap(self):
-        state = given.a_tool_state_with_calls_not_sent(unsent_cases=0, unsent_chains=0)
+    async def test_a_cause_with_no_call_withheld_leaves_no_gap(self):
+        state = given.a_tool_state(unsent_cases=0, unsent_chains=0)
 
         result = await build_tool_report(state)
 

@@ -1,5 +1,5 @@
-from mcp_auditor.domain.models import AuditReport, CoverageGap
-from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
+from mcp_auditor.domain.models import AuditReport
+from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from tests.unit.auditor.support import report_builders as reports
 
 LOST_ARGUMENTS = {"user_id": "1; sleep 999"}
@@ -23,17 +23,6 @@ def a_report_with_two_relaunches_on_get_user(last_succeeded: bool = True) -> Aud
         ),
     ]
     return report
-
-
-def a_gap_with_calls_not_sent(cause: UnsentCause) -> CoverageGap:
-    return CoverageGap(
-        requested_cases=10,
-        received_cases=10,
-        missing_categories=[],
-        unsent_cases=3,
-        unsent_chains=2,
-        unsent_cause=cause,
-    )
 
 
 def a_report_with_a_chain_cut_by_a_relaunch() -> AuditReport:

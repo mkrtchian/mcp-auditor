@@ -101,7 +101,7 @@ def a_coverage_gap() -> CoverageGap:
     )
 
 
-def a_tool_state_with_calls_not_sent(
+def a_tool_state(
     *,
     unsent_cases: int,
     unsent_chains: int,

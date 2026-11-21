@@ -5,10 +5,11 @@ import pytest
 import tests.unit.auditor.support.report_builders as reports
 import tests.unit.auditor.support.test_relaunch_rendering_given as given
 import tests.unit.auditor.support.test_rendering_then as then
-from mcp_auditor.domain.models import AuditCategory, CoverageGap
+from mcp_auditor.domain.models import AuditCategory
 from mcp_auditor.domain.rendering import describe_coverage_gap, render_json, render_markdown
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, TIMEOUTS_IN_A_ROW
+from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
 
 
 def test_markdown_summary_counts_the_relaunches():
@@ -72,7 +73,7 @@ def test_markdown_lists_each_relaunch_under_its_tool_with_the_call_before_it_and
     ],
 )
 def test_a_coverage_gap_names_the_cases_and_chains_not_sent_and_why(cause: UnsentCause, why: str):
-    gap = given.a_gap_with_calls_not_sent(cause)
+    gap = a_gap_with_calls_not_sent(cause)
 
     assert describe_coverage_gap(gap) == (
         f"10 cases generated for 10 requested, 3 cases and 2 chains not sent ({why})"
@@ -80,12 +81,13 @@ def test_a_coverage_gap_names_the_cases_and_chains_not_sent_and_why(cause: Unsen
 
 
 def test_a_coverage_gap_names_its_calls_not_sent_before_its_missing_categories():
-    gap = CoverageGap(
-        requested_cases=10,
-        received_cases=7,
-        missing_categories=[AuditCategory.INJECTION],
-        unsent_cases=1,
-        unsent_cause=UnsentCause.TOOL_TIMING_OUT,
+    gap = a_gap_with_calls_not_sent(UnsentCause.TOOL_TIMING_OUT).model_copy(
+        update={
+            "received_cases": 7,
+            "missing_categories": [AuditCategory.INJECTION],
+            "unsent_cases": 1,
+            "unsent_chains": 0,
+        }
     )
 
     assert describe_coverage_gap(gap) == (
@@ -95,11 +97,8 @@ def test_a_coverage_gap_names_its_calls_not_sent_before_its_missing_categories()
 
 
 def test_the_coverage_gap_of_a_tool_left_by_a_server_down_names_why():
-    gap = CoverageGap(
-        requested_cases=10,
-        received_cases=0,
-        missing_categories=[],
-        unsent_cause=UnsentCause.SERVER_DOWN,
+    gap = a_gap_with_calls_not_sent(UnsentCause.SERVER_DOWN).model_copy(
+        update={"received_cases": 0, "unsent_cases": 0, "unsent_chains": 0}
     )
 
     assert describe_coverage_gap(gap) == (
@@ -127,7 +126,7 @@ def test_markdown_does_not_label_a_chain_the_server_answered_to_the_end():
 
 def test_json_carries_the_relaunches_and_the_calls_not_sent():
     report = given.a_report_with_two_relaunches_on_get_user(last_succeeded=False)
-    report.tool_reports[0].coverage_gap = given.a_gap_with_calls_not_sent(UnsentCause.SERVER_DOWN)
+    report.tool_reports[0].coverage_gap = a_gap_with_calls_not_sent(UnsentCause.SERVER_DOWN)
 
     data = json.loads(render_json(report))
 
