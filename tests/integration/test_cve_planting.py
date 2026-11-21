@@ -59,8 +59,9 @@ def test_the_holder_and_the_target_run_under_the_memory_bound_with_no_swap():
         holder_bound = given.inspected_memory_bound(holder)
         target_bound = given.memory_max_as_target(args)
 
-    assert holder_bound == "4294967296 4294967296"
-    assert target_bound == "4294967296"
+    assert holder_bound.memory == given.MEMORY_BOUND_BYTES
+    assert holder_bound.memory_swap == holder_bound.memory
+    assert target_bound == given.MEMORY_BOUND_BYTES
 
 
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():

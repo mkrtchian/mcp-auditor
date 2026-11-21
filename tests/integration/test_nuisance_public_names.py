@@ -19,6 +19,7 @@ from evals.cve.planting_base import (
 )
 from tests.integration.support.docker_prerequisites import stand_in_prerequisites
 from tests.integration.support.test_cve_planting_then import no_container_it_started_outlives
+from tests.unit.support.docker_argv import value_after
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -47,6 +48,6 @@ def test_a_backend_less_server_reaches_its_public_name_through_the_stand_in(tmp_
         )
 
     assert (result.returncode, result.stdout) == (0, given.PLAIN_BODY), result.stderr
-    assert "none" not in args[args.index("--network") + 1]
+    assert value_after(args, "--network").startswith("container:")
     assert docker.networks == []
     no_container_it_started_outlives(docker)

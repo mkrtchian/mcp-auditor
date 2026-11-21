@@ -7,10 +7,12 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
 from mcp_auditor.config import Settings
 from mcp_auditor.console import AuditDisplay
+from mcp_auditor.domain import AttackContext, TestCaseBatch
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.report_files import ReportPaths
 from mcp_auditor.server_execution import LaunchOptions, ServerExecution
 from tests.fakes import FakeContainerRuntime, FakeLLM
+from tests.unit.auditor.support.graph_builders import a_judgment, a_payload
 
 
 @dataclass(frozen=True)
@@ -37,3 +39,10 @@ def an_unconfined_audit(launch: ServerLaunch, variant: AuditVariant) -> Audit:
         analysts=Analysts(llm=variant.llm, judge=variant.llm, settings=Settings()),
         display=AuditDisplay(console=Console(file=variant.output, width=200)),
     )
+
+
+def a_scripted_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
+    # One case per tool, judged and summarized by the same scripted model.
+    batch = TestCaseBatch(cases=[a_payload(arguments={"path": "/outside/flag"})])
+    llm = FakeLLM([batch, a_judgment(), AttackContext()])
+    return an_unconfined_audit(launch, AuditVariant(llm=llm, tools=tools))

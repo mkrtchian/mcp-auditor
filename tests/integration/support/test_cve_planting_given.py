@@ -17,10 +17,12 @@ from evals.cve.planting import (
     confinement_args,
     planting_spec,
 )
-from evals.cve.planting_base import LABEL, SENTINEL_IMAGE
+from evals.cve.planting_base import LABEL, MEMORY_BOUND, SENTINEL_IMAGE
 from evals.cve.planting_spec import request_target
 from mcp_auditor.adapters.docker import DockerRuntime
 
+# Docker reads the `g` suffix as 1024³ bytes.
+MEMORY_BOUND_BYTES = int(MEMORY_BOUND.removesuffix("g")) * 1024**3
 IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
 # wget's own 5 s bound plus the start-up of the fresh container each read runs in.
 _READ_TIMEOUT = 10.0
@@ -155,14 +157,21 @@ def identity_as_target(args: PlantedArgs) -> dict[str, str]:
     return dict(section.split("\n", 1) for section in sections)
 
 
-def memory_max_as_target(args: PlantedArgs) -> str:
+def memory_max_as_target(args: PlantedArgs) -> int:
     """The cgroup v2 memory limit a container started with the target's own options reads."""
     command = TargetCommand(SENTINEL_IMAGE, "/bin/cat", ("/sys/fs/cgroup/memory.max",))
-    return run_as_target(args, command).stdout.strip()
+    return int(run_as_target(args, command).stdout)
 
 
-def inspected_memory_bound(container: str) -> str:
-    """The container's memory and memory-plus-swap limits, in bytes, as Docker records them."""
+@dataclass(frozen=True)
+class InspectedMemoryBound:
+    """A container's limits in bytes, as Docker records them."""
+
+    memory: int
+    memory_swap: int  # memory plus swap
+
+
+def inspected_memory_bound(container: str) -> InspectedMemoryBound:
     result = subprocess.run(
         ["docker", "inspect", "-f", "{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}}", container],
         capture_output=True,
@@ -170,7 +179,8 @@ def inspected_memory_bound(container: str) -> str:
         timeout=_READ_TIMEOUT,
         check=True,
     )
-    return result.stdout.strip()
+    memory, memory_swap = result.stdout.split()
+    return InspectedMemoryBound(int(memory), int(memory_swap))
 
 
 @dataclass(frozen=True)
