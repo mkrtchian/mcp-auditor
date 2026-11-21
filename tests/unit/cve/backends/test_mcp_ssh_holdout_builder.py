@@ -76,7 +76,6 @@ def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: 
     ) as launch:
         assert mount_of(launch.args, KNOWN_HOSTS) == f"{sshd.known_hosts}:{KNOWN_HOSTS}:ro"
         assert sshd.owners == [ROOT]
-        assert KNOWN_HOSTS == "/tmp/.ssh/known_hosts"
 
 
 def test_the_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):

@@ -1,28 +1,17 @@
 from collections.abc import Sequence
 
-from evals.cve.backends.httpbin import HTTPBIN_BRIDGE
+from evals.cve.backends.httpbin import HTTPBIN_BRIDGE, HTTPBIN_FRONT_IP
 from evals.cve.planting_base import confinement_args
 from evals.cve.public_stand_ins import stand_in_files
-from tests.unit.support.docker_argv import (
-    carries,
-    environment,
-    mount_of,
-    value_after,
-    values_after,
-)
+from tests.unit.support.docker_argv import carries, value_after, values_after
 
 _FILES = stand_in_files("httpbin.org")
 
 
 def joins_the_bridge_with_httpbin_org_at_the_front(server_args: Sequence[str]) -> None:
     assert value_after(server_args, "--network") == HTTPBIN_BRIDGE
-    assert carries(server_args, ["--add-host", "httpbin.org:44.209.237.184"])
+    assert carries(server_args, ["--add-host", f"httpbin.org:{HTTPBIN_FRONT_IP}"])
     assert carries(server_args, confinement_args())
-
-
-def trusts_the_fixture_authority_through_ssl_cert_file(server_args: Sequence[str]) -> None:
-    bundle = environment(server_args)["SSL_CERT_FILE"]
-    assert mount_of(server_args, bundle) == f"{_FILES.authority}:{bundle}:ro"
 
 
 def mounts_the_leaf_and_key_of_httpbin_org(front_args: Sequence[str]) -> None:

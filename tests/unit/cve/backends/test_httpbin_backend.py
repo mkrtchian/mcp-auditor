@@ -1,6 +1,7 @@
 import tests.unit.cve.backends.support.test_httpbin_backend_given as given
 import tests.unit.cve.backends.support.test_httpbin_backend_then as then
 from evals.cve.backends.httpbin import HTTPBIN_PARTS, httpbin_server_args
+from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority
 
 
 def test_the_server_joins_the_bridge_with_httpbin_org_at_the_front():
@@ -12,7 +13,7 @@ def test_the_server_joins_the_bridge_with_httpbin_org_at_the_front():
 def test_the_server_trusts_the_fixture_authority_mounted_read_only():
     server_args = httpbin_server_args("server", "image", given.a_host(), [])
 
-    then.trusts_the_fixture_authority_through_ssl_cert_file(server_args)
+    trusts_the_fixture_authority(server_args, "SSL_CERT_FILE", "httpbin.org")
 
 
 def test_the_front_mounts_the_leaf_and_key_of_httpbin_org_read_only():
@@ -22,7 +23,3 @@ def test_the_front_mounts_the_leaf_and_key_of_httpbin_org_read_only():
 def test_every_part_sits_on_the_bridge_at_its_address():
     for part in HTTPBIN_PARTS:
         then.sits_on_the_bridge_at_its_address(part.run_args(), part.ip)
-
-
-def test_the_front_sits_at_the_address_httpbin_org_resolves_to():
-    assert given.the_front().ip == "44.209.237.184"

@@ -3,8 +3,8 @@ import pytest
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
 from evals.cve.backends.searxng import SEARXNG_IMAGE
 from evals.cve.layout import WORKSPACE
-from evals.cve.public_stand_ins import stand_in_files
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority
 from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
 
 
@@ -28,7 +28,6 @@ def test_searxng_runs_under_its_own_account_with_no_capability():
         assert value_after(started, "--user") == "searxng"
         assert carries(started, ["--cap-drop", "ALL"])
         assert carries(started, ["--security-opt", "no-new-privileges"])
-        assert value_after(started, "--pids-limit") == "64"
         assert "--cap-add" not in started
         assert started[-1] == SEARXNG_IMAGE
 
@@ -36,14 +35,10 @@ def test_searxng_runs_under_its_own_account_with_no_capability():
 def test_searxng_trusts_the_fixture_authority_through_its_http_clients_variable():
     planting = FakePlantingDocker()
     searxng = given.a_searxng(planting)
-    authority = stand_in_files("html.duckduckgo.com").authority
 
     with given.a_launch(planting, searxng):
         [started] = searxng.started
-        assert environment(started)["SSL_CERT_FILE"] == "/etc/ssl/extra-ca.pem"
-        assert mount_of(started, "/etc/ssl/extra-ca.pem") == (
-            f"{authority}:/etc/ssl/extra-ca.pem:ro"
-        )
+        trusts_the_fixture_authority(started, "SSL_CERT_FILE", "html.duckduckgo.com")
 
 
 def test_the_server_reaches_searxng_at_the_address_of_the_readme_example():

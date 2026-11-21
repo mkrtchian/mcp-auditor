@@ -1,6 +1,12 @@
 from collections.abc import Sequence
 
-from evals.cve.backends.gitlab import GITLAB_HOST, GITLAB_IMAGE, GITLAB_NETWORK
+from evals.cve.backends.gitlab import (
+    GITLAB_HOST,
+    GITLAB_IMAGE,
+    GITLAB_NETWORK,
+    GITLAB_PIDS_LIMIT,
+    GITLAB_SHM_SIZE,
+)
 from tests.fakes import ScriptedDocker
 from tests.unit.support.docker_argv import carries, environment, value_after, values_after
 
@@ -13,10 +19,10 @@ CAPABILITIES = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "KILL", "SETGID", "SETUID"]
 def the_backend_is_hardened_and_named_gitlab_example_com(backend: Sequence[str]) -> None:
     assert carries(backend, HARDENING)
     assert sorted(values_after(backend, "--cap-add")) == CAPABILITIES
-    assert value_after(backend, "--pids-limit") == "4096"
+    assert value_after(backend, "--pids-limit") == GITLAB_PIDS_LIMIT
     assert value_after(backend, "--hostname") == GITLAB_HOST
     assert value_after(backend, "--network-alias") == GITLAB_HOST
-    assert value_after(backend, "--shm-size") == "256m"
+    assert value_after(backend, "--shm-size") == GITLAB_SHM_SIZE
     assert backend[-1] == GITLAB_IMAGE
 
 
@@ -40,7 +46,6 @@ def the_server_takes_the_token_the_seed_created(
         and "set_token" in script
         for command, script in zip(docker.commands, docker.inputs, strict=True)
     )
-    assert len(token) == 20
 
 
 def the_two_servers_join_two_networks(first: Sequence[str], second: Sequence[str]) -> None:

@@ -9,7 +9,8 @@ from evals.cve.backends.facebook_ads import (
 from evals.cve.nuisance.fix_checks import cve_2026_19956_facebook_ads as fix_check
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 from evals.cve.public_stand_ins import stand_in_files
-from tests.unit.support.docker_argv import count, environment, mount_of, values_after
+from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority
+from tests.unit.support.docker_argv import count, mount_of, values_after
 
 GRAPH_FILES = stand_in_files(FACEBOOK_ADS_BENIGN_HOST)
 RUN_HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
@@ -26,13 +27,7 @@ def test_the_run_resolves_only_the_graph_host_to_the_responder():
 
 
 def test_the_server_trusts_the_fixture_authority_mounted_read_only():
-    args = run_launch()
-
-    assert FACEBOOK_ADS_CA_BUNDLE == "/etc/ssl/extra-ca.pem"
-    assert mount_of(args, FACEBOOK_ADS_CA_BUNDLE) == (
-        f"{GRAPH_FILES.authority}:{FACEBOOK_ADS_CA_BUNDLE}:ro"
-    )
-    assert environment(args)["REQUESTS_CA_BUNDLE"] == FACEBOOK_ADS_CA_BUNDLE
+    trusts_the_fixture_authority(run_launch(), "REQUESTS_CA_BUNDLE", FACEBOOK_ADS_BENIGN_HOST)
 
 
 def test_the_responder_serves_the_graph_leaf_of_the_fixture_authority():

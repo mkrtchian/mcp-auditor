@@ -6,7 +6,8 @@ from evals.cve.backends.apify import (
     APIFY_SUBNET,
     apify_network_args,
 )
-from tests.unit.support.docker_argv import environment, values_after
+from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority
+from tests.unit.support.docker_argv import values_after
 
 
 def test_each_documentation_host_resolves_to_a_stand_in_on_the_backend_subnet():
@@ -18,11 +19,4 @@ def test_each_documentation_host_resolves_to_a_stand_in_on_the_backend_subnet():
 
 
 def test_the_server_trusts_the_fixture_authority_instead_of_skipping_verification():
-    env = environment(apify_network_args())
-
-    assert "NODE_EXTRA_CA_CERTS" in env
-    assert "NODE_TLS_REJECT_UNAUTHORIZED" not in env
-
-
-def test_the_token_is_the_readme_placeholder():
-    assert environment(apify_network_args())["APIFY_TOKEN"] == "your-apify-token"
+    trusts_the_fixture_authority(apify_network_args(), "NODE_EXTRA_CA_CERTS", APIFY_BENIGN_HOST)

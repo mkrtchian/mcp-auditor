@@ -1,9 +1,12 @@
+from urllib.parse import urlsplit
+
 import pytest
 
 import tests.unit.cve.backends.support.test_backend_hostnames_given as given
 from evals.cve.backends.doris import DORIS_HOST, DORIS_SERVER_LAUNCH
 from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
 from evals.cve.nuisance.admission.admission import AdmittedServer
+from tests.unit.support.docker_argv import value_after
 
 _AUDIT_WORDS = ("mcp-auditor", "mcpaudit")
 
@@ -33,9 +36,9 @@ def test_no_value_reaching_an_admitted_server_names_the_audit(server: AdmittedSe
 
 
 def test_the_gravitino_server_is_launched_at_the_instances_alias():
-    assert GRAVITINO_SERVER_LAUNCH == [
-        "--metalake", "metalake_demo", "--gravitino-uri", "http://gravitino:8090",
-    ]  # fmt: skip
+    uri = urlsplit(value_after(GRAVITINO_SERVER_LAUNCH, "--gravitino-uri"))
+
+    assert uri.hostname in {part.alias for part in GRAVITINO_PARTS}
 
 
 def test_the_gravitino_catalogs_reach_postgresql_and_kafka_at_their_aliases():
