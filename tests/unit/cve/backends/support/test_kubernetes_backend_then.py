@@ -4,26 +4,20 @@ from pathlib import Path
 
 from evals.cve.backends.kubernetes import CONTROL_PLANE_IMAGE, CONTROL_PLANE_NETWORK, KUBECONFIG
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import WITNESS
-from evals.cve.planting_base import confinement_args, memory_bound_args, unprivileged_user_args
+from evals.cve.planting_base import unprivileged_user_args
 from tests.fakes import ScriptedDocker
 from tests.unit.cve.backends.support.test_kubernetes_backend_given import ADMIN_CONF, API_SERVER
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
 
 
-def the_control_plane_is_confined_on_its_own_network(
+def the_control_plane_runs_unprivileged_on_its_own_network(
     docker: ScriptedDocker, control_plane: Sequence[str]
 ) -> None:
     networks = values_after(control_plane, "--network")
     assert networks == docker.created_networks()
     assert networks[0].startswith(f"{CONTROL_PLANE_NETWORK}-")
-    assert carries(control_plane, confinement_args())
     assert carries(control_plane, unprivileged_user_args())
-    assert "--cap-add" not in control_plane
     assert control_plane[-1] == CONTROL_PLANE_IMAGE
-
-
-def the_control_plane_carries_the_memory_bound(control_plane: Sequence[str]) -> None:
-    assert carries(control_plane, memory_bound_args())
 
 
 def mounts_the_kubeconfig_read_only(server: Sequence[str]) -> Path:

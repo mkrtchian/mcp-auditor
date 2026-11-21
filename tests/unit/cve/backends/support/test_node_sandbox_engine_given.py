@@ -15,10 +15,6 @@ def a_host() -> PlantingHost:
     return PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
 
-def a_directory() -> Path:
-    return Path("/tmp/a-socket-directory")
-
-
 class FakeEngineDocker:
     """Answers every Docker command with success, and on an engine's `docker run -d` opens a
     unix socket of mode 0666 in the directory mounted at its socket directory, as the engine's

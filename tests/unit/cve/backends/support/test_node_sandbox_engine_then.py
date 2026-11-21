@@ -1,9 +1,8 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.node_sandbox_engine import ENGINE_IMAGE, ENGINE_SOCKET_DIRECTORY
-from evals.cve.planting_base import memory_bound_args
 from tests.unit.cve.backends.support.test_node_sandbox_engine_given import FakeEngineDocker
-from tests.unit.support.docker_argv import carries, count, environment, mount_of, value_after
+from tests.unit.support.docker_argv import environment, mount_of, value_after
 
 DOCKER_SOCKET = "/var/run/docker.sock"
 
@@ -19,20 +18,11 @@ def the_server_has_no_docker_host(server_args: Sequence[str]) -> None:
     assert "DOCKER_HOST" not in environment(server_args)
 
 
-def the_engine_is_confined_and_bounded_as_root_with_no_network(engine_args: Sequence[str]) -> None:
-    carries_the_hardening_with_no_capability(engine_args)
-    assert carries(engine_args, memory_bound_args())
+def the_engine_runs_as_root_with_no_network(engine_args: Sequence[str]) -> None:
     assert value_after(engine_args, "--network") == "none"
     assert "--user" not in engine_args
     assert engine_args[-1] == ENGINE_IMAGE
     assert mount_of(engine_args, ENGINE_SOCKET_DIRECTORY)
-
-
-def carries_the_hardening_with_no_capability(engine_args: Sequence[str]) -> None:
-    assert carries(engine_args, ["--cap-drop", "ALL"])
-    assert carries(engine_args, ["--security-opt", "no-new-privileges"])
-    assert int(value_after(engine_args, "--pids-limit")) > 0
-    assert count(engine_args, ["--cap-add"]) == 0
 
 
 def the_two_servers_mount_two_sockets(first: Sequence[str], second: Sequence[str]) -> None:

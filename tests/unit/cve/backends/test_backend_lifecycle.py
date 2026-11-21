@@ -5,7 +5,7 @@ import pytest
 import tests.unit.cve.backends.support.test_backend_lifecycle_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
-from evals.cve.backends import ckan, doris, gravitino, jenkins, mcp_ssh_sshd
+from evals.cve.backends import doris
 from evals.cve.backends.responder import Responder
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -216,34 +216,19 @@ def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolve
 
 
 @pytest.mark.parametrize(
-    "args",
+    "container",
     [
-        doris.doris_cluster_run_args(),
-        *(part.run_args() for part in ckan.CKAN_PARTS),
-        *(part.run_args() for part in gravitino.GRAVITINO_PARTS),
-        mcp_ssh_sshd.singleton_run_args(),
-        jenkins.singleton_run_args(),
-    ],
-    ids=[
-        "doris cluster",
-        *(part.container for part in ckan.CKAN_PARTS),
-        *(part.container for part in gravitino.GRAVITINO_PARTS),
-        "mcp-ssh sshd",
-        "jenkins controller",
+        pytest.param(container, id=name)
+        for name, container in given.every_backend_container_argv().items()
     ],
 )
-def test_every_built_backend_container_argv_carries_the_memory_bound_and_the_resolver_option(
-    args: list[str],
-):
+def test_every_backend_container_is_bounded_and_confined(container: given.BackendContainer):
+    args = container.argv
+
     assert carries(args, memory_bound_args())
-    assert count(args, resolver_args()) == 1
-
-
-def test_the_jenkins_controller_drops_every_capability_and_bounds_its_processes():
-    args = jenkins.singleton_run_args()
-
-    assert carries(args, confinement_args())
-    assert "--cap-add" not in args
+    assert count(args, resolver_args()) == container.resolver_options, container.reason
+    assert carries(args, confinement_args()) == container.confined, container.reason
+    assert not (container.confined and "--cap-add" in args)
 
 
 def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():

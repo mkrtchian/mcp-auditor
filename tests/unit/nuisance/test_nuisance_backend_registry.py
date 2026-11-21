@@ -10,7 +10,6 @@ from evals.cve.backends.ckan import (
     CKAN_PARTS,
     EUROPA_IP,
     MOUNTED_FILES,
-    BackendPart,
     ckan_server_args,
 )
 from evals.cve.backends.doris import DORIS_CONTAINER
@@ -22,7 +21,6 @@ from evals.cve.backends.n8n import N8N_IP, n8n_server_args, singleton_run_args
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.backend_registry import BACKENDS, backend_problems
-from evals.cve.planting_base import memory_bound_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,
@@ -97,11 +95,6 @@ def test_the_ckan_front_and_its_stand_in_stand_at_the_addresses_the_server_resol
     assert len(set(addresses.values())) == len(CKAN_PARTS)
 
 
-@pytest.mark.parametrize("part", CKAN_PARTS, ids=lambda part: part.container)
-def test_no_ckan_backend_container_is_granted_a_capability(part: BackendPart):
-    assert "--cap-add" not in part.run_args()
-
-
 def test_the_ckan_front_serves_each_front_name_from_its_mounted_leaf():
     front = next(part for part in CKAN_PARTS if part.container == "mcp-auditor-cve-ckan-front")
     args = front.run_args()
@@ -140,15 +133,12 @@ def test_the_n8n_server_leaves_telemetry_at_its_documented_default():
     assert "N8N_MCP_TELEMETRY_DISABLED" not in environment(args)
 
 
-def test_the_n8n_instance_stands_confined_at_the_address_the_server_reaches_on_its_bridge():
+def test_the_n8n_instance_stands_at_the_address_the_server_reaches_on_its_bridge():
     args = singleton_run_args()
 
     assert value_after(args, "--network") == BACKENDS["n8n"].network
     assert value_after(args, "--ip") == N8N_IP
     assert (args[-1],) == BACKENDS["n8n"].images
-    assert value_after(args, "--cap-drop") == "ALL"
-    assert "--cap-add" not in args
-    assert carries(args, memory_bound_args())
 
 
 def test_the_n8n_registry_entry_builds_the_instance_and_serves_its_dockerfile():

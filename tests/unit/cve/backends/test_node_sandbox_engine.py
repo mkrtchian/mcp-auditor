@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.cve.backends.support.test_node_sandbox_engine_given as given
 import tests.unit.cve.backends.support.test_node_sandbox_engine_then as then
-from evals.cve.backends.node_sandbox_engine import LIFECYCLE, engine_run_args
+from evals.cve.backends.node_sandbox_engine import LIFECYCLE
 
 
 def test_the_server_reaches_the_backend_through_its_socket_mounted_at_the_docker_socket(
@@ -15,19 +15,13 @@ def test_the_server_reaches_the_backend_through_its_socket_mounted_at_the_docker
         then.the_server_has_no_docker_host(server_args)
 
 
-def test_the_backend_carries_the_confinement_and_the_memory_bound_as_root_with_no_network(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_the_backend_runs_as_root_with_no_network(monkeypatch: pytest.MonkeyPatch):
     engine = given.a_docker_whose_engine_opens_its_socket(monkeypatch)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
         pass
 
-    then.the_engine_is_confined_and_bounded_as_root_with_no_network(engine.started[0])
-
-
-def test_the_backend_drops_every_capability_and_bounds_its_processes():
-    then.carries_the_hardening_with_no_capability(engine_run_args("engine", given.a_directory()))
+    then.the_engine_runs_as_root_with_no_network(engine.started[0])
 
 
 def test_two_launches_get_two_sockets(monkeypatch: pytest.MonkeyPatch):

@@ -3,13 +3,26 @@ import re
 import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import AbstractContextManager, contextmanager
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import SimpleNamespace
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 from evals.cve import environments
-from evals.cve.backends import gitlab, gitlab_responder, kubernetes, node_sandbox_engine
+from evals.cve.backends import (
+    ckan,
+    doris,
+    gitlab,
+    gitlab_responder,
+    gravitino,
+    httpbin,
+    jenkins,
+    kubernetes,
+    mcp_ssh_sshd,
+    n8n,
+    node_sandbox_engine,
+    searxng,
+)
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.responder import Responder
 from evals.cve.kit import launch as kit_launch
@@ -36,6 +49,50 @@ def every_responder() -> list[Responder]:
         for value in vars(module).values()
         if isinstance(value, Responder)
     ]
+
+
+@dataclass(frozen=True)
+class BackendContainer:
+    argv: list[str]
+    confined: bool = True  # carries confinement_args() and adds no capability
+    resolver_options: int = 1
+    reason: str = ""  # why the container departs from the rule, when it does
+
+
+def every_backend_container_argv() -> dict[str, BackendContainer]:
+    parts = (*ckan.CKAN_PARTS, *gravitino.GRAVITINO_PARTS, *httpbin.HTTPBIN_PARTS)
+    return {
+        "doris cluster": BackendContainer(
+            doris.doris_cluster_run_args(),
+            confined=False,
+            reason="no hardened options were measured for the all-in-one cluster's start",
+        ),
+        **{part.container: BackendContainer(part.run_args()) for part in parts},
+        "mcp-ssh sshd": BackendContainer(mcp_ssh_sshd.singleton_run_args()),
+        "mcp-ssh per-launch sshd": BackendContainer(mcp_ssh_sshd.sshd_args("sshd", "network")),
+        "jenkins controller": BackendContainer(jenkins.singleton_run_args()),
+        "n8n instance": BackendContainer(n8n.singleton_run_args()),
+        "gitlab": BackendContainer(
+            gitlab.gitlab_run_args("gitlab", "network"),
+            confined=False,
+            reason="GitLab CE carries its own hardening, with the capabilities and the process "
+            "bound its Omnibus start needs",
+        ),
+        "kubernetes control plane": BackendContainer(
+            kubernetes.control_plane_run_args("control-plane", "network")
+        ),
+        "node sandbox engine": BackendContainer(
+            node_sandbox_engine.engine_run_args("engine", Path("/tmp/engine-socket-directory"))
+        ),
+        # Production always passes the holder join: the searxng target declares a stand-in.
+        "searxng": BackendContainer(
+            searxng.searxng_args("searxng", ["--network", "container:holder"]),
+            confined=False,
+            resolver_options=0,
+            reason="SearXNG carries its own hardening and process bound, and joins the holder's "
+            "network namespace, whose resolv.conf it reads",
+        ),
+    }
 
 
 def shared_keys() -> list[str]:

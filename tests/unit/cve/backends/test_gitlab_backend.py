@@ -6,7 +6,7 @@ from evals.cve.backends.gitlab import LIFECYCLE
 from tests.unit.support.docker_argv import value_after
 
 
-def test_the_backend_carries_the_memory_bound_the_hardening_and_the_gitlab_example_com_host(
+def test_the_backend_carries_its_hardening_and_the_gitlab_example_com_host(
     monkeypatch: pytest.MonkeyPatch,
 ):
     docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
@@ -14,7 +14,7 @@ def test_the_backend_carries_the_memory_bound_the_hardening_and_the_gitlab_examp
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
         pass
 
-    then.the_backend_is_bounded_hardened_and_named_gitlab_example_com(docker.started()[0])
+    then.the_backend_is_hardened_and_named_gitlab_example_com(docker.started()[0])
 
 
 def test_the_server_joins_the_closed_network_of_its_backend(

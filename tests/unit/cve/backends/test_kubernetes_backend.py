@@ -18,24 +18,13 @@ def test_the_backend_module_carries_no_auditor_module_into_a_dossier():
     assert not [module for module in closure if module.startswith("mcp_auditor")]
 
 
-def test_the_control_plane_runs_confined_on_its_own_network_with_no_added_capability(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_the_control_plane_runs_unprivileged_on_its_own_network(monkeypatch: pytest.MonkeyPatch):
     docker = given.a_docker_whose_control_plane_comes_up(monkeypatch)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
         pass
 
-    then.the_control_plane_is_confined_on_its_own_network(docker, docker.started()[0])
-
-
-def test_the_nuisance_control_plane_carries_the_memory_bound(monkeypatch: pytest.MonkeyPatch):
-    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch)
-
-    with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
-        pass
-
-    then.the_control_plane_carries_the_memory_bound(docker.started()[0])
+    then.the_control_plane_runs_unprivileged_on_its_own_network(docker, docker.started()[0])
 
 
 def test_the_nuisance_server_joins_its_control_plane_with_its_admin_conf_mounted_read_only(

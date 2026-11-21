@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.gitlab import GITLAB_HOST, GITLAB_IMAGE, GITLAB_NETWORK
-from evals.cve.planting_base import memory_bound_args, resolver_args
 from tests.fakes import ScriptedDocker
 from tests.unit.support.docker_argv import carries, environment, value_after, values_after
 
@@ -11,15 +10,13 @@ HARDENING = ["--security-opt", "no-new-privileges", "--cap-drop", "ALL"]
 CAPABILITIES = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "KILL", "SETGID", "SETUID"]
 
 
-def the_backend_is_bounded_hardened_and_named_gitlab_example_com(backend: Sequence[str]) -> None:
-    assert carries(backend, memory_bound_args())
+def the_backend_is_hardened_and_named_gitlab_example_com(backend: Sequence[str]) -> None:
     assert carries(backend, HARDENING)
     assert sorted(values_after(backend, "--cap-add")) == CAPABILITIES
     assert value_after(backend, "--pids-limit") == "4096"
     assert value_after(backend, "--hostname") == GITLAB_HOST
     assert value_after(backend, "--network-alias") == GITLAB_HOST
     assert value_after(backend, "--shm-size") == "256m"
-    assert carries(backend, resolver_args())
     assert backend[-1] == GITLAB_IMAGE
 
 

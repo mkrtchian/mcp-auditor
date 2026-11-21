@@ -7,7 +7,7 @@ from evals.cve.backends.mcp_ssh_sshd import (
     SSHD_PORT,
     singleton_run_args,
 )
-from tests.unit.support.docker_argv import carries, value_after
+from tests.unit.support.docker_argv import carries
 
 
 def test_the_mcp_ssh_config_is_the_readme_production_entry():
@@ -44,13 +44,3 @@ def test_the_mcp_ssh_key_halves_are_one_pair_with_the_readme_comment():
     assert len(authorized) == 3
     assert base64.b64decode(authorized[1]) == private.public_blob
     assert authorized[2] == private.comment == "production-server"
-
-
-def test_the_sshd_singleton_runs_hardened_under_the_memory_bound():
-    args = singleton_run_args()
-
-    assert carries(args, ["--cap-drop", "ALL"])
-    assert "--cap-add" not in args
-    assert carries(args, ["--security-opt", "no-new-privileges"])
-    assert 0 < int(value_after(args, "--pids-limit")) <= 256
-    assert carries(args, ["--memory", "4g", "--memory-swap", "4g"])

@@ -5,7 +5,6 @@ from evals.cve.planting_base import confinement_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.unit.support.docker_argv import (
     carries,
-    count,
     environment,
     mount_of,
     value_after,
@@ -30,14 +29,6 @@ def mounts_the_leaf_and_key_of_httpbin_org(front_args: Sequence[str]) -> None:
     mounts = {mount.split(":")[0]: mount for mount in values_after(front_args, "-v")}
     assert mounts[str(_FILES.certificate)].endswith(":ro")
     assert mounts[str(_FILES.key)].endswith(":ro")
-
-
-def carries_the_hardening_with_no_capability(part_args: Sequence[str]) -> None:
-    assert carries(part_args, ["--cap-drop", "ALL"])
-    assert carries(part_args, ["--security-opt", "no-new-privileges"])
-    assert int(value_after(part_args, "--pids-limit")) > 0
-    assert carries(part_args, ["--memory", "4g", "--memory-swap", "4g"])
-    assert count(part_args, ["--cap-add"]) == 0
 
 
 def sits_on_the_bridge_at_its_address(part_args: Sequence[str], ip: str) -> None:

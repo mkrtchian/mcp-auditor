@@ -3,7 +3,6 @@ import pytest
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
 from evals.cve.backends.searxng import SEARXNG_IMAGE
 from evals.cve.layout import WORKSPACE
-from evals.cve.planting_base import memory_bound_args
 from evals.cve.public_stand_ins import stand_in_files
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
@@ -20,7 +19,7 @@ def test_searxng_and_the_server_join_the_launchs_holder():
         assert value_after(launch.args, "--network") == f"container:{holder}"
 
 
-def test_searxng_runs_under_its_own_account_with_no_capability_and_bounded():
+def test_searxng_runs_under_its_own_account_with_no_capability():
     planting = FakePlantingDocker()
     searxng = given.a_searxng(planting)
 
@@ -30,7 +29,6 @@ def test_searxng_runs_under_its_own_account_with_no_capability_and_bounded():
         assert carries(started, ["--cap-drop", "ALL"])
         assert carries(started, ["--security-opt", "no-new-privileges"])
         assert value_after(started, "--pids-limit") == "64"
-        assert carries(started, memory_bound_args())
         assert "--cap-add" not in started
         assert started[-1] == SEARXNG_IMAGE
 

@@ -19,9 +19,8 @@ def test_the_front_mounts_the_leaf_and_key_of_httpbin_org_read_only():
     then.mounts_the_leaf_and_key_of_httpbin_org(given.the_front().run_args())
 
 
-def test_every_part_runs_hardened_with_no_capability_on_the_bridge():
+def test_every_part_sits_on_the_bridge_at_its_address():
     for part in HTTPBIN_PARTS:
-        then.carries_the_hardening_with_no_capability(part.run_args())
         then.sits_on_the_bridge_at_its_address(part.run_args(), part.ip)
 
 
