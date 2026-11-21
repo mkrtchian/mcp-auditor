@@ -15,6 +15,7 @@ THETA_POINTS = 320
 D_POINTS = 128
 D_MIN = 1e-3
 D_MAX = 2000.0
+_NEGLIGIBLE = 1e-18
 
 
 @dataclass(frozen=True)
@@ -82,20 +83,36 @@ def _difference_mass(
     counts_b: Counter[int],
     runs: int,
 ) -> list[float]:
-    size = 2 * len(thetas) - 1
-    mass = [0.0] * size
     offset = len(thetas) - 1
+    mass = [0.0] * (2 * len(thetas) - 1)
     log_evidence, cond_a, cond_b = _per_d_terms(thetas, ds, log_prior_d, counts_a, counts_b, runs)
     ceiling = max(log_evidence)
+    # Every product dropped by the weight or support cut is below 1e-18 of the largest one,
+    # far under what the 95 % quantiles can see.
     for j in range(len(ds)):
         weight = math.exp(log_evidence[j] - ceiling)
-        for ia, pa in enumerate(cond_a[j]):
-            if pa == 0.0:
-                continue
-            base = weight * pa
-            for ib, pb in enumerate(cond_b[j]):
-                mass[ia - ib + offset] += base * pb
+        if weight < _NEGLIGIBLE:
+            continue
+        first_a, last_a = _support(cond_a[j])
+        first_b, last_b = _support(cond_b[j])
+        reversed_b = cond_b[j][first_b : last_b + 1][::-1]
+        width = len(reversed_b)
+        for ia in range(first_a, last_a + 1):
+            base = weight * cond_a[j][ia]
+            start = ia - last_b + offset
+            mass[start : start + width] = [
+                cell + base * pb
+                for cell, pb in zip(mass[start : start + width], reversed_b, strict=True)
+            ]
     return mass
+
+
+def _support(row: list[float]) -> tuple[int, int]:
+    threshold = _NEGLIGIBLE * max(row)
+    kept = [index for index, value in enumerate(row) if value > threshold]
+    if not kept:
+        return 0, len(row) - 1
+    return kept[0], kept[-1]
 
 
 def _per_d_terms(

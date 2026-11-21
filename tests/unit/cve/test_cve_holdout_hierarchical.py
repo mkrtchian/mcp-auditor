@@ -4,6 +4,8 @@ below was computed offline with scipy on a 400x160 grid: 20 targets at runs=3 wi
 0.833 give roughly (0.659, 0.917) under Gamma(1, 1), tightening toward the pool under Gamma(2, 2).
 """
 
+import pytest
+
 from evals.cve.holdout_hierarchical import (
     DEFAULT_GRID,
     GammaPrior,
@@ -77,3 +79,36 @@ def test_contrast_is_positive_when_side_a_detects_more():
     low_side = [0, 0, 1, 0, 0]
     interval = contrast_hierarchical(high_side, low_side, RUNS, GammaPrior(1.0, 1.0), grid=COARSE)
     assert interval.low > 0.0
+
+
+# Pinned on the code before the support pruning of the difference mass, which must not move them.
+@pytest.mark.parametrize(
+    ("side_a", "side_b", "shape", "low", "high"),
+    [
+        ([3, 3, 3, 2, 3, 3], [0, 1, 0, 0, 1, 0], 1.0, 0.30565985315521327, 0.8754559641606413),
+        ([3, 3, 3, 2, 3, 3], [0, 1, 0, 0, 1, 0], 2.0, 0.4050871191433019, 0.8922090417997969),
+        ([3, 2, 1, 0, 3, 2], [2, 3, 1, 0, 2, 3], 1.0, -0.3757900736459664, 0.3674567403126321),
+        ([3, 2, 1, 0, 3, 2], [2, 3, 1, 0, 2, 3], 2.0, -0.35872273161616525, 0.35038939828283183),
+        (
+            [3, 3, 2, 1, 3, 0, 3, 2, 3, 3],
+            [1, 0, 2, 0],
+            1.0,
+            0.023380985332281737,
+            0.7196408616869986,
+        ),
+        (
+            [3, 3, 2, 1, 3, 0, 3, 2, 3, 3],
+            [1, 0, 2, 0],
+            2.0,
+            0.07721627135422479,
+            0.7310420714412658,
+        ),
+    ],
+    ids=["lopsided-1", "lopsided-2", "balanced-1", "balanced-2", "sizes-1", "sizes-2"],
+)
+def test_contrast_keeps_its_pinned_bounds(
+    side_a: list[int], side_b: list[int], shape: float, low: float, high: float
+):
+    interval = contrast_hierarchical(side_a, side_b, RUNS, GammaPrior(shape, shape), grid=COARSE)
+    assert interval.low == pytest.approx(low, abs=1e-9)
+    assert interval.high == pytest.approx(high, abs=1e-9)

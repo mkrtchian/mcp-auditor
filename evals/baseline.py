@@ -1,4 +1,5 @@
 import ast
+import functools
 import hashlib
 import os
 from collections.abc import Sequence
@@ -78,6 +79,7 @@ def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
+@functools.cache
 def fingerprint_source(source: str) -> str:
     """Hash of what executes or reaches the model: comments, formatting and the module
     docstring are left out (ADR 020). The format of `ast.dump` can change with a Python
