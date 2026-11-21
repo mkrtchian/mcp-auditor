@@ -10,7 +10,7 @@ from evals.run_honeypot_suite import counted_audit, parse_args, retest_audit
 from mcp_auditor.domain.models import MissCause
 
 
-async def test_a_pass_holding_a_throttled_step_is_a_failed_pass_its_429s_counted():
+async def test_a_pass_holding_a_throttled_model_call_is_a_failed_pass_its_429s_counted():
     throttles = SessionThrottles()
     fake = given.FakeHoneypotAudit("subtle", MissCause.PROVIDER_THROTTLED, throttled_requests=7)
 
@@ -20,7 +20,7 @@ async def test_a_pass_holding_a_throttled_step_is_a_failed_pass_its_429s_counted
     assert throttles.requests == 7
 
 
-async def test_a_pass_holding_a_refused_step_still_completes():
+async def test_a_pass_holding_a_refusal_still_completes():
     fake = given.FakeHoneypotAudit("subtle", MissCause.PROVIDER_REFUSAL)
 
     outcome = await run_all(counted_audit(fake, SessionThrottles()), runs=1)
@@ -28,7 +28,7 @@ async def test_a_pass_holding_a_refused_step_still_completes():
     assert len(outcome.details) == 1
 
 
-async def test_a_retest_holding_a_throttled_step_is_a_failed_retest():
+async def test_a_retest_holding_a_throttled_model_call_is_a_failed_retest():
     fake = given.FakeHoneypotAudit("alpha", MissCause.PROVIDER_THROTTLED)
     retester = Retester(
         audit=retest_audit(counted_audit(fake, SessionThrottles())),

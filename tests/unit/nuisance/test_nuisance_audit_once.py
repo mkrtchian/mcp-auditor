@@ -114,7 +114,7 @@ async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without
     assert "secret-nonce" not in outcome.reason
 
 
-async def test_a_missed_step_on_a_nuisance_run_prints_its_cause_without_the_provider_message(
+async def test_a_missed_model_call_on_a_nuisance_run_prints_its_cause_without_the_provider_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)

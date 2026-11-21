@@ -319,7 +319,7 @@ def test_reports_the_reason_of_every_blocked_case_and_chain():
     ]
 
 
-def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
+def test_a_run_detail_lists_no_missed_model_call_in_a_clean_report():
     report = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
@@ -327,7 +327,7 @@ def test_a_run_detail_lists_no_refused_step_in_a_clean_report():
     assert detail.missed_model_calls == []
 
 
-def test_a_run_detail_lists_each_missed_step_with_its_cause_tool_and_detail():
+def test_a_run_detail_lists_each_missed_model_call_with_its_cause_tool_and_detail():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
     report = given.and_a_missed_judgment(
@@ -406,7 +406,7 @@ def test_phase_usage_add_sums_each_channel():
     )
 
 
-def test_a_report_holding_a_throttled_step_raises_naming_it():
+def test_a_report_holding_a_throttled_judgment_raises_naming_it():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     report = given.and_a_missed_judgment(
         clean, "search", MissCause.PROVIDER_THROTTLED, "300 s waited"

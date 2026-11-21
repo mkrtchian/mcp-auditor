@@ -288,7 +288,7 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 
-async def test_a_dry_run_with_a_refused_generation_carries_the_refused_step():
+async def test_a_dry_run_with_a_refused_generation_carries_the_missed_model_call():
     fake_llm = FakeLLM([given.a_provider_refusal()])
     graph = given.a_dry_run_graph(fake_llm, FakeMCPClient([given.a_tool(name="get_user")]))
     state = given.an_initial_state(test_budget=3)
@@ -324,7 +324,7 @@ async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cau
     )
 
 
-async def test_a_refused_step_planning_judges_the_chain_with_the_steps_it_has():
+async def test_a_chain_step_planning_refusal_judges_the_chain_with_the_steps_it_has():
     fake_llm = given.a_fake_llm_refusing_the_chain_step_planning()
     fake_mcp_client = FakeMCPClient([given.a_tool(name="get_user")])
     graph = given.a_graph(fake_llm, fake_mcp_client)

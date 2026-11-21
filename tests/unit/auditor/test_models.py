@@ -164,7 +164,7 @@ class TestAuditReportCompleteness:
 
         assert report.is_complete is False
 
-    def test_missed_steps_survive_a_json_roundtrip(self):
+    def test_missed_model_calls_survive_a_json_roundtrip(self):
         report = given.a_report(
             missed_model_calls=[given.a_refused_call(ModelCallKind.CHAIN_PLANNING)]
         )

@@ -178,8 +178,8 @@ def test_summary_warns_about_the_calls_not_sent_to_a_tool_as_a_coverage_gap():
     assert "incomplete" in warnings[1]
 
 
-def test_summary_warns_about_a_refused_step_then_about_the_incomplete_audit():
-    report = given.a_report_with_a_refused_step()
+def test_summary_warns_about_a_refusal_then_about_the_incomplete_audit():
+    report = given.a_report_with_a_refused_chain_planning()
     display, buffer = given.a_ci_display()
 
     display.print_summary(report)
@@ -192,7 +192,7 @@ def test_summary_warns_about_a_refused_step_then_about_the_incomplete_audit():
     assert "incomplete" in warnings[1]
 
 
-def test_missed_steps_are_warned_one_by_one_as_the_dry_run_does():
+def test_missed_model_calls_are_warned_one_by_one_as_the_dry_run_does():
     display, buffer = given.a_ci_display()
     refused = given.a_refused_chain_planning_on_list_items()
 
@@ -203,7 +203,7 @@ def test_missed_steps_are_warned_one_by_one_as_the_dry_run_does():
     assert all(given.REFUSAL_MESSAGE in warning for warning in warnings)
 
 
-def test_a_refused_step_warning_prints_the_provider_message_verbatim():
+def test_a_refusal_warning_prints_the_provider_message_verbatim():
     display, buffer = given.a_ci_display()
     message = "Blocked [see policy] by [/moderation]"
     refused = MissedModelCall(
@@ -226,7 +226,7 @@ def test_a_refused_step_warning_prints_the_provider_message_verbatim():
         (MissCause.PROVIDER_THROTTLED, "throttled past every retry"),
     ],
 )
-def test_a_missed_step_warning_names_its_cause(cause: MissCause, label: str):
+def test_a_missed_model_call_warning_names_its_cause(cause: MissCause, label: str):
     display, buffer = given.a_ci_display()
     missed = MissedModelCall(
         tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"

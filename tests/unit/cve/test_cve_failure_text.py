@@ -42,7 +42,7 @@ def test_a_wrapping_error_reads_as_the_original_error_it_was_raised_from() -> No
     assert described == "TimeoutError"
 
 
-def test_a_missed_step_shows_its_cause_without_the_provider_message() -> None:
+def test_a_missed_model_call_shows_its_cause_without_the_provider_message() -> None:
     refusal = MissedModelCall(
         tool_name="git_init",
         kind=ModelCallKind.CHAIN_PLANNING,

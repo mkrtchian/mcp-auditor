@@ -302,7 +302,7 @@ class TestMakePlanStep:
         assert result["current_step_payload"] == next_payload
         assert route_after_plan_step({**state, **result}) == "execute_step"
 
-    async def test_a_refused_step_planning_sends_the_chain_to_its_judgment(self):
+    async def test_a_chain_step_planning_refusal_sends_the_chain_to_its_judgment(self):
         node = make_plan_step(FakeLLM([given.a_provider_refusal()]))
         state = given.a_chain_audit_state(
             current_chain_goal=given.a_chain_goal(),

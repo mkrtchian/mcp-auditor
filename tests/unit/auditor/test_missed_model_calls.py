@@ -12,7 +12,7 @@ from tests.fakes import FakeLLM
 JUDGMENT_CALL = ModelCall("read_file", ModelCallKind.JUDGMENT, "judge this", Judgment)
 
 
-async def test_an_unreadable_answer_is_a_missed_step_with_its_usage():
+async def test_an_unreadable_answer_is_a_missed_model_call_with_its_usage():
     usage = ProviderUsage(input_tokens=40, output_tokens=12)
 
     outcome = await call_model(FakeLLM([UnparseableOutput(3, 1, usage)]), JUDGMENT_CALL)
@@ -31,7 +31,7 @@ async def test_an_unreadable_answer_is_a_missed_step_with_its_usage():
     )
 
 
-async def test_a_refusal_is_a_missed_step_with_the_provider_message():
+async def test_a_refusal_is_a_missed_model_call_with_the_provider_message():
     usage = ProviderUsage(input_tokens=7, output_tokens=0)
 
     outcome = await call_model(
@@ -51,7 +51,7 @@ async def test_a_refusal_is_a_missed_step_with_the_provider_message():
     )
 
 
-async def test_a_throttled_call_is_a_missed_step_with_the_provider_message_and_its_429s():
+async def test_a_throttled_call_is_a_missed_model_call_with_the_provider_message_and_its_429s():
     usage = ProviderUsage(throttled_requests=9)
 
     outcome = await call_model(
@@ -72,7 +72,7 @@ async def test_a_throttled_call_is_a_missed_step_with_the_provider_message_and_i
     )
 
 
-async def test_a_prompt_too_long_is_a_missed_step_with_its_usage():
+async def test_a_prompt_too_long_is_a_missed_model_call_with_its_usage():
     usage = ProviderUsage(throttled_requests=2)
 
     outcome = await call_model(FakeLLM([PromptTooLong(usage)]), JUDGMENT_CALL)

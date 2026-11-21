@@ -167,7 +167,7 @@ def a_refused_chain_planning_on_list_items() -> MissedModelCall:
     )
 
 
-def a_report_with_a_refused_step() -> AuditReport:
+def a_report_with_a_refused_chain_planning() -> AuditReport:
     report = a_report_with_two_tools()
     report.missed_model_calls = [a_refused_chain_planning_on_list_items()]
     return report

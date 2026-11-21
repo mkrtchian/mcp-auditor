@@ -151,7 +151,7 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
     assert outcome == DroppedRun(NotRunCause.PROVIDER_ERROR)
 
 
-async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refused_step():
+async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
     audit = run_given.an_audit(True, missed=MissCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([audit])
 

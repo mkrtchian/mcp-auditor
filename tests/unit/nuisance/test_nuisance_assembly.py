@@ -110,7 +110,7 @@ def test_each_run_status_counts_the_fails_on_the_tools_left_out_by_their_declare
     assert result.declared_function_fail_per_run == [1, 0]
 
 
-def test_a_throttled_step_is_not_a_miss_cause_of_a_run():
+def test_a_throttled_model_call_is_not_a_miss_cause_of_a_run():
     audits = [given.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)]
 
     result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)

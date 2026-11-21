@@ -143,7 +143,7 @@ def a_report_per_honeypot() -> HoneypotReports:
         {
             "honeypot": _a_report(
                 "get_user", EvalVerdict.FAIL, ProviderUsage(input_tokens=100, output_tokens=10)
-            ).model_copy(update={"missed_model_calls": [_a_refused_step("get_user")]}),
+            ).model_copy(update={"missed_model_calls": [_a_refused_judgment("get_user")]}),
             "subtle": _a_report(
                 "list_items", EvalVerdict.PASS, ProviderUsage(input_tokens=200, output_tokens=20)
             ),
@@ -172,7 +172,7 @@ def _a_report(tool: str, verdict: EvalVerdict, usage: ProviderUsage) -> AuditRep
     return AuditReport(server_command=tool, tool_reports=[tool_report], provider_usage=usage)
 
 
-def _a_refused_step(tool: str) -> MissedModelCall:
+def _a_refused_judgment(tool: str) -> MissedModelCall:
     return MissedModelCall(
         tool_name=tool,
         kind=ModelCallKind.JUDGMENT,

@@ -159,7 +159,7 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.
 
 
 @pytest.mark.parametrize("cause", list(MissCause))
-def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
+def test_a_detection_is_kept_whatever_model_call_was_missed(cause: MissCause):
     outcome = graded_or_incomplete(a_detected_grade(), given.a_report_missing(cause))
 
     assert isinstance(outcome, RunGrade)
@@ -167,7 +167,7 @@ def test_a_detection_is_kept_whatever_step_was_missed(cause: MissCause):
 
 
 @pytest.mark.parametrize("cause", list(MissCause))
-def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: MissCause):
+def test_a_miss_with_a_missed_model_call_is_not_graded_and_carries_its_cause(cause: MissCause):
     missed = grammar.a_missed_run(MissKind.AIMED_NO_PROOF)
 
     outcome = graded_or_incomplete(missed, given.a_report_missing(cause))
@@ -176,7 +176,7 @@ def test_a_miss_with_a_missed_step_is_not_graded_and_carries_its_cause(cause: Mi
     assert outcome.causes == {cause}
 
 
-def test_a_miss_with_no_refused_step_is_graded_a_miss():
+def test_a_miss_with_no_missed_model_call_is_graded_a_miss():
     missed = grammar.a_missed_run(MissKind.AIMED_NO_PROOF)
 
     outcome = graded_or_incomplete(missed, grammar.a_report())
@@ -297,7 +297,7 @@ async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.Monk
     assert attempt.calls == 1
 
 
-async def test_an_attempt_holding_a_throttled_step_is_thrown_away_before_any_grading(
+async def test_an_attempt_holding_a_throttled_model_call_is_thrown_away_before_any_grading(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = given.captured_console(monkeypatch)
@@ -350,7 +350,7 @@ async def test_a_run_skipped_on_the_acceptance_gate_prints_the_error_message(
     assert f"{target.flaw_id} run skipped: secret-nonce" in output.getvalue()
 
 
-async def test_a_missed_step_on_a_holdout_run_prints_its_cause_without_the_provider_message(
+async def test_a_missed_model_call_on_a_holdout_run_prints_its_cause_without_the_provider_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = given.captured_console(monkeypatch)
