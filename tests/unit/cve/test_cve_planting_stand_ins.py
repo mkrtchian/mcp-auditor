@@ -11,8 +11,8 @@ from evals.cve.planting_base import (
     own_network_args,
     resolver_args,
 )
-from tests.unit.cve.support.test_cve_planting_then import nothing_left_alive
 from tests.unit.support.docker_argv import carries, count
+from tests.unit.support.fictional_planting import nothing_left_alive
 
 
 def test_a_launch_with_a_stand_in_joins_a_holder_pinning_the_name_to_its_set_up_address(

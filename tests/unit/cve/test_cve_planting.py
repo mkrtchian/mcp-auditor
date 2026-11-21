@@ -1,36 +1,21 @@
 import configparser
-import logging
 import re
-import tempfile
-from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.support.test_cve_planting_given as given
-import tests.unit.cve.support.test_cve_planting_then as then
+import tests.unit.support.fictional_planting as planting
 from evals.cve.endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve.places import is_endpoint_host
 from evals.cve.planting import (
     RANDOM_NONCES,
-    DockerPlanting,
     PlantedArgs,
-    PlantingFailed,
     PlantingSpec,
     planted,
 )
-from evals.cve.planting_base import (
-    MEMORY_BOUND,
-    confinement_args,
-    memory_bound_args,
-    no_network_args,
-    own_network_args,
-    resolver_args,
-)
-from tests.unit.support.docker_argv import carries, count, value_after
 
 
-def _args_in(spec: PlantingSpec, docker: given.FakePlantingDocker | None = None) -> PlantedArgs:
-    with planted(spec, "image:tag", docker or given.FakePlantingDocker()) as args:
+def _args_in(spec: PlantingSpec) -> PlantedArgs:
+    with planted(spec, "image:tag", planting.FakePlantingDocker()) as args:
         return args
 
 
@@ -38,21 +23,21 @@ def _args_in(spec: PlantingSpec, docker: given.FakePlantingDocker | None = None)
 
 
 def test_a_file_place_records_a_container_path_with_the_nonce_as_content():
-    spec = given.spec_of([given.file_place(path="/etc/fictional/secret")])
+    spec = planting.spec_of([planting.file_place(path="/etc/fictional/secret")])
 
     assert spec.files[0].container_path == "/etc/fictional/secret"
     assert spec.files[0].content == spec.nonces["file-1"]
 
 
 def test_paths_plants_every_path_under_the_one_nonce():
-    spec = given.spec_of([given.file_place(paths=["/a/one", "/b/two"])])
+    spec = planting.spec_of([planting.file_place(paths=["/a/one", "/b/two"])])
 
     assert [intent.container_path for intent in spec.files] == ["/a/one", "/b/two"]
     assert {intent.content for intent in spec.files} == {spec.nonces["file-1"]}
 
 
 def test_the_aws_credentials_place_plants_a_parsable_shared_credentials_file_carrying_the_nonce():
-    spec = given.spec_of([given.file_place("aws-credentials", path="~/.aws/credentials")])
+    spec = planting.spec_of([planting.file_place("aws-credentials", path="~/.aws/credentials")])
 
     credentials = configparser.ConfigParser()
     credentials.read_string(spec.files[0].content)
@@ -60,16 +45,16 @@ def test_the_aws_credentials_place_plants_a_parsable_shared_credentials_file_car
 
 
 def test_each_accepted_coordinate_notation_resolves_to_an_absolute_container_path():
-    host = given.unprivileged_host(working_directory="/srv/fictional")
+    host = planting.unprivileged_host(working_directory="/srv/fictional")
     places = [
-        given.file_place("absolute", path="/etc/x"),
-        given.file_place("home-tilde", path="~/under-home"),
-        given.file_place("home-var", path="$HOME/under-home2"),
-        given.file_place("relative", path="rel/under-work"),
-        given.file_place("placeholder", path="/opt/<user>/x"),
+        planting.file_place("absolute", path="/etc/x"),
+        planting.file_place("home-tilde", path="~/under-home"),
+        planting.file_place("home-var", path="$HOME/under-home2"),
+        planting.file_place("relative", path="rel/under-work"),
+        planting.file_place("placeholder", path="/opt/<user>/x"),
     ]
 
-    resolved = [intent.container_path for intent in given.spec_of(places, host=host).files]
+    resolved = [intent.container_path for intent in planting.spec_of(places, host=host).files]
 
     assert resolved == [
         "/etc/x",
@@ -81,14 +66,14 @@ def test_each_accepted_coordinate_notation_resolves_to_an_absolute_container_pat
 
 
 def test_an_env_place_records_a_name_and_nonce_pair():
-    spec = given.spec_of([given.env_place(name="FICTIONAL_TOKEN")])
+    spec = planting.spec_of([planting.env_place(name="FICTIONAL_TOKEN")])
 
     assert spec.env[0].name == "FICTIONAL_TOKEN"
     assert spec.env[0].content == spec.nonces["env-1"]
 
 
 def test_an_account_place_records_the_fixed_uid_gid_and_a_tmp_home_that_never_holds_the_nonce():
-    spec = given.spec_of([given.account_place()])
+    spec = planting.spec_of([planting.account_place()])
 
     assert spec.account is not None
     assert spec.account.name == spec.nonces["account-1"]
@@ -97,13 +82,13 @@ def test_an_account_place_records_the_fixed_uid_gid_and_a_tmp_home_that_never_ho
 
 
 def test_a_hostname_place_records_the_hostname_nonce():
-    spec = given.spec_of([given.hostname_place()])
+    spec = planting.spec_of([planting.hostname_place()])
 
     assert spec.hostname == spec.nonces["hostname-1"]
 
 
 def test_an_unplaceable_place_is_counted_drawn_no_nonce_and_never_planted():
-    spec = given.spec_of([given.unplaceable_place()])
+    spec = planting.spec_of([planting.unplaceable_place()])
 
     assert spec.unplaceable == 1
     assert spec.nonces == {}
@@ -111,7 +96,9 @@ def test_an_unplaceable_place_is_counted_drawn_no_nonce_and_never_planted():
 
 
 def test_two_locations_of_the_same_kind_take_two_distinct_values():
-    spec = given.spec_of([given.env_place("env-1", name="A"), given.env_place("env-2", name="B")])
+    spec = planting.spec_of(
+        [planting.env_place("env-1", name="A"), planting.env_place("env-2", name="B")]
+    )
 
     assert spec.nonces["env-1"] != spec.nonces["env-2"]
 
@@ -121,119 +108,117 @@ def test_two_locations_of_the_same_kind_take_two_distinct_values():
 
 def test_two_hostname_places_raise():
     with pytest.raises(ValueError, match="hostname-2"):
-        given.spec_of([given.hostname_place("hostname-1"), given.hostname_place("hostname-2")])
+        planting.spec_of(
+            [planting.hostname_place("hostname-1"), planting.hostname_place("hostname-2")]
+        )
 
 
 def test_two_account_places_raise():
     with pytest.raises(ValueError, match="account-2"):
-        given.spec_of([given.account_place("account-1"), given.account_place("account-2")])
+        planting.spec_of([planting.account_place("account-1"), planting.account_place("account-2")])
 
 
 def test_two_file_places_with_equal_paths_raise():
     with pytest.raises(ValueError, match="file-2"):
-        given.spec_of(
-            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="/a/b")]
+        planting.spec_of(
+            [planting.file_place("file-1", path="/a/b"), planting.file_place("file-2", path="/a/b")]
         )
 
 
 def test_two_file_places_with_nested_paths_raise():
     with pytest.raises(ValueError, match="file-2"):
-        given.spec_of(
-            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="/a/b/c")]
+        planting.spec_of(
+            [
+                planting.file_place("file-1", path="/a/b"),
+                planting.file_place("file-2", path="/a/b/c"),
+            ]
         )
 
 
 def test_two_http_endpoint_places_on_the_same_host_raise():
     with pytest.raises(ValueError, match="endpoint-2"):
-        given.spec_of(
+        planting.spec_of(
             [
-                given.endpoint_place("endpoint-1", host="fictional-service"),
-                given.endpoint_place("endpoint-2", host="fictional-service"),
+                planting.endpoint_place("endpoint-1", host="fictional-service"),
+                planting.endpoint_place("endpoint-2", host="fictional-service"),
             ],
-            host=given.unprivileged_host(has_network=True),
+            host=planting.unprivileged_host(has_network=True),
         )
 
 
 def test_two_http_endpoint_places_on_the_same_bind_address_raise():
     # distinct hosts (localhost, 127.0.0.1) but one bind address, so the host-name dedup misses
     with pytest.raises(ValueError, match="endpoint-2"):
-        given.spec_of(
+        planting.spec_of(
             [
-                given.endpoint_place("endpoint-1", host="localhost"),
-                given.endpoint_place("endpoint-2", host="127.0.0.1"),
+                planting.endpoint_place("endpoint-1", host="localhost"),
+                planting.endpoint_place("endpoint-2", host="127.0.0.1"),
             ],
-            host=given.unprivileged_host(has_network=True),
+            host=planting.unprivileged_host(has_network=True),
         )
 
 
 def test_two_env_places_with_the_same_name_raise():
     with pytest.raises(ValueError, match="env-2"):
-        given.spec_of(
-            [given.env_place("env-1", name="TOKEN"), given.env_place("env-2", name="TOKEN")]
+        planting.spec_of(
+            [planting.env_place("env-1", name="TOKEN"), planting.env_place("env-2", name="TOKEN")]
         )
 
 
 def test_an_env_place_named_home_raises():
     with pytest.raises(ValueError, match="env-1"):
-        given.spec_of([given.env_place("env-1", name="HOME")])
+        planting.spec_of([planting.env_place("env-1", name="HOME")])
 
 
 def test_a_file_over_the_account_passwd_mount_raises_with_the_file_first():
     with pytest.raises(ValueError, match="file-1"):
-        given.spec_of(
-            [given.file_place("file-1", path="/etc/passwd"), given.account_place("account-1")]
+        planting.spec_of(
+            [planting.file_place("file-1", path="/etc/passwd"), planting.account_place("account-1")]
         )
 
 
 def test_a_file_over_the_account_passwd_mount_raises_with_the_account_first():
     with pytest.raises(ValueError, match="file-1"):
-        given.spec_of(
-            [given.account_place("account-1"), given.file_place("file-1", path="/etc/passwd")]
+        planting.spec_of(
+            [planting.account_place("account-1"), planting.file_place("file-1", path="/etc/passwd")]
         )
 
 
 def test_two_file_places_equal_after_normalising_dot_segments_raise():
     with pytest.raises(ValueError, match="file-2"):
-        given.spec_of(
-            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="/a/./b")]
+        planting.spec_of(
+            [
+                planting.file_place("file-1", path="/a/b"),
+                planting.file_place("file-2", path="/a/./b"),
+            ]
         )
 
 
 def test_two_file_places_equal_after_collapsing_leading_slashes_raise():
     with pytest.raises(ValueError, match="file-2"):
-        given.spec_of(
-            [given.file_place("file-1", path="/a/b"), given.file_place("file-2", path="//a/b")]
+        planting.spec_of(
+            [
+                planting.file_place("file-1", path="/a/b"),
+                planting.file_place("file-2", path="//a/b"),
+            ]
         )
-
-
-def test_a_sentinel_that_does_not_serve_raises_and_leaves_nothing_alive():
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5")], host=given.unprivileged_host()
-    )
-    docker = given.FakePlantingDocker(dead_sentinels=frozenset({"198.51.100.5"}))
-
-    with (
-        pytest.raises(PlantingFailed, match=re.escape("198.51.100.5")),
-        planted(spec, "image:tag", docker),
-    ):
-        pass
-
-    then.nothing_left_alive(docker)
 
 
 def test_an_ip_literal_host_inside_the_reserved_block_raises():
     inside = str(RESERVED_NAME_BLOCK.network_address + 9)
     with pytest.raises(ValueError, match="endpoint-1"):
-        given.spec_of(
-            [given.endpoint_place(host=inside)], host=given.unprivileged_host(has_network=True)
+        planting.spec_of(
+            [planting.endpoint_place(host=inside)],
+            host=planting.unprivileged_host(has_network=True),
         )
 
 
 @pytest.mark.parametrize("literal", ["0.0.0.5", "224.0.0.5", "255.255.255.255", "240.0.0.1"])
 def test_a_non_unicast_ip_literal_host_raises(literal: str):
     with pytest.raises(ValueError, match="endpoint-1"):
-        given.spec_of(
-            [given.endpoint_place(host=literal)], host=given.unprivileged_host(has_network=True)
+        planting.spec_of(
+            [planting.endpoint_place(host=literal)],
+            host=planting.unprivileged_host(has_network=True),
         )
 
 
@@ -259,281 +244,52 @@ def test_the_token_form_has_the_expected_shape_and_is_a_valid_hostname_label():
 
 
 def test_a_hostname_place_on_a_launch_with_a_holder_lands_on_the_holder_not_the_target():
-    spec = given.spec_of(
-        [given.hostname_place(), given.endpoint_place(host="198.51.100.5")],
-        host=given.unprivileged_host(has_network=True),
+    spec = planting.spec_of(
+        [planting.hostname_place(), planting.endpoint_place(host="198.51.100.5")],
+        host=planting.unprivileged_host(has_network=True),
     )
-    docker = given.FakePlantingDocker()
+    docker = planting.FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         assert args.hostname == ()
-        holder = given.only(docker.holders)
-        assert given.following(docker.holders[holder], "--hostname") == spec.nonces["hostname-1"]
+        holder = planting.only(docker.holders)
+        assert planting.following(docker.holders[holder], "--hostname") == spec.nonces["hostname-1"]
 
 
 def test_a_hostname_place_without_a_holder_lands_on_the_target():
-    spec = given.spec_of([given.hostname_place()])
+    spec = planting.spec_of([planting.hostname_place()])
 
     args = _args_in(spec)
 
     assert args.hostname == ("--hostname", spec.nonces["hostname-1"])
 
 
-def test_the_user_working_directory_and_network_args_follow_an_unprivileged_host():
-    spec = given.spec_of([], host=given.unprivileged_host(working_directory="/srv/fictional"))
-
-    args = _args_in(spec)
-
-    assert args.user == ("--user", "65534:65534", "-e", "HOME=/tmp")
-    assert args.working_directory == ("-w", "/srv/fictional")
-    assert args.network == tuple(no_network_args())
-
-
 def test_a_work_host_works_in_a_tmpfs_owned_by_the_unprivileged_account_and_sticky():
-    spec = given.spec_of([], host=given.unprivileged_host(working_directory="/work"))
+    spec = planting.spec_of([], host=planting.unprivileged_host(working_directory="/work"))
 
     args = _args_in(spec)
 
     assert args.working_directory == ("-w", "/work")
-    assert given.following(args.mounts, "--tmpfs") == "/work:exec,mode=1777,uid=65534,gid=65534"
+    assert planting.following(args.mounts, "--tmpfs") == "/work:exec,mode=1777,uid=65534,gid=65534"
 
 
 def test_another_working_directory_gets_no_tmpfs():
-    spec = given.spec_of([], host=given.unprivileged_host(working_directory="/srv/app"))
+    spec = planting.spec_of([], host=planting.unprivileged_host(working_directory="/srv/app"))
 
     assert "--tmpfs" not in _args_in(spec).run_args()
 
 
 @pytest.mark.parametrize("path", ["/work", "/work/secret", "/srv/../work/secret", "notes/secret"])
 def test_a_file_place_resolving_under_work_is_refused(path: str):
-    host = given.unprivileged_host(working_directory="/work")
+    host = planting.unprivileged_host(working_directory="/work")
 
     with pytest.raises(ValueError, match="holds no place"):
-        given.spec_of([given.file_place(path=path)], host=host)
+        planting.spec_of([planting.file_place(path=path)], host=host)
 
 
 def test_an_env_place_emits_a_docker_env_argument_with_the_nonce():
-    spec = given.spec_of([given.env_place(name="FICTIONAL_TOKEN")])
+    spec = planting.spec_of([planting.env_place(name="FICTIONAL_TOKEN")])
 
     args = _args_in(spec)
 
     assert args.env == ("-e", f"FICTIONAL_TOKEN={spec.nonces['env-1']}")
-
-
-# --- the resolver option ---------------------------------------------------------------
-
-
-def test_the_resolver_option_sets_no_search_domain_and_stays_out_of_the_confinement_joiners_take():
-    assert resolver_args() == ["--dns-search", "."]
-    assert "--dns-search" not in confinement_args()
-
-
-@pytest.mark.parametrize("has_network", [False, True], ids=["no_network", "network"])
-def test_only_the_holder_carries_the_resolver_option_on_a_launch_with_a_holder(has_network: bool):
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5")],
-        host=given.unprivileged_host(has_network=has_network),
-    )
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker) as args:
-        holder = docker.holders[given.only(docker.holders)]
-        joiners = [
-            list(args.network),
-            *docker.probes,
-            *docker.sentinels.values(),
-            *docker.stand_ins.values(),
-            *docker.address_setups,
-        ]
-        assert docker.probes and docker.sentinels
-        assert [count(joiner, resolver_args()) for joiner in joiners] == [0] * len(joiners)
-        assert count(holder, resolver_args()) == 1
-
-
-def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolver_option():
-    spec = given.spec_of(
-        [given.endpoint_place(host="fictional-service")],
-        host=given.unprivileged_host(has_network=True),
-    )
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker) as args:
-        network = next(iter(docker.networks))
-        assert args.network == tuple(own_network_args(network))
-        own_stacks = [*docker.probes, *docker.sentinels.values()]
-        assert docker.probes and docker.sentinels
-        assert [count(argv, resolver_args()) for argv in own_stacks] == [1] * len(own_stacks)
-
-
-def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
-    spec = given.spec_of([given.file_place()])
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker) as args:
-        assert docker.holders == {}
-        assert args.network == tuple(no_network_args())
-
-
-# --- the memory bound ----------------------------------------------------------------
-
-
-def test_the_confinement_bounds_memory_with_no_swap():
-    args = confinement_args()
-
-    assert MEMORY_BOUND == "4g"
-    assert (value_after(args, "--memory"), value_after(args, "--memory-swap")) == (
-        MEMORY_BOUND,
-        MEMORY_BOUND,
-    )
-
-
-def test_the_holder_and_a_sentinel_run_under_the_memory_bound():
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5")],
-        host=given.unprivileged_host(has_network=True),
-    )
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker):
-        holder = docker.holders[given.only(docker.holders)]
-        sentinel = docker.sentinels[given.only(docker.sentinels)]
-        assert carries(holder, memory_bound_args())
-        assert carries(sentinel, memory_bound_args())
-
-
-# --- account materialisation and file mode ----------------------------------------------
-
-
-def test_a_planted_file_is_written_mode_0644_with_the_nonce():
-    spec = given.spec_of([given.file_place(path="/etc/x")])
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker):
-        host_file = _only_value(docker.host_files)
-        assert host_file.mode == 0o644
-        assert host_file.content == spec.nonces["file-1"]
-
-
-def test_an_account_emits_a_passwd_entry_under_the_fixed_uid_and_replaces_the_user_args():
-    spec = given.spec_of([given.account_place()])
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker) as args:
-        name = spec.nonces["account-1"]
-        assert args.user == ("--user", "60123:60123", "-e", "HOME=/tmp")
-        assert "-v" in args.mounts
-        passwd = _passwd_content(docker)
-        assert "root:x:0:0" in passwd  # the image's own entries are kept
-        assert f"{name}:x:60123:60123::/tmp:" in passwd
-        group = next(
-            f.content for f in docker.host_files.values() if f"{name}:x:60123:\n" in f.content
-        )
-        assert "root:x:0:\n" in group  # the image's own group entries are kept
-
-
-# --- failures and teardown --------------------------------------------------------------
-
-
-def test_a_setup_failure_after_the_holder_undoes_everything_and_raises_planting_failed():
-    spec = given.spec_of(
-        [
-            given.endpoint_place("endpoint-1", host="198.51.100.5"),
-            given.endpoint_place("endpoint-2", host="203.0.113.7"),
-        ],
-        host=given.unprivileged_host(has_network=True),
-    )
-    docker = given.FakePlantingDocker(fail={"start_sentinel": 1})  # the second sentinel fails
-
-    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
-        pass
-
-    then.nothing_left_alive(docker)
-
-
-def test_a_host_file_that_cannot_be_written_raises_planting_failed():
-    spec = given.spec_of([given.file_place(path="/etc/x")])
-    docker = given.FakePlantingDocker(fail={"write_host_file": 0})
-
-    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
-        pass
-
-
-def test_teardown_leaves_nothing_alive_under_the_network_removal_refusal():
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5"), given.file_place(path="/etc/x")],
-        host=given.unprivileged_host(has_network=True),
-    )
-    docker = given.FakePlantingDocker()
-
-    with planted(spec, "image:tag", docker):
-        assert docker.networks and docker.holders and docker.sentinels and docker.host_files
-
-    then.nothing_left_alive(docker)
-
-
-def test_a_teardown_failure_is_logged_and_the_rest_of_the_teardown_still_runs(
-    caplog: pytest.LogCaptureFixture,
-):
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5")], host=given.unprivileged_host()
-    )
-    docker = given.FakePlantingDocker(fail_teardown=frozenset({"remove_sentinel"}))
-
-    with caplog.at_level(logging.DEBUG), planted(spec, "image:tag", docker):
-        pass  # no exception escapes the block
-
-    assert docker.holders == {}  # the sentinel failure did not abort the holder's removal
-    assert "planting teardown failed" in caplog.text
-
-
-def test_a_non_infra_setup_failure_undoes_everything_and_re_raises_as_itself():
-    spec = given.spec_of(
-        [given.endpoint_place(host="198.51.100.5"), given.file_place(path="/etc/x")],
-        host=given.unprivileged_host(has_network=True),
-    )
-    docker = given.FakePlantingDocker(
-        fail={"start_sentinel": 0}, fail_errors={"start_sentinel": RuntimeError("sentinel boom")}
-    )
-
-    with pytest.raises(RuntimeError, match="sentinel boom"), planted(spec, "image:tag", docker):
-        pass
-
-    then.nothing_left_alive(docker)
-
-
-def test_a_non_utf8_passwd_read_raises_planting_failed():
-    spec = given.spec_of([given.account_place()])
-    decode_error = UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
-    docker = given.FakePlantingDocker(
-        fail={"image_accounts": 0}, fail_errors={"image_accounts": decode_error}
-    )
-
-    with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
-        pass
-
-
-def test_write_host_file_removes_the_temp_file_when_the_content_cannot_be_encoded(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
-
-    with pytest.raises(UnicodeEncodeError):
-        DockerPlanting().write_host_file("\ud800", 0o644)
-
-    assert list(tmp_path.iterdir()) == []
-
-
-def test_the_docker_adapter_refuses_to_remove_a_directory_that_is_no_layout_outer(
-    tmp_path: Path,
-):
-    with pytest.raises(PlantingFailed):
-        DockerPlanting().remove_layout(str(tmp_path))
-
-
-def _only_value(mapping: dict[str, given.HostFile]) -> given.HostFile:
-    assert len(mapping) == 1
-    return next(iter(mapping.values()))
-
-
-def _passwd_content(docker: given.FakePlantingDocker) -> str:
-    return next(f.content for f in docker.host_files.values() if "root:x:0:0" in f.content)

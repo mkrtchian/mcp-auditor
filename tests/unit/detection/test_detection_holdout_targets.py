@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.support.test_cve_planting_given as planting_given
 import tests.unit.detection.support.test_detection_holdout_targets_given as given
+import tests.unit.support.fictional_planting as planting
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
@@ -219,5 +219,5 @@ def test_every_holdout_kept_list_plants_together():
         planting_spec(
             kept_records(target.kept_places, places),
             target.planting_host,
-            planting_given.FakeNonces(),
+            planting.FakeNonces(),
         )

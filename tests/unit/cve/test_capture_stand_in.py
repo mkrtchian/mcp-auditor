@@ -7,7 +7,7 @@ import tests.unit.cve.support.test_capture_stand_in_given as given
 from evals.capture_defaults import CaptureRequest, default_requests
 from evals.capture_stand_in import ProbedDefault, capture_record, parse_request, path_form
 from evals.cve.public_stand_ins import StandInCapture
-from tests.unit.cve.support.test_cve_public_stand_ins_given import PROBED_TARGET
+from tests.unit.cve.support.stand_in_captures import PROBED_TARGET
 
 _HTML = ("Content-Type", "text/html; charset=utf-8")
 _JSON = ("Content-Type", "application/json")

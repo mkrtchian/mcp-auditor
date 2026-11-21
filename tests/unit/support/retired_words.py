@@ -49,6 +49,7 @@ _OLD_TEST_STEMS = (
     "test_cve_oracle",
     "test_cve_oracle_given",
     "test_cve_preflight",
+    "test_cve_public_stand_ins_given",
     "test_cve_recording",
     "test_cve_recording_client",
     "test_cve_recording_given",

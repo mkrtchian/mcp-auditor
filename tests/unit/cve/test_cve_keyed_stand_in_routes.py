@@ -6,7 +6,11 @@ from pydantic import ValidationError
 
 import tests.unit.cve.support.test_cve_keyed_stand_in_routes_given as given
 from evals.cve.public_stand_ins import stand_in
-from tests.unit.cve.support.test_cve_public_stand_ins_given import HOST, a_stand_in_directory
+from tests.unit.cve.support.stand_in_captures import (
+    HOST,
+    a_route,
+    a_stand_in_directory,
+)
 
 
 @pytest.mark.parametrize(
@@ -109,3 +113,73 @@ def test_an_identifier_with_an_empty_name_is_refused(tmp_path: Path):
 
     with pytest.raises(ValidationError, match=r"identifier\.name"):
         stand_in(HOST, directory)
+
+
+@pytest.mark.parametrize(
+    "routes",
+    [
+        [a_route("https"), a_route("https")],
+        [a_route("https", "POST", "Describe"), a_route("https", "POST", "Describe")],
+        [
+            a_route("https", "POST", form_field="q"),
+            a_route("https", "POST", form_field="q"),
+        ],
+    ],
+    ids=["action_less", "one_action", "one_form_field"],
+)
+def test_two_routes_with_one_key_are_refused(tmp_path: Path, routes: list[dict[str, object]]):
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="two routes answer"):
+        stand_in(HOST, directory)
+
+
+@pytest.mark.parametrize(
+    "actions",
+    [
+        ["secretsmanager.GetSecretValue", "GetSecretValue"],
+        ["secretsmanager.GetSecretValue", "secretsmanager.ListSecrets"],
+        [None, "DescribeDBInstances"],
+    ],
+    ids=["json_and_query_spellings", "two_actions", "action_less_beside_an_action"],
+)
+def test_one_post_target_answering_distinct_actions_loads(
+    tmp_path: Path, actions: list[str | None]
+):
+    routes = [a_route("https", "POST", action) for action in actions]
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    assert stand_in(HOST, directory).host == HOST
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD", "PUT"])
+def test_an_action_on_a_route_other_than_post_is_refused(tmp_path: Path, method: str):
+    routes = [a_route("https", method, "GetSecretValue")]
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="only a POST route"):
+        stand_in(HOST, directory)
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+def test_a_form_field_on_a_route_other_than_post_is_refused(tmp_path: Path, method: str):
+    routes = [a_route("https", method, form_field="q")]
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="only a POST route"):
+        stand_in(HOST, directory)
+
+
+def test_a_form_field_beside_an_action_is_refused(tmp_path: Path):
+    routes = [a_route("https", "POST", "DescribeDBInstances", form_field="q")]
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    with pytest.raises(ValidationError, match="action or a form field"):
+        stand_in(HOST, directory)
+
+
+def test_routes_of_one_target_differing_only_by_their_form_field_load(tmp_path: Path):
+    routes = [a_route("https", "POST", form_field=field) for field in (None, "q", "query")]
+    directory = a_stand_in_directory(tmp_path, routes=routes)
+
+    assert stand_in(HOST, directory).host == HOST

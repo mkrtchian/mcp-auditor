@@ -3,12 +3,12 @@ from pathlib import Path
 
 from evals.cve.planting import PlantingSpec
 from evals.cve.planting_base import PublicNames
-from tests.unit.cve.support.test_cve_planting_given import FakePlantingDocker as FakePlantingDocker
-from tests.unit.cve.support.test_cve_planting_given import endpoint_place as endpoint_place
-from tests.unit.cve.support.test_cve_planting_given import file_place as file_place
-from tests.unit.cve.support.test_cve_planting_given import following as following
-from tests.unit.cve.support.test_cve_planting_given import only as only
-from tests.unit.cve.support.test_cve_planting_given import spec_of, unprivileged_host
+from tests.unit.support.fictional_planting import FakePlantingDocker as FakePlantingDocker
+from tests.unit.support.fictional_planting import endpoint_place as endpoint_place
+from tests.unit.support.fictional_planting import file_place as file_place
+from tests.unit.support.fictional_planting import following as following
+from tests.unit.support.fictional_planting import only as only
+from tests.unit.support.fictional_planting import spec_of, unprivileged_host
 
 HOST = "public.fict"
 ADDRESS = "93.184.215.14"  # a global unicast address, as the loader requires

@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 
-from tests.unit.cve.support.test_cve_public_stand_ins_given import (
+from tests.unit.cve.support.stand_in_captures import (
     HOST,
     PROBED_TARGET,
     a_stand_in_directory,

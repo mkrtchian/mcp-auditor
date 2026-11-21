@@ -1,6 +1,6 @@
 from evals.capture_defaults import FORM_SUFFIX
 from evals.capture_stand_in import CapturedResponse, CaptureProvenance, ProbedDefault
-from tests.unit.cve.support.test_cve_public_stand_ins_given import PROBED_TARGET
+from tests.unit.cve.support.stand_in_captures import PROBED_TARGET
 
 A_PROVENANCE = CaptureProvenance(
     host="example.com",

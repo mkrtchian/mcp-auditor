@@ -1,6 +1,6 @@
 import dataclasses
 
-import tests.unit.cve.support.test_cve_planting_given as given
+import tests.unit.support.fictional_planting as planting
 from evals.cve.detection.survey import (
     PlaceFacts,
     TargetSurvey,
@@ -12,12 +12,12 @@ from evals.cve.detection.survey import (
 
 def test_candidates_for_returns_exactly_the_places_whose_reach_meets_the_target():
     places = {
-        "read": given.file_place("read", path="/a"),
+        "read": planting.file_place("read", path="/a"),
         "fetch": dataclasses.replace(
-            given.file_place("fetch", path="/b"), reaches=frozenset({"internal_fetch"})
+            planting.file_place("fetch", path="/b"), reaches=frozenset({"internal_fetch"})
         ),
         "both": dataclasses.replace(
-            given.file_place("both", path="/c"),
+            planting.file_place("both", path="/c"),
             reaches=frozenset({"arbitrary_read", "internal_fetch"}),
         ),
     }
@@ -28,7 +28,7 @@ def test_candidates_for_returns_exactly_the_places_whose_reach_meets_the_target(
 
 
 def test_candidates_for_includes_an_unplaceable_place_whose_reach_meets():
-    place = given.unplaceable_place("up")
+    place = planting.unplaceable_place("up")
 
     result = candidates_for({"up": place}, frozenset({"arbitrary_read"}))
 
@@ -36,54 +36,54 @@ def test_candidates_for_includes_an_unplaceable_place_whose_reach_meets():
 
 
 def test_an_unplaceable_candidate_is_listed_as_not_plantable():
-    place = given.unplaceable_place("up")
+    place = planting.unplaceable_place("up")
 
-    grouped = survey_groups([place], given.unprivileged_host(), given.FakeNonces())
+    grouped = survey_groups([place], planting.unprivileged_host(), planting.FakeNonces())
 
     assert grouped.groups == []
     assert grouped.not_plantable == [place]
 
 
 def test_an_account_place_is_grouped_alone():
-    account = given.account_place("acct")
+    account = planting.account_place("acct")
 
-    grouped = survey_groups([account], given.unprivileged_host(), given.FakeNonces())
+    grouped = survey_groups([account], planting.unprivileged_host(), planting.FakeNonces())
 
     assert grouped.groups == [(account,)]
     assert grouped.not_plantable == []
 
 
 def test_an_ip_literal_inside_the_reserved_block_is_not_plantable():
-    endpoint = given.endpoint_place("ep", host="10.255.255.5")
+    endpoint = planting.endpoint_place("ep", host="10.255.255.5")
 
     grouped = survey_groups(
-        [endpoint], given.unprivileged_host(has_network=True), given.FakeNonces()
+        [endpoint], planting.unprivileged_host(has_network=True), planting.FakeNonces()
     )
 
     assert grouped.not_plantable == [endpoint]
 
 
 def test_an_ip_literal_that_cannot_be_a_unicast_host_address_is_not_plantable():
-    endpoint = given.endpoint_place("ep", host="240.0.0.1")
+    endpoint = planting.endpoint_place("ep", host="240.0.0.1")
 
-    grouped = survey_groups([endpoint], given.unprivileged_host(), given.FakeNonces())
+    grouped = survey_groups([endpoint], planting.unprivileged_host(), planting.FakeNonces())
 
     assert grouped.not_plantable == [endpoint]
 
 
 def test_each_hostname_place_is_grouped_alone():
-    first, second = given.hostname_place("h1"), given.hostname_place("h2")
+    first, second = planting.hostname_place("h1"), planting.hostname_place("h2")
 
-    grouped = survey_groups([first, second], given.unprivileged_host(), given.FakeNonces())
+    grouped = survey_groups([first, second], planting.unprivileged_host(), planting.FakeNonces())
 
     assert grouped.groups == [(first,), (second,)]
 
 
 def test_nested_file_places_go_to_separate_groups():
-    parent = given.file_place("parent", path="/data")
-    child = given.file_place("child", path="/data/secret")
+    parent = planting.file_place("parent", path="/data")
+    child = planting.file_place("child", path="/data/secret")
 
-    grouped = survey_groups([parent, child], given.unprivileged_host(), given.FakeNonces())
+    grouped = survey_groups([parent, child], planting.unprivileged_host(), planting.FakeNonces())
 
     assert {frozenset(group) for group in grouped.groups} == {
         frozenset({parent}),
@@ -92,11 +92,11 @@ def test_nested_file_places_go_to_separate_groups():
 
 
 def test_two_endpoints_with_the_same_host_go_to_separate_groups():
-    first = given.endpoint_place("e1", host="internal.test", path="/a")
-    second = given.endpoint_place("e2", host="internal.test", path="/b")
+    first = planting.endpoint_place("e1", host="internal.test", path="/a")
+    second = planting.endpoint_place("e2", host="internal.test", path="/b")
 
     grouped = survey_groups(
-        [first, second], given.unprivileged_host(has_network=True), given.FakeNonces()
+        [first, second], planting.unprivileged_host(has_network=True), planting.FakeNonces()
     )
 
     assert len(grouped.groups) == 2
@@ -104,12 +104,12 @@ def test_two_endpoints_with_the_same_host_go_to_separate_groups():
 
 
 def test_ip_literal_loopback_and_name_endpoints_share_one_group():
-    literal = given.endpoint_place("lit", host="203.0.113.5", path="/a")
-    loopback = given.endpoint_place("lo", host="127.0.0.5", path="/b")
-    name = given.endpoint_place("name", host="internal.test", path="/c")
+    literal = planting.endpoint_place("lit", host="203.0.113.5", path="/a")
+    loopback = planting.endpoint_place("lo", host="127.0.0.5", path="/b")
+    name = planting.endpoint_place("name", host="internal.test", path="/c")
 
     grouped = survey_groups(
-        [literal, loopback, name], given.unprivileged_host(), given.FakeNonces()
+        [literal, loopback, name], planting.unprivileged_host(), planting.FakeNonces()
     )
 
     assert len(grouped.groups) == 1
@@ -117,12 +117,12 @@ def test_ip_literal_loopback_and_name_endpoints_share_one_group():
 
 
 def test_an_endpoint_groups_with_files_and_env_on_a_host_without_network():
-    file_place = given.file_place("f", path="/a")
-    env_place = given.env_place("e")
-    endpoint = given.endpoint_place("ep", host="127.0.0.5", path="/x")
+    file_place = planting.file_place("f", path="/a")
+    env_place = planting.env_place("e")
+    endpoint = planting.endpoint_place("ep", host="127.0.0.5", path="/x")
 
     grouped = survey_groups(
-        [file_place, env_place, endpoint], given.unprivileged_host(), given.FakeNonces()
+        [file_place, env_place, endpoint], planting.unprivileged_host(), planting.FakeNonces()
     )
 
     assert len(grouped.groups) == 1
@@ -130,16 +130,16 @@ def test_an_endpoint_groups_with_files_and_env_on_a_host_without_network():
 
 
 def test_survey_lines_report_the_three_facts_the_not_plantable_and_the_not_surveyed():
-    leaky = given.file_place("leaky", path="/a")
-    clean = given.file_place("clean", path="/b")
+    leaky = planting.file_place("leaky", path="/a")
+    clean = planting.file_place("clean", path="/b")
     result = TargetSurvey(
         "CVE-X",
         facts=[
             PlaceFacts(leaky, exploit=True, benign=False, patched=True),
             PlaceFacts(clean, exploit=False, benign=True, patched=False),
         ],
-        not_plantable=[given.unplaceable_place("up")],
-        not_surveyed=[given.file_place("broken", path="/c")],
+        not_plantable=[planting.unplaceable_place("up")],
+        not_surveyed=[planting.file_place("broken", path="/c")],
     )
 
     assert survey_lines(result) == [

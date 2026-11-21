@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 import tests.unit.cve.support.test_cve_places_given as given
-import tests.unit.cve.support.test_cve_planting_given as planting_given
+import tests.unit.support.fictional_planting as planting
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.places import (
     DETECTION_PLACES,
@@ -285,5 +285,5 @@ def test_every_target_kept_list_plants_together():
         planting_spec(
             kept_records(target.kept_places, places),
             target.planting_host,
-            planting_given.FakeNonces(),
+            planting.FakeNonces(),
         )

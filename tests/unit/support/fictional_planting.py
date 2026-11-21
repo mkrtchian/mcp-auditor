@@ -156,3 +156,12 @@ def following(args: list[str] | tuple[str, ...], flag: str, *, prefix: str | Non
     if prefix is not None:
         return next(value for value in args if value.startswith(prefix))
     return value_after(args, flag)
+
+
+def nothing_left_alive(docker: FakePlantingDocker) -> None:
+    assert docker.networks == set()
+    assert docker.holders == {}
+    assert docker.sentinels == {}
+    assert docker.stand_ins == {}
+    assert docker.host_files == {}
+    assert docker.layouts == {}

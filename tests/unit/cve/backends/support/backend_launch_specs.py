@@ -2,7 +2,7 @@
 
 from evals.cve.planting import RANDOM_NONCES, PlantingSpec, planting_spec
 from evals.cve.planting_base import PlantingHost, SymbolicUser
-from tests.unit.cve.support.test_cve_planting_given import endpoint_place
+from tests.unit.support.fictional_planting import endpoint_place
 
 
 def a_spec_with_a_holder() -> PlantingSpec:
