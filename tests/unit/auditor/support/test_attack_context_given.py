@@ -1,4 +1,4 @@
-from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_NOTE_LENGTH
+from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_LIST_ITEMS, MAX_NOTE_LENGTH
 from mcp_auditor.domain.models import AttackContext
 
 
@@ -14,8 +14,8 @@ def a_context_over_every_bound() -> AttackContext:
     return AttackContext(
         db_engine=a_text_of(MAX_ITEM_LENGTH + 1),
         framework="Flask",
-        exposed_internals=[*items(40, "internal"), a_text_of(MAX_ITEM_LENGTH + 1)],
-        effective_payloads=items(45, "payload"),
+        exposed_internals=[*items(MAX_LIST_ITEMS + 10, "internal"), a_text_of(MAX_ITEM_LENGTH + 1)],
+        effective_payloads=items(MAX_LIST_ITEMS + 10, "payload"),
         observations="\n".join(f"tool_{index}: {'n' * MAX_NOTE_LENGTH}" for index in range(20)),
     )
 

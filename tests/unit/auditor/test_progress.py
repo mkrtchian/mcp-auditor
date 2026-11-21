@@ -2,6 +2,7 @@ from rich.text import Text
 
 import tests.unit.auditor.support.test_console_given as given
 from mcp_auditor.domain.models import AuditCategory, Severity
+from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.progress import format_failure_line, format_tool_summary
 
@@ -118,7 +119,8 @@ def test_tool_progress_reaches_its_end_on_cases_not_sent_and_names_their_cause_o
 
     output = Text.from_ansi(buffer.getvalue()).plain
     assert "3/3" in output
-    assert output.count("calls not sent from here on: the tool's calls led to 2 relaunches") == 1
+    cause = UNSENT_CAUSE_LABELS[UnsentCause.RELAUNCHES_IN_A_ROW]
+    assert output.count(f"calls not sent from here on: {cause}") == 1
 
 
 def test_ci_progress_names_the_cause_of_cases_not_sent_once():
@@ -128,4 +130,5 @@ def test_ci_progress_names_the_cause_of_cases_not_sent_once():
     for _ in range(2):
         progress.advance_unsent(UnsentCause.SERVER_DOWN)
 
-    assert buffer.getvalue().count("not sent from here on: the server was taken as down") == 1
+    cause = UNSENT_CAUSE_LABELS[UnsentCause.SERVER_DOWN]
+    assert buffer.getvalue().count(f"not sent from here on: {cause}") == 1

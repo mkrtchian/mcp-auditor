@@ -20,6 +20,11 @@ def within_every_bound(context: AttackContext) -> None:
         assert scalar is None or len(scalar) <= MAX_ITEM_LENGTH
 
 
+def the_latest_items_within_length_kept(kept: list[str], carried: list[str]) -> None:
+    within_length = [item for item in carried if len(item) <= MAX_ITEM_LENGTH]
+    assert kept == within_length[-MAX_LIST_ITEMS:]
+
+
 def rendering_within_the_bound(rendered: str) -> None:
     separators = len(", ") * (MAX_LIST_ITEMS - 1)
     lists = 2 * (MAX_LIST_ITEMS * MAX_ITEM_LENGTH + separators)

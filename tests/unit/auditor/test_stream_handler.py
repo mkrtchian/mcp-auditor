@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
     TestCase,
 )
+from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS, describe_relaunch
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.stream_handler import AuditProgressReporter
 
@@ -122,9 +123,8 @@ def test_each_relaunch_is_reported_once_as_a_case_or_a_chain_step_records_it():
 
     warnings = [" ".join(chunk.split()) for chunk in buffer.getvalue().split("Warning: ")[1:]]
     assert warnings == [
-        "run_command: the connection to the server was lost, the server was relaunched",
-        "run_command: the calls of two tools in a row kept timing out, "
-        "the server was taken as stuck, the relaunch failed and the server was taken as down",
+        f"run_command: {describe_relaunch(lost)}",
+        f"run_command: {describe_relaunch(stuck)}",
     ]
 
 
@@ -139,7 +139,8 @@ def test_cases_not_sent_advance_the_progress_bar_to_its_end():
 
     output = Text.from_ansi(buffer.getvalue()).plain
     assert "2/2" in output
-    assert output.count("calls not sent from here on: the tool timed out 3 times in a row") == 1
+    cause = UNSENT_CAUSE_LABELS[UnsentCause.TOOL_TIMING_OUT]
+    assert output.count(f"calls not sent from here on: {cause}") == 1
 
 
 def _a_relaunch(cause: RelaunchCause, succeeded: bool) -> Relaunch:

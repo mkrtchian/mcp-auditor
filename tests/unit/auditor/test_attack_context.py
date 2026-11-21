@@ -173,10 +173,15 @@ def test_the_oldest_notes_are_evicted_past_the_bound():
 
 
 def test_a_carried_context_over_every_bound_comes_back_within_them():
-    merged = merge_attack_context(given.a_context_over_every_bound(), AttackContext(), "tool")
+    carried = given.a_context_over_every_bound()
+
+    merged = merge_attack_context(carried, AttackContext(), "tool")
 
     then.within_every_bound(merged)
     assert merged.framework == "Flask"
+    assert merged.db_engine is None
+    then.the_latest_items_within_length_kept(merged.exposed_internals, carried.exposed_internals)
+    then.the_latest_items_within_length_kept(merged.effective_payloads, carried.effective_payloads)
 
 
 def test_many_reports_keep_the_context_and_its_rendering_bounded():

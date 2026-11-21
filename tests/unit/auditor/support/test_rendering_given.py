@@ -297,9 +297,7 @@ def a_report_with_missed_judgments_on_get_user(refused: int, unreadable: int) ->
 THROTTLE_MESSAGE = "429 RESOURCE_EXHAUSTED"
 
 
-PROMPT_TOO_LONG_MESSAGE = (
-    "the model provider rejected the prompt as longer than the model's context window"
-)
+PROMPT_TOO_LONG_MESSAGE = "prompt of 1048577 tokens over the limit"
 
 
 def a_report_with_one_missed_judgment_on_get_user(cause: MissCause, detail: str) -> AuditReport:

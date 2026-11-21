@@ -82,8 +82,7 @@ async def test_a_prompt_too_long_is_a_missed_model_call_with_its_usage():
             tool_name="read_file",
             kind=ModelCallKind.JUDGMENT,
             cause=MissCause.PROMPT_TOO_LONG,
-            detail="the model provider rejected the prompt as longer than"
-            " the model's context window",
+            detail=str(PromptTooLong(usage)),
         ),
         usage=usage,
         is_judge=True,

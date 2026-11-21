@@ -10,6 +10,7 @@ from mcp_auditor.domain.models import (
     ModelCallKind,
     Severity,
 )
+from mcp_auditor.domain.rendering import describe_coverage_gap
 
 
 def test_header_contains_the_server_command():
@@ -170,11 +171,10 @@ def test_summary_warns_about_the_calls_not_sent_to_a_tool_as_a_coverage_gap():
 
     display.print_summary(report)
 
+    gap = report.tool_reports[0].coverage_gap
+    assert gap is not None
     warnings = _warnings(buffer.getvalue())
-    assert warnings[0] == (
-        ": get_user: coverage gap, 10 cases generated for 10 requested, "
-        "2 cases not sent (the tool timed out 3 times in a row)"
-    )
+    assert warnings[0] == f": get_user: coverage gap, {describe_coverage_gap(gap)}"
     assert "incomplete" in warnings[1]
 
 
