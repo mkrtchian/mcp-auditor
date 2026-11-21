@@ -24,7 +24,7 @@ def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lis
     assert COUNTED_TOOL not in held_row
     assert given.section(markdown, "## Not admitted") == [f"- {given.NOT_ADMITTED}"]
     assert given.section(markdown, "## Outside the gate") == [
-        f"- {given.OUTSIDE.server_package}: {given.OUTSIDE.reason}"
+        f"- {given.OUTSIDE.server_package}: does not run over stdio"
     ]
 
 

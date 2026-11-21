@@ -10,6 +10,7 @@ from evals.cell_grid import retest_fraction
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.counter import flagged_tools, raw_fail_count
 from evals.cve.nuisance.counting import counted_tools
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison
 from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateSession
@@ -77,7 +78,7 @@ def render_markdown(report: NuisanceGateReport) -> str:
             *_listed("## Not admitted", report.not_admitted),
             *_listed(
                 "## Outside the gate",
-                [f"{e.server_package}: {e.reason}" for e in report.outside_gate],
+                [f"{e.server_package}: {EXIT_REASON_TEXTS[e.reason]}" for e in report.outside_gate],
             ),
             *_listed("## Orphaned baseline files", report.orphans),
             *_listed(

@@ -1,8 +1,11 @@
+from datetime import date
+
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 from evals.cve.census.draw_order import draw_digest
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.admission.walk_record import WalkInputs
+from evals.cve.nuisance.exits import ExitReason, RecordedExit
 
 
 def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
@@ -42,3 +45,17 @@ def admitting_the_queue_servers() -> NuisanceAdmission:
         for package in reversed(the_queue_packages())
     ]
     return admission_given.an_admission().model_copy(update={"servers": servers})
+
+
+def a_recorded_exit(
+    package: str, reason: ExitReason = ExitReason.NO_COUNTED_TOOL_LEFT
+) -> RecordedExit:
+    return RecordedExit(server_package=package, reason=reason, logged_on=date(2026, 11, 9))
+
+
+def recording(admission: NuisanceAdmission, *exits: RecordedExit) -> NuisanceAdmission:
+    return admission.model_copy(update={"exits": list(exits)})
+
+
+def admitting_no_server() -> NuisanceAdmission:
+    return admission_given.an_admission().model_copy(update={"servers": []})

@@ -17,7 +17,7 @@ from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
-from evals.cve.nuisance.admission.walk import acceptance_target_servers, nuisance_population
+from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.commands import (
     CENSUS_PATH,
     CRASHED_EXIT,
@@ -83,7 +83,7 @@ def vet(args: argparse.Namespace) -> int:
             print("no server is admitted")
             return 0
         audited = run_population(
-            nuisance_population(walk_inputs), admission, acceptance_target_servers(walk_inputs)
+            reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
         ).audited
     packages = [server.server_package for server in audited]
     unknown = [package for package in args.server if package not in packages]

@@ -10,6 +10,7 @@ from datetime import date
 from enum import StrEnum
 
 from evals.cve.holdout_conditions import Cutoff
+from evals.cve.nuisance.exits import ExitReason
 
 
 @dataclass(frozen=True)
@@ -128,7 +129,7 @@ class NotRunServer:
 @dataclass(frozen=True)
 class ServerExit:
     server_package: str
-    reason: str
+    reason: ExitReason
 
 
 @dataclass(frozen=True)

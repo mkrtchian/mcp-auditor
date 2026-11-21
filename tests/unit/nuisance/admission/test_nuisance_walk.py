@@ -9,6 +9,7 @@ from evals.cve.nuisance.admission.walk import (
     candidate_counted_flaws,
     nuisance_acceptance_servers,
     nuisance_population,
+    reached_servers,
     server_of,
 )
 from evals.cve.nuisance.admission.walk_record import normalized_package, reached_identifiers
@@ -144,6 +145,13 @@ def test_a_server_whose_every_flaw_fails_leaves_the_population():
     )
 
     assert [server.server_package for server in nuisance_population(settled)] == ["npm:ok"]
+
+
+def test_reached_servers_keep_apart_a_server_with_no_flaw_that_may_count():
+    reached = reached_servers(given.a_walk_reaching_a_server_with_no_flaw_that_may_count())
+
+    assert [server.server_package for server in reached.listed] == ["npm:ok"]
+    assert reached.without_candidates == ["npm:bad"]
 
 
 def test_a_benchmark_flaw_marks_its_server_acceptance():

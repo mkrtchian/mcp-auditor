@@ -27597,5 +27597,277 @@
         }
       ]
     }
+  ],
+  "exits": [
+    {
+      "server_package": "npm:@akoskm/create-mcp-server-stdio",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-27"
+    },
+    {
+      "server_package": "npm:claude-in-mobile",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-08"
+    },
+    {
+      "server_package": "npm:appium-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "PyPI:mcp-server-fetch",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-27"
+    },
+    {
+      "server_package": "PyPI:stata-mcp",
+      "reason": "not_under_docker",
+      "logged_on": "2026-10-27"
+    },
+    {
+      "server_package": "https://github.com/A-G-U-P-T-A/wireshark-mcp",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-08"
+    },
+    {
+      "server_package": "npm:repomix",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-30"
+    },
+    {
+      "server_package": "npm:auth-fetch-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-30"
+    },
+    {
+      "server_package": "PyPI:ha-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:mcp-searxng",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-27"
+    },
+    {
+      "server_package": "PyPI:awslabs-documentdb-mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "Go:github.com/grafana/mcp-grafana",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-29"
+    },
+    {
+      "server_package": "npm:openclaw",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:@dynatrace-oss/dynatrace-mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-01"
+    },
+    {
+      "server_package": "PyPI:mcp-memory-service",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/IBM/mcp-context-forge",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "PyPI:adx-mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-11"
+    },
+    {
+      "server_package": "Go:github.com/sonirico/mcp-shell",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-28"
+    },
+    {
+      "server_package": "npm:@arikusi/deepseek-mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "PyPI:awslabs-aws-healthomics-mcp-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-08"
+    },
+    {
+      "server_package": "npm:@cardano402/mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-29"
+    },
+    {
+      "server_package": "npm:@jshookmcp/jshook",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/nhost/nhost",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "Go:github.com/github/github-mcp-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:open-websearch",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-27"
+    },
+    {
+      "server_package": "npm:@nor2/heim-mcp",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-08"
+    },
+    {
+      "server_package": "PyPI:gemini-bridge",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-08"
+    },
+    {
+      "server_package": "npm:a11y-mcp",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-28"
+    },
+    {
+      "server_package": "https://github.com/fatbobman/mail-mcp-bridge",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/611711Dark/mcp_calculate_server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:@mastra/mcp-docs-server",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:xcode-mcp-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:@jsonbored/gittensory-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "PyPI:ciguard",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:browse-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/Kong/mcp-konnect",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:@bytebase/dbhub",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "PyPI:mcp-kubernetes-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "https://github.com/tugcantopaloglu/godot-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:chrome-devtools-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "npm:@adenot/mcp-google-search",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "PyPI:maa-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "PyPI:tooluniverse",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:neo.mjs",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:functype-mcp-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "RubyGems:rails-mcp-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/BeehiveInnovations/pal-mcp-server",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "PyPI:mcp-salesforce-connector",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "Go:github.com/apache/skywalking-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "https://github.com/Kirachon/context-engine",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:@roomi-fields/notebooklm-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    },
+    {
+      "server_package": "https://github.com/radareorg/radare2-mcp",
+      "reason": "no_counted_tool_left",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "npm:@simonb97/server-win-cli",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-10-31"
+    },
+    {
+      "server_package": "PyPI:zscaler-mcp",
+      "reason": "no_counted_flaw",
+      "logged_on": "2026-11-09"
+    }
   ]
 }

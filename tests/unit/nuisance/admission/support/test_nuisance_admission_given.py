@@ -53,6 +53,7 @@ def an_admission() -> NuisanceAdmission:
         rule_commit="0" * 40,
         grammar_fingerprint=detection_baseline.grammar_fingerprint(),
         servers=[an_admitted_server()],
+        exits=[],
     )
 
 

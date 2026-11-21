@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 
 from evals.cve.detection.holdout_report import ConclusionLine, IntervalModel, RunCutoffModel
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from evals.cve.nuisance.report import NotRunLine, NuisanceReport, ServerLine
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
 
@@ -94,11 +95,11 @@ def _exits_section(report: NuisanceReport) -> list[str]:
     """The standing exits the code derives, one row per reason. The rule's other exits (never
     fixed, no counted tool, spent by a reading, a fork of an excluded server) have no row the
     code derives and live in the log."""
-    by_reason: dict[str, list[str]] = {}
+    by_reason: dict[ExitReason, list[str]] = {}
     for line in report.exits:
         by_reason.setdefault(line.reason, []).append(line.server_package)
     lines = [
-        f"- {reason}: {len(packages)} server(s): {', '.join(packages)}"
+        f"- {EXIT_REASON_TEXTS[reason]}: {len(packages)} server(s): {', '.join(packages)}"
         for reason, packages in by_reason.items()
     ]
     return ["## Exits", *(lines or ["- none"]), ""]

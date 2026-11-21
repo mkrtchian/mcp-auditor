@@ -3,8 +3,9 @@ its own (`evals/nuisance_admission.json`), distinct from the census.
 
 The schema is filled by the two blind admission agents and the maintainer who settles their
 disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every list
-is empty until the admission session. `admission_problems` holds the load validation, raised joined
-by `load_admission`, so a crafted admission can be checked without a file. The file is absent until
+is empty until the admission session. `exits` records each server the walk lists and the admission
+leaves out, with its reason. `admission_problems` holds the load validation, raised joined by
+`load_admission`, so a crafted admission can be checked without a file. The file is absent until
 the session, and `load_admission` says so. The fields defaulting to `None` are those nuisance suite
 rule v3 or v4 added and not yet recorded, which `evals/cve/nuisance/admission/unrecorded.py`
 refuses at run.
@@ -29,9 +30,10 @@ from evals.cve.nuisance.admission.admission_records import (
     SeedRecord,
     record_problems,
 )
-from evals.cve.nuisance.admission.admission_walk import walk_problems
+from evals.cve.nuisance.admission.admission_walk import exit_problems, walk_problems
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
+from evals.cve.nuisance.exits import RecordedExit
 from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
 
@@ -130,6 +132,7 @@ class NuisanceAdmission(BaseModel):
     rule_commit: str
     grammar_fingerprint: str
     servers: list[AdmittedServer]
+    exits: list[RecordedExit]
 
 
 def load_admission(path: Path, walk_inputs: WalkInputs) -> NuisanceAdmission:
@@ -167,7 +170,7 @@ def admission_problems(
         problems += _network_problems(server)
         problems += backend_registry.backend_problems(server, backends)
         problems += record_problems(server)
-    return problems + walk_problems(admission, walk_inputs)
+    return problems + walk_problems(admission, walk_inputs) + exit_problems(admission, walk_inputs)
 
 
 def _fingerprint_problems(admission: NuisanceAdmission, grammar_fingerprint: str) -> list[str]:

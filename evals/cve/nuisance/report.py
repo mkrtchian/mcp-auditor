@@ -16,6 +16,7 @@ from evals.cve.detection.holdout_report import (
     run_cutoff,
 )
 from evals.cve.holdout_statistic import Side
+from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import (
     NotRunCause,
     NotRunServer,
@@ -88,7 +89,7 @@ class NotRunLine(BaseModel):
 
 class ExitLine(BaseModel):
     server_package: str
-    reason: str
+    reason: ExitReason
 
     @classmethod
     def of(cls, exit_row: ServerExit) -> "ExitLine":

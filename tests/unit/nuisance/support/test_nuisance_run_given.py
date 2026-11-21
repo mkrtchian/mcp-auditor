@@ -271,7 +271,7 @@ async def run(
     """`draw=None` puts the first flaw in the draw order, disclosed on 2026-01-01."""
     order = draw if draw is not None else draw_entries((FIRST_FLAW, date(2026, 1, 1)))
     return await run_nuisance(
-        RunPopulation(servers, exits),
+        RunPopulation(servers, exits, ()),
         order,
         conditions(),
         SETTINGS,

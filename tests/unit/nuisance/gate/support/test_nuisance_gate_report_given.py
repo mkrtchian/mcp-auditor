@@ -1,5 +1,6 @@
 import itertools
 
+from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison, ServerOutcome, decide
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, server_lines
 from evals.cve.nuisance.gate.gate_session_model import GateAudit, NuisanceGateSession
@@ -12,7 +13,7 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_session_given import (
 )
 
 NOT_ADMITTED = "npm:mcp-fetch-server"
-OUTSIDE = ServerExit("PyPI:mcp-server-git", "does not run over stdio")
+OUTSIDE = ServerExit("PyPI:mcp-server-git", ExitReason.NOT_OVER_STDIO)
 
 
 def a_held_server_beside_a_regression() -> NuisanceGateSession:

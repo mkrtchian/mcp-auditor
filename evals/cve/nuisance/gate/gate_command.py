@@ -30,6 +30,7 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
     write_report,
 )
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_RUNS,
@@ -117,7 +118,7 @@ def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) ->
         return
     print("no admitted nuisance acceptance server can run in the gate")
     for server in outside:
-        print(f"- {server.server_package}: {server.reason}")
+        print(f"- {server.server_package}: {EXIT_REASON_TEXTS[server.reason]}")
 
 
 def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: set[str]) -> int:

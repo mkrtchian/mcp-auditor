@@ -12,6 +12,7 @@ from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
 from evals.cve.nuisance.counter import counter_fingerprint
+from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.results import NotRunCause, ServerExit
 from evals.eval_session import Refused, TreeState
@@ -30,7 +31,7 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
             "npm:second": [refused, given.an_audit(False), given.an_audit(False)],
         }
     )
-    exits = [ServerExit("npm:walked", "marked by the walk")]
+    exits = [ServerExit("npm:walked", ExitReason.EXCLUDED_SERVER)]
 
     result = await given.run([first, second], given.deps_auditing(audit), exits=exits)
 

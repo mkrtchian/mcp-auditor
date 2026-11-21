@@ -13,6 +13,7 @@ from evals.cve.detection.holdout_report import (
     MethodLine,
     RunCutoffModel,
 )
+from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import (
     ExitLine,
@@ -64,8 +65,8 @@ def test_exit_rows_are_grouped_by_reason():
     run = given.a_run(
         [a_server_result("A")],
         exits=[
-            ServerExit("npm:excluded-one", "an excluded server"),
-            ServerExit("npm:excluded-two", "an excluded server"),
+            ServerExit("npm:excluded-one", ExitReason.EXCLUDED_SERVER),
+            ServerExit("npm:excluded-two", ExitReason.EXCLUDED_SERVER),
         ],
     )
 
@@ -298,13 +299,13 @@ def test_no_throttled_line_when_nothing_was_throttled():
 
 def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glossary_keys():
     run = given.a_run(
-        [a_server_result("A")], exits=[ServerExit("npm:excluded", "an excluded server")]
+        [a_server_result("A")], exits=[ServerExit("npm:excluded", ExitReason.EXCLUDED_SERVER)]
     )
 
     dumped = build_report(run).model_dump(mode="json")
 
     assert {"holdout_nuisance_rate", "exits"} <= dumped.keys()
-    assert dumped["exits"] == [{"server_package": "npm:excluded", "reason": "an excluded server"}]
+    assert dumped["exits"] == [{"server_package": "npm:excluded", "reason": "excluded_server"}]
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
@@ -332,7 +333,7 @@ def test_the_report_holds_no_proof_text():
     run = given.a_run(
         [given.with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
-        exits=[ServerExit("npm:c", "the server of a current or dropped acceptance target")],
+        exits=[ServerExit("npm:c", ExitReason.ACCEPTANCE_TARGET_SERVER)],
     )
 
     # The health line's count of cut responses names the word and quotes no response.

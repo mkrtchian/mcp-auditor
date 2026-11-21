@@ -61,7 +61,7 @@ def test_the_summary_lists_the_servers_not_admitted_and_outside_the_gate(
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
     assert NOT_ADMITTED in output.getvalue()
-    assert f"{OUTSIDE.server_package}: {OUTSIDE.reason}" in output.getvalue()
+    assert f"{OUTSIDE.server_package}: does not run over stdio" in output.getvalue()
 
 
 def test_a_not_run_reason_holding_markup_prints_literally(monkeypatch: pytest.MonkeyPatch):

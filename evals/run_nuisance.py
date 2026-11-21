@@ -45,6 +45,7 @@ from evals.cve.nuisance.admission.walk import (
     NuisanceServer,
     acceptance_target_servers,
     nuisance_population,
+    reached_servers,
 )
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.commands import (
@@ -228,7 +229,7 @@ def _run(args: argparse.Namespace) -> int:
             print("no server is admitted")
             return 0
         population = run_population(
-            nuisance_population(walk_inputs), admission, acceptance_target_servers(walk_inputs)
+            reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
         )
     refuse_unrecorded(population.audited, "nuisance run refused")
     _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)

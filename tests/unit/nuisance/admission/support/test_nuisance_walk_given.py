@@ -123,6 +123,12 @@ def with_a_record_settlement(
     return WalkInputs(census=walk_inputs.census, record=settled)
 
 
+def a_walk_reaching_a_server_with_no_flaw_that_may_count() -> WalkInputs:
+    """`npm:bad`, whose one flaw the record settles not pinnable, and `npm:ok`."""
+    census = a_census_walking([("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")])
+    return with_a_record_settlement(walk_inputs_of(census), "bad", Criterion.PINNABLE, False)
+
+
 def with_an_identity(walk_inputs: WalkInputs, flaw: str, server_package: str) -> WalkInputs:
     record = walk_inputs.record
     identity = IdentitySettlement(flaw=flaw, server_package=server_package, reason="one project")

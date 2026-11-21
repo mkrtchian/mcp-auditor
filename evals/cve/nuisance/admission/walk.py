@@ -10,6 +10,7 @@ out here, so a flaw outside the grammar is listed pending the admission's class.
 census, its draw settlements and the walk record, no LLM, no network.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -86,6 +87,21 @@ def nuisance_acceptance_servers(walk_inputs: WalkInputs) -> set[str]:
 
 def _classified(census: Census) -> set[str]:
     return {classification.flaw for classification in census.classifications[CLASSIFIERS[0]]}
+
+
+@dataclass(frozen=True)
+class ReachedServers:
+    listed: Sequence[NuisanceServer]  # nuisance_population: what `walk` prints
+    without_candidates: Sequence[str]  # reached, with no flaw that may count, in walk order
+
+
+def reached_servers(walk_inputs: WalkInputs) -> ReachedServers:
+    without_candidates = [
+        server
+        for server in _first_reaches(walk_inputs)
+        if not candidate_counted_flaws(server, walk_inputs)
+    ]
+    return ReachedServers(nuisance_population(walk_inputs), without_candidates)
 
 
 def nuisance_population(walk_inputs: WalkInputs) -> list[NuisanceServer]:

@@ -6,6 +6,7 @@ from pathlib import Path
 from rich.text import Text
 
 from evals.cell_grid import retest_fraction
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
     NuisanceGateReport,
@@ -25,7 +26,8 @@ def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -
     _print_listed("Not run:", [f"{p}: {why}" for p, why in report.not_run.items()])
     _print_listed("Not admitted:", report.not_admitted)
     _print_listed(
-        "Outside the gate:", [f"{e.server_package}: {e.reason}" for e in report.outside_gate]
+        "Outside the gate:",
+        [f"{e.server_package}: {EXIT_REASON_TEXTS[e.reason]}" for e in report.outside_gate],
     )
     for line in render_throttled(report):
         console.print(Text(line, style="yellow"))
