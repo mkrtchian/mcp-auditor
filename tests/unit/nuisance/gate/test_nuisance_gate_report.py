@@ -4,7 +4,7 @@ import tests.unit.nuisance.gate.support.test_nuisance_gate_report_given as given
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_report import GATE_LEGEND, render_markdown, server_lines
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import FILESYSTEM, KUBERNETES
-from tests.unit.nuisance.support.test_nuisance_run_given import COUNTED_TOOL
+from tests.unit.nuisance.support.test_nuisance_holdout_run_given import COUNTED_TOOL
 
 
 def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lists():

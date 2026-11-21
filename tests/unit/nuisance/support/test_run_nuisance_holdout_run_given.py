@@ -8,16 +8,16 @@ import tests.unit.census.support.test_census_given as census_given
 import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 from evals import run_nuisance
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
-from evals.cve.nuisance.results import NuisanceRunResult
-from evals.cve.nuisance.run import NuisanceDeps, RunProvenance
+from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance
+from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from tests.unit.nuisance.support.nuisance_report_runs import a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
 
 
-def a_run_result() -> NuisanceRunResult:
+def a_run_result() -> NuisanceHoldoutRunResult:
     return a_run([a_server_result()])
 
 
@@ -38,12 +38,12 @@ def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) ->
 
 
 def an_admitted_run_ending_in(
-    monkeypatch: pytest.MonkeyPatch, outcome: NuisanceRunResult | BaseException
+    monkeypatch: pytest.MonkeyPatch, outcome: NuisanceHoldoutRunResult | BaseException
 ) -> None:
     """An admitted server whose run, past the CLI's own checks, returns or raises `outcome`,
     reaching no Docker and no LLM."""
 
-    async def orchestrator(*_: object, **__: object) -> NuisanceRunResult:
+    async def orchestrator(*_: object, **__: object) -> NuisanceHoldoutRunResult:
         if isinstance(outcome, BaseException):
             raise outcome
         return outcome
@@ -65,7 +65,7 @@ def an_admitted_run_keeping_its_provenance(monkeypatch: pytest.MonkeyPatch) -> N
     """An admitted run whose result carries the provenance the CLI handed the orchestrator, each
     file's commit named after the file."""
 
-    async def orchestrator(*args: object, **__: object) -> NuisanceRunResult:
+    async def orchestrator(*args: object, **__: object) -> NuisanceHoldoutRunResult:
         provenance = next(arg for arg in args if isinstance(arg, RunProvenance))
         return dataclasses.replace(
             a_run_result(),

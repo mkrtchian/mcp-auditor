@@ -4,8 +4,8 @@ under the run conditions of a holdout run, keep no per-case trace, and assemble 
 A sibling of `holdout_run.run_holdout_targets`. The servers are passed in, so the tests hand it
 crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from
 the live settings by `default_deps`. The vet is `vetting`'s, the container hygiene
-`run_containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s, the status line
-printed as each run finishes `run_status`'s.
+`containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s, the status line
+printed as each run finishes `holdout_run_status`'s.
 """
 
 import dataclasses
@@ -33,25 +33,25 @@ from evals.cve.nuisance.audit import (
     audit_once,
     nuisance_audit,
 )
-from evals.cve.nuisance.counter import counter_fingerprint
-from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
-from evals.cve.nuisance.holdout_servers import RunPopulation
-from evals.cve.nuisance.results import (
-    DROPPED_RUN_REASONS,
-    NotRunCause,
-    NotRunServer,
-    NuisanceRunResult,
-    NuisanceServerResult,
-    RunInterrupted,
-)
-from evals.cve.nuisance.run_containers import (
+from evals.cve.nuisance.containers import (
     refuse_server_containers,
     remove_backend_containers,
     run_images,
     server_services,
     sweep_run_containers,
 )
-from evals.cve.nuisance.run_status import Audit, announcing, print_run_status
+from evals.cve.nuisance.counter import counter_fingerprint
+from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
+from evals.cve.nuisance.holdout_run_status import Audit, announcing, print_run_status
+from evals.cve.nuisance.holdout_servers import RunPopulation
+from evals.cve.nuisance.results import (
+    DROPPED_RUN_REASONS,
+    NotRunCause,
+    NotRunServer,
+    NuisanceHoldoutRunResult,
+    NuisanceServerResult,
+    RunInterrupted,
+)
 from evals.cve.nuisance.solo import first_failure_then_alone, played_alone
 from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
 from evals.cve.run_images import (
@@ -124,7 +124,7 @@ async def run_nuisance(
     runs: int = NUISANCE_RUNS,
     concurrency: int = NUISANCE_CONCURRENCY,
     deps: NuisanceDeps | None = None,
-) -> NuisanceRunResult:
+) -> NuisanceHoldoutRunResult:
     _refuse_tracing()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
@@ -146,7 +146,7 @@ async def run_nuisance(
 
 async def _run_surviving(
     population: RunPopulation, deps: NuisanceDeps, ctx: _RunContext, tree: TreeState
-) -> NuisanceRunResult:
+) -> NuisanceHoldoutRunResult:
     vetted = await drop_failing_servers(population.audited, deps.benign_call, deps)
     assembled, dropped, failure = await _run_all(vetted.surviving, deps, ctx)
     all_not_run = [*vetted.not_run, *dropped]
@@ -267,12 +267,12 @@ def _assemble_run(
     assembled: Sequence[tuple[AdmittedServer, NuisanceServerResult]],
     not_run: list[NotRunServer],
     tree: TreeState,
-) -> NuisanceRunResult:
+) -> NuisanceHoldoutRunResult:
     settings = ctx.settings
     model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     servers = [server for server, _ in assembled]
     results = [result for _, result in assembled]
-    return NuisanceRunResult(
+    return NuisanceHoldoutRunResult(
         runs=ctx.runs,
         budget=HOLDOUT_BUDGET,
         provider=settings.provider,

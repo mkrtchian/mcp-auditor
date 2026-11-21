@@ -1,7 +1,7 @@
 from datetime import date
 
 from evals.cve.holdout_statistic import Side
-from evals.cve.nuisance.results import NuisanceRunStatus, NuisanceServerResult
+from evals.cve.nuisance.results import NuisanceHoldoutRunStatus, NuisanceServerResult
 from evals.cve.nuisance.statistic import SideStatistic, split_by_side
 
 RUN_CUTOFF = date(2026, 5, 18)
@@ -23,7 +23,7 @@ def a_server_result(
     split_flagged = flagged_runs if split_flagged_runs is None else split_flagged_runs
     first_incomplete = runs - incomplete_unflagged_runs
     statuses = tuple(
-        NuisanceRunStatus(
+        NuisanceHoldoutRunStatus(
             flagged=index < flagged_runs,
             split_flagged=index < split_flagged,
             incomplete=index >= flagged_runs and index >= first_incomplete,

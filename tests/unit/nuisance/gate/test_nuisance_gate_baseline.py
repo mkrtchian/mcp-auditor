@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given as given
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate.gate_baseline import (

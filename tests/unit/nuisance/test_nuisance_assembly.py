@@ -8,7 +8,7 @@ import tests.unit.nuisance.admission.support.test_nuisance_admission_given as ad
 import tests.unit.nuisance.support.test_nuisance_assembly_given as given
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
-from evals.cve.nuisance.results import NuisanceRunStatus
+from evals.cve.nuisance.results import NuisanceHoldoutRunStatus
 from evals.cve.server_health import ServerHealth
 from evals.probe.analysis import call_cost
 from mcp_auditor.domain.models import MissCause, ProviderUsage
@@ -90,9 +90,9 @@ def test_each_run_status_carries_its_server_health_and_missed_call_causes():
     result = assemble_server(given.a_server(), audits, given.draw_entries(), _PRICES)
 
     assert result.statuses == (
-        NuisanceRunStatus(False, False, False, 0, 0, 2, 1, 1, 4, 2, []),
-        NuisanceRunStatus(False, False, True, 0, 0, 0, 3, 2, 0, 1, ["provider_refusal"]),
-        NuisanceRunStatus(False, False, True, 0, 0, 0, 0, 0, 0, 0, ["unreadable_answer"]),
+        NuisanceHoldoutRunStatus(False, False, False, 0, 0, 2, 1, 1, 4, 2, []),
+        NuisanceHoldoutRunStatus(False, False, True, 0, 0, 0, 3, 2, 0, 1, ["provider_refusal"]),
+        NuisanceHoldoutRunStatus(False, False, True, 0, 0, 0, 0, 0, 0, 0, ["unreadable_answer"]),
     )
     assert (result.non_protocol_lines, result.lost_connection_responses) == (2, 4)
     assert (result.relaunches, result.unsent_calls, result.cut_responses) == (3, 4, 3)

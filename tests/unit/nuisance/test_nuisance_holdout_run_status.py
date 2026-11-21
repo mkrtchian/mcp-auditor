@@ -2,10 +2,10 @@
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
+from evals.cve.nuisance.holdout_run_status import RunCount, run_status_line
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
-from evals.cve.nuisance.run_status import RunCount, run_status_line
 from mcp_auditor.domain.models import MissCause
 
 SERVER = run_given.a_server("npm:pkg")

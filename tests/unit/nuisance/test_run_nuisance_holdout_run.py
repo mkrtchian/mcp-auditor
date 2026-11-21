@@ -9,10 +9,10 @@ import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
-import tests.unit.nuisance.support.test_run_nuisance_run_given as given
+import tests.unit.nuisance.support.test_run_nuisance_holdout_run_given as given
 from evals import run_nuisance
+from evals.cve.nuisance.holdout_run import NUISANCE_RUNS
 from evals.cve.nuisance.results import RunInterrupted
-from evals.cve.nuisance.run import NUISANCE_RUNS
 from evals.cve.provider_errors import ProviderFatal
 from tests.unit.detection.support.test_run_detection_holdout_run_given import (
     PROOF_FIELDS,

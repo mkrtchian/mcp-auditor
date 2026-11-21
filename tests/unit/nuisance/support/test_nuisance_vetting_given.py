@@ -11,12 +11,12 @@ from evals.cve.nuisance.solo import SOLO_SERVERS
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes import FakeMCPClient, ScriptedBenignCall
-from tests.unit.nuisance.support.test_nuisance_run_backends_given import (
+from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import (
     CKAN_TAG,
     DockerHost,
     RemovalHost,
 )
-from tests.unit.nuisance.support.test_nuisance_run_given import COUNTED_TOOL, a_server
+from tests.unit.nuisance.support.test_nuisance_holdout_run_given import COUNTED_TOOL, a_server
 
 __all__ = ["CKAN_TAG", "COUNTED_TOOL", "a_server"]
 

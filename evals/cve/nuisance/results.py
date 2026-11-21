@@ -14,7 +14,7 @@ from evals.cve.nuisance.exits import ExitReason
 
 
 @dataclass(frozen=True)
-class NuisanceRunStatus:
+class NuisanceHoldoutRunStatus:
     flagged: bool
     split_flagged: bool  # flagged through a counted tool of the split flaw
     incomplete: bool  # a model call missed: refused, unreadable or too long
@@ -35,7 +35,7 @@ class NuisanceServerResult:
     server_package: str
     split_flaw: str | None  # None when the server leaves the split
     split_disclosure_date: date | None
-    statuses: tuple[NuisanceRunStatus, ...]
+    statuses: tuple[NuisanceHoldoutRunStatus, ...]
     counted_tools_count: int
     tools_count: int
     run_cost: float  # dollars over its runs, incomplete runs included
@@ -133,7 +133,7 @@ class ServerExit:
 
 
 @dataclass(frozen=True)
-class NuisanceRunResult:
+class NuisanceHoldoutRunResult:
     runs: int
     budget: int
     provider: str
@@ -172,7 +172,7 @@ class NuisanceRunResult:
 class RunInterrupted(Exception):
     """A run stopped by an exception out of one of its audits, with what had finished."""
 
-    def __init__(self, partial: NuisanceRunResult, cause: BaseException) -> None:
+    def __init__(self, partial: NuisanceHoldoutRunResult, cause: BaseException) -> None:
         super().__init__(f"the run stopped on {type(cause).__name__}")
         self.partial = partial
         self.cause = cause

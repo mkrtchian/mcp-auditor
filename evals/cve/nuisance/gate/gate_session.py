@@ -24,6 +24,11 @@ from evals.cve.nuisance.audit import (
     gate_run,
     nuisance_audit,
 )
+from evals.cve.nuisance.containers import (
+    remove_backend_containers,
+    run_images,
+    sweep_run_containers,
+)
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.gate.gate import (
     NuisanceGateResult,
@@ -52,11 +57,6 @@ from evals.cve.nuisance.gate.gate_session_model import (
 from evals.cve.nuisance.gate.gate_session_recording import load_checked, record, recording_tree
 from evals.cve.nuisance.images import backend_image_ids, image_tag
 from evals.cve.nuisance.results import ServerExit
-from evals.cve.nuisance.run_containers import (
-    remove_backend_containers,
-    run_images,
-    sweep_run_containers,
-)
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
 from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree

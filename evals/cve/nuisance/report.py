@@ -20,7 +20,7 @@ from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import (
     NotRunCause,
     NotRunServer,
-    NuisanceRunResult,
+    NuisanceHoldoutRunResult,
     NuisanceServerResult,
     ServerExit,
 )
@@ -138,7 +138,7 @@ class NuisanceReport(BaseModel):
     throttled_requests: int
 
 
-def build_report(run: NuisanceRunResult) -> NuisanceReport:
+def build_report(run: NuisanceHoldoutRunResult) -> NuisanceReport:
     model, cutoff = run_cutoff(run.cutoffs)
     split = split_by_side(run.servers, cutoff.date)
     pair = _two_sides(split)

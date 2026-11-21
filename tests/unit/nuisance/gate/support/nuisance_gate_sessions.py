@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
 
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint

@@ -14,7 +14,7 @@ from evals.cve.nuisance.counting import (
     declared_function_tools,
     flaw_counted_tools,
 )
-from evals.cve.nuisance.results import NuisanceRunStatus, NuisanceServerResult
+from evals.cve.nuisance.results import NuisanceHoldoutRunStatus, NuisanceServerResult
 from evals.cve.units import JudgeCategory
 from evals.probe.analysis import call_cost
 from evals.probe.candidates import Prices
@@ -69,10 +69,10 @@ class ServerCounting:
     declared_function: Mapping[str, frozenset[JudgeCategory]]
 
 
-def _run_status(audit: NuisanceAudit, counting: ServerCounting) -> NuisanceRunStatus:
+def _run_status(audit: NuisanceAudit, counting: ServerCounting) -> NuisanceHoldoutRunStatus:
     report = audit.report
     flagged = flagged_tools(report, counting.counted)
-    return NuisanceRunStatus(
+    return NuisanceHoldoutRunStatus(
         flagged=bool(flagged),
         split_flagged=bool(flagged & counting.split_tools),
         incomplete=is_incomplete(report),

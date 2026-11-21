@@ -4,16 +4,16 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
 from evals.concurrency import bounded
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness
-from evals.cve.nuisance.run import NuisanceDeps
+from evals.cve.nuisance.holdout_run import NuisanceDeps
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.cve.nuisance.vet_command import VetDeps
-from tests.unit.nuisance.support.test_nuisance_run_backends_given import DockerHost
+from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
 
 (_SOLO_PACKAGE,) = SOLO_SERVERS
 SOLO_SERVER = run_given.a_server(_SOLO_PACKAGE)

@@ -60,11 +60,7 @@ from evals.cve.nuisance.commands import (
 )
 from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
 from evals.cve.nuisance.gate.gate_command import add_gate_arguments
-from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
-from evals.cve.nuisance.markdown import render_markdown
-from evals.cve.nuisance.report import build_report
-from evals.cve.nuisance.results import NuisanceRunResult
-from evals.cve.nuisance.run import (
+from evals.cve.nuisance.holdout_run import (
     NUISANCE_CONCURRENCY,
     NUISANCE_RUNS,
     NuisanceDeps,
@@ -73,6 +69,10 @@ from evals.cve.nuisance.run import (
     nuisance_overrides,
     run_nuisance,
 )
+from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
+from evals.cve.nuisance.markdown import render_markdown
+from evals.cve.nuisance.report import build_report
+from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.nuisance.vet_command import add_vet_arguments
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
@@ -256,7 +256,7 @@ class _ReadyRun:
     settings: Settings
 
 
-def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> NuisanceRunResult:
+def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> NuisanceHoldoutRunResult:
     deps = default_deps(nuisance_overrides(ready.conditions), args.concurrency)
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(

@@ -5,7 +5,7 @@ import dataclasses
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_given as given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.results import RunInterrupted

@@ -1,11 +1,11 @@
 import dataclasses
 from collections.abc import Callable, Sequence
 
-import tests.unit.nuisance.support.test_nuisance_run_given as given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.run import NuisanceDeps
+from evals.cve.nuisance.holdout_run import NuisanceDeps
 
 SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
 (CKAN_TAG,) = BACKENDS["ckan"].images

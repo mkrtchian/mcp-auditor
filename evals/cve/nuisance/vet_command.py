@@ -27,14 +27,14 @@ from evals.cve.nuisance.commands import (
     committed_walk_inputs,
     malformed_input_refused,
 )
-from evals.cve.nuisance.holdout_servers import run_population
-from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
-from evals.cve.nuisance.run_containers import (
+from evals.cve.nuisance.containers import (
     refuse_server_containers,
     remove_backend_containers,
     run_images,
     sweep_run_containers,
 )
+from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.vetting import VetResult, benign_call, drop_failing_servers
 from evals.cve.run_images import (
     rebuild_images,

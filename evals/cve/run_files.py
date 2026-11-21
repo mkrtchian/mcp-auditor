@@ -11,7 +11,7 @@ from pathlib import Path
 from evals.cve.detection import holdout_results
 from evals.cve.detection.holdout_results import HoldoutRunResult
 from evals.cve.nuisance import results as nuisance_results
-from evals.cve.nuisance.results import NuisanceRunResult
+from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.eval_session import Refused
 
 
@@ -29,7 +29,7 @@ def refuse_existing_report(report: Path, title: str) -> None:
         )
 
 
-def write_result(report: Path, run: HoldoutRunResult | NuisanceRunResult) -> None:
+def write_result(report: Path, run: HoldoutRunResult | NuisanceHoldoutRunResult) -> None:
     path = result_path(report)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dataclasses.asdict(run), default=str, indent=2))

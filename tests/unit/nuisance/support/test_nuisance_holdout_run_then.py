@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
-from evals.cve.nuisance.run_status import RunCount, run_status_line
+from evals.cve.nuisance.holdout_run_status import RunCount, run_status_line
 
 type FinishedRun = tuple[AdmittedServer, NuisanceAudit | DroppedRun]
 

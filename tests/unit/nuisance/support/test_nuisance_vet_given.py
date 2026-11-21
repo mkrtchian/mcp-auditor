@@ -7,14 +7,14 @@ import pytest
 import tests.unit.census.support.test_census_given as census_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
-import tests.unit.nuisance.support.test_nuisance_run_given as nuisance_run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as nuisance_run_given
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance import vet_command as nuisance_vet_command
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.vet_command import VetDeps
 from tests.fakes import ScriptedBenignCall
-from tests.unit.nuisance.support.test_nuisance_run_backends_given import DockerHost
+from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
 
 SERVER = admission_given.SERVER_PACKAGE
 SERVER_TAG = nuisance_images.image_tag("filesystem-nuisance")

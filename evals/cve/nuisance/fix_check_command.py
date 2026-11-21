@@ -30,7 +30,7 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
 )
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
-from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
 
 

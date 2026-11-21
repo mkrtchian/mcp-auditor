@@ -33,7 +33,7 @@ from tests.unit.nuisance.admission.support.test_nuisance_admission_given import 
     a_fake_lifecycle,
     an_admitted_server,
 )
-from tests.unit.nuisance.support import test_nuisance_run_given as run_given
+from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
 
 
 def test_a_backend_less_server_runs_its_patched_image_as_a_single_container_with_no_mount():
@@ -100,7 +100,7 @@ async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run():
         )
 
 
-async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without_its_message():
+async def test_a_launch_failure_on_a_nuisance_holdout_run_keeps_the_error_type_not_its_message():
     lifecycle = given.a_lifecycle_raising(RuntimeError("secret-nonce"))
 
     outcome = await audit_once(
@@ -114,7 +114,7 @@ async def test_a_launch_failure_on_a_nuisance_run_carries_the_error_type_without
     assert "secret-nonce" not in outcome.reason
 
 
-async def test_a_missed_model_call_on_a_nuisance_run_prints_its_cause_without_the_provider_message(
+async def test_a_missed_model_call_on_a_nuisance_holdout_run_prints_its_cause_not_the_provider_text(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)

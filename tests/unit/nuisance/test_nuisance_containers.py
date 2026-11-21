@@ -3,12 +3,12 @@ and the stand-in's images, which the run rebuilds but never sweeps by tag, since
 removes its own containers and a calibration may share those images. The removal at the start
 also resets the Doris cluster, a pulled backend, by its container name."""
 
-import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends_given
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as backends_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends.doris import DORIS_CONTAINER
-from evals.cve.nuisance.run_containers import remove_backend_containers, run_images
+from evals.cve.nuisance.containers import remove_backend_containers, run_images
 from evals.cve.planting_base import (
     SENTINEL_SERVICE,
     STAND_IN_SERVICE,

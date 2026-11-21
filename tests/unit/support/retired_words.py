@@ -123,6 +123,15 @@ _OLD_TEST_STEMS = (
     "test_nuisance_population",
     "test_nuisance_readmission_dossier",
     "test_nuisance_readmission_dossier_given",
+    "test_nuisance_run",
+    "test_nuisance_run_backends",
+    "test_nuisance_run_backends_given",
+    "test_nuisance_run_containers",
+    "test_nuisance_run_given",
+    "test_nuisance_run_interrupted",
+    "test_nuisance_run_status",
+    "test_nuisance_run_sweep",
+    "test_nuisance_run_then",
     "test_probe",
     "test_probe_given",
     "test_probe_then",
@@ -139,6 +148,8 @@ _OLD_TEST_STEMS = (
     "test_run_holdout_run_given",
     "test_run_images",
     "test_run_images_given",
+    "test_run_nuisance_run",
+    "test_run_nuisance_run_given",
     "test_server_execution_given",
     "test_server_health",
     "test_target_execution",
@@ -446,7 +457,8 @@ RETIRED_WORDS = (
             r"audit_(?:attempts|progress)|failure_text|provider_errors|server_health|run_(?:files|"
             r"images|interruption)|fixture_(?:provenance|sources)|calibration_dossier|"
             r"admission_calibration)\b(?!\.(?:json|md))|evals[./]probe(?:_candidates|_corpus|"
-            r"_subset)?(?:\.py\b|(?= import\b))"
+            r"_subset)?(?:\.py\b|(?= import\b))|evals[./]cve[./]nuisance[./]run(?:_status|"
+            r"_containers)?\b"
         ),
         re.NOFLAG,
     ),

@@ -81,7 +81,7 @@ def test_the_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):
     assert sshd.owners == []
 
 
-def test_the_nuisance_run_launch_mounts_the_callers_known_hosts_read_only():
+def test_the_nuisance_holdout_run_launch_mounts_the_callers_known_hosts_read_only():
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
     args = sshd_server_args("server", "img", host, [])

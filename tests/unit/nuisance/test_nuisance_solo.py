@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_solo_given as given
 import tests.unit.nuisance.support.test_nuisance_solo_then as then
 from evals.cve.nuisance.admission.admission import AdmittedServer

@@ -1,4 +1,4 @@
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.walk import NuisanceServer, ReachedServers, ServerMark
 

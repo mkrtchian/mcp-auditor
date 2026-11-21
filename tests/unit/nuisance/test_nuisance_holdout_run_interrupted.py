@@ -3,7 +3,7 @@ cancelled and the finished ones are kept in a partial result. No Docker, no LLM.
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_given as given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
 

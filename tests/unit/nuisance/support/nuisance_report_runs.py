@@ -4,7 +4,7 @@ from datetime import date
 from evals.cve.holdout_conditions import Cutoff
 from evals.cve.nuisance.results import (
     NotRunServer,
-    NuisanceRunResult,
+    NuisanceHoldoutRunResult,
     NuisanceServerResult,
     ServerExit,
 )
@@ -26,8 +26,8 @@ def a_run(
     concurrency: int = 6,
     second_pass: dict[str, str] | None = None,
     pending_admission: Sequence[str] = (),
-) -> NuisanceRunResult:
-    return NuisanceRunResult(
+) -> NuisanceHoldoutRunResult:
+    return NuisanceHoldoutRunResult(
         runs=RUNS,
         budget=10,
         provider="openai",

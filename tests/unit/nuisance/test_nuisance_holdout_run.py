@@ -5,8 +5,8 @@ import dataclasses
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_given as given
-import tests.unit.nuisance.support.test_nuisance_run_then as then
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_then as then
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture

@@ -51,7 +51,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateOptions,
     NuisanceGateSession,
 )
-from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases

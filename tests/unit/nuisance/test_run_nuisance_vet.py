@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends
+import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as backends
 import tests.unit.nuisance.support.test_nuisance_vet_given as given
 import tests.unit.nuisance.support.test_nuisance_vetting_given as vetting_given
 import tests.unit.nuisance.support.test_run_nuisance_given as run_given
 from evals import run_nuisance
 from evals.cve.environments import TOOL_CALL_TIMEOUT
-from evals.cve.nuisance.run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.vet_command import default_vet_deps
 
 

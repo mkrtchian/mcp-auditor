@@ -9,8 +9,8 @@ import pytest
 import tests.unit.cve.support.test_cve_closed_network_refusal_given as given
 import tests.unit.cve.support.test_cve_closed_network_refusal_then as then
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_run_backends_given as backends
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as backends
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
@@ -19,7 +19,7 @@ from tests.unit.support import holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 
-async def test_a_nuisance_run_refuses_before_any_rebuild():
+async def test_a_nuisance_holdout_run_refuses_before_any_rebuild():
     server = run_given.a_server()
     host = backends.DockerHost()
     deps = dataclasses.replace(

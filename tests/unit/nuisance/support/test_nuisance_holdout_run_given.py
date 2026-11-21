@@ -9,9 +9,9 @@ from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
+from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance, run_nuisance
 from evals.cve.nuisance.holdout_servers import RunPopulation
-from evals.cve.nuisance.results import NuisanceRunResult, ServerExit
-from evals.cve.nuisance.run import NuisanceDeps, RunProvenance, run_nuisance
+from evals.cve.nuisance.results import NuisanceHoldoutRunResult, ServerExit
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_session import TreeState
 from evals.probe.candidates import Prices
@@ -256,7 +256,7 @@ async def run(
     pending: Sequence[str] = (),
     runs: int = 3,
     concurrency: int = 6,
-) -> NuisanceRunResult:
+) -> NuisanceHoldoutRunResult:
     """`draw=None` puts the first flaw in the draw order, disclosed on 2026-01-01."""
     order = draw if draw is not None else draw_entries((FIRST_FLAW, date(2026, 1, 1)))
     return await run_nuisance(

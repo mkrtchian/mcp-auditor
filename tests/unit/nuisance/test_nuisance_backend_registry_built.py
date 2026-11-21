@@ -1,6 +1,6 @@
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_run_given as run_given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends.atlassian import ATLASSIAN_RESPONDER_IMAGE
 from evals.cve.backends.responder import Responder
