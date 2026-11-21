@@ -16,12 +16,12 @@ from rich.text import Text
 from evals.baseline import BaselineStatus
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
+from evals.cve.census.census import CENSUS_PATH
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
 from evals.cve.nuisance.commands import (
-    CENSUS_PATH,
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,

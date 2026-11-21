@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from evals.concurrency import bounded, positive_int
+from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.targets import image_tag as backend_image_tag
 from evals.cve.docker_paths import DOCKER_DIRECTORY
@@ -21,7 +22,6 @@ from evals.cve.kit.launch import build_images, image_tag
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, FixCheckRecord
 from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
-    CENSUS_PATH,
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,

@@ -16,7 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals import eval_display as display
-from evals.cve.census.census import CLASSIFIERS, load_census
+from evals.cve.census.census import CENSUS_PATH, CLASSIFIERS, load_census
 from evals.cve.census.classification import Classification
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.grouping import READERS, ProofJudgment
@@ -48,7 +48,6 @@ from evals.honeypots import REPO_ROOT
 
 SOURCES = REPO_ROOT / "output" / "census" / "sources"
 WORK = REPO_ROOT / "output" / "census" / "work"
-CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 INCOMPLETE_EXIT = 1
 REFUSED_EXIT = 3
 

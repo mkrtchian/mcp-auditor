@@ -1,5 +1,5 @@
-"""What the nuisance subcommands share: the census and walk record paths, the admission they read,
-the report files they write and their exit codes."""
+"""What the nuisance subcommands share: the walk record path, the admission they read, the report
+files they write and their exit codes."""
 
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -13,7 +13,6 @@ from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_recor
 from evals.eval_session import Refused
 from evals.honeypots import REPO_ROOT
 
-CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 WALK_RECORD_PATH = REPO_ROOT / "evals" / "nuisance_walk_record.json"
 UNKNOWN_SERVER_EXIT = 2
 REFUSED_EXIT = 3

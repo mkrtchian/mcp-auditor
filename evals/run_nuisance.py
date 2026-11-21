@@ -27,6 +27,7 @@ from rich.progress import Progress
 from evals import eval_display as display
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
+from evals.cve.census.census import CENSUS_PATH
 from evals.cve.census.draw_order import draw_order
 from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord, governing_steps
@@ -49,7 +50,6 @@ from evals.cve.nuisance.admission.walk import (
 )
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.commands import (
-    CENSUS_PATH,
     CRASHED_EXIT,
     REFUSED_EXIT,
     WALK_RECORD_PATH,

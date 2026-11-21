@@ -32,6 +32,7 @@ from evals.cve.census.sources import SourceProvenance, SourceRecord
 from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
 from evals.cve.detection.draw_record import DrawRecord, draw_problems
 
+CENSUS_PATH = Path(__file__).resolve().parents[2] / "census.json"
 BOUND = date(2026, 10, 7)
 CLASSIFIERS = ("classifier_1", "classifier_2")
 

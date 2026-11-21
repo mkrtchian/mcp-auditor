@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from evals.concurrency import bounded, positive_int
+from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
@@ -19,7 +20,6 @@ from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServe
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.commands import (
-    CENSUS_PATH,
     CRASHED_EXIT,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,

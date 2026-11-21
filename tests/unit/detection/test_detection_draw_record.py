@@ -7,12 +7,11 @@ from pydantic import ValidationError
 
 import tests.unit.census.support.test_census_given as census
 import tests.unit.detection.support.test_detection_draw_record_given as given
-from evals.cve.census.census import load_census
+from evals.cve.census.census import CENSUS_PATH, load_census
 from evals.cve.census.classification import Criterion
 from evals.cve.census.work import AgentRole
 from evals.cve.detection.draw_record import GiveUp, GiveUpReason, KeptPlace, Settlement
 from evals.cve.fixture_provenance import SoftwareRelease
-from evals.run_census import CENSUS_PATH
 from tests.unit.detection.support.test_detection_draw_record_given import (
     A_DRAWN_FLAW,
     A_TWICE_GIVEN_UP_FLAW,

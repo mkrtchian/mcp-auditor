@@ -17,7 +17,7 @@ from rich.progress import Progress
 from evals import eval_display as display
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
-from evals.cve.census.census import Census, load_census
+from evals.cve.census.census import CENSUS_PATH, Census, load_census
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection import calibration_dossier
 from evals.cve.detection.calibration_check_exit import (
@@ -56,7 +56,6 @@ from evals.metrics import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
-CENSUS_PATH = REPO_ROOT / "evals" / "census.json"
 DEFAULT_REPORT_PATH = "output/detection_holdout_report.json"
 REFUSED_EXIT = 3
 CRASHED_EXIT = 4

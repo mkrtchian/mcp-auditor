@@ -2,7 +2,7 @@ import ast
 import re
 from pathlib import Path
 
-from evals.cve.census.census import load_census
+from evals.cve.census.census import CENSUS_PATH, load_census
 from evals.cve.census.exclusions import EXCLUDED_SERVERS
 from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
@@ -17,7 +17,6 @@ HONEYPOT_SERVERS = (
 )
 
 _JUDGE_CASES = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
-_CENSUS = REPO_ROOT / "evals" / "census.json"
 
 # The auditor's own tool name heads every payload marker it plants (`mcp-auditor-probe`, the
 # `mcp-auditor-no-such-…` probe paths). A server never emits that name except by echoing our
@@ -59,7 +58,7 @@ def detection_cases() -> list[JudgeCase]:
 
 
 def servers_by_flaw() -> dict[str, str]:
-    census = load_census(_CENSUS)
+    census = load_census(CENSUS_PATH)
     return {
         classification.flaw: classification.server_package
         for own in census.classifications.values()
