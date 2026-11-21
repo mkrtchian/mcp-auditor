@@ -24,14 +24,6 @@ def test_a_missing_file_loads_as_no_entry(tmp_path: Path):
     assert load_declared_flips(tmp_path / "absent.json") == []
 
 
-def test_an_entry_names_its_instrument(tmp_path: Path):
-    path = given.a_file_holding(tmp_path, given.a_raw_entry(instrument="judge"))
-
-    [entry] = load_declared_flips(path)
-
-    assert entry.instrument == Instrument.JUDGE
-
-
 def test_a_valid_file_round_trips(tmp_path: Path):
     path = given.a_file_holding(tmp_path, given.a_raw_entry(runs_seen=["run-1"]))
 

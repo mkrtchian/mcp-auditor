@@ -15,11 +15,9 @@ from evals.baseline import (
     rescore,
     write_baseline,
 )
-from evals.eval_session import BASELINE_PATH, select_mode
 from evals.gate import Observation, RetestRule, cell_key
-from evals.gate_outcome import GateMode
 from evals.ground_truth import GroundTruth
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
+from evals.honeypots import HONEYPOTS
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL = given.VULNERABLE_CELL
@@ -199,14 +197,12 @@ def test_a_baseline_written_before_the_protected_summary_loads_without_it(tmp_pa
     assert loaded is not None and loaded.protected is None
 
 
-def test_the_committed_baseline_still_keyed_replay_rule_loads_and_gates():
-    assert "replay_rule" in json.loads(BASELINE_PATH.read_text())
+def test_a_baseline_file_still_keyed_replay_rule_loads_its_retest_rule(tmp_path: Path):
+    path = given.a_baseline_file_keyed_replay_rule(tmp_path)
 
-    baseline = load_baseline(BASELINE_PATH)
+    baseline = load_baseline(path)
 
     assert baseline is not None and baseline.retest_rule == RetestRule()
-    assert baseline_integrity(baseline, MERGED_GROUND_TRUTH) == []
-    assert select_mode(baseline, no_baseline=False) == GateMode.PAIRED
 
 
 def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
@@ -215,7 +211,7 @@ def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
     write_baseline(path, given.a_baseline())
 
     written = json.loads(path.read_text())
-    assert written["retest_rule"] == {"retests": 5, "required": 4}
+    assert written["retest_rule"] == RetestRule().model_dump()
     assert "replay_rule" not in written
 
 

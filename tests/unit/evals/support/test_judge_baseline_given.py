@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.gate import Observation, ProtectedCells, RetestRule, protected_cells
 from evals.judge.baseline import JudgeBaseline, JudgeConditions
@@ -89,3 +92,11 @@ def _protected_of(runs: ObservationRuns) -> ProtectedCells:
             fail_stable_correct=0, fail_total=0, pass_stable_correct=0, pass_total=0, unstable=0
         )
     return protected_cells(runs, a_ground_truth())
+
+
+def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
+    written = a_baseline().model_dump(mode="json")
+    written["replay_rule"] = written.pop("retest_rule")
+    path = tmp_path / "judge.json"
+    path.write_text(json.dumps(written))
+    return path

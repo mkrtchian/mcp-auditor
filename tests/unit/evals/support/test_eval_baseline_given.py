@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from evals.baseline import (
     Baseline,
     BaselineConditions,
@@ -127,6 +130,14 @@ def a_baseline(
             recall=0.9, precision=0.8, consistency=0.7, distribution_coverage=0.95
         ),
     )
+
+
+def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
+    written = a_baseline().model_dump(mode="json")
+    written["replay_rule"] = written.pop("retest_rule")
+    path = tmp_path / "honeypot.json"
+    path.write_text(json.dumps(written))
+    return path
 
 
 def a_confirmation(runs: ObservationRuns) -> Baseline:

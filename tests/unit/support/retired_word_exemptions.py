@@ -110,7 +110,7 @@ ALLOWLIST = (
         "read alias of the committed judge baseline until its next re-recording",
     ),
     AllowedLine(
-        "tests/unit/evals/test_*baseline*.py",
+        "tests/unit/evals/*test_*baseline*.py",
         "replay-retest",
         "replay_rule",
         "the tests that a committed baseline loads through the alias",
