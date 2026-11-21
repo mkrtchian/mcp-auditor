@@ -1,6 +1,4 @@
-import json
-import subprocess
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -8,7 +6,8 @@ import pytest
 
 from evals.cve.backends.kubernetes import READY_LINE, StoodControlPlane
 from evals.cve.backends.kubernetes_detection import ControlPlaneDocker
-from evals.cve.planting_base import LABEL, PlantingHost, SymbolicUser
+from evals.cve.planting_base import PlantingHost, SymbolicUser
+from tests.fakes import CLOSED_NETWORK_INSPECT, ScriptedDocker
 from tests.fakes.planting_docker import FakePlantingDocker
 
 API_SERVER = "https://192.0.2.10:6443"
@@ -21,65 +20,14 @@ def a_host() -> PlantingHost:
     return PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 
-class FakeControlPlaneDocker:
-    """Answers every Docker command with success: a network it was asked to create inspects as
-    closed, the control plane runs and logs its ready line, and its admin.conf reads as
-    ADMIN_CONF."""
-
-    def __init__(self) -> None:
-        self.commands: list[list[str]] = []
-
-    def run(self, args: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        command = list(args)
-        self.commands.append(command)
-        return subprocess.CompletedProcess(command, 0, self._stdout(command), "")
-
-    def _stdout(self, command: list[str]) -> str:
-        match command[1:]:
-            case ["network", "inspect", *_]:
-                return _a_closed_network()
-            case ["logs", *_]:
-                return f'[certs] Generating "ca" certificate and key\n{READY_LINE}\n'
-            case ["inspect", *_]:
-                return "running\n"
-            case ["exec", _, "cat", _]:
-                return ADMIN_CONF
-            case _:
-                return ""
-
-    def started(self) -> list[list[str]]:
-        return [command for command in self.commands if command[1:3] == ["run", "-d"]]
-
-    def created_networks(self) -> list[str]:
-        return [command[-1] for command in self.commands if command[1:3] == ["network", "create"]]
-
-    def removed(self) -> list[str]:
-        removals = (["rm", "-f", "-v"], ["network", "rm"])
-        return [
-            command[-1]
-            for command in self.commands
-            if any(command[1 : 1 + len(removal)] == removal for removal in removals)
-        ]
-
-
-def _a_closed_network() -> str:
-    return json.dumps(
-        {
-            "Internal": True,
-            "EnableIPv6": False,
-            "Labels": {LABEL: ""},
-            "Options": {"com.docker.network.bridge.gateway_mode_ipv4": "isolated"},
-            "Containers": {},
-        }
-    )
-
-
-def a_docker_whose_control_plane_comes_up(
-    monkeypatch: pytest.MonkeyPatch,
-) -> FakeControlPlaneDocker:
-    docker = FakeControlPlaneDocker()
-    monkeypatch.setattr(subprocess, "run", docker.run)
-    return docker
+def a_docker_whose_control_plane_comes_up(monkeypatch: pytest.MonkeyPatch) -> ScriptedDocker:
+    answers = {
+        ("network", "inspect"): CLOSED_NETWORK_INSPECT,
+        ("logs",): f'[certs] Generating "ca" certificate and key\n{READY_LINE}\n',
+        ("inspect",): "running\n",
+        ("exec",): ADMIN_CONF,
+    }
+    return ScriptedDocker(answers).installed(monkeypatch)
 
 
 class FakeControlPlane:

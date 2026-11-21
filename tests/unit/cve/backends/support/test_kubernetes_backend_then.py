@@ -5,18 +5,18 @@ from pathlib import Path
 from evals.cve.backends.kubernetes import CONTROL_PLANE_IMAGE, CONTROL_PLANE_NETWORK, KUBECONFIG
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import WITNESS
 from evals.cve.planting_base import confinement_args, memory_bound_args, unprivileged_user_args
+from tests.fakes import ScriptedDocker
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.cve.backends.support.test_kubernetes_backend_given import (
     ADMIN_CONF,
     API_SERVER,
     FakeControlPlane,
-    FakeControlPlaneDocker,
 )
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
 
 
 def the_control_plane_is_confined_on_its_own_network(
-    docker: FakeControlPlaneDocker, control_plane: Sequence[str]
+    docker: ScriptedDocker, control_plane: Sequence[str]
 ) -> None:
     networks = values_after(control_plane, "--network")
     assert networks == docker.created_networks()
@@ -46,13 +46,13 @@ def the_kubeconfig_is_the_control_planes_admin_conf_naming_the_api_server_by_add
 
 
 def the_server_joins_the_network_of_its_control_plane(
-    docker: FakeControlPlaneDocker, server: Sequence[str]
+    docker: ScriptedDocker, server: Sequence[str]
 ) -> None:
     assert value_after(server, "--network") == docker.created_networks()[0]
 
 
 def the_control_plane_its_network_and_its_kubeconfig_were_removed(
-    docker: FakeControlPlaneDocker, server: str, kubeconfig: Path
+    docker: ScriptedDocker, server: str, kubeconfig: Path
 ) -> None:
     removed = docker.removed()
     assert server in removed

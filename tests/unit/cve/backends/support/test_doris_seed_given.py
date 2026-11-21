@@ -1,4 +1,3 @@
-import json
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -7,7 +6,7 @@ import pytest
 
 from evals.cve.backends import doris
 from evals.cve.nuisance.confinement import launch_digest
-from evals.cve.planting_base import LABEL
+from tests.fakes import CLOSED_NETWORK_INSPECT
 
 
 @dataclass
@@ -40,7 +39,7 @@ class FakeDorisDocker:
     def _answer(self, command: list[str]) -> tuple[int, str]:
         match command[1:3]:
             case ["network", "inspect"]:
-                return 0, _a_closed_network()
+                return 0, CLOSED_NETWORK_INSPECT
             case ["inspect", "-f"]:
                 return 0, self._inspected(command[3])
             case ["run", "--rm"]:
@@ -62,18 +61,6 @@ class FakeDorisDocker:
             self.seedings += 1
             self.rows += 4
         return 0, ""
-
-
-def _a_closed_network() -> str:
-    return json.dumps(
-        {
-            "Internal": True,
-            "EnableIPv6": False,
-            "Labels": {LABEL: ""},
-            "Options": {"com.docker.network.bridge.gateway_mode_ipv4": "isolated"},
-            "Containers": {},
-        }
-    )
 
 
 def a_cluster_whose_sample_table_holds(

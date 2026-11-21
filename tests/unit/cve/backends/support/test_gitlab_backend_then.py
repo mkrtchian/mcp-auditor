@@ -7,7 +7,7 @@ from evals.cve.planting_base import (
     resolver_args,
     unprivileged_user_args,
 )
-from tests.unit.cve.backends.support.test_gitlab_backend_given import FakeGitLabDocker
+from tests.fakes import ScriptedDocker
 from tests.unit.support.docker_argv import carries, environment, value_after, values_after
 
 # Measured in the GitLab CE stand-up: what Omnibus needs to reconfigure and run under no new
@@ -29,7 +29,7 @@ def the_backend_is_bounded_hardened_and_named_gitlab_example_com(backend: Sequen
 
 
 def the_server_joins_the_closed_network_created_for_its_backend(
-    docker: FakeGitLabDocker, server: Sequence[str]
+    docker: ScriptedDocker, server: Sequence[str]
 ) -> None:
     network = value_after(server, "--network")
     assert network.startswith(f"{GITLAB_NETWORK}-")
@@ -46,15 +46,15 @@ def the_server_is_confined_as_the_hosts_user(
 
 
 def the_server_takes_the_token_the_seed_created(
-    docker: FakeGitLabDocker, server: Sequence[str]
+    docker: ScriptedDocker, server: Sequence[str]
 ) -> None:
     token = environment(server)["GITLAB_PERSONAL_ACCESS_TOKEN"]
-    seeds = docker.seed_commands()
     assert any(
-        environment(command).get("SEED_TOKEN") == token
+        command[1:3] == ["exec", "-i"]
+        and environment(command).get("SEED_TOKEN") == token
         and script is not None
         and "set_token" in script
-        for command, script in seeds
+        for command, script in zip(docker.commands, docker.inputs, strict=True)
     )
     assert len(token) == 20
 
@@ -64,7 +64,7 @@ def the_two_servers_join_two_networks(first: Sequence[str], second: Sequence[str
 
 
 def the_server_its_backend_and_its_network_were_removed(
-    docker: FakeGitLabDocker, server: str
+    docker: ScriptedDocker, server: str
 ) -> None:
     removed = docker.removed()
     assert server in removed
