@@ -19,11 +19,14 @@ from evals.cve.planting import (
     planted,
 )
 from evals.cve.planting_base import (
+    MEMORY_BOUND,
     confinement_args,
+    memory_bound_args,
     no_network_args,
     own_network_args,
     resolver_args,
 )
+from tests.unit.support.docker_argv import carries, count, value_after
 
 
 def _args_in(spec: PlantingSpec, docker: given.FakePlantingDocker | None = None) -> PlantedArgs:
@@ -343,8 +346,8 @@ def test_only_the_holder_carries_the_resolver_option_on_a_launch_with_a_holder(h
             *docker.address_setups,
         ]
         assert docker.probes and docker.sentinels
-        assert [then.resolver_options_in(joiner) for joiner in joiners] == [0] * len(joiners)
-        assert then.resolver_options_in(holder) == 1
+        assert [count(joiner, resolver_args()) for joiner in joiners] == [0] * len(joiners)
+        assert count(holder, resolver_args()) == 1
 
 
 def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolver_option():
@@ -359,7 +362,7 @@ def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolve
         assert args.network == tuple(own_network_args(network))
         own_stacks = [*docker.probes, *docker.sentinels.values()]
         assert docker.probes and docker.sentinels
-        assert [then.resolver_options_in(argv) for argv in own_stacks] == [1] * len(own_stacks)
+        assert [count(argv, resolver_args()) for argv in own_stacks] == [1] * len(own_stacks)
 
 
 def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
@@ -375,7 +378,13 @@ def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
 
 
 def test_the_confinement_bounds_memory_with_no_swap():
-    assert then.memory_bound_in(confinement_args()) == ("4g", "4g")
+    args = confinement_args()
+
+    assert MEMORY_BOUND == "4g"
+    assert (value_after(args, "--memory"), value_after(args, "--memory-swap")) == (
+        MEMORY_BOUND,
+        MEMORY_BOUND,
+    )
 
 
 def test_the_holder_and_a_sentinel_run_under_the_memory_bound():
@@ -388,8 +397,8 @@ def test_the_holder_and_a_sentinel_run_under_the_memory_bound():
     with planted(spec, "image:tag", docker):
         holder = docker.holders[given.only(docker.holders)]
         sentinel = docker.sentinels[given.only(docker.sentinels)]
-        assert then.memory_bound_in(holder) == ("4g", "4g")
-        assert then.memory_bound_in(sentinel) == ("4g", "4g")
+        assert carries(holder, memory_bound_args())
+        assert carries(sentinel, memory_bound_args())
 
 
 # --- account materialisation and file mode ----------------------------------------------

@@ -13,7 +13,6 @@ from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
 from evals.cve.planting_base import (
     LABEL,
-    MEMORY_BOUND,
     confinement_args,
     memory_bound_args,
     resolver_args,
@@ -133,7 +132,7 @@ def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_opt
     with given.through_the_kit(given.a_lifecycle_without_side_effects(key)) as launch:
         args = launch.args
 
-    assert carries(args, ["--memory", MEMORY_BOUND, "--memory-swap", MEMORY_BOUND])
+    assert carries(args, memory_bound_args())
     assert count(args, resolver_args()) == 1
 
 

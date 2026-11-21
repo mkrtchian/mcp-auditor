@@ -17,12 +17,13 @@ from evals.cve.planting_base import (
     PublicNames,
     SymbolicUser,
     confinement_args,
+    memory_bound_args,
     no_network_args,
 )
 
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
 LAUNCH = ["node", "dist/index.js"]
-BACKEND_RUN = ["run", "-d", "--name", "backend", "--memory", "4g", "backend:image"]
+BACKEND_RUN = ["run", "-d", "--name", "backend", *memory_bound_args(), "backend:image"]
 
 
 def test_equal_launches_have_the_same_digest():
