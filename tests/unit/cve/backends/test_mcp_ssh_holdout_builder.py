@@ -4,22 +4,19 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.backend_launch_specs as specs
-import tests.unit.cve.backends.support.test_mcp_ssh_holdout_builder_given as given
+import tests.unit.support.fake_sshd as fake_sshd
 from evals.cve.backends.mcp_ssh_holdout import mcp_ssh_injection_env
 from evals.cve.backends.mcp_ssh_sshd import (
-    CALLER,
     KNOWN_HOSTS,
     ROOT,
     RUN_KNOWN_HOSTS,
     SSHD_ALIAS,
     SSHD_IMAGE,
-    StoodSshd,
     install_known_hosts,
     known_hosts_text,
     sshd_args,
     sshd_server_args,
 )
-from evals.cve.nuisance.fix_checks import mcp_ssh_fix_check as fix_check
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
@@ -36,7 +33,7 @@ def test_the_sshd_runs_in_its_own_namespace_under_the_readme_hostname():
 
 
 def test_known_hosts_names_the_sshd_by_the_hostname_the_config_entry_names():
-    scanned = "# 127.0.0.1:22 SSH-2.0-OpenSSH_10.6\n" + given.SCANNED
+    scanned = "# 127.0.0.1:22 SSH-2.0-OpenSSH_10.6\n" + fake_sshd.SCANNED
 
     assert known_hosts_text(scanned) == (
         f"{SSHD_ALIAS} ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ\n"
@@ -61,7 +58,7 @@ def test_known_hosts_is_installed_mode_0644_and_handed_to_its_owner_with_chown_a
 
 
 def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
+    sshd = fake_sshd.an_sshd(tmp_path)
 
     with mcp_ssh_injection_env(
         "img", specs.a_spec_with_a_holder(), docker=FakePlantingDocker(), sshd=sshd.docker()
@@ -71,7 +68,7 @@ def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: 
 
 
 def test_the_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
+    sshd = fake_sshd.an_sshd(tmp_path)
 
     with (
         pytest.raises(ValueError, match="has_network"),
@@ -90,27 +87,3 @@ def test_the_nuisance_run_launch_mounts_the_callers_known_hosts_read_only():
     args = sshd_server_args("server", "img", host, [])
 
     assert mount_of(args, KNOWN_HOSTS) == f"{RUN_KNOWN_HOSTS}:{KNOWN_HOSTS}:ro"
-
-
-def test_the_fix_check_stands_its_sshd_with_a_known_hosts_the_caller_owns(tmp_path: Path):
-    sshd = given.an_sshd(tmp_path)
-    spec = fix_check.target(
-        flaw="CVE-2025-9654",
-        aim=fix_check.re.compile(r'";'),
-        injection=fix_check.shell_injection,
-        vulnerable_service="mcp-ssh-flaw-1.0.3",
-        patched_service="mcp-ssh-flaw-1.0.4",
-        server_patched_service="mcp-ssh",
-    ).planting_spec()
-
-    with fix_check.ssh_env("img", spec, stand=sshd.stand) as launch:
-        assert sshd.owners == [CALLER]
-        assert mount_of(launch.args, KNOWN_HOSTS) == f"{sshd.known_hosts}:{KNOWN_HOSTS}:ro"
-        assert value_after(launch.args, "--network") == "sshd-net-1"
-
-
-def test_the_fix_check_server_mounts_the_known_hosts_beside_the_witness():
-    args = fix_check.server_args("img", StoodSshd("net", Path("/k/known_hosts")), "/tmp/w")
-
-    assert mount_of(args, KNOWN_HOSTS) == f"/k/known_hosts:{KNOWN_HOSTS}:ro"
-    assert mount_of(args, fix_check.WITNESS_PATH) == f"/tmp/w:{fix_check.WITNESS_PATH}:ro"

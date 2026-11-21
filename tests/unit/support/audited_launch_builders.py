@@ -18,9 +18,9 @@ import tests.unit.cve.backends.support.backend_launch_specs as specs
 import tests.unit.cve.backends.support.doris_launch as doris_launch
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as ckan_given
 import tests.unit.cve.backends.support.test_kubernetes_backend_given as kubernetes_given
-import tests.unit.cve.backends.support.test_mcp_ssh_holdout_builder_given as mcp_ssh_given
 import tests.unit.cve.backends.support.test_searxng_backend_given as searxng_given
 import tests.unit.cve.support.test_cve_planting_stand_ins_given as stand_ins
+import tests.unit.support.fake_sshd as fake_sshd
 from evals.cve.backends import (
     backend_beside_launch,
     ckan,
@@ -133,7 +133,7 @@ def _kubernetes(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[B
 @contextmanager
 def _mcp_ssh(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
     spec = specs.a_spec_with_a_holder()
-    sshd = mcp_ssh_given.an_sshd(tmp_path).docker()
+    sshd = fake_sshd.an_sshd(tmp_path).docker()
     with mcp_ssh_injection_env(_IMAGE, spec, docker=FakePlantingDocker(), sshd=sshd) as launch:
         yield BuiltLaunch(launch.args, spec.host)
 
