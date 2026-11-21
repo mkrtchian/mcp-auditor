@@ -80,7 +80,7 @@ def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: py
     assert not json.loads(report.with_suffix(".result.json").read_text())["partial"]
 
 
-def test_run_records_the_census_and_walk_record_commits_in_its_result(
+def test_run_records_the_census_walk_record_and_admission_commits_in_its_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     given.an_admitted_run_keeping_its_provenance(monkeypatch)
@@ -91,6 +91,7 @@ def test_run_records_the_census_and_walk_record_commits_in_its_result(
     result = json.loads(report.with_suffix(".result.json").read_text())
     assert result["census_commit"] == "commit-of-census.json"
     assert result["walk_record_commit"] == "commit-of-nuisance_walk_record.json"
+    assert result["admission_commit"] == "commit-of-nuisance_admission.json"
 
 
 def test_run_writes_its_result_before_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

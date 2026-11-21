@@ -265,7 +265,11 @@ def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> Nuisa
                 draw_order(ready.walk_inputs.census),
                 ready.conditions,
                 ready.settings,
-                RunProvenance(last_commit(args.census), last_commit(args.walk_record)),
+                RunProvenance(
+                    last_commit(args.census),
+                    last_commit(args.walk_record),
+                    last_commit(args.admission),
+                ),
                 runs=args.runs if args.runs is not None else NUISANCE_RUNS,
                 concurrency=args.concurrency,
                 deps=_tracked(deps, AuditProgress(bar)),

@@ -100,6 +100,7 @@ class RunProvenance:
 
     census_commit: str
     walk_record_commit: str
+    admission_commit: str
 
 
 @dataclass(frozen=True)
@@ -289,6 +290,7 @@ def _assemble_run(
         commit=tree.commit,
         census_commit=ctx.provenance.census_commit,
         walk_record_commit=ctx.provenance.walk_record_commit,
+        admission_commit=ctx.provenance.admission_commit,
         image_ids={
             **deps.image_ids(server_services(servers)),
             **deps.backend_image_ids(nuisance_images.backend_images(servers)),
@@ -302,4 +304,5 @@ def _assemble_run(
         prices_as_of=ctx.conditions.prices_as_of,
         concurrency=ctx.concurrency,
         throttled_requests=deps.throttled_requests(),
+        pending_admission=list(population.pending),
     )

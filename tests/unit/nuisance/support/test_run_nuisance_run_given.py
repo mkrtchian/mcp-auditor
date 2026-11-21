@@ -71,6 +71,7 @@ def an_admitted_run_keeping_its_provenance(monkeypatch: pytest.MonkeyPatch) -> N
             a_run_result(),
             census_commit=provenance.census_commit,
             walk_record_commit=provenance.walk_record_commit,
+            admission_commit=provenance.admission_commit,
         )
 
     an_admitted_run_ending_in(monkeypatch, a_run_result())

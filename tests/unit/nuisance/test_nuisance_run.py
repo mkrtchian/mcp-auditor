@@ -52,12 +52,26 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
     assert result.total_cost == pytest.approx(4 * call_cost(usage, given.LUNA_PRICE))
 
 
-async def test_a_run_records_the_census_and_walk_record_commits_apart():
+async def test_a_run_records_the_census_walk_record_and_admission_commits_apart():
     audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
 
     result = await given.run([given.a_server("npm:first")], given.deps_auditing(audit))
 
-    assert (result.census_commit, result.walk_record_commit) == ("cafe", "beef")
+    assert (result.census_commit, result.walk_record_commit, result.admission_commit) == (
+        "cafe",
+        "beef",
+        "f00d",
+    )
+
+
+async def test_a_run_carries_the_servers_whose_admission_is_pending():
+    audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
+
+    result = await given.run(
+        [given.a_server("npm:first")], given.deps_auditing(audit), pending=["npm:pending"]
+    )
+
+    assert result.pending_admission == ["npm:pending"]
 
 
 async def test_the_run_announces_the_audits_of_the_surviving_servers_only():

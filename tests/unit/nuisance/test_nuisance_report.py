@@ -13,7 +13,7 @@ from evals.cve.detection.holdout_report import (
     MethodLine,
     RunCutoffModel,
 )
-from evals.cve.nuisance.exits import ExitReason
+from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import (
     ExitLine,
@@ -61,11 +61,12 @@ def test_a_server_row_shows_its_status_per_run_in_order():
     assert "counted tools 1 of 4" in markdown
 
 
-def test_exit_rows_are_grouped_by_reason():
+def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its_count():
     run = given.a_run(
         [a_server_result("A")],
         exits=[
             ServerExit("npm:excluded-one", ExitReason.EXCLUDED_SERVER),
+            ServerExit("npm:flawless", ExitReason.NO_COUNTED_FLAW),
             ServerExit("npm:excluded-two", ExitReason.EXCLUDED_SERVER),
         ],
     )
@@ -73,15 +74,41 @@ def test_exit_rows_are_grouped_by_reason():
     markdown = render_markdown(build_report(run))
 
     assert (
-        "## Exits\n- an excluded server: 2 server(s): npm:excluded-one, npm:excluded-two\n"
+        "## Exits\n"
+        "- no counted flaw: 1 server(s): npm:flawless\n"
+        "- a counted flaw never fixed: 0 server(s)\n"
+        "- no counted tool left: 0 server(s)\n"
+        "- does not run over stdio: 0 server(s)\n"
+        "- its patched version does not run under Docker: 0 server(s)\n"
+        "- an excluded server: 2 server(s): npm:excluded-one, npm:excluded-two\n"
+        "- the server of a current or dropped acceptance target: 0 server(s)\n"
+        "- spent by a reading: 0 server(s)\n\n"
     ) in markdown
 
 
-def test_no_exit_reads_none_in_both_sections():
+def test_with_no_exit_every_reason_reads_zero_and_the_not_run_section_reads_none():
     markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
 
-    assert "## Exits\n- none\n" in markdown
+    zero_rows = "".join(f"- {EXIT_REASON_TEXTS[reason]}: 0 server(s)\n" for reason in ExitReason)
+    assert f"## Exits\n{zero_rows}\n" in markdown
     assert "## Not run\n- none\n" in markdown
+
+
+def test_a_server_whose_admission_is_pending_closes_the_exits_section():
+    run = given.a_run([a_server_result("A")], pending_admission=["npm:pending"])
+
+    markdown = render_markdown(build_report(run))
+
+    assert (
+        "- spent by a reading: 0 server(s)\n"
+        "- admission pending (not an exit of the rule): 1 server(s): npm:pending\n\n"
+    ) in markdown
+
+
+def test_no_pending_line_when_every_reached_server_is_admitted_or_out():
+    markdown = render_markdown(build_report(given.a_run([a_server_result("A")])))
+
+    assert "admission pending" not in markdown
 
 
 def test_the_not_run_section_counts_the_in_run_drops_against_the_servers_launched():
@@ -231,11 +258,12 @@ def test_the_recorded_at_line_carries_the_run_timestamp():
     assert f"Recorded at: {given.RECORDED_AT}\n" in markdown
 
 
-def test_the_provenance_line_names_the_census_and_walk_record_commits():
+def test_the_provenance_line_names_the_census_walk_record_and_admission_commits():
     report = build_report(given.a_run([a_server_result("A")]))
 
-    assert "Commits: run deadbeef, census cafe1234, walk record beef5678\n" in render_markdown(
-        report
+    assert (
+        "Commits: run deadbeef, census cafe1234, walk record beef5678, admission feed4321\n"
+        in render_markdown(report)
     )
 
 
@@ -306,6 +334,15 @@ def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glo
 
     assert {"holdout_nuisance_rate", "exits"} <= dumped.keys()
     assert dumped["exits"] == [{"server_package": "npm:excluded", "reason": "excluded_server"}]
+
+
+def test_the_report_writes_the_pending_servers_and_the_admission_commit():
+    run = given.a_run([a_server_result("A")], pending_admission=["npm:pending"])
+
+    dumped = build_report(run).model_dump(mode="json")
+
+    assert dumped["pending_admission"] == ["npm:pending"]
+    assert dumped["admission_commit"] == "feed4321"
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():

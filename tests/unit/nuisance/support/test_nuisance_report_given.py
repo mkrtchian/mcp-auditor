@@ -28,6 +28,7 @@ def a_run(
     throttled_requests: int = 0,
     concurrency: int = 6,
     second_pass: dict[str, str] | None = None,
+    pending_admission: Sequence[str] = (),
 ) -> NuisanceRunResult:
     return NuisanceRunResult(
         runs=RUNS,
@@ -47,6 +48,7 @@ def a_run(
         commit="deadbeef",
         census_commit="cafe1234",
         walk_record_commit="beef5678",
+        admission_commit="feed4321",
         image_ids={"patched": "sha256:1"},
         recorded_at=RECORDED_AT,
         servers=tuple(servers),
@@ -58,6 +60,7 @@ def a_run(
         concurrency=concurrency,
         throttled_requests=throttled_requests,
         second_pass=second_pass or {},
+        pending_admission=tuple(pending_admission),
     )
 
 

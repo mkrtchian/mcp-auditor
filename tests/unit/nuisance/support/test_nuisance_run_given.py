@@ -265,17 +265,18 @@ async def run(
     *,
     draw: Sequence[DrawEntry] | None = None,
     exits: Sequence[ServerExit] = (),
+    pending: Sequence[str] = (),
     runs: int = 3,
     concurrency: int = 6,
 ) -> NuisanceRunResult:
     """`draw=None` puts the first flaw in the draw order, disclosed on 2026-01-01."""
     order = draw if draw is not None else draw_entries((FIRST_FLAW, date(2026, 1, 1)))
     return await run_nuisance(
-        RunPopulation(servers, exits, ()),
+        RunPopulation(servers, exits, pending),
         order,
         conditions(),
         SETTINGS,
-        RunProvenance(census_commit="cafe", walk_record_commit="beef"),
+        RunProvenance(census_commit="cafe", walk_record_commit="beef", admission_commit="f00d"),
         runs=runs,
         concurrency=concurrency,
         deps=deps,

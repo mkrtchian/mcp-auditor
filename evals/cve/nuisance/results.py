@@ -151,6 +151,7 @@ class NuisanceRunResult:
     commit: str
     census_commit: str
     walk_record_commit: str
+    admission_commit: str
     image_ids: dict[str, str]
     recorded_at: str  # ISO timestamp: a model can change behind one identifier
     servers: Sequence[NuisanceServerResult]
@@ -164,6 +165,8 @@ class NuisanceRunResult:
     # The servers run only after a clean second pass of the vet, to their first pass's reason.
     second_pass: dict[str, str] = field(default_factory=dict[str, str])
     partial: bool = False  # a run stopped by an exception, its finished entries only
+    # The reached servers neither admitted nor recorded out, outside the rule's list of exits.
+    pending_admission: Sequence[str] = ()
 
 
 class RunInterrupted(Exception):

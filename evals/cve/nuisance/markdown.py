@@ -15,7 +15,7 @@ def render_markdown(report: NuisanceReport) -> str:
             "",
             f"Recorded at: {report.recorded_at}",
             f"Commits: run {report.commit}, census {report.census_commit}, "
-            f"walk record {report.walk_record_commit}",
+            f"walk record {report.walk_record_commit}, admission {report.admission_commit}",
             "",
             f"Holdout nuisance rate: at most {report.holdout_nuisance_rate:.3f}"
             f" (95% Wilson {_span(report.cited_interval)})",
@@ -92,17 +92,28 @@ def _counts(per_run: Sequence[int]) -> str:
 
 
 def _exits_section(report: NuisanceReport) -> list[str]:
-    """The standing exits the code derives, one row per reason. The rule's other exits (never
-    fixed, no counted tool, spent by a reading, a fork of an excluded server) have no row the
-    code derives and live in the log."""
-    by_reason: dict[ExitReason, list[str]] = {}
+    """The servers outside the nuisance holdout layer, one row per reason of the rule in its order,
+    a reason with none included, so two runs read side by side, the exits the walk derives and
+    those the admission records alike. The reached servers whose admission is pending close the
+    section: no reason of the rule holds for them yet."""
+    by_reason: dict[ExitReason, list[str]] = {reason: [] for reason in ExitReason}
     for line in report.exits:
-        by_reason.setdefault(line.reason, []).append(line.server_package)
+        by_reason[line.reason].append(line.server_package)
     lines = [
-        f"- {EXIT_REASON_TEXTS[reason]}: {len(packages)} server(s): {', '.join(packages)}"
+        _server_count_line(EXIT_REASON_TEXTS[reason], packages)
         for reason, packages in by_reason.items()
     ]
-    return ["## Exits", *(lines or ["- none"]), ""]
+    if report.pending_admission:
+        lines.append(_server_count_line(_ADMISSION_PENDING, report.pending_admission))
+    return ["## Exits", *lines, ""]
+
+
+_ADMISSION_PENDING = "admission pending (not an exit of the rule)"
+
+
+def _server_count_line(label: str, packages: Sequence[str]) -> str:
+    count = f"- {label}: {len(packages)} server(s)"
+    return f"{count}: {', '.join(packages)}" if packages else count
 
 
 _BENIGN_CALL_FAILED = "benign call failed before the runs"
@@ -115,8 +126,7 @@ def _not_run_section(
     then every server with its reason, closed by the servers that ran only after a clean solo
     second pass of the vet, each with its first pass's reason. The two in-run causes are counted
     against the servers launched, the benign-call failures plainly since they were never launched
-    for the runs. The rule's other exits (never fixed, no counted tool, spent by a reading, a fork
-    of an excluded server) have no row the code derives and live in the log."""
+    for the runs."""
     if not not_run:
         return ["## Not run", "- none", *_second_pass_lines(second_pass), ""]
     by_cause: dict[NotRunCause, list[str]] = {}

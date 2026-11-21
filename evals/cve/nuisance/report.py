@@ -108,6 +108,7 @@ class NuisanceReport(BaseModel):
     not_run: list[NotRunLine]
     second_pass: dict[str, str]  # run only after a clean second pass of the vet, to its reason
     exits: list[ExitLine]
+    pending_admission: list[str]  # reached, neither admitted nor out: no exit of the rule
     incomplete_run_count: int
     incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
     total_cost: float
@@ -115,6 +116,7 @@ class NuisanceReport(BaseModel):
     commit: str
     census_commit: str
     walk_record_commit: str
+    admission_commit: str
     # The run conditions and provenance, so a reader can tell two runs apart.
     provider: str
     model: str
@@ -161,6 +163,7 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         not_run=[NotRunLine.of(server) for server in run.not_run],
         second_pass=dict(run.second_pass),
         exits=[ExitLine.of(exit_row) for exit_row in run.exits],
+        pending_admission=list(run.pending_admission),
         incomplete_run_count=run.incomplete_run_count,
         incomplete_runs_by_cause=dict(
             Counter(
@@ -175,6 +178,7 @@ def build_report(run: NuisanceRunResult) -> NuisanceReport:
         commit=run.commit,
         census_commit=run.census_commit,
         walk_record_commit=run.walk_record_commit,
+        admission_commit=run.admission_commit,
         provider=run.provider,
         model=run.model,
         judge_model=run.judge_model,
