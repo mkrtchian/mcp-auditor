@@ -146,7 +146,7 @@ def _run(args: argparse.Namespace) -> int:
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
-    run = _audit_drawn_targets(args, _ReadyDetectionHoldoutRun(census, conditions, settings))
+    run = _audit_drawn_targets(args, _ReadyHoldoutRun(census, conditions, settings))
     write_result(args.report, run)
     report = build_report(run)
     markdown = render_markdown(report)
@@ -167,7 +167,7 @@ def _refuse_unready_cards(census: Census) -> None:
 
 
 @dataclasses.dataclass(frozen=True)
-class _ReadyDetectionHoldoutRun:
+class _ReadyHoldoutRun:
     """What a detection holdout run reads, once its cards and its conditions are checked ready."""
 
     census: Census
@@ -176,7 +176,7 @@ class _ReadyDetectionHoldoutRun:
 
 
 def _audit_drawn_targets(
-    args: argparse.Namespace, ready: _ReadyDetectionHoldoutRun
+    args: argparse.Namespace, ready: _ReadyHoldoutRun
 ) -> DetectionHoldoutRunResult:
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in ready.census.flaws}
     places = load_places(DETECTION_PLACES)
