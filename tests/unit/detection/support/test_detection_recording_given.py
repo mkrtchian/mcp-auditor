@@ -1,28 +1,14 @@
 from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.recording import TargetRecording
 from evals.cve.grammar import TargetStatus
-from tests.unit.detection.support.test_detection_gate_given import (
+from tests.unit.detection.support.detection_baselines import (
     DETECTED,
     FIXTURE,
     FLAW_ID,
     MISSED,
     RECORDED_COMMIT,
-    a_comparison,
-    a_gated_baseline,
-    an_unconfirmed_baseline,
     conditions,
 )
-
-__all__ = [
-    "DETECTED",
-    "FLAW_ID",
-    "MISSED",
-    "RECORDED_COMMIT",
-    "a_comparison",
-    "a_gated_baseline",
-    "an_unconfirmed_baseline",
-    "conditions",
-]
 
 RECORDING_TIME = "2026-09-28T11:00:00+00:00"
 

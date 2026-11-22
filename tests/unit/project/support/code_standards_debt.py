@@ -41,77 +41,11 @@ _FIREWORKS_RETRY = ThirdParty(
 )
 
 _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
-    "tests/integration/test_cve_keyed_stand_in_routes.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_then"),
-    ),
-    "tests/unit/auditor/support/test_cli_given.py": ((FOREIGN, "test_models_given"),),
-    "tests/unit/auditor/support/test_llm_patience_given.py": (
-        (FOREIGN, "test_llm_adapter_given"),
-        (FOREIGN, "test_llm_refusals_given"),
-    ),
-    "tests/unit/auditor/support/test_llm_refusals_given.py": ((FOREIGN, "test_llm_adapter_given"),),
-    "tests/unit/auditor/support/test_model_inputs_golden_given.py": (
-        (FOREIGN, "test_llm_adapter_given"),
-    ),
-    "tests/unit/cve/support/test_cve_grammar_golden_given.py": (
-        (FOREIGN, "test_cve_strike_given"),
-    ),
-    "tests/unit/detection/support/detection_sessions.py": ((FOREIGN, "test_detection_gate_given"),),
-    "tests/unit/detection/support/test_detection_baseline_given.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
-    "tests/unit/detection/support/test_detection_recording_given.py": (
-        (FOREIGN, "test_detection_gate_given"),
-    ),
-    "tests/unit/detection/support/test_detection_session_given.py": (
-        (FOREIGN, "test_detection_gate_given"),
-    ),
-    "tests/unit/detection/test_run_detection_holdout.py": (
-        (FOREIGN, "test_run_detection_holdout_run_given"),
-    ),
-    "tests/unit/evals/support/test_eval_baseline_given.py": ((FOREIGN, "test_eval_gate_given"),),
-    "tests/unit/evals/support/test_eval_display_given.py": ((FOREIGN, "test_eval_baseline_given"),),
-    "tests/unit/evals/support/test_eval_gate_outcome_given.py": (
-        (FOREIGN, "test_eval_gate_given"),
-    ),
-    "tests/unit/evals/support/test_eval_recording_given.py": (
-        (FOREIGN, "test_eval_baseline_given"),
-        (FOREIGN, "test_eval_gate_given"),
-    ),
-    "tests/unit/evals/support/test_eval_session_given.py": ((FOREIGN, "test_eval_baseline_given"),),
-    "tests/unit/evals/support/test_honeypot_decision_given.py": (
-        (FOREIGN, "test_eval_session_given"),
-    ),
-    "tests/unit/evals/support/test_honeypot_fault_harness_given.py": (
-        (FOREIGN, "test_honeypot_fault_injection_given"),
-    ),
-    "tests/unit/evals/support/test_judge_display_given.py": (
-        (FOREIGN, "test_judge_outcomes_given"),
-    ),
-    "tests/unit/evals/support/test_judge_gate_given.py": ((FOREIGN, "test_judge_baseline_given"),),
-    "tests/unit/evals/support/test_judge_outcomes_given.py": (
-        (FOREIGN, "test_judge_baseline_given"),
-    ),
-    "tests/unit/evals/support/test_judge_recording_given.py": (
-        (FOREIGN, "test_judge_baseline_given"),
-    ),
-    "tests/unit/evals/support/test_judge_session_given.py": (
-        (FOREIGN, "test_judge_baseline_given"),
-    ),
-    "tests/unit/evals/support/test_probe_subset_given.py": (
-        (FOREIGN, "test_probe_analysis_given"),
-    ),
-    "tests/unit/evals/support/test_run_judge_eval_given.py": (
-        (FOREIGN, "test_judge_baseline_given"),
-    ),
     "tests/unit/nuisance/admission/test_nuisance_dossier.py": (
         (FOREIGN, "test_nuisance_unrecorded_given"),
     ),
     "tests/unit/nuisance/admission/test_nuisance_re_admission_dossier.py": (
         (FOREIGN, "test_nuisance_dossier_then"),
-    ),
-    "tests/unit/nuisance/fix_checks/test_nuisance_fix_check_command.py": (
-        (FOREIGN, "test_kit_fix_check_given"),
     ),
     "tests/unit/nuisance/gate/support/nuisance_gate_sessions.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
@@ -138,17 +72,11 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/gate/test_nuisance_gate_session.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
     ),
-    "tests/unit/nuisance/support/test_nuisance_confinement_given.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
     "tests/unit/nuisance/support/test_nuisance_report_given.py": (
         (FOREIGN, "test_nuisance_statistic_given"),
     ),
     "tests/unit/nuisance/support/test_run_nuisance_holdout_run_given.py": (
         (FOREIGN, "test_nuisance_statistic_given"),
-    ),
-    "tests/unit/nuisance/test_nuisance_confinement.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
     ),
     "tests/unit/nuisance/test_nuisance_report.py": ((FOREIGN, "test_nuisance_statistic_given"),),
     "tests/unit/nuisance/test_nuisance_report_sections.py": (
@@ -157,13 +85,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/test_run_nuisance_holdout_run.py": (
         (FOREIGN, "test_nuisance_holdout_calibration_copies_given"),
     ),
-    "tests/unit/support/audited_launch_builders.py": (
-        (FOREIGN, "test_ckan_holdout_builder_given"),
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
-        (FOREIGN, "test_kubernetes_backend_given"),
-        (FOREIGN, "test_searxng_backend_given"),
-    ),
-    "tests/unit/support/nuisance_walks.py": ((FOREIGN, "test_census_grouping_given"),),
 }
 
 DEBTS: tuple[Debt, ...] = (

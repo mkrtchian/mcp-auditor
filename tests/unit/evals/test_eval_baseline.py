@@ -2,6 +2,8 @@ import json
 import math
 from pathlib import Path
 
+import tests.unit.evals.support.honeypot_baselines as honeypot_baselines
+import tests.unit.evals.support.honeypot_gate_inputs as honeypot_gate_inputs
 import tests.unit.evals.support.test_eval_baseline_given as given
 from evals.baseline import (
     BaselineStatus,
@@ -18,8 +20,8 @@ from evals.gate import Observation, RetestRule, cell_key
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
-VULNERABLE_CELL = given.VULNERABLE_CELL
-SAFE_CELL = given.SAFE_CELL
+VULNERABLE_CELL = honeypot_gate_inputs.VULNERABLE_CELL
+SAFE_CELL = honeypot_gate_inputs.SAFE_CELL
 
 
 def test_ground_truth_fingerprint_changes_with_one_verdict_flipped():
@@ -111,11 +113,15 @@ def test_sources_fingerprint_changes_with_a_change_in_any_module():
 
 
 def test_equal_conditions_have_no_mismatch():
-    assert condition_mismatches(given.conditions(), given.conditions()) == []
+    assert (
+        condition_mismatches(honeypot_baselines.conditions(), honeypot_baselines.conditions()) == []
+    )
 
 
 def test_a_differing_budget_names_both_values():
-    mismatches = condition_mismatches(given.conditions(budget=10), given.conditions(budget=7))
+    mismatches = condition_mismatches(
+        honeypot_baselines.conditions(budget=10), honeypot_baselines.conditions(budget=7)
+    )
 
     assert len(mismatches) == 1
     assert "budget" in mismatches[0]
@@ -124,7 +130,7 @@ def test_a_differing_budget_names_both_values():
 
 
 def test_a_baseline_recorded_at_another_reasoning_setting_names_it():
-    recorded = given.conditions()
+    recorded = honeypot_baselines.conditions()
     candidate = recorded.model_copy(update={"reasoning": "high"})
 
     mismatches = condition_mismatches(recorded, candidate)
@@ -133,7 +139,7 @@ def test_a_baseline_recorded_at_another_reasoning_setting_names_it():
 
 
 def test_a_differing_ground_truth_fingerprint_is_no_mismatch():
-    recorded = given.conditions()
+    recorded = honeypot_baselines.conditions()
     candidate = recorded.model_copy(update={"ground_truth_fingerprint": "another"})
 
     assert condition_mismatches(recorded, candidate) == []
@@ -141,7 +147,8 @@ def test_a_differing_ground_truth_fingerprint_is_no_mismatch():
 
 def test_a_differing_fixture_fingerprint_names_the_honeypot():
     mismatches = condition_mismatches(
-        given.conditions(source_fingerprint="abc"), given.conditions(source_fingerprint="xyz")
+        honeypot_baselines.conditions(source_fingerprint="abc"),
+        honeypot_baselines.conditions(source_fingerprint="xyz"),
     )
 
     assert len(mismatches) == 1
@@ -151,7 +158,7 @@ def test_a_differing_fixture_fingerprint_names_the_honeypot():
 
 def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
     path = tmp_path / "baselines" / "honeypot.json"
-    baseline = given.a_baseline()
+    baseline = honeypot_baselines.a_baseline()
 
     write_baseline(path, baseline)
 
@@ -160,8 +167,8 @@ def test_a_baseline_written_then_loaded_is_equal(tmp_path: Path):
 
 def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp_path: Path):
     path = tmp_path / "honeypot.json"
-    write_baseline(path, given.a_baseline())
-    second = given.a_baseline(status=BaselineStatus.CONFIRMED)
+    write_baseline(path, honeypot_baselines.a_baseline())
+    second = honeypot_baselines.a_baseline(status=BaselineStatus.CONFIRMED)
 
     write_baseline(path, second)
 
@@ -171,7 +178,7 @@ def test_a_baseline_written_over_another_replaces_it_and_leaves_no_temporary(tmp
 
 def test_a_baseline_written_before_the_protected_summary_loads_without_it(tmp_path: Path):
     path = tmp_path / "honeypot.json"
-    written = given.a_baseline().model_dump(exclude={"protected"})
+    written = honeypot_baselines.a_baseline().model_dump(exclude={"protected"})
     path.write_text(json.dumps(written))
 
     loaded = load_baseline(path)
@@ -190,7 +197,7 @@ def test_a_baseline_file_still_keyed_replay_rule_loads_its_retest_rule(tmp_path:
 def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
     path = tmp_path / "honeypot.json"
 
-    write_baseline(path, given.a_baseline())
+    write_baseline(path, honeypot_baselines.a_baseline())
 
     written = json.loads(path.read_text())
     assert written["retest_rule"] == RetestRule().model_dump()
@@ -198,7 +205,7 @@ def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
 
 
 def test_observation_runs_parse_the_keys_back_to_cells():
-    runs = given.a_baseline().observation_runs()
+    runs = honeypot_baselines.a_baseline().observation_runs()
 
     assert runs[1] == {VULNERABLE_CELL: Observation.UNCOVERED, SAFE_CELL: Observation.PASS}
 
@@ -208,111 +215,131 @@ def test_loading_an_absent_baseline_gives_none(tmp_path: Path):
 
 
 def test_a_baseline_consistent_with_the_ground_truth_has_no_integrity_problem():
-    assert baseline_integrity(given.a_baseline(), given.a_ground_truth()) == []
+    assert (
+        baseline_integrity(honeypot_baselines.a_baseline(), honeypot_gate_inputs.a_ground_truth())
+        == []
+    )
 
 
 def test_a_run_missing_a_ground_truth_cell_names_it():
-    runs = given.all_correct_runs()
+    runs = honeypot_baselines.all_correct_runs()
     del runs[1][SAFE_CELL]
 
-    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+    problems = baseline_integrity(
+        honeypot_baselines.a_baseline(runs=runs), honeypot_gate_inputs.a_ground_truth()
+    )
 
     assert problems == [f"run 1: cells ['{cell_key(SAFE_CELL)}'] missing"]
 
 
 def test_a_run_with_a_cell_outside_the_ground_truth_names_it():
     unknown_cell = ("get_user", AuditCategory.ERROR_HANDLING)
-    runs = given.all_correct_runs()
+    runs = honeypot_baselines.all_correct_runs()
     runs[2][unknown_cell] = Observation.PASS
 
-    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+    problems = baseline_integrity(
+        honeypot_baselines.a_baseline(runs=runs), honeypot_gate_inputs.a_ground_truth()
+    )
 
     assert problems == [f"run 2: cells ['{cell_key(unknown_cell)}'] unknown"]
 
 
 def test_a_baseline_with_no_run_is_refused():
-    problems = baseline_integrity(given.a_baseline(runs=[]), given.a_ground_truth())
+    problems = baseline_integrity(
+        honeypot_baselines.a_baseline(runs=[]), honeypot_gate_inputs.a_ground_truth()
+    )
 
     assert problems == ["the baseline holds no run"]
 
 
 def test_a_baseline_with_no_run_is_refused_even_when_its_conditions_claim_none():
-    baseline = given.a_baseline(runs=[])
+    baseline = honeypot_baselines.a_baseline(runs=[])
     baseline.conditions.runs = 0
 
-    problems = baseline_integrity(baseline, given.a_ground_truth())
+    problems = baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert problems == ["the baseline holds no run"]
 
 
 def test_a_baseline_with_fewer_runs_than_its_conditions_claim_names_the_run_count():
-    runs = given.runs_where_vulnerable_cell_is(Observation.FAIL, Observation.FAIL)
+    runs = honeypot_baselines.runs_where_vulnerable_cell_is(Observation.FAIL, Observation.FAIL)
 
-    problems = baseline_integrity(given.a_baseline(runs=runs), given.a_ground_truth())
+    problems = baseline_integrity(
+        honeypot_baselines.a_baseline(runs=runs), honeypot_gate_inputs.a_ground_truth()
+    )
 
     assert problems == ["the baseline holds 2 runs, its conditions claim 3"]
 
 
 def test_a_confirmation_holding_the_runs_of_both_recordings_has_no_integrity_problem():
-    baseline = given.a_confirmation(runs=given.all_correct_runs() + given.all_correct_runs())
+    baseline = given.a_confirmation(
+        runs=honeypot_baselines.all_correct_runs() + honeypot_baselines.all_correct_runs()
+    )
 
-    assert baseline_integrity(baseline, given.a_ground_truth()) == []
+    assert baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth()) == []
 
 
 def test_a_confirmation_holding_the_runs_of_one_recording_names_the_run_count():
-    baseline = given.a_confirmation(runs=given.all_correct_runs())
+    baseline = given.a_confirmation(runs=honeypot_baselines.all_correct_runs())
 
-    problems = baseline_integrity(baseline, given.a_ground_truth())
+    problems = baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert problems == ["the baseline holds 3 runs, its conditions and its confirmation claim 6"]
 
 
 def test_a_baseline_confirming_nothing_with_twice_its_runs_names_the_run_count():
-    baseline = given.a_baseline(runs=given.all_correct_runs() + given.all_correct_runs())
+    baseline = honeypot_baselines.a_baseline(
+        runs=honeypot_baselines.all_correct_runs() + honeypot_baselines.all_correct_runs()
+    )
 
-    problems = baseline_integrity(baseline, given.a_ground_truth())
+    problems = baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert problems == ["the baseline holds 6 runs, its conditions claim 3"]
 
 
 def test_a_key_without_a_category_is_reported_not_raised():
-    baseline = given.a_baseline()
+    baseline = honeypot_baselines.a_baseline()
     baseline.runs[0]["get_user"] = Observation.PASS
 
-    problems = baseline_integrity(baseline, given.a_ground_truth())
+    problems = baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert problems == ["run 0: unreadable cell key 'get_user'"]
 
 
 def test_a_key_with_an_unknown_category_is_reported_not_raised():
-    baseline = given.a_baseline()
+    baseline = honeypot_baselines.a_baseline()
     baseline.runs[1]["get_user/unknown"] = Observation.PASS
 
-    problems = baseline_integrity(baseline, given.a_ground_truth())
+    problems = baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert problems == ["run 1: unreadable cell key 'get_user/unknown'"]
 
 
 def test_a_baseline_missing_a_cell_the_ground_truth_added_has_no_integrity_problem():
     other_ground_truth: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL}
-    runs = given.all_correct_runs()
+    runs = honeypot_baselines.all_correct_runs()
     del runs[0][SAFE_CELL]
-    baseline = given.a_baseline(runs=runs, ground_truth=other_ground_truth)
+    baseline = honeypot_baselines.a_baseline(runs=runs, ground_truth=other_ground_truth)
 
-    assert baseline_integrity(baseline, given.a_ground_truth()) == []
+    assert baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth()) == []
 
 
 def test_a_baseline_holding_a_cell_the_ground_truth_removed_has_no_integrity_problem():
     removed_cell = ("get_user", AuditCategory.ERROR_HANDLING)
-    recorded_ground_truth: GroundTruth = {**given.a_ground_truth(), removed_cell: EvalVerdict.PASS}
-    runs = [{**run, removed_cell: Observation.PASS} for run in given.all_correct_runs()]
-    baseline = given.a_baseline(runs=runs, ground_truth=recorded_ground_truth)
+    recorded_ground_truth: GroundTruth = {
+        **honeypot_gate_inputs.a_ground_truth(),
+        removed_cell: EvalVerdict.PASS,
+    }
+    runs = [
+        {**run, removed_cell: Observation.PASS} for run in honeypot_baselines.all_correct_runs()
+    ]
+    baseline = honeypot_baselines.a_baseline(runs=runs, ground_truth=recorded_ground_truth)
 
-    assert baseline_integrity(baseline, given.a_ground_truth()) == []
+    assert baseline_integrity(baseline, honeypot_gate_inputs.a_ground_truth()) == []
 
 
 def test_rescoring_under_a_revised_label_recomputes_recall_and_precision():
-    baseline = given.a_baseline(runs=given.all_correct_runs())
+    baseline = honeypot_baselines.a_baseline(runs=honeypot_baselines.all_correct_runs())
     revised: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.FAIL}
 
     rescored = rescore(baseline, revised)
@@ -322,18 +349,20 @@ def test_rescoring_under_a_revised_label_recomputes_recall_and_precision():
 
 def test_rescoring_a_combined_baseline_reads_the_runs_of_both_recordings():
     missed = {VULNERABLE_CELL: Observation.PASS, SAFE_CELL: Observation.PASS}
-    runs = given.all_correct_runs() + given.all_correct_runs()[:2] + [missed]
+    runs = (
+        honeypot_baselines.all_correct_runs() + honeypot_baselines.all_correct_runs()[:2] + [missed]
+    )
     revised: GroundTruth = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.FAIL}
 
-    rescored = rescore(given.a_baseline(runs=runs), revised)
+    rescored = rescore(honeypot_baselines.a_baseline(runs=runs), revised)
 
     assert math.isclose(rescored.metrics.recall, 5 / 12)
 
 
 def test_rescoring_leaves_out_a_cell_the_baseline_did_not_record():
     added_cell = ("get_user", AuditCategory.ERROR_HANDLING)
-    baseline = given.a_baseline(runs=given.all_correct_runs())
-    revised: GroundTruth = {**given.a_ground_truth(), added_cell: EvalVerdict.FAIL}
+    baseline = honeypot_baselines.a_baseline(runs=honeypot_baselines.all_correct_runs())
+    revised: GroundTruth = {**honeypot_gate_inputs.a_ground_truth(), added_cell: EvalVerdict.FAIL}
 
     rescored = rescore(baseline, revised)
 
@@ -342,8 +371,8 @@ def test_rescoring_leaves_out_a_cell_the_baseline_did_not_record():
 
 
 def test_rescoring_keeps_the_recorded_distribution_coverage():
-    baseline = given.a_baseline(runs=given.all_correct_runs())
+    baseline = honeypot_baselines.a_baseline(runs=honeypot_baselines.all_correct_runs())
 
-    rescored = rescore(baseline, given.a_ground_truth())
+    rescored = rescore(baseline, honeypot_gate_inputs.a_ground_truth())
 
     assert rescored.metrics.distribution_coverage == baseline.metrics.distribution_coverage

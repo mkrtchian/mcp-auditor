@@ -9,6 +9,7 @@ from mcp_auditor.adapters.llm_throttling import ThrottlePatience, one_audit
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled
 from tests.fakes.chat_model import FakeChatModel
+from tests.unit.auditor.support.scripted_llms import Output
 
 _THROTTLING_LOGGER = "mcp_auditor.throttling"
 
@@ -19,9 +20,9 @@ class TestPatientRetry:
         chat_model = FakeChatModel([given.a_throttle(), given.a_throttle(), given.an_answer()])
         llm = given.an_llm(chat_model, given.a_patience(sleep))
 
-        output, usage = await llm.generate_structured("prompt", given.Output)
+        output, usage = await llm.generate_structured("prompt", Output)
 
-        assert output == given.Output(value="ok")
+        assert output == Output(value="ok")
         assert usage == ProviderUsage(
             input_tokens=100, output_tokens=50, throttled_requests=2, largest_input_tokens=100
         )
@@ -32,7 +33,7 @@ class TestPatientRetry:
         llm = given.an_llm(chat_model, given.a_patience(given.RecordingSleep()))
 
         with caplog.at_level(logging.WARNING, logger=_THROTTLING_LOGGER):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert [record.getMessage() for record in caplog.records] == [
             "the model provider is throttling requests, waiting 10 s (retry 1)",
@@ -45,7 +46,7 @@ class TestPatientRetry:
         )
 
         with caplog.at_level(logging.WARNING, logger=_THROTTLING_LOGGER):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert caplog.records == []
 
@@ -54,7 +55,7 @@ class TestPatientRetry:
         chat_model = FakeChatModel([given.a_throttle({"Retry-After": "3"}), given.an_answer()])
         llm = given.an_llm(chat_model, given.a_patience(sleep))
 
-        await llm.generate_structured("prompt", given.Output)
+        await llm.generate_structured("prompt", Output)
 
         assert sleep.delays == [3.0]
 
@@ -67,7 +68,7 @@ class TestExhaustedPatience:
         )
 
         with pytest.raises(ProviderThrottled) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert raised.value.provider_message == given.PROVIDER_MESSAGE
         assert raised.value.waited_seconds == 30.0
@@ -81,7 +82,7 @@ class TestExhaustedPatience:
         llm = given.an_llm(chat_model, given.a_patience(sleep))
 
         with pytest.raises(ProviderThrottled):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert sleep.delays == []
 
@@ -98,7 +99,7 @@ class TestExhaustedPatience:
         llm = given.an_llm(chat_model, given.a_patience(sleep, max_total_wait=15.0))
 
         with pytest.raises(ProviderThrottled) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert sleep.delays == [10.0]
         assert raised.value.usage == ProviderUsage(
@@ -110,7 +111,7 @@ class TestExhaustedPatience:
         llm = given.an_llm(chat_model, given.a_patience(given.RecordingSleep()))
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert raised.value.usage.throttled_requests == 1
 
@@ -120,7 +121,7 @@ class TestExhaustedPatience:
         llm = given.an_llm(chat_model, given.a_patience(sleep))
 
         with pytest.raises(openai.RateLimitError):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
         assert sleep.delays == []
 
@@ -136,11 +137,11 @@ class TestBreaker:
 
         with one_audit():
             with pytest.raises(ProviderThrottled):
-                await llm.generate_structured("prompt", given.Output)
+                await llm.generate_structured("prompt", Output)
             with pytest.raises(ProviderThrottled) as same_llm:
-                await llm.generate_structured("prompt", given.Output)
+                await llm.generate_structured("prompt", Output)
             with pytest.raises(ProviderThrottled) as other:
-                await other_llm.generate_structured("prompt", given.Output)
+                await other_llm.generate_structured("prompt", Output)
 
         assert (chat_model.calls, other_model.calls) == (1, 0)
         assert sleep.delays == []
@@ -157,13 +158,13 @@ class TestBreaker:
 
         async def exhaust_then_wake() -> None:
             try:
-                await exhausted_llm.generate_structured("prompt", given.Output)
+                await exhausted_llm.generate_structured("prompt", Output)
             finally:
                 sleep.gate.set()
 
         with one_audit():
             outcomes = await asyncio.gather(
-                waiting_llm.generate_structured("prompt", given.Output),
+                waiting_llm.generate_structured("prompt", Output),
                 exhaust_then_wake(),
                 return_exceptions=True,
             )
@@ -175,24 +176,24 @@ class TestBreaker:
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
         llm = given.an_llm(FakeChatModel([given.a_throttle(), given.an_answer()]), patience)
         with pytest.raises(ProviderThrottled):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
-        output, _ = await llm.generate_structured("prompt", given.Output)
+        output, _ = await llm.generate_structured("prompt", Output)
 
-        assert output == given.Output(value="ok")
+        assert output == Output(value="ok")
 
     async def test_a_call_outside_any_audit_or_in_a_later_audit_is_sent(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
         chat_model = FakeChatModel([given.a_throttle(), given.an_answer(), given.an_answer()])
         llm = given.an_llm(chat_model, patience)
         with one_audit(), pytest.raises(ProviderThrottled):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", Output)
 
-        outside, _ = await llm.generate_structured("prompt", given.Output)
+        outside, _ = await llm.generate_structured("prompt", Output)
         with one_audit():
-            later, _ = await llm.generate_structured("prompt", given.Output)
+            later, _ = await llm.generate_structured("prompt", Output)
 
-        assert outside == later == given.Output(value="ok")
+        assert outside == later == Output(value="ok")
 
     async def test_concurrent_audits_over_one_llm_each_have_their_own_breaker(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
@@ -202,17 +203,17 @@ class TestBreaker:
         async def exhausted_audit() -> None:
             with one_audit():
                 try:
-                    await llm.generate_structured("prompt", given.Output)
+                    await llm.generate_structured("prompt", Output)
                 finally:
                     first_audit_done.set()
 
-        async def later_audit() -> given.Output:
+        async def later_audit() -> Output:
             with one_audit():
                 await first_audit_done.wait()
-                output, _ = await llm.generate_structured("prompt", given.Output)
+                output, _ = await llm.generate_structured("prompt", Output)
                 return output
 
         outcomes = await asyncio.gather(exhausted_audit(), later_audit(), return_exceptions=True)
 
         assert isinstance(outcomes[0], ProviderThrottled)
-        assert outcomes[1] == given.Output(value="ok")
+        assert outcomes[1] == Output(value="ok")

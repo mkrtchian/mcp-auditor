@@ -1,5 +1,6 @@
 import math
 
+import tests.unit.evals.support.probe_observations as probe_observations
 import tests.unit.evals.support.test_probe_analysis_given as given
 import tests.unit.evals.support.test_probe_analysis_then as then
 from evals.probe.analysis import (
@@ -31,8 +32,8 @@ class TestCallCost:
 class TestSummarize:
     def test_weights_judge_calls_and_leaves_the_others_at_one(self):
         observations = [
-            given.an_observation(role="main", usage=given.a_million_input_tokens()),
-            given.an_observation(
+            probe_observations.an_observation(role="main", usage=given.a_million_input_tokens()),
+            probe_observations.an_observation(
                 role="judge", schema_name="Judgment", usage=given.a_million_input_tokens()
             ),
         ]
@@ -45,8 +46,8 @@ class TestSummarize:
         usage = ProviderUsage(input_tokens=1_000, output_tokens=8_192)
         prices = Prices(input=0.25, cached_input=0.025, output=1.50)
         observations = [
-            given.an_observation(usage=usage),
-            given.an_observation(outcome=CallOutcome.PARSE_FAILURE, usage=usage),
+            probe_observations.an_observation(usage=usage),
+            probe_observations.an_observation(outcome=CallOutcome.PARSE_FAILURE, usage=usage),
         ]
 
         stats = summarize(given.a_candidate(prices), observations, judge_weight=1.0)
@@ -55,11 +56,11 @@ class TestSummarize:
 
     def test_computes_the_median_latency_of_each_role(self):
         observations = [
-            given.an_observation(role="main", seconds=1.0),
-            given.an_observation(role="main", seconds=2.0),
-            given.an_observation(role="main", seconds=9.0),
-            given.an_observation(role="judge", schema_name="Judgment", seconds=4.0),
-            given.an_observation(role="judge", schema_name="Judgment", seconds=6.0),
+            probe_observations.an_observation(role="main", seconds=1.0),
+            probe_observations.an_observation(role="main", seconds=2.0),
+            probe_observations.an_observation(role="main", seconds=9.0),
+            probe_observations.an_observation(role="judge", schema_name="Judgment", seconds=4.0),
+            probe_observations.an_observation(role="judge", schema_name="Judgment", seconds=6.0),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
@@ -68,10 +69,16 @@ class TestSummarize:
 
     def test_counts_parse_failures_per_schema(self):
         observations = [
-            given.an_observation(schema_name="StepObservation", outcome=CallOutcome.PARSE_FAILURE),
-            given.an_observation(schema_name="StepObservation", outcome=CallOutcome.PARSE_FAILURE),
-            given.an_observation(schema_name="TestCaseBatch", outcome=CallOutcome.PARSE_FAILURE),
-            given.an_observation(schema_name="Judgment"),
+            probe_observations.an_observation(
+                schema_name="StepObservation", outcome=CallOutcome.PARSE_FAILURE
+            ),
+            probe_observations.an_observation(
+                schema_name="StepObservation", outcome=CallOutcome.PARSE_FAILURE
+            ),
+            probe_observations.an_observation(
+                schema_name="TestCaseBatch", outcome=CallOutcome.PARSE_FAILURE
+            ),
+            probe_observations.an_observation(schema_name="Judgment"),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
@@ -80,10 +87,12 @@ class TestSummarize:
 
     def test_counts_coverage_gaps_and_unparsed_batches_as_refusals(self):
         observations = [
-            given.an_observation(coverage_gap=given.a_coverage_gap()),
-            given.an_observation(outcome=CallOutcome.PARSE_FAILURE),
-            given.an_observation(),
-            given.an_observation(schema_name="Judgment", outcome=CallOutcome.PARSE_FAILURE),
+            probe_observations.an_observation(coverage_gap=given.a_coverage_gap()),
+            probe_observations.an_observation(outcome=CallOutcome.PARSE_FAILURE),
+            probe_observations.an_observation(),
+            probe_observations.an_observation(
+                schema_name="Judgment", outcome=CallOutcome.PARSE_FAILURE
+            ),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
@@ -92,9 +101,13 @@ class TestSummarize:
 
     def test_counts_errors_and_sums_reasoning_tokens(self):
         observations = [
-            given.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
-            given.an_observation(usage=ProviderUsage(output_tokens=50, reasoning_tokens=30)),
-            given.an_observation(usage=ProviderUsage(output_tokens=50, reasoning_tokens=12)),
+            probe_observations.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
+            probe_observations.an_observation(
+                usage=ProviderUsage(output_tokens=50, reasoning_tokens=30)
+            ),
+            probe_observations.an_observation(
+                usage=ProviderUsage(output_tokens=50, reasoning_tokens=12)
+            ),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
@@ -105,16 +118,16 @@ class TestSummarize:
 class TestCountDefects:
     def test_counts_each_kind_of_defect_over_the_observations_given(self):
         observations = [
-            given.an_observation(role="judge", schema_name="Judgment"),
-            given.an_observation(outcome=CallOutcome.PARSE_FAILURE),
-            given.an_observation(
+            probe_observations.an_observation(role="judge", schema_name="Judgment"),
+            probe_observations.an_observation(outcome=CallOutcome.PARSE_FAILURE),
+            probe_observations.an_observation(
                 role="judge",
                 schema_name="Judgment",
                 outcome=CallOutcome.PARSE_FAILURE,
                 truncated_attempts=2,
             ),
-            given.an_observation(coverage_gap=given.a_coverage_gap()),
-            given.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
+            probe_observations.an_observation(coverage_gap=given.a_coverage_gap()),
+            probe_observations.an_observation(outcome=CallOutcome.ERROR, error="timeout"),
         ]
 
         counts = count_defects("candidate", observations)
@@ -131,7 +144,7 @@ class TestCountDefects:
 
 class TestProbeObservation:
     def test_a_line_written_before_truncation_was_recorded_reads_as_no_truncation(self):
-        line = given.an_observation(outcome=CallOutcome.PARSE_FAILURE).model_dump_json(
+        line = probe_observations.an_observation(outcome=CallOutcome.PARSE_FAILURE).model_dump_json(
             exclude={"truncated_attempts"}
         )
 

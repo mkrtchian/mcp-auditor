@@ -1,35 +1,37 @@
 from typing import Any
 
-import tests.unit.evals.support.test_judge_outcomes_given as outcomes_given
+import tests.unit.evals.support.judge_session_results as judge_session_results
 from evals.gate import CellComparison, CellOutcome, FlipCause
 from evals.judge.outcomes import CaseOutcomes, case_outcomes
 from evals.judge.session_model import JudgeSessionResult
 
-FLIPPED_ID = outcomes_given.FLIPPED_ID
+FLIPPED_ID = judge_session_results.FLIPPED_ID
 
 
 def a_result_with_a_flip_not_reproduced() -> JudgeSessionResult:
-    return outcomes_given.a_result(
+    return judge_session_results.a_result(
         {
             FLIPPED_ID: CellComparison(
                 outcome=CellOutcome.FLIP_NOT_REPRODUCED,
                 cause=FlipCause.WRONG_VERDICT,
                 retests=[True, False, False],
             ),
-            outcomes_given.STEADY_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
+            judge_session_results.STEADY_ID: CellComparison(outcome=CellOutcome.UNCHANGED),
         },
-        retest_observations={FLIPPED_ID: [outcomes_given.F, outcomes_given.P, outcomes_given.P]},
+        retest_observations={
+            FLIPPED_ID: [judge_session_results.F, judge_session_results.P, judge_session_results.P]
+        },
     )
 
 
 def a_result_with_a_partial_case() -> JudgeSessionResult:
-    return outcomes_given.a_result(
-        {outcomes_given.PARTIAL_ID: CellComparison(outcome=CellOutcome.UNCHANGED)}
+    return judge_session_results.a_result(
+        {judge_session_results.PARTIAL_ID: CellComparison(outcome=CellOutcome.UNCHANGED)}
     )
 
 
 def the_outcomes_of(result: JudgeSessionResult) -> CaseOutcomes:
-    return case_outcomes(result, outcomes_given.a_judge_fixture())
+    return case_outcomes(result, judge_session_results.a_judge_fixture())
 
 
 def a_report(throttled_requests: int = 0, concurrency: int = 30) -> dict[str, Any]:

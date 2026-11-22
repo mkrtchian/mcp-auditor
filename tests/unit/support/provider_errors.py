@@ -25,6 +25,12 @@ def an_openai_rate_limit(
     return openai.RateLimitError("Error code: 429 - slow down", response=response, body=body)
 
 
+def an_openai_bad_request(message: str, code: str | None) -> openai.BadRequestError:
+    response = httpx2.Response(400, request=httpx2.Request("POST", _URL))
+    body = {"message": message, "type": "invalid_request_error", "code": code}
+    return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
+
+
 def an_anthropic_rate_limit(headers: dict[str, str] | None = None) -> anthropic.RateLimitError:
     response = httpx2.Response(429, headers=headers, request=httpx2.Request("POST", _URL))
     return anthropic.RateLimitError("Error code: 429 - slow down", response=response, body=None)

@@ -56,7 +56,7 @@ from tests.unit.auditor.support.graph_builders import (
     a_redacting_graph,
     a_server_echoing,
 )
-from tests.unit.auditor.support.test_llm_adapter_given import the_openai_request_body
+from tests.unit.auditor.support.openai_request_bodies import the_openai_request_body
 
 GOLDEN_PATH = Path(__file__).parent / "model_inputs_golden.json"
 _SECRET = "s3cr3t-value"

@@ -3,6 +3,7 @@ import math
 import pytest
 from pydantic import ValidationError
 
+import tests.unit.evals.support.honeypot_gate_inputs as honeypot_gate_inputs
 import tests.unit.evals.support.test_eval_gate_given as given
 from evals.gate import (
     FLOORS,
@@ -32,8 +33,8 @@ from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 FAIL = Observation.FAIL
 PASS = Observation.PASS
 UNCOVERED = Observation.UNCOVERED
-VULNERABLE_CELL = given.VULNERABLE_CELL
-SAFE_CELL = given.SAFE_CELL
+VULNERABLE_CELL = honeypot_gate_inputs.VULNERABLE_CELL
+SAFE_CELL = honeypot_gate_inputs.SAFE_CELL
 
 
 def test_cell_key_round_trips():
@@ -46,13 +47,13 @@ def test_cell_key_round_trips():
 def test_observe_reads_each_ground_truth_cell_from_the_verdicts():
     verdicts: VerdictMap = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.PASS}
 
-    observations = observe(verdicts, given.a_ground_truth())
+    observations = observe(verdicts, honeypot_gate_inputs.a_ground_truth())
 
     assert observations == {VULNERABLE_CELL: FAIL, SAFE_CELL: PASS}
 
 
 def test_observe_marks_a_missing_cell_uncovered():
-    observations = observe({}, given.a_ground_truth())
+    observations = observe({}, honeypot_gate_inputs.a_ground_truth())
 
     assert observations == {VULNERABLE_CELL: UNCOVERED, SAFE_CELL: UNCOVERED}
 
@@ -60,7 +61,7 @@ def test_observe_marks_a_missing_cell_uncovered():
 def test_observe_marks_a_cell_without_verdict_uncovered():
     verdicts: VerdictMap = {VULNERABLE_CELL: None}
 
-    observations = observe(verdicts, given.a_ground_truth())
+    observations = observe(verdicts, honeypot_gate_inputs.a_ground_truth())
 
     assert observations[VULNERABLE_CELL] == UNCOVERED
 
@@ -68,7 +69,7 @@ def test_observe_marks_a_cell_without_verdict_uncovered():
 def test_observe_ignores_verdicts_outside_the_ground_truth():
     verdicts: VerdictMap = {("other_tool", AuditCategory.INJECTION): EvalVerdict.FAIL}
 
-    observations = observe(verdicts, given.a_ground_truth())
+    observations = observe(verdicts, honeypot_gate_inputs.a_ground_truth())
 
     assert set(observations) == {VULNERABLE_CELL, SAFE_CELL}
 
@@ -86,7 +87,7 @@ def test_observe_ignores_verdicts_outside_the_ground_truth():
 def test_classify(observations: list[Observation], expected: CellState):
     runs = given.runs_observing(VULNERABLE_CELL, observations)
 
-    states = classify(runs, given.a_ground_truth())
+    states = classify(runs, honeypot_gate_inputs.a_ground_truth())
 
     assert states[VULNERABLE_CELL] == expected
 
@@ -94,7 +95,7 @@ def test_classify(observations: list[Observation], expected: CellState):
 def test_classify_reads_uncovered_in_every_run_as_stable_incorrect():
     runs = given.runs_observing(VULNERABLE_CELL, [UNCOVERED, UNCOVERED, UNCOVERED])
 
-    states = classify(runs, given.a_ground_truth())
+    states = classify(runs, honeypot_gate_inputs.a_ground_truth())
 
     assert states[VULNERABLE_CELL] == CellState.STABLE_INCORRECT
 
@@ -102,7 +103,7 @@ def test_classify_reads_uncovered_in_every_run_as_stable_incorrect():
 def test_classify_leaves_out_a_cell_a_run_did_not_record():
     runs = given.runs_observing(VULNERABLE_CELL, [FAIL, FAIL, FAIL])
 
-    states = classify(runs, given.a_ground_truth())
+    states = classify(runs, honeypot_gate_inputs.a_ground_truth())
 
     assert SAFE_CELL not in states
 
@@ -110,7 +111,9 @@ def test_classify_leaves_out_a_cell_a_run_did_not_record():
 def test_protected_cells_count_the_stable_and_correct_cells_on_each_side():
     runs = given.runs_on_two_cells_of_each_side()
 
-    protected = protected_cells(runs, given.a_ground_truth_with_two_cells_of_each_side())
+    protected = protected_cells(
+        runs, honeypot_gate_inputs.a_ground_truth_with_two_cells_of_each_side()
+    )
 
     assert protected == ProtectedCells(
         fail_stable_correct=1, fail_total=2, pass_stable_correct=1, pass_total=2, unstable=1
@@ -172,7 +175,7 @@ def test_compare(
     comparisons = compare(
         given.runs_observing(VULNERABLE_CELL, baseline),
         given.runs_observing(VULNERABLE_CELL, candidate),
-        given.a_ground_truth(),
+        honeypot_gate_inputs.a_ground_truth(),
     )
 
     assert comparisons[VULNERABLE_CELL] == expected
@@ -182,7 +185,7 @@ def test_compare_marks_a_cell_the_baseline_did_not_record():
     comparisons = compare(
         given.runs_observing(VULNERABLE_CELL, [FAIL, FAIL, FAIL]),
         [{VULNERABLE_CELL: FAIL, SAFE_CELL: PASS} for _ in range(3)],
-        given.a_ground_truth(),
+        honeypot_gate_inputs.a_ground_truth(),
     )
 
     assert comparisons[SAFE_CELL] == CellComparison(outcome=CellOutcome.NOT_RECORDED)
@@ -233,30 +236,41 @@ def test_applying_retests_turns_a_cleared_flip_into_not_reproduced():
 
 
 def test_one_detection_per_run_clears_the_recall_floor():
-    assert not recall_floor_breached(given.detections(3, runs=3))
+    assert not recall_floor_breached(honeypot_gate_inputs.detections(3, runs=3))
 
 
 def test_fewer_detections_than_runs_breaches_the_recall_floor():
-    assert recall_floor_breached(given.detections(2, runs=3))
+    assert recall_floor_breached(honeypot_gate_inputs.detections(2, runs=3))
 
 
 def test_a_recall_floor_breach_is_named_from_the_detection_count():
-    assert floor_breaches(given.metrics(recall=0.9), given.detections(2, runs=3)) == ["recall"]
+    assert floor_breaches(
+        honeypot_gate_inputs.metrics(recall=0.9), honeypot_gate_inputs.detections(2, runs=3)
+    ) == ["recall"]
 
 
 @pytest.mark.parametrize("metric", sorted(FLOORS))
 def test_floor_breach_names_the_metric(metric: str):
-    metrics = given.metrics(**{metric: 0.49})
+    metrics = honeypot_gate_inputs.metrics(**{metric: 0.49})
 
-    assert floor_breaches(metrics, given.detections(3, runs=3)) == [metric]
+    assert floor_breaches(metrics, honeypot_gate_inputs.detections(3, runs=3)) == [metric]
 
 
 def test_no_floor_breach_when_every_metric_clears_its_floor():
-    assert floor_breaches(given.metrics(), given.detections(3, runs=3)) == []
+    assert (
+        floor_breaches(honeypot_gate_inputs.metrics(), honeypot_gate_inputs.detections(3, runs=3))
+        == []
+    )
 
 
 def test_consistency_has_no_floor():
-    assert floor_breaches(given.metrics(consistency=0.1), given.detections(3, runs=3)) == []
+    assert (
+        floor_breaches(
+            honeypot_gate_inputs.metrics(consistency=0.1),
+            honeypot_gate_inputs.detections(3, runs=3),
+        )
+        == []
+    )
 
 
 def test_detections_count_the_planted_cells_observed_fail_over_the_runs():
@@ -266,17 +280,21 @@ def test_detections_count_the_planted_cells_observed_fail_over_the_runs():
         {VULNERABLE_CELL: FAIL, SAFE_CELL: PASS},
     ]
 
-    count = count_detections(runs, given.a_ground_truth())
+    count = count_detections(runs, honeypot_gate_inputs.a_ground_truth())
 
     assert (count.detections, count.runs, count.planted) == (2, 3, 1)
 
 
 def test_recall_delta_smaller_than_one_case_is_inconclusive():
     resolutions = metric_resolutions(
-        given.runs_failing(VULNERABLE_CELL, runs=3), given.a_ground_truth(), 1
+        given.runs_failing(VULNERABLE_CELL, runs=3), honeypot_gate_inputs.a_ground_truth(), 1
     )
 
-    deltas = metric_deltas(given.metrics(recall=0.9), given.metrics(recall=0.8), resolutions)
+    deltas = metric_deltas(
+        honeypot_gate_inputs.metrics(recall=0.9),
+        honeypot_gate_inputs.metrics(recall=0.8),
+        resolutions,
+    )
 
     assert math.isclose(resolutions["recall"], 1 / 3)
     assert math.isclose(deltas["recall"].value, -0.1)
@@ -285,10 +303,14 @@ def test_recall_delta_smaller_than_one_case_is_inconclusive():
 
 def test_recall_delta_larger_than_one_case_is_conclusive():
     resolutions = metric_resolutions(
-        given.runs_failing(VULNERABLE_CELL, runs=3), given.a_ground_truth(), 1
+        given.runs_failing(VULNERABLE_CELL, runs=3), honeypot_gate_inputs.a_ground_truth(), 1
     )
 
-    deltas = metric_deltas(given.metrics(recall=0.9), given.metrics(recall=0.5), resolutions)
+    deltas = metric_deltas(
+        honeypot_gate_inputs.metrics(recall=0.9),
+        honeypot_gate_inputs.metrics(recall=0.5),
+        resolutions,
+    )
 
     assert not deltas["recall"].inconclusive
 
@@ -297,7 +319,9 @@ def test_a_delta_of_exactly_one_case_is_conclusive():
     resolutions = {"recall": 1 / 33, "precision": 1.0, "distribution_coverage": 1.0}
 
     deltas = metric_deltas(
-        given.metrics(recall=32 / 33), given.metrics(recall=31 / 33), resolutions
+        honeypot_gate_inputs.metrics(recall=32 / 33),
+        honeypot_gate_inputs.metrics(recall=31 / 33),
+        resolutions,
     )
 
     assert not deltas["recall"].inconclusive
@@ -307,7 +331,9 @@ def test_a_delta_of_half_a_case_is_inconclusive():
     resolutions = {"recall": 1 / 33, "precision": 1.0, "distribution_coverage": 1.0}
 
     deltas = metric_deltas(
-        given.metrics(recall=32 / 33), given.metrics(recall=31.5 / 33), resolutions
+        honeypot_gate_inputs.metrics(recall=32 / 33),
+        honeypot_gate_inputs.metrics(recall=31.5 / 33),
+        resolutions,
     )
 
     assert deltas["recall"].inconclusive
@@ -315,10 +341,12 @@ def test_a_delta_of_half_a_case_is_inconclusive():
 
 def test_deltas_cover_the_gated_metrics_only():
     resolutions = metric_resolutions(
-        given.runs_failing(VULNERABLE_CELL, runs=3), given.a_ground_truth(), 1
+        given.runs_failing(VULNERABLE_CELL, runs=3), honeypot_gate_inputs.a_ground_truth(), 1
     )
 
-    deltas = metric_deltas(given.metrics(), given.metrics(), resolutions)
+    deltas = metric_deltas(
+        honeypot_gate_inputs.metrics(), honeypot_gate_inputs.metrics(), resolutions
+    )
 
     assert set(deltas) == {"recall", "precision", "distribution_coverage"}
 
@@ -330,7 +358,7 @@ def test_precision_resolution_ignores_a_fail_outside_the_ground_truth():
         {VULNERABLE_CELL: EvalVerdict.FAIL, outside: EvalVerdict.FAIL},
     ]
 
-    resolutions = metric_resolutions(maps, given.a_ground_truth(), 1)
+    resolutions = metric_resolutions(maps, honeypot_gate_inputs.a_ground_truth(), 1)
 
     assert math.isclose(resolutions["precision"], 1 / (2 * 1))
 
@@ -365,7 +393,7 @@ def test_precision_resolution_without_predicted_fail_is_one_case_per_run():
 
 def test_distribution_coverage_resolution_is_one_category_of_one_tool_in_one_run():
     resolutions = metric_resolutions(
-        given.runs_failing(VULNERABLE_CELL, runs=3), given.a_ground_truth(), 2
+        given.runs_failing(VULNERABLE_CELL, runs=3), honeypot_gate_inputs.a_ground_truth(), 2
     )
 
     assert math.isclose(resolutions["distribution_coverage"], 1 / (2 * len(AuditCategory) * 3))

@@ -6,7 +6,7 @@ from evals.cve.backends.kubernetes import CONTROL_PLANE_IMAGE, CONTROL_PLANE_NET
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import WITNESS
 from evals.cve.planting_base import unprivileged_user_args
 from tests.fakes import ScriptedDockerExecutable
-from tests.unit.cve.backends.support.test_kubernetes_backend_given import ADMIN_CONF, API_SERVER
+from tests.unit.cve.backends.support.fake_control_planes import ADMIN_CONF, API_SERVER
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
 
 

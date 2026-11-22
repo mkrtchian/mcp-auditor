@@ -16,6 +16,7 @@ from evals.cve.detection.baseline import (
 from evals.cve.grammar import TargetStatus
 from evals.cve.places import LayoutAnchor
 from evals.cve.planting_base import PlantingHost, SymbolicUser
+from tests.unit.support.fictional_stand_ins import a_stand_ins_directory
 
 DETECTED = TargetStatus.DETECTED
 MISSED = TargetStatus.MISSED
@@ -57,7 +58,7 @@ def test_the_fixture_fingerprint_ignores_what_neither_builds_nor_reaches_the_tar
 def test_the_fixture_fingerprint_moves_with_what_a_declared_stand_in_serves(
     change: given.StandInChange, tmp_path: Path
 ):
-    stand_ins = given.a_stand_ins_directory(tmp_path)
+    stand_ins = a_stand_ins_directory(tmp_path)
     target, places = given.a_target_declaring_a_stand_in()
     before = fixture_fingerprint(target, places, stand_ins_directory=stand_ins)
 

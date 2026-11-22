@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
+import tests.integration.support.stand_in_answers as stand_in_answers
 import tests.integration.support.stand_in_capture as stand_in_capture
 import tests.integration.support.stand_in_fetches as stand_in_fetches
 import tests.integration.support.test_cve_keyed_stand_in_routes_given as given
-import tests.integration.support.test_cve_planting_stand_ins_then as then
 from evals.cve.planting import DockerPlanting, planted
 from evals.cve.planting_base import SENTINEL_IMAGE
 from tests.integration.support.docker_prerequisites import stand_in_prerequisites
@@ -41,9 +41,9 @@ def test_a_json_protocol_action_answers_its_keyed_member_value_and_errs_on_any_o
             stand_in_fetches.fetch_as_target(args, url, "POST", each) for each in requests
         ]
 
-    then.answered_by_its_route(keyed, given.DESCRIBED_HEADERS, given.DESCRIBED_BODY)
+    stand_in_answers.answered_by_its_route(keyed, given.DESCRIBED_HEADERS, given.DESCRIBED_BODY)
     for other in others:
-        then.answered_with(other, *given.SECRET_NOT_FOUND)
+        stand_in_answers.answered_with(other, *given.SECRET_NOT_FOUND)
 
 
 def test_a_query_protocol_action_answers_its_keyed_field_value_and_errs_on_any_other(
@@ -64,9 +64,9 @@ def test_a_query_protocol_action_answers_its_keyed_field_value_and_errs_on_any_o
             stand_in_fetches.fetch_as_target(args, url, "POST", each) for each in requests
         ]
 
-    then.answered_by_its_route(keyed, given.CLUSTERS_HEADERS, given.CLUSTERS_BODY)
+    stand_in_answers.answered_by_its_route(keyed, given.CLUSTERS_HEADERS, given.CLUSTERS_BODY)
     for other in others:
-        then.answered_with(other, *given.CLUSTER_NOT_FOUND)
+        stand_in_answers.answered_with(other, *given.CLUSTER_NOT_FOUND)
 
 
 def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its_string(
@@ -81,8 +81,8 @@ def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its
         integer = stand_in_fetches.fetch_as_target(args, url, "POST", given.an_issue_request(1))
         string = stand_in_fetches.fetch_as_target(args, url, "POST", given.an_issue_request("1"))
 
-    then.answered_by_its_route(integer, given.ISSUE_HEADERS, given.ISSUE_BODY)
-    then.answered_with(string, *given.ISSUE_NOT_FOUND)
+    stand_in_answers.answered_by_its_route(integer, given.ISSUE_HEADERS, given.ISSUE_BODY)
+    stand_in_answers.answered_with(string, *given.ISSUE_NOT_FOUND)
 
 
 def test_an_unkeyed_action_keeps_its_answer_whatever_its_body(tmp_path: Path):
@@ -101,6 +101,6 @@ def test_an_unkeyed_action_keeps_its_answer_whatever_its_body(tmp_path: Path):
         ]
 
     for answer in answers:
-        then.answered_by_its_route(
+        stand_in_answers.answered_by_its_route(
             answer, stand_in_capture.SECRET_HEADERS, stand_in_capture.SECRET_BODY
         )

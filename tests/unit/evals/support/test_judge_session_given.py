@@ -13,26 +13,11 @@ from evals.judge.fixture import JudgeCase
 from evals.judge.session_model import JudgeHarness, JudgeOptions
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
-from tests.unit.evals.support.test_judge_baseline_given import (
-    FAIL_ID,
-    PASS_ID,
+from tests.unit.evals.support.judge_baselines import (
     RECORDED_COMMIT,
-    UNSPECIFIED_ID,
     a_baseline,
     a_ground_truth,
-    a_judge_fixture,
-    runs_where,
 )
-
-__all__ = [
-    "FAIL_ID",
-    "PASS_ID",
-    "RECORDED_COMMIT",
-    "UNSPECIFIED_ID",
-    "a_baseline",
-    "a_judge_fixture",
-    "runs_where",
-]
 
 FAIL, PASS = EvalVerdict.FAIL, EvalVerdict.PASS
 BASE = "0123456789abcdef0123456789abcdef01234567"

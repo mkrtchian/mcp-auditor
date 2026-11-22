@@ -42,6 +42,7 @@ OUTSIDE_THE_GRAMMAR: dict[str, Any] = {
     "effect_class": "authorization_bypass",
     "first_failed_criterion": Criterion.GRAMMAR_CLASS,
 }
+NOT_PINNABLE: dict[str, Any] = {"pinnable": False, "first_failed_criterion": Criterion.PINNABLE}
 
 
 def a_census() -> Census:

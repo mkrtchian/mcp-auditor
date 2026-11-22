@@ -5,25 +5,11 @@ import openai
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.completion_usage import CompletionUsage
 
-from tests.unit.auditor.support.test_llm_adapter_given import (
-    A_FULL_USAGE,
-    Output,
-    a_completion,
-    an_llm,
-)
-
-__all__ = ["A_FULL_USAGE", "Output", "an_llm"]
+from tests.unit.auditor.support.scripted_llms import a_completion
 
 OPENAI_POLICY_MESSAGE = (
     "Invalid prompt: your prompt was flagged as potentially violating our usage policy."
 )
-
-
-def a_bad_request(message: str, code: str | None) -> openai.BadRequestError:
-    request = httpx2.Request("POST", "https://api.example.test/v1/responses")
-    response = httpx2.Response(400, request=request)
-    body = {"message": message, "type": "invalid_request_error", "code": code}
-    return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
 
 
 def a_permission_denied(body: dict[str, Any]) -> openai.PermissionDeniedError:

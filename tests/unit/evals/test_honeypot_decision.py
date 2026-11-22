@@ -5,6 +5,7 @@ sequences: each audit is a paid server run, and retesting in a mode or state tha
 would give the same verdicts.
 """
 
+import tests.unit.evals.support.honeypot_sessions as honeypot_sessions
 import tests.unit.evals.support.test_honeypot_decision_given as given
 from evals.baseline import BaselineStatus
 from evals.declared_flips import ActiveDeclarations
@@ -18,7 +19,9 @@ FLIPPED_KEY = cell_key(given.FLIPPED_CELL)
 async def test_without_baseline_the_legacy_thresholds_judge_and_nothing_retests():
     audit = given.an_audit_reproducing_the_flip()
 
-    result = await decide_runs(given.a_session(), given.correct_runs(), given.a_retester(audit))
+    result = await decide_runs(
+        honeypot_sessions.a_session(), given.correct_runs(), given.a_retester(audit)
+    )
 
     assert result.mode == GateMode.LEGACY_THRESHOLDS
     assert result.thresholds == LEGACY_THRESHOLDS
@@ -33,7 +36,7 @@ async def test_without_baseline_missing_runs_are_not_comparable():
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
-        given.a_session(), given.correct_runs(completed=2), given.a_retester(audit)
+        honeypot_sessions.a_session(), given.correct_runs(completed=2), given.a_retester(audit)
     )
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
@@ -41,7 +44,9 @@ async def test_without_baseline_missing_runs_are_not_comparable():
 
 
 async def test_a_confirmed_baseline_retests_a_flip_into_a_regression():
-    session = given.a_session(baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED))
+    session = honeypot_sessions.a_session(
+        baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED)
+    )
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
@@ -56,7 +61,7 @@ async def test_a_confirmed_baseline_retests_a_flip_into_a_regression():
 
 
 async def test_a_declared_flip_is_not_retested_and_does_not_fail_the_gate():
-    session = given.a_session(
+    session = honeypot_sessions.a_session(
         baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED),
         declarations=ActiveDeclarations(keys=frozenset({FLIPPED_KEY})),
     )
@@ -73,7 +78,9 @@ async def test_a_declared_flip_is_not_retested_and_does_not_fail_the_gate():
 
 
 async def test_a_confirmed_baseline_with_missing_runs_retests_nothing():
-    session = given.a_session(baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED))
+    session = honeypot_sessions.a_session(
+        baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED)
+    )
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
@@ -85,7 +92,9 @@ async def test_a_confirmed_baseline_with_missing_runs_retests_nothing():
 
 
 async def test_an_unconfirmed_baseline_leaves_a_flip_unretested():
-    session = given.a_session(baseline=given.a_baseline_all_correct(BaselineStatus.UNCONFIRMED))
+    session = honeypot_sessions.a_session(
+        baseline=given.a_baseline_all_correct(BaselineStatus.UNCONFIRMED)
+    )
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
@@ -98,7 +107,9 @@ async def test_an_unconfirmed_baseline_leaves_a_flip_unretested():
 
 
 async def test_a_crashing_retest_makes_the_run_not_comparable():
-    session = given.a_session(baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED))
+    session = honeypot_sessions.a_session(
+        baseline=given.a_baseline_all_correct(BaselineStatus.CONFIRMED)
+    )
 
     result = await decide_runs(
         session, given.runs_missing_the_flipped_cell(), given.a_retester(given.a_crashing_audit())
@@ -113,7 +124,7 @@ async def test_a_cell_the_baseline_did_not_record_is_neither_gated_nor_retested(
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
-        given.a_session(baseline=baseline),
+        honeypot_sessions.a_session(baseline=baseline),
         given.runs_missing_the_flipped_cell(),
         given.a_retester(audit),
     )
@@ -128,7 +139,7 @@ async def test_deltas_leave_out_a_cell_the_baseline_did_not_record():
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
-        given.a_session(baseline=baseline),
+        honeypot_sessions.a_session(baseline=baseline),
         given.runs_missing_the_flipped_cell(),
         given.a_retester(audit),
     )
@@ -139,7 +150,9 @@ async def test_deltas_leave_out_a_cell_the_baseline_did_not_record():
 async def test_without_baseline_the_gate_reports_no_protected_cells():
     audit = given.an_audit_reproducing_the_flip()
 
-    result = await decide_runs(given.a_session(), given.correct_runs(), given.a_retester(audit))
+    result = await decide_runs(
+        honeypot_sessions.a_session(), given.correct_runs(), given.a_retester(audit)
+    )
 
     assert result.protected is None
 
@@ -149,7 +162,9 @@ async def test_the_gate_reports_the_protected_cells_of_the_baseline_under_the_cu
     audit = given.an_audit_reproducing_the_flip()
 
     result = await decide_runs(
-        given.a_session(baseline=baseline), given.correct_runs(), given.a_retester(audit)
+        honeypot_sessions.a_session(baseline=baseline),
+        given.correct_runs(),
+        given.a_retester(audit),
     )
 
     assert result.protected is not None

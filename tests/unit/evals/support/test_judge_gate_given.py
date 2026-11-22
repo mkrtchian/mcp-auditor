@@ -1,30 +1,11 @@
 from evals.gate_outcome import GateMode
 from evals.judge.baseline import JudgeBaseline
 from evals.judge.gate import JudgeGateInput
-from tests.unit.evals.support.test_judge_baseline_given import (
-    FAIL_ID,
-    PASS_ID,
-    UNSPECIFIED_ID,
+from tests.unit.evals.support.judge_baselines import (
     ObservationRuns,
     a_baseline,
     a_ground_truth,
-    conditions,
-    correct_runs,
-    runs_failing_every_case,
-    runs_where,
 )
-
-__all__ = [
-    "FAIL_ID",
-    "PASS_ID",
-    "UNSPECIFIED_ID",
-    "a_baseline",
-    "a_ground_truth",
-    "conditions",
-    "correct_runs",
-    "runs_failing_every_case",
-    "runs_where",
-]
 
 
 def a_paired_input(

@@ -1,11 +1,12 @@
 import tests.unit.cve.support.test_kit_fix_check_given as given
+import tests.unit.support.fix_check_fixtures as fix_check_fixtures
 from evals.cve.kit.client import KitResponse
 from evals.cve.kit.fix_check import benign_transcript, fix_check_result
 from evals.cve.nuisance.admission.admission import FixCheckRecord
 
 
 def test_surfaces_on_vulnerable_and_is_fixed_on_the_patched_version():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()])
 
@@ -20,7 +21,7 @@ def test_surfaces_on_vulnerable_and_is_fixed_on_the_patched_version():
 
 
 def test_still_surfaces_on_the_patched_version():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
 
@@ -30,7 +31,7 @@ def test_still_surfaces_on_the_patched_version():
 
 
 def test_a_clean_server_patched_exercise_fills_the_field_false():
-    fixture = given.a_fix_check_fixture(server_patched_service="server-patched")
+    fixture = fix_check_fixtures.a_fix_check_fixture(server_patched_service="server-patched")
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()])
     server_patched = given.an_exercise([given.clean_exchanges()])
@@ -41,7 +42,7 @@ def test_a_clean_server_patched_exercise_fills_the_field_false():
 
 
 def test_a_surfacing_server_patched_exercise_fills_the_field_true():
-    fixture = given.a_fix_check_fixture(server_patched_service="server-patched")
+    fixture = fix_check_fixtures.a_fix_check_fixture(server_patched_service="server-patched")
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()])
     server_patched = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
@@ -52,7 +53,7 @@ def test_a_surfacing_server_patched_exercise_fills_the_field_true():
 
 
 def test_a_benign_call_errored_on_the_patched_exercise():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()], benign=given.errored_exchanges())
 
@@ -62,7 +63,7 @@ def test_a_benign_call_errored_on_the_patched_exercise():
 
 
 def test_a_benign_call_errored_only_on_the_vulnerable_exercise_does_not_count():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise(
         [given.exchanges_surfacing(given.NONCE)], benign=given.errored_exchanges()
     )
@@ -74,7 +75,7 @@ def test_a_benign_call_errored_only_on_the_vulnerable_exercise_does_not_count():
 
 
 def test_the_nonce_surfaces_but_no_exploit_is_aimed():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise([given.unaimed_exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()])
 
@@ -84,7 +85,7 @@ def test_the_nonce_surfaces_but_no_exploit_is_aimed():
 
 
 def test_either_of_two_exploits_surfacing_the_witness_counts():
-    fixture = given.a_fix_check_fixture()
+    fixture = fix_check_fixtures.a_fix_check_fixture()
     vulnerable = given.an_exercise(
         [given.clean_exchanges("list_dir"), given.exchanges_surfacing(given.NONCE)]
     )
@@ -97,7 +98,7 @@ def test_either_of_two_exploits_surfacing_the_witness_counts():
 
 
 def test_to_json_round_trips_to_a_valid_fix_check_record():
-    fixture = given.a_fix_check_fixture(server_patched_service="server-patched")
+    fixture = fix_check_fixtures.a_fix_check_fixture(server_patched_service="server-patched")
     vulnerable = given.an_exercise([given.exchanges_surfacing(given.NONCE)])
     patched = given.an_exercise([given.clean_exchanges()])
     server_patched = given.an_exercise([given.clean_exchanges()])
@@ -131,7 +132,9 @@ def test_the_benign_transcript_shows_each_exchange_on_one_line():
 
 
 def test_a_fix_check_working_in_work_holds_its_witness_there_with_no_tmpfs():
-    fixture = given.a_fix_check_fixture(working_directory="/work", witness_path="/work/secret.md")
+    fixture = fix_check_fixtures.a_fix_check_fixture(
+        working_directory="/work", witness_path="/work/secret.md"
+    )
 
     spec = fixture.planting_spec()
 

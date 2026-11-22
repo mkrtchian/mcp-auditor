@@ -19,8 +19,8 @@ from evals.cve.nuisance.fix_check_command import (
     fix_check_mismatches,
 )
 from evals.cve.run_images import DOCKER_REQUIREMENT
-from tests.unit.cve.support.test_kit_fix_check_given import a_fix_check_fixture
 from tests.unit.support.admission_mutations import admitting
+from tests.unit.support.fix_check_fixtures import a_fix_check_fixture
 from tests.unit.support.nuisance_admissions import a_passing_fix_check, an_admission
 
 FIXTURE = a_fix_check_fixture(server_patched_service="server-patched")

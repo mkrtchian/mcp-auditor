@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.integration.support.stand_in_answers as stand_in_answers
 import tests.integration.support.stand_in_capture as stand_in_capture
 import tests.integration.support.stand_in_fetches as stand_in_fetches
 import tests.integration.support.test_cve_planting_stand_ins_then as then
@@ -73,7 +74,7 @@ def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_prob
         )
 
     assert route.body == stand_in_capture.SECURE_BODY
-    then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
+    stand_in_answers.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
 
 
 def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_ones(
@@ -93,10 +94,10 @@ def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_o
         )
         default = stand_in_fetches.fetch_as_target(args, f"http://{host}/uncaptured")
 
-    then.carries(route, stand_in_capture.SECURE_REPLAYED, secure_length)
-    then.carries(fallback, stand_in_capture.SECURE_REPLAYED, secure_length)
-    then.carries(head_route, stand_in_capture.HEAD_ONLY_REPLAYED, None)
-    then.carries(
+    stand_in_answers.carries(route, stand_in_capture.SECURE_REPLAYED, secure_length)
+    stand_in_answers.carries(fallback, stand_in_capture.SECURE_REPLAYED, secure_length)
+    stand_in_answers.carries(head_route, stand_in_capture.HEAD_ONLY_REPLAYED, None)
+    stand_in_answers.carries(
         default, [("Location", f"https://{host}/uncaptured"), stand_in_capture.REDIRECT_SERVER], 0
     )
 
@@ -118,13 +119,13 @@ def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
             args, url, "POST", stand_in_fetches.UNKNOWN_ACTION_REQUEST
         )
 
-    then.answered_by_its_route(
+    stand_in_answers.answered_by_its_route(
         json_protocol, stand_in_capture.SECRET_HEADERS, stand_in_capture.SECRET_BODY
     )
-    then.answered_by_its_route(
+    stand_in_answers.answered_by_its_route(
         query_protocol, stand_in_capture.INSTANCES_HEADERS, stand_in_capture.INSTANCES_BODY
     )
-    then.answered_with(unknown, 404, stand_in_capture.MISSING_BODY)
+    stand_in_answers.answered_with(unknown, 404, stand_in_capture.MISSING_BODY)
 
 
 def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_path: Path):
@@ -142,10 +143,12 @@ def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_pat
             args, url, "POST", stand_in_fetches.ANONYMOUS_OPERATION_REQUEST
         )
 
-    then.answered_by_its_route(named, stand_in_capture.ISSUES_HEADERS, stand_in_capture.ISSUES_BODY)
+    stand_in_answers.answered_by_its_route(
+        named, stand_in_capture.ISSUES_HEADERS, stand_in_capture.ISSUES_BODY
+    )
     fallback = (stand_in_capture.GRAPHQL_FALLBACK_HEADERS, stand_in_capture.GRAPHQL_FALLBACK_BODY)
-    then.answered_by_its_route(other, *fallback)
-    then.answered_by_its_route(anonymous, *fallback)
+    stand_in_answers.answered_by_its_route(other, *fallback)
+    stand_in_answers.answered_by_its_route(anonymous, *fallback)
 
 
 def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
@@ -162,7 +165,7 @@ def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path
             args, url, "POST", stand_in_fetches.FIELDLESS_SEARCH_REQUEST
         )
 
-    then.answered_by_its_route(
+    stand_in_answers.answered_by_its_route(
         carrying, stand_in_capture.RESULTS_HEADERS, stand_in_capture.RESULTS_BODY
     )
-    then.answered_with(lacking, 404, stand_in_capture.MISSING_BODY)
+    stand_in_answers.answered_with(lacking, 404, stand_in_capture.MISSING_BODY)

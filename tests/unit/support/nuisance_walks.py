@@ -2,7 +2,6 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
-import tests.unit.census.support.test_census_grouping_given as grouping
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery
 from evals.cve.census.classification import Criterion
 from evals.cve.census.draw_order import draw_digest
@@ -16,7 +15,7 @@ from tests.unit.support import censuses
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
 OUTSIDE_THE_GRAMMAR: dict[str, Any] = censuses.OUTSIDE_THE_GRAMMAR
-NOT_PINNABLE: dict[str, Any] = grouping.NOT_PINNABLE
+NOT_PINNABLE: dict[str, Any] = censuses.NOT_PINNABLE
 EFFECT_HIDDEN: dict[str, Any] = {"effect_in_tool_response": False}
 
 A_CURRENT_TARGET_FLAW = ACCEPTANCE_TARGETS[0].flaw_id

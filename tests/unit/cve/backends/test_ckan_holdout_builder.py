@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.cve.backends.support.fake_ckan as fake_ckan
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as given
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_then as then
 from evals.cve.backends.ckan import CKAN_BRIDGE, CKAN_PARTS
@@ -23,9 +24,9 @@ def test_the_server_reaches_demo_ckan_org_on_the_front_and_trusts_the_fixture_au
 
 
 def test_the_launch_stands_the_stack_then_a_sentinel_per_kept_place_and_no_holder():
-    ckan = given.FakeCkanDocker()
+    ckan = fake_ckan.FakeCkanDocker()
     planting = FakePlantingDocker()
-    spec = given.the_targets_spec()
+    spec = fake_ckan.the_targets_spec()
     hosts = sorted(sentinel.host for sentinel in spec.sentinels)
 
     with ckan_ssrf_env("img", spec, docker=planting, ckan=ckan.docker()):
@@ -35,10 +36,10 @@ def test_the_launch_stands_the_stack_then_a_sentinel_per_kept_place_and_no_holde
 
 
 def test_the_launch_removes_its_server_and_its_sentinels_on_exit():
-    ckan = given.FakeCkanDocker()
+    ckan = fake_ckan.FakeCkanDocker()
 
     with ckan_ssrf_env(
-        "img", given.the_targets_spec(), docker=FakePlantingDocker(), ckan=ckan.docker()
+        "img", fake_ckan.the_targets_spec(), docker=FakePlantingDocker(), ckan=ckan.docker()
     ) as launch:
         server = value_after(launch.args, "--name")
 
@@ -49,7 +50,7 @@ def test_no_ckan_part_runs_on_the_network_the_sentinels_take(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
-    [sentinel] = given.the_targets_spec().sentinels[:1]
+    [sentinel] = fake_ckan.the_targets_spec().sentinels[:1]
 
     start_doris_sentinel(sentinel)
 

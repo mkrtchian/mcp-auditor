@@ -1,4 +1,4 @@
-import tests.unit.evals.support.test_eval_baseline_given as baseline_given
+import tests.unit.evals.support.honeypot_baselines as honeypot_baselines
 from evals.cell_grid import CellTag, GateGrid, GridBox, GridRow, GridSection, OutcomeRow
 from evals.gate_outcome import GateMode, GateOutcome, GateResult
 from evals.honeypot.report import HoneypotReport
@@ -13,7 +13,7 @@ def an_eval_report(
         timestamp="2026-09-28T00:00:00+00:00",
         commit="c0ffee",
         dirty=False,
-        conditions=baseline_given.conditions(),
+        conditions=honeypot_baselines.conditions(),
         config=config or {"concurrency": 6},
         metrics=HoneypotMetrics(
             recall=1.0, precision=1.0, consistency=1.0, distribution_coverage=1.0

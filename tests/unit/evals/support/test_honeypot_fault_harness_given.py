@@ -31,13 +31,8 @@ from mcp_auditor.domain.models import (
     ToolResponse,
 )
 from mcp_auditor.domain.ports import LLMPort
-from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 from tests.fakes.scripted_audit_model import ScriptedAuditModel
-from tests.unit.evals.support.test_honeypot_fault_injection_given import (
-    the_fault_injection_baseline,
-)
-
-__all__ = ["CHAIN_ONLY_FLAWS", "the_fault_injection_baseline"]
+from tests.unit.evals.support.fault_injection_baseline import the_fault_injection_baseline
 
 
 def the_fixture_missing(cell: Cell) -> Baseline:

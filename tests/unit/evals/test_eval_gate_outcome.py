@@ -1,5 +1,6 @@
 import pytest
 
+import tests.unit.evals.support.honeypot_gate_inputs as honeypot_gate_inputs
 import tests.unit.evals.support.test_eval_gate_outcome_given as given
 from evals.gate import LEGACY_THRESHOLDS, CellOutcome
 from evals.gate_outcome import GateInput, GateMode, GateOutcome, decide_gate
@@ -12,8 +13,8 @@ def test_legacy_mode_is_red_on_a_missed_legacy_threshold(metric: str):
     result = decide_gate(
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(**{metric: missed}),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(**{metric: missed}),
+            detections=honeypot_gate_inputs.detections(),
         )
     )
 
@@ -25,8 +26,8 @@ def test_legacy_mode_is_green_when_every_threshold_is_met():
     result = decide_gate(
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
         )
     )
 
@@ -38,8 +39,8 @@ def test_legacy_mode_reports_floor_breaches():
     result = decide_gate(
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(),
-            detections=given.detections(2, runs=3),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(2, runs=3),
         )
     )
 
@@ -50,8 +51,8 @@ def test_a_recall_breach_reads_as_detections_under_one_per_run():
     result = decide_gate(
         GateInput(
             mode=GateMode.FLOORS_ONLY,
-            metrics=given.metrics(),
-            detections=given.detections(2, runs=3),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(2, runs=3),
         )
     )
 
@@ -61,7 +62,11 @@ def test_a_recall_breach_reads_as_detections_under_one_per_run():
 
 def test_the_recall_floor_reads_as_one_planted_flaw_in_the_floors():
     result = decide_gate(
-        GateInput(mode=GateMode.PAIRED, metrics=given.metrics(), detections=given.detections())
+        GateInput(
+            mode=GateMode.PAIRED,
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
+        )
     )
 
     assert result.floors == {"recall": 1 / 8, "precision": 0.50, "distribution_coverage": 0.50}
@@ -71,8 +76,8 @@ def test_floors_only_mode_ignores_a_regression_cell():
     result = decide_gate(
         GateInput(
             mode=GateMode.FLOORS_ONLY,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=given.cells_with(CellOutcome.REGRESSION),
         )
     )
@@ -84,8 +89,8 @@ def test_floors_only_mode_is_red_on_a_floor_breach():
     result = decide_gate(
         GateInput(
             mode=GateMode.FLOORS_ONLY,
-            metrics=given.metrics(distribution_coverage=0.4),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(distribution_coverage=0.4),
+            detections=honeypot_gate_inputs.detections(),
         )
     )
 
@@ -98,8 +103,8 @@ def test_paired_mode_is_red_on_a_regression():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=cells,
         )
     )
@@ -112,8 +117,8 @@ def test_paired_mode_is_red_on_a_floor_breach():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(precision=0.3),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(precision=0.3),
+            detections=honeypot_gate_inputs.detections(),
         )
     )
 
@@ -127,8 +132,8 @@ def test_paired_mode_is_green_with_only_unreproduced_and_inconclusive_flips():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=cells,
         )
     )
@@ -143,8 +148,8 @@ def test_a_mismatch_makes_the_gate_not_comparable():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(recall=0.1),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(recall=0.1),
+            detections=honeypot_gate_inputs.detections(),
             cells=given.cells_with(CellOutcome.REGRESSION),
             mismatches=[mismatch],
         )
@@ -160,8 +165,8 @@ def test_legacy_mode_with_a_mismatch_is_not_comparable():
     result = decide_gate(
         GateInput(
             mode=GateMode.LEGACY_THRESHOLDS,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             mismatches=[mismatch],
         )
     )
@@ -182,7 +187,11 @@ def test_only_the_legacy_mode_carries_the_legacy_thresholds(
     mode: GateMode, thresholds: dict[str, float]
 ):
     result = decide_gate(
-        GateInput(mode=mode, metrics=given.metrics(), detections=given.detections())
+        GateInput(
+            mode=mode,
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
+        )
     )
 
     assert result.thresholds == thresholds
@@ -194,8 +203,8 @@ def test_paired_mode_is_green_when_its_only_flips_are_declared():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=cells,
             declared=frozenset({given.cell(1)}),
         )
@@ -211,8 +220,8 @@ def test_a_declared_cell_that_did_not_flip_is_reported_as_held():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=cells,
             declared=frozenset({given.cell(0), given.cell(2), given.cell(1)}),
         )
@@ -228,8 +237,8 @@ def test_a_regression_on_an_undeclared_cell_stays_red_beside_a_declared_flip():
     result = decide_gate(
         GateInput(
             mode=GateMode.PAIRED,
-            metrics=given.metrics(),
-            detections=given.detections(),
+            metrics=honeypot_gate_inputs.metrics(),
+            detections=honeypot_gate_inputs.detections(),
             cells=cells,
             declared=frozenset({given.cell(0)}),
         )

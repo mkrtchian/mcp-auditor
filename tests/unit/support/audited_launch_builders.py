@@ -16,11 +16,11 @@ import pytest
 
 import tests.unit.cve.backends.support.backend_launch_specs as specs
 import tests.unit.cve.backends.support.doris_launch as doris_launch
-import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as ckan_given
-import tests.unit.cve.backends.support.test_kubernetes_backend_given as kubernetes_given
-import tests.unit.cve.backends.support.test_searxng_backend_given as searxng_given
-import tests.unit.cve.support.test_cve_planting_stand_ins_given as stand_ins
+import tests.unit.cve.backends.support.fake_ckan as fake_ckan
+import tests.unit.cve.backends.support.fake_control_planes as fake_control_planes
+import tests.unit.cve.backends.support.fake_searxng as fake_searxng
 import tests.unit.support.fake_sshd as fake_sshd
+import tests.unit.support.fictional_stand_ins as stand_ins
 from evals.cve.backends import (
     backend_beside_launch,
     ckan,
@@ -114,8 +114,8 @@ def _doris(_tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltL
 
 @contextmanager
 def _ckan(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
-    spec = ckan_given.the_targets_spec()
-    stack = ckan_given.FakeCkanDocker().docker()
+    spec = fake_ckan.the_targets_spec()
+    stack = fake_ckan.FakeCkanDocker().docker()
     with ckan_ssrf_env(_IMAGE, spec, docker=FakePlantingDocker(), ckan=stack) as launch:
         yield BuiltLaunch(launch.args, spec.host)
 
@@ -123,7 +123,7 @@ def _ckan(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltL
 @contextmanager
 def _kubernetes(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
     spec = specs.a_spec_with_a_holder()
-    control_plane = kubernetes_given.a_control_plane(tmp_path).docker()
+    control_plane = fake_control_planes.a_control_plane(tmp_path).docker()
     with kubernetes_injection_env(
         _IMAGE, spec, docker=FakePlantingDocker(), control_plane=control_plane
     ) as launch:
@@ -140,9 +140,9 @@ def _mcp_ssh(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[Buil
 
 @contextmanager
 def _searxng(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
-    spec = searxng_given.the_targets_spec()
+    spec = fake_searxng.the_targets_spec()
     planting = FakePlantingDocker()
-    stand = searxng_given.FakeSearxng(planting).docker()
+    stand = fake_searxng.FakeSearxng(planting).docker()
     with searxng_env(_IMAGE, spec, docker=planting, searxng=stand) as launch:
         yield BuiltLaunch(launch.args, spec.host)
 

@@ -1,5 +1,6 @@
 import pytest
 
+import tests.unit.cve.backends.support.fake_searxng as fake_searxng
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
 from evals.cve.backends.searxng import SEARXNG_IMAGE
 from tests.fakes.planting_docker import FakePlantingDocker
@@ -9,7 +10,7 @@ from tests.unit.support.docker_argv import carries, environment, value_after
 
 def test_searxng_and_the_server_join_the_launchs_holder():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with given.a_launch(planting, searxng) as launch:
         [holder] = planting.holders
@@ -20,7 +21,7 @@ def test_searxng_and_the_server_join_the_launchs_holder():
 
 def test_searxng_runs_under_its_own_account_with_no_capability():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with given.a_launch(planting, searxng):
         [started] = searxng.started
@@ -33,7 +34,7 @@ def test_searxng_runs_under_its_own_account_with_no_capability():
 
 def test_searxng_trusts_the_fixture_authority_through_its_http_clients_variable():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with given.a_launch(planting, searxng):
         [started] = searxng.started
@@ -42,7 +43,7 @@ def test_searxng_trusts_the_fixture_authority_through_its_http_clients_variable(
 
 def test_the_server_reaches_searxng_at_the_address_of_the_readme_example():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with given.a_launch(planting, searxng) as launch:
         assert environment(launch.args)["SEARXNG_URL"] == "http://localhost:8080"
@@ -51,7 +52,7 @@ def test_the_server_reaches_searxng_at_the_address_of_the_readme_example():
 
 def test_searxng_answers_before_the_server_launches():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with given.a_launch(planting, searxng):
         [started] = searxng.started
@@ -60,7 +61,7 @@ def test_searxng_answers_before_the_server_launches():
 
 def test_searxng_is_removed_before_the_holder_even_when_the_launch_raises():
     planting = FakePlantingDocker()
-    searxng = given.FakeSearxng(planting)
+    searxng = fake_searxng.FakeSearxng(planting)
 
     with pytest.raises(RuntimeError, match="audit failed"), given.a_launch(planting, searxng):
         raise RuntimeError("audit failed")

@@ -1,5 +1,6 @@
 import pytest
 
+import tests.unit.detection.support.detection_baselines as detection_baselines
 import tests.unit.detection.support.test_detection_gate_given as given
 from evals.cve.detection.baseline import DetectionBaseline
 from evals.cve.detection.gate import (
@@ -14,8 +15,8 @@ from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 
-DETECTED = given.DETECTED
-MISSED = given.MISSED
+DETECTED = detection_baselines.DETECTED
+MISSED = detection_baselines.MISSED
 
 
 def test_a_target_without_a_file_has_no_baseline():
@@ -25,7 +26,9 @@ def test_a_target_without_a_file_has_no_baseline():
 
 
 def test_a_changed_fixture_leaves_the_comparison_with_the_target_reset():
-    comparison = compare_target(given.a_gated_baseline(), given.a_candidate(fixture="another"))
+    comparison = compare_target(
+        detection_baselines.a_gated_baseline(), given.a_candidate(fixture="another")
+    )
 
     assert comparison.outcome == TargetOutcome.FIXTURE_CHANGED
     assert comparison.detail is not None
@@ -36,8 +39,11 @@ def test_a_changed_fixture_leaves_the_comparison_with_the_target_reset():
 @pytest.mark.parametrize(
     ("baseline", "outcome"),
     [
-        (given.a_gated_baseline(), TargetOutcome.INCOMPLETE),
-        (given.a_confirmed_baseline([DETECTED] * 5 + [MISSED]), TargetOutcome.NOT_GATED),
+        (detection_baselines.a_gated_baseline(), TargetOutcome.INCOMPLETE),
+        (
+            detection_baselines.a_confirmed_baseline([DETECTED] * 5 + [MISSED]),
+            TargetOutcome.NOT_GATED,
+        ),
     ],
     ids=["gated", "not gated"],
 )
@@ -48,18 +54,20 @@ def test_an_incomplete_candidate(baseline: DetectionBaseline, outcome: TargetOut
 
 
 def test_an_unconfirmed_file_does_not_gate_and_asks_to_be_confirmed_or_deleted():
-    comparison = compare_target(given.an_unconfirmed_baseline(), given.a_candidate([MISSED] * 3))
+    comparison = compare_target(
+        detection_baselines.an_unconfirmed_baseline(), given.a_candidate([MISSED] * 3)
+    )
 
     assert comparison.outcome == TargetOutcome.NOT_GATED
     assert comparison.detail is not None
     assert "unconfirmed" in comparison.detail
-    assert given.RECORDED_COMMIT in comparison.detail
+    assert detection_baselines.RECORDED_COMMIT in comparison.detail
     assert "confirm it" in comparison.detail
     assert "delete it" in comparison.detail
 
 
 def test_a_confirmed_file_with_a_miss_does_not_gate():
-    baseline = given.a_confirmed_baseline([DETECTED] * 5 + [MISSED])
+    baseline = detection_baselines.a_confirmed_baseline([DETECTED] * 5 + [MISSED])
 
     comparison = compare_target(baseline, given.a_candidate([MISSED] * 3))
 
@@ -76,7 +84,7 @@ def test_a_confirmed_file_with_a_miss_does_not_gate():
     ids=["detected", "missed once", "missed every run"],
 )
 def test_a_gated_target(runs: list[TargetStatus], outcome: TargetOutcome):
-    comparison = compare_target(given.a_gated_baseline(), given.a_candidate(runs))
+    comparison = compare_target(detection_baselines.a_gated_baseline(), given.a_candidate(runs))
 
     assert comparison.outcome == outcome
     assert comparison.candidate_runs == runs
@@ -85,10 +93,14 @@ def test_a_gated_target(runs: list[TargetStatus], outcome: TargetOutcome):
 @pytest.mark.parametrize(
     ("baseline", "runs", "outcome"),
     [
-        (given.a_gated_baseline(), [DETECTED] * 3, TargetOutcome.HELD),
-        (given.a_gated_baseline(), [DETECTED, MISSED, DETECTED], TargetOutcome.PENDING_RETEST),
+        (detection_baselines.a_gated_baseline(), [DETECTED] * 3, TargetOutcome.HELD),
         (
-            given.a_confirmed_baseline([DETECTED] * 5 + [MISSED]),
+            detection_baselines.a_gated_baseline(),
+            [DETECTED, MISSED, DETECTED],
+            TargetOutcome.PENDING_RETEST,
+        ),
+        (
+            detection_baselines.a_confirmed_baseline([DETECTED] * 5 + [MISSED]),
             [MISSED] * 3,
             TargetOutcome.NOT_GATED,
         ),
@@ -111,7 +123,9 @@ def test_a_comparison_without_a_baseline_carries_no_baseline_runs():
 
 
 def test_apply_retests_keeps_the_baseline_runs():
-    pending = compare_target(given.a_gated_baseline(), given.a_candidate([MISSED] * 3))
+    pending = compare_target(
+        detection_baselines.a_gated_baseline(), given.a_candidate([MISSED] * 3)
+    )
 
     retested = apply_retests(pending, [True] * 4, RetestRule())
 
@@ -129,7 +143,7 @@ def test_apply_retests_keeps_the_baseline_runs():
     ids=["reproduced", "cleared", "retest incomplete"],
 )
 def test_apply_retests_decides_the_retests(retests: list[bool | None], outcome: TargetOutcome):
-    pending = given.a_comparison(TargetOutcome.PENDING_RETEST)
+    pending = detection_baselines.a_comparison(TargetOutcome.PENDING_RETEST)
 
     retested = apply_retests(pending, retests, RetestRule())
 
@@ -137,7 +151,7 @@ def test_apply_retests_decides_the_retests(retests: list[bool | None], outcome: 
 
 
 def test_apply_retests_keeps_the_retests():
-    pending = given.a_comparison(TargetOutcome.PENDING_RETEST)
+    pending = detection_baselines.a_comparison(TargetOutcome.PENDING_RETEST)
 
     retested = apply_retests(pending, [True, False, True, True, True], RetestRule())
 
@@ -145,16 +159,16 @@ def test_apply_retests_keeps_the_retests():
 
 
 def test_matching_conditions_have_no_mismatch():
-    baselines = {given.FLAW_ID: given.a_gated_baseline()}
+    baselines = {detection_baselines.FLAW_ID: detection_baselines.a_gated_baseline()}
 
-    assert condition_mismatches(baselines, given.conditions()) == []
+    assert condition_mismatches(baselines, detection_baselines.conditions()) == []
 
 
 def test_a_condition_mismatch_is_not_comparable_and_names_the_file_and_field():
-    baselines = {given.FLAW_ID: given.a_gated_baseline()}
-    mismatches = condition_mismatches(baselines, given.conditions(budget=20))
+    baselines = {detection_baselines.FLAW_ID: detection_baselines.a_gated_baseline()}
+    mismatches = condition_mismatches(baselines, detection_baselines.conditions(budget=20))
 
-    result = decide([given.a_comparison(TargetOutcome.HELD)], mismatches)
+    result = decide([detection_baselines.a_comparison(TargetOutcome.HELD)], mismatches)
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
     reasons = "\n".join(result.reasons)
@@ -164,22 +178,22 @@ def test_a_condition_mismatch_is_not_comparable_and_names_the_file_and_field():
 
 
 def test_a_gated_incomplete_target_is_not_comparable():
-    result = decide([given.a_comparison(TargetOutcome.INCOMPLETE)], [])
+    result = decide([detection_baselines.a_comparison(TargetOutcome.INCOMPLETE)], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.FLAW_ID in reason for reason in result.reasons)
+    assert any(detection_baselines.FLAW_ID in reason for reason in result.reasons)
 
 
 def test_a_not_run_target_is_not_comparable():
-    result = decide([given.a_comparison(TargetOutcome.NOT_RUN)], [])
+    result = decide([detection_baselines.a_comparison(TargetOutcome.NOT_RUN)], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.FLAW_ID in reason for reason in result.reasons)
+    assert any(detection_baselines.FLAW_ID in reason for reason in result.reasons)
 
 
 @pytest.mark.parametrize(
     "baseline",
-    [None, given.a_gated_baseline()],
+    [None, detection_baselines.a_gated_baseline()],
     ids=["no baseline", "gated"],
 )
 def test_a_run_that_depends_on_unchecked_credits_is_not_comparable(
@@ -196,23 +210,23 @@ def test_a_run_that_depends_on_unchecked_credits_is_not_comparable(
 def test_unchecked_credits_that_change_no_status_stay_comparable():
     candidate = given.a_candidate([DETECTED] * 3, depends_on_unchecked=False)
 
-    comparison = compare_target(given.a_gated_baseline(), candidate)
+    comparison = compare_target(detection_baselines.a_gated_baseline(), candidate)
 
     assert comparison.outcome == TargetOutcome.HELD
 
 
 def test_an_undecided_retest_is_not_comparable():
-    pending = given.a_comparison(TargetOutcome.PENDING_RETEST)
+    pending = detection_baselines.a_comparison(TargetOutcome.PENDING_RETEST)
     undecided = apply_retests(pending, [True, True], RetestRule())
 
     result = decide([undecided], [])
 
     assert result.outcome == GateOutcome.NOT_COMPARABLE
-    assert any(given.FLAW_ID in reason for reason in result.reasons)
+    assert any(detection_baselines.FLAW_ID in reason for reason in result.reasons)
 
 
 def test_a_no_baseline_incomplete_target_leaves_the_run_comparable():
-    baseline = given.a_confirmed_baseline([DETECTED] * 5 + [MISSED])
+    baseline = detection_baselines.a_confirmed_baseline([DETECTED] * 5 + [MISSED])
     comparison = compare_target(baseline, given.a_candidate([DETECTED], completed=False))
 
     assert decide([comparison], []).outcome == GateOutcome.GREEN
@@ -220,14 +234,14 @@ def test_a_no_baseline_incomplete_target_leaves_the_run_comparable():
 
 def test_a_regression_is_red_and_named():
     comparisons = [
-        given.a_comparison(TargetOutcome.HELD, flaw_id="CVE-2025-53109"),
-        given.a_comparison(TargetOutcome.REGRESSION),
+        detection_baselines.a_comparison(TargetOutcome.HELD, flaw_id="CVE-2025-53109"),
+        detection_baselines.a_comparison(TargetOutcome.REGRESSION),
     ]
 
     result = decide(comparisons, [])
 
     assert result.outcome == GateOutcome.RED
-    assert any(given.FLAW_ID in reason for reason in result.reasons)
+    assert any(detection_baselines.FLAW_ID in reason for reason in result.reasons)
 
 
 @pytest.mark.parametrize(
@@ -241,7 +255,7 @@ def test_a_regression_is_red_and_named():
 )
 def test_green(outcomes: list[TargetOutcome]):
     comparisons = [
-        given.a_comparison(outcome, flaw_id=f"CVE-2025-{index}")
+        detection_baselines.a_comparison(outcome, flaw_id=f"CVE-2025-{index}")
         for index, outcome in enumerate(outcomes)
     ]
 

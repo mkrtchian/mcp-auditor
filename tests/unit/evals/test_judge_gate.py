@@ -1,3 +1,4 @@
+import tests.unit.evals.support.judge_baselines as judge_baselines
 import tests.unit.evals.support.test_judge_gate_given as given
 from evals.baseline import BaselineStatus
 from evals.gate import CellOutcome, Observation
@@ -10,7 +11,7 @@ from evals.judge.gate import (
 )
 from mcp_auditor.domain.models import EvalVerdict
 
-FAIL_ID, PASS_ID = given.FAIL_ID, given.PASS_ID
+FAIL_ID, PASS_ID = judge_baselines.FAIL_ID, judge_baselines.PASS_ID
 FAIL, PASS, UNCOVERED = Observation.FAIL, Observation.PASS, Observation.UNCOVERED
 
 
@@ -21,34 +22,38 @@ def test_a_verdict_is_observed_as_itself_and_a_raised_call_as_uncovered():
 
 
 def test_conditions_at_the_ci_defaults_do_not_mismatch():
-    assert judge_ci_condition_mismatches(given.conditions()) == []
+    assert judge_ci_condition_mismatches(judge_baselines.conditions()) == []
 
 
 def test_runs_off_the_ci_default_name_the_field():
-    mismatches = judge_ci_condition_mismatches(given.conditions(runs=5))
+    mismatches = judge_ci_condition_mismatches(judge_baselines.conditions(runs=5))
 
     assert mismatches == ["runs: CI runs 3, this run 5"]
 
 
 def test_correct_runs_breach_no_floor():
-    assert judge_floor_breaches(given.correct_runs(), given.a_ground_truth()) == []
+    assert (
+        judge_floor_breaches(judge_baselines.correct_runs(), judge_baselines.a_ground_truth()) == []
+    )
 
 
 def test_runs_with_no_detection_breach_the_recall_floor():
-    runs = given.runs_where(FAIL_ID, PASS, PASS, PASS)
+    runs = judge_baselines.runs_where(FAIL_ID, PASS, PASS, PASS)
 
-    assert judge_floor_breaches(runs, given.a_ground_truth()) == ["recall"]
+    assert judge_floor_breaches(runs, judge_baselines.a_ground_truth()) == ["recall"]
 
 
 def test_a_judge_failing_every_case_breaches_the_precision_floor_when_fail_cases_are_a_minority():
-    breaches = judge_floor_breaches(given.runs_failing_every_case(), given.a_ground_truth())
+    breaches = judge_floor_breaches(
+        judge_baselines.runs_failing_every_case(), judge_baselines.a_ground_truth()
+    )
 
     assert breaches == ["precision"]
 
 
 def test_a_floor_breach_is_red_with_no_baseline():
     result = decide_judge_gate(
-        given.a_floors_only_input(given.runs_where(FAIL_ID, PASS, PASS, PASS))
+        given.a_floors_only_input(judge_baselines.runs_where(FAIL_ID, PASS, PASS, PASS))
     )
 
     assert result.outcome == GateOutcome.RED
@@ -58,7 +63,7 @@ def test_a_floor_breach_is_red_with_no_baseline():
 
 
 def test_the_precision_breach_reason_gives_the_measured_precision():
-    result = decide_judge_gate(given.a_floors_only_input(given.runs_failing_every_case()))
+    result = decide_judge_gate(given.a_floors_only_input(judge_baselines.runs_failing_every_case()))
 
     assert result.reasons == ["precision 0.33 under its floor 0.50"]
 
@@ -66,7 +71,7 @@ def test_the_precision_breach_reason_gives_the_measured_precision():
 def test_a_flip_that_reproduces_four_times_out_of_five_is_a_regression_and_red():
     result = decide_judge_gate(
         given.a_paired_input(
-            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS),
+            runs=judge_baselines.runs_where(PASS_ID, PASS, FAIL, PASS),
             retests={PASS_ID: [True, False, True, True, True]},
         )
     )
@@ -79,7 +84,8 @@ def test_a_flip_that_reproduces_four_times_out_of_five_is_a_regression_and_red()
 def test_a_flip_that_does_not_reproduce_is_green():
     result = decide_judge_gate(
         given.a_paired_input(
-            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS), retests={PASS_ID: [False, False]}
+            runs=judge_baselines.runs_where(PASS_ID, PASS, FAIL, PASS),
+            retests={PASS_ID: [False, False]},
         )
     )
 
@@ -90,7 +96,8 @@ def test_a_flip_that_does_not_reproduce_is_green():
 def test_a_declared_flip_is_declared_and_green():
     result = decide_judge_gate(
         given.a_paired_input(
-            runs=given.runs_where(PASS_ID, PASS, FAIL, PASS), declared=frozenset({PASS_ID})
+            runs=judge_baselines.runs_where(PASS_ID, PASS, FAIL, PASS),
+            declared=frozenset({PASS_ID}),
         )
     )
 
@@ -101,7 +108,7 @@ def test_a_declared_flip_is_declared_and_green():
 
 def test_a_declared_case_that_holds_is_named():
     result = decide_judge_gate(
-        given.a_paired_input(runs=given.correct_runs(), declared=frozenset({PASS_ID}))
+        given.a_paired_input(runs=judge_baselines.correct_runs(), declared=frozenset({PASS_ID}))
     )
 
     assert result.declared_held == [PASS_ID]
@@ -110,7 +117,7 @@ def test_a_declared_case_that_holds_is_named():
 def test_a_mismatch_is_not_comparable():
     result = decide_judge_gate(
         given.a_paired_input(
-            runs=given.correct_runs(), mismatches=["runs: baseline 3, candidate 5"]
+            runs=judge_baselines.correct_runs(), mismatches=["runs: baseline 3, candidate 5"]
         )
     )
 
@@ -121,8 +128,8 @@ def test_a_mismatch_is_not_comparable():
 def test_a_flip_under_an_unconfirmed_baseline_is_not_red():
     result = decide_judge_gate(
         given.a_floors_only_input(
-            given.runs_where(PASS_ID, PASS, FAIL, PASS),
-            baseline=given.a_baseline(status=BaselineStatus.UNCONFIRMED),
+            judge_baselines.runs_where(PASS_ID, PASS, FAIL, PASS),
+            baseline=judge_baselines.a_baseline(status=BaselineStatus.UNCONFIRMED),
         )
     )
 
@@ -133,14 +140,16 @@ def test_a_flip_under_an_unconfirmed_baseline_is_not_red():
 
 def test_an_unspecified_case_is_outside_the_comparison():
     result = decide_judge_gate(
-        given.a_paired_input(runs=given.runs_where(given.UNSPECIFIED_ID, FAIL, FAIL, FAIL))
+        given.a_paired_input(
+            runs=judge_baselines.runs_where(judge_baselines.UNSPECIFIED_ID, FAIL, FAIL, FAIL)
+        )
     )
 
-    assert given.UNSPECIFIED_ID not in result.cases
+    assert judge_baselines.UNSPECIFIED_ID not in result.cases
     assert result.outcome == GateOutcome.GREEN
 
 
 def test_the_protected_cases_are_the_baseline_ones():
-    result = decide_judge_gate(given.a_paired_input(runs=given.correct_runs()))
+    result = decide_judge_gate(given.a_paired_input(runs=judge_baselines.correct_runs()))
 
-    assert result.protected == given.a_baseline().protected
+    assert result.protected == judge_baselines.a_baseline().protected

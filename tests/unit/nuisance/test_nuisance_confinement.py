@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.support.test_cve_planting_stand_ins_given as stand_ins_given
 import tests.unit.nuisance.support.test_nuisance_confinement_given as given
+import tests.unit.support.fictional_stand_ins as stand_ins
 from evals.cve.nuisance.confinement import (
     labelled_run_args,
     launch_digest,
@@ -108,7 +108,7 @@ def test_a_launch_with_no_public_names_is_the_single_container_argv_and_starts_n
 def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confinement(
     tmp_path: Path,
 ):
-    names = PublicNames(stand_ins=(stand_ins_given.HOST,))
+    names = PublicNames(stand_ins=(stand_ins.HOST,))
 
     with given.a_launch_serving(tmp_path, names) as launch:
         (holder,) = launch.docker.holders
@@ -121,7 +121,7 @@ def test_a_launch_with_a_public_name_joins_the_holder_serving_it_under_the_confi
 
 
 def test_a_trust_setting_carries_its_variable(tmp_path: Path):
-    names = PublicNames(stand_ins=(stand_ins_given.HOST,), trust=("NODE_EXTRA_CA_CERTS",))
+    names = PublicNames(stand_ins=(stand_ins.HOST,), trust=("NODE_EXTRA_CA_CERTS",))
 
     with given.a_launch_serving(tmp_path, names) as launch:
         assert "NODE_EXTRA_CA_CERTS" in environment(launch.args)
@@ -130,7 +130,7 @@ def test_a_trust_setting_carries_its_variable(tmp_path: Path):
 def test_a_launch_with_a_public_name_keeps_the_project_baked_into_its_work_directory(
     tmp_path: Path,
 ):
-    names = PublicNames(stand_ins=(stand_ins_given.HOST,))
+    names = PublicNames(stand_ins=(stand_ins.HOST,))
 
     with given.a_launch_serving(tmp_path, names, working_directory="/work") as launch:
         assert "--tmpfs" not in launch.args

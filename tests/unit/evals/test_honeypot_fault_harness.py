@@ -28,6 +28,7 @@ from mcp_auditor.domain.models import (
     TestCaseBatch,
 )
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
+from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 from tests.fakes.llm import FakeLLM
 
 INJECTION = AuditCategory.INJECTION
@@ -177,7 +178,7 @@ async def test_a_retest_takes_its_audit_index_when_it_starts_not_when_it_ends():
 
 
 def test_the_harness_refuses_a_fixture_whose_runs_miss_a_cell():
-    fixture = given.the_fixture_missing(given.CHAIN_ONLY_FLAWS[0])
+    fixture = given.the_fixture_missing(CHAIN_ONLY_FLAWS[0])
 
     reasons = fixture_refusals(fixture)
 

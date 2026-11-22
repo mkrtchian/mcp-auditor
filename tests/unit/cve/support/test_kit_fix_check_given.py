@@ -1,25 +1,19 @@
-"""Crafted exchanges and targets for the fix-check verdict, free of Docker and any launch.
+"""Crafted exchanges for the fix-check verdict, free of Docker and any launch.
 
 The verdict is a pure function of the exchanges each version records, so these helpers build
 `Exercised` values directly: an exploit that surfaces the witness nonce, one that stays clean,
-one that errors, and a `FixCheckFixture` whose builder is never entered in a unit test.
+and one that errors.
 """
 
-import re
 from collections.abc import Sequence
-from contextlib import AbstractContextManager
 
-from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitResponse
-from evals.cve.kit.fix_check import Exchange, Exercised, FixCheckFixture
-from evals.cve.kit.launch import Launch, LaunchShape
-from evals.cve.places import Coordinates, Place, PlaceKind
-from evals.cve.planting import PlantedArgs, PlantingHost, PlantingSpec, SymbolicUser, planted
+from evals.cve.kit.fix_check import Exchange, Exercised
+from evals.cve.planting import PlantedArgs, PlantingSpec, planted
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.fix_check_fixtures import WITNESS_ID
 
-WITNESS_ID = "witness"
 NONCE = "MCPAUDIT-fixcheckwitnessnonce"
-AIM = re.compile(r"cat ")
 
 
 def exchanges_surfacing(nonce: str, tool: str = "read_file") -> list[Exchange]:
@@ -49,42 +43,6 @@ def an_exercise(
     )
 
 
-def a_fix_check_fixture(
-    server_patched_service: str | None = None,
-    working_directory: str = "/srv",
-    witness_path: str = "/tmp/witness",
-) -> FixCheckFixture:
-    return FixCheckFixture(
-        flaw="CVE-2025-0001",
-        effect_class=FlawClass.READ_OUTSIDE_SCOPE,
-        aim=AIM,
-        witness=a_witness(witness_path),
-        planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),
-        builder=_unused_builder,
-        exploits=(),
-        benign_calls=(),
-        vulnerable_service="vuln",
-        patched_service="patched",
-        server_patched_service=server_patched_service,
-    )
-
-
-def a_witness(path: str = "/tmp/witness") -> Place:
-    return Place(
-        id=WITNESS_ID,
-        family="fix_check",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path=path),
-    )
-
-
 def launch_args(spec: PlantingSpec) -> PlantedArgs:
     with planted(spec, "image:tag", FakePlantingDocker()) as args:
         return args
-
-
-def _unused_builder(
-    image: str, spec: PlantingSpec, shape: LaunchShape
-) -> AbstractContextManager[Launch]:
-    raise RuntimeError("the fix-check unit tests never launch a container")

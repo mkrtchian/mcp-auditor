@@ -9,35 +9,19 @@ from evals.gate_outcome import GateMode, GateOutcome, GateResult
 from evals.ground_truth import GroundTruth
 from evals.metrics import HoneypotMetrics
 from evals.recording import Recording
-from tests.unit.evals.support.test_eval_baseline_given import (
+from tests.unit.evals.support.honeypot_baselines import (
     RECORDED_COMMIT,
-    SAFE_CELL,
-    VULNERABLE_CELL,
     ObservationRuns,
-    a_baseline,
-    a_ground_truth,
     all_correct_runs,
     conditions,
-    runs_where_vulnerable_cell_is,
 )
-from tests.unit.evals.support.test_eval_gate_given import (
+from tests.unit.evals.support.honeypot_gate_inputs import (
     OTHER_SAFE_CELL,
     OTHER_VULNERABLE_CELL,
-    a_ground_truth_with_two_cells_of_each_side,
+    SAFE_CELL,
+    VULNERABLE_CELL,
+    a_ground_truth,
 )
-
-__all__ = [
-    "OTHER_SAFE_CELL",
-    "OTHER_VULNERABLE_CELL",
-    "RECORDED_COMMIT",
-    "SAFE_CELL",
-    "VULNERABLE_CELL",
-    "a_baseline",
-    "a_ground_truth",
-    "a_ground_truth_with_two_cells_of_each_side",
-    "all_correct_runs",
-    "runs_where_vulnerable_cell_is",
-]
 
 _THREE_FAILS = (Observation.FAIL,) * 3
 _THREE_PASSES = (Observation.PASS,) * 3

@@ -3,40 +3,42 @@ from typing import Any
 import openai
 import pytest
 
+import tests.unit.auditor.support.scripted_llms as llms
 import tests.unit.auditor.support.test_llm_refusals_given as given
 from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import ProviderRefusal
 from tests.fakes.chat_model import raw_response, truncated
+from tests.unit.support.provider_errors import an_openai_bad_request
 
 
 class TestRefusalAsAnError:
     async def test_openai_invalid_prompt_raises_a_refusal_carrying_the_message(self):
-        error = given.a_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
-        llm = given.an_llm([error])
+        error = an_openai_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
+        llm = llms.an_llm([error])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message == given.OPENAI_POLICY_MESSAGE
         assert raised.value.usage == ProviderUsage()
 
     async def test_a_refusal_wrapped_as_the_cause_of_another_error_is_recognized(self):
         error = given.wrapped(
-            given.a_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
+            an_openai_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt")
         )
-        llm = given.an_llm([error])
+        llm = llms.an_llm([error])
 
         with pytest.raises(ProviderRefusal, match="usage policy"):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
     async def test_alibaba_data_inspection_failure_raises_a_refusal(self):
-        error = given.a_bad_request(
+        error = an_openai_bad_request(
             "Input data may contain inappropriate content.", "data_inspection_failed"
         )
-        llm = given.an_llm([error])
+        llm = llms.an_llm([error])
 
         with pytest.raises(ProviderRefusal, match="inappropriate content"):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
     @pytest.mark.parametrize(
         "message",
@@ -47,31 +49,31 @@ class TestRefusalAsAnError:
         ],
     )
     async def test_a_refusal_without_a_code_is_recognized_by_its_wording(self, message: str):
-        llm = given.an_llm([given.a_bad_request(message, code=None)])
+        llm = llms.an_llm([an_openai_bad_request(message, code=None)])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message == message
 
     async def test_another_bad_request_propagates_unchanged(self):
-        error = given.a_bad_request("Too many tokens.", code="context_length_exceeded")
-        llm = given.an_llm([error])
+        error = an_openai_bad_request("Too many tokens.", code="context_length_exceeded")
+        llm = llms.an_llm([error])
 
         with pytest.raises(openai.BadRequestError) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value is error
 
     async def test_a_refusal_after_a_truncated_attempt_carries_its_usage(self):
         responses: list[dict[str, Any] | Exception] = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
-            given.a_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt"),
+            an_openai_bad_request(given.OPENAI_POLICY_MESSAGE, code="invalid_prompt"),
         ]
-        llm = given.an_llm(responses)
+        llm = llms.an_llm(responses)
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.usage == ProviderUsage(
             input_tokens=100, output_tokens=8192, largest_input_tokens=100
@@ -87,10 +89,10 @@ class TestHostLevelBlock:
             "provider_code": "1301",
         }
         error = given.a_permission_denied({"message": "blocked", "metadata": metadata})
-        llm = given.an_llm([error])
+        llm = llms.an_llm([error])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         message = raised.value.provider_message
         assert "blocked" in message
@@ -99,34 +101,34 @@ class TestHostLevelBlock:
 
     async def test_a_403_without_metadata_propagates_unchanged(self):
         error = given.a_permission_denied({"message": "Guardrail blocked the request."})
-        llm = given.an_llm([error])
+        llm = llms.an_llm([error])
 
         with pytest.raises(openai.PermissionDeniedError) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value is error
 
     async def test_a_content_filter_finish_with_a_refusal_raises_it_without_a_retry(self):
-        llm = given.an_llm([given.a_content_filtered("I cannot help")])
+        llm = llms.an_llm([given.a_content_filtered("I cannot help")])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message == "I cannot help"
 
     async def test_a_content_filter_finish_without_a_refusal_names_the_finish(self):
-        llm = given.an_llm([given.a_content_filtered(None)])
+        llm = llms.an_llm([given.a_content_filtered(None)])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message == "finish_reason content_filter"
 
     async def test_a_content_filter_finish_carries_the_usage_of_its_completion(self):
-        llm = given.an_llm([given.a_content_filtered(None, given.A_FULL_USAGE)])
+        llm = llms.an_llm([given.a_content_filtered(None, llms.A_FULL_USAGE)])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.usage == ProviderUsage(
             input_tokens=100,
@@ -139,12 +141,12 @@ class TestHostLevelBlock:
     async def test_a_content_filter_finish_after_a_cut_carries_the_usage_of_both(self):
         responses: list[dict[str, Any] | Exception] = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length"),
-            given.a_content_filtered(None, given.A_FULL_USAGE),
+            given.a_content_filtered(None, llms.A_FULL_USAGE),
         ]
-        llm = given.an_llm(responses)
+        llm = llms.an_llm(responses)
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.usage == ProviderUsage(
             input_tokens=200,
@@ -184,10 +186,10 @@ class TestRefusalInTheResponse:
             given.with_raw(raw_response(None, 100, 5), **raw_fields),
             raw_response({"value": "ok"}, 100, 50),
         ]
-        llm = given.an_llm(responses)
+        llm = llms.an_llm(responses)
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message
         assert raised.value.usage == ProviderUsage(
@@ -200,10 +202,10 @@ class TestRefusalInTheResponse:
             raw_response(None, 100, 5),
             response_metadata={"stop_reason": "refusal", "stop_details": stop_details},
         )
-        llm = given.an_llm([refused])
+        llm = llms.an_llm([refused])
 
         with pytest.raises(ProviderRefusal, match="category cyber"):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
     @pytest.mark.parametrize(
         "stop_details",
@@ -216,10 +218,10 @@ class TestRefusalInTheResponse:
             raw_response(None, 100, 5),
             response_metadata={"stop_reason": "refusal", "stop_details": stop_details},
         )
-        llm = given.an_llm([refused])
+        llm = llms.an_llm([refused])
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.provider_message == "Anthropic stopped the answer: stop_reason refusal"
 
@@ -228,10 +230,10 @@ class TestRefusalInTheResponse:
             raw_response(None, 100, 5),
             content=[{"type": "refusal", "refusal": "I can't help with that."}],
         )
-        llm = given.an_llm([refused])
+        llm = llms.an_llm([refused])
 
         with pytest.raises(ProviderRefusal, match="can't help with that"):
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
     async def test_a_refusal_on_the_second_attempt_carries_the_usage_of_both(self):
         responses: list[dict[str, Any] | Exception] = [
@@ -240,10 +242,10 @@ class TestRefusalInTheResponse:
                 raw_response(None, 100, 5), response_metadata={"stop_reason": "refusal"}
             ),
         ]
-        llm = given.an_llm(responses)
+        llm = llms.an_llm(responses)
 
         with pytest.raises(ProviderRefusal) as raised:
-            await llm.generate_structured("prompt", given.Output)
+            await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.usage == ProviderUsage(
             input_tokens=200, output_tokens=8197, largest_input_tokens=100
@@ -257,8 +259,8 @@ class TestRefusalInTheResponse:
                 "prompt_feedback": {"block_reason": 0, "safety_ratings": []},
             },
         )
-        llm = given.an_llm([answered])
+        llm = llms.an_llm([answered])
 
-        output, _ = await llm.generate_structured("prompt", given.Output)
+        output, _ = await llm.generate_structured("prompt", llms.Output)
 
-        assert output == given.Output(value="ok")
+        assert output == llms.Output(value="ok")

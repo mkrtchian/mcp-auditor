@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.detection.support.test_run_detection_holdout_run_given as run_given
+import tests.unit.detection.support.holdout_command_deps as command_deps
 import tests.unit.support.kit_isolation as iso
 from evals import run_detection_holdout
 from evals.cve.closed_network import ClosedNetworkUnsupported
@@ -23,7 +23,7 @@ from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance
 
 
 def test_run_without_a_drawn_target_exits_zero_and_says_so(capsys: pytest.CaptureFixture[str]):
-    deps = replace(run_given.a_drawn_run_reaching_nothing(), drawn=())
+    deps = replace(command_deps.a_drawn_run_reaching_nothing(), drawn=())
 
     exit_code = run_detection_holdout.main(["run"], deps)
 
@@ -34,7 +34,7 @@ def test_run_without_a_drawn_target_exits_zero_and_says_so(capsys: pytest.Captur
 def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LANGSMITH_TRACING", "true")
 
-    exit_code = run_detection_holdout.main(["run"], run_given.a_command_reaching_nothing())
+    exit_code = run_detection_holdout.main(["run"], command_deps.a_command_reaching_nothing())
 
     assert exit_code == run_detection_holdout.REFUSED_EXIT
 
@@ -42,19 +42,19 @@ def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
-    run_given.a_ready_run(monkeypatch)
+    command_deps.a_ready_run(monkeypatch)
     deps = replace(
-        run_given.a_drawn_run_ending_in(run_given.a_run_result()),
-        drawn=(run_given.a_drawn_target(),),
+        command_deps.a_drawn_run_ending_in(command_deps.a_run_result()),
+        drawn=(command_deps.a_drawn_target(),),
         run_targets=run_holdout_targets,
     )
-    census = run_given.a_census_with_a_ready_card(tmp_path)
+    census = command_deps.a_census_with_a_ready_card(tmp_path)
 
     exit_code = run_detection_holdout.main(["run", "--census", str(census)], deps)
 
     assert exit_code == run_detection_holdout.REFUSED_EXIT
     assert (
-        f"the rule runs with no tools filter, but {run_given.DRAWN_FLAW} carries one"
+        f"the rule runs with no tools filter, but {command_deps.DRAWN_FLAW} carries one"
         in capsys.readouterr().out
     )
 
@@ -62,7 +62,7 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
 def test_the_calibration_check_without_a_drawn_target_exits_zero_and_says_so(
     capsys: pytest.CaptureFixture[str],
 ):
-    deps = replace(run_given.a_command_reaching_nothing(), drawn=())
+    deps = replace(command_deps.a_command_reaching_nothing(), drawn=())
 
     exit_code = run_detection_holdout.main(["calibration-check"], deps)
 
@@ -162,7 +162,7 @@ def _drawn(
         (sweep or FakeContainerSweep()).sweep,
     )
     return replace(
-        run_given.a_command_reaching_nothing(),
+        command_deps.a_command_reaching_nothing(),
         drawn=targets,
         docker=docker,
         calibration_check=lambda _concurrency, _ci: checks,

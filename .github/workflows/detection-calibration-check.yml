@@ -16,6 +16,7 @@ on:
       - tests/integration/support/docker_prerequisites.py
       - tests/integration/support/planting_specs.py
       - tests/integration/support/recording_planting.py
+      - tests/integration/support/stand_in_answers.py
       - tests/integration/support/stand_in_capture.py
       - tests/integration/support/stand_in_fetches.py
       - tests/integration/support/target_commands.py
@@ -37,6 +38,7 @@ on:
       - tests/integration/support/docker_prerequisites.py
       - tests/integration/support/planting_specs.py
       - tests/integration/support/recording_planting.py
+      - tests/integration/support/stand_in_answers.py
       - tests/integration/support/stand_in_capture.py
       - tests/integration/support/stand_in_fetches.py
       - tests/integration/support/target_commands.py

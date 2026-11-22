@@ -27,6 +27,7 @@ from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
 from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.recording import Recording, RecordingRefused, decide_recording
 from mcp_auditor.domain.models import AuditCategory
+from tests.unit.evals.support.fault_injection_baseline import the_fault_injection_baseline
 
 NO_DETECTION = "recall: 0 detection(s) over 3 runs, under one per run"
 NO_STABLE_FAIL = (
@@ -139,7 +140,7 @@ class _GateRun:
 
 def _through_the_gate(candidate: given.FaultedCandidate, retests: list[bool]) -> _GateRun:
     """Every flip settles on the same scripted retests: the fault stays active in them."""
-    baseline = given.the_fault_injection_baseline()
+    baseline = the_fault_injection_baseline()
     metrics = given.metrics_of(candidate)
     detections = count_detections(candidate.runs, MERGED_GROUND_TRUTH)
     cells = compare(baseline.observation_runs(), candidate.runs, MERGED_GROUND_TRUTH)

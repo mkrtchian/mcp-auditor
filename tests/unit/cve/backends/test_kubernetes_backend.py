@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.backend_launch_specs as specs
+import tests.unit.cve.backends.support.fake_control_planes as fake_control_planes
 import tests.unit.cve.backends.support.test_kubernetes_backend_given as given
 import tests.unit.cve.backends.support.test_kubernetes_backend_then as then
 from evals.cve.backends.kubernetes import LIFECYCLE
@@ -54,7 +55,7 @@ def test_the_control_plane_its_network_and_its_kubeconfig_are_removed_when_the_b
 
 
 def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
-    control_plane = given.a_control_plane(tmp_path)
+    control_plane = fake_control_planes.a_control_plane(tmp_path)
 
     with (
         pytest.raises(ValueError, match="has_network"),
@@ -73,7 +74,7 @@ def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
 def test_the_fix_check_launch_takes_the_bounded_control_planes_network_and_its_kubeconfig(
     tmp_path: Path,
 ):
-    control_plane = given.a_control_plane(tmp_path)
+    control_plane = fake_control_planes.a_control_plane(tmp_path)
 
     with kubectl_env(
         "img", FIXTURE.planting_spec(), docker=FakePlantingDocker(), stand=control_plane.stand

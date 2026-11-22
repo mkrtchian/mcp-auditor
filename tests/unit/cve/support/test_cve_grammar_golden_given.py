@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import tests.unit.cve.support.cve_grammar_golden_corpus as corpus
-import tests.unit.cve.support.test_cve_strike_given as strike
+import tests.unit.cve.support.strike_inputs as strike
 import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.calibration_check import not_fixed_reasons, not_live_reasons
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS

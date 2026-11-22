@@ -8,11 +8,7 @@ from mcp_auditor.adapters.llm import LLM, StructuredOutput
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from tests.fakes.chat_model import FakeChatModel, ScriptedResponse, Throttled, raw_response
-from tests.unit.auditor.support.test_llm_adapter_given import Output
-from tests.unit.auditor.support.test_llm_refusals_given import a_bad_request
-from tests.unit.support.provider_errors import an_openai_rate_limit
-
-__all__ = ["Output"]
+from tests.unit.support.provider_errors import an_openai_bad_request, an_openai_rate_limit
 
 PROVIDER_MESSAGE = "Error code: 429 - slow down"
 
@@ -56,7 +52,7 @@ def an_unreadable_answer() -> dict[str, Any]:
 
 
 def a_refusal() -> openai.BadRequestError:
-    return a_bad_request("Invalid prompt", code="invalid_prompt")
+    return an_openai_bad_request("Invalid prompt", code="invalid_prompt")
 
 
 @dataclass

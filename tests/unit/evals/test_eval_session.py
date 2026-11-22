@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.evals.support.honeypot_sessions as honeypot_sessions
 import tests.unit.evals.support.test_eval_session_given as given
 from evals.baseline import BaselineStatus
 from evals.declared_flips import DECLARED_FLIPS_PATH, ActiveDeclarations, Instrument
@@ -31,7 +32,7 @@ OTHER_COMMIT = "4567def"
 
 
 def test_a_no_baseline_run_gates_on_floors_only_even_with_a_confirmed_baseline():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
 
     assert select_mode(baseline, no_baseline=True) == GateMode.FLOORS_ONLY
 
@@ -41,24 +42,25 @@ def test_no_baseline_gates_on_the_legacy_thresholds():
 
 
 def test_an_unconfirmed_baseline_gates_on_floors_only():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
 
     assert select_mode(baseline, no_baseline=False) == GateMode.FLOORS_ONLY
 
 
 def test_a_confirmed_baseline_gates_paired():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
 
     assert select_mode(baseline, no_baseline=False) == GateMode.PAIRED
 
 
 def test_a_run_without_baseline_nor_recording_is_not_refused():
-    assert pre_run_refusals(given.a_session(), given.LABELS) == []
+    assert pre_run_refusals(honeypot_sessions.a_session(), given.LABELS) == []
 
 
 def test_a_baseline_at_other_conditions_names_the_mismatch():
-    session = given.a_session(
-        baseline=given.a_baseline_at_ci_conditions(), conditions=given.ci_conditions(budget=7)
+    session = honeypot_sessions.a_session(
+        baseline=honeypot_sessions.a_baseline_at_ci_conditions(),
+        conditions=honeypot_sessions.ci_conditions(budget=7),
     )
 
     reasons = pre_run_refusals(session, given.LABELS)
@@ -69,17 +71,19 @@ def test_a_baseline_at_other_conditions_names_the_mismatch():
 
 
 def test_a_baseline_of_another_ground_truth_is_not_refused():
-    baseline = given.a_baseline_at_ci_conditions()
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions()
     baseline.conditions.ground_truth_fingerprint = "another"
 
-    assert pre_run_refusals(given.a_session(baseline=baseline), given.LABELS) == []
+    assert pre_run_refusals(honeypot_sessions.a_session(baseline=baseline), given.LABELS) == []
 
 
 @pytest.mark.parametrize("status", list(BaselineStatus))
 def test_a_label_revision_leaving_no_stable_and_correct_fail_cell_names_the_reset(
     status: BaselineStatus,
 ):
-    session = given.a_session(baseline=given.a_baseline_at_ci_conditions(status))
+    session = honeypot_sessions.a_session(
+        baseline=honeypot_sessions.a_baseline_at_ci_conditions(status)
+    )
 
     reasons = pre_run_refusals(session, given.LABELS_WITH_THE_FLAW_RELABELED_PASS)
 
@@ -91,7 +95,7 @@ def test_a_label_revision_leaving_no_stable_and_correct_fail_cell_names_the_rese
 
 
 def test_a_label_revision_leaving_no_stable_and_correct_pass_cell_names_the_reset():
-    session = given.a_session(baseline=given.a_baseline_at_ci_conditions())
+    session = honeypot_sessions.a_session(baseline=honeypot_sessions.a_baseline_at_ci_conditions())
 
     reasons = pre_run_refusals(session, given.LABELS_WITH_THE_SAFE_CELL_RELABELED_FAIL)
 
@@ -100,8 +104,8 @@ def test_a_label_revision_leaving_no_stable_and_correct_pass_cell_names_the_rese
 
 
 def test_recording_over_a_baseline_a_label_revision_left_blind_is_refused():
-    session = given.a_session(
-        baseline=given.a_baseline_at_ci_conditions(), tree=given.a_clean_tree()
+    session = honeypot_sessions.a_session(
+        baseline=honeypot_sessions.a_baseline_at_ci_conditions(), tree=given.a_clean_tree()
     )
 
     reasons = pre_run_refusals(session, given.LABELS_WITH_THE_FLAW_RELABELED_PASS)
@@ -111,7 +115,7 @@ def test_recording_over_a_baseline_a_label_revision_left_blind_is_refused():
 
 
 def test_recording_on_a_dirty_tree_is_refused():
-    session = given.a_session(tree=TreeState(commit=given.HEAD, dirty=True))
+    session = honeypot_sessions.a_session(tree=TreeState(commit=given.HEAD, dirty=True))
 
     reasons = pre_run_refusals(session, given.LABELS)
 
@@ -120,7 +124,9 @@ def test_recording_on_a_dirty_tree_is_refused():
 
 
 def test_recording_at_other_ci_conditions_is_refused():
-    session = given.a_session(tree=given.a_clean_tree(), conditions=given.ci_conditions(budget=7))
+    session = honeypot_sessions.a_session(
+        tree=given.a_clean_tree(), conditions=honeypot_sessions.ci_conditions(budget=7)
+    )
 
     reasons = pre_run_refusals(session, given.LABELS)
 
@@ -130,8 +136,8 @@ def test_recording_at_other_ci_conditions_is_refused():
 
 
 def test_recording_over_an_unconfirmed_baseline_at_another_commit_is_refused():
-    baseline = given.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
-    session = given.a_session(baseline=baseline, tree=given.a_clean_tree(OTHER_COMMIT))
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.UNCONFIRMED)
+    session = honeypot_sessions.a_session(baseline=baseline, tree=given.a_clean_tree(OTHER_COMMIT))
 
     reasons = pre_run_refusals(session, given.LABELS)
 
@@ -165,19 +171,19 @@ def test_no_baseline_before_nor_after_has_not_changed():
 
 
 def test_an_unchanged_baseline_has_not_changed():
-    baseline = given.a_baseline_at_ci_conditions()
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions()
 
     assert baseline_changed(baseline, baseline.model_copy()) == []
 
 
 def test_a_baseline_appearing_during_the_runs_is_named():
-    changed = baseline_changed(None, given.a_baseline_at_ci_conditions())
+    changed = baseline_changed(None, honeypot_sessions.a_baseline_at_ci_conditions())
 
     assert changed == ["the baseline file changed during the runs: record again"]
 
 
 def test_a_baseline_recorded_again_during_the_runs_is_named():
-    loaded = given.a_baseline_at_ci_conditions()
+    loaded = honeypot_sessions.a_baseline_at_ci_conditions()
     current = loaded.model_copy(update={"recorded_at": "2026-09-23T11:00:00+00:00"})
 
     assert baseline_changed(loaded, current) == [
@@ -186,13 +192,15 @@ def test_a_baseline_recorded_again_during_the_runs_is_named():
 
 
 def test_a_budget_other_than_the_ci_one_is_named():
-    mismatches = ci_condition_mismatches(given.ci_conditions(budget=7))
+    mismatches = ci_condition_mismatches(honeypot_sessions.ci_conditions(budget=7))
 
     assert mismatches == ["budget: CI runs 10, this run 7"]
 
 
 def test_a_model_override_is_named():
-    conditions = given.ci_conditions().model_copy(update={"judge_model": "another-judge"})
+    conditions = honeypot_sessions.ci_conditions().model_copy(
+        update={"judge_model": "another-judge"}
+    )
 
     mismatches = ci_condition_mismatches(conditions)
 
@@ -201,7 +209,7 @@ def test_a_model_override_is_named():
 
 
 def test_a_reasoning_override_is_named():
-    conditions = given.ci_conditions().model_copy(update={"reasoning": "high"})
+    conditions = honeypot_sessions.ci_conditions().model_copy(update={"reasoning": "high"})
 
     mismatches = ci_condition_mismatches(conditions)
 

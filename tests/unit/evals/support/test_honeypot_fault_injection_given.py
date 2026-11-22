@@ -8,13 +8,12 @@ counts the categories among a tool's judged cases, chains excluded).
 import random
 from dataclasses import dataclass
 
-from evals.baseline import Baseline, load_baseline
 from evals.gate import Cell, Observation, cell_key
-from evals.honeypot.fault_harness import FIXTURE_PATH
 from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.metrics import HoneypotMetrics, VerdictMap, compute_consistency, label_scores
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
+from tests.unit.evals.support.fault_injection_baseline import the_fault_injection_baseline
 
 STABLE_CORRECT_FAILS: list[Cell] = [
     ("get_user", AuditCategory.ERROR_HANDLING),
@@ -132,12 +131,6 @@ def _every_cell_observed(seen: Observation, distribution_coverage: float) -> Fau
 
 def _recorded_runs() -> ObservationRuns:
     return the_fault_injection_baseline().observation_runs()
-
-
-def the_fault_injection_baseline() -> Baseline:
-    baseline = load_baseline(FIXTURE_PATH)
-    assert baseline is not None
-    return baseline
 
 
 def _coin(seed: int, run_index: int, cell: Cell) -> bool:

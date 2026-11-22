@@ -39,8 +39,8 @@ def test_a_server_counts_able_to_run_in_a_container_when_either_classifier_finds
 
 def test_a_flaw_meets_a_criterion_of_the_draw_order_when_either_classifier_finds_it_does():
     classifications = given.classified(
-        classifier_pairs.the_same_flaw_seen_as("CVE-2026-0001", given.NOT_PINNABLE, {}),
-        classifier_pairs.agreed("CVE-2026-0002", **given.NOT_PINNABLE),
+        classifier_pairs.the_same_flaw_seen_as("CVE-2026-0001", censuses.NOT_PINNABLE, {}),
+        classifier_pairs.agreed("CVE-2026-0002", **censuses.NOT_PINNABLE),
     )
 
     population = gap_population(classifications, {"CVE-2026-0001", "CVE-2026-0002"})

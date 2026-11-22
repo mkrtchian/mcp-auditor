@@ -1,8 +1,5 @@
 from evals.gate import Cell, CellComparison, CellOutcome
 from mcp_auditor.domain.models import AuditCategory
-from tests.unit.evals.support.test_eval_gate_given import detections, metrics
-
-__all__ = ["cell", "cells_with", "detections", "metrics"]
 
 
 def cells_with(*outcomes: CellOutcome) -> dict[Cell, CellComparison]:

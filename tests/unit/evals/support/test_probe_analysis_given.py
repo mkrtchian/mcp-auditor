@@ -1,8 +1,7 @@
 from typing import Any
 
-from evals.probe.analysis import CallOutcome, CandidateStats, ProbeObservation
+from evals.probe.analysis import CandidateStats
 from evals.probe.candidates import Candidate, Prices
-from evals.probe.corpus import Role
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage
 
@@ -15,26 +14,6 @@ def a_candidate(prices: Prices = ONE_DOLLAR_PER_MILLION_INPUT) -> Candidate:
         settings=Settings(provider="google", model="some-model", judge_model="", reasoning=""),
         prices=prices,
         reasoning_expected=True,
-    )
-
-
-def an_observation(
-    role: Role = "main",
-    schema_name: str = "TestCaseBatch",
-    seconds: float = 1.0,
-    outcome: CallOutcome = CallOutcome.PARSED,
-    **changes: Any,
-) -> ProbeObservation:
-    return ProbeObservation(
-        candidate="candidate",
-        call_id=f"honeypot/{schema_name}/000",
-        schema_name=schema_name,
-        role=role,
-        seconds=seconds,
-        usage=changes.pop("usage", ProviderUsage()),
-        outcome=outcome,
-        coverage_gap=changes.pop("coverage_gap", None),
-        **changes,
     )
 
 

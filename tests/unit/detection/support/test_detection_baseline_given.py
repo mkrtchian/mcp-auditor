@@ -15,11 +15,8 @@ from evals.cve.planting import PlantingHost, SymbolicUser
 from evals.cve.planting_base import LayoutMount, PublicNames
 from evals.gate import RetestRule
 from mcp_auditor.domain.ports import MCPClientPort
-from tests.unit.cve.support.test_cve_planting_stand_ins_given import HOST as STAND_IN_HOST
-from tests.unit.cve.support.test_cve_planting_stand_ins_given import (
-    a_stand_ins_directory as a_stand_ins_directory,
-)
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES, an_acceptance_target
+from tests.unit.support.fictional_stand_ins import HOST as STAND_IN_HOST
 
 type TargetChange = Callable[[Target, Places, Path], tuple[Target, Places]]
 type StandInChange = Callable[[Target, Path], Target]
