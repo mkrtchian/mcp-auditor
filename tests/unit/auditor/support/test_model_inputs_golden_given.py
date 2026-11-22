@@ -42,7 +42,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.redaction import marker
+from mcp_auditor.domain.redaction import redaction_marker
 from mcp_auditor.graph import chain_prompts, prompts
 from tests.fakes import FakeLLM
 from tests.unit.auditor.support.anthropic_request_bodies import the_anthropic_request_body
@@ -72,7 +72,7 @@ def _constants() -> dict[str, str]:
         "constant/non_destructive": prompts.NON_DESTRUCTIVE_CONSTRAINT,
         "constant/judging_rules": prompts.JUDGING_RULES,
         "constant/redaction_notice": prompts.REDACTION_NOTICE,
-        "redaction/marker": marker("API_TOKEN"),
+        "redaction/marker": redaction_marker("API_TOKEN"),
         "redaction/with_notice": prompts.with_redaction_notice("a prompt"),
         **{f"category_guidance/{c.value}": text for c, text in CATEGORY_GUIDANCE.items()},
         **{

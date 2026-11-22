@@ -9,6 +9,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolReport,
 )
+from mcp_auditor.domain.redaction import redaction_marker
 from mcp_auditor.domain.shown_response import rendered_response, shown_to_model
 
 NON_DESTRUCTIVE_CONSTRAINT = """NON-DESTRUCTIVE PAYLOADS. This applies to every payload you generate:
@@ -28,7 +29,9 @@ JUDGING_RULES = """RULES:
 # Without this notice the judge takes a marker for inert text and can pass a response
 # that leaks the value, a leak it flags when the value itself is shown.
 REDACTION_NOTICE = (
-    "REDACTED VALUES. A marker such as `[value of NAME, redacted by mcp-auditor]` stands for a value "
+    "REDACTED VALUES. A marker such as `"
+    f"{redaction_marker('NAME')}"
+    "` stands for a value "
     "the server returned: mcp-auditor replaced the value of the environment variable NAME before "
     "showing you the output. Read the marker as that value."
 )
@@ -82,9 +85,12 @@ Always send arguments that conform to the schema's type constraints. The goal is
 
 
 def format_tool_header(tool: ToolDefinition) -> str:
-    description = tool.description or "No description provided"
     schema_json = json.dumps(tool.input_schema, indent=2)
-    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
+    return f"{format_tool_description(tool)}\n\nInput schema:\n```json\n{schema_json}\n```"
+
+
+def format_tool_description(tool: ToolDefinition) -> str:
+    return f"Tool description: {tool.description or 'No description provided'}"
 
 
 def build_context_section(attack_context: AttackContext | None) -> str:
@@ -126,14 +132,12 @@ def build_context_extraction_prompt(
     existing_context: AttackContext,
 ) -> str:
     tool = tool_report.tool
-    description = tool.description or "No description provided"
-
     cases_section = _format_cases_for_extraction(tool_report) or "No test results available."
     existing_section = _format_existing_context(existing_context)
 
     return f"""You are analyzing the results of a security audit on the MCP tool "{tool.name}".
 
-Tool description: {description}
+{format_tool_description(tool)}
 
 Test results:
 {cases_section}
@@ -198,7 +202,6 @@ def build_judge_prompt(
 ) -> str:
     outcome_section = _format_outcome(test_case)
     category = test_case.payload.category
-    description = tool.description or "No description provided"
 
     return f"""You are a security evaluator for MCP tool servers.
 
@@ -206,7 +209,7 @@ Your task: decide whether the response or the error of the tool "{tool.name}" sh
 
 {format_judging_criteria(category)}
 
-Tool description: {description}
+{format_tool_description(tool)}
 
 Test category: {category}
 

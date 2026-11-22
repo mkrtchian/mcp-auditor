@@ -7,7 +7,7 @@ from mcp_auditor.adapters.log_redaction import (
     redacted_sdk_logging,
     silenced_stdio_logging,
 )
-from mcp_auditor.domain.redaction import Redaction, marker
+from mcp_auditor.domain.redaction import Redaction, redaction_marker
 
 REDACTION = Redaction({"TOKEN": given.VALUE})
 
@@ -25,7 +25,7 @@ def test_a_record_and_its_exception_are_formatted_with_the_marker() -> None:
         logger.exception("received %s", given.VALUE)
 
     formatted = output.getvalue()
-    assert formatted.count(marker("TOKEN")) == 2
+    assert formatted.count(redaction_marker("TOKEN")) == 2
     assert given.VALUE not in formatted
 
 
@@ -33,7 +33,7 @@ def test_an_active_redaction_masks_the_value_and_silences_the_stdio_logger() -> 
     with given.sdk_output() as outputs, redacted_sdk_logging(REDACTION):
         given.server_data_logged()
 
-    assert marker("TOKEN") in outputs["client"].getvalue()
+    assert redaction_marker("TOKEN") in outputs["client"].getvalue()
     assert outputs["mcp.client.stdio"].getvalue() == ""
     assert all(given.VALUE not in output.getvalue() for output in outputs.values())
 

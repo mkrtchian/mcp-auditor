@@ -3,22 +3,22 @@ import logging
 import pytest
 
 import tests.integration.support.test_relayed_environment_given as given
-from mcp_auditor.domain.redaction import marker
+from mcp_auditor.domain.redaction import redaction_marker
 from mcp_auditor.domain.relayed_environment import RelayRequest
 
-MARKER = marker(given.NAME)
+REDACTION_MARKER = redaction_marker(given.NAME)
 
 
 async def test_a_redacted_variable_comes_back_as_the_marker() -> None:
     echo = await given.echoed_through_the_audit_boundaries(RelayRequest(redacted=(given.NAME,)))
 
-    assert echo.response == MARKER
+    assert echo.response == REDACTION_MARKER
 
 
 async def test_the_server_stderr_is_kept_redacted() -> None:
     echo = await given.echoed_through_the_audit_boundaries(RelayRequest(redacted=(given.NAME,)))
 
-    assert MARKER in echo.stderr
+    assert REDACTION_MARKER in echo.stderr
     assert given.VALUE not in echo.stderr
 
 
@@ -33,7 +33,7 @@ async def test_the_sdk_logs_never_quote_a_redacted_value(
     assert not [r for r in caplog.records if r.name == "mcp.client.stdio"]
     rejected = [r for r in caplog.records if "Failed to validate notification" in r.getMessage()]
     assert rejected
-    assert all(MARKER in r.getMessage() for r in rejected)
+    assert all(REDACTION_MARKER in r.getMessage() for r in rejected)
 
 
 async def test_a_relaunch_writes_no_value_and_logs_no_exception_text(
@@ -44,7 +44,7 @@ async def test_a_relaunch_writes_no_value_and_logs_no_exception_text(
 
     echo = await given.echoed_through_the_audit_boundaries(redacted, relaunched=True)
 
-    assert echo.response == MARKER
+    assert echo.response == REDACTION_MARKER
     assert given.VALUE not in echo.stderr
     assert given.VALUE not in caplog.text
     assert not [r for r in caplog.records if r.exc_info or r.name.startswith("mcp_auditor")]

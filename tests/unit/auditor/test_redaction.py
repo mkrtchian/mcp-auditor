@@ -1,13 +1,13 @@
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
-from mcp_auditor.domain.redaction import Redaction, marker
+from mcp_auditor.domain.redaction import Redaction, redaction_marker
 
 _TOKEN = "s3cr3t-t0ken-value"
 _TOKEN_MARKER = "[value of TOKEN, redacted by mcp-auditor]"
 _REDACTION = Redaction({"TOKEN": _TOKEN})
 
 
-def test_marker_names_the_variable():
-    assert marker("TOKEN") == _TOKEN_MARKER
+def test_redaction_marker_names_the_variable():
+    assert redaction_marker("TOKEN") == _TOKEN_MARKER
 
 
 def test_text_without_secret_is_unchanged():
@@ -29,7 +29,7 @@ def test_text_replaces_the_longer_value_first_when_one_contains_the_other():
 
     redacted = redaction.text("leak: xx-abcdefgh-yy")
 
-    assert redacted == f"leak: {marker('LONG')}"
+    assert redacted == f"leak: {redaction_marker('LONG')}"
 
 
 def test_response_redacts_the_content_and_keeps_the_error_fields():
@@ -86,7 +86,7 @@ def test_stream_redacts_a_value_spanning_a_newline():
 
     emitted = stream.feed("key: line-one\n") + stream.feed("line-two\nnext\n") + stream.flush()
 
-    assert emitted == f"key: {marker('PEM')}\nnext\n"
+    assert emitted == f"key: {redaction_marker('PEM')}\nnext\n"
 
 
 def test_stream_without_secret_returns_each_chunk_as_is():

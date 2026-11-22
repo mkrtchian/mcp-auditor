@@ -91,6 +91,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `judged_cases` (the audit's state channel) | processed cases | rename | 2026-11-11 |
 | known gap of the holdout | known gap | rename | 2026-11-11 |
 | location id | place id | rename | 2026-11-11 |
+| `marker()` (the function of `domain/redaction.py`) | `redaction_marker()` | rename | 2026-11-22 |
 | `MCP_AUDITOR_OPENROUTER_HOSTS` | `MCP_AUDITOR_OPENROUTER_PROVIDERS` | rename | 2026-11-11 |
 | `MechanismClass`, `mechanisms` | class (`FlawClass`, `classes`) | rename | 2026-11-11 |
 | `miss_causes` | `missed_call_causes` | rename | 2026-11-11 |

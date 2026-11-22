@@ -13,6 +13,7 @@ from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
     build_context_section,
     format_judging_criteria,
+    format_tool_description,
     format_tool_header,
 )
 
@@ -99,7 +100,6 @@ def build_step_observation_prompt(
     goal: ChainGoal,
     chain_steps: list[ChainStep],
 ) -> str:
-    description = tool.description or "No description provided"
     latest = chain_steps[-1]
     history_section = _format_chain_history(chain_steps[:-1])
     outcome = _format_latest_outcome(latest.response, latest.error)
@@ -110,7 +110,7 @@ def build_step_observation_prompt(
         f' attack chain against the MCP tool "{tool.name}".'
         f"""
 
-Tool description: {description}
+{format_tool_description(tool)}
 
 Chain goal: {goal.description}
 
@@ -134,7 +134,6 @@ def build_chain_judge_prompt(
     tool: ToolDefinition,
     chain: AttackChain,
 ) -> str:
-    description = tool.description or "No description provided"
     steps_section = _format_chain_history(chain.steps)
     category = chain.goal.category
 
@@ -147,7 +146,7 @@ against "{tool.name}" show a **{category}** failure.
 
 {format_judging_criteria(category)}
 
-Tool description: {description}
+{format_tool_description(tool)}
 
 Chain goal: {chain.goal.description}
 Target category: {category}

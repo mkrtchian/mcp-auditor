@@ -20,7 +20,7 @@ class Redaction:
     def text(self, text: str) -> str:
         # Longest first: a value contained in another must not break the longer one apart.
         for name, value in sorted(self.secrets.items(), key=lambda item: -len(item[1])):
-            text = text.replace(value, marker(name))
+            text = text.replace(value, redaction_marker(name))
         return text
 
     def response(self, response: ToolResponse) -> ToolResponse:
@@ -47,7 +47,7 @@ class Redaction:
         return value
 
 
-def marker(name: str) -> str:
+def redaction_marker(name: str) -> str:
     return f"[value of {name}, redacted by mcp-auditor]"
 
 
