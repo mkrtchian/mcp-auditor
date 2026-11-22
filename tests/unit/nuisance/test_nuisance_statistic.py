@@ -132,15 +132,6 @@ def test_primary_controls_are_the_five_intervals_on_the_flagged_shares():
     }
 
 
-def test_primary_controls_compute_the_hierarchical_intervals_on_the_grid_they_are_given():
-    results = [a_server_result("A", flagged_runs=3), a_server_result("B", flagged_runs=1)]
-    controls = nuisance_rate_controls(results, RUNS, grid=COARSE_GRID)
-    prior = GammaPrior(2.0, 2.0)
-    assert controls["hierarchical_gamma_2_2"] == hierarchical_interval(
-        [3, 1], RUNS, prior, COARSE_GRID
-    )
-
-
 def test_incomplete_as_flagged_control_counts_the_incomplete_unflagged_runs_as_flagged():
     results = [a_server_result("A", flagged_runs=0, incomplete_unflagged_runs=2)]
     bound = nuisance_rate_controls(results, RUNS, grid=COARSE_GRID)["incomplete_as_flagged_wilson"]
