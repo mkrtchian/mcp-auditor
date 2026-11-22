@@ -1,12 +1,8 @@
 from datetime import date
 from typing import Any, NamedTuple
 
-from evals.cve.census.classification import (
-    Classification,
-    Primitive,
-    SoftwareKind,
-    Transport,
-)
+from evals.cve.census.classification import Classification
+from tests.unit.support.censuses import a_classification
 
 FIRST = "classifier_a"
 SECOND = "classifier_b"
@@ -18,7 +14,7 @@ class CensusParts(NamedTuple):
     withdrawn: set[str]
 
 
-def a_census(
+def census_parts(
     *pairs: tuple[Classification, Classification],
     disclosed: dict[str, date] | None = None,
     withdrawn: set[str] | None = None,
@@ -44,24 +40,3 @@ def the_same_flaw_seen_as(
     flaw: str, first: dict[str, Any], second: dict[str, Any]
 ) -> tuple[Classification, Classification]:
     return a_classification(flaw=flaw, **first), a_classification(flaw=flaw, **second)
-
-
-def a_classification(**overrides: Any) -> Classification:
-    fields: dict[str, Any] = {
-        "flaw": "CVE-2025-1234",
-        "software_kind": SoftwareKind.SERVER,
-        "server_package": "npm:@acme/files",
-        "affected_versions": "< 1.2.0",
-        "vulnerable_version": "1.1.0",
-        "first_patched_version": "1.2.0",
-        "pinnable": True,
-        "disclosure_date": date(2025, 6, 10),
-        "transport": Transport.STDIO,
-        "primitive": Primitive.TOOLS,
-        "effect_in_tool_response": True,
-        "runs_in_container": True,
-        "effect_class": "read_outside_scope",
-        "first_failed_criterion": None,
-        **overrides,
-    }
-    return Classification(**fields)

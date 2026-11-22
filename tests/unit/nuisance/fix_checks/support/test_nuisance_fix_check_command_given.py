@@ -4,8 +4,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.admission_mutations as mutations
@@ -16,6 +14,7 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fix_check_command import FixCheckCommandDeps, FixCheckDeps
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import FakeContainerSweep
+from tests.unit.support import census_draws, censuses
 
 
 class FakeFixCheck:
@@ -95,7 +94,7 @@ def a_result_matching(record: FixCheckRecord, **overrides: Any) -> FixCheckResul
 def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> list[str]:
     """The `fix-check` arguments of a census with a draw walk, an empty walk record and
     `admission`, written to a file, or a path to no file when it is None."""
-    census = census_given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
+    census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
     admitted = (
         tmp_path / "absent.json"
         if admission is None

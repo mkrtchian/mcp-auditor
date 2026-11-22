@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.census.support.test_census_given as census_given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as then
 import tests.unit.nuisance.admission.support.test_nuisance_unrecorded_given as unrecorded_given
@@ -20,13 +19,14 @@ from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
+from tests.unit.support import censuses
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):
     out = given.a_written_dossier(tmp_path)
 
     for relative in (
-        f"advisories/{census_given.FLAW_WITH_A_CVE}.json",
+        f"advisories/{censuses.FLAW_WITH_A_CVE}.json",
         "evals/__init__.py",
         "evals/cve/__init__.py",
         "evals/cve/kit/__init__.py",
@@ -82,7 +82,7 @@ def test_an_unknown_backend_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
         write_dossier(
-            walk_given.walk_inputs_of(census_given.a_census()),
+            walk_given.walk_inputs_of(censuses.a_census()),
             given.SERVER,
             out,
             backend="ghost",
@@ -157,7 +157,7 @@ def test_the_readme_names_the_kit_tag_and_the_acceptance_services(tmp_path: Path
 
 def test_both_readmes_state_the_mcp_specifier_of_the_project(tmp_path: Path):
     dossier = given.a_written_dossier(tmp_path)
-    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, tmp_path / "kit")
+    write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, tmp_path / "kit")
 
     specifier = _mcp_specifier()
     assert f"`{specifier}`" in (dossier / "README.md").read_text()
@@ -172,7 +172,7 @@ def _mcp_specifier() -> str:
 
 def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Path):
     dossier = given.a_written_dossier(tmp_path)
-    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, tmp_path / "kit")
+    write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, tmp_path / "kit")
 
     build = "docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker"
     assert build in (dossier / "README.md").read_text()
@@ -184,7 +184,7 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
 def test_an_unknown_server_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
-        write_dossier(walk_given.walk_inputs_of(census_given.a_census()), "npm:nonexistent", out)
+        write_dossier(walk_given.walk_inputs_of(censuses.a_census()), "npm:nonexistent", out)
     assert not out.exists()
 
 

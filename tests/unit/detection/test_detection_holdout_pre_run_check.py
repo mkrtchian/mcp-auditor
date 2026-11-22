@@ -8,14 +8,15 @@ import tests.unit.detection.support.test_detection_holdout_pre_run_check_then as
 from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.layout_check import layout_failure
+from tests.unit.detection.support import scripted_checks
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
 
 
 async def test_a_target_out_of_calibration_on_its_first_pass_runs_when_its_second_pass_is_clean():
     flaky, *_ = given.TARGETS
-    checks = given.ScriptedChecks(
+    checks = scripted_checks.ScriptedChecks(
         out_of_calibration={
-            flaky.flaw_id: [["vulnerable: exploit 3 surfaces no nonce"], given.LIVE]
+            flaky.flaw_id: [["vulnerable: exploit 3 surfaces no nonce"], scripted_checks.LIVE]
         }
     )
 
@@ -28,7 +29,7 @@ async def test_a_target_out_of_calibration_on_its_first_pass_runs_when_its_secon
 
 async def test_a_target_the_layout_breaks_once_runs_when_its_second_pass_is_clean():
     flaky, *_ = given.TARGETS
-    checks = given.ScriptedChecks(layouts={flaky.flaw_id: [given.BROKEN, SOUND_LAYOUT]})
+    checks = scripted_checks.ScriptedChecks(layouts={flaky.flaw_id: [given.BROKEN, SOUND_LAYOUT]})
 
     outcome = await check_before_run(given.TARGETS, checks.check, checks.layout)
 
@@ -38,7 +39,7 @@ async def test_a_target_the_layout_breaks_once_runs_when_its_second_pass_is_clea
 
 async def test_a_target_failing_both_passes_is_dropped_with_the_second_reason():
     unfit, *healthy = given.TARGETS
-    checks = given.ScriptedChecks(
+    checks = scripted_checks.ScriptedChecks(
         out_of_calibration={
             unfit.flaw_id: [
                 ["vulnerable: exploit 3 surfaces no nonce"],
@@ -58,7 +59,7 @@ async def test_a_target_failing_both_passes_is_dropped_with_the_second_reason():
 
 async def test_a_target_leaking_a_nonce_on_both_passes_is_dropped():
     leaking, *healthy = given.TARGETS
-    checks = given.ScriptedChecks(layouts={leaking.flaw_id: [given.LEAKING]})
+    checks = scripted_checks.ScriptedChecks(layouts={leaking.flaw_id: [given.LEAKING]})
 
     outcome = await check_before_run(given.TARGETS, checks.check, checks.layout)
 
@@ -68,7 +69,7 @@ async def test_a_target_leaking_a_nonce_on_both_passes_is_dropped():
 
 
 async def test_a_target_passing_its_first_pass_is_checked_once():
-    checks = given.ScriptedChecks()
+    checks = scripted_checks.ScriptedChecks()
 
     outcome = await check_before_run(given.TARGETS, checks.check, checks.layout)
 
@@ -79,8 +80,8 @@ async def test_a_target_passing_its_first_pass_is_checked_once():
 
 async def test_the_second_passes_run_one_at_a_time_after_every_first_pass():
     first, second, _ = given.TARGETS
-    checks = given.ScriptedChecks(
-        out_of_calibration={first.flaw_id: [["exploit 0 surfaces no nonce"], given.LIVE]},
+    checks = scripted_checks.ScriptedChecks(
+        out_of_calibration={first.flaw_id: [["exploit 0 surfaces no nonce"], scripted_checks.LIVE]},
         layouts={second.flaw_id: [given.BROKEN, SOUND_LAYOUT]},
     )
 

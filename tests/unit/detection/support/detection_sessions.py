@@ -23,14 +23,14 @@ from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
 from tests.unit.cve.support.test_cve_grammar_given import a_report
+from tests.unit.detection.support.detection_reports import (
+    a_detected_grade,
+    a_missed_grade,
+)
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.detection.support.test_detection_gate_given import (
     a_gated_baseline,
     conditions,
-)
-from tests.unit.detection.support.test_detection_oracle_given import (
-    a_detected_grade,
-    a_missed_grade,
 )
 
 # The real loaded places, so the real targets' kept ids resolve (fixture_fingerprint and the

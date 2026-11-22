@@ -6,14 +6,14 @@ from typing import Any
 
 from pydantic import BaseModel
 
-import tests.unit.census.support.test_census_figures_given as figures
-import tests.unit.census.support.test_census_sources_given as sources
 from evals import run_census
 from evals.cve.census.classification import Classification, SoftwareKind
 from evals.cve.census.grouping import READERS
 from evals.cve.census.prefilter import PrefilterTerm
 from evals.cve.census.sources import AdvisoryRecord, SourceName
 from evals.cve.census.work import AgentRecord, AgentRole, Downloads, Gap, HitDecision, read_jsonl
+from tests.unit.census.support import advisory_sources
+from tests.unit.support import censuses
 
 DOWNLOADED = date(2026, 10, 8)
 MCP_SUMMARY = "Path traversal in an MCP filesystem server"
@@ -27,22 +27,22 @@ def a_sources_directory(
 ) -> Path:
     directory = tmp_path / "sources"
     directory.mkdir()
-    clone = sources.a_ghsa_clone(directory, *ghsa)
+    clone = advisory_sources.a_ghsa_clone(directory, *ghsa)
     clone.mkdir(exist_ok=True)
     _commit_all(clone)
-    sources.an_nvd_feed(directory, *nvd)
-    sources.an_osv_export(directory, *osv)
+    advisory_sources.an_nvd_feed(directory, *nvd)
+    advisory_sources.an_osv_export(directory, *osv)
     return directory
 
 
 def an_mcp_advisory(advisory_id: str, *aliases: str, **overrides: Any) -> dict[str, Any]:
-    return sources.an_osv_advisory(
+    return advisory_sources.an_osv_advisory(
         advisory_id, aliases=list(aliases), summary=MCP_SUMMARY, **overrides
     )
 
 
 def an_advisory_without_mcp(advisory_id: str, *aliases: str, **overrides: Any) -> dict[str, Any]:
-    return sources.an_osv_advisory(advisory_id, aliases=list(aliases), **overrides)
+    return advisory_sources.an_osv_advisory(advisory_id, aliases=list(aliases), **overrides)
 
 
 def a_work_directory(
@@ -81,7 +81,7 @@ def kept(source: SourceName, source_id: str) -> HitDecision:
         source=source,
         source_id=source_id,
         decision="keep",
-        software_kind=figures.a_classification().software_kind,
+        software_kind=censuses.a_classification().software_kind,
         reason="A filesystem MCP server.",
         agent=f"{source} collector",
     )
@@ -115,7 +115,7 @@ def a_package_widening(package: str, added_for: str) -> PrefilterTerm:
 
 def both_classifiers_classifying(*flaws: tuple[str, date]) -> list[list[Classification]]:
     own = [
-        figures.a_classification(flaw=flaw, disclosure_date=disclosed) for flaw, disclosed in flaws
+        censuses.a_classification(flaw=flaw, disclosure_date=disclosed) for flaw, disclosed in flaws
     ]
     return [own, own]
 

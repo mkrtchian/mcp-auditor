@@ -3,8 +3,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.census.census import CLASSIFIERS, Census
@@ -26,12 +24,13 @@ from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import RegisteredBackend
 from evals.cve.planting_base import PlantingHost, SymbolicUser
+from tests.unit.support import census_draws, censuses
 
 OTHER_PACKAGE = "PyPI:context-forge"
 
 SERVER_PACKAGE = "npm:@acme/files"
-FIRST_FLAW = census_given.FLAW_WITH_A_CVE
-SECOND_FLAW = census_given.OSV_ONLY_FLAW
+FIRST_FLAW = censuses.FLAW_WITH_A_CVE
+SECOND_FLAW = censuses.OSV_ONLY_FLAW
 PATCHED_VERSION = "1.2.0"
 
 
@@ -51,7 +50,7 @@ def walk_inputs_of() -> WalkInputs:
 def a_census() -> Census:
     """The census whose detection walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
     of the package then add nothing to the queue."""
-    return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
+    return census_draws.with_a_walk_skipping(censuses.a_census(), FIRST_FLAW)
 
 
 def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, RegisteredBackend]:
@@ -117,10 +116,8 @@ ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
 def a_census_with_an_acceptance_server() -> Census:
     """A census that also classifies the benchmark flaw ACCEPTANCE_FLAW, outside the draw order,
     under ACCEPTANCE_PACKAGE."""
-    with_target = census_given.with_a_cve_of(
-        census_given.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE
-    )
-    return draw_given.with_a_walk_skipping(with_target, FIRST_FLAW)
+    with_target = censuses.with_a_cve_of(censuses.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE)
+    return census_draws.with_a_walk_skipping(with_target, FIRST_FLAW)
 
 
 def admitting_the_acceptance_server() -> NuisanceAdmission:

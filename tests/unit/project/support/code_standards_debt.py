@@ -110,34 +110,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/auditor/support/test_model_inputs_golden_given.py": (
         (FOREIGN, "test_llm_adapter_given"),
     ),
-    "tests/unit/census/support/test_census_draw_order_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_given"),
-    ),
-    "tests/unit/census/support/test_census_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_grouping_given"),
-        (FOREIGN, "test_census_identity_given"),
-    ),
-    "tests/unit/census/support/test_census_grouping_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-    ),
-    "tests/unit/census/support/test_census_identity_given.py": (
-        (FOREIGN, "test_census_sources_given"),
-    ),
-    "tests/unit/census/support/test_run_census_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_sources_given"),
-    ),
-    "tests/unit/census/test_census.py": ((FOREIGN, "test_census_identity_given"),),
-    "tests/unit/census/test_census_classification.py": ((FOREIGN, "test_census_figures_given"),),
-    "tests/unit/census/test_census_grouping.py": ((FOREIGN, "test_census_figures_given"),),
-    "tests/unit/census/test_census_identity.py": ((FOREIGN, "test_census_sources_given"),),
-    "tests/unit/census/test_census_prefilter.py": ((FOREIGN, "test_census_sources_given"),),
-    "tests/unit/census/test_run_census.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_census_sources_given"),
-    ),
     "tests/unit/cve/backends/support/test_backend_lifecycle_given.py": (
         (FOREIGN, "test_nuisance_admission_given"),
     ),
@@ -164,7 +136,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/cve/test_cve_launch_audit.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/cve/test_cve_strike.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/cve/test_kit_isolation.py": ((FOREIGN, "test_census_given"),),
     "tests/unit/detection/support/detection_audits.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
@@ -172,7 +143,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/detection/support/detection_sessions.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_detection_gate_given"),
-        (FOREIGN, "test_detection_oracle_given"),
     ),
     "tests/unit/detection/support/test_detection_audit_given.py": (
         (FOREIGN, "test_cve_grammar_given"),
@@ -183,19 +153,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/support/test_detection_baseline_given.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
-    "tests/unit/detection/support/test_detection_calibration_dossier_given.py": (
-        (FOREIGN, "test_census_given"),
-    ),
-    "tests/unit/detection/support/test_detection_census_work_given.py": (
-        (FOREIGN, "test_detection_draw_record_given"),
-    ),
-    "tests/unit/detection/support/test_detection_console_given.py": (
-        (FOREIGN, "test_detection_oracle_given"),
-    ),
-    "tests/unit/detection/support/test_detection_draw_record_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_given"),
     ),
     "tests/unit/detection/support/test_detection_holdout_run_given.py": (
         (FOREIGN, "test_cve_grammar_given"),
@@ -209,42 +166,16 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/detection/support/test_detection_session_given.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_detection_gate_given"),
-        (FOREIGN, "test_detection_oracle_given"),
-    ),
-    "tests/unit/detection/support/test_run_detection_given.py": (
-        (FOREIGN, "test_detection_calibration_check_exit_given"),
-    ),
-    "tests/unit/detection/support/test_run_detection_holdout_run_given.py": (
-        (FOREIGN, "test_detection_draw_record_given"),
     ),
     "tests/unit/detection/test_detection_audit.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
-        (FOREIGN, "test_detection_oracle_given"),
     ),
     "tests/unit/detection/test_detection_audit_holdout.py": (
         (FOREIGN, "test_cve_launch_audit_given"),
     ),
-    "tests/unit/detection/test_detection_draw_record.py": ((FOREIGN, "test_census_given"),),
-    "tests/unit/detection/test_detection_holdout_audit.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_detection_oracle_given"),
-    ),
-    "tests/unit/detection/test_detection_holdout_card_readiness.py": (
-        (FOREIGN, "test_detection_draw_record_given"),
-    ),
-    "tests/unit/detection/test_detection_holdout_run_pre_run.py": (
-        (FOREIGN, "test_detection_holdout_pre_run_check_given"),
-    ),
-    "tests/unit/detection/test_detection_layout_check.py": (
-        (FOREIGN, "test_detection_layout_check_golden_given"),
-    ),
-    "tests/unit/detection/test_detection_route_check.py": (
-        (FOREIGN, "test_detection_route_check_golden_given"),
-    ),
+    "tests/unit/detection/test_detection_holdout_audit.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/detection/test_run_detection_holdout.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_calibration_check_exit_given"),
         (FOREIGN, "test_run_detection_holdout_run_given"),
     ),
     "tests/unit/evals/support/test_eval_baseline_given.py": ((FOREIGN, "test_eval_gate_given"),),
@@ -283,8 +214,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_judge_baseline_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_admission_given.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_admission_records_given.py": (
@@ -296,13 +225,10 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_dossier_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_given"),
         (FOREIGN, "test_nuisance_committed_admission_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_holdout_calibration_copies_given.py": (
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_admission_given"),
     ),
@@ -316,8 +242,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_admission_records_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_walk_given.py": (
-        (FOREIGN, "test_census_figures_given"),
-        (FOREIGN, "test_census_given"),
         (FOREIGN, "test_census_grouping_given"),
     ),
     "tests/unit/nuisance/admission/support/test_nuisance_walk_record_given.py": (
@@ -332,7 +256,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/admission/test_nuisance_dossier.py": (
-        (FOREIGN, "test_census_given"),
         (FOREIGN, "test_nuisance_unrecorded_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
@@ -347,8 +270,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_committed_admission_given"),
     ),
     "tests/unit/nuisance/fix_checks/support/test_nuisance_fix_check_command_given.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
@@ -380,8 +301,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_gate_baseline_given"),
     ),
     "tests/unit/nuisance/gate/support/test_run_nuisance_gate_given.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_walk_given"),
@@ -454,7 +373,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_vet_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_vet_given.py": (
-        (FOREIGN, "test_census_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
@@ -465,15 +383,11 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/support/test_run_nuisance_given.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/support/test_run_nuisance_holdout_run_given.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_nuisance_statistic_given"),
@@ -549,13 +463,10 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_admission_edits_given"),
     ),
     "tests/unit/nuisance/test_run_nuisance.py": (
-        (FOREIGN, "test_census_given"),
-        (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/test_run_nuisance_dossier.py": (
-        (FOREIGN, "test_census_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_re_admission_dossier_given"),
         (FOREIGN, "test_nuisance_walk_given"),
@@ -564,7 +475,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_holdout_calibration_copies_given"),
-        (FOREIGN, "test_run_detection_holdout_run_given"),
     ),
     "tests/unit/nuisance/test_run_nuisance_vet.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),

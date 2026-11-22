@@ -11,6 +11,7 @@ import tests.unit.detection.support.test_run_detection_holdout_run_given as give
 from evals import run_detection_holdout
 from evals.cve.detection.holdout_results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
+from tests.unit.support import holdout_result_keys
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])
@@ -72,8 +73,8 @@ def test_the_result_and_the_report_carry_the_glossary_keys(
         _run_flags(tmp_path, report), given.a_drawn_run_ending_in(given.a_run_result())
     )
 
-    result_keys = given.result_keys(report.with_suffix(".result.json"))
-    report_keys = given.result_keys(report)
+    result_keys = holdout_result_keys.result_keys(report.with_suffix(".result.json"))
+    report_keys = holdout_result_keys.result_keys(report)
     assert {"flaw_id", "class_labels", "missed_call_causes"} <= result_keys
     assert {
         "holdout_detection_rate",
@@ -95,7 +96,7 @@ def test_run_writes_its_result_before_the_report(tmp_path: Path, monkeypatch: py
         run_detection_holdout.main(_run_flags(tmp_path, report), deps)
 
     result = report.with_suffix(".result.json")
-    assert given.result_keys(result).isdisjoint(given.PROOF_FIELDS)
+    assert holdout_result_keys.result_keys(result).isdisjoint(holdout_result_keys.PROOF_FIELDS)
     assert not report.exists()
 
 

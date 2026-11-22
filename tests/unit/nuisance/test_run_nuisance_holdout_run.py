@@ -14,14 +14,14 @@ from evals import run_nuisance
 from evals.cve.nuisance.holdout_run import NUISANCE_RUNS
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
-from tests.unit.detection.support.test_run_detection_holdout_run_given import (
-    PROOF_FIELDS,
-    result_keys,
-)
 from tests.unit.nuisance.admission.support import (
     test_nuisance_holdout_calibration_copies_given as copies_given,
 )
 from tests.unit.support.admission_mutations import admitting
+from tests.unit.support.holdout_result_keys import (
+    PROOF_FIELDS,
+    result_keys,
+)
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])

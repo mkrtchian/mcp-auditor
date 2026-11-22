@@ -2,7 +2,6 @@ import dataclasses
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-import tests.unit.census.support.test_census_given as census_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as nuisance_run_given
@@ -12,6 +11,7 @@ from evals.cve.nuisance.vet_command import VetCommandDeps, VetDeps
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
+from tests.unit.support import censuses
 
 SERVER = admission_given.SERVER_PACKAGE
 SERVER_TAG = nuisance_images.image_tag("filesystem-nuisance")
@@ -82,7 +82,7 @@ def a_vet_of_one_server_beside_the_acceptance_one(tmp_path: Path) -> list[str]:
     both = one.model_copy(update={"servers": [*one.servers, *acceptance.servers]})
     return [
         "vet",
-        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
+        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_given.written(tmp_path, both)),
     ]

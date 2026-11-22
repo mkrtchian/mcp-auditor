@@ -118,7 +118,7 @@ ALLOWLIST = (
         "reads of that field",
     ),
     AllowedLine(
-        "tests/unit/census/support/test_census_given.py",
+        "tests/unit/support/censuses.py",
         "cve-id",
         "VulnerableMcpEntry(cve_id=",
         "builds that record",

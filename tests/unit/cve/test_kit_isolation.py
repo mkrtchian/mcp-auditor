@@ -4,20 +4,20 @@ of the kit, a negative control, and the KitTarget/Target field transplant rule."
 from dataclasses import fields
 from pathlib import Path
 
-import tests.unit.census.support.test_census_given as census_given
 import tests.unit.support.kit_isolation as iso
 from evals.cve.detection.calibration_dossier import write_kit
 from evals.cve.detection.targets import Target
 from evals.cve.kit.fix_check import FixCheckResult
 from evals.cve.kit.target import KitTarget
 from evals.cve.nuisance.admission.admission import FixCheckRecord
+from tests.unit.support import censuses
 
 _KIT_DIR = iso.REPO_ROOT / "evals" / "cve" / "kit"
 
 
 def test_the_written_kit_imports_from_its_own_tree_with_no_mcp_auditor_module(tmp_path: Path):
     out = tmp_path / "kit"
-    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, out)
+    write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, out)
 
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 

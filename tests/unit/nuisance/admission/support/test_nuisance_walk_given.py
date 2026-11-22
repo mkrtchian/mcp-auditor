@@ -2,8 +2,6 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
-import tests.unit.census.support.test_census_figures_given as figures
-import tests.unit.census.support.test_census_given as census_given
 import tests.unit.census.support.test_census_grouping_given as grouping
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery
 from evals.cve.census.classification import Criterion, Primitive, Transport
@@ -18,10 +16,11 @@ from evals.cve.nuisance.admission.walk_record import (
     NuisanceWalkRecord,
     WalkInputs,
 )
+from tests.unit.support import censuses
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
-OUTSIDE_THE_GRAMMAR: dict[str, Any] = grouping.OUTSIDE_THE_GRAMMAR
+OUTSIDE_THE_GRAMMAR: dict[str, Any] = censuses.OUTSIDE_THE_GRAMMAR
 NOT_PINNABLE: dict[str, Any] = grouping.NOT_PINNABLE
 EFFECT_HIDDEN: dict[str, Any] = {"effect_in_tool_response": False}
 ON_RESOURCES: dict[str, Any] = {"primitive": Primitive.RESOURCES}
@@ -66,7 +65,7 @@ def a_census_walking(
 
     classifications = {
         classifier: [
-            figures.a_classification(
+            censuses.a_classification(
                 **{
                     "flaw": identifier,
                     "server_package": step_package.get(identifier, ""),
@@ -164,7 +163,7 @@ def written_record(tmp_path: Path, record: NuisanceWalkRecord) -> Path:
 
 
 def _bare_census(identifiers: list[str]) -> Census:
-    census = census_given.a_census()
+    census = censuses.a_census()
     return census.model_copy(update={"flaws": [_flaw(identifier) for identifier in identifiers]})
 
 

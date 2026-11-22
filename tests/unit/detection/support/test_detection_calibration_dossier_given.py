@@ -1,13 +1,13 @@
 import importlib.util
 from pathlib import Path
 
-import tests.unit.census.support.test_census_given as census_given
 from evals.cve.detection.calibration_dossier import write_kit
+from tests.unit.support import censuses
 
 
 def a_written_kit(tmp_path: Path) -> Path:
     out = tmp_path / "kit"
-    write_kit(census_given.a_census(), census_given.FLAW_WITH_A_CVE, out)
+    write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, out)
     return out
 
 

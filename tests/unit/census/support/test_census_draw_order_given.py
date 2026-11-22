@@ -1,11 +1,10 @@
 from datetime import date
 from typing import Any
 
-import tests.unit.census.support.test_census_figures_given as figures
-import tests.unit.census.support.test_census_given as census_given
 from evals.cve.census.census import Census, CensusFlaw, Discovery
 from evals.cve.census.figures import compute_figures
 from evals.cve.census.sources import SourceName, SourceRecord
+from tests.unit.support import censuses
 
 AN_EXCLUDED_SERVER = "npm:mcp-fetch-server"
 AN_ACCEPTANCE_TARGET_FLAW = "CVE-2025-65513"
@@ -35,7 +34,7 @@ def a_flaw(
 
 
 def agreed_classifications(specs: dict[str, dict[str, Any]]) -> dict[str, list[Any]]:
-    seen = [figures.a_classification(flaw=flaw, **overrides) for flaw, overrides in specs.items()]
+    seen = [censuses.a_classification(flaw=flaw, **overrides) for flaw, overrides in specs.items()]
     return {"classifier_1": seen, "classifier_2": seen}
 
 
@@ -43,7 +42,7 @@ def a_census(flaws: list[CensusFlaw], classifications: dict[str, list[Any]]) -> 
     dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
     withdrawn = {flaw.identifier for flaw in flaws if flaw.withdrawn}
     return Census(
-        sources=census_given.a_provenance(),
+        sources=censuses.a_provenance(),
         agents=[],
         prefilter=[],
         hits=[],

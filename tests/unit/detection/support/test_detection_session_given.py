@@ -7,6 +7,7 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
 from evals.cve.grammar import TargetStatus
 from tests.unit.cve.support.test_cve_grammar_given import a_report
+from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.detection.support.detection_sessions import (
     KUBERNETES,
     ScriptedAudit,
@@ -17,7 +18,6 @@ from tests.unit.detection.support.test_detection_gate_given import (
     an_unconfirmed_baseline,
     conditions,
 )
-from tests.unit.detection.support.test_detection_oracle_given import a_detected_grade
 
 
 @dataclass

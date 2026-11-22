@@ -6,11 +6,11 @@ import dataclasses
 
 import pytest
 
-import tests.unit.detection.support.test_detection_holdout_pre_run_check_given as pre_run_check
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.targets import LaunchMode
 from evals.eval_session import Refused
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
+from tests.unit.detection.support.scripted_checks import ScriptedChecks
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
@@ -80,7 +80,7 @@ async def test_a_target_clean_on_its_solo_second_pre_run_pass_runs_and_is_named(
     audit = detection_holdout_runs.scripted(
         {flaky.flaw_id: detection_holdout_runs.three_detections()}
     )
-    checks = pre_run_check.ScriptedChecks(
+    checks = ScriptedChecks(
         out_of_calibration={flaky.flaw_id: [["vulnerable: exploit 3 surfaces no nonce"], []]}
     )
     deps = dataclasses.replace(

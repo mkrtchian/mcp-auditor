@@ -1,5 +1,4 @@
 import asyncio
-import json
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -15,12 +14,10 @@ from evals.cve.run_files import write_report
 from evals.cve.run_images import RunDocker
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
-from tests.unit.detection.support.test_detection_draw_record_given import a_census_drawing
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
+from tests.unit.support.census_draws import a_census_drawing
 
-# The report's no-proof guarantee, held by the result file too.
-PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
 DRAWN_FLAW = "CVE-2026-0001"
 
 
@@ -107,17 +104,3 @@ def _written(tmp_path: Path, census: str) -> Path:
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "openai")
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
-
-
-def result_keys(path: Path) -> set[str]:
-    return _keys(json.loads(path.read_text()))
-
-
-def _keys(value: Any) -> set[str]:
-    if isinstance(value, dict):
-        entries: dict[str, Any] = value
-        return set(entries).union(*(_keys(item) for item in entries.values()))
-    if isinstance(value, list):
-        items: list[Any] = value
-        return set[str]().union(*(_keys(item) for item in items))
-    return set()

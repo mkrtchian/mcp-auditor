@@ -4,17 +4,17 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.census.support.test_census_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 from evals import run_nuisance
 from tests.unit.nuisance.admission.support import (
     test_nuisance_re_admission_dossier_given as re_admission,
 )
+from tests.unit.support import censuses
 
 
 def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    census = given.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -36,7 +36,7 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
 def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = given.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -59,7 +59,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
 def test_nuisance_dossier_with_an_unknown_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = given.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
@@ -83,7 +83,7 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(
 def test_nuisance_dossier_on_an_unknown_server_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = given.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admission.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(

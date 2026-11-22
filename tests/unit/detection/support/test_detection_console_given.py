@@ -1,10 +1,10 @@
 from datetime import date
 
-import tests.unit.detection.support.test_detection_oracle_given as oracle_given
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
 from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedStatus
 from evals.cve.grammar import TargetStatus
 from evals.gate_outcome import GateOutcome
+from tests.unit.detection.support import detection_reports
 
 DETECTED_FLAW = "CVE-2025-53109"
 NOT_RUN_FLAW = "CVE-2025-68143"
@@ -16,10 +16,10 @@ def a_report_with_a_not_run_target(reasons: list[str], gated: bool) -> Detection
 
 
 def a_gated_report(**update: object) -> DetectionReport:
-    report = oracle_given.a_detection_report(
-        [oracle_given.a_target_result(DETECTED_FLAW, TargetStatus.DETECTED, detected_runs=3)]
+    report = detection_reports.a_detection_report(
+        [detection_reports.a_target_result(DETECTED_FLAW, TargetStatus.DETECTED, detected_runs=3)]
     )
-    return report.model_copy(update={"gate": oracle_given.a_red_gate(), **update})
+    return report.model_copy(update={"gate": detection_reports.a_red_gate(), **update})
 
 
 def a_no_baseline_report(**update: object) -> DetectionReport:
@@ -49,5 +49,5 @@ def a_report_gated_on_a_detail(detail: str) -> DetectionReport:
 
 def a_priced_no_baseline_report() -> DetectionReport:
     return a_no_baseline_report(
-        costs=[oracle_given.a_target_cost(DETECTED_FLAW)], prices_as_of=date(2026, 10, 1)
+        costs=[detection_reports.a_target_cost(DETECTED_FLAW)], prices_as_of=date(2026, 10, 1)
     )

@@ -1,10 +1,9 @@
 from pathlib import Path
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+from tests.unit.support import census_draws, censuses
 
 QUEUE_FLAW = "CVE-2025-7777"
 QUEUE_SERVER = "npm:queued"
@@ -17,8 +16,8 @@ def a_walk_with_a_queue_server(
     `npm:@acme/files` and whose queue reaches QUEUE_SERVER through QUEUE_FLAW, with the admission
     of both servers when `admitted`, else a missing admission path. QUEUE_SERVER's admission
     predates the fields nuisance suite rule v3 adds when `queue_server_unrecorded`."""
-    census = draw_given.with_a_walk_skipping(
-        census_given.with_a_cve_of(census_given.a_census(), QUEUE_FLAW, QUEUE_SERVER),
+    census = census_draws.with_a_walk_skipping(
+        censuses.with_a_cve_of(censuses.a_census(), QUEUE_FLAW, QUEUE_SERVER),
         admission_given.FIRST_FLAW,
     )
     admission_path = tmp_path / "absent.json"
@@ -32,7 +31,7 @@ def a_walk_with_a_queue_server(
         both = admission.model_copy(update={"servers": [*admission.servers, *queued.servers]})
         admission_path = admission_given.written(tmp_path, both)
     return [
-        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
+        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

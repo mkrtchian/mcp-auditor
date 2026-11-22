@@ -4,8 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
@@ -18,13 +16,14 @@ from evals.run_nuisance import NuisanceCommandDeps
 from mcp_auditor.config import Settings
 from tests.unit.nuisance.support.nuisance_report_runs import a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.support import census_draws, censuses
 from tests.unit.support.detection_holdout_runs import ready_conditions
 
 
 def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:
     """The `run` arguments of a census with a draw walk, an empty walk record and `admission`, by
     default the admission of one fully recorded server."""
-    census = census_given.written(tmp_path, draw_given.a_census_with_draw(draw_given.a_draw()))
+    census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
     admitted = admission_given.written(tmp_path, admission or admission_given.an_admission())
     report = tmp_path / "nuisance_report.json"
     return [

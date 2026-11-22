@@ -6,15 +6,16 @@ from pathlib import Path
 import pytest
 
 import tests.unit.census.support.test_census_given as given
-import tests.unit.census.support.test_census_identity_given as identity
 from evals.cve.census.census import Census, DateMismatch, load_census
 from evals.cve.census.work import HitDecision, read_jsonl
+from tests.unit.census.support import advisory_sources
+from tests.unit.support import censuses
 
 
 def test_a_well_formed_census_loads(tmp_path: Path):
-    census = given.a_census()
+    census = censuses.a_census()
 
-    loaded = load_census(given.written(tmp_path, census))
+    loaded = load_census(censuses.written(tmp_path, census))
 
     assert loaded == census
 
@@ -81,7 +82,7 @@ DEFECTS: list[tuple[Callable[[Census], Census], str]] = [
 def test_a_census_with_one_defect_is_refused(
     tmp_path: Path, defect: Callable[[Census], Census], refusal: str
 ):
-    path = given.written(tmp_path, defect(given.a_census()))
+    path = censuses.written(tmp_path, defect(censuses.a_census()))
 
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(path)
@@ -90,9 +91,9 @@ def test_a_census_with_one_defect_is_refused(
 def test_a_classifier_date_differing_from_the_computed_one_is_listed_not_refused(
     tmp_path: Path,
 ):
-    census = given.with_a_classifier_date_differing_from_the_computed_one(given.a_census())
+    census = given.with_a_classifier_date_differing_from_the_computed_one(censuses.a_census())
 
-    loaded = load_census(given.written(tmp_path, census))
+    loaded = load_census(censuses.written(tmp_path, census))
 
     assert loaded.date_mismatches == [
         DateMismatch(
@@ -105,14 +106,14 @@ def test_a_classifier_date_differing_from_the_computed_one_is_listed_not_refused
 
 
 def test_a_flaw_is_withdrawn_only_when_every_record_is_withdrawn_or_rejected():
-    withdrawn = identity.a_ghsa("GHSA-aaaa-bbbb-cccc", "CVE-2025-0001").model_copy(
+    withdrawn = advisory_sources.a_ghsa("GHSA-aaaa-bbbb-cccc", "CVE-2025-0001").model_copy(
         update={"withdrawn": date(2025, 8, 1)}
     )
-    rejected = identity.an_nvd("CVE-2025-0001", rejected=True)
-    live = identity.an_osv("PYSEC-2025-1", "CVE-2025-0001")
+    rejected = advisory_sources.an_nvd("CVE-2025-0001", rejected=True)
+    live = advisory_sources.an_osv("PYSEC-2025-1", "CVE-2025-0001")
 
-    assert given.a_flaw_with_records(withdrawn, rejected).withdrawn
-    assert not given.a_flaw_with_records(withdrawn, rejected, live).withdrawn
+    assert censuses.a_flaw_with_records(withdrawn, rejected).withdrawn
+    assert not censuses.a_flaw_with_records(withdrawn, rejected, live).withdrawn
 
 
 def test_a_malformed_work_file_line_is_refused_with_its_file_and_line_number(tmp_path: Path):

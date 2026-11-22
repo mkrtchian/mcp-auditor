@@ -3,8 +3,6 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.detection.support.test_detection_draw_record_given as draw_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
@@ -23,6 +21,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
 from evals.gate_outcome import GateOutcome
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
+from tests.unit.support import census_draws, censuses
 from tests.unit.support.detection_holdout_runs import SETTINGS, ready_conditions
 
 GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
@@ -53,10 +52,10 @@ OTHER_GATE_SERVER = "npm:other-acceptance"
 def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
     """The arguments of a gate of GATE_SERVER, fully recorded, and OTHER_GATE_SERVER, whose
     admission predates the fields nuisance suite rule v3 adds."""
-    census = draw_given.with_a_walk_skipping(
-        census_given.with_a_cve_of(
-            census_given.with_a_cve_of(
-                census_given.a_census(),
+    census = census_draws.with_a_walk_skipping(
+        censuses.with_a_cve_of(
+            censuses.with_a_cve_of(
+                censuses.a_census(),
                 admission_given.ACCEPTANCE_FLAW,
                 admission_given.ACCEPTANCE_PACKAGE,
             ),
@@ -85,7 +84,7 @@ def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission)
 
 def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
     return [
-        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
+        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

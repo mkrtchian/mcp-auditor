@@ -31,7 +31,7 @@ from tests.unit.detection.support.detection_audits import (
     a_target_launching,
     an_auditor_reporting,
 )
-from tests.unit.detection.support.test_detection_oracle_given import a_detected_grade
+from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 
 _REFUSED = frozenset({MissCause.PROVIDER_REFUSAL})

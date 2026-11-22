@@ -22,7 +22,7 @@ from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause
 from tests.unit.cve.support import test_cve_grammar_given as grammar
-from tests.unit.detection.support.test_detection_oracle_given import a_detected_grade
+from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 
 TARGET = ACCEPTANCE_TARGETS[0]

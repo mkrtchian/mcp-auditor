@@ -1,121 +1,22 @@
 from collections.abc import Callable
-from datetime import date, timedelta
-from pathlib import Path
+from datetime import timedelta
 from typing import Any
 
-import tests.unit.census.support.test_census_figures_given as figures
-import tests.unit.census.support.test_census_grouping_given as grouping
-import tests.unit.census.support.test_census_identity_given as identity
-from evals.cve.census.census import (
-    BOUND,
-    CLASSIFIERS,
-    Census,
-    CensusFlaw,
-    Discovery,
-    TermHits,
-    census_flaw,
-    date_mismatches,
-    draw_candidates,
-)
+from evals.cve.census.census import BOUND, CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import Classification, Criterion
-from evals.cve.census.figures import Share, compute_figures
-from evals.cve.census.grouping import READERS, ProofJudgment, gap_population, known_gap
-from evals.cve.census.identity import merge
-from evals.cve.census.prefilter import INITIAL_TERMS
-from evals.cve.census.sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
-from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
+from evals.cve.census.figures import Share
+from evals.cve.census.grouping import READERS, ProofJudgment
+from tests.unit.support.censuses import (
+    FLAW_WITH_A_CVE,
+    GHSA_ONLY_FLAW,
+    ITS_GHSA,
+    OSV_ONLY_FLAW,
+    a_classification,
+    a_judgment,
+    recomputed,
+)
 
-FLAW_WITH_A_CVE = "CVE-2025-0001"
-ITS_GHSA = "GHSA-aaaa-bbbb-cccc"
-GHSA_ONLY_FLAW = "GHSA-dddd-eeee-ffff"
-OSV_ONLY_FLAW = "PYSEC-2025-1"
 SHARED_ID = "GO-2025-0001"
-
-
-def a_census() -> Census:
-    flaws = [
-        census_flaw(flaw, [Discovery.PREFILTER])
-        for flaw in merge(
-            [
-                identity.a_ghsa(ITS_GHSA, FLAW_WITH_A_CVE),
-                identity.an_nvd(FLAW_WITH_A_CVE),
-                identity.a_ghsa(GHSA_ONLY_FLAW),
-                identity.an_osv(OSV_ONLY_FLAW),
-            ],
-            recorded={},
-        )
-    ]
-    dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
-    classifications = {
-        classifier: [
-            figures.a_classification(
-                flaw=flaw,
-                disclosure_date=disclosed,
-                **(grouping.OUTSIDE_THE_GRAMMAR if flaw == GHSA_ONLY_FLAW else {}),
-            )
-            for flaw, disclosed in dates.items()
-        ]
-        for classifier in CLASSIFIERS
-    }
-    groupings = {reader: [grouping.no_proof(GHSA_ONLY_FLAW)] for reader in READERS}
-    return Census(
-        sources=a_provenance(),
-        agents=[
-            AgentRecord(role=AgentRole.COLLECTOR, scope="ghsa", model="claude-opus-5-5"),
-            *(
-                AgentRecord(role=AgentRole.READER, scope=reader, model="claude-opus-4-8")
-                for reader in READERS
-            ),
-        ],
-        prefilter=[TermHits(term=term, hit_count=2) for term in INITIAL_TERMS],
-        hits=[_a_hit(ITS_GHSA), _a_hit(GHSA_ONLY_FLAW)],
-        flaws=flaws,
-        vulnerablemcp=[
-            VulnerableMcpEntry(cve_id=FLAW_WITH_A_CVE, listed=date(2025, 7, 3), found=True)
-        ],
-        classifications=classifications,
-        date_mismatches=[],
-        figures=compute_figures(classifications, dates, withdrawn=set()),
-        groupings=groupings,
-        known_gap=known_gap(groupings, gap_population(classifications, draw_candidates(flaws))),
-    )
-
-
-def a_provenance() -> SourceProvenance:
-    a_file = SourceFile(name="all.zip", downloaded=date(2026, 10, 8), sha256="0" * 64)
-    return SourceProvenance(
-        ghsa_commit="1" * 40,
-        nvd_feeds=[a_file.model_copy(update={"name": "nvdcve-2.0-2025.json.gz"})],
-        osv_export=a_file,
-    )
-
-
-def written(tmp_path: Path, census: Census) -> Path:
-    path = tmp_path / "census.json"
-    path.write_text(census.model_dump_json(indent=2))
-    return path
-
-
-def with_a_cve_of(census: Census, flaw_id: str, server_package: str) -> Census:
-    """A valid census that also classifies `flaw_id` under `server_package`."""
-    flaw = a_flaw_with_records(identity.an_nvd(flaw_id))
-    classification = figures.a_classification(
-        flaw=flaw_id, disclosure_date=flaw.disclosure_date, server_package=server_package
-    )
-    classifications = {
-        classifier: [*census.classifications[classifier], classification]
-        for classifier in CLASSIFIERS
-    }
-    return _recomputed(
-        census.model_copy(
-            update={"flaws": [*census.flaws, flaw], "classifications": classifications}
-        )
-    )
-
-
-def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
-    [flaw] = merge(records, recorded={})
-    return census_flaw(flaw, [Discovery.PREFILTER])
 
 
 # Each defect below breaks one rule of `load_census` and keeps every derived part
@@ -132,7 +33,7 @@ def with_a_non_canonical_identifier(census: Census) -> Census:
     census = _with_flaw(census, FLAW_WITH_A_CVE, identifier=ITS_GHSA)
     for classifier in CLASSIFIERS:
         census = _with_classifications(census, classifier, renamed)
-    return _recomputed(census)
+    return recomputed(census)
 
 
 def with_a_wrong_disclosure_date(census: Census) -> Census:
@@ -169,7 +70,7 @@ def with_a_flaw_classified_twice(census: Census) -> Census:
 
 
 def with_a_classification_of_an_unknown_flaw(census: Census) -> Census:
-    unknown = figures.a_classification(flaw="CVE-2099-0001")
+    unknown = a_classification(flaw="CVE-2099-0001")
     return _with_classifications(census, CLASSIFIERS[0], lambda own: [*own, unknown])
 
 
@@ -183,9 +84,7 @@ def with_an_inconsistent_first_failed_criterion(census: Census) -> Census:
         failed = {"first_failed_criterion": Criterion.STDIO_TOOLS_CALL}
         return [own[0].model_copy(update=failed), *own[1:]]
 
-    return _recomputed(
-        _with_classifications(census, CLASSIFIERS[0], stdio_tools_call_marked_failed)
-    )
+    return recomputed(_with_classifications(census, CLASSIFIERS[0], stdio_tools_call_marked_failed))
 
 
 def with_a_flaw_disclosed_after_the_bound(census: Census) -> Census:
@@ -193,7 +92,7 @@ def with_a_flaw_disclosed_after_the_bound(census: Census) -> Census:
     flaw = _flaw(census, GHSA_ONLY_FLAW)
     records = [record.model_copy(update={"published": late}) for record in flaw.records]
     moved = _with_flaw(census, GHSA_ONLY_FLAW, records=records, disclosure_date=late)
-    return _recomputed(moved)
+    return recomputed(moved)
 
 
 def with_stale_figures(census: Census) -> Census:
@@ -202,16 +101,16 @@ def with_stale_figures(census: Census) -> Census:
 
 
 def with_a_reader_missing_a_grouped_flaw(census: Census) -> Census:
-    return _recomputed(_with_groupings(census, READERS[1], lambda own: []))
+    return recomputed(_with_groupings(census, READERS[1], lambda own: []))
 
 
 def with_a_reader_grouping_a_flaw_outside_the_population(census: Census) -> Census:
-    extra = grouping.a_judgment(FLAW_WITH_A_CVE)
-    return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, extra]))
+    extra = a_judgment(FLAW_WITH_A_CVE)
+    return recomputed(_with_groupings(census, READERS[0], lambda own: [*own, extra]))
 
 
 def with_a_flaw_grouped_twice(census: Census) -> Census:
-    return _recomputed(_with_groupings(census, READERS[0], lambda own: [*own, own[0]]))
+    return recomputed(_with_groupings(census, READERS[0], lambda own: [*own, own[0]]))
 
 
 def with_a_judgment_without_a_reason(census: Census) -> Census:
@@ -248,20 +147,7 @@ def with_a_classifier_date_differing_from_the_computed_one(
         late = own[0].disclosure_date + timedelta(days=1)
         return [own[0].model_copy(update={"disclosure_date": late}), *own[1:]]
 
-    return _recomputed(_with_classifications(census, CLASSIFIERS[1], one_day_late))
-
-
-def _recomputed(census: Census) -> Census:
-    dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
-    withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
-    population = gap_population(census.classifications, draw_candidates(census.flaws))
-    return census.model_copy(
-        update={
-            "figures": compute_figures(census.classifications, dates, withdrawn),
-            "date_mismatches": date_mismatches(census.classifications, dates),
-            "known_gap": known_gap(census.groupings, population),
-        }
-    )
+    return recomputed(_with_classifications(census, CLASSIFIERS[1], one_day_late))
 
 
 def _flaw(census: Census, identifier: str) -> CensusFlaw:
@@ -294,14 +180,3 @@ def _with_groupings(
 ) -> Census:
     groupings = census.groupings | {reader: change(census.groupings[reader])}
     return census.model_copy(update={"groupings": groupings})
-
-
-def _a_hit(source_id: str) -> HitDecision:
-    return HitDecision(
-        source=SourceName.GHSA,
-        source_id=source_id,
-        decision="keep",
-        software_kind=figures.a_classification().software_kind,
-        reason="A filesystem MCP server.",
-        agent="ghsa collector",
-    )

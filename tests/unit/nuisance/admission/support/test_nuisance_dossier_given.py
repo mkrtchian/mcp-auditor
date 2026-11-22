@@ -1,23 +1,22 @@
 from pathlib import Path
 
-import tests.unit.census.support.test_census_figures_given as figures
-import tests.unit.census.support.test_census_given as census_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.dossier import write_dossier
+from tests.unit.support import censuses
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_walk_inputs,
 )
 
-SERVER = figures.a_classification().server_package
+SERVER = censuses.a_classification().server_package
 
 
 def a_written_dossier(tmp_path: Path, backend: str | None = None) -> Path:
     out = tmp_path / "dossier"
-    write_dossier(walk_given.walk_inputs_of(census_given.a_census()), SERVER, out, backend)
+    write_dossier(walk_given.walk_inputs_of(censuses.a_census()), SERVER, out, backend)
     return out
 
 

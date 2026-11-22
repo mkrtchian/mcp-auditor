@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.census.support.test_census_given as given
 import tests.unit.detection.support.test_run_detection_holdout_run_given as run_given
 import tests.unit.support.kit_isolation as iso
 from evals import run_detection_holdout
@@ -18,7 +17,8 @@ from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import RunDocker, target_services
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
-from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
+from tests.unit.detection.support.calibration_check_deps import deps_with
+from tests.unit.support import censuses
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
 
 
@@ -183,7 +183,7 @@ def _cannot_close_a_network() -> None:
 
 
 def test_calibration_dossier_on_an_unknown_flaw_refuses_with_exit_three(tmp_path: Path):
-    census = given.written(tmp_path, given.a_census())
+    census = censuses.written(tmp_path, censuses.a_census())
 
     exit_code = run_detection_holdout.main(
         [
@@ -202,7 +202,7 @@ def test_calibration_dossier_on_an_unknown_flaw_refuses_with_exit_three(tmp_path
 
 
 def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
-    census = given.written(tmp_path, given.a_census())
+    census = censuses.written(tmp_path, censuses.a_census())
     out = tmp_path / "kit"
 
     exit_code = run_detection_holdout.main(
@@ -211,7 +211,7 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
             "--census",
             str(census),
             "--flaw",
-            given.FLAW_WITH_A_CVE,
+            censuses.FLAW_WITH_A_CVE,
             "--out",
             str(out),
         ]
@@ -219,7 +219,7 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
 
     assert exit_code == 0
     for relative in (
-        f"advisories/{given.FLAW_WITH_A_CVE}.json",
+        f"advisories/{censuses.FLAW_WITH_A_CVE}.json",
         "evals/__init__.py",
         "evals/cve/grammar.py",
         "evals/detection_places.json",

@@ -6,7 +6,7 @@ from evals.cve.census.classification import (
     in_grammar,
     is_consistent,
 )
-from tests.unit.census.support.test_census_figures_given import a_classification
+from tests.unit.support.censuses import a_classification
 
 
 def test_failing_stdio_tools_call_with_stdio_and_tools_is_inconsistent():

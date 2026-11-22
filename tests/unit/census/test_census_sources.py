@@ -13,15 +13,16 @@ from evals.cve.census.sources import (
     read_osv,
     source_provenance,
 )
+from tests.unit.census.support import advisory_sources
 
 
 def test_the_ghsa_reader_yields_each_reviewed_advisory(tmp_path: Path):
-    advisory = given.an_osv_advisory(
+    advisory = advisory_sources.an_osv_advisory(
         "GHSA-aaaa-bbbb-cccc",
         aliases=["CVE-2025-1234"],
         withdrawn="2025-08-01T12:00:00Z",
     )
-    clone = given.a_ghsa_clone(tmp_path, advisory)
+    clone = advisory_sources.a_ghsa_clone(tmp_path, advisory)
 
     [record] = read_ghsa(clone)
 
@@ -40,8 +41,10 @@ def test_the_ghsa_reader_yields_each_reviewed_advisory(tmp_path: Path):
 
 
 def test_an_offset_moves_the_published_day_to_its_utc_day(tmp_path: Path):
-    advisory = given.an_osv_advisory("GHSA-aaaa-bbbb-cccc", published="2025-06-10T23:30:00-02:00")
-    clone = given.a_ghsa_clone(tmp_path, advisory)
+    advisory = advisory_sources.an_osv_advisory(
+        "GHSA-aaaa-bbbb-cccc", published="2025-06-10T23:30:00-02:00"
+    )
+    clone = advisory_sources.a_ghsa_clone(tmp_path, advisory)
 
     [record] = read_ghsa(clone)
 
@@ -49,7 +52,7 @@ def test_an_offset_moves_the_published_day_to_its_utc_day(tmp_path: Path):
 
 
 def test_the_nvd_reader_marks_a_rejected_cve_and_reads_its_cpe_products(tmp_path: Path):
-    cve = given.an_nvd_cve(
+    cve = advisory_sources.an_nvd_cve(
         "CVE-2025-53109",
         vulnStatus="Rejected",
         configurations=given.cpe_configurations(
@@ -57,7 +60,7 @@ def test_the_nvd_reader_marks_a_rejected_cve_and_reads_its_cpe_products(tmp_path
             "cpe:2.3:a:anthropic:filesystem_mcp_server:0.6.2:*:*:*:*:node.js:*:*",
         ),
     )
-    feed = given.an_nvd_feed(tmp_path, cve)
+    feed = advisory_sources.an_nvd_feed(tmp_path, cve)
 
     [record] = read_nvd([feed])
 
@@ -76,7 +79,7 @@ def test_the_nvd_reader_marks_a_rejected_cve_and_reads_its_cpe_products(tmp_path
 
 
 def test_an_nvd_record_without_configuration_has_no_packages(tmp_path: Path):
-    feed = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2025-1"))
+    feed = advisory_sources.an_nvd_feed(tmp_path, advisory_sources.an_nvd_cve("CVE-2025-1"))
 
     [record] = read_nvd([feed])
 
@@ -84,13 +87,13 @@ def test_an_nvd_record_without_configuration_has_no_packages(tmp_path: Path):
 
 
 def test_an_escaped_colon_does_not_split_a_cpe_field(tmp_path: Path):
-    cve = given.an_nvd_cve(
+    cve = advisory_sources.an_nvd_cve(
         "CVE-2025-1",
         configurations=given.cpe_configurations(
             r"cpe:2.3:a:acme\:labs:files_mcp:1.0:*:*:*:*:*:*:*"
         ),
     )
-    feed = given.an_nvd_feed(tmp_path, cve)
+    feed = advisory_sources.an_nvd_feed(tmp_path, cve)
 
     [record] = read_nvd([feed])
 
@@ -98,8 +101,12 @@ def test_an_escaped_colon_does_not_split_a_cpe_field(tmp_path: Path):
 
 
 def test_the_nvd_reader_reads_every_feed(tmp_path: Path):
-    first = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2024-1"), year=2024)
-    second = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2025-1"), year=2025)
+    first = advisory_sources.an_nvd_feed(
+        tmp_path, advisory_sources.an_nvd_cve("CVE-2024-1"), year=2024
+    )
+    second = advisory_sources.an_nvd_feed(
+        tmp_path, advisory_sources.an_nvd_cve("CVE-2025-1"), year=2025
+    )
 
     records = read_nvd([first, second])
 
@@ -107,11 +114,11 @@ def test_the_nvd_reader_reads_every_feed(tmp_path: Path):
 
 
 def test_the_osv_reader_reads_the_zip_and_keeps_the_aliases(tmp_path: Path):
-    pysec = given.an_osv_advisory(
+    pysec = advisory_sources.an_osv_advisory(
         "PYSEC-2025-12", aliases=["CVE-2025-1234"], affected=[], references=[]
     )
     del pysec["summary"]
-    export = given.an_osv_export(tmp_path, pysec)
+    export = advisory_sources.an_osv_export(tmp_path, pysec)
 
     [record] = read_osv(export)
 
@@ -130,9 +137,9 @@ def test_the_osv_reader_reads_the_zip_and_keeps_the_aliases(tmp_path: Path):
 
 
 def test_an_osv_record_without_a_published_date_is_read_without_one(tmp_path: Path):
-    undated = given.an_osv_advisory("PYSEC-2025-12")
+    undated = advisory_sources.an_osv_advisory("PYSEC-2025-12")
     del undated["published"]
-    export = given.an_osv_export(tmp_path, undated)
+    export = advisory_sources.an_osv_export(tmp_path, undated)
 
     [record] = read_osv(export)
 
@@ -140,11 +147,11 @@ def test_an_osv_record_without_a_published_date_is_read_without_one(tmp_path: Pa
 
 
 def test_an_osv_reference_without_a_url_is_left_out(tmp_path: Path):
-    advisory = given.an_osv_advisory(
+    advisory = advisory_sources.an_osv_advisory(
         "CAN-2022-1000071",
         references=[{"type": "WEB"}, {"type": "WEB", "url": "https://example.org/gateway"}],
     )
-    export = given.an_osv_export(tmp_path, advisory)
+    export = advisory_sources.an_osv_export(tmp_path, advisory)
 
     [record] = read_osv(export)
 
@@ -152,8 +159,10 @@ def test_an_osv_reference_without_a_url_is_left_out(tmp_path: Path):
 
 
 def test_the_provenance_records_the_hash_of_each_download_and_its_date(tmp_path: Path):
-    feed = given.an_nvd_feed(tmp_path, given.an_nvd_cve("CVE-2025-1"))
-    export = given.an_osv_export(tmp_path, given.an_osv_advisory("PYSEC-2025-12"))
+    feed = advisory_sources.an_nvd_feed(tmp_path, advisory_sources.an_nvd_cve("CVE-2025-1"))
+    export = advisory_sources.an_osv_export(
+        tmp_path, advisory_sources.an_osv_advisory("PYSEC-2025-12")
+    )
 
     provenance = source_provenance(
         "0123abcd",

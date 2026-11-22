@@ -9,13 +9,13 @@ from evals.cve.detection.survey import TargetSurvey
 from evals.cve.detection.targets import Target
 from evals.metrics import SessionThrottles
 from tests.fakes import FakeContainerSweep
+from tests.unit.detection.support.calibration_check_deps import deps_with
 from tests.unit.detection.support.run_detection_cli import (
     a_billing_audit_target,
     a_session_auditing_nothing,
     a_session_under_priced_models,
     deps_reaching_nothing,
 )
-from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
 
 
 def a_calibration(

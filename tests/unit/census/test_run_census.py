@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.census.support.test_census_given as census_given
-import tests.unit.census.support.test_census_sources_given as sources
 import tests.unit.census.support.test_run_census_given as given
 from evals import run_census
 from evals.cve.census.census import Discovery, load_census
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.grouping import READERS
 from evals.cve.census.sources import SourceName
+from tests.unit.census.support import advisory_sources
+from tests.unit.support import censuses
 
 GHSA = SourceName.GHSA
 OSV = SourceName.OSV
@@ -108,7 +108,7 @@ def test_prefilter_keeps_a_hit_published_after_the_bound_when_its_flaw_is_disclo
             given.an_mcp_advisory(A_GHSA, ITS_CVE, published=AFTER_THE_BOUND),
             given.an_mcp_advisory(OTHER_GHSA, published=AFTER_THE_BOUND),
         ],
-        nvd=[sources.an_nvd_cve(ITS_CVE)],
+        nvd=[advisory_sources.an_nvd_cve(ITS_CVE)],
     )
     work = given.a_work_directory(tmp_path)
 
@@ -218,12 +218,10 @@ def test_classify_dossier_writes_one_file_per_flaw_the_schema_and_the_grammar_cl
 def test_draw_order_prints_each_candidate_with_its_digest_and_disclosure_date(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = census_given.a_census()
+    census = censuses.a_census()
     entries = draw_order(census)
 
-    exit_code = run_census.main(
-        ["draw-order", "--census", str(census_given.written(tmp_path, census))]
-    )
+    exit_code = run_census.main(["draw-order", "--census", str(censuses.written(tmp_path, census))])
 
     assert exit_code == 0
     output = capsys.readouterr().out
@@ -249,7 +247,7 @@ def _a_complete_census_collection(tmp_path: Path) -> tuple[Path, Path]:
     sources_directory = given.a_sources_directory(
         tmp_path,
         ghsa=[given.an_mcp_advisory(A_GHSA, ITS_CVE)],
-        nvd=[sources.an_nvd_cve(ITS_CVE)],
+        nvd=[advisory_sources.an_nvd_cve(ITS_CVE)],
         osv=[given.an_mcp_advisory(AN_OSV_ONLY)],
     )
     work = given.a_work_directory(

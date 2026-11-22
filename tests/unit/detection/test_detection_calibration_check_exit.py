@@ -1,7 +1,7 @@
 import pytest
 
 from evals.cve.detection.calibration_check_exit import run_calibration_check
-from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
+from tests.unit.detection.support.calibration_check_deps import deps_with
 
 
 async def test_every_target_in_calibration_exits_zero():

@@ -1,9 +1,9 @@
 import pytest
 
-import tests.unit.detection.support.test_detection_draw_record_given as given
 from evals.cve.detection.draw_record import DrawRecord
 from evals.cve.detection.holdout_card_readiness import unready_cards
-from tests.unit.detection.support.test_detection_draw_record_given import A_DRAWN_FLAW
+from tests.unit.support import census_draws
+from tests.unit.support.census_draws import A_DRAWN_FLAW
 
 
 def _with_check_version(draw: DrawRecord, version: int) -> DrawRecord:
@@ -12,20 +12,20 @@ def _with_check_version(draw: DrawRecord, version: int) -> DrawRecord:
 
 
 def test_a_ready_card_and_check_give_no_gap():
-    assert unready_cards(given.a_draw(), [A_DRAWN_FLAW]) == []
+    assert unready_cards(census_draws.a_draw(), [A_DRAWN_FLAW]) == []
 
 
 def test_a_check_at_a_later_rule_version_passes():
-    assert unready_cards(_with_check_version(given.a_draw(), 12), [A_DRAWN_FLAW]) == []
+    assert unready_cards(_with_check_version(census_draws.a_draw(), 12), [A_DRAWN_FLAW]) == []
 
 
 @pytest.mark.parametrize(
     ("draw", "gap"),
     [
-        (given.a_draw().model_copy(update={"cards": []}), "no card"),
-        (given.a_draw().model_copy(update={"card_checks": []}), "no card check"),
+        (census_draws.a_draw().model_copy(update={"cards": []}), "no card"),
+        (census_draws.a_draw().model_copy(update={"card_checks": []}), "no card check"),
         (
-            _with_check_version(given.a_draw(), 10),
+            _with_check_version(census_draws.a_draw(), 10),
             "card check under detection suite rule v10, below v11",
         ),
     ],

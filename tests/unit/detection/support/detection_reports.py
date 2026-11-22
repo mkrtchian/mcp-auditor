@@ -1,0 +1,119 @@
+from evals.cve.detection.baseline import DetectionRunConditions
+from evals.cve.detection.costs import TargetCost
+from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
+from evals.cve.detection.oracle import DetectionReport, TargetResult
+from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus
+from evals.cve.units import JudgeCategory
+from evals.gate_outcome import GateOutcome
+from evals.metrics import UsageBreakdown
+from mcp_auditor.domain.models import ProviderUsage
+
+NONCE = "s3nt1nel_ab12cd34ef56"
+FINGERPRINT = "0123456789abcdef" * 4
+CONCURRENCY = 4
+COMMIT = "c0ffee"
+
+
+def a_detected_grade() -> RunGrade:
+    return RunGrade(
+        status=TargetStatus.DETECTED,
+        surfaced_places=frozenset({"planted"}),
+        aimed=True,
+        evidence=f"leaked {NONCE}",
+        category=JudgeCategory("injection"),
+    )
+
+
+def a_missed_grade(miss_kind: MissKind, fail_without_proof: bool = False) -> RunGrade:
+    return RunGrade(
+        status=TargetStatus.MISSED,
+        miss_kind=miss_kind,
+        aimed=miss_kind != MissKind.NOT_AIMED,
+        fail_without_proof=fail_without_proof,
+    )
+
+
+def a_target_result(
+    flaw_id: str,
+    status: TargetStatus,
+    detected_runs: int = 0,
+    aimed_runs: int = 0,
+    fail_without_proof_runs: int = 0,
+    miss_kind: MissKind | None = None,
+    struck_places: list[list[str]] | None = None,
+    unchecked_places: list[list[str]] | None = None,
+    classes: tuple[FlawClass, ...] = (FlawClass.COMMAND_EXECUTION,),
+) -> TargetResult:
+    return TargetResult(
+        flaw_id=flaw_id,
+        severity="9.1 CRITICAL",
+        note="test note",
+        classes=list(classes),
+        status=status,
+        miss_kind=miss_kind,
+        awaited_capability="cross-tool chains",
+        runs=3,
+        detected_runs=detected_runs,
+        surfaced_runs=detected_runs,
+        aimed_runs=aimed_runs,
+        fail_without_proof_runs=fail_without_proof_runs,
+        budget=10,
+        struck_places=struck_places or [],
+        unchecked_places=unchecked_places or [],
+    )
+
+
+def a_red_gate() -> DetectionGateResult:
+    return DetectionGateResult(
+        outcome=GateOutcome.RED,
+        reasons=["CVE-2025-53355: regression, the miss reproduced in 4 of 4 retests"],
+        targets=[
+            TargetComparison(
+                flaw_id="CVE-2025-53355",
+                outcome=TargetOutcome.REGRESSION,
+                candidate_runs=[
+                    TargetStatus.DETECTED,
+                    TargetStatus.MISSED,
+                    TargetStatus.REACHED_BUT_JUDGED_PASS,
+                ],
+                retests=[True] * 4,
+            ),
+            TargetComparison(
+                flaw_id="CVE-2025-53109",
+                outcome=TargetOutcome.HELD,
+                candidate_runs=[TargetStatus.DETECTED] * 3,
+            ),
+        ],
+    )
+
+
+def a_detection_report(results: list[TargetResult]) -> DetectionReport:
+    return DetectionReport(
+        conditions=DetectionRunConditions(
+            runs=3,
+            budget=10,
+            tools_filtered=True,
+            provider="openai",
+            model="gpt-6-luna",
+            judge_model="gpt-6-judge",
+            reasoning="none",
+            judge_reasoning=None,
+            grammar_fingerprint=FINGERPRINT,
+        ),
+        concurrency=CONCURRENCY,
+        commit=COMMIT,
+        dirty=False,
+        results=results,
+    )
+
+
+def a_target_cost(flaw_id: str) -> TargetCost:
+    return TargetCost(
+        flaw_id=flaw_id,
+        usage=UsageBreakdown(total=ProviderUsage(input_tokens=2000, output_tokens=300)),
+        single_step=0.25,
+        chains=0.5,
+        judge=0.125,
+        total=0.75,
+        largest_input_tokens=900,
+    )
