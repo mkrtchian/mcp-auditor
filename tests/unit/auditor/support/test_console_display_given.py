@@ -51,7 +51,7 @@ def a_report_with_two_tools() -> AuditReport:
                 tool=ToolDefinition(name="list_items", description="", input_schema={}),
                 cases=[
                     a_failing_case(
-                        "list_items", Severity.HIGH, AuditCategory.INPUT_VALIDATION, "bad"
+                        "list_items", AuditCategory.INPUT_VALIDATION, Severity.HIGH, "bad"
                     ),
                 ],
             ),

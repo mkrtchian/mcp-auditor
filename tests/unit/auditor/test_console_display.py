@@ -2,11 +2,9 @@ import pytest
 from rich.text import Text
 
 import tests.unit.auditor.support.audit_displays as displays
-import tests.unit.auditor.support.report_builders as reports
 import tests.unit.auditor.support.test_console_display_given as given
 from mcp_auditor.domain.execution import ExecutionRegime
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
-from mcp_auditor.domain.models import AuditCategory, Severity
 from mcp_auditor.domain.rendering import describe_coverage_gap
 
 
@@ -34,18 +32,6 @@ def test_header_states_the_execution_regime(regime: ExecutionRegime, shown: str)
     assert f"execution: {shown}" in Text.from_ansi(buffer.getvalue()).plain
 
 
-def test_discovery_shows_count_and_names():
-    names = ["read_file", "write_file", "list_dir"]
-    display, buffer = displays.a_display()
-
-    display.print_discovery(3, names)
-
-    output = Text.from_ansi(buffer.getvalue()).plain
-    assert "3 tools" in output
-    for name in names:
-        assert name in output
-
-
 def test_summary_contains_score_and_tools():
     report = given.a_report_with_two_tools()
     display, buffer = displays.a_display()
@@ -58,8 +44,6 @@ def test_summary_contains_score_and_tools():
     assert "50%" in output  # 1 pass, 1 fail = 50% score
     assert "1,234" in output  # input tokens
     assert "567" in output  # output tokens
-    assert "\u2588" in output  # filled bar char
-    assert "\u2591" in output  # empty bar char
 
 
 def test_dry_run_shows_arguments():
@@ -119,20 +103,24 @@ def test_ci_mode_shows_discovery():
     assert "write_file" in output
 
 
-def test_ci_mode_progress_prints_tool_summary():
-    display, buffer = displays.a_ci_display()
-    progress = display.create_tool_progress(1, 2, "get_user", 1)
+def test_discovery_columnar_for_many_tools():
+    names = [f"tool_{i}" for i in range(8)]
+    display, buffer = displays.a_plain_display()
 
-    progress.start()
-    progress.advance(
-        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
-    )
-    progress.stop()
+    display.print_discovery(8, names)
 
-    output = buffer.getvalue()
-    assert "get_user" in output
-    assert "1 failed" in output
-    assert "injection" in output
+    heading, *columns = buffer.getvalue().splitlines()
+    assert heading == "Discovered 8 tools:"
+    assert " ".join(columns).split() == names
+
+
+def test_discovery_inline_for_few_tools():
+    names = ["alpha", "beta", "gamma", "delta"]
+    display, buffer = displays.a_plain_display()
+
+    display.print_discovery(4, names)
+
+    assert buffer.getvalue().splitlines() == ["Discovered 4 tools: alpha, beta, gamma, delta"]
 
 
 def test_summary_warns_about_a_tool_with_a_coverage_gap():

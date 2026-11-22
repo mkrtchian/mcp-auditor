@@ -131,20 +131,20 @@ def a_tool_report(
     tool_name: str,
     results: list[JudgeResult],
 ) -> ToolReport:
-    cases = [
-        TestCase(
-            payload=AuditPayload(
-                category=r.category,
-                description="test",
-                arguments=r.arguments,
-            ),
-            judge_result=r,
-        )
-        for r in results
-    ]
     return ToolReport(
         tool=a_tool_definition(name=tool_name, description=f"The {tool_name} tool"),
-        cases=cases,
+        cases=[a_judged_case(result) for result in results],
+    )
+
+
+def a_judged_case(result: JudgeResult) -> TestCase:
+    return TestCase(
+        payload=AuditPayload(
+            category=result.category,
+            description="test",
+            arguments=result.arguments,
+        ),
+        judge_result=result,
     )
 
 
@@ -213,40 +213,16 @@ def a_pass_result(
 
 
 def a_passing_case(tool_name: str) -> TestCase:
-    return _a_test_case(tool_name, AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW)
+    return a_judged_case(a_pass_result(tool_name, AuditCategory.INJECTION))
 
 
 def a_failing_case(
     tool_name: str,
-    severity: Severity,
     category: AuditCategory,
+    severity: Severity,
     justification: str,
 ) -> TestCase:
-    return _a_test_case(tool_name, category, EvalVerdict.FAIL, justification, severity)
-
-
-def _a_test_case(
-    tool_name: str,
-    category: AuditCategory,
-    verdict: EvalVerdict,
-    justification: str,
-    severity: Severity,
-) -> TestCase:
-    return TestCase(
-        payload=AuditPayload(
-            category=category,
-            description="test",
-            arguments={},
-        ),
-        judge_result=JudgeResult(
-            tool_name=tool_name,
-            category=category,
-            arguments={},
-            verdict=verdict,
-            justification=justification,
-            severity=severity,
-        ),
-    )
+    return a_judged_case(a_fail_result(tool_name, category, severity, justification))
 
 
 def a_tool_definition(

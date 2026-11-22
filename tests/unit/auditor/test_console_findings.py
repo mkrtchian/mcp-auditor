@@ -130,23 +130,3 @@ def test_summary_score_line_zero_cases():
 
     output = buffer.getvalue()
     assert "0%" in output
-
-
-def test_discovery_columnar_for_many_tools():
-    names = [f"tool_{i}" for i in range(8)]
-    display, buffer = displays.a_plain_display()
-
-    display.print_discovery(8, names)
-
-    heading, *columns = buffer.getvalue().splitlines()
-    assert heading == "Discovered 8 tools:"
-    assert " ".join(columns).split() == names
-
-
-def test_discovery_inline_for_few_tools():
-    names = ["alpha", "beta", "gamma", "delta"]
-    display, buffer = displays.a_plain_display()
-
-    display.print_discovery(4, names)
-
-    assert buffer.getvalue().splitlines() == ["Discovered 4 tools: alpha, beta, gamma, delta"]

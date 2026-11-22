@@ -96,6 +96,22 @@ def test_ci_progress_advance_blocked_names_the_reason():
     assert "destructive SQL statement: drop table" in buffer.getvalue()
 
 
+def test_ci_mode_progress_prints_tool_summary():
+    display, buffer = displays.a_ci_display()
+    progress = display.create_tool_progress(1, 2, "get_user", 1)
+
+    progress.start()
+    progress.advance(
+        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
+    )
+    progress.stop()
+
+    output = buffer.getvalue()
+    assert "get_user" in output
+    assert "1 failed" in output
+    assert "injection" in output
+
+
 def test_a_blocked_line_names_the_guard_and_leaves_not_sent_to_calls_withheld():
     display, buffer = displays.a_ci_display()
     progress = display.create_tool_progress(1, 1, "run_command", 1)

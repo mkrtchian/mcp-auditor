@@ -16,7 +16,7 @@ def a_report_with_one_pass_plus_failures(
     for tool_name, failures in failures_per_tool.items():
         cases = [a_passing_case(tool_name)]
         for severity, category, justification in failures:
-            cases.append(a_failing_case(tool_name, severity, category, justification))
+            cases.append(a_failing_case(tool_name, category, severity, justification))
         tool_reports.append(
             ToolReport(
                 tool=ToolDefinition(name=tool_name, description="", input_schema={}),
@@ -29,7 +29,7 @@ def a_report_with_one_pass_plus_failures(
 def a_report_with_n_results(pass_count: int, fail_count: int) -> AuditReport:
     passing = [a_passing_case("tool_a") for _ in range(pass_count)]
     failing = [
-        a_failing_case("tool_a", Severity.MEDIUM, AuditCategory.INJECTION, "vuln")
+        a_failing_case("tool_a", AuditCategory.INJECTION, Severity.MEDIUM, "vuln")
         for _ in range(fail_count)
     ]
     return _a_report(

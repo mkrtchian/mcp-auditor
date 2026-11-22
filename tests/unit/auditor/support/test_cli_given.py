@@ -70,7 +70,7 @@ def an_environment_whose_home_is_a_file(tmp_path: Path) -> dict[str, str]:
 
 def _add_a_finding(report: AuditReport, severity: Severity) -> None:
     report.tool_reports[0].cases.append(
-        reports.a_failing_case("test_tool", severity, AuditCategory.INJECTION, "vuln")
+        reports.a_failing_case("test_tool", AuditCategory.INJECTION, severity, "vuln")
     )
 
 
