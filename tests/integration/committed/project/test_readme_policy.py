@@ -1,6 +1,6 @@
-from pathlib import Path
+from evals.honeypots import REPO_ROOT
 
-README = Path(__file__).resolve().parents[3] / "README.md"
+README = REPO_ROOT / "README.md"
 
 OVERCLAIMS = (
     "read-only",

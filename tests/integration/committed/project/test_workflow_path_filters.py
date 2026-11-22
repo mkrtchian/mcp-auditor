@@ -1,6 +1,6 @@
 import pytest
 
-import tests.unit.project.support.test_workflow_path_filters_given as given
+import tests.integration.committed.project.support.test_workflow_path_filters_given as given
 
 
 def test_the_detection_calibration_check_workflow_filters_on_paths():

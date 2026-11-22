@@ -3,39 +3,12 @@ from pathlib import Path
 import pytest
 
 import tests.unit.project.support.test_glossary_given as given
-from evals.honeypots import REPO_ROOT
-from tests.unit.support.retired_word_exemptions import EXEMPTIONS
 from tests.unit.support.retired_word_scan import (
     AllowedLine,
     Exemptions,
-    Scan,
     imports_the_glossary,
-    oversized_files,
     scan,
 )
-from tests.unit.support.retired_words import RETIRED_WORDS
-
-
-# Scanning the repository takes seconds, so its two tests share one scan.
-@pytest.fixture(scope="module")
-def repository_scan() -> Scan:
-    return scan(REPO_ROOT, RETIRED_WORDS, EXEMPTIONS)
-
-
-def test_living_files_use_no_retired_word(repository_scan: Scan):
-    assert repository_scan.violations == ()
-
-
-def test_every_allowlist_entry_matches_a_line(repository_scan: Scan):
-    assert repository_scan.stale_entries == ()
-
-
-def test_the_size_bound_skips_only_the_files_embedding_an_android_capture():
-    assert oversized_files(REPO_ROOT) == given.THE_ANDROID_DOCKERFILES
-
-
-def test_claude_md_imports_the_glossary():
-    assert imports_the_glossary(REPO_ROOT)
 
 
 def test_a_retired_word_fires_on_a_living_file(tmp_path: Path):

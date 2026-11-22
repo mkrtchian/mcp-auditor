@@ -127,8 +127,9 @@ _WORKFLOWS = ".github/workflows"
 _SKIPPED = (
     "tests/unit/project/test_glossary.py",
     "tests/unit/project/support/test_glossary_given.py",
-    "tests/unit/support/retired_words.py",
-    "tests/unit/support/retired_word_exemptions.py",
+    "tests/integration/committed/project/test_glossary.py",
+    "tests/integration/committed/project/support/retired_words.py",
+    "tests/integration/committed/project/support/retired_word_exemptions.py",
 )
 _RECORD_AND_KEY_SUFFIXES = (".json", ".pem", ".key")
 _SIZE_BOUND = 100_000

@@ -16,6 +16,7 @@ You'll need Python 3.13+. The project uses [uv](https://docs.astral.sh/uv/) for 
 ```bash
 uv run pytest tests/unit               # unit tests
 uv run pytest tests/integration -n auto # integration tests
+uv run pytest tests/integration/committed -n auto # the tests of the committed content alone
 uv run ruff check .                    # lint
 uv run ruff format .                   # format
 uv run pyright                         # type-check

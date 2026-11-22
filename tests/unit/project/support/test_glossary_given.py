@@ -11,14 +11,6 @@ NO_EXEMPTION = Exemptions()
 A_LINE_WITH_THE_WORD = f"A line that still says {THE_WORD}.\n"
 A_TEST_NAMED_WITH_THE_WORD = f"def test_the_{THE_WORD}_is_still_named():\n    pass\n"
 
-THE_ANDROID_DOCKERFILES = (
-    "evals/docker/Dockerfile.android",
-    "evals/docker/Dockerfile.holdout-2026-19978-android",
-    "evals/docker/Dockerfile.holdout-2026-19978-android-patched",
-    "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile",
-    "evals/docker/Dockerfile.holdout-2026-81562-claude-in-mobile-patched",
-)
-
 
 @dataclass(frozen=True)
 class FixtureFile:
