@@ -8,8 +8,6 @@ from mcp_auditor.domain.models import (
     MissedModelCall,
     ModelCallKind,
     ProviderUsage,
-    is_chain_call,
-    is_judge_call,
 )
 from mcp_auditor.domain.ports import (
     LLMPort,
@@ -27,24 +25,40 @@ class ModelCall[T: BaseModel]:
     prompt: str
     output_schema: type[T]
 
+    def billed(self, usage: ProviderUsage) -> dict[str, list[ProviderUsage]]:
+        return billed_usage(self.kind, usage)
+
 
 @dataclass(frozen=True)
 class Missed:
     missed_call: MissedModelCall
     usage: ProviderUsage
-    is_judge: bool
-    is_chain: bool
 
     def state_update(self) -> dict[str, Any]:
-        update: dict[str, Any] = {
+        return {
             "missed_model_calls": [self.missed_call],
-            "provider_usage": [self.usage],
+            **billed_usage(self.missed_call.kind, self.usage),
         }
-        if self.is_judge:
-            update["judge_usage"] = [self.usage]
-        if self.is_chain:
-            update["chain_usage"] = [self.usage]
-        return update
+
+
+_JUDGE_CALLS = frozenset({ModelCallKind.JUDGMENT, ModelCallKind.CHAIN_JUDGMENT})
+_CHAIN_CALLS = frozenset(
+    {
+        ModelCallKind.CHAIN_PLANNING,
+        ModelCallKind.CHAIN_STEP_OBSERVATION,
+        ModelCallKind.CHAIN_STEP_PLANNING,
+        ModelCallKind.CHAIN_JUDGMENT,
+    }
+)
+
+
+def billed_usage(kind: ModelCallKind, usage: ProviderUsage) -> dict[str, list[ProviderUsage]]:
+    billed = {"provider_usage": [usage]}
+    if kind in _JUDGE_CALLS:
+        billed["judge_usage"] = [usage]
+    if kind in _CHAIN_CALLS:
+        billed["chain_usage"] = [usage]
+    return billed
 
 
 async def call_model[T: BaseModel](
@@ -70,9 +84,4 @@ def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: Provider
     missed_call = MissedModelCall(
         tool_name=call.tool_name, kind=call.kind, cause=cause, detail=detail
     )
-    return Missed(
-        missed_call=missed_call,
-        usage=usage,
-        is_judge=is_judge_call(call.kind),
-        is_chain=is_chain_call(call.kind),
-    )
+    return Missed(missed_call, usage)

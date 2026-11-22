@@ -8,8 +8,6 @@ report keeps every response whole: only what a model is shown is bounded.
 import json
 from typing import Any
 
-from mcp_auditor.domain.models import ToolReport
-
 MAX_SHOWN_LENGTH = 20_000  # characters of one tool response or error a prompt shows
 
 _HEAD_LENGTH = MAX_SHOWN_LENGTH // 2
@@ -27,18 +25,6 @@ def shown_to_model(text: str) -> str:
 
 def is_cut(text: str) -> bool:
     return len(text) > MAX_SHOWN_LENGTH
-
-
-def cut_responses(tool_report: ToolReport) -> int:
-    shown: list[str] = []
-    for case in tool_report.cases:
-        if case.response is not None:
-            shown.append(rendered_response(case.response))
-        if case.error is not None:
-            shown.append(case.error)
-    for chain in tool_report.chains:
-        shown.extend(text for step in chain.steps for text in (step.response, step.error) if text)
-    return sum(1 for text in shown if is_cut(text))
 
 
 def rendered_response(response: dict[str, Any] | str) -> str:

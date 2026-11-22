@@ -1,3 +1,5 @@
+import pytest
+
 from mcp_auditor.domain.models import (
     Judgment,
     MissCause,
@@ -11,7 +13,7 @@ from mcp_auditor.domain.ports import (
     ProviderThrottled,
     UnparseableOutput,
 )
-from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
+from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, billed_usage, call_model
 from tests.fakes import FakeLLM
 
 JUDGMENT_CALL = ModelCall("read_file", ModelCallKind.JUDGMENT, "judge this", Judgment)
@@ -31,8 +33,6 @@ async def test_an_unreadable_answer_is_a_missed_model_call_with_its_usage():
             " (1 cut at the output limit)",
         ),
         usage=usage,
-        is_judge=True,
-        is_chain=False,
     )
 
 
@@ -51,8 +51,6 @@ async def test_a_refusal_is_a_missed_model_call_with_the_provider_message():
             detail="flagged by policy",
         ),
         usage=usage,
-        is_judge=True,
-        is_chain=False,
     )
 
 
@@ -72,8 +70,6 @@ async def test_a_throttled_call_is_a_missed_model_call_with_the_provider_message
             " (312 s waited by the auditor): Error code: 429 - slow down",
         ),
         usage=usage,
-        is_judge=True,
-        is_chain=False,
     )
 
 
@@ -90,6 +86,24 @@ async def test_a_prompt_too_long_is_a_missed_model_call_with_its_usage():
             detail=str(PromptTooLong(usage)),
         ),
         usage=usage,
-        is_judge=True,
-        is_chain=False,
     )
+
+
+@pytest.mark.parametrize(
+    ("kind", "channels"),
+    [
+        (ModelCallKind.TEST_GENERATION, {"provider_usage"}),
+        (ModelCallKind.JUDGMENT, {"provider_usage", "judge_usage"}),
+        (ModelCallKind.CONTEXT_EXTRACTION, {"provider_usage"}),
+        (ModelCallKind.CHAIN_PLANNING, {"provider_usage", "chain_usage"}),
+        (ModelCallKind.CHAIN_STEP_OBSERVATION, {"provider_usage", "chain_usage"}),
+        (ModelCallKind.CHAIN_STEP_PLANNING, {"provider_usage", "chain_usage"}),
+        (ModelCallKind.CHAIN_JUDGMENT, {"provider_usage", "judge_usage", "chain_usage"}),
+    ],
+)
+def test_a_model_call_is_billed_to_the_channels_of_its_kind(
+    kind: ModelCallKind, channels: set[str]
+):
+    usage = ProviderUsage(input_tokens=5, output_tokens=3)
+
+    assert billed_usage(kind, usage) == {channel: [usage] for channel in channels}

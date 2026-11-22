@@ -18,7 +18,7 @@ from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
 _TOOL = ToolDefinition(name="run", description="Runs a command", input_schema={"type": "object"})
 
 
-async def test_attempt_refuses_a_destructive_payload_without_touching_the_server():
+async def test_attempt_blocks_a_destructive_payload_without_touching_the_server():
     client = FakeMCPClient([_TOOL])
     server = AuditedServer(client)
 
@@ -33,7 +33,7 @@ def _a_payload(arguments: dict[str, str]) -> AuditPayload:
     return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
 
 
-async def test_attempt_refuses_an_unencodable_payload_without_touching_the_server():
+async def test_attempt_blocks_an_unencodable_payload_without_touching_the_server():
     client = FakeMCPClient([_TOOL])
     server = AuditedServer(client)
 

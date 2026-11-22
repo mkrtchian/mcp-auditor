@@ -1,4 +1,4 @@
-# Refuses generated payloads that are destructive to state, or dangerous to the host
+# Blocks generated payloads that are destructive to state, or dangerous to the host
 # and the run, before they reach the audited server (ADR 013), and payloads the
 # transport cannot encode, which would otherwise end the MCP session.
 # The list below is enumerated, not complete: it guards against our own generator's

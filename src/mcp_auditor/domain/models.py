@@ -5,6 +5,7 @@ from typing import Any, override
 from pydantic import BaseModel, Field, computed_field
 
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
+from mcp_auditor.domain.shown_response import is_cut, rendered_response
 
 
 @dataclass(frozen=True)
@@ -81,7 +82,7 @@ class ToolResponse(BaseModel):
 @dataclass(frozen=True)
 class BlockedPayload:
     # No field is named like a ToolResponse field (content, is_error, error_type): the
-    # non-overlap is what makes an unhandled refusal a type error, never a silent success.
+    # non-overlap is what makes an unhandled blocked payload a type error, never a silent success.
     reason: str
 
 
@@ -159,14 +160,6 @@ class ChainStep(BaseModel):
     response: str | None = None
     error: str | None = None
     observation: str = ""
-
-    @staticmethod
-    def from_response(payload: AuditPayload, response: str) -> "ChainStep":
-        return ChainStep(payload=payload, response=response)
-
-    @staticmethod
-    def from_error(payload: AuditPayload, error: str) -> "ChainStep":
-        return ChainStep(payload=payload, error=error)
 
     def with_observation(self, observation: str) -> "ChainStep":
         return self.model_copy(update={"observation": observation})
@@ -254,10 +247,17 @@ class ToolReport(BaseModel):
     @computed_field
     @property
     def cut_responses(self) -> int:
-        # Local import: domain.shown_response imports this module for ToolReport.
-        from mcp_auditor.domain.shown_response import cut_responses
-
-        return cut_responses(self)
+        shown: list[str] = []
+        for case in self.cases:
+            if case.response is not None:
+                shown.append(rendered_response(case.response))
+            if case.error is not None:
+                shown.append(case.error)
+        for chain in self.chains:
+            shown.extend(
+                text for step in chain.steps for text in (step.response, step.error) if text
+            )
+        return sum(1 for text in shown if is_cut(text))
 
 
 _READ_PREFIXES = (
@@ -325,27 +325,6 @@ class ModelCallKind(StrEnum):
     CHAIN_STEP_OBSERVATION = "chain_step_observation"
     CHAIN_STEP_PLANNING = "chain_step_planning"
     CHAIN_JUDGMENT = "chain_judgment"
-
-
-JUDGE_CALLS = frozenset({ModelCallKind.JUDGMENT, ModelCallKind.CHAIN_JUDGMENT})
-
-
-def is_judge_call(kind: ModelCallKind) -> bool:
-    return kind in JUDGE_CALLS
-
-
-CHAIN_CALLS = frozenset(
-    {
-        ModelCallKind.CHAIN_PLANNING,
-        ModelCallKind.CHAIN_STEP_OBSERVATION,
-        ModelCallKind.CHAIN_STEP_PLANNING,
-        ModelCallKind.CHAIN_JUDGMENT,
-    }
-)
-
-
-def is_chain_call(kind: ModelCallKind) -> bool:
-    return kind in CHAIN_CALLS
 
 
 class MissCause(StrEnum):

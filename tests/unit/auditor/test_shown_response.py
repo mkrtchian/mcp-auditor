@@ -7,7 +7,6 @@ import tests.unit.auditor.support.test_shown_response_given as given
 from mcp_auditor.domain.models import ToolReport
 from mcp_auditor.domain.shown_response import (
     MAX_SHOWN_LENGTH,
-    cut_responses,
     rendered_response,
     shown_to_model,
 )
@@ -58,7 +57,7 @@ class TestRenderedResponse:
     ids=["case dict response", "case error", "step response", "step error"],
 )
 def test_counts_a_response_or_error_over_the_bound(tool_report: ToolReport):
-    assert cut_responses(tool_report) == 1
+    assert tool_report.cut_responses == 1
 
 
 def test_counts_nothing_for_short_responses_and_a_blocked_case():
@@ -67,7 +66,7 @@ def test_counts_nothing_for_short_responses_and_a_blocked_case():
         steps=[given.a_step(response="ok", error="short error")],
     )
 
-    assert cut_responses(tool_report) == 0
+    assert tool_report.cut_responses == 0
 
 
 def test_counts_the_response_and_the_error_of_one_case_apart():
@@ -75,4 +74,4 @@ def test_counts_the_response_and_the_error_of_one_case_apart():
         cases=[given.a_case(response=given.OVER_THE_BOUND, error=given.OVER_THE_BOUND)]
     )
 
-    assert cut_responses(tool_report) == 2
+    assert tool_report.cut_responses == 2

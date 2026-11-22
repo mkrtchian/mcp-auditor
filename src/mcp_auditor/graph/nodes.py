@@ -188,9 +188,8 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         prompt = build_judge_prompt(tool=tool, test_case=case)
         if redacting:
             prompt = with_redaction_notice(prompt)
-        answer = await call_model(
-            llm, ModelCall(tool.name, ModelCallKind.JUDGMENT, prompt, Judgment)
-        )
+        call = ModelCall(tool.name, ModelCallKind.JUDGMENT, prompt, Judgment)
+        answer = await call_model(llm, call)
         if isinstance(answer, Missed):
             return {"processed_cases": [case], "current_case": None, **answer.state_update()}
         judgment, usage = answer
@@ -206,8 +205,7 @@ def make_judge_response(llm: LLMPort, redacting: bool = False):
         return {
             "processed_cases": [judged_case],
             "current_case": None,
-            "provider_usage": [usage],
-            "judge_usage": [usage],
+            **call.billed(usage),
         }
 
     return judge_response
@@ -242,7 +240,7 @@ def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
             return {"attack_context": existing_context, **answer.state_update()}
         reported_context, usage = answer
         merged = merge_attack_context(existing_context, reported_context, tool_report.tool.name)
-        return {"attack_context": merged, "provider_usage": [usage]}
+        return {"attack_context": merged, **call.billed(usage)}
 
     return extract_attack_context
 

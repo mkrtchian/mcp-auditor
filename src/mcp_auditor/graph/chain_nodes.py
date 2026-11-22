@@ -45,7 +45,7 @@ def make_plan_chains(llm: LLMPort, redacting: bool = False):
         if isinstance(outcome, Missed):
             return {"pending_chains": [], **outcome.state_update()}
         batch, usage = outcome
-        return {"pending_chains": batch.chains, "provider_usage": [usage], "chain_usage": [usage]}
+        return {"pending_chains": batch.chains, **call.billed(usage)}
 
     return plan_chains
 
@@ -75,9 +75,9 @@ def make_execute_step(server: AuditedServer):
         if isinstance(outcome, BlockedPayload):
             return {"blocked_step_reason": outcome.reason}
         if outcome.is_error:
-            step = ChainStep.from_error(payload, outcome.content)
+            step = ChainStep(payload=payload, error=outcome.content)
         else:
-            step = ChainStep.from_response(payload, outcome.content)
+            step = ChainStep(payload=payload, response=outcome.content)
         update: dict[str, Any] = {"current_chain_steps": [*state["current_chain_steps"], step]}
         if attempt.relaunch is not None:
             update |= {"relaunches": [attempt.relaunch], "chain_cut_by_relaunch": True}
@@ -108,8 +108,7 @@ def make_observe_step(llm: LLMPort, redacting: bool = False):
         return {
             "current_chain_steps": steps,
             "current_observation": obs,
-            "provider_usage": [usage],
-            "chain_usage": [usage],
+            **call.billed(usage),
         }
 
     return observe_step
@@ -135,7 +134,7 @@ def make_plan_step(llm: LLMPort, redacting: bool = False):
         if isinstance(outcome, Missed):
             return {"chain_model_call_missed": True, **outcome.state_update()}
         payload, usage = outcome
-        return {"current_step_payload": payload, "provider_usage": [usage], "chain_usage": [usage]}
+        return {"current_step_payload": payload, **call.billed(usage)}
 
     return plan_step
 
@@ -152,9 +151,8 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
         if redacting:
             prompt = with_redaction_notice(prompt)
-        outcome = await call_model(
-            llm, ModelCall(tool.name, ModelCallKind.CHAIN_JUDGMENT, prompt, Judgment)
-        )
+        call = ModelCall(tool.name, ModelCallKind.CHAIN_JUDGMENT, prompt, Judgment)
+        outcome = await call_model(llm, call)
         if isinstance(outcome, Missed):
             return {**_completion(chain), **outcome.state_update()}
         judgment, usage = outcome
@@ -162,9 +160,7 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
         judged_chain = chain.model_copy(update={"judge_result": judge_result})
         return {
             **_completion(judged_chain),
-            "provider_usage": [usage],
-            "judge_usage": [usage],
-            "chain_usage": [usage],
+            **call.billed(usage),
         }
 
     return judge_chain
