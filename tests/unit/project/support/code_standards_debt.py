@@ -39,13 +39,8 @@ _FIREWORKS_RETRY = ThirdParty(
     "langchain_fireworks retries through langchain_core's create_base_retry_decorator, whose "
     "tenacity wait_exponential(min=4) is hard-coded",
 )
-_GOOGLE_RETRY = ThirdParty(
-    "google-genai",
-    "the throttled call is retried by google-genai's own retry loop, which waits between attempts",
-)
 
 _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
-    "tests/conftest.py": ((SETATTR, "_no_dotenv_in_tests:'mcp_auditor.config.load_dotenv'"),),
     "tests/fakes/scripted_docker.py": ((SETATTR, "ScriptedDocker:subprocess.run"),),
     "tests/integration/committed/cve/backends/support/test_backend_hostnames_given.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
@@ -92,12 +87,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/integration/support/test_detection_replay_given.py": (
         (FOREIGN, "test_cve_grammar_given"),
-    ),
-    "tests/integration/test_audit_server_failures.py": (
-        (
-            SETATTR,
-            "test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_server:audit.checkpoint_db_path",
-        ),
     ),
     "tests/integration/test_cve_keyed_stand_in_routes.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
@@ -182,10 +171,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/cve/backends/test_backend_lifecycle.py": (
         (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_admission_given"),
-        (
-            SETATTR,
-            "test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name:importlib.import_module",
-        ),
     ),
     "tests/unit/cve/support/cve_grammar_golden_corpus.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/cve/support/test_cve_grammar_golden_given.py": (
@@ -198,8 +183,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/cve/support/test_kit_benign_probe_given.py": (
         (FOREIGN, "test_nuisance_admission_given"),
-        (SETATTR, "a_fake_lifecycle_resolved_by_key:benign_probe.lifecycle_of"),
-        (SETATTR, "a_probe_answering:benign_probe.probe"),
     ),
     "tests/unit/cve/test_cve_closed_network_refusal.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
@@ -342,17 +325,8 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/evals/support/test_run_judge_eval_given.py": (
         (FOREIGN, "test_judge_baseline_given"),
     ),
-    "tests/unit/evals/test_draw_judge_cases.py": (
-        (SETATTR, "test_the_detection_export_is_read_from_its_flag:'sys.argv'"),
-    ),
     "tests/unit/evals/test_judge_baseline.py": ((FOREIGN, "test_judge_fixture_given"),),
-    "tests/unit/evals/test_run_honeypot_suite.py": (
-        (FOREIGN, "test_honeypot_retest_given"),
-        (SETATTR, "test_the_no_baseline_flag_is_read:'sys.argv'"),
-    ),
-    "tests/unit/evals/test_run_judge_eval.py": (
-        (SETATTR, "test_the_no_baseline_flag_is_read:'sys.argv'"),
-    ),
+    "tests/unit/evals/test_run_honeypot_suite.py": ((FOREIGN, "test_honeypot_retest_given"),),
     "tests/unit/nuisance/admission/support/test_nuisance_admission_given.py": (
         (FOREIGN, "test_census_given"),
         (FOREIGN, "test_detection_draw_record_given"),
@@ -765,12 +739,6 @@ DEBTS: tuple[Debt, ...] = (
         SETATTR,
         "test_a_fireworks_retry_counts_the_throttled_response_once:asyncio.sleep",
         _FIREWORKS_RETRY,
-    ),
-    Debt(
-        "tests/unit/auditor/test_throttling.py",
-        SETATTR,
-        "test_a_google_retry_counts_the_throttled_response:asyncio.sleep",
-        _GOOGLE_RETRY,
     ),
     Debt(
         "tests/unit/cve/backends/support/doris_launch.py",

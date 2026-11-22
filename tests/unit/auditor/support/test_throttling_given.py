@@ -18,6 +18,10 @@ _CHAT_COMPLETION: dict[str, Any] = {
     "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
 }
 
+SHORT_GOOGLE_RETRIES: dict[str, Any] = {
+    "retry_options": {"attempts": 3, "initial_delay": 0.001, "max_delay": 0.001, "jitter": 0.001}
+}
+
 _GENERATE_CONTENT: dict[str, Any] = {
     "candidates": [
         {"content": {"role": "model", "parts": [{"text": "ok"}]}, "finishReason": "STOP"}

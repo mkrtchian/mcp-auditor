@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import traceback
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -55,9 +56,9 @@ DEFAULT_CONCURRENCY = 30
 CRASHED_EXIT = 4
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     quiet_throttle_waits()
-    args = parse_args()
+    args = parse_args(argv)
     try:
         code = _evaluate(args)
     except Refused as refusal:
@@ -170,7 +171,7 @@ def _judge_prompt(case: JudgeCase) -> str:
     return build_judge_prompt(tool=tool, test_case=test_case)
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the judge eval")
     parser.add_argument("--runs", type=positive_int, default=DEFAULT_JUDGE_RUNS)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
@@ -196,7 +197,7 @@ def parse_args() -> argparse.Namespace:
             " conditions, with no baseline (never in CI)"
         ),
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _build_report(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str, Any]:

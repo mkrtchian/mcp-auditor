@@ -5,7 +5,7 @@ from collections.abc import Callable, Generator, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType
 
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 from evals.cve import environments
@@ -144,8 +144,10 @@ def _a_control_plane_with_no_container(name: str) -> Generator[kubernetes.StoodC
     )
 
 
-def a_module_whose_lifecycle_is_neither_kind(name: str) -> SimpleNamespace:
-    return SimpleNamespace(LIFECYCLE=object())
+def a_module_whose_lifecycle_is_neither_kind(name: str) -> ModuleType:
+    module = ModuleType(name)
+    module.__dict__["LIFECYCLE"] = object()
+    return module
 
 
 def _noop_ensure() -> None:

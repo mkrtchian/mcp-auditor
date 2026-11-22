@@ -63,12 +63,11 @@ async def test_a_fireworks_retry_counts_the_throttled_response_once(
     assert tally.requests == 1
 
 
-async def test_a_google_retry_counts_the_throttled_response(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(asyncio, "sleep", given.no_wait)
+async def test_a_google_retry_counts_the_throttled_response():
     model = given.a_google_model_answering([429, 200])
 
     with counting_throttles() as tally:
-        answer = await model.ainvoke("prompt")
+        answer = await model.ainvoke("prompt", http_options=given.SHORT_GOOGLE_RETRIES)
 
     assert tally.requests == 1
     assert answer.content == "ok"

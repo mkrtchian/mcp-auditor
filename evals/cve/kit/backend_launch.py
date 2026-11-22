@@ -8,8 +8,9 @@ stood for this launch alone and removed with its server.
 """
 
 import importlib
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
+from types import ModuleType
 from uuid import uuid4
 
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend, launched_server_args
@@ -17,9 +18,11 @@ from evals.cve.kit.launch import Launch
 from evals.cve.planting_base import LABEL, PlantingHost
 
 
-def lifecycle_of(key: str) -> BackendLifecycle | PerLaunchBackend:
+def lifecycle_of(
+    key: str, import_module: Callable[[str], ModuleType] = importlib.import_module
+) -> BackendLifecycle | PerLaunchBackend:
     try:
-        lifecycle = importlib.import_module(f"evals.cve.backends.{key}").LIFECYCLE
+        lifecycle = import_module(f"evals.cve.backends.{key}").LIFECYCLE
     except (ModuleNotFoundError, AttributeError) as error:
         raise ValueError(f"no backend lifecycle for the key {key!r}") from error
     match lifecycle:

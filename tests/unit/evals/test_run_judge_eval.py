@@ -59,7 +59,5 @@ async def test_any_other_judge_call_failure_propagates():
         await judge_one_case(RaisingLLM(ConnectionError("network down")), given.a_judge_case())
 
 
-def test_the_no_baseline_flag_is_read(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr("sys.argv", ["run_judge_eval", "--no-baseline"])
-
-    assert parse_args().no_baseline
+def test_the_no_baseline_flag_is_read():
+    assert parse_args(["--no-baseline"]).no_baseline

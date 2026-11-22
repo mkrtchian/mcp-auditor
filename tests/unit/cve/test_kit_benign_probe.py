@@ -75,16 +75,14 @@ def test_the_single_container_launch_is_the_run_launch():
         assert probe_launch_.args == run_args
 
 
-def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    asked = given.a_fake_lifecycle_resolved_by_key(monkeypatch)
+def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch():
+    lifecycles = given.RecordingLifecycles()
     record = given.a_record_with_a_backend()
 
-    with probe_launch(record, "the-image") as launch:
+    with probe_launch(record, "the-image", lifecycles=lifecycles) as launch:
         args = launch.args
 
-    assert asked == ["fake"]
+    assert lifecycles.asked == ["fake"]
     assert launch.command == "docker"
     assert args[:2] == ["run", "--name"]
     assert args[3:] == ["the-image", record["host"]["working_directory"], *record["launch"]]
@@ -133,37 +131,32 @@ def test_report_lines_render_every_call_and_prerequisite():
     ]
 
 
-def test_main_passes_when_every_call_is_listed_and_answers_its_expected_text(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_main_passes_when_every_call_is_listed_and_answers_its_expected_text(tmp_path: Path):
     call = given.a_probe_call("read", expect="note", before=["create"])
-    probed = given.a_probe_answering(
-        monkeypatch,
+    probe = given.ScriptedProbe(
         given.a_report(
             ["read", "create"],
             given.an_outcome(call, given.ok("a note"), before=[given.ok("created")]),
-        ),
+        )
     )
     record = given.a_record_with_one_benign_call()
     record_path = given.written(tmp_path / "admission_record.json", record)
 
-    assert main(["--record", str(record_path), "--image", "img"]) == 0
-    assert probed == [probe_calls(record_calls(record))]
+    assert main(["--record", str(record_path), "--image", "img"], probe=probe) == 0
+    assert probe.probed == [probe_calls(record_calls(record))]
 
 
-def test_main_probes_the_calls_given_in_place_of_the_records(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    probed = given.a_probe_answering(monkeypatch, given.a_report([]))
+def test_main_probes_the_calls_given_in_place_of_the_records(tmp_path: Path):
+    probe = given.ScriptedProbe(given.a_report([]))
     record_path = given.written(
         tmp_path / "admission_record.json", given.a_record_with_one_benign_call()
     )
     calls = [given.a_call("list", path="docs")]
     calls_path = given.written(tmp_path / "calls.json", calls)
 
-    main(["--record", str(record_path), "--image", "img", "--calls", str(calls_path)])
+    main(["--record", str(record_path), "--image", "img", "--calls", str(calls_path)], probe=probe)
 
-    assert probed == [probe_calls(calls)]
+    assert probe.probed == [probe_calls(calls)]
 
 
 @pytest.mark.parametrize(
@@ -192,11 +185,11 @@ def test_main_probes_the_calls_given_in_place_of_the_records(
     ids=["missing expect", "error", "unlisted tool", "failing before", "unlisted before"],
 )
 def test_main_fails_on_any_call_that_does_not_pass(
-    outcome: ProbeOutcome, listed: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    outcome: ProbeOutcome, listed: list[str], tmp_path: Path
 ):
-    given.a_probe_answering(monkeypatch, given.a_report(listed, outcome))
+    probe = given.ScriptedProbe(given.a_report(listed, outcome))
     record_path = given.written(
         tmp_path / "admission_record.json", given.a_record_with_one_benign_call()
     )
 
-    assert main(["--record", str(record_path), "--image", "img"]) == 1
+    assert main(["--record", str(record_path), "--image", "img"], probe=probe) == 1

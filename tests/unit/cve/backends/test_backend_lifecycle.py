@@ -1,5 +1,3 @@
-import importlib
-
 import pytest
 
 import tests.unit.cve.backends.support.test_backend_lifecycle_given as given
@@ -195,13 +193,9 @@ def test_the_kit_launch_of_a_per_launch_backend_is_the_provisioner_launch():
     assert given.with_the_name_masked(kit_args) == given.with_the_name_masked(run_args)
 
 
-def test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    monkeypatch.setattr(importlib, "import_module", given.a_module_whose_lifecycle_is_neither_kind)
-
+def test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name():
     with pytest.raises(ValueError, match="odd"):
-        lifecycle_of("odd")
+        lifecycle_of("odd", import_module=given.a_module_whose_lifecycle_is_neither_kind)
 
 
 @pytest.mark.parametrize("responder", given.every_responder(), ids=lambda r: r.container)

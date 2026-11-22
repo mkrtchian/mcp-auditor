@@ -259,10 +259,7 @@ def test_clean_sources_at_one_commit_are_accepted():
     assert source_refusals(reports) == []
 
 
-def test_the_detection_export_is_read_from_its_flag(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "sys.argv",
-        ["draw_judge_cases", "--honeypot-export", "h.jsonl", "--detection-export", "d.jsonl"],
-    )
+def test_the_detection_export_is_read_from_its_flag():
+    args = parse_args(["--honeypot-export", "h.jsonl", "--detection-export", "d.jsonl"])
 
-    assert str(parse_args().detection_export) == "d.jsonl"
+    assert str(args.detection_export) == "d.jsonl"

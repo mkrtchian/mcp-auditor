@@ -10,7 +10,7 @@ import getpass
 import json
 import random
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -51,8 +51,8 @@ class Strata:
     targets: dict[str, list[JudgeCase]]
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_args(argv)
     try:
         _draw(args)
     except Refused as refusal:
@@ -60,7 +60,7 @@ def main() -> None:
         sys.exit(REFUSED_EXIT)
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=f"Draw the judge cases into {DRAWN_PATH.relative_to(REPO_ROOT)}"
     )
@@ -71,7 +71,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="draw one more case per PASS cell into the labeled drawn file (complement rule)",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _draw(args: argparse.Namespace) -> None:

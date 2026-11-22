@@ -13,12 +13,13 @@ import asyncio
 import json
 import os
 import tempfile
-from collections.abc import Generator, Mapping, Sequence
+from collections.abc import Callable, Coroutine, Generator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse, docker_client_env
 from evals.cve.kit.launch import Launch
@@ -49,7 +50,23 @@ class ProbeReport:
     outcomes: tuple[ProbeOutcome, ...]
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+# Above main, whose default it is.
+async def probe(launch: Launch, calls: Sequence[ProbeCall], tool_call_timeout: int) -> ProbeReport:
+    with tempfile.TemporaryFile("w+") as server_stderr:
+        async with KitMCPClient.connect(
+            launch.command,
+            launch.args,
+            env=docker_client_env(os.environ),
+            errlog=server_stderr,
+            tool_call_timeout=tool_call_timeout,
+        ) as client:
+            return await probe_client(client, calls)
+
+
+def main(
+    argv: Sequence[str] | None = None,
+    probe: Callable[[Launch, Sequence[ProbeCall], int], Coroutine[Any, Any, ProbeReport]] = probe,
+) -> int:
     options = _parser().parse_args(argv)
     record = json.loads(Path(options.record).read_text())
     raw_calls = json.loads(Path(options.calls).read_text()) if options.calls else None
@@ -94,10 +111,14 @@ def _probe_call(call: Mapping[str, Any]) -> ProbeCall:
     return ProbeCall(call["tool"], dict(call["arguments"]), call.get("expect"), before)
 
 
-def probe_launch(record: Mapping[str, Any], image: str) -> AbstractContextManager[Launch]:
+def probe_launch(
+    record: Mapping[str, Any],
+    image: str,
+    lifecycles: Callable[[str], BackendLifecycle | PerLaunchBackend] = lifecycle_of,
+) -> AbstractContextManager[Launch]:
     if record["backend"] is None:
         return single_container_launch(record, image)
-    lifecycle = lifecycle_of(record["backend"]["provisioner"])
+    lifecycle = lifecycles(record["backend"]["provisioner"])
     return backend_launch(lifecycle, image, record_host(record), record["launch"])
 
 
@@ -118,18 +139,6 @@ def record_host(record: Mapping[str, Any]) -> PlantingHost:
 def single_container_launch(record: Mapping[str, Any], image: str) -> Generator[Launch]:
     with single_container_launch_args(image, record_host(record), record["launch"]) as args:
         yield Launch("docker", args)
-
-
-async def probe(launch: Launch, calls: Sequence[ProbeCall], tool_call_timeout: int) -> ProbeReport:
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        async with KitMCPClient.connect(
-            launch.command,
-            launch.args,
-            env=docker_client_env(os.environ),
-            errlog=server_stderr,
-            tool_call_timeout=tool_call_timeout,
-        ) as client:
-            return await probe_client(client, calls)
 
 
 async def probe_client(client: KitClient, calls: Sequence[ProbeCall]) -> ProbeReport:

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import sys
 import traceback
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -69,9 +70,9 @@ class HoneypotRunResult:
     outcome: RunsOutcome
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     quiet_throttle_waits()
-    options = parse_args()
+    options = parse_args(argv)
     try:
         code = _evaluate(options)
     except Refused as refusal:
@@ -117,7 +118,7 @@ def _gate_grid(baseline: Baseline | None, result: HoneypotRunResult) -> GateGrid
     )
 
 
-def parse_args() -> HoneypotOptions:
+def parse_args(argv: Sequence[str] | None = None) -> HoneypotOptions:
     parser = argparse.ArgumentParser(description="Run the honeypot suite")
     parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET)
@@ -144,7 +145,7 @@ def parse_args() -> HoneypotOptions:
             " distribution coverage: 0.50), at any conditions, with no baseline (never in CI)"
         ),
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     return HoneypotOptions(
         runs=args.runs,
         budget=args.budget,

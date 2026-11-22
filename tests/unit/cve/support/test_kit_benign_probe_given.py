@@ -4,14 +4,12 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, override
 
-import pytest
-
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.lifecycle import BackendLifecycle
-from evals.cve.kit import benign_probe
 from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.cve.kit.client import KitResponse, KitTool
+from evals.cve.kit.launch import Launch
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.planting_base import PlantingHost
 from tests.fakes import FakeKitClient
@@ -30,18 +28,17 @@ def the_record_of(server: AdmittedServer) -> dict[str, Any]:
     return json.loads(server.model_dump_json())
 
 
-def a_fake_lifecycle_resolved_by_key(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+class RecordingLifecycles:
     """Resolves every backend key to a lifecycle whose ensure and remove do nothing and whose
-    server argv is `run --name <name> <image> <working directory> <launch...>`. Returns the keys
-    asked for."""
-    asked: list[str] = []
+    server argv is `run --name <name> <image> <working directory> <launch...>`, and records the
+    keys asked for."""
 
-    def resolve(key: str) -> BackendLifecycle:
-        asked.append(key)
+    def __init__(self) -> None:
+        self.asked: list[str] = []
+
+    def __call__(self, key: str) -> BackendLifecycle:
+        self.asked.append(key)
         return BackendLifecycle(key, threading.Lock(), lambda: None, _server_args, lambda _: None)
-
-    monkeypatch.setattr(benign_probe, "lifecycle_of", resolve)
-    return asked
 
 
 def _server_args(
@@ -91,18 +88,18 @@ def error(content: str) -> KitResponse:
     return KitResponse(content, True)
 
 
-def a_probe_answering(
-    monkeypatch: pytest.MonkeyPatch, report: ProbeReport
-) -> list[list[ProbeCall]]:
-    """Returns the calls each probe received."""
-    probed: list[list[ProbeCall]] = []
+class ScriptedProbe:
+    """Answers every probe with one report, and records the calls each probe received."""
 
-    async def probe(launch: object, calls: list[ProbeCall], tool_call_timeout: int) -> ProbeReport:
-        probed.append(calls)
-        return report
+    def __init__(self, report: ProbeReport) -> None:
+        self.report = report
+        self.probed: list[list[ProbeCall]] = []
 
-    monkeypatch.setattr(benign_probe, "probe", probe)
-    return probed
+    async def __call__(
+        self, launch: Launch, calls: Sequence[ProbeCall], tool_call_timeout: int
+    ) -> ProbeReport:
+        self.probed.append(list(calls))
+        return self.report
 
 
 def a_record_with_one_benign_call() -> dict[str, Any]:

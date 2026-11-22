@@ -79,7 +79,5 @@ def test_tracing_enabled_reads_langchain_v2(monkeypatch: pytest.MonkeyPatch) -> 
     assert tracing_enabled() is True
 
 
-def test_the_no_baseline_flag_is_read(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr("sys.argv", ["run_honeypot_suite", "--no-baseline"])
-
-    assert parse_args().no_baseline
+def test_the_no_baseline_flag_is_read():
+    assert parse_args(["--no-baseline"]).no_baseline

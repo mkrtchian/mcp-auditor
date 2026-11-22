@@ -5,7 +5,6 @@ import sqlite3
 import pytest
 
 import tests.integration.support.test_audit_server_failures_given as given
-from mcp_auditor import audit
 from tests.integration.support.stalling_server import DYING_WORDS
 from tests.integration.support.support_servers import (
     A_COMMAND_NOT_FOUND,
@@ -69,10 +68,9 @@ async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
 
 
 async def test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_server(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: pathlib.Path,
 ) -> None:
-    unopenable = str(tmp_path / "absent" / "checkpoints.db")
-    monkeypatch.setattr(audit, "checkpoint_db_path", lambda: unopenable)
+    (tmp_path / ".mcp-auditor" / "checkpoints.db").mkdir(parents=True)
 
     with pytest.raises(sqlite3.OperationalError):
         await given.an_audit_of(a_stalling_server(), io.StringIO()).run()
