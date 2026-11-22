@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, override
 
 from evals.cve.nuisance.admission.admission import AdmittedServer, ToolCall
 from mcp_auditor.domain import ToolDefinition, ToolResponse
@@ -35,6 +35,7 @@ class RaisingClient(FakeMCPClient):
         super().__init__(_definitions([FIRST_TOOL, SECOND_TOOL]))
         self._failing_tool = failing_tool
 
+    @override
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         if name == self._failing_tool:
             raise RuntimeError("connection closed")
@@ -45,6 +46,7 @@ class ListingRaisingClient(FakeMCPClient):
     def __init__(self) -> None:
         super().__init__([])
 
+    @override
     async def list_tools(self) -> list[ToolDefinition]:
         raise RuntimeError("listing timed out")
 
@@ -57,6 +59,7 @@ class ConnectingClient(FakeMCPClient):
         super().__init__(_definitions([FIRST_TOOL, SECOND_TOOL, PREREQUISITE_TOOL]))
         self._connected = False
 
+    @override
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         self.calls.append((name, args))
         if name == PREREQUISITE_TOOL:

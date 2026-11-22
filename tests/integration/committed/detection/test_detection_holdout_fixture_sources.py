@@ -1,6 +1,7 @@
 import pytest
 
 from evals.cve.census.census import CENSUS_PATH, load_census
+from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from tests.integration.committed.detection.support import (
     test_detection_holdout_fixture_sources_then as then,
@@ -10,7 +11,7 @@ from tests.integration.committed.detection.support import (
 def test_every_committed_card_stand_in_is_a_file_the_target_fingerprint_covers():
     targets = {target.flaw_id: target for target in HOLDOUT_TARGETS}
     draw = load_census(CENSUS_PATH).draw
-    cards = [] if draw is None else draw.cards
+    cards: list[CalibrationCard] = [] if draw is None else draw.cards
     with_stand_ins = [card for card in cards if card.flaw in targets and card.stand_ins]
     if not with_stand_ins:
         pytest.skip("no committed card records a stand-in")

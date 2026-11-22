@@ -125,14 +125,14 @@ def _appending_to_the_patched_dockerfile(line: str) -> TargetChange:
 
 def _replacing(**fields: object) -> TargetChange:
     def change(target: Target, places: Places, _docker_directory: Path) -> tuple[Target, Places]:
-        return dataclasses.replace(target, **fields), places
+        return dataclasses.replace(target, **fields), places  # pyrefly: ignore[bad-argument-type]
 
     return change
 
 
 def _changing_its_host(**fields: object) -> TargetChange:
     def change(target: Target, places: Places, _docker_directory: Path) -> tuple[Target, Places]:
-        host = dataclasses.replace(target.planting_host, **fields)
+        host = dataclasses.replace(target.planting_host, **fields)  # pyrefly: ignore[bad-argument-type]
         return dataclasses.replace(target, planting_host=host), places
 
     return change

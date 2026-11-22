@@ -1,3 +1,5 @@
+from typing import override
+
 from pydantic import BaseModel
 
 from mcp_auditor.domain import (
@@ -63,6 +65,7 @@ class PerRoleBillingLLM(FakeLLM):
         self._judge_usage = judge_usage
         self._generator_usage = generator_usage
 
+    @override
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:
@@ -94,6 +97,7 @@ class PerCallBillingLLM(FakeLLM):
         super().__init__(responses)
         self.billed: list[ProviderUsage] = []
 
+    @override
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:

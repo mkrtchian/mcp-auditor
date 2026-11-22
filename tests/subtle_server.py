@@ -24,7 +24,7 @@ from pydantic import Strict, ValidationError
 class GenericArgumentErrors(FastMCP):
     # Instrument repair (docs/labeling-log.md): the library's validation message names an
     # internal model and the pydantic version, a flaw no label planted.
-    async def call_tool(
+    async def call_tool(  # pyrefly: ignore[missing-override-decorator]
         self, name: str, arguments: dict[str, Any]
     ) -> Sequence[ContentBlock] | dict[str, Any]:
         try:

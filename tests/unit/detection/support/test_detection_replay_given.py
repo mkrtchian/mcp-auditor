@@ -7,7 +7,7 @@ import re
 from collections.abc import AsyncGenerator, Generator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, override
 
 import tests.unit.cve.support.test_cve_grammar_given as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
@@ -150,14 +150,17 @@ class _ScriptedClient(FakeMCPClient):
         )
         self._events = version.events
 
+    @override
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         self._events.append("call")
         return await super().call_tool(name, args)
 
+    @override
     async def ping(self) -> bool:
         self._events.append("ping")
         return await super().ping()
 
+    @override
     async def relaunch(self) -> bool:
         self._events.append("relaunch")
         return await super().relaunch()

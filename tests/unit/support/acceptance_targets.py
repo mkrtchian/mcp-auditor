@@ -12,4 +12,4 @@ GIT = "CVE-2025-68143"
 
 def an_acceptance_target(flaw_id: str, **changes: object) -> Target:
     (target,) = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == flaw_id]
-    return dataclasses.replace(target, **changes)
+    return dataclasses.replace(target, **changes)  # pyrefly: ignore[bad-argument-type]

@@ -63,8 +63,10 @@ class ScriptedAudit:
     """Plays each target's script in order, then detects. Each report is named after the
     audit that made it, `audit_name(flaw_id, n)` for the target's n-th call."""
 
-    scripts: dict[str, list[RunGrade | None]] = field(default_factory=lambda: {})
-    calls: list[str] = field(default_factory=lambda: [])
+    scripts: dict[str, list[RunGrade | None]] = field(
+        default_factory=dict[str, list[RunGrade | None]]
+    )
+    calls: list[str] = field(default_factory=list[str])
 
     async def __call__(self, target: Target) -> GradedAudit | None:
         name = audit_name(target.flaw_id, self.calls.count(target.flaw_id))
@@ -83,7 +85,7 @@ class ScriptedCheck:
     """The pre-run check: each target's out-of-calibration reasons, empty (in calibration) by
     default. Raises `error` to stand for a configuration error."""
 
-    conditions: dict[str, list[str]] = field(default_factory=lambda: {})
+    conditions: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     error: Exception | None = None
 
     async def __call__(self, target: Target) -> list[str]:
@@ -99,7 +101,7 @@ BROKEN_LAYOUT = replace(SOUND_LAYOUT, breaks=True)
 class ScriptedLayout:
     """The layout and route checks: each target's observed layout, sound by default."""
 
-    layouts: dict[str, LayoutCheck] = field(default_factory=lambda: {})
+    layouts: dict[str, LayoutCheck] = field(default_factory=dict[str, LayoutCheck])
 
     async def __call__(self, target: Target) -> LayoutCheck:
         return self.layouts.get(target.flaw_id, SOUND_LAYOUT)

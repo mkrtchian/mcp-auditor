@@ -9,12 +9,14 @@ server that launched."""
 
 import pathlib
 import sys
+from typing import override
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import Tool
 
 
 class _BrokenToolsList(FastMCP):
+    @override
     async def list_tools(self) -> list[Tool]:
         raise RuntimeError("tools/list broke")
 

@@ -24,7 +24,7 @@ def a_stand_ins_directory(directory: Path) -> Path:
         "source": "capture",
         "captured_at": "2026-11-02T10:00:00Z",
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
-        "request_headers": [],
+        "request_headers": list[list[str]](),
         "routes": [
             {
                 "scheme": "http",

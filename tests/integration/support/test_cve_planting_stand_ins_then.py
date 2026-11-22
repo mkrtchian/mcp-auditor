@@ -24,7 +24,7 @@ def answered_with(fetched: Fetched, status: int, body: str) -> None:
 
 
 def carries(fetched: Fetched, headers: Sequence[tuple[str, str]], length: int | None) -> None:
-    computed = [] if length is None else [("Content-Length", str(length))]
+    computed: list[tuple[str, str]] = [] if length is None else [("Content-Length", str(length))]
     assert fetched.header_list == [*headers, *computed]
 
 

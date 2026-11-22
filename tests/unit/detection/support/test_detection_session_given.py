@@ -41,7 +41,7 @@ class RecordingAnnounce:
     """Records each announced audit count, with the audits already started at that moment."""
 
     audit: ScriptedAudit
-    announced: list[tuple[int, int]] = field(default_factory=lambda: [])
+    announced: list[tuple[int, int]] = field(default_factory=list[tuple[int, int]])
 
     def __call__(self, audits: int) -> None:
         self.announced.append((audits, len(self.audit.calls)))

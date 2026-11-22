@@ -20,7 +20,7 @@ def a_host() -> PlantingHost:
 
 
 def a_docker_whose_control_plane_comes_up(monkeypatch: pytest.MonkeyPatch) -> ScriptedDocker:
-    answers = {
+    answers: dict[tuple[str, ...], str] = {
         ("network", "inspect"): CLOSED_NETWORK_INSPECT,
         ("logs",): f'[certs] Generating "ca" certificate and key\n{READY_LINE}\n',
         ("inspect",): "running\n",

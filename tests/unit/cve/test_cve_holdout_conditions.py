@@ -161,8 +161,8 @@ def test_require_chain_settings_refuses_a_null_chain_setting_alone(tmp_path: Pat
 
 def test_require_chain_settings_needs_no_cutoff_and_no_price(tmp_path: Path):
     payload = _complete_payload()
-    payload["cutoffs"] = {}
-    payload["prices"] = {}
+    payload["cutoffs"] = dict[str, object]()
+    payload["prices"] = dict[str, object]()
     conditions = load_conditions(_write(tmp_path, payload))
 
     assert conditions.require_chain_settings() is None

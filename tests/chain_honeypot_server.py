@@ -23,7 +23,7 @@ from pydantic import ValidationError
 class GenericArgumentErrors(FastMCP):
     # Instrument repair (docs/labeling-log.md): the library's validation message names an
     # internal model and the pydantic version, a flaw no label planted.
-    async def call_tool(
+    async def call_tool(  # pyrefly: ignore[missing-override-decorator]
         self, name: str, arguments: dict[str, Any]
     ) -> Sequence[ContentBlock] | dict[str, Any]:
         try:
@@ -186,7 +186,7 @@ def _user_field(user_id: str | None, field: str | None) -> str:
     value = user.get(field)
     if value is None:
         raise ValueError(f"Unknown field: {field}")
-    return str(value)
+    return str(value)  # pyrefly: ignore[unnecessary-type-conversion]
 
 
 if __name__ == "__main__":

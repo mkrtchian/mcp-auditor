@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, override
 
 import pytest
 from langchain_core.runnables import RunnableConfig
@@ -30,6 +30,7 @@ class ServerDyingOnCall(FakeMCPClient):
         super().__init__(tools)
         self._dies_on_call = dies_on_call
 
+    @override
     async def call_tool(self, name: str, args: dict[str, Any]) -> ToolResponse:
         if len(self.calls) + 1 == self._dies_on_call:
             self._dies_on_call = 0
@@ -48,6 +49,7 @@ class InterruptedLLM(FakeLLM):
         super().__init__(responses)
         self._interrupted_on_call = interrupted_on_call
 
+    @override
     async def generate_structured[T: BaseModel](
         self, prompt: str, output_schema: type[T]
     ) -> tuple[T, ProviderUsage]:

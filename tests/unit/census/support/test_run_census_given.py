@@ -4,6 +4,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel
+
 import tests.unit.census.support.test_census_figures_given as figures
 import tests.unit.census.support.test_census_sources_given as sources
 from evals import run_census
@@ -128,7 +130,7 @@ def hit_ids(work: Path, source: SourceName) -> list[str]:
     return [record.id for record in read_jsonl(work / f"hits_{source}.jsonl", AdvisoryRecord)]
 
 
-def _write_jsonl(path: Path, records: Sequence[Any]) -> None:
+def _write_jsonl(path: Path, records: Sequence[BaseModel]) -> None:
     path.write_text("".join(record.model_dump_json() + "\n" for record in records))
 
 

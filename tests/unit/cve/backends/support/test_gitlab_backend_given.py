@@ -28,7 +28,7 @@ def a_docker_whose_gitlab_fails_to_reconfigure(
 
 
 def _a_docker(monkeypatch: pytest.MonkeyPatch, logs: str) -> ScriptedDocker:
-    answers = {
+    answers: dict[tuple[str, ...], str] = {
         ("network", "inspect"): CLOSED_NETWORK_INSPECT,
         ("logs",): logs,
         ("inspect",): "running\n",

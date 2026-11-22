@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
@@ -192,8 +194,8 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
 
 
 class _ScriptedAttempts:
-    def __init__(self, outcomes: list[AttemptOutcome[GradedAudit] | ProviderFatal]) -> None:
-        self._outcomes = outcomes
+    def __init__(self, outcomes: Sequence[AttemptOutcome[GradedAudit] | ProviderFatal]) -> None:
+        self._outcomes = list(outcomes)
         self.calls = 0
 
     async def __call__(self) -> AttemptOutcome[GradedAudit]:

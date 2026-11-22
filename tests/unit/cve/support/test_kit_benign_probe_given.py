@@ -2,7 +2,7 @@ import json
 import threading
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 import pytest
 
@@ -70,6 +70,7 @@ class PrerequisiteFakeKitClient(FakeKitClient):
             {"create_note": KitResponse("created", False)},
         )
 
+    @override
     async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse:
         response = await super().call_tool(name, args)
         if name != "read_note":

@@ -4,6 +4,7 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import override
 
 from evals.cve.closed_network import create_closed_network
 from evals.cve.places import Coordinates, Place, PlaceKind
@@ -249,22 +250,26 @@ class RecordingPlanting(DockerPlanting):
         self.holders: list[str] = []
         self.stand_ins: list[str] = []
 
+    @override
     def create_network(self) -> str:
         name = super().create_network()
         self.networks.append(name)
         return name
 
+    @override
     def start_holder(self, run_args: Sequence[str]) -> str:
         name = super().start_holder(run_args)
         self.containers.append(name)
         self.holders.append(name)
         return name
 
+    @override
     def start_sentinel(self, run_args: Sequence[str]) -> str:
         name = super().start_sentinel(run_args)
         self.containers.append(name)
         return name
 
+    @override
     def start_stand_in(self, run_args: Sequence[str]) -> str:
         name = super().start_stand_in(run_args)
         self.containers.append(name)
