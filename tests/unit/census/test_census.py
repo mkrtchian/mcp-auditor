@@ -7,7 +7,7 @@ import pytest
 
 import tests.unit.census.support.test_census_given as given
 import tests.unit.census.support.test_census_identity_given as identity
-from evals.cve.census.census import CENSUS_PATH, Census, DateMismatch, load_census
+from evals.cve.census.census import Census, DateMismatch, load_census
 from evals.cve.census.work import HitDecision, read_jsonl
 
 
@@ -17,10 +17,6 @@ def test_a_well_formed_census_loads(tmp_path: Path):
     loaded = load_census(given.written(tmp_path, census))
 
     assert loaded == census
-
-
-def test_the_committed_census_loads():
-    assert load_census(CENSUS_PATH).flaws
 
 
 DEFECTS: list[tuple[Callable[[Census], Census], str]] = [

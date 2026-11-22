@@ -2,7 +2,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-import tests.unit.cve.backends.support.test_backend_hostnames_given as given
+import tests.integration.committed.cve.backends.support.test_backend_hostnames_given as given
 from evals.cve.backends.doris import DORIS_HOST, DORIS_SERVER_LAUNCH
 from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
 from evals.cve.nuisance.admission.admission import AdmittedServer

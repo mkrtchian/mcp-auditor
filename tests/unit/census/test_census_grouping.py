@@ -1,9 +1,7 @@
 import tests.unit.census.support.test_census_figures_given as figures
 import tests.unit.census.support.test_census_grouping_given as given
-from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS
 from evals.cve.census.figures import Share
 from evals.cve.census.grouping import gap_population, grouped_flaws, known_gap
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS
 
 EXCLUDED_SERVER = "npm:mcp-fetch-server"
 AN_ACCEPTANCE_TARGET_FLAW = "CVE-2025-65513"
@@ -70,12 +68,6 @@ def test_a_flaw_outside_the_candidates_is_left_out():
     classifications = given.classified(given.outside_the_grammar("PYSEC-2026-1"))
 
     assert gap_population(classifications, set()) == set()
-
-
-def test_every_current_and_dropped_acceptance_target_is_an_acceptance_target_flaw():
-    targets = {target.flaw_id for target in (*ACCEPTANCE_TARGETS, *OUT_OF_SCOPE_FLAWS)}
-
-    assert targets <= ACCEPTANCE_TARGET_FLAWS
 
 
 def test_the_known_gap_of_a_reader_is_its_no_proof_share_of_the_gap_population():

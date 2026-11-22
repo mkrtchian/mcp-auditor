@@ -12,7 +12,6 @@ from evals.judge.fixture import (
     load_drawn,
     load_fixture,
 )
-from evals.run_judge_eval import FIXTURES_PATH
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 
@@ -117,9 +116,3 @@ def test_the_fingerprint_changes_when_the_inputs_of_a_case_change():
     after = given.a_case(description="after")
 
     assert inputs_fingerprint(given.a_fixture(before)) != inputs_fingerprint(given.a_fixture(after))
-
-
-def test_the_committed_fixture_is_a_labeled_draw():
-    fixture = load_fixture(FIXTURES_PATH)
-
-    assert all(case.clause for case in fixture.cases)

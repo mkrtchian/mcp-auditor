@@ -176,12 +176,6 @@ async def test_a_retest_takes_its_audit_index_when_it_starts_not_when_it_ends():
     then.lost_as_drawn_at(second_verdicts, audit_index=1)
 
 
-def test_the_harness_accepts_the_fixture():
-    fixture = given.the_fault_injection_baseline()
-
-    assert fixture_refusals(fixture) == []
-
-
 def test_the_harness_refuses_a_fixture_whose_runs_miss_a_cell():
     fixture = given.the_fixture_missing(given.CHAIN_ONLY_FLAWS[0])
 
