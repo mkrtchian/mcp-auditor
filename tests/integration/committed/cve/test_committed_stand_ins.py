@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.support.test_committed_stand_ins_given as given
-import tests.unit.cve.support.test_committed_stand_ins_then as then
+import tests.integration.committed.cve.support.test_committed_stand_ins_given as given
+import tests.integration.committed.cve.support.test_committed_stand_ins_then as then
 from evals.cve.public_stand_ins import STAND_INS_DIRECTORY, stand_in
 
 

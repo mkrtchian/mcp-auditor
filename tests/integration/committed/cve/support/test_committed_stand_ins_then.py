@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tests.unit.cve.support.test_committed_stand_ins_given import is_ip_literal
+from tests.integration.committed.cve.support.test_committed_stand_ins_given import is_ip_literal
 
 
 def each_leaf_names_exactly_one_of(leaves: dict[str, set[str]], hosts: set[str]) -> None:
