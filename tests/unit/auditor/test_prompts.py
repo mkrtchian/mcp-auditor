@@ -1,5 +1,5 @@
+import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_prompts_given as given
-import tests.unit.auditor.support.test_shown_response_then as shown_then
 from mcp_auditor.domain import AttackContext, AuditCategory
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.prompts import (
@@ -10,7 +10,6 @@ from mcp_auditor.graph.prompts import (
     format_attack_context,
     with_redaction_notice,
 )
-from tests.unit.auditor.support.test_shown_response_given import a_long_text
 
 ATTACK_CONTEXT_HEADER = format_attack_context(AttackContext(db_engine="sqlite")).splitlines()[0]
 
@@ -196,20 +195,20 @@ class TestJudgePrompt:
         assert "connection refused" in prompt
 
     def test_bounds_a_long_response(self):
-        response = a_long_text("response")
+        response = cuts.a_long_text("response")
         test_case = given.a_test_case(response=response)
 
         prompt = build_judge_prompt(tool=given.a_tool(), test_case=test_case)
 
-        shown_then.shows_cut(prompt, response)
+        cuts.shows_cut(prompt, response)
 
     def test_bounds_a_long_error(self):
-        error = a_long_text("error")
+        error = cuts.a_long_text("error")
         test_case = given.a_test_case(error=error)
 
         prompt = build_judge_prompt(tool=given.a_tool(), test_case=test_case)
 
-        shown_then.shows_cut(prompt, error)
+        cuts.shows_cut(prompt, error)
 
     def test_includes_payload_description(self):
         test_case = given.a_test_case(

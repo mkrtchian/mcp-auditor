@@ -1,7 +1,7 @@
 import pytest
 from rich.text import Text
 
-import tests.unit.auditor.support.test_console_given as given
+import tests.unit.auditor.support.audit_displays as displays
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -21,7 +21,7 @@ BLOCKED_REASON = "destructive filesystem command: rm -rf"
 
 
 def test_a_blocked_case_is_reported_while_the_audit_runs():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
 
@@ -36,7 +36,7 @@ def test_a_blocked_case_is_reported_while_the_audit_runs():
 
 
 def test_a_normal_execution_reports_nothing():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
 
@@ -51,7 +51,7 @@ def test_a_normal_execution_reports_nothing():
 
 
 def test_an_unjudged_case_advances_the_progress_bar():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
 
@@ -80,7 +80,7 @@ def test_an_unjudged_case_advances_the_progress_bar():
     ],
 )
 def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissCause, line: str):
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
 
@@ -90,7 +90,7 @@ def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissCaus
 
 
 def test_a_throttled_provider_is_warned_about_once():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
 
     reporter.on_stream_event(_a_usage_event((), ProviderUsage(throttled_requests=1)))
@@ -102,7 +102,7 @@ def test_a_throttled_provider_is_warned_about_once():
 
 
 def test_an_unthrottled_provider_is_not_warned_about():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
 
     reporter.on_stream_event(_a_usage_event((), ProviderUsage(input_tokens=10)))
@@ -112,7 +112,7 @@ def test_an_unthrottled_provider_is_not_warned_about():
 
 
 def test_each_relaunch_is_reported_once_as_a_case_or_a_chain_step_records_it():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
     lost = _a_relaunch(RelaunchCause.LOST_CONNECTION, succeeded=True)
     stuck = _a_relaunch(RelaunchCause.STUCK, succeeded=False)
@@ -129,7 +129,7 @@ def test_each_relaunch_is_reported_once_as_a_case_or_a_chain_step_records_it():
 
 
 def test_cases_not_sent_advance_the_progress_bar_to_its_end():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
 

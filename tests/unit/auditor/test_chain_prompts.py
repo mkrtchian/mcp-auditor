@@ -1,4 +1,4 @@
-import tests.unit.auditor.support.test_shown_response_then as shown_then
+import tests.unit.auditor.support.cut_responses as cuts
 from mcp_auditor.domain import AttackChain, AttackContext, AuditCategory
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.graph.chain_prompts import (
@@ -14,12 +14,13 @@ from mcp_auditor.graph.prompts import (
     build_judge_prompt,
     format_attack_context,
 )
-from tests.unit.auditor.support.chain_states import a_chain_goal, a_chain_step, a_tool
-from tests.unit.auditor.support.test_chain_nodes_given import (
+from tests.unit.auditor.support.chain_states import (
     a_blocked_single_step_case,
+    a_chain_goal,
+    a_chain_step,
     a_single_step_case,
+    a_tool,
 )
-from tests.unit.auditor.support.test_shown_response_given import a_long_text
 
 
 class TestChainPlanningPrompt:
@@ -92,7 +93,7 @@ class TestChainPlanningPrompt:
         assert "Case 2" not in prompt
 
     def test_bounds_each_error_and_keeps_the_response_snippet(self):
-        response, error = a_long_text("response"), a_long_text("error")
+        response, error = cuts.a_long_text("response"), cuts.a_long_text("error")
         cases = [a_single_step_case(response=response, error=error)]
 
         prompt = build_chain_planning_prompt(
@@ -103,7 +104,7 @@ class TestChainPlanningPrompt:
         )
 
         assert f"Response: {response[:RESPONSE_SNIPPET_LENGTH]}..." in prompt
-        shown_then.shows_cut(prompt, error)
+        cuts.shows_cut(prompt, error)
 
     def test_includes_chain_budget(self):
         prompt = build_chain_planning_prompt(
@@ -152,7 +153,7 @@ class TestStepPlanningPrompt:
         assert "file not found: /var/data" in prompt
 
     def test_bounds_the_response_and_the_error_of_each_step(self):
-        response, error = a_long_text("response"), a_long_text("error")
+        response, error = cuts.a_long_text("response"), cuts.a_long_text("error")
 
         prompt = build_step_planning_prompt(
             tool=a_tool(),
@@ -161,8 +162,8 @@ class TestStepPlanningPrompt:
             observation_hint="",
         )
 
-        shown_then.shows_cut(prompt, response)
-        shown_then.shows_cut(prompt, error)
+        cuts.shows_cut(prompt, response)
+        cuts.shows_cut(prompt, error)
 
     def test_includes_observation_hint(self):
         prompt = build_step_planning_prompt(
@@ -206,7 +207,7 @@ class TestStepObservationPrompt:
         assert "connection refused" in prompt
 
     def test_bounds_the_response_and_the_error_of_the_history_and_the_latest_step(self):
-        texts = [a_long_text(label) for label in ("r1", "e1", "r2", "e2")]
+        texts = [cuts.a_long_text(label) for label in ("r1", "e1", "r2", "e2")]
         steps = [
             a_chain_step(response=texts[0], error=texts[1]),
             a_chain_step(response=texts[2], error=texts[3]),
@@ -219,7 +220,7 @@ class TestStepObservationPrompt:
         )
 
         for text in texts:
-            shown_then.shows_cut(prompt, text)
+            cuts.shows_cut(prompt, text)
 
     def test_includes_chain_history(self):
         steps = [
@@ -263,15 +264,15 @@ class TestChainJudgePrompt:
         assert "traversal succeeded: root:x:0:0" in prompt
 
     def test_bounds_the_response_and_the_error_of_each_step(self):
-        response, error = a_long_text("response"), a_long_text("error")
+        response, error = cuts.a_long_text("response"), cuts.a_long_text("error")
         chain = AttackChain(
             goal=a_chain_goal(), steps=[a_chain_step(response=response, error=error)]
         )
 
         prompt = build_chain_judge_prompt(tool=a_tool(), chain=chain)
 
-        shown_then.shows_cut(prompt, response)
-        shown_then.shows_cut(prompt, error)
+        cuts.shows_cut(prompt, response)
+        cuts.shows_cut(prompt, error)
 
     def test_includes_the_guidance_of_the_target_category(self):
         chain = AttackChain(

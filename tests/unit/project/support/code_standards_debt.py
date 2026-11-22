@@ -102,37 +102,14 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_cve_planting_then"),
     ),
     "tests/unit/auditor/support/test_cli_given.py": ((FOREIGN, "test_models_given"),),
-    "tests/unit/auditor/support/test_graph_throttling_given.py": (
-        (FOREIGN, "test_llm_throttling_given"),
-    ),
     "tests/unit/auditor/support/test_llm_patience_given.py": (
         (FOREIGN, "test_llm_adapter_given"),
         (FOREIGN, "test_llm_refusals_given"),
-        (FOREIGN, "test_llm_throttling_given"),
     ),
     "tests/unit/auditor/support/test_llm_refusals_given.py": ((FOREIGN, "test_llm_adapter_given"),),
     "tests/unit/auditor/support/test_model_inputs_golden_given.py": (
         (FOREIGN, "test_llm_adapter_given"),
     ),
-    "tests/unit/auditor/test_chain_models.py": ((FOREIGN, "test_chain_nodes_given"),),
-    "tests/unit/auditor/test_chain_prompts.py": (
-        (FOREIGN, "test_chain_nodes_given"),
-        (FOREIGN, "test_shown_response_given"),
-        (FOREIGN, "test_shown_response_then"),
-    ),
-    "tests/unit/auditor/test_console_display.py": ((FOREIGN, "test_console_given"),),
-    "tests/unit/auditor/test_console_findings.py": ((FOREIGN, "test_console_given"),),
-    "tests/unit/auditor/test_context_extraction_prompt.py": (
-        (FOREIGN, "test_shown_response_given"),
-        (FOREIGN, "test_shown_response_then"),
-    ),
-    "tests/unit/auditor/test_progress.py": ((FOREIGN, "test_console_given"),),
-    "tests/unit/auditor/test_prompts.py": (
-        (FOREIGN, "test_shown_response_given"),
-        (FOREIGN, "test_shown_response_then"),
-    ),
-    "tests/unit/auditor/test_relaunch_rendering.py": ((FOREIGN, "test_rendering_then"),),
-    "tests/unit/auditor/test_stream_handler.py": ((FOREIGN, "test_console_given"),),
     "tests/unit/census/support/test_census_draw_order_given.py": (
         (FOREIGN, "test_census_figures_given"),
         (FOREIGN, "test_census_given"),
@@ -186,7 +163,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_vet_given"),
     ),
     "tests/unit/cve/test_cve_launch_audit.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/cve/test_cve_provider_errors.py": ((FOREIGN, "test_llm_throttling_given"),),
     "tests/unit/cve/test_cve_strike.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/cve/test_kit_isolation.py": ((FOREIGN, "test_census_given"),),
     "tests/unit/detection/support/detection_audits.py": (
@@ -283,13 +259,9 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/evals/support/test_eval_session_given.py": ((FOREIGN, "test_eval_baseline_given"),),
     "tests/unit/evals/support/test_honeypot_decision_given.py": (
         (FOREIGN, "test_eval_session_given"),
-        (FOREIGN, "test_honeypot_retest_given"),
     ),
     "tests/unit/evals/support/test_honeypot_fault_harness_given.py": (
         (FOREIGN, "test_honeypot_fault_injection_given"),
-    ),
-    "tests/unit/evals/support/test_judge_baseline_given.py": (
-        (FOREIGN, "test_judge_fixture_given"),
     ),
     "tests/unit/evals/support/test_judge_display_given.py": (
         (FOREIGN, "test_judge_outcomes_given"),
@@ -297,7 +269,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/evals/support/test_judge_gate_given.py": ((FOREIGN, "test_judge_baseline_given"),),
     "tests/unit/evals/support/test_judge_outcomes_given.py": (
         (FOREIGN, "test_judge_baseline_given"),
-        (FOREIGN, "test_judge_fixture_given"),
     ),
     "tests/unit/evals/support/test_judge_recording_given.py": (
         (FOREIGN, "test_judge_baseline_given"),
@@ -311,8 +282,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/evals/support/test_run_judge_eval_given.py": (
         (FOREIGN, "test_judge_baseline_given"),
     ),
-    "tests/unit/evals/test_judge_baseline.py": ((FOREIGN, "test_judge_fixture_given"),),
-    "tests/unit/evals/test_run_honeypot_suite.py": ((FOREIGN, "test_honeypot_retest_given"),),
     "tests/unit/nuisance/admission/support/test_nuisance_admission_given.py": (
         (FOREIGN, "test_census_given"),
         (FOREIGN, "test_detection_draw_record_given"),

@@ -1,5 +1,6 @@
+import tests.unit.auditor.support.audit_displays as displays
+import tests.unit.auditor.support.test_console_findings_given as given
 import tests.unit.auditor.support.test_console_findings_then as then
-import tests.unit.auditor.support.test_console_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditReport,
@@ -19,7 +20,7 @@ def test_findings_recap_groups_by_severity():
             ],
         }
     )
-    display, buffer = given.a_plain_display()
+    display, buffer = displays.a_plain_display()
 
     display.print_findings_recap(report)
 
@@ -36,7 +37,7 @@ def test_findings_recap_groups_by_severity():
 
 def test_findings_recap_empty_when_no_failures():
     report = given.a_report_with_one_pass_plus_failures({})
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_findings_recap(report)
 
@@ -51,7 +52,7 @@ def test_findings_recap_ci_mode_plain_text():
             ],
         }
     )
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_findings_recap(report)
 
@@ -72,7 +73,7 @@ def test_summary_fail_column_shows_severity_breakdown():
             ],
         }
     )
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -83,7 +84,7 @@ def test_summary_fail_column_shows_severity_breakdown():
 
 def test_summary_fail_column_zero_shows_no_breakdown():
     report = given.a_report_with_one_pass_plus_failures({"get_user": []})
-    display, buffer = given.a_plain_display()
+    display, buffer = displays.a_plain_display()
 
     display.print_summary(report)
 
@@ -97,7 +98,7 @@ def test_summary_fail_column_zero_shows_no_breakdown():
 
 def test_summary_score_line_high_score():
     report = given.a_report_with_n_results(pass_count=9, fail_count=1)
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -109,7 +110,7 @@ def test_summary_score_line_high_score():
 
 def test_summary_score_line_low_score():
     report = given.a_report_with_n_results(pass_count=2, fail_count=8)
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -123,7 +124,7 @@ def test_summary_score_line_zero_cases():
         tool_reports=[],
         provider_usage=ProviderUsage(input_tokens=0, output_tokens=0),
     )
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -133,7 +134,7 @@ def test_summary_score_line_zero_cases():
 
 def test_discovery_columnar_for_many_tools():
     names = [f"tool_{i}" for i in range(8)]
-    display, buffer = given.a_plain_display()
+    display, buffer = displays.a_plain_display()
 
     display.print_discovery(8, names)
 
@@ -144,7 +145,7 @@ def test_discovery_columnar_for_many_tools():
 
 def test_discovery_inline_for_few_tools():
     names = ["alpha", "beta", "gamma", "delta"]
-    display, buffer = given.a_plain_display()
+    display, buffer = displays.a_plain_display()
 
     display.print_discovery(4, names)
 

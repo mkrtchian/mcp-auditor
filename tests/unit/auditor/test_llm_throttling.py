@@ -1,6 +1,5 @@
 import pytest
 
-import tests.unit.auditor.support.test_llm_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import (
     Throttle,
     ThrottlePatience,
@@ -8,32 +7,43 @@ from mcp_auditor.adapters.llm_throttling import (
     one_audit,
     throttle_of,
 )
+from tests.unit.support import provider_errors
 
 
 class TestThrottleOf:
-    @pytest.mark.parametrize("build", [given.an_openai_rate_limit, given.an_anthropic_rate_limit])
+    @pytest.mark.parametrize(
+        "build", [provider_errors.an_openai_rate_limit, provider_errors.an_anthropic_rate_limit]
+    )
     def test_a_rate_limit_without_hint_is_a_throttle_without_hint(
-        self, build: given.RateLimitBuilder
+        self, build: provider_errors.RateLimitBuilder
     ):
         assert throttle_of(build()) == Throttle(retry_after=None)
 
-    @pytest.mark.parametrize("build", [given.an_openai_rate_limit, given.an_anthropic_rate_limit])
-    def test_a_retry_after_in_seconds_is_the_hint(self, build: given.RateLimitBuilder):
+    @pytest.mark.parametrize(
+        "build", [provider_errors.an_openai_rate_limit, provider_errors.an_anthropic_rate_limit]
+    )
+    def test_a_retry_after_in_seconds_is_the_hint(self, build: provider_errors.RateLimitBuilder):
         assert throttle_of(build({"Retry-After": "12"})) == Throttle(retry_after=12.0)
 
     def test_retry_after_ms_wins_over_retry_after(self):
-        error = given.an_openai_rate_limit({"retry-after-ms": "1500", "Retry-After": "12"})
+        error = provider_errors.an_openai_rate_limit(
+            {"retry-after-ms": "1500", "Retry-After": "12"}
+        )
 
         assert throttle_of(error) == Throttle(retry_after=1.5)
 
     def test_a_retry_after_given_as_a_date_is_no_hint(self):
-        error = given.an_openai_rate_limit({"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"})
+        error = provider_errors.an_openai_rate_limit(
+            {"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}
+        )
 
         assert throttle_of(error) == Throttle(retry_after=None)
 
-    @pytest.mark.parametrize("build", [given.an_openai_rate_limit, given.an_anthropic_rate_limit])
+    @pytest.mark.parametrize(
+        "build", [provider_errors.an_openai_rate_limit, provider_errors.an_anthropic_rate_limit]
+    )
     def test_a_rate_limit_the_provider_marks_not_retryable_is_no_throttle(
-        self, build: given.RateLimitBuilder
+        self, build: provider_errors.RateLimitBuilder
     ):
         assert throttle_of(build({"x-should-retry": "false"})) is None
 
@@ -48,25 +58,27 @@ class TestThrottleOf:
         ],
     )
     def test_a_billing_limit_is_no_throttle(self, code: str):
-        assert throttle_of(given.an_openai_billing_limit(code)) is None
+        assert throttle_of(provider_errors.an_openai_billing_limit(code)) is None
 
     def test_a_rate_limit_of_the_insufficient_quota_type_is_no_throttle(self):
         body = {"message": "Credit balance exhausted", "type": "insufficient_quota", "code": None}
 
-        assert throttle_of(given.an_openai_rate_limit(body=body)) is None
+        assert throttle_of(provider_errors.an_openai_rate_limit(body=body)) is None
 
     def test_a_slow_down_is_a_throttle(self):
         body = {"message": "Please slow down", "type": "rate_limit_error", "code": "slow_down"}
 
-        assert throttle_of(given.an_openai_rate_limit(body=body)) == Throttle(retry_after=None)
+        assert throttle_of(provider_errors.an_openai_rate_limit(body=body)) == Throttle(
+            retry_after=None
+        )
 
     def test_a_google_rate_limit_reads_the_hint_of_the_error_it_is_raised_from(self):
-        error = given.a_google_rate_limit({"Retry-After": "7"})
+        error = provider_errors.a_google_rate_limit({"Retry-After": "7"})
 
         assert throttle_of(error) == Throttle(retry_after=7.0)
 
     def test_a_server_error_is_no_throttle(self):
-        assert throttle_of(given.an_openai_server_error()) is None
+        assert throttle_of(provider_errors.an_openai_server_error()) is None
 
     def test_an_error_without_http_status_is_no_throttle(self):
         assert throttle_of(ValueError("boom")) is None
@@ -116,18 +128,18 @@ class TestIsBillingLimit:
     @pytest.mark.parametrize(
         "build",
         [
-            given.an_anthropic_billing_error,
-            given.an_anthropic_spend_limit_reached,
-            given.an_anthropic_workspace_spend_limit_reached,
-            given.an_anthropic_spend_cap_reached,
-            given.an_anthropic_credit_balance_too_low,
+            provider_errors.an_anthropic_billing_error,
+            provider_errors.an_anthropic_spend_limit_reached,
+            provider_errors.an_anthropic_workspace_spend_limit_reached,
+            provider_errors.an_anthropic_spend_cap_reached,
+            provider_errors.an_anthropic_credit_balance_too_low,
         ],
     )
-    def test_an_anthropic_billing_limit_is_one(self, build: given.RateLimitBuilder):
+    def test_an_anthropic_billing_limit_is_one(self, build: provider_errors.RateLimitBuilder):
         assert is_billing_limit(build())
 
     def test_an_anthropic_invalid_request_is_none(self):
-        assert not is_billing_limit(given.an_anthropic_invalid_request())
+        assert not is_billing_limit(provider_errors.an_anthropic_invalid_request())
 
     def test_an_anthropic_spend_cap_is_no_throttle(self):
-        assert throttle_of(given.an_anthropic_spend_cap_reached()) is None
+        assert throttle_of(provider_errors.an_anthropic_spend_cap_reached()) is None

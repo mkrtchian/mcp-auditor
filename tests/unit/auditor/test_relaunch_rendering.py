@@ -4,18 +4,18 @@ import pytest
 
 import tests.unit.auditor.support.report_builders as reports
 import tests.unit.auditor.support.test_relaunch_rendering_given as given
-import tests.unit.auditor.support.test_rendering_then as then
 from mcp_auditor.domain.models import AuditCategory
 from mcp_auditor.domain.rendering import describe_coverage_gap, render_json, render_markdown
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, TIMEOUTS_IN_A_ROW
 from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
+from tests.unit.auditor.support.markdown_sections import summary_of
 
 
 def test_markdown_summary_counts_the_relaunches():
     report = given.a_report_with_two_relaunches_on_get_user()
 
-    summary = then.summary_of(render_markdown(report))
+    summary = summary_of(render_markdown(report))
 
     assert "**Relaunches**: 2\n" in summary
 
@@ -23,7 +23,7 @@ def test_markdown_summary_counts_the_relaunches():
 def test_markdown_summary_says_when_a_relaunch_failed():
     report = given.a_report_with_two_relaunches_on_get_user(last_succeeded=False)
 
-    summary = then.summary_of(render_markdown(report))
+    summary = summary_of(render_markdown(report))
 
     assert "**Relaunches**: 2, 1 failed and the server was taken as down\n" in summary
 
@@ -32,7 +32,7 @@ def test_markdown_summary_counts_a_failed_relaunch_a_resumed_audit_followed_with
     report = given.a_report_with_two_relaunches_on_get_user()
     report.relaunches[0].succeeded = False
 
-    summary = then.summary_of(render_markdown(report))
+    summary = summary_of(render_markdown(report))
 
     assert "**Relaunches**: 2, 1 failed and the server was taken as down\n" in summary
 

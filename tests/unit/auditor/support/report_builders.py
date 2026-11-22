@@ -216,6 +216,43 @@ def a_pass_result(
     )
 
 
+def a_passing_case(tool_name: str) -> TestCase:
+    return _a_test_case(tool_name, AuditCategory.INJECTION, EvalVerdict.PASS, "ok", Severity.LOW)
+
+
+def a_failing_case(
+    tool_name: str,
+    severity: Severity,
+    category: AuditCategory,
+    justification: str,
+) -> TestCase:
+    return _a_test_case(tool_name, category, EvalVerdict.FAIL, justification, severity)
+
+
+def _a_test_case(
+    tool_name: str,
+    category: AuditCategory,
+    verdict: EvalVerdict,
+    justification: str,
+    severity: Severity,
+) -> TestCase:
+    return TestCase(
+        payload=AuditPayload(
+            category=category,
+            description="test",
+            arguments={},
+        ),
+        judge_result=JudgeResult(
+            tool_name=tool_name,
+            category=category,
+            arguments={},
+            verdict=verdict,
+            justification=justification,
+            severity=severity,
+        ),
+    )
+
+
 def a_tool_definition(
     name: str = "test_tool",
     description: str = "A test tool",

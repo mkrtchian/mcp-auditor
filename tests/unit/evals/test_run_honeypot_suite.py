@@ -1,6 +1,5 @@
 import pytest
 
-import tests.unit.evals.support.test_honeypot_retest_given as retest_given
 import tests.unit.evals.support.test_run_honeypot_suite_given as given
 from evals.gate import RetestRule
 from evals.honeypot.retest import Retester
@@ -8,6 +7,7 @@ from evals.honeypot.runs import run_all, tracing_enabled
 from evals.metrics import SessionThrottles
 from evals.run_honeypot_suite import counted_audit, parse_args, retest_audit
 from mcp_auditor.domain.models import MissCause
+from tests.unit.evals.support import fictional_honeypots
 
 
 async def test_a_pass_holding_a_throttled_model_call_is_a_failed_pass_its_429s_counted():
@@ -32,13 +32,13 @@ async def test_a_retest_holding_a_throttled_model_call_is_a_failed_retest():
     fake = given.FakeHoneypotAudit("alpha", MissCause.PROVIDER_THROTTLED)
     retester = Retester(
         audit=retest_audit(counted_audit(fake, SessionThrottles())),
-        honeypots=retest_given.HONEYPOTS,
+        honeypots=fictional_honeypots.HONEYPOTS,
         announce=lambda _: None,
         warn=lambda _: None,
     )
 
     _, failures = await retester.retest_flips(
-        retest_given.cells_flipping(retest_given.ALPHA_CELL), RetestRule()
+        fictional_honeypots.cells_flipping(fictional_honeypots.ALPHA_CELL), RetestRule()
     )
 
     assert failures == ["a retest of alpha failed"]

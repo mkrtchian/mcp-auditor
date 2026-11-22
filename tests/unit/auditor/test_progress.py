@@ -1,6 +1,7 @@
 from rich.text import Text
 
-import tests.unit.auditor.support.test_console_given as given
+import tests.unit.auditor.support.audit_displays as displays
+import tests.unit.auditor.support.report_builders as reports
 from mcp_auditor.domain.models import AuditCategory, Severity
 from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS
 from mcp_auditor.domain.server_liveness import UnsentCause
@@ -8,7 +9,7 @@ from mcp_auditor.progress import format_failure_line, format_tool_summary
 
 
 def test_format_failure_line_includes_owasp_id_for_mapped_category():
-    result = given.a_fail_result(
+    result = reports.a_fail_result(
         "get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection via user_id"
     )
 
@@ -18,7 +19,7 @@ def test_format_failure_line_includes_owasp_id_for_mapped_category():
 
 
 def test_format_failure_line_no_owasp_for_unmapped_category():
-    result = given.a_fail_result(
+    result = reports.a_fail_result(
         "get_user", AuditCategory.INPUT_VALIDATION, Severity.MEDIUM, "No length check"
     )
 
@@ -28,7 +29,7 @@ def test_format_failure_line_no_owasp_for_unmapped_category():
 
 
 def test_format_failure_line_includes_category_severity_justification():
-    result = given.a_fail_result(
+    result = reports.a_fail_result(
         "get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection via user_id"
     )
 
@@ -47,8 +48,8 @@ def test_format_tool_summary_all_passed():
 
 def test_format_tool_summary_with_failures():
     failures = [
-        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection"),
-        given.a_fail_result(
+        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "SQL injection"),
+        reports.a_fail_result(
             "get_user", AuditCategory.INPUT_VALIDATION, Severity.MEDIUM, "Negative ID"
         ),
     ]
@@ -62,9 +63,9 @@ def test_format_tool_summary_with_failures():
 
 def test_format_tool_summary_sorts_severity_descending():
     failures = [
-        given.a_fail_result("get_user", AuditCategory.INPUT_VALIDATION, Severity.LOW, "Weak"),
-        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.CRITICAL, "SQLi"),
-        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.MEDIUM, "XSS"),
+        reports.a_fail_result("get_user", AuditCategory.INPUT_VALIDATION, Severity.LOW, "Weak"),
+        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.CRITICAL, "SQLi"),
+        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.MEDIUM, "XSS"),
     ]
 
     summary = format_tool_summary(fail_count=3, failures=failures)
@@ -73,7 +74,7 @@ def test_format_tool_summary_sorts_severity_descending():
 
 
 def test_tool_progress_advance_blocked_names_the_reason_without_counting_a_failure():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
     progress = display.create_tool_progress(1, 1, "run_command", 2)
     progress.start()
 
@@ -86,7 +87,7 @@ def test_tool_progress_advance_blocked_names_the_reason_without_counting_a_failu
 
 
 def test_ci_progress_advance_blocked_names_the_reason():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     progress = display.create_tool_progress(1, 1, "run_command", 2)
     progress.start()
 
@@ -96,7 +97,7 @@ def test_ci_progress_advance_blocked_names_the_reason():
 
 
 def test_a_blocked_line_names_the_guard_and_leaves_not_sent_to_calls_withheld():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     progress = display.create_tool_progress(1, 1, "run_command", 1)
 
     progress.advance_blocked("destructive SQL statement: drop table")
@@ -106,12 +107,12 @@ def test_a_blocked_line_names_the_guard_and_leaves_not_sent_to_calls_withheld():
 
 
 def test_tool_progress_reaches_its_end_on_cases_not_sent_and_names_their_cause_once():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
     progress = display.create_tool_progress(1, 1, "run_command", 3)
     progress.start()
 
     progress.advance(
-        given.a_fail_result("run_command", AuditCategory.INJECTION, Severity.HIGH, "x")
+        reports.a_fail_result("run_command", AuditCategory.INJECTION, Severity.HIGH, "x")
     )
     for _ in range(2):
         progress.advance_unsent(UnsentCause.RELAUNCHES_IN_A_ROW)
@@ -124,7 +125,7 @@ def test_tool_progress_reaches_its_end_on_cases_not_sent_and_names_their_cause_o
 
 
 def test_ci_progress_names_the_cause_of_cases_not_sent_once():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     progress = display.create_tool_progress(1, 1, "run_command", 2)
 
     for _ in range(2):

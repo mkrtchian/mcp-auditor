@@ -1,7 +1,9 @@
 import pytest
 from rich.text import Text
 
-import tests.unit.auditor.support.test_console_given as given
+import tests.unit.auditor.support.audit_displays as displays
+import tests.unit.auditor.support.report_builders as reports
+import tests.unit.auditor.support.test_console_display_given as given
 from mcp_auditor.domain.models import (
     AuditCategory,
     ExecutionRegime,
@@ -14,7 +16,7 @@ from mcp_auditor.domain.rendering import describe_coverage_gap
 
 
 def test_header_contains_the_server_command():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_header("python server.py", ExecutionRegime.UNCONFINED)
 
@@ -30,7 +32,7 @@ def test_header_contains_the_server_command():
     ],
 )
 def test_header_states_the_execution_regime(regime: ExecutionRegime, shown: str):
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_header("npx some-server", regime)
 
@@ -39,7 +41,7 @@ def test_header_states_the_execution_regime(regime: ExecutionRegime, shown: str)
 
 def test_discovery_shows_count_and_names():
     names = ["read_file", "write_file", "list_dir"]
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_discovery(3, names)
 
@@ -51,7 +53,7 @@ def test_discovery_shows_count_and_names():
 
 def test_summary_contains_score_and_tools():
     report = given.a_report_with_two_tools()
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -67,7 +69,7 @@ def test_summary_contains_score_and_tools():
 
 def test_dry_run_shows_arguments():
     payloads = given.dry_run_payloads()
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_dry_run_payloads("get_user", payloads)
 
@@ -77,7 +79,7 @@ def test_dry_run_shows_arguments():
 
 
 def test_error_message_displayed():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_error("connection failed")
 
@@ -85,7 +87,7 @@ def test_error_message_displayed():
 
 
 def test_report_path_displayed():
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_report_path("report.json")
 
@@ -93,7 +95,7 @@ def test_report_path_displayed():
 
 
 def test_ci_mode_suppresses_header():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_header("python server.py", ExecutionRegime.UNCONFINED)
 
@@ -102,7 +104,7 @@ def test_ci_mode_suppresses_header():
 
 def test_ci_mode_prints_plain_summary():
     report = given.a_report_with_two_tools()
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_summary(report)
 
@@ -112,7 +114,7 @@ def test_ci_mode_prints_plain_summary():
 
 
 def test_ci_mode_shows_discovery():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_discovery(2, ["read_file", "write_file"])
 
@@ -123,12 +125,12 @@ def test_ci_mode_shows_discovery():
 
 
 def test_ci_mode_progress_prints_tool_summary():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     progress = display.create_tool_progress(1, 2, "get_user", 1)
 
     progress.start()
     progress.advance(
-        given.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
+        reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.HIGH, "vuln")
     )
     progress.stop()
 
@@ -140,7 +142,7 @@ def test_ci_mode_progress_prints_tool_summary():
 
 def test_summary_warns_about_a_tool_with_a_coverage_gap():
     report = given.a_report_with_a_coverage_gap_on_get_user()
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -154,7 +156,7 @@ def test_summary_warns_about_a_tool_with_a_coverage_gap():
 
 def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
     report = given.a_report_with_a_coverage_gap_on_get_user()
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_summary(report)
 
@@ -167,7 +169,7 @@ def test_ci_mode_summary_warns_about_a_tool_with_a_coverage_gap():
 
 def test_summary_warns_about_the_calls_not_sent_to_a_tool_as_a_coverage_gap():
     report = given.a_report_with_calls_not_sent_on_get_user()
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_summary(report)
 
@@ -180,7 +182,7 @@ def test_summary_warns_about_the_calls_not_sent_to_a_tool_as_a_coverage_gap():
 
 def test_summary_warns_about_a_refusal_then_about_the_incomplete_audit():
     report = given.a_report_with_a_refused_chain_planning()
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_summary(report)
 
@@ -193,7 +195,7 @@ def test_summary_warns_about_a_refusal_then_about_the_incomplete_audit():
 
 
 def test_missed_model_calls_are_warned_one_by_one_as_the_dry_run_does():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     refused = given.a_refused_chain_planning_on_list_items()
 
     display.print_missed_model_calls([refused, refused])
@@ -204,7 +206,7 @@ def test_missed_model_calls_are_warned_one_by_one_as_the_dry_run_does():
 
 
 def test_a_refusal_warning_prints_the_provider_message_verbatim():
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     message = "Blocked [see policy] by [/moderation]"
     refused = MissedModelCall(
         tool_name="get_user",
@@ -227,7 +229,7 @@ def test_a_refusal_warning_prints_the_provider_message_verbatim():
     ],
 )
 def test_a_missed_model_call_warning_names_its_cause(cause: MissCause, label: str):
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
     missed = MissedModelCall(
         tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"
     )
@@ -239,7 +241,7 @@ def test_a_missed_model_call_warning_names_its_cause(cause: MissCause, label: st
 
 def test_summary_has_no_warning_without_a_coverage_gap():
     report = given.a_report_with_two_tools()
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -248,7 +250,7 @@ def test_summary_has_no_warning_without_a_coverage_gap():
 
 def test_summary_shows_the_throttled_requests():
     report = given.a_report_throttled(3)
-    display, buffer = given.a_display()
+    display, buffer = displays.a_display()
 
     display.print_summary(report)
 
@@ -257,7 +259,7 @@ def test_summary_shows_the_throttled_requests():
 
 def test_ci_mode_summary_shows_the_throttled_requests():
     report = given.a_report_throttled(3)
-    display, buffer = given.a_ci_display()
+    display, buffer = displays.a_ci_display()
 
     display.print_summary(report)
 
@@ -266,7 +268,7 @@ def test_ci_mode_summary_shows_the_throttled_requests():
 
 def test_summary_omits_throttling_when_nothing_was_throttled():
     report = given.a_report_throttled(0)
-    for display, buffer in (given.a_display(), given.a_ci_display()):
+    for display, buffer in (displays.a_display(), displays.a_ci_display()):
         display.print_summary(report)
 
         assert "Throttled" not in buffer.getvalue()

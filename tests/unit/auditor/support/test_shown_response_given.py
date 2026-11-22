@@ -12,17 +12,7 @@ from mcp_auditor.domain import (
 )
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
-NEEDLE = "NEEDLE-FROM-THE-CUT-MIDDLE"
 OVER_THE_BOUND = "x" * (MAX_SHOWN_LENGTH + 1)
-
-
-def a_long_text(label: str = "text", length: int = 50_000) -> str:
-    """Its head and tail name the label, so a prompt shows which text it kept, and its middle
-    holds NEEDLE, so a prompt shows whether the middle was cut."""
-    head = f"{label}-head-"
-    tail = f"-{label}-tail"
-    filler = length - len(head) - len(tail) - len(NEEDLE)
-    return head + "h" * (filler // 2) + NEEDLE + "t" * (filler - filler // 2) + tail
 
 
 def a_dict_response_rendering_over_the_bound() -> dict[str, Any]:

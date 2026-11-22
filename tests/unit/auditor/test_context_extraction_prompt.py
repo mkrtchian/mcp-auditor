@@ -1,9 +1,8 @@
+import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_context_extraction_prompt_given as given
-import tests.unit.auditor.support.test_shown_response_then as shown_then
 from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_NOTE_LENGTH
 from mcp_auditor.graph.prompts import build_context_extraction_prompt
-from tests.unit.auditor.support.test_shown_response_given import a_long_text
 
 
 class TestContextExtractionPrompt:
@@ -22,13 +21,13 @@ class TestContextExtractionPrompt:
         assert "sqlite3.OperationalError" in prompt
 
     def test_bounds_the_response_and_the_error_of_each_case_apart(self):
-        response, error = a_long_text("response"), a_long_text("error")
+        response, error = cuts.a_long_text("response"), cuts.a_long_text("error")
         report = given.a_tool_report(response=response, error=error)
 
         prompt = build_context_extraction_prompt(report, AttackContext())
 
-        shown_then.shows_cut(prompt, response)
-        shown_then.shows_cut(prompt, error)
+        cuts.shows_cut(prompt, response)
+        cuts.shows_cut(prompt, error)
 
     def test_includes_existing_context_when_non_empty(self):
         existing = AttackContext(db_engine="sqlite")

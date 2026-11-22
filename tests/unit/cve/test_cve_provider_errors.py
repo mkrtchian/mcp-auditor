@@ -11,8 +11,8 @@ from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData
 
 from evals.cve.provider_errors import ProviderErrorKind, classify, describe_provider_error
-from tests.unit.auditor.support import test_llm_throttling_given as billing
 from tests.unit.cve.support import test_cve_provider_errors_given as given
+from tests.unit.support import provider_errors
 
 FATAL = ProviderErrorKind.FATAL
 TRANSIENT = ProviderErrorKind.TRANSIENT
@@ -21,11 +21,11 @@ TRANSIENT = ProviderErrorKind.TRANSIENT
 @pytest.mark.parametrize(
     "error",
     [
-        billing.an_openai_billing_limit(),
-        billing.an_anthropic_billing_error(),
-        billing.an_anthropic_spend_limit_reached(),
-        billing.an_anthropic_spend_cap_reached(),
-        billing.an_anthropic_credit_balance_too_low(),
+        provider_errors.an_openai_billing_limit(),
+        provider_errors.an_anthropic_billing_error(),
+        provider_errors.an_anthropic_spend_limit_reached(),
+        provider_errors.an_anthropic_spend_cap_reached(),
+        provider_errors.an_anthropic_credit_balance_too_low(),
     ],
 )
 def test_a_billing_limit_is_fatal(error: Exception):
@@ -63,7 +63,7 @@ def test_a_status_carried_as_a_code_on_the_error_it_is_raised_from_is_read():
         given.AnUnmappedError(status_code=500),
         given.AnUnmappedError(status_code=529),
         given.AnUnmappedError(status_code=400),
-        billing.an_anthropic_invalid_request(),
+        provider_errors.an_anthropic_invalid_request(),
         ModelAPIError("overloaded"),
         ModelConnectionError("connection reset"),
         ModelTimeoutError("read timeout"),

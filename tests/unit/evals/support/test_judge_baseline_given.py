@@ -7,7 +7,7 @@ from evals.judge.baseline import JudgeBaseline, JudgeConditions
 from evals.judge.fixture import CaseLabel, JudgeFixture, ground_truth_of, inputs_fingerprint
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
-from tests.unit.evals.support.test_judge_fixture_given import a_case, a_fixture
+from tests.unit.evals.support.judge_cases import a_case, a_fixture
 
 RECORDED_COMMIT = "0123abc"
 

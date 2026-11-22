@@ -5,8 +5,8 @@ from evals.honeypot.retest import Retester
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.metrics import VerdictMap, build_run_detail
 from mcp_auditor.domain.models import AuditReport, EvalVerdict, ProviderUsage
+from tests.unit.evals.support.fictional_honeypots import FakeAudit, a_retest
 from tests.unit.evals.support.test_eval_session_given import a_baseline_at_ci_conditions, a_session
-from tests.unit.evals.support.test_honeypot_retest_given import FakeAudit, a_retest
 
 __all__ = ["a_session"]
 

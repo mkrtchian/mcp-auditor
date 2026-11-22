@@ -2,8 +2,8 @@ import json
 
 import pytest
 
+import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_shown_response_given as given
-import tests.unit.auditor.support.test_shown_response_then as then
 from mcp_auditor.domain import ToolReport
 from mcp_auditor.domain.shown_response import (
     MAX_SHOWN_LENGTH,
@@ -28,11 +28,11 @@ class TestShownToModel:
         )
 
     def test_names_how_many_characters_were_cut(self):
-        text = given.a_long_text(length=50_000)
+        text = cuts.a_long_text(length=50_000)
 
         shown = shown_to_model(text)
 
-        then.shows_cut(shown, text)
+        cuts.shows_cut(shown, text)
 
 
 class TestRenderedResponse:

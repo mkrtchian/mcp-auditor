@@ -13,11 +13,12 @@ from evals.judge.fixture import (
     load_fixture,
 )
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
+from tests.unit.evals.support import judge_cases
 
 
 def test_a_case_id_ignores_the_key_order_of_the_arguments():
-    first = given.some_inputs(arguments={"user_id": -1, "verbose": True})
-    second = given.some_inputs(arguments={"verbose": True, "user_id": -1})
+    first = judge_cases.some_inputs(arguments={"user_id": -1, "verbose": True})
+    second = judge_cases.some_inputs(arguments={"verbose": True, "user_id": -1})
 
     assert case_id(first) == case_id(second)
 
@@ -35,18 +36,18 @@ def test_a_case_id_ignores_the_key_order_of_the_arguments():
     ],
 )
 def test_a_case_id_changes_with_any_input(change: dict[str, Any]):
-    assert case_id(given.some_inputs(**change)) != case_id(given.some_inputs())
+    assert case_id(judge_cases.some_inputs(**change)) != case_id(judge_cases.some_inputs())
 
 
 def test_a_case_id_is_sixteen_hex_characters():
-    identifier = case_id(given.some_inputs())
+    identifier = case_id(judge_cases.some_inputs())
 
     assert len(identifier) == 16
     int(identifier, 16)
 
 
 def test_a_fixture_round_trips(tmp_path: Path):
-    cases = (given.a_case(), given.a_case(CaseLabel.FAIL, description="Other"))
+    cases = (judge_cases.a_case(), judge_cases.a_case(CaseLabel.FAIL, description="Other"))
 
     fixture = load_fixture(given.a_file_holding(tmp_path, *cases))
 
@@ -54,7 +55,7 @@ def test_a_fixture_round_trips(tmp_path: Path):
 
 
 def test_a_case_whose_id_does_not_match_its_inputs_is_refused(tmp_path: Path):
-    raw = {**given.a_case().model_dump(mode="json"), "id": "0000000000000000"}
+    raw = {**judge_cases.a_case().model_dump(mode="json"), "id": "0000000000000000"}
     path = given.a_file_with_raw_cases(tmp_path, raw)
 
     with pytest.raises(ValueError, match="0000000000000000"):
@@ -64,7 +65,7 @@ def test_a_case_whose_id_does_not_match_its_inputs_is_refused(tmp_path: Path):
 
 
 def test_a_duplicate_id_is_refused(tmp_path: Path):
-    case = given.a_case()
+    case = judge_cases.a_case()
     path = given.a_file_holding(tmp_path, case, case.model_copy(update={"label": CaseLabel.FAIL}))
 
     with pytest.raises(ValueError, match=case.id):
@@ -74,7 +75,7 @@ def test_a_duplicate_id_is_refused(tmp_path: Path):
 
 
 def test_an_unlabeled_case_is_refused_by_the_fixture_and_accepted_by_the_draw(tmp_path: Path):
-    unlabeled = given.a_case(label=None)
+    unlabeled = judge_cases.a_case(label=None)
     path = given.a_file_holding(tmp_path, unlabeled)
 
     with pytest.raises(ValueError, match=unlabeled.id):
@@ -83,36 +84,38 @@ def test_an_unlabeled_case_is_refused_by_the_fixture_and_accepted_by_the_draw(tm
 
 
 def test_the_ground_truth_leaves_unspecified_cases_out():
-    passing = given.a_case(CaseLabel.PASS, description="passing")
-    failing = given.a_case(CaseLabel.FAIL, description="failing")
-    unspecified = given.a_case(CaseLabel.UNSPECIFIED, description="unspecified")
+    passing = judge_cases.a_case(CaseLabel.PASS, description="passing")
+    failing = judge_cases.a_case(CaseLabel.FAIL, description="failing")
+    unspecified = judge_cases.a_case(CaseLabel.UNSPECIFIED, description="unspecified")
 
-    ground_truth = ground_truth_of(given.a_fixture(passing, failing, unspecified))
+    ground_truth = ground_truth_of(judge_cases.a_fixture(passing, failing, unspecified))
 
     assert ground_truth == {passing.id: EvalVerdict.PASS, failing.id: EvalVerdict.FAIL}
 
 
 def test_the_fingerprint_ignores_labels_clauses_and_order():
-    first = given.a_case(CaseLabel.PASS, description="first")
-    second = given.a_case(CaseLabel.FAIL, description="second")
+    first = judge_cases.a_case(CaseLabel.PASS, description="first")
+    second = judge_cases.a_case(CaseLabel.FAIL, description="second")
     relabeled = second.model_copy(update={"label": CaseLabel.PASS, "clause": "J1"})
 
-    assert inputs_fingerprint(given.a_fixture(first, second)) == inputs_fingerprint(
-        given.a_fixture(relabeled, first)
+    assert inputs_fingerprint(judge_cases.a_fixture(first, second)) == inputs_fingerprint(
+        judge_cases.a_fixture(relabeled, first)
     )
 
 
 def test_the_fingerprint_changes_when_a_case_is_added():
-    first = given.a_case(description="first")
-    second = given.a_case(description="second")
+    first = judge_cases.a_case(description="first")
+    second = judge_cases.a_case(description="second")
 
-    assert inputs_fingerprint(given.a_fixture(first)) != inputs_fingerprint(
-        given.a_fixture(first, second)
+    assert inputs_fingerprint(judge_cases.a_fixture(first)) != inputs_fingerprint(
+        judge_cases.a_fixture(first, second)
     )
 
 
 def test_the_fingerprint_changes_when_the_inputs_of_a_case_change():
-    before = given.a_case(description="before")
-    after = given.a_case(description="after")
+    before = judge_cases.a_case(description="before")
+    after = judge_cases.a_case(description="after")
 
-    assert inputs_fingerprint(given.a_fixture(before)) != inputs_fingerprint(given.a_fixture(after))
+    assert inputs_fingerprint(judge_cases.a_fixture(before)) != inputs_fingerprint(
+        judge_cases.a_fixture(after)
+    )

@@ -1,4 +1,3 @@
-import tests.unit.auditor.support.test_chain_nodes_given as given
 from mcp_auditor.domain import (
     AttackChain,
     AuditCategory,
@@ -10,7 +9,7 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolReport,
 )
-from tests.unit.auditor.support.chain_states import a_chain_goal, a_chain_step
+from tests.unit.auditor.support.chain_states import a_chain_goal, a_chain_step, a_fail_judge_result
 
 
 class TestAuditReportChainFindings:
@@ -18,7 +17,7 @@ class TestAuditReportChainFindings:
         chain = AttackChain(
             goal=a_chain_goal(),
             steps=[a_chain_step()],
-            judge_result=given.a_fail_judge_result(),
+            judge_result=a_fail_judge_result(),
         )
         tool = ToolDefinition(name="t", description="t", input_schema={})
         report = AuditReport(

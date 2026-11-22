@@ -1,5 +1,7 @@
 import json
 
+from tests.unit.auditor.support.markdown_sections import summary_of
+
 
 def json_has_owasp_for_category(
     json_str: str,
@@ -55,10 +57,6 @@ def markdown_summary_has_counts(
     assert f"**Findings**: {findings}\n" in summary
     for severity, count in per_severity_dict.items():
         assert f"{count} {severity}" in summary
-
-
-def summary_of(markdown: str) -> str:
-    return markdown.split("## Summary\n", 1)[1].split("\n## ", 1)[0]
 
 
 def markdown_includes_pass_without_severity(markdown: str) -> None:

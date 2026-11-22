@@ -5,8 +5,8 @@ from evals.judge.fixture import CaseLabel, JudgeFixture
 from evals.judge.gate import JudgeGateResult
 from evals.judge.session_model import JudgeSessionResult
 from mcp_auditor.domain.models import AuditCategory
+from tests.unit.evals.support.judge_cases import a_case, a_fixture
 from tests.unit.evals.support.test_judge_baseline_given import a_baseline, conditions
-from tests.unit.evals.support.test_judge_fixture_given import a_case, a_fixture
 
 FLIPPED_CASE = a_case(
     label=CaseLabel.PASS,

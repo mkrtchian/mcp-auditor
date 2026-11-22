@@ -10,7 +10,7 @@ from evals.judge.baseline import (
     load_judge_baseline,
     write_judge_baseline,
 )
-from tests.unit.evals.support.test_judge_fixture_given import a_case, a_fixture
+from tests.unit.evals.support.judge_cases import a_case, a_fixture
 
 PASS_ID = given.PASS_ID
 

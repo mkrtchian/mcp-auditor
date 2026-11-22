@@ -10,7 +10,7 @@ from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from tests.fakes.chat_model import FakeChatModel, ScriptedResponse, Throttled, raw_response
 from tests.unit.auditor.support.test_llm_adapter_given import Output
 from tests.unit.auditor.support.test_llm_refusals_given import a_bad_request
-from tests.unit.auditor.support.test_llm_throttling_given import an_openai_rate_limit
+from tests.unit.support.provider_errors import an_openai_rate_limit
 
 __all__ = ["Output"]
 

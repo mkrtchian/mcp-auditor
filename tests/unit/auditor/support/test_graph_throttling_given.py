@@ -8,7 +8,7 @@ from mcp_auditor.graph.builder import build_graph
 from tests.fakes import FakeMCPClient
 from tests.fakes.chat_model import FakeChatModel, Throttled
 from tests.unit.auditor.support.graph_builders import a_tool, an_initial_state
-from tests.unit.auditor.support.test_llm_throttling_given import an_openai_rate_limit
+from tests.unit.support.provider_errors import an_openai_rate_limit
 
 TOOL_NAMES = ["get_user", "list_users"]
 
