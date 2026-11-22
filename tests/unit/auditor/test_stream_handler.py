@@ -2,6 +2,7 @@ import pytest
 from rich.text import Text
 
 import tests.unit.auditor.support.audit_displays as displays
+import tests.unit.auditor.support.test_stream_handler_given as given
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditCategory, AuditPayload, ProviderUsage, TestCase
 from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS, describe_relaunch
@@ -134,6 +135,19 @@ def test_cases_not_sent_advance_the_progress_bar_to_its_end():
     assert "2/2" in output
     cause = UNSENT_CAUSE_LABELS[UnsentCause.TOOL_TIMING_OUT]
     assert output.count(f"calls not sent from here on: {cause}") == 1
+
+
+async def test_the_progress_follows_a_real_audit_stream():
+    display, buffer = displays.a_ci_display()
+    reporter = AuditProgressReporter(display)
+
+    for event in await given.events_of_a_real_audit_with_one_chain():
+        reporter.on_stream_event(event)
+
+    output = buffer.getvalue()
+    assert "[1/1] get_user: \u2717 1 failed (1 medium)" in output
+    assert "Planning 1 attack chain(s)" in output
+    assert "Chain judged: fail" in output
 
 
 def _a_relaunch(cause: RelaunchCause, succeeded: bool) -> Relaunch:

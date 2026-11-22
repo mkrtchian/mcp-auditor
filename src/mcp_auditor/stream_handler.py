@@ -11,6 +11,8 @@ from mcp_auditor.progress import CIProgress, ToolProgress
 # reports one, so it is printed once.
 _CALLING_NODES = frozenset({"execute_tool", "execute_step"})
 
+_CHAIN_AUDIT_NODE = "chain_audit_tool"
+
 
 class AuditProgressReporter:
     def __init__(self, display: AuditDisplay) -> None:
@@ -125,10 +127,10 @@ class _GraphLevel(Enum):
 
 
 def _graph_level(namespace: tuple[str, ...]) -> _GraphLevel:
-    match len(namespace):
-        case 0:
-            return _GraphLevel.ORCHESTRATOR
-        case 1:
-            return _GraphLevel.TOOL_AUDIT
-        case _:
-            return _GraphLevel.CHAIN_AUDIT
+    # Both subgraphs are nodes of the orchestrator, so their events carry a namespace of
+    # one element, "<node name>:<task id>": the node name tells them apart, not the depth.
+    if not namespace:
+        return _GraphLevel.ORCHESTRATOR
+    if namespace[0].startswith(f"{_CHAIN_AUDIT_NODE}:"):
+        return _GraphLevel.CHAIN_AUDIT
+    return _GraphLevel.TOOL_AUDIT

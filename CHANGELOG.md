@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A declared container that passes a relayed variable with a short option glued to its value (`-eNAME`) or ending a group (`-ie NAME`) no longer gets the false warning that its `docker run` does not pass the variable.
+- The progress display shows again, during an audit, the planning of the attack chains, each chain step executed and each chain's verdict, which it had stopped printing.
 
 ## [0.5.0] - 2026-11-22
 
