@@ -20,6 +20,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
+from mcp_auditor.graph.state import AuditInput
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import Billing, flat_billing
 from tests.fakes.mcp_client import a_lost_connection_response
@@ -101,21 +102,14 @@ def an_initial_state(
     test_budget: int = 1,
     chain_budget: int = 0,
     max_chain_steps: int = 3,
-) -> dict[str, Any]:
-    return {
-        "server_command": "python honeypot_server.py",
-        "discovered_tools": [],
-        "test_budget": test_budget,
-        "current_tool": None,
-        "processed_cases": [],
-        "tool_reports": [],
-        "provider_usage": [],
-        "audit_report": None,
-        "attack_context": AttackContext(),
-        "chain_budget": chain_budget,
-        "max_chain_steps": max_chain_steps,
-        "completed_chains": [],
-    }
+) -> AuditInput:
+    return AuditInput(
+        server_command="python honeypot_server.py",
+        test_budget=test_budget,
+        attack_context=AttackContext(),
+        chain_budget=chain_budget,
+        max_chain_steps=max_chain_steps,
+    )
 
 
 def a_complete_batch(num_cases: int) -> TestCaseBatch:
