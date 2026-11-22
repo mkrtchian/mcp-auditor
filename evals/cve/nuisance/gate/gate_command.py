@@ -4,10 +4,13 @@ compare each to its baseline under `evals/baselines/nuisance/`."""
 import argparse
 import asyncio
 import dataclasses
+import functools
 import sys
 import traceback
-from collections.abc import Sequence
+from collections.abc import Callable, Coroutine, Sequence
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from rich.markup import escape
 from rich.progress import Progress
@@ -17,7 +20,7 @@ from evals.baseline import BaselineStatus
 from evals.concurrency import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
-from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
@@ -33,6 +36,7 @@ from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_RUNS,
+    NuisanceGateConditions,
     baseline_file_name,
     gate_conditions,
 )
@@ -56,15 +60,27 @@ from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases
-from mcp_auditor.config import load_settings
+from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_GATE_REPORT_PATH = "output/nuisance_gate_report.json"
 _BASELINES = "evals/baselines/nuisance/"
 _RECORD_COMMAND = "uv run python -m evals.run_nuisance gate --record-baseline"
 
+type GateSessionRunner = Callable[
+    [NuisanceGateOptions, NuisanceGateHarness], Coroutine[Any, Any, NuisanceGateSession]
+]
 
-def add_gate_arguments(gate_parser: argparse.ArgumentParser) -> None:
-    gate_parser.set_defaults(command=gate)
+
+@dataclass(frozen=True)
+class GateCommandDeps:
+    conditions: Callable[[], HoldoutConditions] = committed_conditions
+    settings: Callable[[], Settings] = load_settings
+    harness: Callable[[NuisanceGateConditions, int], NuisanceGateHarness] = default_harness
+    run_gate: GateSessionRunner = run_gate
+
+
+def add_gate_arguments(gate_parser: argparse.ArgumentParser, deps: GateCommandDeps) -> None:
+    gate_parser.set_defaults(command=functools.partial(gate, deps=deps))
     gate_parser.add_argument("--record-baseline", action="store_true")
     gate_parser.add_argument("--runs", type=positive_int, default=NUISANCE_GATE_RUNS)
     gate_parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
@@ -77,7 +93,7 @@ def add_gate_arguments(gate_parser: argparse.ArgumentParser) -> None:
     gate_parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
-def gate(args: argparse.Namespace) -> int:
+def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
@@ -93,7 +109,7 @@ def gate(args: argparse.Namespace) -> int:
         return UNKNOWN_SERVER_EXIT
     refuse_unrecorded(_selected(servers, args.server), "nuisance gate refused")
     try:
-        return _run_gate(args, admission, current)
+        return _run_gate(args, admission, current, deps)
     except Refused:
         raise
     except Exception:
@@ -122,11 +138,17 @@ def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) ->
         print(f"- {server.server_package}: {EXIT_REASON_TEXTS[server.reason]}")
 
 
-def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: set[str]) -> int:
-    options = _gate_options(args, gate_servers(admission, current))
-    harness = default_harness(options.conditions, args.concurrency)
+def _run_gate(
+    args: argparse.Namespace,
+    admission: NuisanceAdmission,
+    current: set[str],
+    deps: GateCommandDeps,
+) -> int:
+    conditions = gate_conditions(deps.settings(), deps.conditions(), args.runs)
+    options = _gate_options(args, gate_servers(admission, current), conditions)
+    harness = deps.harness(options.conditions, args.concurrency)
     tree = harness.read_tree()
-    session = _tracked_gate(options, harness)
+    session = _tracked_gate(options, harness, deps.run_gate)
     report = NuisanceGateReport(
         conditions=options.conditions,
         commit=tree.commit,
@@ -150,21 +172,25 @@ def _run_gate(args: argparse.Namespace, admission: NuisanceAdmission, current: s
 
 
 def _tracked_gate(
-    options: NuisanceGateOptions, harness: NuisanceGateHarness
+    options: NuisanceGateOptions,
+    harness: NuisanceGateHarness,
+    run: GateSessionRunner,
 ) -> NuisanceGateSession:
     with Progress(console=console) as bar:
         progress = AuditProgress(bar)
         tracked = dataclasses.replace(
             harness, audit=progress.tracked(harness.audit), announce_audits=progress.announce
         )
-        return asyncio.run(run_gate(options, tracked))
+        return asyncio.run(run(options, tracked))
 
 
-def _gate_options(args: argparse.Namespace, servers: list[AdmittedServer]) -> NuisanceGateOptions:
+def _gate_options(
+    args: argparse.Namespace, servers: list[AdmittedServer], conditions: NuisanceGateConditions
+) -> NuisanceGateOptions:
     return NuisanceGateOptions(
         servers=_selected(servers, args.server),
         gate_packages=frozenset(server.server_package for server in servers),
-        conditions=gate_conditions(load_settings(), load_conditions(CONDITIONS_PATH), args.runs),
+        conditions=conditions,
         record_baseline=args.record_baseline,
     )
 

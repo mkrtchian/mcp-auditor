@@ -80,15 +80,15 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
 
 
 def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     unrecorded = records_given.with_every_new_field_unrecorded(
         admission.admitting_the_acceptance_server()
     )
     gate_set = given.a_gate_set_of_one_server(tmp_path, unrecorded)
 
-    exit_code = run_nuisance.main(["gate", *gate_set])
+    exit_code = run_nuisance.main(["gate", *gate_set], recording.deps)
 
     out = capsys.readouterr().out
     assert exit_code == run_nuisance.REFUSED_EXIT
@@ -100,12 +100,14 @@ def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
 
-    selected_recorded = run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set])
+    selected_recorded = run_nuisance.main(
+        ["gate", "--server", given.GATE_SERVER, *gate_set], recording.deps
+    )
     selected_unrecorded = run_nuisance.main(
-        ["gate", "--server", given.OTHER_GATE_SERVER, *gate_set]
+        ["gate", "--server", given.OTHER_GATE_SERVER, *gate_set], recording.deps
     )
 
     assert selected_recorded == 0
@@ -113,11 +115,11 @@ def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
     assert f"{given.OTHER_GATE_SERVER}: real_software" in output.getvalue()
 
 
-def test_the_gate_audits_only_the_selected_servers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    seen = given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+def test_the_gate_audits_only_the_selected_servers(tmp_path: Path):
+    seen = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
 
-    run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set])
+    run_nuisance.main(["gate", "--server", given.GATE_SERVER, *gate_set], seen.deps)
 
     assert [s.server_package for s in seen.options.servers] == [given.GATE_SERVER]
     assert seen.options.gate_packages == {given.GATE_SERVER, given.OTHER_GATE_SERVER}
@@ -127,10 +129,10 @@ def test_an_unconfirmed_gate_recording_names_the_command_that_confirms_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
-    exit_code = run_nuisance.main(["gate", "--record-baseline", *gate_set])
+    exit_code = run_nuisance.main(["gate", "--record-baseline", *gate_set], recording.deps)
 
     assert exit_code == 0
     assert (
@@ -144,11 +146,14 @@ def test_the_confirming_gate_command_repeats_the_server_and_a_non_default_run_co
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
     server = given.GATE_SERVER
 
-    run_nuisance.main(["gate", "--record-baseline", "--server", server, "--runs", "5", *gate_set])
+    run_nuisance.main(
+        ["gate", "--record-baseline", "--server", server, "--runs", "5", *gate_set],
+        recording.deps,
+    )
 
     assert (
         "Run uv run python -m evals.run_nuisance gate --record-baseline"
@@ -160,10 +165,10 @@ def test_the_confirming_gate_command_leaves_the_default_run_count_out(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.UNCONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
-    run_nuisance.main(["gate", "--record-baseline", "--runs", "3", *gate_set])
+    run_nuisance.main(["gate", "--record-baseline", "--runs", "3", *gate_set], recording.deps)
 
     printed = output.getvalue()
     assert "Run uv run python -m evals.run_nuisance gate --record-baseline again now" in printed
@@ -174,10 +179,10 @@ def test_a_recorded_gate_baseline_prints_once_after_the_verdict(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_green_recording_writing(monkeypatch, tmp_path, BaselineStatus.CONFIRMED)
+    recording = given.GreenRecording(tmp_path, BaselineStatus.CONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
-    run_nuisance.main(["gate", "--record-baseline", *gate_set])
+    run_nuisance.main(["gate", "--record-baseline", *gate_set], recording.deps)
 
     printed = output.getvalue()
     assert printed.count("recorded (confirmed)") == 1

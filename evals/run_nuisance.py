@@ -39,8 +39,8 @@ from evals.cve.nuisance.commands import (
     committed_walk_inputs,
     malformed_input_refused,
 )
-from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
-from evals.cve.nuisance.gate.gate_command import add_gate_arguments
+from evals.cve.nuisance.fix_check_command import FixCheckCommandDeps, add_fix_check_arguments
+from evals.cve.nuisance.gate.gate_command import GateCommandDeps, add_gate_arguments
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps, add_run_arguments
 from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
@@ -52,6 +52,8 @@ from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 @dataclass(frozen=True)
 class NuisanceCommandDeps:
     run: RunCommandDeps = field(default_factory=RunCommandDeps)
+    fix_check: FixCheckCommandDeps = field(default_factory=FixCheckCommandDeps)
+    gate: GateCommandDeps = field(default_factory=GateCommandDeps)
     vet: VetCommandDeps = field(default_factory=VetCommandDeps)
 
 
@@ -104,13 +106,17 @@ def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
     add_fix_check_arguments(
         commands.add_parser(
             "fix-check", help="rebuild and reproduce each fix-check fixture against the admission"
-        )
+        ),
+        deps.fix_check,
     )
-    gate = commands.add_parser(
-        "gate",
-        help="audit the admitted nuisance acceptance servers and compare them to their baselines",
+    add_gate_arguments(
+        commands.add_parser(
+            "gate",
+            help="audit the admitted nuisance acceptance servers and compare them to their"
+            " baselines",
+        ),
+        deps.gate,
     )
-    add_gate_arguments(gate)
     add_vet_arguments(
         commands.add_parser(
             "vet", help="rebuild the run's images and make each audited server's benign calls"

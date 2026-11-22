@@ -1,9 +1,8 @@
+import dataclasses
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
 from typing import Any
-
-import pytest
 
 import tests.unit.census.support.test_census_given as census_given
 import tests.unit.detection.support.test_detection_draw_record_given as draw_given
@@ -12,17 +11,18 @@ import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_gi
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult
-from evals.cve.nuisance import fix_check_command
 from evals.cve.nuisance.admission.admission import BackendFixture, FixCheckRecord, NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.fix_check_command import FixCheckDeps
+from evals.cve.nuisance.fix_check_command import FixCheckCommandDeps, FixCheckDeps
+from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import FakeContainerSweep
 
 
 class FakeFixCheck:
     """Records the services it is asked to build and the backend services it is asked to bring
     up to date, raising `build_error` instead of building when one is given, answers every fix
-    check with `result`, and finds the containers of `running` left running."""
+    check with `result`, and finds the containers of `running` left running, on a daemon that
+    creates closed networks."""
 
     def __init__(
         self,
@@ -42,6 +42,8 @@ class FakeFixCheck:
             build_images=self._build,
             refresh_backend_images=self.refreshed.extend,
             check_fix=self._check_fix,
+            check_networks=_closes_networks,
+            sweep=self.containers.sweep,
         )
 
     def _build(self, services: Sequence[str]) -> None:
@@ -61,20 +63,17 @@ class Networks(Enum):
 
 
 def a_fix_check_ready(
-    monkeypatch: pytest.MonkeyPatch,
-    fixture: FixCheckFixture,
-    fix_check: FakeFixCheck,
-    networks: Networks = Networks.CLOSABLE,
-) -> None:
+    fixture: FixCheckFixture, fix_check: FakeFixCheck, networks: Networks = Networks.CLOSABLE
+) -> NuisanceCommandDeps:
     """The `fix-check` command on `fixture` alone, its Docker work answered by `fix_check`."""
+    deps = dataclasses.replace(fix_check.deps, check_networks=_CHECKS[networks])
 
-    def default_deps(_concurrency: int) -> FixCheckDeps:
-        return fix_check.deps
+    def fix_check_deps(_concurrency: int) -> FixCheckDeps:
+        return deps
 
-    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", (fixture,))
-    monkeypatch.setattr(fix_check_command, "check_closed_network_support", _CHECKS[networks])
-    monkeypatch.setattr(fix_check_command, "default_fix_check_deps", default_deps)
-    monkeypatch.setattr(fix_check_command, "DOCKER_SWEEP", fix_check.containers.sweep)
+    return NuisanceCommandDeps(
+        fix_check=FixCheckCommandDeps(fixtures=(fixture,), fix_check_deps=fix_check_deps)
+    )
 
 
 def _closes_networks() -> None:

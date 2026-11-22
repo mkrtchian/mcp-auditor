@@ -437,18 +437,10 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_detection_draw_record_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_walk_given"),
-        (SETATTR, "a_fix_check_ready:fix_check_command.DOCKER_SWEEP"),
-        (SETATTR, "a_fix_check_ready:fix_check_command.FIX_CHECK_FIXTURES"),
-        (SETATTR, "a_fix_check_ready:fix_check_command.check_closed_network_support"),
-        (SETATTR, "a_fix_check_ready:fix_check_command.default_fix_check_deps"),
     ),
     "tests/unit/nuisance/fix_checks/test_nuisance_fix_check_command.py": (
         (FOREIGN, "test_kit_fix_check_given"),
         (FOREIGN, "test_nuisance_admission_given"),
-        (
-            SETATTR,
-            "test_a_fix_check_with_no_fixture_says_no_server_is_admitted:fix_check_command.FIX_CHECK_FIXTURES",
-        ),
     ),
     "tests/unit/nuisance/gate/support/nuisance_gate_sessions.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
@@ -480,11 +472,7 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_admission_records_given"),
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
         (FOREIGN, "test_nuisance_walk_given"),
-        (SETATTR, "a_green_recording_writing:nuisance_gate_command.default_harness"),
-        (SETATTR, "a_green_recording_writing:nuisance_gate_command.gate_conditions"),
-        (SETATTR, "a_green_recording_writing:nuisance_gate_command.run_gate"),
     ),
     "tests/unit/nuisance/gate/test_nuisance_gate_baseline.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),

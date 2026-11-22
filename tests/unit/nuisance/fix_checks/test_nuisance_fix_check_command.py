@@ -10,11 +10,14 @@ import tests.unit.nuisance.fix_checks.support.test_nuisance_fix_check_command_gi
 from evals import run_nuisance
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
-from evals.cve.nuisance import fix_check_command
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.commands import CRASHED_EXIT, UNKNOWN_SERVER_EXIT
-from evals.cve.nuisance.fix_check_command import check_fixes, fix_check_mismatches
+from evals.cve.nuisance.fix_check_command import (
+    FixCheckCommandDeps,
+    check_fixes,
+    fix_check_mismatches,
+)
 from evals.cve.run_images import DOCKER_REQUIREMENT
 from tests.unit.cve.support.test_kit_fix_check_given import a_fix_check_fixture
 from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
@@ -67,36 +70,36 @@ def test_a_fix_check_with_no_admitted_server_says_so(
 
 
 def test_a_fix_check_with_no_fixture_says_no_server_is_admitted(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
 ):
-    monkeypatch.setattr(fix_check_command, "FIX_CHECK_FIXTURES", ())
+    no_fixture = run_nuisance.NuisanceCommandDeps(fix_check=FixCheckCommandDeps(fixtures=()))
 
-    code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()))
+    code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()), no_fixture)
 
     assert code == 0
     assert "no server is admitted" in capsys.readouterr().out
 
 
 def test_a_fix_check_of_a_flaw_no_fixture_matches_exits_naming_it(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
 ):
-    given.a_fix_check_ready(monkeypatch, FIXTURE, given.FakeFixCheck(RuntimeError("unused")))
+    deps = given.a_fix_check_ready(FIXTURE, given.FakeFixCheck(RuntimeError("unused")))
     command = [*given.a_fix_check_command(tmp_path, an_admission()), "--flaw", "CVE-2099-9999"]
 
-    code = run_nuisance.main(command)
+    code = run_nuisance.main(command, deps)
 
     assert code == UNKNOWN_SERVER_EXIT
     assert "CVE-2099-9999 matches no fix-check fixture" in capsys.readouterr().err
 
 
 def test_the_fix_check_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_network(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
 ):
     never_built = AssertionError("the fix-check images were built")
     fake = given.FakeFixCheck(RuntimeError("unused"), never_built)
-    given.a_fix_check_ready(monkeypatch, FIXTURE, fake, given.Networks.UNSUPPORTED)
+    deps = given.a_fix_check_ready(FIXTURE, fake, given.Networks.UNSUPPORTED)
 
-    code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()))
+    code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()), deps)
 
     assert code == run_nuisance.REFUSED_EXIT
     assert DOCKER_REQUIREMENT in capsys.readouterr().out
@@ -104,19 +107,19 @@ def test_the_fix_check_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_n
 
 @pytest.mark.parametrize("build_fails", [False, True])
 def test_the_fix_check_removes_the_kit_and_built_backend_containers_left_running(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, build_fails: bool
+    tmp_path: Path, build_fails: bool
 ):
     build_error = RuntimeError("docker build failed") if build_fails else None
     running = ("leftover_kit", "leftover_responder")
     fake = given.FakeFixCheck(given.a_result_matching(RECORD), build_error, running)
-    given.a_fix_check_ready(monkeypatch, FIXTURE, fake)
+    deps = given.a_fix_check_ready(FIXTURE, fake)
     command = given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend())
 
     if build_fails:
         with pytest.raises(RuntimeError):
-            run_nuisance.main(command)
+            run_nuisance.main(command, deps)
     else:
-        run_nuisance.main(command)
+        run_nuisance.main(command, deps)
 
     assert fake.containers.removed == list(running)
     kit_tags = [kit_launch.image_tag(service) for service in ("vuln", "patched", "server-patched")]
@@ -127,47 +130,51 @@ def test_the_fix_check_removes_the_kit_and_built_backend_containers_left_running
 
 
 def test_the_fix_check_removes_the_containers_left_running_of_the_backend_services_it_names(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ):
     fixture = dataclasses.replace(FIXTURE, backend_services=("its-responder",))
     fake = given.FakeFixCheck(given.a_result_matching(RECORD))
-    given.a_fix_check_ready(monkeypatch, fixture, fake)
+    deps = given.a_fix_check_ready(fixture, fake)
+    command = given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend())
 
-    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+    run_nuisance.main(command, deps)
 
     assert detection_targets.image_tag("its-responder") in fake.containers.listed_tags[0]
 
 
 def test_a_fixture_naming_no_backend_services_refreshes_the_run_backends_of_its_servers(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ):
     fake = given.FakeFixCheck(given.a_result_matching(RECORD))
-    given.a_fix_check_ready(monkeypatch, FIXTURE, fake)
+    deps = given.a_fix_check_ready(FIXTURE, fake)
+    command = given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend())
 
-    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+    run_nuisance.main(command, deps)
 
     assert fake.refreshed == list(BACKENDS["ckan"].built_services)
 
 
 def test_a_fixture_naming_its_backend_services_refreshes_those_and_not_the_run_backends(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ):
     fixture = dataclasses.replace(FIXTURE, backend_services=("its-responder",))
     fake = given.FakeFixCheck(given.a_result_matching(RECORD))
-    given.a_fix_check_ready(monkeypatch, fixture, fake)
+    deps = given.a_fix_check_ready(fixture, fake)
+    command = given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend())
 
-    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+    run_nuisance.main(command, deps)
 
     assert fake.refreshed == ["its-responder"]
 
 
 def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its_flaws(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ):
     fake = given.FakeFixCheck(given.a_result_matching(RECORD))
-    given.a_fix_check_ready(monkeypatch, FIXTURE_OF_NO_ADMITTED_FLAW, fake)
+    deps = given.a_fix_check_ready(FIXTURE_OF_NO_ADMITTED_FLAW, fake)
+    command = given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend())
 
-    run_nuisance.main(given.a_fix_check_command(tmp_path, given.an_admission_on_the_ckan_backend()))
+    run_nuisance.main(command, deps)
 
     assert fake.refreshed == []
 

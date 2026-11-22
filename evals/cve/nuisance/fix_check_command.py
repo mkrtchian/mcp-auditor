@@ -19,7 +19,12 @@ from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.images import ComposeImageStore, ensure_images
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, FixCheckRecord
+from evals.cve.nuisance.admission.admission import (
+    ADMISSION_PATH,
+    AdmittedServer,
+    FixCheckRecord,
+    NuisanceAdmission,
+)
 from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
@@ -31,7 +36,12 @@ from evals.cve.nuisance.commands import (
 )
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
 from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
-from evals.cve.run_images import DOCKER_SWEEP, refuse_without_closed_networks, sweep_containers
+from evals.cve.run_images import (
+    DOCKER_SWEEP,
+    ContainerSweep,
+    refuse_without_closed_networks,
+    sweep_containers,
+)
 
 
 @dataclass(frozen=True)
@@ -41,10 +51,32 @@ class FixCheckDeps:
     # an older Dockerfile built.
     refresh_backend_images: Callable[[Sequence[str]], None]
     check_fix: Callable[[FixCheckFixture], Awaitable[FixCheckResult]]
+    check_networks: Callable[[], None]
+    sweep: ContainerSweep
 
 
-def add_fix_check_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.set_defaults(command=fix_check)
+def default_fix_check_deps(concurrency: int) -> FixCheckDeps:
+    return FixCheckDeps(
+        build_images=functools.partial(build_images, DOCKER_DIRECTORY),
+        refresh_backend_images=_ensure_compose_images,
+        check_fix=bounded(check_fix, concurrency),
+        check_networks=check_closed_network_support,
+        sweep=DOCKER_SWEEP,
+    )
+
+
+def _ensure_compose_images(services: Sequence[str]) -> None:
+    ensure_images(services, ComposeImageStore())
+
+
+@dataclass(frozen=True)
+class FixCheckCommandDeps:
+    fixtures: Sequence[FixCheckFixture] = FIX_CHECK_FIXTURES
+    fix_check_deps: Callable[[int], FixCheckDeps] = default_fix_check_deps
+
+
+def add_fix_check_arguments(parser: argparse.ArgumentParser, deps: FixCheckCommandDeps) -> None:
+    parser.set_defaults(command=functools.partial(fix_check, deps=deps))
     parser.add_argument("--flaw", help="fix-check only this flaw, default: every admitted flaw")
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     parser.add_argument("--census", type=Path, default=CENSUS_PATH)
@@ -52,29 +84,36 @@ def add_fix_check_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
-def fix_check(args: argparse.Namespace) -> int:
+def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
-    if admission is None or not admission.servers or not FIX_CHECK_FIXTURES:
+    if admission is None or not admission.servers or not deps.fixtures:
         print("no server is admitted")
         return 0
-    fixtures = [
-        fixture for fixture in FIX_CHECK_FIXTURES if args.flaw is None or fixture.flaw == args.flaw
-    ]
+    fixtures = _selected_fixtures(deps.fixtures, args.flaw)
     if not fixtures:
         print(f"unknown flaw: {args.flaw} matches no fix-check fixture", file=sys.stderr)
         return UNKNOWN_SERVER_EXIT
-    records = {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
-    refuse_without_closed_networks(check_closed_network_support)
+    docker = deps.fix_check_deps(args.concurrency)
+    refuse_without_closed_networks(docker.check_networks)
     backend_services = _backend_services(fixtures, admission.servers)
     tags = _swept_tags(fixtures, backend_services, admission.servers)
     try:
-        deps = default_fix_check_deps(args.concurrency)
-        deps.refresh_backend_images(backend_services)
-        return asyncio.run(check_fixes(fixtures, records, deps))
+        docker.refresh_backend_images(backend_services)
+        return asyncio.run(check_fixes(fixtures, _recorded_fix_checks(admission), docker))
     finally:
-        sweep_containers(tags, DOCKER_SWEEP.running_containers, DOCKER_SWEEP.remove_containers)
+        sweep_containers(tags, docker.sweep.running_containers, docker.sweep.remove_containers)
+
+
+def _selected_fixtures(
+    fixtures: Sequence[FixCheckFixture], flaw: str | None
+) -> list[FixCheckFixture]:
+    return [fixture for fixture in fixtures if flaw is None or fixture.flaw == flaw]
+
+
+def _recorded_fix_checks(admission: NuisanceAdmission) -> dict[str, FixCheckRecord]:
+    return {flaw.flaw: flaw.fix_check for server in admission.servers for flaw in server.flaws}
 
 
 def _swept_tags(
@@ -106,18 +145,6 @@ def _run_backend_services(flaw: str, servers: Sequence[AdmittedServer]) -> list[
     return built_backend_services(
         [server for server in servers if flaw in {carried.flaw for carried in server.flaws}]
     )
-
-
-def default_fix_check_deps(concurrency: int) -> FixCheckDeps:
-    return FixCheckDeps(
-        build_images=functools.partial(build_images, DOCKER_DIRECTORY),
-        refresh_backend_images=_ensure_compose_images,
-        check_fix=bounded(check_fix, concurrency),
-    )
-
-
-def _ensure_compose_images(services: Sequence[str]) -> None:
-    ensure_images(services, ComposeImageStore())
 
 
 async def check_fixes(

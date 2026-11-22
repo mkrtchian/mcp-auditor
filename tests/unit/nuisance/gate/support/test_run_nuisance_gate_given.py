@@ -16,7 +16,7 @@ from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.gate import gate_command as nuisance_gate_command
 from evals.cve.nuisance.gate import gate_console as nuisance_gate_console
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
-from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
+from evals.cve.nuisance.gate.gate_command import GateCommandDeps
 from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
@@ -24,8 +24,9 @@ from evals.cve.nuisance.gate.gate_session_model import (
     WrittenBaseline,
 )
 from evals.gate_outcome import GateOutcome
+from evals.run_nuisance import NuisanceCommandDeps
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
-from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import conditions
+from tests.unit.support.detection_holdout_runs import SETTINGS, ready_conditions
 
 GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
 
@@ -100,7 +101,12 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
 
 
 @dataclass
-class SeenSession:
+class GreenRecording:
+    """A gate run that audits nothing and records one baseline file with `status`, reaching no
+    Docker and no LLM, through `deps`. It holds the options the session received."""
+
+    directory: Path
+    status: BaselineStatus
     received: list[NuisanceGateOptions] = field(default_factory=list[NuisanceGateOptions])
 
     @property
@@ -108,38 +114,31 @@ class SeenSession:
         [options] = self.received
         return options
 
+    @property
+    def deps(self) -> NuisanceCommandDeps:
+        return NuisanceCommandDeps(
+            gate=GateCommandDeps(
+                conditions=ready_conditions,
+                settings=lambda: SETTINGS,
+                harness=self._harness,
+                run_gate=self._session,
+            )
+        )
 
-def a_green_recording_writing(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status: BaselineStatus
-) -> SeenSession:
-    """A gate run that audits nothing and records one baseline file with this status, reaching
-    no Docker and no LLM. What it returns holds the options the session received."""
-    seen = SeenSession()
+    def _harness(self, *_: object) -> NuisanceGateHarness:
+        return a_harness(self.directory, scripted({}))
 
-    async def session(
-        options: NuisanceGateOptions, harness: NuisanceGateHarness
+    async def _session(
+        self, options: NuisanceGateOptions, _harness: NuisanceGateHarness
     ) -> NuisanceGateSession:
-        seen.received.append(options)
+        self.received.append(options)
         return NuisanceGateSession(
             audits=[],
             gate=NuisanceGateResult(outcome=GateOutcome.GREEN, reasons=[], servers=[]),
             not_run={},
             orphans=[],
-            written=[WrittenBaseline(GATE_SERVER, status, leaves_gated_set=False)],
+            written=[WrittenBaseline(GATE_SERVER, self.status, leaves_gated_set=False)],
             recording_refused=[],
             throttled_requests=0,
             exit_code=0,
         )
-
-    def gate_conditions(
-        _settings: object, _conditions: object, runs: int
-    ) -> NuisanceGateConditions:
-        return conditions(runs)
-
-    def default_harness(*_: object) -> NuisanceGateHarness:
-        return a_harness(tmp_path, scripted({}))
-
-    monkeypatch.setattr(nuisance_gate_command, "gate_conditions", gate_conditions)
-    monkeypatch.setattr(nuisance_gate_command, "default_harness", default_harness)
-    monkeypatch.setattr(nuisance_gate_command, "run_gate", session)
-    return seen
