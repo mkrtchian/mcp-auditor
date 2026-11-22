@@ -9,9 +9,10 @@ settings by `default_deps`.
 """
 
 import dataclasses
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from typing import Any, Protocol
 
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
@@ -79,6 +80,29 @@ class HoldoutDeps:
     running_containers: Callable[[Sequence[str]], list[str]]
     remove_containers: Callable[[Sequence[str]], None]
     check_networks: Callable[[], None]
+
+
+class RunHoldoutTargets(Protocol):
+    def __call__(
+        self,
+        targets: Sequence[Target],
+        disclosure_dates: Mapping[str, date],
+        conditions: HoldoutConditions,
+        settings: Settings,
+        places: Places,
+        census_commit: str,
+        /,
+        *,
+        runs: int = HOLDOUT_RUNS,
+        concurrency: int = HOLDOUT_CONCURRENCY,
+        deps: HoldoutDeps | None = None,
+    ) -> Coroutine[Any, Any, DetectionHoldoutRunResult]: ...
+
+
+class HoldoutDepsFactory(Protocol):
+    def __call__(
+        self, places: Places, overrides: RunOverrides, concurrency: int, /
+    ) -> HoldoutDeps: ...
 
 
 @dataclass(frozen=True)

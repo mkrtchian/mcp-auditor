@@ -68,6 +68,10 @@ def _incomplete_cutoff_reasons(model: str, cutoff: Cutoff) -> list[str]:
     return reasons
 
 
+def committed_conditions() -> HoldoutConditions:
+    return load_conditions(CONDITIONS_PATH)
+
+
 def load_conditions(path: Path) -> HoldoutConditions:
     if not path.exists():
         raise Refused("run conditions missing", [f"no conditions file at {path}"])

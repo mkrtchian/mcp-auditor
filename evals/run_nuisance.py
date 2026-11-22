@@ -56,7 +56,6 @@ from evals.cve.nuisance.commands import (
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
-    write_report,
 )
 from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
 from evals.cve.nuisance.gate.gate_command import add_gate_arguments
@@ -76,7 +75,12 @@ from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.nuisance.vet_command import add_vet_arguments
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
-from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
+from evals.cve.run_files import (
+    partial_result_kept,
+    refuse_existing_report,
+    write_report,
+    write_result,
+)
 from evals.eval_session import Refused, last_commit
 from evals.honeypot.runs import tracing_enabled
 from evals.metrics import quiet_throttle_waits

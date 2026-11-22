@@ -1,12 +1,14 @@
-"""The files a holdout run writes: its report, the report's markdown and the run
-result beside them. The result is written before the report is built, so an error building it
-loses no paid run, and a run never overwrites any of the three."""
+"""The files a holdout run writes: its report, the report's markdown and the run result beside
+them, the report write shared with the nuisance gate. The result is written before the report is
+built, so an error building it loses no paid run, and a run never overwrites any of the three."""
 
 import dataclasses
 import json
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
+
+from pydantic import BaseModel
 
 from evals.cve.detection import holdout_results
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
@@ -47,3 +49,12 @@ def write_result(report: Path, run: DetectionHoldoutRunResult | NuisanceHoldoutR
 
 def result_path(report: Path) -> Path:
     return report.with_suffix(".result.json")
+
+
+type ReportWriter = Callable[[Path, BaseModel, str], None]
+
+
+def write_report(path: Path, report: BaseModel, markdown: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(report.model_dump_json(indent=2))
+    path.with_suffix(".md").write_text(markdown)

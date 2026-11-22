@@ -277,13 +277,7 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_detection_calibration_check_exit_given"),
     ),
     "tests/unit/detection/support/test_run_detection_holdout_run_given.py": (
-        (SETATTR, "a_drawn_run_ending_in:run_detection_holdout.default_deps"),
-        (SETATTR, "a_drawn_run_ending_in:run_detection_holdout.run_holdout_targets"),
-        (SETATTR, "a_drawn_target_with_a_ready_card:run_detection_holdout.HOLDOUT_TARGETS"),
-        (SETATTR, "a_run_reaching_nothing:run_detection_holdout.default_deps"),
-        (SETATTR, "a_run_reaching_nothing:run_detection_holdout.load_conditions"),
-        (SETATTR, "a_run_reaching_nothing:run_detection_holdout.run_holdout_targets"),
-        (SETATTR, "cards_reporting:run_detection_holdout.unready_cards"),
+        (FOREIGN, "test_detection_draw_record_given"),
     ),
     "tests/unit/detection/support/test_run_detection_recording_given.py": (
         (FOREIGN, "test_eval_display_given"),
@@ -318,37 +312,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_census_given"),
         (FOREIGN, "test_detection_calibration_check_exit_given"),
         (FOREIGN, "test_run_detection_holdout_run_given"),
-        (SETATTR, "_a_calibration_check:run_detection_holdout.default_calibration_check_deps"),
-        (SETATTR, "_drawn_targets:run_detection_holdout.HOLDOUT_TARGETS"),
-        (SETATTR, "_drawn_targets:run_detection_holdout.IMAGE_STORE"),
-        (SETATTR, "_drawn_targets:run_detection_holdout.check_closed_network_support"),
-        (SETATTR, "_leftovers:run_detection_holdout.DOCKER_SWEEP"),
-        (
-            SETATTR,
-            "test_run_refuses_an_acceptance_target_for_its_tools_filter:run_detection_holdout.HOLDOUT_TARGETS",
-        ),
-        (
-            SETATTR,
-            "test_run_without_a_drawn_target_exits_zero_and_says_so:run_detection_holdout.HOLDOUT_TARGETS",
-        ),
-        (
-            SETATTR,
-            "test_the_calibration_check_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_network:run_detection_holdout.check_closed_network_support",
-        ),
-        (
-            SETATTR,
-            "test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_image:run_detection_holdout.IMAGE_STORE",
-        ),
-        (
-            SETATTR,
-            "test_the_calibration_check_without_a_drawn_target_exits_zero_and_says_so:run_detection_holdout.HOLDOUT_TARGETS",
-        ),
-    ),
-    "tests/unit/detection/test_run_detection_holdout_run.py": (
-        (
-            SETATTR,
-            "test_run_writes_its_result_before_the_report:run_detection_holdout.build_report",
-        ),
     ),
     "tests/unit/evals/support/test_eval_baseline_given.py": ((FOREIGN, "test_eval_gate_given"),),
     "tests/unit/evals/support/test_eval_display_given.py": (

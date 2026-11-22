@@ -163,7 +163,7 @@ async def run(
     return await run_holdout_targets(
         targets,
         dates,
-        _conditions(),
+        ready_conditions(),
         SETTINGS,
         load_places(DETECTION_PLACES),
         census_commit="cafe",
@@ -173,7 +173,7 @@ async def run(
     )
 
 
-def _conditions() -> HoldoutConditions:
+def ready_conditions() -> HoldoutConditions:
     return HoldoutConditions(
         chain_budget=3,
         max_chain_steps=5,

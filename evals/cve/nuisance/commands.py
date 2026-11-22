@@ -1,11 +1,9 @@
-"""What the nuisance subcommands share: the walk record path, the admission they read, the report
-files they write and their exit codes."""
+"""What the nuisance subcommands share: the walk record path, the admission they read and their
+exit codes."""
 
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-
-from pydantic import BaseModel
 
 from evals.cve.census.census import load_census
 from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
@@ -46,9 +44,3 @@ def committed_admission(path: Path, walk_inputs: WalkInputs) -> NuisanceAdmissio
         return load_admission(path, walk_inputs)
     except FileNotFoundError:
         return None
-
-
-def write_report(path: Path, report: BaseModel, markdown: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(report.model_dump_json(indent=2))
-    path.with_suffix(".md").write_text(markdown)

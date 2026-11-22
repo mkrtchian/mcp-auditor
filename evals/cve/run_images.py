@@ -4,11 +4,17 @@ containers of the run's images: refused when running before a run, swept at its 
 
 import subprocess
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from evals.cve.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve.detection.targets import Target
-from evals.cve.images import RunBatch, compose_build, compose_build_batch
+from evals.cve.images import (
+    ComposeImageStore,
+    ImageStore,
+    RunBatch,
+    compose_build,
+    compose_build_batch,
+)
 from evals.eval_session import Refused
 
 _BUILD_TAIL_LINES = 40
@@ -77,6 +83,15 @@ class ContainerSweep:
 
 
 DOCKER_SWEEP = ContainerSweep(running_containers, remove_containers)
+
+
+@dataclass(frozen=True)
+class RunDocker:
+    """What a command checks, reads and sweeps on the Docker daemon around its run."""
+
+    check_networks: Callable[[], None] = check_closed_network_support
+    images: ImageStore = field(default_factory=ComposeImageStore)
+    sweep: ContainerSweep = DOCKER_SWEEP
 
 
 def refuse_running_containers(running: Sequence[str], refusal: str) -> None:

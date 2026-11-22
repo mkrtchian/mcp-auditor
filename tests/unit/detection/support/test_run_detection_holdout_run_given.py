@@ -1,19 +1,27 @@
 import asyncio
 import json
+from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from pydantic import BaseModel
 
-from evals import run_detection_holdout
+from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps
+from evals.cve.detection.targets import Target
+from evals.cve.run_files import write_report
+from evals.cve.run_images import RunDocker
+from tests.fakes import FakeContainerSweep
+from tests.fakes.image_store import FakeImageStore
+from tests.unit.detection.support.test_detection_draw_record_given import a_census_drawing
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 # The report's no-proof guarantee, held by the result file too.
 PROOF_FIELDS = {"evidence", "category", "judge_input", "judge", "verdict", "status", "miss_kind"}
+DRAWN_FLAW = "CVE-2026-0001"
 
 
 def a_run_result() -> DetectionHoldoutRunResult:
@@ -27,54 +35,78 @@ def a_run_result() -> DetectionHoldoutRunResult:
 
 
 def a_drawn_run_ending_in(
-    monkeypatch: pytest.MonkeyPatch, outcome: DetectionHoldoutRunResult | BaseException
-) -> None:
-    """A drawn target whose run, past the CLI's own checks, returns or raises `outcome`, reaching
-    no Docker and no LLM."""
+    outcome: DetectionHoldoutRunResult | BaseException,
+) -> HoldoutCommandDeps:
+    """A drawn target with a ready card whose run, past the CLI's own checks, returns or raises
+    `outcome`, reaching no Docker and no LLM."""
 
     async def orchestrator(*_: object, **__: object) -> DetectionHoldoutRunResult:
         if isinstance(outcome, BaseException):
             raise outcome
         return outcome
 
-    a_ready_run(monkeypatch)
-    a_drawn_target_with_a_ready_card(monkeypatch)
-
-    def deps(*_: object) -> HoldoutDeps:
-        return detection_holdout_runs.deps_reaching_nothing()
-
-    monkeypatch.setattr(run_detection_holdout, "default_deps", deps)
-    monkeypatch.setattr(run_detection_holdout, "run_holdout_targets", orchestrator)
-
-
-def a_drawn_target_with_a_ready_card(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        run_detection_holdout, "HOLDOUT_TARGETS", (SimpleNamespace(flaw_id="CVE-2025-0001"),)
+    return replace(
+        a_drawn_run_reaching_nothing(),
+        holdout_deps=_holdout_deps_reaching_nothing,
+        run_targets=orchestrator,
+        last_commit=lambda _census: "cafe",
+        write_report=write_report,
     )
-    cards_reporting(monkeypatch, [])
 
 
-def cards_reporting(monkeypatch: pytest.MonkeyPatch, gaps: list[str]) -> None:
-    def unready_cards(*_: object) -> list[str]:
-        return gaps
+def _holdout_deps_reaching_nothing(*_: object) -> HoldoutDeps:
+    return detection_holdout_runs.deps_reaching_nothing()
 
-    monkeypatch.setattr(run_detection_holdout, "unready_cards", unready_cards)
+
+def a_drawn_run_reaching_nothing() -> HoldoutCommandDeps:
+    """A drawn target under ready run conditions, its run and every Docker call unreached."""
+    return replace(a_command_reaching_nothing(), conditions=detection_holdout_runs.ready_conditions)
+
+
+def a_command_reaching_nothing() -> HoldoutCommandDeps:
+    def unreached(*_: object, **__: object) -> Any:
+        raise AssertionError("the run was reached")
+
+    return HoldoutCommandDeps(
+        drawn=(a_drawn_target(tools_filter=None),),
+        docker=RunDocker(unreached, FakeImageStore({}), FakeContainerSweep().sweep),
+        calibration_check=unreached,
+        conditions=unreached,
+        holdout_deps=unreached,
+        run_targets=unreached,
+        last_commit=unreached,
+        write_report=unreached,
+    )
+
+
+def a_drawn_target(**changes: Any) -> Target:
+    """An acceptance target under a flaw ID the test census draws: `load_census` refuses an
+    acceptance flaw ID, which is no draw-order candidate, as a draw."""
+    return replace(an_acceptance_target(FILESYSTEM, **changes), flaw_id=DRAWN_FLAW)
+
+
+def a_failing_report_write(_path: Path, _report: BaseModel, _markdown: str) -> None:
+    raise RuntimeError("the report failed to write")
+
+
+def a_census_with_a_ready_card(tmp_path: Path) -> Path:
+    return _written(tmp_path, a_census_drawing([DRAWN_FLAW]).model_dump_json())
+
+
+def a_census_with_no_draw(tmp_path: Path) -> Path:
+    census = a_census_drawing([DRAWN_FLAW]).model_copy(update={"draw": None})
+    return _written(tmp_path, census.model_dump_json())
+
+
+def _written(tmp_path: Path, census: str) -> Path:
+    path = tmp_path / "census.json"
+    path.write_text(census)
+    return path
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "openai")
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
-
-
-def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
-    def unreached(*_: object, **__: object) -> Any:
-        raise AssertionError("the run was reached")
-
-    a_ready_run(monkeypatch)
-    a_drawn_target_with_a_ready_card(monkeypatch)
-    monkeypatch.setattr(run_detection_holdout, "load_conditions", unreached)
-    monkeypatch.setattr(run_detection_holdout, "default_deps", unreached)
-    monkeypatch.setattr(run_detection_holdout, "run_holdout_targets", unreached)
 
 
 def result_keys(path: Path) -> set[str]:

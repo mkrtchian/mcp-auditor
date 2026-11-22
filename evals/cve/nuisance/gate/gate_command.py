@@ -28,7 +28,6 @@ from evals.cve.nuisance.commands import (
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
-    write_report,
 )
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_baseline import (
@@ -53,6 +52,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
 )
 from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.results import ServerExit
+from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases
