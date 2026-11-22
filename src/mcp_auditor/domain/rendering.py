@@ -60,7 +60,8 @@ def render_markdown(report: AuditReport) -> str:
 
 def _render_summary_section(report: AuditReport) -> str:
     tool_count = len(report.tool_reports)
-    total_cases = sum(len(tr.cases) + len(tr.chains) for tr in report.tool_reports)
+    case_count = sum(len(tr.cases) for tr in report.tool_reports)
+    chain_count = sum(len(tr.chains) for tr in report.tool_reports)
     findings = report.findings
     finding_count = len(findings)
     blocked_count = _blocked_count(report)
@@ -71,7 +72,9 @@ def _render_summary_section(report: AuditReport) -> str:
     if report.execution is not None:
         lines.extend(_render_execution_lines(report.execution))
     lines.append(f"**Tools audited**: {tool_count}")
-    lines.append(f"**Test cases**: {total_cases}")
+    lines.append(f"**Test cases**: {case_count}")
+    if chain_count > 0:
+        lines.append(f"**Attack chains**: {chain_count}")
     if blocked_count > 0:
         lines.append(f"**Blocked**: {blocked_count}")
     lines.extend(render_relaunch_summary_lines(report))

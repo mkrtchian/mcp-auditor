@@ -138,12 +138,13 @@ def test_markdown_without_chains():
     assert "CHAIN:" not in result
 
 
-def test_markdown_summary_counts_chains():
+def test_markdown_summary_counts_chains_apart_from_test_cases():
     report = a_report_with_chain_finding()
 
     result = render_markdown(report)
 
-    assert "**Test cases**: 1" in result
+    assert "**Test cases**: 0" in result
+    assert "**Attack chains**: 1" in result
 
 
 def test_summary_one_liner():

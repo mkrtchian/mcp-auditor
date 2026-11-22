@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The error for an unknown `MCP_AUDITOR_PROVIDER` lists the accepted providers.
+- The Markdown report's summary counts attack chains on their own line, `**Attack chains**`, instead of adding them to the test cases.
 
 ### Fixed
 
