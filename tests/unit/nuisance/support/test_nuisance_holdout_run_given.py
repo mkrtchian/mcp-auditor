@@ -2,8 +2,8 @@ import asyncio
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from datetime import date
 
-import tests.unit.cve.support.test_cve_grammar_given as grammar
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions

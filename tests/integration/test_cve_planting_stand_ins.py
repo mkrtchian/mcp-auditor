@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-import tests.integration.support.test_cve_planting_given as planting
-import tests.integration.support.test_cve_planting_stand_ins_given as given
+import tests.integration.support.stand_in_capture as stand_in_capture
+import tests.integration.support.stand_in_fetches as stand_in_fetches
 import tests.integration.support.test_cve_planting_stand_ins_then as then
 from evals.cve import planting_docker
 from evals.cve.planting import DockerPlanting, planted
 from evals.cve.planting_base import SENTINEL_IMAGE
 from tests.integration.support.docker_prerequisites import stand_in_prerequisites
-from tests.integration.support.test_cve_planting_then import nothing_it_made_outlives
+from tests.integration.support.recording_planting import RecordingPlanting, nothing_it_made_outlives
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -27,104 +27,142 @@ def _stand_in_prerequisites() -> None:
 def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anything_else(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ):
-    stand_ins_directory = given.a_stand_ins_directory(tmp_path)
-    docker = planting.RecordingPlanting()
-    host = given.STAND_IN_HOST
+    stand_ins_directory = stand_in_capture.a_stand_ins_directory(tmp_path)
+    docker = RecordingPlanting()
+    host = stand_in_capture.STAND_IN_HOST
 
     with (
         caplog.at_level(logging.WARNING, logger=planting_docker.__name__),
-        planted(given.a_stand_in_spec(), SENTINEL_IMAGE, docker, stand_ins_directory) as args,
+        planted(
+            stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, docker, stand_ins_directory
+        ) as args,
     ):
-        plain = given.fetch_as_target(args, f"http://{host}/")
-        secure = given.fetch_as_target(args, f"https://{host}/")
-        head = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
-        unknown = given.fetch_as_target(args, f"https://{host}/uncaptured")
-        redirected = given.fetch_as_target(args, f"http://{host}{given.QUOTED_REQUEST}")
+        plain = stand_in_fetches.fetch_as_target(args, f"http://{host}/")
+        secure = stand_in_fetches.fetch_as_target(args, f"https://{host}/")
+        head = stand_in_fetches.fetch_as_target(args, f"https://{host}/", method="HEAD")
+        unknown = stand_in_fetches.fetch_as_target(args, f"https://{host}/uncaptured")
+        redirected = stand_in_fetches.fetch_as_target(
+            args, f"http://{host}{stand_in_capture.QUOTED_REQUEST}"
+        )
 
-    assert (plain.body, secure.body) == (given.PLAIN_BODY, given.SECURE_BODY)
-    then.answered_without_its_body(head, 200, given.SECURE_BODY)
-    assert (unknown.status, unknown.body) == (404, given.MISSING_BODY)
-    then.redirects_to(redirected, f"https://{host}{given.QUOTED_REQUEST}")
+    assert (plain.body, secure.body) == (stand_in_capture.PLAIN_BODY, stand_in_capture.SECURE_BODY)
+    then.answered_without_its_body(head, 200, stand_in_capture.SECURE_BODY)
+    assert (unknown.status, unknown.body) == (404, stand_in_capture.MISSING_BODY)
+    then.redirects_to(redirected, f"https://{host}{stand_in_capture.QUOTED_REQUEST}")
     then.logged_its_default_for(
-        caplog.text, host, ["https GET /uncaptured", f"http GET {given.QUOTED_REQUEST}"]
+        caplog.text, host, ["https GET /uncaptured", f"http GET {stand_in_capture.QUOTED_REQUEST}"]
     )
     assert docker.stand_ins
     nothing_it_made_outlives(docker)
 
 
-@pytest.mark.parametrize("case", sorted(given.QUOTING_CASES))
+@pytest.mark.parametrize("case", sorted(stand_in_capture.QUOTING_CASES))
 def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_probe(
     case: str, tmp_path: Path
 ):
-    quoting = given.QUOTING_CASES[case]
-    directory = given.a_stand_ins_directory(tmp_path, quoting)
-    host = given.STAND_IN_HOST
+    quoting = stand_in_capture.QUOTING_CASES[case]
+    directory = stand_in_capture.a_stand_ins_directory(tmp_path, quoting)
+    host = stand_in_capture.STAND_IN_HOST
 
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        route = given.fetch_as_target(args, f"https://{host}/")
-        unknown = given.fetch_as_target(args, f"https://{host}{given.QUOTED_REQUEST}")
+    with planted(
+        stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
+    ) as args:
+        route = stand_in_fetches.fetch_as_target(args, f"https://{host}/")
+        unknown = stand_in_fetches.fetch_as_target(
+            args, f"https://{host}{stand_in_capture.QUOTED_REQUEST}"
+        )
 
-    assert route.body == given.SECURE_BODY
+    assert route.body == stand_in_capture.SECURE_BODY
     then.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
 
 
 def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_ones(
     tmp_path: Path,
 ):
-    directory = given.a_stand_ins_directory(tmp_path)
-    host = given.STAND_IN_HOST
-    secure_length = len(given.SECURE_BODY.encode())
+    directory = stand_in_capture.a_stand_ins_directory(tmp_path)
+    host = stand_in_capture.STAND_IN_HOST
+    secure_length = len(stand_in_capture.SECURE_BODY.encode())
 
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        route = given.fetch_as_target(args, f"https://{host}/")
-        fallback = given.fetch_as_target(args, f"https://{host}/", method="HEAD")
-        head_route = given.fetch_as_target(
-            args, f"https://{host}{given.HEAD_ONLY_TARGET}", method="HEAD"
+    with planted(
+        stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
+    ) as args:
+        route = stand_in_fetches.fetch_as_target(args, f"https://{host}/")
+        fallback = stand_in_fetches.fetch_as_target(args, f"https://{host}/", method="HEAD")
+        head_route = stand_in_fetches.fetch_as_target(
+            args, f"https://{host}{stand_in_capture.HEAD_ONLY_TARGET}", method="HEAD"
         )
-        default = given.fetch_as_target(args, f"http://{host}/uncaptured")
+        default = stand_in_fetches.fetch_as_target(args, f"http://{host}/uncaptured")
 
-    then.carries(route, given.SECURE_REPLAYED, secure_length)
-    then.carries(fallback, given.SECURE_REPLAYED, secure_length)
-    then.carries(head_route, given.HEAD_ONLY_REPLAYED, None)
-    then.carries(default, [("Location", f"https://{host}/uncaptured"), given.REDIRECT_SERVER], 0)
+    then.carries(route, stand_in_capture.SECURE_REPLAYED, secure_length)
+    then.carries(fallback, stand_in_capture.SECURE_REPLAYED, secure_length)
+    then.carries(head_route, stand_in_capture.HEAD_ONLY_REPLAYED, None)
+    then.carries(
+        default, [("Location", f"https://{host}/uncaptured"), stand_in_capture.REDIRECT_SERVER], 0
+    )
 
 
 def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
-    directory = given.a_stand_ins_directory(tmp_path)
-    url = f"https://{given.STAND_IN_HOST}/"
+    directory = stand_in_capture.a_stand_ins_directory(tmp_path)
+    url = f"https://{stand_in_capture.STAND_IN_HOST}/"
 
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        json_protocol = given.fetch_as_target(args, url, "POST", given.JSON_PROTOCOL_REQUEST)
-        query_protocol = given.fetch_as_target(args, url, "POST", given.QUERY_PROTOCOL_REQUEST)
-        unknown = given.fetch_as_target(args, url, "POST", given.UNKNOWN_ACTION_REQUEST)
+    with planted(
+        stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
+    ) as args:
+        json_protocol = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.JSON_PROTOCOL_REQUEST
+        )
+        query_protocol = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.QUERY_PROTOCOL_REQUEST
+        )
+        unknown = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.UNKNOWN_ACTION_REQUEST
+        )
 
-    then.answered_by_its_route(json_protocol, given.SECRET_HEADERS, given.SECRET_BODY)
-    then.answered_by_its_route(query_protocol, given.INSTANCES_HEADERS, given.INSTANCES_BODY)
-    then.answered_with(unknown, 404, given.MISSING_BODY)
+    then.answered_by_its_route(
+        json_protocol, stand_in_capture.SECRET_HEADERS, stand_in_capture.SECRET_BODY
+    )
+    then.answered_by_its_route(
+        query_protocol, stand_in_capture.INSTANCES_HEADERS, stand_in_capture.INSTANCES_BODY
+    )
+    then.answered_with(unknown, 404, stand_in_capture.MISSING_BODY)
 
 
 def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_path: Path):
-    directory = given.a_stand_ins_directory(tmp_path)
-    url = f"https://{given.STAND_IN_HOST}{given.GRAPHQL_TARGET}"
+    directory = stand_in_capture.a_stand_ins_directory(tmp_path)
+    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_TARGET}"
 
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        named = given.fetch_as_target(args, url, "POST", given.ISSUES_REQUEST)
-        other = given.fetch_as_target(args, url, "POST", given.OTHER_OPERATION_REQUEST)
-        anonymous = given.fetch_as_target(args, url, "POST", given.ANONYMOUS_OPERATION_REQUEST)
+    with planted(
+        stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
+    ) as args:
+        named = stand_in_fetches.fetch_as_target(args, url, "POST", stand_in_fetches.ISSUES_REQUEST)
+        other = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.OTHER_OPERATION_REQUEST
+        )
+        anonymous = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.ANONYMOUS_OPERATION_REQUEST
+        )
 
-    then.answered_by_its_route(named, given.ISSUES_HEADERS, given.ISSUES_BODY)
-    fallback = (given.GRAPHQL_FALLBACK_HEADERS, given.GRAPHQL_FALLBACK_BODY)
+    then.answered_by_its_route(named, stand_in_capture.ISSUES_HEADERS, stand_in_capture.ISSUES_BODY)
+    fallback = (stand_in_capture.GRAPHQL_FALLBACK_HEADERS, stand_in_capture.GRAPHQL_FALLBACK_BODY)
     then.answered_by_its_route(other, *fallback)
     then.answered_by_its_route(anonymous, *fallback)
 
 
 def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
-    directory = given.a_stand_ins_directory(tmp_path)
-    url = f"https://{given.STAND_IN_HOST}{given.FORM_TARGET}"
+    directory = stand_in_capture.a_stand_ins_directory(tmp_path)
+    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.FORM_TARGET}"
 
-    with planted(given.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory) as args:
-        carrying = given.fetch_as_target(args, url, "POST", given.SEARCH_REQUEST)
-        lacking = given.fetch_as_target(args, url, "POST", given.FIELDLESS_SEARCH_REQUEST)
+    with planted(
+        stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
+    ) as args:
+        carrying = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.SEARCH_REQUEST
+        )
+        lacking = stand_in_fetches.fetch_as_target(
+            args, url, "POST", stand_in_fetches.FIELDLESS_SEARCH_REQUEST
+        )
 
-    then.answered_by_its_route(carrying, given.RESULTS_HEADERS, given.RESULTS_BODY)
-    then.answered_with(lacking, 404, given.MISSING_BODY)
+    then.answered_by_its_route(
+        carrying, stand_in_capture.RESULTS_HEADERS, stand_in_capture.RESULTS_BODY
+    )
+    then.answered_with(lacking, 404, stand_in_capture.MISSING_BODY)

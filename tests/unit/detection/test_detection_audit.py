@@ -1,5 +1,7 @@
 import pytest
 
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.audit_attempts import (
     INCOMPLETE_ATTEMPTS,
     AttemptOutcome,
@@ -21,8 +23,6 @@ from evals.cve.report_units import units_of
 from evals.cve.server_health import ServerHealth
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import MissCause
-from tests.unit.cve.support import test_cve_grammar_given as grammar
-from tests.unit.cve.support import test_cve_launch_audit_given as launch_given
 from tests.unit.detection.support import test_detection_audit_given as given
 from tests.unit.detection.support.detection_audits import (
     TARGET,
@@ -249,9 +249,9 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     a_captured_console(capsys, monkeypatch)
-    graphs = launch_given.graph_reporting([grammar.a_report()])
-    connect = launch_given.FakeConnect()
-    auditor = launch_given.an_auditor(graphs=graphs, connect=connect)
+    graphs = launch_audit_fakes.graph_reporting([grammar.a_report()])
+    connect = launch_audit_fakes.FakeConnect()
+    auditor = launch_audit_fakes.an_auditor(graphs=graphs, connect=connect)
 
     await attempt_once(
         a_target_launching(), auditor, SessionThrottles(), {}, RunOverrides(7, 9, 11)
@@ -277,8 +277,8 @@ async def test_the_graph_audits_the_target_tools_filter_unless_every_tool_is_aud
     tools_filter: frozenset[str] | None,
 ):
     a_captured_console(capsys, monkeypatch)
-    graphs = launch_given.graph_reporting([grammar.a_report()])
-    auditor = launch_given.an_auditor(graphs=graphs)
+    graphs = launch_audit_fakes.graph_reporting([grammar.a_report()])
+    auditor = launch_audit_fakes.an_auditor(graphs=graphs)
 
     await attempt_once(a_target_launching(), auditor, SessionThrottles(), {}, overrides)
 

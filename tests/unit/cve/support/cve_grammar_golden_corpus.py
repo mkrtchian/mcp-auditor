@@ -5,7 +5,7 @@ unit tests, and the judge cases drawn from detection suite runs, pinned by id. T
 from collections import defaultdict
 from typing import Any
 
-import tests.unit.cve.support.test_cve_grammar_given as given
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.grammar import MissKind, RunGrade
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit, unit_of_exchanges
@@ -14,9 +14,9 @@ from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
 JUDGE_FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
-NONCE = given.NONCE
-FAIL = given.FAIL
-PASS = given.PASS
+NONCE = grammar.NONCE
+FAIL = grammar.FAIL
+PASS = grammar.PASS
 
 # Pinned by id and in this order, which chains follow, so that a later draw adding a CVE case
 # to the judge fixture, or a reordering of it, leaves the corpus.
@@ -50,13 +50,13 @@ def command_target_reports() -> dict[str, AuditReport]:
     aimed = {"command": "id; whoami"}
     return {
         "nonce_under_fail": _of_cases(
-            given.a_case(response=f"FLAG={NONCE}", category=given.INJECTION)
+            grammar.a_case(response=f"FLAG={NONCE}", category=grammar.INJECTION)
         ),
         "fail_without_proof_injection": _of_cases(
-            given.a_case(response="denied", arguments=aimed, category=given.INJECTION)
+            grammar.a_case(response="denied", arguments=aimed, category=grammar.INJECTION)
         ),
         "fail_without_proof_outside_class": _of_cases(
-            given.a_case(response="denied", arguments=aimed, category=given.INFO_LEAKAGE)
+            grammar.a_case(response="denied", arguments=aimed, category=grammar.INFO_LEAKAGE)
         ),
     }
 
@@ -64,11 +64,11 @@ def command_target_reports() -> dict[str, AuditReport]:
 def test_exchanges() -> dict[str, Unit]:
     return {
         "aim_in_a_nested_dict": unit_of_exchanges(
-            [({"options": {"source": given.AIMED_PATH}}, "ok")]
+            [({"options": {"source": grammar.AIMED_PATH}}, "ok")]
         ),
-        "aim_in_a_list": unit_of_exchanges([({"paths": ["/inside/a", given.AIMED_PATH]}, "ok")]),
+        "aim_in_a_list": unit_of_exchanges([({"paths": ["/inside/a", grammar.AIMED_PATH]}, "ok")]),
         "aim_in_a_list_of_dicts": unit_of_exchanges(
-            [({"batch": [{"files": [given.AIMED_PATH]}]}, "ok")]
+            [({"batch": [{"files": [grammar.AIMED_PATH]}]}, "ok")]
         ),
         "non_string_argument_values": unit_of_exchanges(
             [({"depth": 3, "recursive": True, "path": None}, "ok")]
@@ -85,20 +85,20 @@ def test_exchanges() -> dict[str, Unit]:
 def test_resolutions() -> dict[str, list[RunGrade]]:
     return {
         "highest_rung_over_runs": [
-            given.a_missed_run(MissKind.NOT_AIMED),
-            given.a_reached_run(),
-            given.a_detected_run(),
+            grammar.a_missed_run(MissKind.NOT_AIMED),
+            grammar.a_reached_run(),
+            grammar.a_detected_run(),
         ],
         "best_miss_class_over_missed_runs": [
-            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
-            given.a_missed_run(MissKind.AIMED_NO_PROOF),
-            given.a_missed_run(MissKind.AIMED_BLOCKED),
+            grammar.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            grammar.a_missed_run(MissKind.AIMED_NO_PROOF),
+            grammar.a_missed_run(MissKind.AIMED_BLOCKED),
         ],
         "each_condition_per_run": [
-            given.a_detected_run(),
-            given.a_reached_run(),
-            given.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
-            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            grammar.a_detected_run(),
+            grammar.a_reached_run(),
+            grammar.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
+            grammar.a_missed_run(MissKind.NOT_AIMED, aimed=False),
         ],
     }
 
@@ -135,8 +135,8 @@ def chain_reports(cases: list[JudgeCase]) -> dict[str, AuditReport]:
     return {
         "nonce_in_step_2": _of_chain([_step(first), leaking, _step(third)]),
         "nonce_in_step_2_echoed_from_step_1": _of_chain([echoing, leaking, _step(third)]),
-        "blocked_after_step_1": _of_chains(given.a_chain([_step(first)], blocked_reason=blocked)),
-        "blocked_at_first_step": _of_chains(given.a_chain_blocked_at_first_step(first.arguments)),
+        "blocked_after_step_1": _of_chains(grammar.a_chain([_step(first)], blocked_reason=blocked)),
+        "blocked_at_first_step": _of_chains(grammar.a_chain_blocked_at_first_step(first.arguments)),
     }
 
 
@@ -149,57 +149,59 @@ def not_live_reasons_units(inputs: JudgeInputs) -> tuple[Unit, Unit]:
 def _nonce_reports() -> dict[str, AuditReport]:
     leaking = f"leaked {NONCE}"
     return {
-        "nonce_in_a_fail_case/response": _of_cases(given.a_case(response=leaking)),
-        "nonce_in_a_fail_case/error": _of_cases(given.a_case(error=f"boom {NONCE}")),
-        "nonce_in_a_fail_case/dict_response": _of_cases(given.a_case(response={"content": NONCE})),
+        "nonce_in_a_fail_case/response": _of_cases(grammar.a_case(response=leaking)),
+        "nonce_in_a_fail_case/error": _of_cases(grammar.a_case(error=f"boom {NONCE}")),
+        "nonce_in_a_fail_case/dict_response": _of_cases(
+            grammar.a_case(response={"content": NONCE})
+        ),
         "nonce_echoed_from_the_case_arguments": _of_cases(
-            given.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
+            grammar.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
         ),
         "nonce_carried_by_an_earlier_chain_step": _of_chain(
-            [given.a_step(arguments={"path": NONCE}), given.a_step(response=f"echo {NONCE}")]
+            [grammar.a_step(arguments={"path": NONCE}), grammar.a_step(response=f"echo {NONCE}")]
         ),
         "nonce_carried_only_by_a_later_chain_step": _of_chain(
             [
-                given.a_step(),
-                given.a_step(response=leaking),
-                given.a_step(arguments={"path": NONCE}),
+                grammar.a_step(),
+                grammar.a_step(response=leaking),
+                grammar.a_step(arguments={"path": NONCE}),
             ]
         ),
-        "nonce_only_in_the_report_target": given.a_report(
-            cases=[given.a_case(response="nothing")],
+        "nonce_only_in_the_report_target": grammar.a_report(
+            cases=[grammar.a_case(response="nothing")],
             server_command=f"docker run -e FLAG={NONCE}",
         ),
         "nonce_only_in_a_step_observation": _of_chain(
-            [given.a_step(response="nothing", observation=f"saw {NONCE}")]
+            [grammar.a_step(response="nothing", observation=f"saw {NONCE}")]
         ),
-        "nonce_under_pass": _of_cases(given.a_case(response=leaking, verdict=PASS)),
+        "nonce_under_pass": _of_cases(grammar.a_case(response=leaking, verdict=PASS)),
         "proof_and_fail_on_different_cases": _of_cases(
-            given.a_case(response=leaking, verdict=PASS),
-            given.a_case(response="nothing", verdict=FAIL),
+            grammar.a_case(response=leaking, verdict=PASS),
+            grammar.a_case(response="nothing", verdict=FAIL),
         ),
         "nonce_under_fail_in_any_category": _of_cases(
-            given.a_case(response=leaking, category=given.RESOURCE_ABUSE)
+            grammar.a_case(response=leaking, category=grammar.RESOURCE_ABUSE)
         ),
     }
 
 
 def _miss_reports() -> dict[str, AuditReport]:
-    aimed = {"path": given.AIMED_PATH}
+    aimed = {"path": grammar.AIMED_PATH}
     return {
-        "missed/not_aimed": _of_cases(given.a_case(response="nothing")),
-        "missed/aimed_blocked": _of_cases(given.a_blocked_case(aimed)),
-        "missed/aimed_no_proof": _of_cases(given.a_case(response="nothing", arguments=aimed)),
+        "missed/not_aimed": _of_cases(grammar.a_case(response="nothing")),
+        "missed/aimed_blocked": _of_cases(grammar.a_blocked_case(aimed)),
+        "missed/aimed_no_proof": _of_cases(grammar.a_case(response="nothing", arguments=aimed)),
         "missed/blocked_and_unblocked": _of_cases(
-            given.a_blocked_case(aimed), given.a_case(response="nothing", arguments=aimed)
+            grammar.a_blocked_case(aimed), grammar.a_case(response="nothing", arguments=aimed)
         ),
         "fail_without_proof/aimed_valid_category": _of_cases(
-            given.a_case(response="denied", arguments=aimed, category=given.INJECTION)
+            grammar.a_case(response="denied", arguments=aimed, category=grammar.INJECTION)
         ),
         "fail_without_proof/category_outside_class": _of_cases(
-            given.a_case(response="denied", arguments=aimed, category=given.RESOURCE_ABUSE)
+            grammar.a_case(response="denied", arguments=aimed, category=grammar.RESOURCE_ABUSE)
         ),
         "fail_without_proof/not_aimed": _of_cases(
-            given.a_case(response="denied", category=given.INJECTION)
+            grammar.a_case(response="denied", category=grammar.INJECTION)
         ),
     }
 
@@ -208,14 +210,14 @@ def _blocked_chain_reports() -> dict[str, AuditReport]:
     blocked = "destructive payload"
     return {
         "chain_blocked_at_first_step": _of_chains(
-            given.a_chain_blocked_at_first_step({"path": given.AIMED_PATH})
+            grammar.a_chain_blocked_at_first_step({"path": grammar.AIMED_PATH})
         ),
         "chain_blocked_after_a_leaking_first_step": _of_chains(
-            given.a_chain([given.a_step(response=f"leaked {NONCE}")], blocked_reason=blocked)
+            grammar.a_chain([grammar.a_step(response=f"leaked {NONCE}")], blocked_reason=blocked)
         ),
         "chain_blocked_after_its_first_step": _of_chains(
-            given.a_chain(
-                [given.a_step(arguments={"path": given.AIMED_PATH})], blocked_reason=blocked
+            grammar.a_chain(
+                [grammar.a_step(arguments={"path": grammar.AIMED_PATH})], blocked_reason=blocked
             )
         ),
     }
@@ -235,19 +237,19 @@ def _variants(inputs: JudgeInputs) -> dict[str, tuple[JudgeInputs, EvalVerdict]]
 
 
 def _of_cases(*cases: TestCase) -> AuditReport:
-    return given.a_report(cases=list(cases))
+    return grammar.a_report(cases=list(cases))
 
 
 def _of_chains(*chains: AttackChain) -> AuditReport:
-    return given.a_report(chains=list(chains))
+    return grammar.a_report(chains=list(chains))
 
 
 def _of_chain(steps: list[ChainStep]) -> AuditReport:
-    return _of_chains(given.a_chain(steps))
+    return _of_chains(grammar.a_chain(steps))
 
 
 def _case_of(inputs: JudgeInputs, verdict: EvalVerdict) -> TestCase:
-    return given.a_case(
+    return grammar.a_case(
         response=inputs.response,
         error=inputs.error,
         verdict=verdict,
@@ -258,7 +260,7 @@ def _case_of(inputs: JudgeInputs, verdict: EvalVerdict) -> TestCase:
 
 def _step(inputs: JudgeInputs) -> ChainStep:
     response = None if inputs.response is None else str(inputs.response)
-    return given.a_step(arguments=inputs.arguments, response=response, error=inputs.error)
+    return grammar.a_step(arguments=inputs.arguments, response=response, error=inputs.error)
 
 
 def _with_response(inputs: JudgeInputs, text: str) -> JudgeInputs:

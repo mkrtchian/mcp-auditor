@@ -2,7 +2,8 @@ import dataclasses
 from collections.abc import Generator
 from contextlib import contextmanager
 
-import tests.unit.cve.support.test_cve_launch_audit_given as launch_given
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.audit_attempts import AttemptOutcome
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
@@ -10,7 +11,6 @@ from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.launch_audit import Auditor
 from evals.cve.planting_base import PlantingSpec
 from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 TARGET = an_acceptance_target(FILESYSTEM)
@@ -20,7 +20,9 @@ A_LAUNCH = Launch("docker", ["run", "x"])
 def an_auditor_reporting(
     *reports: AuditReport, report_detail: ReportDetail = FULL_DETAIL
 ) -> Auditor:
-    return launch_given.an_auditor(report_detail, launch_given.graph_reporting(list(reports)))
+    return launch_audit_fakes.an_auditor(
+        report_detail, launch_audit_fakes.graph_reporting(list(reports))
+    )
 
 
 def a_target_launching(launch: Launch = A_LAUNCH) -> Target:

@@ -1,5 +1,5 @@
-import tests.unit.cve.support.test_cve_grammar_given as grammar
 import tests.unit.cve.support.test_cve_strike_given as given
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.grammar import CreditCheck, TargetStatus, grade_run
 from evals.cve.proofs import GradedRun, UnitPlace, struck_by_replay
 from evals.cve.report_units import units_of

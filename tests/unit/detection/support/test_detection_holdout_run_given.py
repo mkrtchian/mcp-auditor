@@ -1,5 +1,5 @@
+import tests.unit.support.grammar_inputs as grammar
 from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 
 def a_report_missing(*causes: MissCause) -> AuditReport:

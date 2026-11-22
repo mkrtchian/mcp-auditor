@@ -13,6 +13,12 @@ on:
       - evals/stand_ins/**
       - tests/integration/test_cve_planting.py
       - tests/integration/support/test_cve_planting_*.py
+      - tests/integration/support/docker_prerequisites.py
+      - tests/integration/support/planting_specs.py
+      - tests/integration/support/recording_planting.py
+      - tests/integration/support/stand_in_capture.py
+      - tests/integration/support/stand_in_fetches.py
+      - tests/integration/support/target_commands.py
       - pyproject.toml
       - uv.lock
       - .github/workflows/detection-calibration-check.yml
@@ -28,6 +34,12 @@ on:
       - evals/stand_ins/**
       - tests/integration/test_cve_planting.py
       - tests/integration/support/test_cve_planting_*.py
+      - tests/integration/support/docker_prerequisites.py
+      - tests/integration/support/planting_specs.py
+      - tests/integration/support/recording_planting.py
+      - tests/integration/support/stand_in_capture.py
+      - tests/integration/support/stand_in_fetches.py
+      - tests/integration/support/target_commands.py
       - pyproject.toml
       - uv.lock
       - .github/workflows/detection-calibration-check.yml

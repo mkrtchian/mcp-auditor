@@ -3,6 +3,7 @@ from collections.abc import Sequence
 import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
@@ -21,7 +22,6 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 

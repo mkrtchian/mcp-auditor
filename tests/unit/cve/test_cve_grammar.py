@@ -2,16 +2,16 @@ from typing import Any
 
 import pytest
 
-import tests.unit.cve.support.test_cve_grammar_given as given
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.grammar import FlawClass, MissKind, TargetStatus, grade_run, resolve
 from evals.cve.proofs import is_aimed, proofs_in
 from evals.cve.report_units import units_of
 from evals.cve.units import unit_of_exchanges
 from mcp_auditor.domain.models import AuditCategory, TestCase
 
-NONCE = given.NONCE
-PLACE = given.PLACE
-AIMED = {"path": given.AIMED_PATH}
+NONCE = grammar.NONCE
+PLACE = grammar.PLACE
+AIMED = {"path": grammar.AIMED_PATH}
 COMMAND_EXECUTION = FlawClass.COMMAND_EXECUTION
 READ_OUTSIDE_SCOPE = FlawClass.READ_OUTSIDE_SCOPE
 INTERNAL_FETCH = FlawClass.INTERNAL_FETCH
@@ -20,116 +20,116 @@ INTERNAL_FETCH = FlawClass.INTERNAL_FETCH
 @pytest.mark.parametrize(
     "case",
     [
-        given.a_case(response=f"leaked {NONCE}"),
-        given.a_case(error=f"boom {NONCE}"),
-        given.a_case(response={"content": NONCE}),
+        grammar.a_case(response=f"leaked {NONCE}"),
+        grammar.a_case(error=f"boom {NONCE}"),
+        grammar.a_case(response={"content": NONCE}),
     ],
     ids=["response", "error", "dict_response"],
 )
 def test_nonce_in_a_fail_case_output_is_detected(case: TestCase):
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[case])))
 
     assert grade.status == TargetStatus.DETECTED
     assert grade.evidence is not None and NONCE in grade.evidence
-    assert grade.category == given.INFO_LEAKAGE
+    assert grade.category == grammar.INFO_LEAKAGE
 
 
 def test_nonce_echoed_from_the_case_arguments_is_not_a_proof():
-    case = given.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
+    case = grammar.a_case(response=f"no file {NONCE}", arguments={"path": NONCE})
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[case])))
 
     assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_carried_by_an_earlier_chain_step_is_not_a_proof():
-    chain = given.a_chain(
+    chain = grammar.a_chain(
         [
-            given.a_step(arguments={"path": NONCE}),
-            given.a_step(response=f"echo {NONCE}"),
+            grammar.a_step(arguments={"path": NONCE}),
+            grammar.a_step(response=f"echo {NONCE}"),
         ]
     )
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(chains=[chain])))
 
     assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_carried_only_by_a_later_chain_step_is_a_proof():
-    chain = given.a_chain(
+    chain = grammar.a_chain(
         [
-            given.a_step(),
-            given.a_step(response=f"leaked {NONCE}"),
-            given.a_step(arguments={"path": NONCE}),
+            grammar.a_step(),
+            grammar.a_step(response=f"leaked {NONCE}"),
+            grammar.a_step(arguments={"path": NONCE}),
         ]
     )
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(chains=[chain])))
 
     assert grade.status == TargetStatus.DETECTED
 
 
 def test_nonce_only_in_the_server_command_is_not_a_proof():
-    report = given.a_report(
-        cases=[given.a_case(response="nothing")], server_command=f"docker run -e FLAG={NONCE}"
+    report = grammar.a_report(
+        cases=[grammar.a_case(response="nothing")], server_command=f"docker run -e FLAG={NONCE}"
     )
 
-    grade = grade_run(given.a_read_target(), units_of(report))
+    grade = grade_run(grammar.a_read_target(), units_of(report))
 
     assert grade.status == TargetStatus.MISSED
     assert not grade.surfaced
 
 
 def test_nonce_only_in_a_step_observation_is_not_a_proof():
-    chain = given.a_chain([given.a_step(response="nothing", observation=f"saw {NONCE}")])
+    chain = grammar.a_chain([grammar.a_step(response="nothing", observation=f"saw {NONCE}")])
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(chains=[chain])))
 
     assert grade.status == TargetStatus.MISSED
 
 
 def test_nonce_under_pass_is_reached_but_judged_pass():
-    case = given.a_case(response=f"leaked {NONCE}", verdict=given.PASS)
+    case = grammar.a_case(response=f"leaked {NONCE}", verdict=grammar.PASS)
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[case])))
 
     assert grade.status == TargetStatus.REACHED_BUT_JUDGED_PASS
     assert grade.surfaced
 
 
 def test_proof_and_fail_on_different_cases_is_not_detected():
-    proof = given.a_case(response=f"leaked {NONCE}", verdict=given.PASS)
-    fail = given.a_case(response="nothing", verdict=given.FAIL)
+    proof = grammar.a_case(response=f"leaked {NONCE}", verdict=grammar.PASS)
+    fail = grammar.a_case(response="nothing", verdict=grammar.FAIL)
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[proof, fail])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[proof, fail])))
 
     assert grade.status == TargetStatus.REACHED_BUT_JUDGED_PASS
 
 
 def test_nonce_under_fail_in_any_category_is_detected():
-    case = given.a_case(response=f"leaked {NONCE}", category=given.RESOURCE_ABUSE)
+    case = grammar.a_case(response=f"leaked {NONCE}", category=grammar.RESOURCE_ABUSE)
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[case])))
 
     assert grade.status == TargetStatus.DETECTED
-    assert grade.category == given.RESOURCE_ABUSE
+    assert grade.category == grammar.RESOURCE_ABUSE
 
 
 @pytest.mark.parametrize(
     ("cases", "miss_kind"),
     [
-        ([given.a_case(response="nothing")], MissKind.NOT_AIMED),
-        ([given.a_blocked_case(AIMED)], MissKind.AIMED_BLOCKED),
-        ([given.a_case(response="nothing", arguments=AIMED)], MissKind.AIMED_NO_PROOF),
+        ([grammar.a_case(response="nothing")], MissKind.NOT_AIMED),
+        ([grammar.a_blocked_case(AIMED)], MissKind.AIMED_BLOCKED),
+        ([grammar.a_case(response="nothing", arguments=AIMED)], MissKind.AIMED_NO_PROOF),
         (
-            [given.a_blocked_case(AIMED), given.a_case(response="nothing", arguments=AIMED)],
+            [grammar.a_blocked_case(AIMED), grammar.a_case(response="nothing", arguments=AIMED)],
             MissKind.AIMED_NO_PROOF,
         ),
     ],
     ids=["not_aimed", "aimed_blocked", "aimed_no_proof", "blocked_and_unblocked"],
 )
 def test_a_missed_run_is_classed_by_its_best_aimed_unit(cases: list[TestCase], miss_kind: MissKind):
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=cases)))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=cases)))
 
     assert grade.status == TargetStatus.MISSED
     assert grade.miss_kind == miss_kind
@@ -138,14 +138,17 @@ def test_a_missed_run_is_classed_by_its_best_aimed_unit(cases: list[TestCase], m
 @pytest.mark.parametrize(
     ("case", "expected"),
     [
-        (given.a_case(response="denied", arguments=AIMED, category=given.INJECTION), True),
-        (given.a_case(response="denied", arguments=AIMED, category=given.RESOURCE_ABUSE), False),
-        (given.a_case(response="denied", category=given.INJECTION), False),
+        (grammar.a_case(response="denied", arguments=AIMED, category=grammar.INJECTION), True),
+        (
+            grammar.a_case(response="denied", arguments=AIMED, category=grammar.RESOURCE_ABUSE),
+            False,
+        ),
+        (grammar.a_case(response="denied", category=grammar.INJECTION), False),
     ],
     ids=["aimed_valid_category", "category_outside_class", "not_aimed"],
 )
 def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCase, expected: bool):
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(cases=[case])))
 
     assert grade.fail_without_proof is expected
 
@@ -153,13 +156,13 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
 @pytest.mark.parametrize(
     ("classes", "category", "expected"),
     [
-        ((COMMAND_EXECUTION, READ_OUTSIDE_SCOPE), given.INFO_LEAKAGE, True),
-        ((COMMAND_EXECUTION,), given.INFO_LEAKAGE, False),
-        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INJECTION, True),
-        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INFO_LEAKAGE, True),
-        ((COMMAND_EXECUTION, INTERNAL_FETCH), given.INPUT_VALIDATION, False),
-        ((), given.RESOURCE_ABUSE, True),
-        ((), given.INPUT_VALIDATION, True),
+        ((COMMAND_EXECUTION, READ_OUTSIDE_SCOPE), grammar.INFO_LEAKAGE, True),
+        ((COMMAND_EXECUTION,), grammar.INFO_LEAKAGE, False),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), grammar.INJECTION, True),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), grammar.INFO_LEAKAGE, True),
+        ((COMMAND_EXECUTION, INTERNAL_FETCH), grammar.INPUT_VALIDATION, False),
+        ((), grammar.RESOURCE_ABUSE, True),
+        ((), grammar.INPUT_VALIDATION, True),
     ],
     ids=[
         "union_admits_a_member_category",
@@ -174,17 +177,17 @@ def test_fail_without_proof_needs_an_aimed_fail_in_a_valid_category(case: TestCa
 def test_fail_without_proof_counts_a_category_any_class_of_the_set_admits(
     classes: tuple[FlawClass, ...], category: AuditCategory, expected: bool
 ):
-    case = given.a_case(response="denied", arguments=AIMED, category=category)
+    case = grammar.a_case(response="denied", arguments=AIMED, category=category)
 
-    grade = grade_run(given.a_target_under(*classes), units_of(given.a_report(cases=[case])))
+    grade = grade_run(grammar.a_target_under(*classes), units_of(grammar.a_report(cases=[case])))
 
     assert grade.fail_without_proof is expected
 
 
 def test_resolve_sums_a_union_target_fail_without_proof_runs():
-    target = given.a_target_under(COMMAND_EXECUTION, READ_OUTSIDE_SCOPE)
-    case = given.a_case(response="denied", arguments=AIMED, category=given.INFO_LEAKAGE)
-    report = given.a_report(cases=[case])
+    target = grammar.a_target_under(COMMAND_EXECUTION, READ_OUTSIDE_SCOPE)
+    case = grammar.a_case(response="denied", arguments=AIMED, category=grammar.INFO_LEAKAGE)
+    report = grammar.a_report(cases=[case])
 
     resolution = resolve([grade_run(target, units_of(report)) for _ in range(2)])
 
@@ -194,69 +197,73 @@ def test_resolve_sums_a_union_target_fail_without_proof_runs():
 @pytest.mark.parametrize(
     "arguments",
     [
-        {"options": {"source": given.AIMED_PATH}},
-        {"paths": ["/inside/a", given.AIMED_PATH]},
-        {"batch": [{"files": [given.AIMED_PATH]}]},
+        {"options": {"source": grammar.AIMED_PATH}},
+        {"paths": ["/inside/a", grammar.AIMED_PATH]},
+        {"batch": [{"files": [grammar.AIMED_PATH]}]},
     ],
     ids=["nested_dict", "list", "list_of_dicts"],
 )
 def test_aim_reads_nested_argument_values(arguments: dict[str, Any]):
     unit = unit_of_exchanges([(arguments, "ok")])
 
-    assert is_aimed(unit, given.a_read_target().aim)
+    assert is_aimed(unit, grammar.a_read_target().aim)
 
 
 def test_non_string_argument_values_are_not_aimed():
     unit = unit_of_exchanges([({"depth": 3, "recursive": True, "path": None}, "ok")])
 
-    assert not is_aimed(unit, given.a_read_target().aim)
+    assert not is_aimed(unit, grammar.a_read_target().aim)
 
 
 def test_chain_blocked_at_its_first_step_is_aimed_blocked():
-    chain = given.a_chain_blocked_at_first_step(AIMED)
+    chain = grammar.a_chain_blocked_at_first_step(AIMED)
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(chains=[chain])))
 
     assert grade.status == TargetStatus.MISSED
     assert grade.miss_kind == MissKind.AIMED_BLOCKED
 
 
 def test_chain_blocked_after_a_leaking_first_step_is_detected():
-    chain = given.a_chain(
-        [given.a_step(response=f"leaked {NONCE}")], blocked_reason="destructive payload"
+    chain = grammar.a_chain(
+        [grammar.a_step(response=f"leaked {NONCE}")], blocked_reason="destructive payload"
     )
 
-    grade = grade_run(given.a_read_target(), units_of(given.a_report(chains=[chain])))
+    grade = grade_run(grammar.a_read_target(), units_of(grammar.a_report(chains=[chain])))
 
     assert grade.status == TargetStatus.DETECTED
 
 
 def test_chain_blocked_after_its_first_step_is_a_blocked_judged_unit():
-    chain = given.a_chain([given.a_step(arguments=AIMED)], blocked_reason="destructive payload")
+    chain = grammar.a_chain([grammar.a_step(arguments=AIMED)], blocked_reason="destructive payload")
 
-    [unit] = units_of(given.a_report(chains=[chain]))
+    [unit] = units_of(grammar.a_report(chains=[chain]))
 
     assert unit.blocked
-    assert unit.verdict == given.FAIL
+    assert unit.verdict == grammar.FAIL
 
 
 def test_resolve_keeps_the_highest_rung_over_runs():
     resolution = resolve(
-        [given.a_missed_run(MissKind.NOT_AIMED), given.a_reached_run(), given.a_detected_run()]
+        [
+            grammar.a_missed_run(MissKind.NOT_AIMED),
+            grammar.a_reached_run(),
+            grammar.a_detected_run(),
+        ]
     )
 
     assert resolution.status == TargetStatus.DETECTED
     assert resolution.miss_kind is None
     assert resolution.evidence == f"leaked {NONCE}"
-    assert resolution.category == given.INFO_LEAKAGE
+    assert resolution.category == grammar.INFO_LEAKAGE
 
 
 def test_resolve_keeps_the_best_miss_class_over_missed_runs():
     resolution = resolve(
         [
-            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
-            given.a_missed_run(MissKind.AIMED_NO_PROOF),
-            given.a_missed_run(MissKind.AIMED_BLOCKED),
+            grammar.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            grammar.a_missed_run(MissKind.AIMED_NO_PROOF),
+            grammar.a_missed_run(MissKind.AIMED_BLOCKED),
         ]
     )
 
@@ -267,10 +274,10 @@ def test_resolve_keeps_the_best_miss_class_over_missed_runs():
 def test_resolve_counts_each_condition_per_run():
     resolution = resolve(
         [
-            given.a_detected_run(),
-            given.a_reached_run(),
-            given.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
-            given.a_missed_run(MissKind.NOT_AIMED, aimed=False),
+            grammar.a_detected_run(),
+            grammar.a_reached_run(),
+            grammar.a_missed_run(MissKind.AIMED_NO_PROOF, fail_without_proof=True),
+            grammar.a_missed_run(MissKind.NOT_AIMED, aimed=False),
         ]
     )
 
@@ -285,7 +292,7 @@ def test_unit_of_exchanges_finds_a_proof_in_the_last_output():
         [({"path": "/a"}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, f"leaked {NONCE}")]
     )
 
-    assert proofs_in(unit, given.a_read_target()) == {PLACE: f"leaked {NONCE}"}
+    assert proofs_in(unit, grammar.a_read_target()) == {PLACE: f"leaked {NONCE}"}
 
 
 def test_unit_of_exchanges_reads_every_exchange_for_the_anti_echo():
@@ -293,4 +300,4 @@ def test_unit_of_exchanges_reads_every_exchange_for_the_anti_echo():
         [({"path": NONCE}, "ok"), ({"path": "/b"}, "ok"), ({"path": "/c"}, NONCE)]
     )
 
-    assert proofs_in(unit, given.a_read_target()) == {}
+    assert proofs_in(unit, grammar.a_read_target()) == {}

@@ -2,11 +2,8 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
-from tests.integration.support.test_cve_planting_stand_ins_given import (
-    GRAPHQL_TARGET,
-    Sent,
-    a_stand_ins_directory,
-)
+from tests.integration.support.stand_in_capture import GRAPHQL_TARGET, a_stand_ins_directory
+from tests.integration.support.stand_in_fetches import Sent
 
 _AMZ_JSON = (("Content-Type", "application/x-amz-json-1.1"),)
 _FORM = (("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),)

@@ -1,46 +1,32 @@
 import secrets
 import subprocess
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import override
 
 from evals.cve.closed_network import create_closed_network
-from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting import (
     RANDOM_NONCES,
-    DockerPlanting,
     PlantedArgs,
     PlantingHost,
     PlantingSpec,
     SymbolicUser,
-    confinement_args,
     planting_spec,
 )
 from evals.cve.planting_base import LABEL, MEMORY_BOUND, SENTINEL_IMAGE
 from evals.cve.planting_spec import request_target
-from mcp_auditor.adapters.docker import DockerRuntime
+from tests.integration.support.planting_specs import IP_LITERAL, spec_of
+from tests.integration.support.target_commands import READ_TIMEOUT, TargetCommand, run_as_target
 
 # Docker reads the `g` suffix as 1024³ bytes.
 MEMORY_BOUND_BYTES = int(MEMORY_BOUND.removesuffix("g")) * 1024**3
-IP_LITERAL = "198.51.100.5"  # RFC 5737 documentation range: routes nowhere
-# wget's own 5 s bound plus the start-up of the fresh container each read runs in.
-_READ_TIMEOUT = 10.0
-
-
 DANGLING_LINK = "leak/report"
 
 
 def a_tree_holding_a_dangling_absolute_link(root: Path) -> None:
     (root / "leak").mkdir(parents=True)
     (root / DANGLING_LINK).symlink_to("/nowhere/in/the/helper")
-
-
-def missing_prerequisite() -> str | None:
-    if not DockerRuntime().available():
-        return "CVE planting needs Docker"
-    return None
 
 
 @dataclass(frozen=True)
@@ -62,7 +48,7 @@ def a_listener_that_accepts_and_never_answers() -> Generator[SilentListener]:
                 "--network", listener.network, "--entrypoint", "/bin/sh", SENTINEL_IMAGE,
                 "-c", "sleep 3600 | nc -l -p 80",
             ],
-            check=True, capture_output=True, timeout=_READ_TIMEOUT,
+            check=True, capture_output=True, timeout=READ_TIMEOUT,
         )  # fmt: skip
         yield listener
     finally:
@@ -95,16 +81,10 @@ def host_search_domain_reaches_a_plain_container() -> bool:
         ],
         capture_output=True,
         text=True,
-        timeout=_READ_TIMEOUT,
+        timeout=READ_TIMEOUT,
         check=True,
     )
     return any(line.startswith("search") for line in result.stdout.splitlines())
-
-
-def a_work_spec(*, with_an_account: bool) -> PlantingSpec:
-    places = [_place("account-1", Coordinates(PlaceKind.ACCOUNT))] if with_an_account else []
-    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", False)
-    return planting_spec(places, planting_host, RANDOM_NONCES)
 
 
 def a_launch_of_shape(shape: str) -> PlantingSpec:
@@ -114,27 +94,6 @@ def a_launch_of_shape(shape: str) -> PlantingSpec:
     if shape == "holder":
         return spec_of(IP_LITERAL, "/fict/secret", has_network=True)
     return spec_of("meta.fict", "/fict/secret", has_network=True)
-
-
-def spec_of(
-    host: str, path: str, *, has_network: bool = False, file_at: str | None = None
-) -> PlantingSpec:
-    places: list[Place] = []
-    if file_at is not None:
-        places.append(_place("file-1", Coordinates(PlaceKind.FILE, path=file_at)))
-    places.append(_place("endpoint-1", Coordinates(PlaceKind.HTTP_ENDPOINT, host=host, path=path)))
-    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
-    return planting_spec(places, planting_host, RANDOM_NONCES)
-
-
-def _place(place_id: str, coordinates: Coordinates) -> Place:
-    return Place(
-        id=place_id,
-        family="fictional-family",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=coordinates.kind,
-        coordinates=coordinates,
-    )
 
 
 def read_as_target(args: PlantedArgs, host: str, path: str) -> str:
@@ -177,7 +136,7 @@ def inspected_memory_bound(container: str) -> InspectedMemoryBound:
         ["docker", "inspect", "-f", "{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}}", container],
         capture_output=True,
         text=True,
-        timeout=_READ_TIMEOUT,
+        timeout=READ_TIMEOUT,
         check=True,
     )
     memory, memory_swap = result.stdout.split()
@@ -203,37 +162,6 @@ def work_as_target(args: PlantedArgs) -> WorkObservation:
     return WorkObservation(at_start, created.strip() == "created", listing)
 
 
-@dataclass(frozen=True)
-class TargetCommand:
-    image: str
-    entrypoint: str
-    command: tuple[str, ...]
-
-
-def run_as_target(
-    args: PlantedArgs, command: TargetCommand, *, check: bool = True
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            "--label",
-            LABEL,
-            *confinement_args(),
-            *args.run_args(),
-            "--entrypoint",
-            command.entrypoint,
-            command.image,
-            *command.command,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=_READ_TIMEOUT,
-        check=check,
-    )
-
-
 _SECTION = "=== "
 _IDENTITY_READS = {
     "hostname": "hostname",
@@ -241,37 +169,3 @@ _IDENTITY_READS = {
     "/etc/resolv.conf": "cat /etc/resolv.conf",
     "env": "env",
 }
-
-
-class RecordingPlanting(DockerPlanting):
-    def __init__(self) -> None:
-        self.networks: list[str] = []
-        self.containers: list[str] = []
-        self.holders: list[str] = []
-        self.stand_ins: list[str] = []
-
-    @override
-    def create_network(self) -> str:
-        name = super().create_network()
-        self.networks.append(name)
-        return name
-
-    @override
-    def start_holder(self, run_args: Sequence[str]) -> str:
-        name = super().start_holder(run_args)
-        self.containers.append(name)
-        self.holders.append(name)
-        return name
-
-    @override
-    def start_sentinel(self, run_args: Sequence[str]) -> str:
-        name = super().start_sentinel(run_args)
-        self.containers.append(name)
-        return name
-
-    @override
-    def start_stand_in(self, run_args: Sequence[str]) -> str:
-        name = super().start_stand_in(run_args)
-        self.containers.append(name)
-        self.stand_ins.append(name)
-        return name

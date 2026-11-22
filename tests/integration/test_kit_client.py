@@ -3,8 +3,7 @@ import sys
 import pytest
 
 from evals.cve.kit.client import KitMCPClient
-from tests.integration.support.support_servers import READ_SERVER_PATH
-from tests.integration.support.test_mcp_client_given import PAGINATED_SERVER_PATH
+from tests.integration.support.support_servers import PAGINATED_SERVER_PATH, READ_SERVER_PATH
 
 
 async def test_a_server_logging_its_shutdown_to_stdout_is_left_cleanly() -> None:

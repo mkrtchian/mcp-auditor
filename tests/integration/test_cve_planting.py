@@ -12,6 +12,8 @@ import time
 
 import pytest
 
+import tests.integration.support.planting_specs as planting_specs
+import tests.integration.support.recording_planting as recording_planting
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
 from evals.cve import planting_docker
@@ -24,12 +26,12 @@ from evals.cve.planting_base import (
     UNPRIVILEGED_GID,
     UNPRIVILEGED_UID,
 )
-from tests.integration.support.docker_prerequisites import skip_or_require
+from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _planting_prerequisites() -> None:
-    missing = given.missing_prerequisite()
+    missing = missing_prerequisite()
     if missing is not None:
         skip_or_require(missing)
     try:
@@ -52,7 +54,7 @@ def test_a_planted_target_reads_no_search_domain_nor_an_audit_name(shape: str):
 
 def test_the_holder_and_the_target_run_under_the_memory_bound_with_no_swap():
     spec = given.a_launch_of_shape("holder")
-    docker = given.RecordingPlanting()
+    docker = recording_planting.RecordingPlanting()
 
     with planted(spec, SENTINEL_IMAGE, docker) as args:
         [holder] = docker.holders
@@ -65,24 +67,24 @@ def test_the_holder_and_the_target_run_under_the_memory_bound_with_no_swap():
 
 
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():
-    spec = given.spec_of(given.IP_LITERAL, "/fict/secret")
+    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        body = given.read_as_target(args, given.IP_LITERAL, "/fict/secret")
+        body = given.read_as_target(args, planting_specs.IP_LITERAL, "/fict/secret")
 
     assert body == spec.nonces["endpoint-1"]
 
 
 def test_two_coexisting_launches_each_serve_their_own_nonce():
-    spec_a = given.spec_of(given.IP_LITERAL, "/fict/a")
-    spec_b = given.spec_of(given.IP_LITERAL, "/fict/b")
+    spec_a = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/a")
+    spec_b = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/b")
 
     with (
         planted(spec_a, SENTINEL_IMAGE, DockerPlanting()) as args_a,
         planted(spec_b, SENTINEL_IMAGE, DockerPlanting()) as args_b,
     ):
-        body_a = given.read_as_target(args_a, given.IP_LITERAL, "/fict/a")
-        body_b = given.read_as_target(args_b, given.IP_LITERAL, "/fict/b")
+        body_a = given.read_as_target(args_a, planting_specs.IP_LITERAL, "/fict/a")
+        body_b = given.read_as_target(args_b, planting_specs.IP_LITERAL, "/fict/b")
 
     assert body_a == spec_a.nonces["endpoint-1"]
     assert body_b == spec_b.nonces["endpoint-1"]
@@ -102,10 +104,10 @@ def test_two_coexisting_launches_each_serve_their_own_nonce():
     ],
 )
 def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
-    spec = given.spec_of(given.IP_LITERAL, path)
+    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, path)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        body = given.read_as_target(args, given.IP_LITERAL, path)
+        body = given.read_as_target(args, planting_specs.IP_LITERAL, path)
 
     assert body == spec.nonces["endpoint-1"]
 
@@ -116,7 +118,7 @@ def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
     ids=["reserved_block_add_host", "bridge_alias", "localhost"],
 )
 def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool):
-    spec = given.spec_of(host, "/fict/secret", has_network=has_network)
+    spec = planting_specs.spec_of(host, "/fict/secret", has_network=has_network)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         body = given.read_as_target(args, host, "/fict/secret")
@@ -126,7 +128,9 @@ def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool)
 
 @pytest.mark.parametrize("has_network", [False, True], ids=["no_network", "network"])
 def test_a_file_place_beside_a_name_host_still_serves_its_nonce(has_network: bool):
-    spec = given.spec_of("meta.fict", "/fict/secret", has_network=has_network, file_at="/etc/fict")
+    spec = planting_specs.spec_of(
+        "meta.fict", "/fict/secret", has_network=has_network, file_at="/etc/fict"
+    )
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         body = given.read_as_target(args, "meta.fict", "/fict/secret")
@@ -138,7 +142,7 @@ def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
-    spec = given.spec_of("meta.fict", "/fict/secret", file_at="/etc/hosts")
+    spec = planting_specs.spec_of("meta.fict", "/fict/secret", file_at="/etc/hosts")
 
     with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
         pass
@@ -148,17 +152,19 @@ def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
-    spec = given.spec_of("meta.fict", "/fict/secret", has_network=True, file_at="/etc/resolv.conf")
+    spec = planting_specs.spec_of(
+        "meta.fict", "/fict/secret", has_network=True, file_at="/etc/resolv.conf"
+    )
 
     with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
         pass
 
 
 def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
-    spec = given.spec_of(given.IP_LITERAL, "/fict/secret")
+    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
-        assert given.read_as_target(args, given.IP_LITERAL, "/fict/secret")
+        assert given.read_as_target(args, planting_specs.IP_LITERAL, "/fict/secret")
         start = time.monotonic()
     teardown = time.monotonic() - start
 
@@ -166,19 +172,22 @@ def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
 
 
 def test_no_labelled_container_or_network_outlives_two_launches():
-    docker = given.RecordingPlanting()
+    docker = recording_planting.RecordingPlanting()
 
     for suffix in ("/fict/one", "/fict/two"):
-        spec = given.spec_of(given.IP_LITERAL, suffix, has_network=True)
+        spec = planting_specs.spec_of(planting_specs.IP_LITERAL, suffix, has_network=True)
         with planted(spec, SENTINEL_IMAGE, docker) as args:
-            assert given.read_as_target(args, given.IP_LITERAL, suffix) == spec.nonces["endpoint-1"]
+            assert (
+                given.read_as_target(args, planting_specs.IP_LITERAL, suffix)
+                == spec.nonces["endpoint-1"]
+            )
 
-    then.nothing_it_made_outlives(docker)
+    recording_planting.nothing_it_made_outlives(docker)
 
 
 @pytest.mark.parametrize("with_an_account", [False, True], ids=["unprivileged", "planted"])
 def test_work_starts_empty_takes_a_file_and_names_no_nonce_as_its_owner(with_an_account: bool):
-    spec = given.a_work_spec(with_an_account=with_an_account)
+    spec = planting_specs.a_work_spec(with_an_account=with_an_account)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         observed = given.work_as_target(args)

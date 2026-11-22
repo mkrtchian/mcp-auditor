@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from tests.integration.support.test_cve_planting_stand_ins_given import Fetched
+from tests.integration.support.stand_in_fetches import Fetched
 
 
 def answered_without_its_body(fetched: Fetched, status: int, body: str) -> None:

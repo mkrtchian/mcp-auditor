@@ -2,7 +2,7 @@ import dataclasses
 from collections.abc import Generator
 from contextlib import contextmanager
 
-import tests.unit.cve.support.test_cve_launch_audit_given as launch_given
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.launch_audit import Auditor
@@ -21,12 +21,12 @@ def a_target_failing_to_launch(error: Exception) -> Target:
 
 def an_audit_taking_the_server_as_down(audits: int = 1) -> Auditor:
     """Each of the `audits` reports holds a relaunch that failed."""
-    reports = [launch_given.a_report_with_relaunches(False) for _ in range(audits)]
-    return launch_given.an_auditor(graphs=launch_given.graph_reporting(reports))
+    reports = [launch_audit_fakes.a_report_with_relaunches(False) for _ in range(audits)]
+    return launch_audit_fakes.an_auditor(graphs=launch_audit_fakes.graph_reporting(reports))
 
 
 def an_audit_raising(error: Exception, *, grouped: bool = True) -> Auditor:
-    return launch_given.an_auditor(
-        graphs=launch_given.graph_raising(error),
-        connect=launch_given.FakeConnect(grouped=grouped),
+    return launch_audit_fakes.an_auditor(
+        graphs=launch_audit_fakes.graph_raising(error),
+        connect=launch_audit_fakes.FakeConnect(grouped=grouped),
     )

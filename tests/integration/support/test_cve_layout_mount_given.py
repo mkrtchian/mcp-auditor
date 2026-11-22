@@ -16,10 +16,7 @@ from evals.cve.planting_base import (
     no_network_args,
 )
 from evals.cve.planting_docker import DOCKER_PLANTING
-from tests.integration.support.test_cve_planting_given import a_work_spec
-from tests.integration.support.test_cve_planting_given import (
-    missing_prerequisite as missing_prerequisite,
-)
+from tests.integration.support.planting_specs import a_work_spec
 from tests.unit.support.docker_argv import mount_of
 
 LayoutBuilder = Callable[[Path], None]

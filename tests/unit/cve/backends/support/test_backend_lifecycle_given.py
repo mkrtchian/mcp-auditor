@@ -1,4 +1,3 @@
-import importlib
 import re
 import threading
 from collections.abc import Callable, Generator, Sequence
@@ -13,7 +12,6 @@ from evals.cve.backends import (
     ckan,
     doris,
     gitlab,
-    gitlab_responder,
     gravitino,
     httpbin,
     jenkins,
@@ -24,7 +22,6 @@ from evals.cve.backends import (
     searxng,
 )
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
-from evals.cve.backends.responder import Responder
 from evals.cve.kit import launch as kit_launch
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -33,18 +30,6 @@ from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 type Launch = environments.Launch | kit_launch.Launch
 type Launcher = Callable[[BackendLifecycle | PerLaunchBackend], AbstractContextManager[Launch]]
-
-
-def every_responder() -> list[Responder]:
-    # The GitLab responder serves a fix check, not a registered backend.
-    names = [*(f"evals.cve.backends.{key}" for key in BACKENDS), gitlab_responder.__name__]
-    modules = (importlib.import_module(name) for name in names)
-    return [
-        value
-        for module in modules
-        for value in vars(module).values()
-        if isinstance(value, Responder)
-    ]
 
 
 @dataclass(frozen=True)

@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 from typing import Any
 
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import HoldoutDeps, run_holdout_targets
@@ -19,7 +20,6 @@ from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 

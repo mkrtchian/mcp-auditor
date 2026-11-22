@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.environments import Launch
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.launch_audit import Auditor
@@ -18,7 +19,6 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from tests.fakes import FakeLLM, FakeMCPClient
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 type _Invocation = Callable[[AuditedServer], Awaitable[AuditReport]]
 

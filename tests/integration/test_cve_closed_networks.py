@@ -13,12 +13,13 @@ import tests.integration.support.test_cve_closed_networks_then as then
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.planting_base import SENTINEL_SERVICE
-from tests.integration.support.docker_prerequisites import skip_or_require
+from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
+from tests.integration.support.planting_specs import IP_LITERAL
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _docker_prerequisites() -> None:
-    missing = given.missing_prerequisite()
+    missing = missing_prerequisite()
     if missing is not None:
         skip_or_require(missing)
     try:
@@ -44,7 +45,7 @@ def test_a_planted_launch_with_a_network_reaches_neither_the_host_nor_the_intern
         given.a_planted_launch_with_a_network() as args,
         given.a_container_with(args) as container,
     ):
-        assert given.reaches(container, given.IP_LITERAL, 80)
+        assert given.reaches(container, IP_LITERAL, 80)
         then.unreachable(container, port)
         then.no_default_route(container)
 

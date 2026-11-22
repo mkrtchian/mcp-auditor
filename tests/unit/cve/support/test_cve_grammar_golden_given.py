@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any
 
 import tests.unit.cve.support.cve_grammar_golden_corpus as corpus
-import tests.unit.cve.support.test_cve_grammar_given as given
 import tests.unit.cve.support.test_cve_strike_given as strike
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.calibration_check import not_fixed_reasons, not_live_reasons
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.grammar import CreditCheck, GradedTarget, grade_run, resolve
@@ -37,13 +37,13 @@ def golden_entries() -> dict[str, Any]:
     entries: dict[str, Any] = {
         f"tests/{name}": _graded(target, report)
         for target, reports in (
-            (given.a_read_target(), corpus.read_target_reports()),
-            (given.a_command_target(), corpus.command_target_reports()),
+            (grammar.a_read_target(), corpus.read_target_reports()),
+            (grammar.a_command_target(), corpus.command_target_reports()),
         )
         for name, report in reports.items()
     }
     entries |= {
-        f"tests/exchanges/{name}": _unit_entry(unit, given.a_read_target())
+        f"tests/exchanges/{name}": _unit_entry(unit, grammar.a_read_target())
         for name, unit in corpus.test_exchanges().items()
     }
     entries |= {
@@ -121,10 +121,10 @@ _MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
 _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 
 
-def _graded_target(flaw_id: str) -> given.FakeTarget:
+def _graded_target(flaw_id: str) -> grammar.FakeTarget:
     keeper = _REMOVED_GRADED_UNDER.get(flaw_id) or _MERGED_SIBLINGS.get(flaw_id, flaw_id)
     [target] = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == keeper]
-    return given.FakeTarget(target.classes, {given.PLACE: given.NONCE}, target.aim)
+    return grammar.FakeTarget(target.classes, {grammar.PLACE: grammar.NONCE}, target.aim)
 
 
 def _resolved(target: GradedTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:
@@ -171,14 +171,14 @@ def _check_cases() -> dict[str, tuple[GradedTarget, list[Unit], CreditCheck]]:
     target = strike.a_target({strike.PLACE_A: strike.NONCE_A})
     leaking = f"leaked {strike.NONCE_A}"
     two_units = units_of(
-        given.a_report(
+        grammar.a_report(
             cases=[
-                given.a_case(response=leaking, verdict=given.FAIL),
-                given.a_case(response=leaking, verdict=given.PASS),
+                grammar.a_case(response=leaking, verdict=grammar.FAIL),
+                grammar.a_case(response=leaking, verdict=grammar.PASS),
             ]
         )
     )
-    one_unit = units_of(given.a_report(cases=[given.a_case(response=leaking)]))
+    one_unit = units_of(grammar.a_report(cases=[grammar.a_case(response=leaking)]))
     struck = CreditCheck(frozenset({UnitPlace(0, strike.PLACE_A)}), False)
     return {
         "struck_pair": (target, two_units, struck),

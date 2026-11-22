@@ -62,44 +62,14 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/integration/committed/nuisance/fix_checks/test_nuisance_fix_checks.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
     ),
-    "tests/integration/committed/nuisance/test_nuisance_backend_registry_built.py": (
-        (FOREIGN, "test_backend_lifecycle_given"),
-    ),
     "tests/integration/committed/nuisance/test_nuisance_compose.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
     ),
     "tests/integration/committed/nuisance/test_nuisance_fixture_sources.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
     ),
-    "tests/integration/support/docker_prerequisites.py": ((FOREIGN, "test_cve_planting_given"),),
-    "tests/integration/support/test_cve_closed_networks_given.py": (
-        (FOREIGN, "test_cve_planting_given"),
-    ),
-    "tests/integration/support/test_cve_keyed_stand_in_routes_given.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
-    "tests/integration/support/test_cve_layout_mount_given.py": (
-        (FOREIGN, "test_cve_planting_given"),
-    ),
-    "tests/integration/support/test_cve_planting_stand_ins_given.py": (
-        (FOREIGN, "test_cve_planting_given"),
-    ),
-    "tests/integration/support/test_detection_replay_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-    ),
     "tests/integration/test_cve_keyed_stand_in_routes.py": (
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
         (FOREIGN, "test_cve_planting_stand_ins_then"),
-    ),
-    "tests/integration/test_cve_planting_stand_ins.py": (
-        (FOREIGN, "test_cve_planting_given"),
-        (FOREIGN, "test_cve_planting_then"),
-    ),
-    "tests/integration/test_kit_client.py": ((FOREIGN, "test_mcp_client_given"),),
-    "tests/integration/test_nuisance_public_names.py": (
-        (FOREIGN, "test_cve_planting_given"),
-        (FOREIGN, "test_cve_planting_stand_ins_given"),
-        (FOREIGN, "test_cve_planting_then"),
     ),
     "tests/unit/auditor/support/test_cli_given.py": ((FOREIGN, "test_models_given"),),
     "tests/unit/auditor/support/test_llm_patience_given.py": (
@@ -117,14 +87,8 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_admission_given"),
     ),
-    "tests/unit/cve/support/cve_grammar_golden_corpus.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/cve/support/test_cve_grammar_golden_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_strike_given"),
-    ),
-    "tests/unit/cve/support/test_cve_launch_audit_given.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/cve/support/test_cve_server_health_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
     ),
     "tests/unit/cve/support/test_kit_benign_probe_given.py": (
         (FOREIGN, "test_nuisance_admission_given"),
@@ -134,47 +98,16 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_nuisance_vet_given"),
     ),
-    "tests/unit/cve/test_cve_launch_audit.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/cve/test_cve_strike.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/detection/support/detection_audits.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_cve_launch_audit_given"),
-    ),
-    "tests/unit/detection/support/detection_sessions.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_detection_gate_given"),
-    ),
-    "tests/unit/detection/support/test_detection_audit_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_cve_launch_audit_given"),
-    ),
-    "tests/unit/detection/support/test_detection_audit_holdout_given.py": (
-        (FOREIGN, "test_cve_launch_audit_given"),
-    ),
+    "tests/unit/detection/support/detection_sessions.py": ((FOREIGN, "test_detection_gate_given"),),
     "tests/unit/detection/support/test_detection_baseline_given.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
-    "tests/unit/detection/support/test_detection_holdout_run_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
     ),
     "tests/unit/detection/support/test_detection_recording_given.py": (
         (FOREIGN, "test_detection_gate_given"),
     ),
-    "tests/unit/detection/support/test_detection_replay_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-    ),
     "tests/unit/detection/support/test_detection_session_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_detection_gate_given"),
     ),
-    "tests/unit/detection/test_detection_audit.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_cve_launch_audit_given"),
-    ),
-    "tests/unit/detection/test_detection_audit_holdout.py": (
-        (FOREIGN, "test_cve_launch_audit_given"),
-    ),
-    "tests/unit/detection/test_detection_holdout_audit.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/detection/test_run_detection_holdout.py": (
         (FOREIGN, "test_run_detection_holdout_run_given"),
     ),
@@ -337,8 +270,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_audit_once_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_cve_launch_audit_given"),
         (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_benign_call_given.py": (
@@ -358,7 +289,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_holdout_run_given.py": (
-        (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_holdout_servers_given.py": (
@@ -395,8 +325,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/nuisance/test_nuisance_assembly.py": ((FOREIGN, "test_nuisance_admission_given"),),
     "tests/unit/nuisance/test_nuisance_audit_once.py": (
-        (FOREIGN, "test_cve_grammar_given"),
-        (FOREIGN, "test_cve_launch_audit_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
@@ -418,7 +346,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
-    "tests/unit/nuisance/test_nuisance_counter.py": ((FOREIGN, "test_cve_grammar_given"),),
     "tests/unit/nuisance/test_nuisance_counting.py": ((FOREIGN, "test_nuisance_admission_given"),),
     "tests/unit/nuisance/test_nuisance_fingerprint.py": (
         (FOREIGN, "test_nuisance_admission_edits_given"),
@@ -492,7 +419,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_kubernetes_backend_given"),
         (FOREIGN, "test_searxng_backend_given"),
     ),
-    "tests/unit/support/detection_holdout_runs.py": ((FOREIGN, "test_cve_grammar_given"),),
 }
 
 DEBTS: tuple[Debt, ...] = (

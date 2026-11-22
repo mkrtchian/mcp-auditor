@@ -14,12 +14,12 @@ import tests.integration.support.test_cve_layout_mount_given as given
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.layout import build_empty_layout
 from evals.cve.planting_base import SENTINEL_SERVICE
-from tests.integration.support.docker_prerequisites import skip_or_require
+from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _docker_prerequisites() -> None:
-    missing = given.missing_prerequisite()
+    missing = missing_prerequisite()
     if missing is not None:
         skip_or_require(missing)
     try:

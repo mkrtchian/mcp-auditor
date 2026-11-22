@@ -4,6 +4,7 @@ a provider error), and what each prints under the report detail of either layer.
 import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.audit_attempts import (
     ProviderErrorAttempt,
     ThrottledAttempt,
@@ -19,7 +20,6 @@ from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.provider_errors import ProviderFatal
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import MissCause
-from tests.unit.cve.support import test_cve_launch_audit_given as launch_given
 from tests.unit.detection.support import test_detection_audit_holdout_given as given
 from tests.unit.detection.support.detection_audits import (
     TARGET,
@@ -38,7 +38,7 @@ async def test_a_run_skipped_on_a_detection_holdout_run_prints_the_error_type_wi
     output = a_captured_console(capsys, monkeypatch)
     target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
 
-    await attempt_once(target, launch_given.an_auditor(TYPES_ONLY), SessionThrottles(), {})
+    await attempt_once(target, launch_audit_fakes.an_auditor(TYPES_ONLY), SessionThrottles(), {})
 
     printed = output.getvalue()
     assert f"{target.flaw_id} run skipped" in printed
@@ -53,7 +53,7 @@ async def test_a_run_skipped_on_the_acceptance_layer_prints_the_error_message(
     output = a_captured_console(capsys, monkeypatch)
     target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
 
-    await attempt_once(target, launch_given.an_auditor(), SessionThrottles(), {})
+    await attempt_once(target, launch_audit_fakes.an_auditor(), SessionThrottles(), {})
 
     assert f"{target.flaw_id} run skipped: secret-nonce" in output.getvalue()
 
@@ -124,7 +124,7 @@ async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run(
     target = a_target_launching(Launch("docker", ["run", "--an-unknown-option", "v", "x"]))
 
     with pytest.raises(UndecidableLaunch):
-        await attempt_once(target, launch_given.an_auditor(), SessionThrottles(), {})
+        await attempt_once(target, launch_audit_fakes.an_auditor(), SessionThrottles(), {})
 
 
 @_SHAPES

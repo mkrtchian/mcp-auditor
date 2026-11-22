@@ -1,20 +1,22 @@
 from collections.abc import Awaitable, Callable
 
-import tests.unit.cve.support.test_cve_launch_audit_given as launch_given
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck
 from evals.cve.grammar import PlantedTarget
 from evals.cve.launch_audit import Auditor
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 from tests.unit.detection.support.detection_audits import TARGET
 
 
 def an_audit_on_a_noisy_server(*, non_protocol_lines: int, lost_calls: int) -> Auditor:
     """The graph sends one call per lost connection, each answered "Connection closed", to a
     client that read `non_protocol_lines` lines it could not parse."""
-    return launch_given.an_auditor(
-        graphs=launch_given.graph_calling(lost_calls),
-        connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines)),
+    return launch_audit_fakes.an_auditor(
+        graphs=launch_audit_fakes.graph_calling(lost_calls),
+        connect=launch_audit_fakes.FakeConnect(
+            launch_audit_fakes.a_noisy_client(non_protocol_lines)
+        ),
     )
 
 

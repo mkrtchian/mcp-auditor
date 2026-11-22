@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from typing import Any, override
 
-import tests.unit.cve.support.test_cve_grammar_given as grammar
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape

@@ -1,7 +1,7 @@
+import tests.unit.support.grammar_inputs as grammar
 from mcp_auditor.domain.models import AuditReport, CoverageGap, ToolResponse
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
-from tests.unit.cve.support import test_cve_grammar_given as grammar
 
 
 def a_response(error_type: str | None, content: str) -> ToolResponse:

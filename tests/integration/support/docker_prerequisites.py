@@ -10,7 +10,7 @@ import pytest
 
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from tests.integration.support.test_cve_planting_given import missing_prerequisite
+from mcp_auditor.adapters.docker import DockerRuntime
 
 
 def stand_in_prerequisites() -> None:
@@ -21,6 +21,12 @@ def stand_in_prerequisites() -> None:
         ensure_images([SENTINEL_SERVICE, STAND_IN_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
+
+
+def missing_prerequisite() -> str | None:
+    if not DockerRuntime().available():
+        return "CVE planting needs Docker"
+    return None
 
 
 def skip_or_require(missing: str) -> NoReturn:

@@ -4,6 +4,8 @@ import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
 import tests.unit.nuisance.support.test_nuisance_audit_once_given as given
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
@@ -23,8 +25,6 @@ from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
-from tests.unit.cve.support import test_cve_grammar_given as grammar
-from tests.unit.cve.support import test_cve_launch_audit_given as launch_given
 from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
     a_backend_registry,
     a_fake_lifecycle,
@@ -119,7 +119,7 @@ async def test_a_missed_model_call_on_a_nuisance_holdout_run_prints_its_cause_no
 ):
     output = a_captured_console(capsys, monkeypatch)
     refused = given.a_report_refused_with_detail("secret-nonce")
-    auditor = given.an_auditor(TYPES_ONLY, launch_given.graph_reporting([refused]))
+    auditor = given.an_auditor(TYPES_ONLY, launch_audit_fakes.graph_reporting([refused]))
 
     await audit_once(an_admitted_server(), auditor)
 
@@ -131,8 +131,8 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     a_captured_console(capsys, monkeypatch)
-    graphs = launch_given.graph_reporting([grammar.a_report()])
-    connect = launch_given.FakeConnect()
+    graphs = launch_audit_fakes.graph_reporting([grammar.a_report()])
+    connect = launch_audit_fakes.FakeConnect()
     auditor = given.an_auditor(graphs=graphs, connect=connect, overrides=RunOverrides(7, 9, 11))
 
     await audit_once(an_admitted_server(), auditor)
@@ -151,7 +151,7 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
         False, missed=MissCause.PROVIDER_THROTTLED, provider=ProviderUsage(throttled_requests=3)
     )
     clean = run_given.a_report(False, provider=ProviderUsage(throttled_requests=2))
-    auditor = given.an_auditor(graphs=launch_given.graph_reporting([throttled, clean]))
+    auditor = given.an_auditor(graphs=launch_audit_fakes.graph_reporting([throttled, clean]))
     server = an_admitted_server()
 
     outcome = await nuisance_audit(server, lambda: audit_once(server, auditor))
@@ -191,7 +191,7 @@ async def test_two_concurrent_audits_of_one_backend_server_both_complete():
     server = given.a_server_backed_by(lifecycle)
     registry = a_backend_registry(lifecycle)
     auditor = given.an_auditor(
-        graphs=launch_given.graph_reporting([grammar.a_report(), grammar.a_report()])
+        graphs=launch_audit_fakes.graph_reporting([grammar.a_report(), grammar.a_report()])
     )
 
     outcomes = await asyncio.gather(

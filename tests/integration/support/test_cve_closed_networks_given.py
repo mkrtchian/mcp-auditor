@@ -9,13 +9,7 @@ from collections.abc import Generator
 from evals.cve.closed_network import create_closed_network
 from evals.cve.planting import DockerPlanting, PlantedArgs, confinement_args, planted
 from evals.cve.planting_base import LABEL, SENTINEL_IMAGE
-from tests.integration.support.test_cve_planting_given import (
-    IP_LITERAL as IP_LITERAL,
-)
-from tests.integration.support.test_cve_planting_given import (
-    missing_prerequisite as missing_prerequisite,
-)
-from tests.integration.support.test_cve_planting_given import spec_of
+from tests.integration.support.planting_specs import IP_LITERAL, spec_of
 
 PINNED_NAME = "pinned.test"
 UNPINNED_NAME = "example.com"

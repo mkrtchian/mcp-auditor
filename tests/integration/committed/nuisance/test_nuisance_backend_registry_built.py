@@ -4,7 +4,7 @@ from evals.cve.backends.responder import Responder
 from evals.cve.detection import targets as detection_targets
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
-from tests.unit.cve.backends.support.test_backend_lifecycle_given import every_responder
+from tests.unit.support.registered_responders import every_responder
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))

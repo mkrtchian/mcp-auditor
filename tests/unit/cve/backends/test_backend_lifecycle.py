@@ -4,6 +4,7 @@ import pytest
 
 import tests.unit.cve.backends.support.test_backend_lifecycle_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.registered_responders as registered_responders
 import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends import doris
 from evals.cve.backends.responder import Responder
@@ -200,7 +201,9 @@ def test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name():
         lifecycle_of("odd", import_module=given.a_module_whose_lifecycle_is_neither_kind)
 
 
-@pytest.mark.parametrize("responder", given.every_responder(), ids=lambda r: r.container)
+@pytest.mark.parametrize(
+    "responder", registered_responders.every_responder(), ids=lambda r: r.container
+)
 def test_every_responder_singleton_argv_carries_the_memory_bound_and_the_resolver_option(
     responder: Responder,
 ):
