@@ -99,6 +99,8 @@ async def test_detects_missing_input_validation():
 
 A unit test lives in the directory of its area under `tests/unit/` (`auditor/`, `evals/`, `cve/`, `census/`, `detection/`, `nuisance/`, `project/`, and their subdirectories), its given and then in that directory's `support/`, and a helper shared across areas in `tests/unit/support/`. A test that goes red on a change of committed content (a record, a fixture, `compose.yml`, a Dockerfile, a doc or a workflow) rather than of code lives under `tests/integration/committed/`, in the directory of its area, its given and then in that directory's `support/`. A test that sweeps a registry to check code stays a unit test.
 
+`tests/unit/project/test_code_standards.py` checks the newspaper rule, the one given/then pair per test file and the absence of `monkeypatch.setattr` on every Python file, against the debt list of `tests/unit/project/support/code_standards_debt.py` (see `CONTRIBUTING.md`).
+
 ### When an eval number comes back red
 
 Governed by ADR 016, amended by ADR 020 for the honeypot suite (`docs/adr/016-eval-gate-governance.md`, `docs/adr/020-honeypot-baseline-changes.md`). The short form:

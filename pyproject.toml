@@ -100,12 +100,19 @@ filterwarnings = [
 
 [tool.ruff]
 target-version = "py313"
+# A nested ruff.toml resolves the default `src` against its own directory, so without this
+# `mcp_auditor` stops being first-party under `domain/` and `graph/`.
+src = [".", "src"]
 line-length = 100
 # ruff formats the Python blocks of Markdown files, and these two are immutable.
 extend-exclude = ["plans", "docs/adr"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "TID251"]
+
+# `domain/ruff.toml` and `graph/ruff.toml` replace this table with their own, which repeats this ban.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"unittest.mock".msg = "use a fake (CLAUDE.md, Testing standards)"
 
 [tool.ruff.lint.per-file-ignores]
 "src/mcp_auditor/graph/prompts.py" = ["E501"]

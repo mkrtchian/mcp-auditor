@@ -8,7 +8,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
-from unittest import mock
+
+import pytest
 
 from evals.cve.backends.atlassian import ATLASSIAN_RESPONDER_DOCKERFILE
 
@@ -37,13 +38,17 @@ class Answer:
     body: Any
 
 
-def the_responder(demo_summary: str | None = None) -> types.ModuleType:
+def the_responder(
+    monkeypatch: pytest.MonkeyPatch, demo_summary: str | None = None
+) -> types.ModuleType:
     """The responder program inlined in its Dockerfile, loaded as a module, not served."""
     module = types.ModuleType("atlassian_responder")
     source = _inlined_program(ATLASSIAN_RESPONDER_DOCKERFILE.read_text())
-    environment = {} if demo_summary is None else {"DEMO_SUMMARY": demo_summary}
-    with mock.patch.dict(os.environ, environment, clear=True):
-        exec(compile(source, "responder.py", "exec"), module.__dict__)
+    for name in list(os.environ):
+        monkeypatch.delenv(name)
+    if demo_summary is not None:
+        monkeypatch.setenv("DEMO_SUMMARY", demo_summary)
+    exec(compile(source, "responder.py", "exec"), module.__dict__)
     return module
 
 

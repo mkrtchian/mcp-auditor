@@ -24,8 +24,10 @@ def test_both_clients_are_scoped_to_the_project_and_space_of_the_server_examples
 
 
 @pytest.mark.parametrize("jql", given.PROJ_JQLS)
-def test_each_jql_the_server_builds_for_the_project_answers_its_issues(jql: str):
-    answer = given.a_jira_search(given.the_responder(), jql)
+def test_each_jql_the_server_builds_for_the_project_answers_its_issues(
+    jql: str, monkeypatch: pytest.MonkeyPatch
+):
+    answer = given.a_jira_search(given.the_responder(monkeypatch), jql)
 
     assert answer.status == 200
     assert answer.body["issues"][0]["key"] == "PROJ-19"
@@ -40,15 +42,19 @@ def test_each_jql_the_server_builds_for_the_project_answers_its_issues(jql: str)
         "project = PROJ OR project = DEMO",
     ],
 )
-def test_any_other_jql_answers_the_bare_error_collection(jql: str):
-    answer = given.a_jira_search(given.the_responder(), jql)
+def test_any_other_jql_answers_the_bare_error_collection(jql: str, monkeypatch: pytest.MonkeyPatch):
+    answer = given.a_jira_search(given.the_responder(monkeypatch), jql)
 
     assert (answer.status, answer.body) == (400, JIRA_ERROR)
 
 
 @pytest.mark.parametrize("jql", given.DEMO_JQLS)
-def test_a_fix_checks_responder_gives_the_out_of_allowlist_issues_its_witness(jql: str):
-    answer = given.a_jira_search(given.the_responder(demo_summary="MCPAUDIT-ab12"), jql)
+def test_a_fix_checks_responder_gives_the_out_of_allowlist_issues_its_witness(
+    jql: str, monkeypatch: pytest.MonkeyPatch
+):
+    answer = given.a_jira_search(
+        given.the_responder(monkeypatch, demo_summary="MCPAUDIT-ab12"), jql
+    )
 
     assert answer.status == 200
     assert {issue["fields"]["summary"] for issue in answer.body["issues"]} == {"MCPAUDIT-ab12"}
@@ -56,9 +62,9 @@ def test_a_fix_checks_responder_gives_the_out_of_allowlist_issues_its_witness(jq
 
 @pytest.mark.parametrize(("key", "identifier"), [("PROJ-19", "10050"), ("PROJ-35", "10389")])
 def test_each_issue_a_project_search_returns_answers_the_servers_issue_fixture_under_its_key(
-    key: str, identifier: str
+    key: str, identifier: str, monkeypatch: pytest.MonkeyPatch
 ):
-    answer = given.a_jira_issue(given.the_responder(), key)
+    answer = given.a_jira_issue(given.the_responder(monkeypatch), key)
 
     assert answer.status == 200
     assert (answer.body["key"], answer.body["id"]) == (key, identifier)
@@ -68,23 +74,27 @@ def test_each_issue_a_project_search_returns_answers_the_servers_issue_fixture_u
     assert "example.atlassian.net" not in json.dumps(answer.body)
 
 
-def test_an_issue_of_the_demo_search_answers_under_the_demo_project():
-    answer = given.a_jira_issue(given.the_responder(), "DEMO-19")
+def test_an_issue_of_the_demo_search_answers_under_the_demo_project(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    answer = given.a_jira_issue(given.the_responder(monkeypatch), "DEMO-19")
 
     assert (answer.status, answer.body["key"]) == (200, "DEMO-19")
     assert answer.body["fields"]["project"]["key"] == "DEMO"
 
 
 @pytest.mark.parametrize("key", ["PROJ-123", "PROJ-21", "OTHER-1"])
-def test_an_issue_no_search_returns_answers_jiras_404(key: str):
-    answer = given.a_jira_issue(given.the_responder(), key)
+def test_an_issue_no_search_returns_answers_jiras_404(key: str, monkeypatch: pytest.MonkeyPatch):
+    answer = given.a_jira_issue(given.the_responder(monkeypatch), key)
 
     assert (answer.status, answer.body) == (404, JIRA_ERROR)
 
 
 @pytest.mark.parametrize("cql", given.TEAM_CQLS)
-def test_each_cql_the_server_builds_for_the_space_answers_its_page(cql: str):
-    answer = given.a_confluence_search(given.the_responder(), cql)
+def test_each_cql_the_server_builds_for_the_space_answers_its_page(
+    cql: str, monkeypatch: pytest.MonkeyPatch
+):
+    answer = given.a_confluence_search(given.the_responder(monkeypatch), cql)
 
     assert answer.status == 200
     assert [result["title"] for result in answer.body["results"]] == [
@@ -92,9 +102,11 @@ def test_each_cql_the_server_builds_for_the_space_answers_its_page(cql: str):
     ]
 
 
-def test_a_fix_checks_responder_gives_the_out_of_allowlist_page_its_witness():
+def test_a_fix_checks_responder_gives_the_out_of_allowlist_page_its_witness(
+    monkeypatch: pytest.MonkeyPatch,
+):
     answer = given.a_confluence_search(
-        given.the_responder(demo_summary="MCPAUDIT-ab12"), given.DEMO_CQL
+        given.the_responder(monkeypatch, demo_summary="MCPAUDIT-ab12"), given.DEMO_CQL
     )
 
     assert [result["title"] for result in answer.body["results"]] == ["MCPAUDIT-ab12"]
@@ -103,8 +115,10 @@ def test_a_fix_checks_responder_gives_the_out_of_allowlist_page_its_witness():
 @pytest.mark.parametrize(
     "cql", ["((type = page) AND (space = TEAM)) AND (space = DEMO)", 'siteSearch ~ "meeting"']
 )
-def test_any_other_cql_answers_the_bare_rest_error_without_the_query(cql: str):
-    answer = given.a_confluence_search(given.the_responder(), cql)
+def test_any_other_cql_answers_the_bare_rest_error_without_the_query(
+    cql: str, monkeypatch: pytest.MonkeyPatch
+):
+    answer = given.a_confluence_search(given.the_responder(monkeypatch), cql)
 
     assert (answer.status, answer.body) == (400, {"statusCode": 400})
 
@@ -120,9 +134,9 @@ def test_any_other_cql_answers_the_bare_rest_error_without_the_query(cql: str):
     ],
 )
 def test_every_other_method_and_path_answers_jiras_404_with_no_server_header(
-    method: str, target: str
+    method: str, target: str, monkeypatch: pytest.MonkeyPatch
 ):
-    with given.serving(given.the_responder()) as server:
+    with given.serving(given.the_responder(monkeypatch)) as server:
         served = given.a_request(server, method, target)
 
     assert served.status == 404
@@ -130,8 +144,8 @@ def test_every_other_method_and_path_answers_jiras_404_with_no_server_header(
     assert "server" not in served.headers
 
 
-def test_a_served_search_carries_no_server_header_of_its_own():
-    with given.serving(given.the_responder()) as server:
+def test_a_served_search_carries_no_server_header_of_its_own(monkeypatch: pytest.MonkeyPatch):
+    with given.serving(given.the_responder(monkeypatch)) as server:
         served = given.a_request(server, "GET", "/rest/api/search?cql=space+%3D+TEAM")
 
     assert served.status == 200
