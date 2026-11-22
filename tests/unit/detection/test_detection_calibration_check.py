@@ -6,6 +6,7 @@ import pytest
 
 import tests.unit.detection.support.test_detection_calibration_check_given as given
 from evals.cve.detection.calibration_check import (
+    CheckOptions,
     check_target,
     not_fixed_reasons,
     not_live_reasons,
@@ -41,37 +42,42 @@ async def test_an_unknown_kept_id_raises_out_of_the_calibration_check_before_any
         await passes_calibration_check(target, {})
 
 
-async def test_check_target_hands_the_ping_answer_of_each_version_to_its_callback(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    given.launches(monkeypatch, {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: False})
+async def test_check_target_hands_the_ping_answer_of_each_version_to_its_callback():
+    launches = given.launches({TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: False})
     answers: list[tuple[TargetVersion, bool]] = []
 
     reasons = await check_target(
         given.a_target(),
         given.a_places_mapping(),
-        on_ping=lambda version, answered: answers.append((version, answered)),
+        CheckOptions(
+            on_ping=lambda version, answered: answers.append((version, answered)),
+            connect=launches.connect,
+        ),
     )
 
     assert reasons == []
     assert answers == [(TargetVersion.VULNERABLE, True), (TargetVersion.PATCHED, False)]
 
 
-async def test_check_target_without_a_callback_sends_no_ping(monkeypatch: pytest.MonkeyPatch):
-    launches = given.launches(monkeypatch)
+async def test_check_target_without_a_callback_sends_no_ping():
+    launches = given.launches()
 
-    reasons = await check_target(given.a_target(), given.a_places_mapping())
+    reasons = await check_target(
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
+    )
 
     assert reasons == []
     assert launches.pings == 0
 
 
 async def test_the_calibration_check_prints_whether_each_version_answers_the_ping(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    capsys: pytest.CaptureFixture[str],
 ):
-    given.launches(monkeypatch, {TargetVersion.VULNERABLE: False, TargetVersion.PATCHED: True})
+    launches = given.launches({TargetVersion.VULNERABLE: False, TargetVersion.PATCHED: True})
 
-    passes = await passes_calibration_check(given.a_target(), given.a_places_mapping())
+    passes = await passes_calibration_check(
+        given.a_target(), given.a_places_mapping(), connect=launches.connect
+    )
 
     output = capsys.readouterr().out
     assert passes
@@ -80,11 +86,13 @@ async def test_the_calibration_check_prints_whether_each_version_answers_the_pin
 
 
 async def test_a_target_out_of_calibration_that_answers_the_ping_still_fails(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    capsys: pytest.CaptureFixture[str],
 ):
-    given.launches(monkeypatch, exploit_surfaces_the_nonce=False)
+    launches = given.launches(exploit_surfaces_the_nonce=False)
 
-    passes = await passes_calibration_check(given.a_target(), given.a_places_mapping())
+    passes = await passes_calibration_check(
+        given.a_target(), given.a_places_mapping(), connect=launches.connect
+    )
 
     output = capsys.readouterr().out
     assert not passes

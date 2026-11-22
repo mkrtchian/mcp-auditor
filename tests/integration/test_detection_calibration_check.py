@@ -6,6 +6,7 @@ import pytest
 import tests.integration.support.test_detection_calibration_check_given as given
 from evals.concurrency import bounded
 from evals.cve.detection.calibration_check import (
+    CheckOptions,
     check_calibrations,
     check_target,
     passes_calibration_check,
@@ -198,8 +199,8 @@ async def test_the_types_only_check_prints_the_out_of_calibration_reasons_and_no
     exits = given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered")
     misses = given.a_target_whose_exploit_misses("CVE-MISS")
 
-    await check_target(exits, places, report_detail=TYPES_ONLY)
-    await check_target(misses, places, report_detail=TYPES_ONLY)
+    await check_target(exits, places, options=CheckOptions(report_detail=TYPES_ONLY))
+    await check_target(misses, places, options=CheckOptions(report_detail=TYPES_ONLY))
 
     output = capsys.readouterr().out
     assert "CVE-DEAD calibration check error" in output

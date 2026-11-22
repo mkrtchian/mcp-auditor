@@ -4,8 +4,7 @@ import pytest
 from mcp.types import INTERNAL_ERROR
 
 import tests.integration.support.test_mcp_client_relaunch_given as given
-from mcp_auditor.adapters import mcp_client
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from mcp_auditor.domain.server_liveness import RelaunchCause
 from mcp_auditor.domain.server_watch import is_lost_connection, is_timeout
 from tests.integration.support.detection_fake_targets import removals
@@ -80,10 +79,11 @@ async def test_a_relaunch_whose_server_does_not_start_again_returns_false(
         assert is_lost_connection(await client.call_tool("echo", {}))
 
 
-async def test_a_teardown_past_its_bound_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(mcp_client, "TEARDOWN_TIMEOUT_SECONDS", 0.2)
+async def test_a_teardown_past_its_bound_returns_false() -> None:
     teardown = given.FakeTeardown(lasting_seconds=5)
-    async with StdioMCPClient.connect(a_stalling_server(), teardown=teardown) as client:
+    async with StdioMCPClient.connect(
+        a_stalling_server(), bounds=SessionBounds(teardown=0.2), teardown=teardown
+    ) as client:
         assert not await client.relaunch()
 
 

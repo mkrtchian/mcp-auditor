@@ -25,6 +25,7 @@ from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
+from evals.cve.launch_audit import Connect
 from evals.cve.places import Place, Places, kept_records
 from evals.cve.proofs import is_aimed, proofs_in
 from evals.cve.units import Unit, unit_of_exchanges
@@ -60,31 +61,39 @@ async def check_calibrations(
     return all_pass
 
 
-async def passes_calibration_check(target: Target, places: Places) -> bool:
+async def passes_calibration_check(
+    target: Target, places: Places, connect: Connect = connect
+) -> bool:
     def print_ping(version: TargetVersion, answered: bool) -> None:
         answer = "yes" if answered else "no"
         console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
 
-    return not await check_target(target, places, on_ping=print_ping)
+    return not await check_target(target, places, CheckOptions(on_ping=print_ping, connect=connect))
+
+
+@dataclass(frozen=True)
+class CheckOptions:
+    """`report_detail` sets how much server text the log shows. `on_ping`, when given, gets whether
+    each launched version answers a ping sent right after its handshake."""
+
+    report_detail: ReportDetail = FULL_DETAIL
+    on_ping: Callable[[TargetVersion, bool], None] | None = None
+    connect: Connect = connect
 
 
 async def check_target(
-    target: Target,
-    places: Places,
-    *,
-    report_detail: ReportDetail = FULL_DETAIL,
-    on_ping: Callable[[TargetVersion, bool], None] | None = None,
+    target: Target, places: Places, options: CheckOptions | None = None
 ) -> list[str]:
     """The out-of-calibration reasons of a target on both versions, empty when it is live and
     fixed: the no-LLM check the pre-run check (`session`, `holdout_run`) and the calibration check
     share. It resolves the kept records and checks the spec before any launch, so a configuration
     error (an unknown kept id, a planting_spec refusal) propagates instead of reading out of
-    calibration, then exercises the vulnerable version and, once it is torn down, the patched one.
-    `report_detail` sets how much server text the log shows. `on_ping`, when given, gets whether
-    each launched version answers a ping sent right after its handshake."""
+    calibration, then exercises the vulnerable version and, once it is torn down, the patched
+    one."""
+    options = options or CheckOptions()
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    exercise = _Exercise(target, records, places, report_detail, on_ping)
+    exercise = _Exercise(target, records, places, options)
     vulnerable = await first_launch(lambda: exercise.version(TargetVersion.VULNERABLE))
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
@@ -97,7 +106,7 @@ async def check_target(
     else:
         reasons += _not_fixed_reasons(target, patched)
     if reasons:
-        _report_out_of_calibration(target.flaw_id, reasons, vulnerable, report_detail)
+        _report_out_of_calibration(target.flaw_id, reasons, vulnerable, options.report_detail)
     return reasons
 
 
@@ -170,8 +179,7 @@ class _Exercise:
     target: Target
     records: tuple[Place, ...]
     places: Places
-    report_detail: ReportDetail
-    on_ping: Callable[[TargetVersion, bool], None] | None
+    options: CheckOptions
 
     async def version(self, version: TargetVersion) -> _Exercised | None:
         # A failure before the server is up raises NotLaunched, for a retry. Any later failure
@@ -183,14 +191,14 @@ class _Exercise:
             try:
                 async with (
                     self.target.launched(self.records, version=version) as planted,
-                    connect(planted.launch, server_stderr) as client,
+                    self.options.connect(planted.launch, server_stderr) as client,
                 ):
                     launched = True
-                    if self.on_ping is not None:
-                        self.on_ping(version, await client.ping())
+                    if self.options.on_ping is not None:
+                        self.options.on_ping(version, await client.ping())
                     benign, exploits = await self._calls(client)
             except Exception as exc:
-                _report_error(self.target.flaw_id, exc, server_stderr, self.report_detail)
+                _report_error(self.target.flaw_id, exc, server_stderr, self.options.report_detail)
                 if not launched:
                     raise NotLaunched from exc
                 return None

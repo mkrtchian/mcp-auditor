@@ -5,7 +5,7 @@ import pathlib
 import pytest
 
 import tests.integration.support.test_mcp_client_cancellation_given as given
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from tests.integration.support.support_servers import a_read_server, a_stalling_server
 
 
@@ -74,7 +74,7 @@ async def test_a_caller_cancelled_while_a_timed_out_opening_unwinds_leaves_no_se
 ) -> None:
     pid_file = tmp_path / "pid"
     launch = given.a_silent_server_writing_its_pid(pid_file)
-    opening = asyncio.create_task(given.a_session_opened(launch, initialize_timeout=0.5))
+    opening = asyncio.create_task(given.a_session_opened(launch, SessionBounds(initialize=0.5)))
 
     took = await given.cancelled_after(1.5, opening)
 

@@ -29,7 +29,7 @@ from mcp_auditor.domain.server_watch import PING_TIMEOUT_SECONDS
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
-TEARDOWN_TIMEOUT_SECONDS = 30
+_TEARDOWN_TIMEOUT = 30
 # Once the owner has unwound a session whose transport failed, a call reads as a lost connection.
 _SESSION_LOST = ToolResponse(
     content="the session with the server is closed",
@@ -42,6 +42,16 @@ type IncomingMessage = (
 )
 
 
+@dataclass(frozen=True)
+class SessionBounds:
+    """How long, in seconds, the session waits for its opening (and its tool list), a ping and a
+    server's teardown."""
+
+    initialize: float = _INITIALIZE_TIMEOUT
+    ping: float = PING_TIMEOUT_SECONDS
+    teardown: float = _TEARDOWN_TIMEOUT
+
+
 class ServerTeardown(Protocol):
     async def end_server(self) -> None: ...
 
@@ -50,7 +60,7 @@ class StdioMCPClient:
     _owner: SessionOwner
     _session: ClientSession
     _tool_call_timeout: int
-    _list_tools_timeout: float
+    _bounds: SessionBounds
     _declared_container: "_DeclaredContainer | None"
     _teardown: ServerTeardown | None
     _non_protocol_lines: int = 0
@@ -63,15 +73,17 @@ class StdioMCPClient:
         errlog: IO[str] | None = None,
         tool_call_timeout: int = _DEFAULT_TOOL_CALL_TIMEOUT,
         *,
-        initialize_timeout: float = _INITIALIZE_TIMEOUT,
+        bounds: SessionBounds | None = None,
         teardown: ServerTeardown | None = None,
     ) -> AsyncGenerator[Self]:
         client = cls()
         client._tool_call_timeout = tool_call_timeout
-        client._list_tools_timeout = initialize_timeout
+        client._bounds = bounds or SessionBounds()
         client._declared_container = _DeclaredContainer.named_by(launch)
         client._teardown = teardown
-        client._owner = SessionOwner(client._session_entry(launch, errlog), initialize_timeout)
+        client._owner = SessionOwner(
+            client._session_entry(launch, errlog), client._bounds.initialize
+        )
         # The body runs outside the SDK's task groups, which the owner's task holds: what it
         # raises leaves bare, and only the opening raises in their groups.
         try:
@@ -91,7 +103,7 @@ class StdioMCPClient:
         return self._non_protocol_lines
 
     async def list_tools(self) -> list[ToolDefinition]:
-        async with asyncio.timeout(self._list_tools_timeout):
+        async with asyncio.timeout(self._bounds.initialize):
             tools = await _list_every_page(self._session)
         return [_to_tool_definition(tool) for tool in tools]
 
@@ -116,7 +128,7 @@ class StdioMCPClient:
         if self._owner.lost:
             return False
         try:
-            async with asyncio.timeout(PING_TIMEOUT_SECONDS):
+            async with asyncio.timeout(self._bounds.ping):
                 await self._session.send_ping()
         except McpError as error:
             return error.error.code != CONNECTION_CLOSED
@@ -128,7 +140,7 @@ class StdioMCPClient:
         """Ends the old server, then opens a session on a new one. Logs nothing, since what the
         server or Docker says can quote a relayed value."""
         try:
-            async with asyncio.timeout(TEARDOWN_TIMEOUT_SECONDS):
+            async with asyncio.timeout(self._bounds.teardown):
                 await self._end_server()
             self._session = await self._owner.replace()
         except Exception:

@@ -5,7 +5,6 @@ import tests.integration.support.test_detection_replay_then as then
 from evals.cve.detection.replay import REPLAY_ATTEMPTS, ReplayAttemptFailure, replay_with_causes
 from evals.cve.grammar import TargetStatus, grade_run
 from evals.cve.report_units import units_of
-from mcp_auditor.adapters import mcp_client
 
 pytestmark = pytest.mark.usefixtures("docker_on_the_host")
 
@@ -147,13 +146,12 @@ async def test_a_timeout_at_a_relaunch_point_relaunches_and_replays_the_next_cal
     then.the_flaw_credit_is_struck(outcome)
 
 
-async def test_a_patched_server_that_stops_answering_leaves_the_credit_unchecked(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    monkeypatch.setattr(mcp_client, "PING_TIMEOUT_SECONDS", 1)
+async def test_a_patched_server_that_stops_answering_leaves_the_credit_unchecked():
     run = given.a_patched_server_stopping_answering_run()
 
-    outcome = await replay_with_causes(run, tool_call_timeout=1)
+    outcome = await replay_with_causes(
+        run, tool_call_timeout=1, connect=given.connect_pinging_within(1)
+    )
 
     then.the_credit_is_left_unchecked(
         outcome, (ReplayAttemptFailure.STOPPED_ANSWERING,) * REPLAY_ATTEMPTS

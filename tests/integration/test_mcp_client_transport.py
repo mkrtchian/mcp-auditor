@@ -5,7 +5,7 @@ import pytest
 from mcp.shared.exceptions import McpError
 from mcp.types import CONNECTION_CLOSED
 
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from tests.integration.support.support_servers import (
     A_COMMAND_NOT_FOUND,
     a_read_server,
@@ -40,7 +40,7 @@ async def test_a_server_that_never_answers_initialize_times_out() -> None:
     started = time.monotonic()
     with pytest.raises(ExceptionGroup) as raised:
         async with StdioMCPClient.connect(
-            a_read_server("silent_initialize"), initialize_timeout=0.5
+            a_read_server("silent_initialize"), bounds=SessionBounds(initialize=0.5)
         ):
             pass
 

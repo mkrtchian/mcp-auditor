@@ -7,19 +7,26 @@ ones and an old nonce never fools the strike.
 """
 
 import dataclasses
+import os
 import pathlib
 import sys
-from collections.abc import Callable, Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator, Callable, Generator
+from contextlib import asynccontextmanager, contextmanager
+from typing import IO
 
 import tests.unit.cve.support.test_cve_grammar_given as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.grammar import FlawClass, PlantedTarget
+from evals.cve.launch_audit import Connect
 from evals.cve.places import Places, kept_records
 from evals.cve.planting import PlantingSpec
+from mcp_auditor.adapters.docker import docker_client_env
+from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
+from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.domain.models import AuditReport, ToolResponse
+from mcp_auditor.domain.ports import MCPClientPort
 from tests.integration.support.detection_fake_targets import (
     OUTSIDE_AIM,
     a_fake_target,
@@ -187,6 +194,26 @@ def a_patched_server_stopping_answering_run() -> RunToCheck:
     # The vulnerable run answered its one call. The patched server blocks its loop on it, so the
     # call times out and the ping after it gets no answer.
     return _single_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=1), (FLAW_ID,))
+
+
+def connect_pinging_within(seconds: float) -> Connect:
+    """The suites' own `connect`, with the ping bounded to `seconds`."""
+
+    @asynccontextmanager
+    async def connect(
+        launch: Launch, server_stderr: IO[str], *, tool_call_timeout: int
+    ) -> AsyncGenerator[MCPClientPort]:
+        async with StdioMCPClient.connect(
+            ServerLaunch.declared_container(
+                launch.command, launch.args, docker_client_env(os.environ)
+            ),
+            errlog=server_stderr,
+            tool_call_timeout=tool_call_timeout,
+            bounds=SessionBounds(ping=seconds),
+        ) as client:
+            yield client
+
+    return connect
 
 
 # --- builders and run assembly ---

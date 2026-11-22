@@ -23,7 +23,7 @@ from evals.cve.detection.baseline import (
     grammar_fingerprint,
     image_ids,
 )
-from evals.cve.detection.calibration_check import check_target
+from evals.cve.detection.calibration_check import CheckOptions, check_target
 from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.cve.detection.holdout_pre_run_check import check_before_run
@@ -242,7 +242,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         )
 
     async def check(target: Target) -> list[str]:
-        return await check_target(target, places, report_detail=TYPES_ONLY)
+        return await check_target(target, places, options=CheckOptions(report_detail=TYPES_ONLY))
 
     async def layout(target: Target) -> LayoutCheck:
         return await observe_layout(target, places, report_detail=TYPES_ONLY)

@@ -3,9 +3,6 @@ from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Mapp
 from contextlib import asynccontextmanager, contextmanager
 from typing import IO
 
-import pytest
-
-from evals.cve.detection import calibration_check
 from evals.cve.detection.targets import Target, TargetVersion, image_tag
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.grammar import FlawClass
@@ -84,14 +81,11 @@ class FakeLaunches:
 
 
 def launches(
-    monkeypatch: pytest.MonkeyPatch,
     ping_answers: Mapping[TargetVersion, bool] | None = None,
     exploit_surfaces_the_nonce: bool = True,
 ) -> FakeLaunches:
     answers = ping_answers or {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: True}
-    fake = FakeLaunches(answers, exploit_surfaces_the_nonce)
-    monkeypatch.setattr(calibration_check, "connect", fake.connect)
-    return fake
+    return FakeLaunches(answers, exploit_surfaces_the_nonce)
 
 
 @contextmanager

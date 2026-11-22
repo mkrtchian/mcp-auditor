@@ -4,22 +4,21 @@ import pathlib
 import sys
 import time
 
-from mcp_auditor.adapters.mcp_client import StdioMCPClient
+from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 
 # Long enough that a caller made to wait the opening out shows it.
 SLOW_OPENING_SECONDS = 60
+_SLOW_OPENING = SessionBounds(initialize=SLOW_OPENING_SECONDS)
 
 
-async def a_session_opened(
-    launch: ServerLaunch, initialize_timeout: float = SLOW_OPENING_SECONDS
-) -> None:
-    async with StdioMCPClient.connect(launch, initialize_timeout=initialize_timeout):
+async def a_session_opened(launch: ServerLaunch, bounds: SessionBounds = _SLOW_OPENING) -> None:
+    async with StdioMCPClient.connect(launch, bounds=bounds):
         pass
 
 
 async def a_relaunch_of(launch: ServerLaunch, relaunching: asyncio.Event) -> None:
-    async with StdioMCPClient.connect(launch, initialize_timeout=SLOW_OPENING_SECONDS) as client:
+    async with StdioMCPClient.connect(launch, bounds=_SLOW_OPENING) as client:
         relaunching.set()
         await client.relaunch()
 

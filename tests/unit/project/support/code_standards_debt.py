@@ -107,19 +107,7 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_cve_planting_given"),
         (FOREIGN, "test_cve_planting_then"),
     ),
-    "tests/integration/test_detection_replay.py": (
-        (
-            SETATTR,
-            "test_a_patched_server_that_stops_answering_leaves_the_credit_unchecked:mcp_client.PING_TIMEOUT_SECONDS",
-        ),
-    ),
     "tests/integration/test_kit_client.py": ((FOREIGN, "test_mcp_client_given"),),
-    "tests/integration/test_mcp_client_relaunch.py": (
-        (
-            SETATTR,
-            "test_a_teardown_past_its_bound_returns_false:mcp_client.TEARDOWN_TIMEOUT_SECONDS",
-        ),
-    ),
     "tests/integration/test_nuisance_public_names.py": (
         (FOREIGN, "test_cve_planting_given"),
         (FOREIGN, "test_cve_planting_stand_ins_given"),
@@ -241,9 +229,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/support/test_detection_baseline_given.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
-    ),
-    "tests/unit/detection/support/test_detection_calibration_check_given.py": (
-        (SETATTR, "launches:calibration_check.connect"),
     ),
     "tests/unit/detection/support/test_detection_calibration_dossier_given.py": (
         (FOREIGN, "test_census_given"),
