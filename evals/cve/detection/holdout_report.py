@@ -12,6 +12,7 @@ from evals.cve.detection.holdout_not_run import NotRunLine
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_target_line import TargetLine
 from evals.cve.holdout_conditions import Cutoff
+from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
 from evals.cve.holdout_intervals import Interval
 from evals.cve.holdout_statistic import (
     MethodPlacement,
@@ -121,7 +122,7 @@ class HoldoutReport(BaseModel):
     throttled_requests: int
 
 
-def build_report(run: DetectionHoldoutRunResult) -> HoldoutReport:
+def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -> HoldoutReport:
     model, cutoff = run_cutoff(run.cutoffs)
     split = split_by_side(run.targets, cutoff.date)
     pair = _two_sides(split)
@@ -130,7 +131,7 @@ def build_report(run: DetectionHoldoutRunResult) -> HoldoutReport:
         cited_interval=IntervalModel.of(cited_interval(run.targets)),
         controls={
             name: IntervalModel.of(interval)
-            for name, interval in detection_rate_controls(run.targets, run.runs).items()
+            for name, interval in detection_rate_controls(run.targets, run.runs, grid=grid).items()
         },
         run_cutoff=RunCutoffModel(
             model=model,
@@ -141,7 +142,7 @@ def build_report(run: DetectionHoldoutRunResult) -> HoldoutReport:
         ),
         sides=[_side_line(side) for side in split.values()],
         contrast=_contrast_line(pair),
-        conclusion=_conclusion_line(pair, run.runs),
+        conclusion=_conclusion_line(pair, run.runs, grid),
         ladder=dict(Counter(target.detected_runs for target in run.targets)),
         targets=[TargetLine.of(target) for target in run.targets],
         not_run=[NotRunLine.of(target) for target in run.not_run],
@@ -198,11 +199,11 @@ def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> Interval
 
 
 def _conclusion_line(
-    pair: tuple[SideStatistic, SideStatistic] | None, runs: int
+    pair: tuple[SideStatistic, SideStatistic] | None, runs: int, grid: Grid
 ) -> ConclusionLine | None:
     if pair is None:
         return None
-    conclusion = check_conclusion(*pair, runs)
+    conclusion = check_conclusion(*pair, runs, grid=grid)
     if conclusion is None:
         return None
     return ConclusionLine(

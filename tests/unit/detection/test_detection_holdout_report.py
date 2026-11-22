@@ -21,10 +21,11 @@ from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
 from evals.cve.detection.holdout_target_line import TargetLine, TargetRunLine
 from evals.cve.holdout_statistic import Side
 from tests.unit.detection.support.holdout_report_runs import RECORDED_AT, RUNS, a_run_result
+from tests.unit.support.coarse_grid import COARSE_GRID
 
 
 def test_build_report_carries_the_holdout_detection_rate_and_the_split():
-    report = build_report(a_run_result())
+    report = build_report(a_run_result(), grid=COARSE_GRID)
     assert report.holdout_detection_rate == (1.0 + 1 / 3) / 2
     sides = {line.side: line for line in report.sides}
     assert set(sides) == {Side.PRE_CUTOFF, Side.POST_CUTOFF}
@@ -32,7 +33,7 @@ def test_build_report_carries_the_holdout_detection_rate_and_the_split():
 
 
 def test_render_markdown_shows_the_number_ladder_controls_and_cost():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert "Holdout detection rate: 0.667 (95% Wilson " in markdown
     assert "## Ladder\n- 3 detecting run(s): 1 target(s)\n- 1 detecting run(s): 1 target(s)\n" in (
@@ -48,7 +49,7 @@ def test_render_markdown_shows_the_number_ladder_controls_and_cost():
 def test_render_markdown_names_the_targets_run_after_a_solo_second_pre_run_pass():
     run = dataclasses.replace(a_run_result(), second_pass=("CVE-B",))
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert (
         "- CVE-C: out of calibration: patched: exploit 0 surfaces\n"
@@ -57,7 +58,7 @@ def test_render_markdown_names_the_targets_run_after_a_solo_second_pre_run_pass(
 
 
 def test_render_markdown_names_no_second_pass_when_every_target_passed_the_first():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert "second pass" not in markdown
 
@@ -65,7 +66,7 @@ def test_render_markdown_names_no_second_pass_when_every_target_passed_the_first
 def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs():
     run = dataclasses.replace(a_run_result(), throttled_requests=12, concurrency=4)
 
-    report = build_report(run)
+    report = build_report(run, grid=COARSE_GRID)
     markdown = render_markdown(report)
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
@@ -77,7 +78,7 @@ def test_render_markdown_states_the_throttled_requests_after_the_incomplete_runs
 
 
 def test_render_markdown_leaves_throttling_out_when_nothing_was_throttled():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert "Throttled" not in markdown
 
@@ -96,7 +97,7 @@ def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targe
         ),
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert f"- 2 of the 5 target(s) launched: {throttled}" in markdown
     assert f"- 1 of the 5 target(s) launched: {launch_failure}" in markdown
@@ -106,13 +107,13 @@ def test_the_not_run_section_counts_the_in_run_drops_per_cause_against_the_targe
 
 
 def test_the_not_run_section_counts_nothing_when_no_target_dropped_during_the_run():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert "target(s) launched" not in markdown
 
 
 def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
-    report = build_report(a_run_result())
+    report = build_report(a_run_result(), grid=COARSE_GRID)
 
     line = next(line for line in report.targets if line.flaw_id == "CVE-B")
 
@@ -126,7 +127,7 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
 
 
 def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
-    report = build_report(given.a_run_with_incidents())
+    report = build_report(given.a_run_with_incidents(), grid=COARSE_GRID)
 
     line = next(line for line in report.targets if line.flaw_id == "CVE-A")
 
@@ -143,7 +144,7 @@ def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
 
 
 def test_the_markdown_names_each_target_with_a_health_count_or_a_replay_failure():
-    markdown = render_markdown(build_report(given.a_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents(), grid=COARSE_GRID))
 
     assert (
         "## Server health and replay\n"
@@ -160,13 +161,15 @@ def test_the_markdown_names_a_target_whose_server_was_only_relaunched():
     relaunched = dataclasses.replace(first.statuses[0], relaunches=2)
     first = dataclasses.replace(first, statuses=(relaunched, *first.statuses[1:]))
 
-    markdown = render_markdown(build_report(dataclasses.replace(run, targets=(first, second))))
+    markdown = render_markdown(
+        build_report(dataclasses.replace(run, targets=(first, second)), grid=COARSE_GRID)
+    )
 
     assert "## Server health and replay\n- CVE-A: relaunched 2 time(s)\n" in markdown
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():
-    markdown = render_markdown(build_report(given.a_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents(), grid=COARSE_GRID))
 
     assert (
         f"{given.INCOMPLETE_RUNS}: 2 (CVE-A, CVE-B)\n"
@@ -176,13 +179,13 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
 
 
 def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert "## Server health and replay" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
-    markdown = render_markdown(build_report(a_run_result()))
+    markdown = render_markdown(build_report(a_run_result(), grid=COARSE_GRID))
 
     assert f"Recorded at: {RECORDED_AT}\n" in markdown
 
@@ -203,12 +206,12 @@ def test_the_report_holds_no_proof_text_fields():
     ]
     for model in models:
         assert set(model.model_fields).isdisjoint(forbidden)
-    markdown = render_markdown(build_report(given.a_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents(), grid=COARSE_GRID))
     assert "evidence" not in markdown and "verdict" not in markdown
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
-    report = build_report(a_run_result())
+    report = build_report(a_run_result(), grid=COARSE_GRID)
     assert report.model == "gpt-6-luna"
     assert report.judge_model == "gpt-6-luna"
     assert report.reasoning == "none"

@@ -11,6 +11,7 @@ from evals.cve.nuisance.results import (
 )
 from tests.unit.nuisance.support.nuisance_report_runs import a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.support.coarse_grid import COARSE_GRID
 
 
 def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its_count():
@@ -23,7 +24,7 @@ def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its
         ],
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     counts = {
         ExitReason.NO_COUNTED_FLAW: "1 server(s): npm:flawless",
@@ -37,7 +38,7 @@ def test_the_exits_section_prints_every_reason_of_the_rule_in_its_order_with_its
 
 
 def test_with_no_exit_every_reason_reads_zero_and_the_not_run_section_reads_none():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     zero_rows = "".join(f"- {EXIT_REASON_TEXTS[reason]}: 0 server(s)\n" for reason in ExitReason)
     assert f"## Exits\n{zero_rows}\n" in markdown
@@ -47,7 +48,7 @@ def test_with_no_exit_every_reason_reads_zero_and_the_not_run_section_reads_none
 def test_a_server_whose_admission_is_pending_closes_the_exits_section():
     run = a_run([a_server_result("A")], pending_admission=["npm:pending"])
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     last_reason = EXIT_REASON_TEXTS[list(ExitReason)[-1]]
     assert (
@@ -57,7 +58,7 @@ def test_a_server_whose_admission_is_pending_closes_the_exits_section():
 
 
 def test_no_pending_line_when_every_reached_server_is_admitted_or_out():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert "admission pending" not in markdown
 
@@ -72,7 +73,7 @@ def test_the_not_run_section_counts_the_in_run_drops_against_the_servers_launche
         ],
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert f"- 1 of the 3 server(s) launched: {throttled}: npm:throttled\n" in markdown
     assert "- benign call failed before the runs: 1 server(s): npm:benign\n" in markdown
@@ -94,7 +95,7 @@ def test_the_not_run_section_closes_on_the_second_pass_servers_after_the_not_run
         second_pass={"npm:flaky": "boom"},
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert f"- npm:benign: the benign call errored\n{_SECOND_PASS_LINE}" in markdown
 
@@ -102,13 +103,13 @@ def test_the_not_run_section_closes_on_the_second_pass_servers_after_the_not_run
 def test_the_second_pass_servers_follow_none_when_no_server_is_not_run():
     run = a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert f"## Not run\n- none\n{_SECOND_PASS_LINE}\n" in markdown
 
 
 def test_no_second_pass_line_when_every_server_answered_its_first_pass():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert "second pass" not in markdown
 
@@ -116,4 +117,4 @@ def test_no_second_pass_line_when_every_server_answered_its_first_pass():
 def test_build_report_carries_each_second_pass_server_with_its_first_reason():
     run = a_run([a_server_result("A")], second_pass={"npm:flaky": "boom"})
 
-    assert build_report(run).second_pass == {"npm:flaky": "boom"}
+    assert build_report(run, grid=COARSE_GRID).second_pass == {"npm:flaky": "boom"}

@@ -27,6 +27,7 @@ from evals.cve.nuisance.report import (
 from evals.cve.nuisance.results import NotRunCause, NotRunServer, ServerExit
 from tests.unit.nuisance.support.nuisance_report_runs import LUNA_CUTOFF, RECORDED_AT, a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.support.coarse_grid import COARSE_GRID
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}
 
@@ -40,7 +41,7 @@ def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
         ]
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert "Holdout nuisance rate: at most 0.667 (95% Wilson " in markdown
 
@@ -48,7 +49,7 @@ def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
 def test_a_server_row_shows_its_status_per_run_in_order():
     run = a_run([a_server_result("npm:@acme/files", flagged_runs=1)])
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert (
         "## Servers\n- npm:@acme/files: flagged share 0.333, flagged, not flagged, not flagged"
@@ -60,7 +61,7 @@ def test_a_server_row_shows_its_status_per_run_in_order():
 def test_the_raw_fail_count_is_reported_per_server_and_per_run():
     run = a_run([a_server_result("A", flagged_runs=2), a_server_result("B")])
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert (
         "## Raw FAIL count (report-only, never compared)\n"
@@ -72,7 +73,7 @@ def test_the_raw_fail_count_is_reported_per_server_and_per_run():
 def test_the_raw_fail_count_shows_its_part_on_the_tools_left_out_by_their_declared_function():
     server = a_server_result("A", flagged_runs=1, declared_function_fail_runs=2)
 
-    report = build_report(a_run([server]))
+    report = build_report(a_run([server]), grid=COARSE_GRID)
 
     assert report.servers[0].declared_function_fail_per_run == [1, 1, 0]
     assert (
@@ -84,7 +85,7 @@ def test_the_raw_fail_count_shows_its_part_on_the_tools_left_out_by_their_declar
 def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
     server = a_server_result("A", flagged_runs=1, split_flagged_runs=0, incomplete_unflagged_runs=1)
 
-    line = build_report(a_run([server])).servers[0]
+    line = build_report(a_run([server]), grid=COARSE_GRID).servers[0]
 
     assert (line.split_flaw, line.split_disclosure_date) == ("CVE-2025-0001", date(2026, 1, 1))
     assert line.per_run == [
@@ -95,7 +96,7 @@ def test_a_server_line_keeps_its_split_flaw_and_the_facts_of_each_run():
 
 
 def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause():
-    report = build_report(given.a_run_with_incidents())
+    report = build_report(given.a_run_with_incidents(), grid=COARSE_GRID)
 
     line = report.servers[0]
 
@@ -110,7 +111,7 @@ def test_a_server_line_sums_its_health_and_counts_its_incomplete_runs_by_cause()
 
 
 def test_the_markdown_names_each_server_with_a_health_count():
-    markdown = render_markdown(build_report(given.a_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents(), grid=COARSE_GRID))
 
     assert (
         "## Server health\n- A: non-protocol lines 2, connection lost on 1 call(s),"
@@ -120,13 +121,15 @@ def test_the_markdown_names_each_server_with_a_health_count():
 
 
 def test_the_markdown_names_a_server_that_was_only_relaunched():
-    markdown = render_markdown(build_report(given.a_run_with_a_server_only_relaunched()))
+    markdown = render_markdown(
+        build_report(given.a_run_with_a_server_only_relaunched(), grid=COARSE_GRID)
+    )
 
     assert "## Server health\n- A: relaunched 2 time(s)\n" in markdown
 
 
 def test_the_markdown_splits_the_incomplete_runs_by_cause():
-    markdown = render_markdown(build_report(given.a_run_with_incidents()))
+    markdown = render_markdown(build_report(given.a_run_with_incidents(), grid=COARSE_GRID))
 
     assert (
         "Incomplete runs (a model call missed: refused, unreadable or too long): 1 (A)\n"
@@ -136,19 +139,19 @@ def test_the_markdown_splits_the_incomplete_runs_by_cause():
 
 
 def test_the_markdown_leaves_the_health_section_out_when_nothing_happened():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert "## Server health" not in markdown
 
 
 def test_the_recorded_at_line_carries_the_run_timestamp():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert f"Recorded at: {RECORDED_AT}\n" in markdown
 
 
 def test_the_provenance_line_names_the_census_walk_record_and_admission_commits():
-    report = build_report(a_run([a_server_result("A")]))
+    report = build_report(a_run([a_server_result("A")]), grid=COARSE_GRID)
 
     assert (
         "Commits: run deadbeef, census cafe1234, walk record beef5678, admission feed4321\n"
@@ -160,7 +163,7 @@ def test_the_run_cutoff_is_the_latest_of_the_run_models():
     later = dataclasses.replace(LUNA_CUTOFF, date=date(2026, 6, 30))
     run = a_run([a_server_result("A")], cutoffs={"gpt-6-luna": LUNA_CUTOFF, "judge": later})
 
-    cutoff = build_report(run).run_cutoff
+    cutoff = build_report(run, grid=COARSE_GRID).run_cutoff
 
     assert (cutoff.model, cutoff.date) == ("judge", date(2026, 6, 30))
 
@@ -173,7 +176,7 @@ def test_the_split_section_names_the_run_cutoff_and_both_sides():
         ]
     )
 
-    markdown = render_markdown(build_report(run))
+    markdown = render_markdown(build_report(run, grid=COARSE_GRID))
 
     assert (
         "## Split by cutoff side\n"
@@ -186,7 +189,7 @@ def test_the_split_section_names_the_run_cutoff_and_both_sides():
 
 
 def test_the_markdown_ends_with_the_total_cost():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert markdown.endswith("Total cost: $0.06")
 
@@ -196,7 +199,7 @@ def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurr
         [a_server_result("A", incomplete_unflagged_runs=1)], throttled_requests=12, concurrency=4
     )
 
-    report = build_report(run)
+    report = build_report(run, grid=COARSE_GRID)
     markdown = render_markdown(report)
 
     assert (report.throttled_requests, report.concurrency) == (12, 4)
@@ -207,7 +210,7 @@ def test_the_throttled_requests_follow_the_incomplete_runs_line_with_the_concurr
 
 
 def test_no_throttled_line_when_nothing_was_throttled():
-    markdown = render_markdown(build_report(a_run([a_server_result("A")])))
+    markdown = render_markdown(build_report(a_run([a_server_result("A")]), grid=COARSE_GRID))
 
     assert "Throttled" not in markdown
 
@@ -217,7 +220,7 @@ def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glo
         [a_server_result("A")], exits=[ServerExit("npm:excluded", ExitReason.EXCLUDED_SERVER)]
     )
 
-    dumped = build_report(run).model_dump(mode="json")
+    dumped = build_report(run, grid=COARSE_GRID).model_dump(mode="json")
 
     assert {"holdout_nuisance_rate", "exits"} <= dumped.keys()
     assert dumped["exits"] == [{"server_package": "npm:excluded", "reason": "excluded_server"}]
@@ -226,14 +229,14 @@ def test_the_report_writes_the_holdout_nuisance_rate_and_the_exits_under_the_glo
 def test_the_report_writes_the_pending_servers_and_the_admission_commit():
     run = a_run([a_server_result("A")], pending_admission=["npm:pending"])
 
-    dumped = build_report(run).model_dump(mode="json")
+    dumped = build_report(run, grid=COARSE_GRID).model_dump(mode="json")
 
     assert dumped["pending_admission"] == ["npm:pending"]
     assert dumped["admission_commit"] == "feed4321"
 
 
 def test_build_report_carries_the_run_conditions_and_provenance():
-    report = build_report(a_run([a_server_result("A")]))
+    report = build_report(a_run([a_server_result("A")]), grid=COARSE_GRID)
 
     assert report.counter_fingerprint == "counter-abc"
     assert report.grammar_fingerprint == "grammar-abc"
@@ -261,7 +264,9 @@ def test_the_report_holds_no_proof_text():
     )
 
     # The health line's count of cut responses names the word and quotes no response.
-    markdown = re.sub(r"\d+ response\(s\) shown cut", "", render_markdown(build_report(run)))
+    markdown = re.sub(
+        r"\d+ response\(s\) shown cut", "", render_markdown(build_report(run, grid=COARSE_GRID))
+    )
 
     for model in models:
         assert set(model.model_fields).isdisjoint(PROOF_WORDS)

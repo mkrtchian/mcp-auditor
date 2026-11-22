@@ -15,6 +15,7 @@ from evals.cve.detection.holdout_report import (
     RunCutoffModel,
     run_cutoff,
 )
+from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
 from evals.cve.holdout_statistic import Side
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import (
@@ -138,7 +139,7 @@ class NuisanceReport(BaseModel):
     throttled_requests: int
 
 
-def build_report(run: NuisanceHoldoutRunResult) -> NuisanceReport:
+def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -> NuisanceReport:
     model, cutoff = run_cutoff(run.cutoffs)
     split = split_by_side(run.servers, cutoff.date)
     pair = _two_sides(split)
@@ -147,7 +148,7 @@ def build_report(run: NuisanceHoldoutRunResult) -> NuisanceReport:
         cited_interval=IntervalModel.of(cited_interval(run.servers)),
         controls={
             name: IntervalModel.of(interval)
-            for name, interval in nuisance_rate_controls(run.servers, run.runs).items()
+            for name, interval in nuisance_rate_controls(run.servers, run.runs, grid=grid).items()
         },
         run_cutoff=RunCutoffModel(
             model=model,
@@ -158,7 +159,7 @@ def build_report(run: NuisanceHoldoutRunResult) -> NuisanceReport:
         ),
         sides=[_side_line(side) for side in split.values()],
         contrast=_contrast_line(pair),
-        conclusion=_conclusion_line(pair, run.runs),
+        conclusion=_conclusion_line(pair, run.runs, grid),
         servers=[_server_line(server) for server in run.servers],
         not_run=[NotRunLine.of(server) for server in run.not_run],
         second_pass=dict(run.second_pass),
@@ -214,11 +215,11 @@ def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> Interval
 
 
 def _conclusion_line(
-    pair: tuple[SideStatistic, SideStatistic] | None, runs: int
+    pair: tuple[SideStatistic, SideStatistic] | None, runs: int, grid: Grid
 ) -> ConclusionLine | None:
     if pair is None:
         return None
-    conclusion = check_conclusion(*pair, runs)
+    conclusion = check_conclusion(*pair, runs, grid=grid)
     if conclusion is None:
         return None
     return ConclusionLine(
