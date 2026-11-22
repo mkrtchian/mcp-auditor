@@ -1,49 +1,21 @@
 from pathlib import Path
 
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
-from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.detection.targets import Target
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.dossier import write_dossier
 from tests.unit.support import censuses
-from tests.unit.support.test_nuisance_committed_admission_given import (
-    the_committed_admission,
-    the_committed_walk_inputs,
-)
+from tests.unit.support.committed_nuisance_admission import the_committed_walk_inputs
 
 SERVER = censuses.a_classification().server_package
 
 
 def a_written_dossier(tmp_path: Path, backend: str | None = None) -> Path:
     out = tmp_path / "dossier"
-    write_dossier(walk_given.walk_inputs_of(censuses.a_census()), SERVER, out, backend)
+    write_dossier(walks.walk_inputs_of(censuses.a_census()), SERVER, out, backend)
     return out
-
-
-def a_detection_holdout_server_with_its_own_fix_check() -> AdmittedServer:
-    """An admitted server with a holdout target among its flaws whose fix check is its own, not
-    a holdout calibration copy."""
-    return next(
-        server
-        for server in the_committed_admission().servers
-        if any(
-            flaw.flaw in _holdout_identifiers()
-            and flaw.fix_check.source != "detection_holdout_calibration"
-            for flaw in server.flaws
-        )
-    )
-
-
-def its_holdout_targets(server: AdmittedServer) -> list[Target]:
-    flaws = {flaw.flaw for flaw in server.flaws}
-    return [target for target in HOLDOUT_TARGETS if target.flaw_id in flaws]
 
 
 def a_written_dossier_of(tmp_path: Path, server: AdmittedServer) -> Path:
     out = tmp_path / "holdout-target-dossier"
     write_dossier(the_committed_walk_inputs(), server.server_package, out)
     return out
-
-
-def _holdout_identifiers() -> set[str]:
-    return {target.flaw_id for target in HOLDOUT_TARGETS}

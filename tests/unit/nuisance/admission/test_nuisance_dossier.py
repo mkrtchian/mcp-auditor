@@ -12,14 +12,18 @@ import pytest
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as then
 import tests.unit.nuisance.admission.support.test_nuisance_unrecorded_given as unrecorded_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.kit_isolation as iso
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
 from tests.unit.support import censuses
+from tests.unit.support.committed_nuisance_admission import (
+    a_detection_holdout_server_with_its_own_fix_check,
+    its_holdout_targets,
+)
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):
@@ -82,7 +86,7 @@ def test_an_unknown_backend_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
         write_dossier(
-            walk_given.walk_inputs_of(censuses.a_census()),
+            walks.walk_inputs_of(censuses.a_census()),
             given.SERVER,
             out,
             backend="ghost",
@@ -119,11 +123,11 @@ def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
 def test_a_detection_holdout_server_dossier_carries_the_holdout_reference_of_each_target(
     tmp_path: Path,
 ):
-    server = given.a_detection_holdout_server_with_its_own_fix_check()
+    server = a_detection_holdout_server_with_its_own_fix_check()
 
     out = given.a_written_dossier_of(tmp_path, server)
 
-    for target in given.its_holdout_targets(server):
+    for target in its_holdout_targets(server):
         then.it_carries_the_holdout_reference_of(out, target)
     assert iso.scan_tree(out) == {}
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
@@ -184,7 +188,7 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
 def test_an_unknown_server_is_refused(tmp_path: Path):
     out = tmp_path / "dossier"
     with pytest.raises(Refused):
-        write_dossier(walk_given.walk_inputs_of(censuses.a_census()), "npm:nonexistent", out)
+        write_dossier(walks.walk_inputs_of(censuses.a_census()), "npm:nonexistent", out)
     assert not out.exists()
 
 

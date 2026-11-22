@@ -1,15 +1,15 @@
 from dataclasses import replace
 from pathlib import Path
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import RegisteredBackend
 from evals.cve.nuisance.fingerprint import CONFINEMENT_SOURCE
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 
-SERVICE = admission_given.a_server([]).service
+SERVICE = admissions.a_server([]).service
 SERVED_CHANGES = [
     ("Dockerfile.fake-responder", "FROM python:3.13\n", "FROM python:3.14\n"),
     ("fake_backend.py", "ANSWER = 1\n", "ANSWER = 2\n"),
@@ -28,7 +28,7 @@ def a_registry_serving(directory: Path) -> dict[str, RegisteredBackend]:
     for name, before, _ in SERVED_CHANGES:
         (directory / name).write_text(before)
     served = tuple(directory / name for name, _, _ in SERVED_CHANGES)
-    return {"fake": replace(admission_given.a_backend_registry()["fake"], served=served)}
+    return {"fake": replace(admissions.a_backend_registry()["fake"], served=served)}
 
 
 def a_confinement_copy(directory: Path) -> Path:
@@ -38,10 +38,8 @@ def a_confinement_copy(directory: Path) -> Path:
 
 
 def one_flaw_server(effect_class: FlawClass) -> AdmittedServer:
-    flaw = admission_given.a_flaw_record(
-        admission_given.FIRST_FLAW, effect_class, admission_given.PATCHED_VERSION
-    )
-    return admission_given.a_server([flaw])
+    flaw = admissions.a_flaw_record(admissions.FIRST_FLAW, effect_class, admissions.PATCHED_VERSION)
+    return admissions.a_server([flaw])
 
 
 def written_public_name_dockerfiles(

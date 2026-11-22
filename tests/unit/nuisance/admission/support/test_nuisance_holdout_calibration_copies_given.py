@@ -1,13 +1,11 @@
-from typing import Literal
-
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.detection.draw_record import CalibrationCard, DrawRecord, Sibling
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from tests.unit.support import census_draws
 
-SERVER = admission_given.SERVER_PACKAGE
-COPIED_FLAW = admission_given.FIRST_FLAW
+SERVER = admissions.SERVER_PACKAGE
+COPIED_FLAW = admissions.FIRST_FLAW
 RECORDED = "a" * 64
 
 DRAWN = "CVE-2030-0001"
@@ -25,24 +23,9 @@ def _a_card_listing(flaw: str, sibling: str) -> CalibrationCard:
     return census_draws.a_card(flaw).model_copy(update={"siblings": [sibling_record]})
 
 
-def a_server_with_a_holdout_calibration_copy_at(
-    fingerprint: str | None,
-    source: Literal["fix_check", "detection_holdout_calibration"] = "detection_holdout_calibration",
-) -> AdmittedServer:
-    """The admission's server whose COPIED_FLAW record carries `fingerprint` under `source`."""
-
-    def copied(flaw: FlawRecord) -> FlawRecord:
-        check = flaw.fix_check.model_copy(
-            update={"source": source, "holdout_fingerprint": fingerprint}
-        )
-        return flaw.model_copy(update={"fix_check": check})
-
-    return edits.with_the_first_flaw(admission_given.an_admitted_server(), copied)
-
-
 def not_counting(server: AdmittedServer) -> AdmittedServer:
     def uncounted(flaw: FlawRecord) -> FlawRecord:
         check = flaw.fix_check.model_copy(update={"vulnerable_surfaces": False})
         return flaw.model_copy(update={"fix_check": check})
 
-    return edits.with_the_first_flaw(server, uncounted)
+    return mutations.with_the_first_flaw(server, uncounted)

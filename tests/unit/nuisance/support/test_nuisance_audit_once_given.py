@@ -10,11 +10,8 @@ from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixtur
 from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.metrics import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
-    a_fake_lifecycle,
-    an_admitted_server,
-)
 from tests.unit.support.admission_mutations import with_a_backend
+from tests.unit.support.nuisance_admissions import a_fake_lifecycle, an_admitted_server
 
 NO_OVERRIDES = RunOverrides(None, None, None)
 

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from evals.cve.docker_paths import image_dockerfile
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 def mcp_ssh_config() -> dict[str, str]:

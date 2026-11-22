@@ -8,7 +8,7 @@ from evals.cve.backends.gravitino_seed import GRAVITINO_SEED
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.images import dockerfile_instructions
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 def the_benign_argument(service: str, name: str) -> Any:

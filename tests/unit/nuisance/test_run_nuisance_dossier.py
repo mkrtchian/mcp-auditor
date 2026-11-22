@@ -4,23 +4,21 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from evals import run_nuisance
-from tests.unit.nuisance.admission.support import (
-    test_nuisance_re_admission_dossier_given as re_admission,
-)
 from tests.unit.support import censuses
+from tests.unit.support.committed_nuisance_admission import a_committed_server_with_fix_checks
 
 
 def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    census = censuses.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admissions.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walk_given.committed_census_arguments(tmp_path, census),
+            *walks.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -36,13 +34,13 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
 def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = censuses.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admissions.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walk_given.committed_census_arguments(tmp_path, census),
+            *walks.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -59,13 +57,13 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
 def test_nuisance_dossier_with_an_unknown_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = censuses.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admissions.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walk_given.committed_census_arguments(tmp_path, census),
+            *walks.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -83,13 +81,13 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(
 def test_nuisance_dossier_on_an_unknown_server_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    census = censuses.written(tmp_path, admission.a_census())
+    census = censuses.written(tmp_path, admissions.a_census())
     out = tmp_path / "dossier"
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walk_given.committed_census_arguments(tmp_path, census),
+            *walks.committed_census_arguments(tmp_path, census),
             "--server",
             "npm:ghost",
             "--out",
@@ -106,7 +104,7 @@ def test_a_re_admission_dossier_with_a_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
-    server = re_admission.a_committed_server_with_fix_checks().server_package
+    server = a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
@@ -130,7 +128,7 @@ def test_a_re_admission_dossier_of_an_admitted_server_exits_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
-    server = re_admission.a_committed_server_with_fix_checks().server_package
+    server = a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         ["nuisance-dossier", "--server", server, "--re-admission", "--out", str(out)]
@@ -146,7 +144,7 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
 ):
     out = tmp_path / "dossier"
     missing = tmp_path / "absent.json"
-    server = re_admission.a_committed_server_with_fix_checks().server_package
+    server = a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [

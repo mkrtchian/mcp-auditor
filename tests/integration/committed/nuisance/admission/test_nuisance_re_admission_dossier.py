@@ -9,7 +9,7 @@ from tests.integration.committed.nuisance.admission.support import (
 from tests.unit.nuisance.admission.support import (
     test_nuisance_re_admission_dossier_given as re_admission,
 )
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 def test_no_committed_server_carries_a_shared_helper_of_the_fix_check_package():

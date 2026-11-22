@@ -6,7 +6,7 @@ containers removed before it, and drops it only when that pass fails too."""
 import pytest
 
 import tests.unit.nuisance.support.test_nuisance_vetting_given as given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.results import NotRunCause, NotRunServer
@@ -111,7 +111,7 @@ async def test_a_server_failing_both_passes_is_not_run_with_its_second_reason():
 
 
 async def test_a_server_answering_its_first_pass_is_called_once_and_its_backend_left_running():
-    ckan = edits.on_the_ckan_backend(given.a_server("npm:ckan"))
+    ckan = mutations.on_the_ckan_backend(given.a_server("npm:ckan"))
     vet = given.ScriptedVet({"npm:plain": ["boom", None]}, {given.CKAN_TAG: ["ckan_front"]})
 
     await drop_failing_servers([ckan, given.a_server("npm:plain")], vet.benign_call, vet.host)
@@ -121,7 +121,7 @@ async def test_a_server_answering_its_first_pass_is_called_once_and_its_backend_
 
 
 async def test_the_ckan_containers_of_a_failing_server_are_removed_right_before_its_second_call():
-    ckan = edits.on_the_ckan_backend(given.a_server("npm:ckan"))
+    ckan = mutations.on_the_ckan_backend(given.a_server("npm:ckan"))
     vet = given.ScriptedVet({"npm:ckan": ["boom", None]}, {given.CKAN_TAG: ["ckan_front"]})
 
     await drop_failing_servers([ckan], vet.benign_call, vet.host)
@@ -130,7 +130,7 @@ async def test_the_ckan_containers_of_a_failing_server_are_removed_right_before_
 
 
 async def test_the_doris_cluster_of_a_failing_server_is_removed_right_before_its_second_call():
-    doris = edits.with_the_registered_backend(given.a_server("PyPI:d"), "doris")
+    doris = mutations.with_the_registered_backend(given.a_server("PyPI:d"), "doris")
     vet = given.ScriptedVet({"PyPI:d": ["boom", None]})
 
     await drop_failing_servers([doris], vet.benign_call, vet.host)

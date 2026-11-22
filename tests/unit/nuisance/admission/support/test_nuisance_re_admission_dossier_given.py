@@ -3,14 +3,13 @@ from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from pathlib import Path
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture, FlawRecord
 from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.admission.re_admission_dossier import (
-    fix_check_modules,
     holdout_target_references,
     re_admission_plan,
     write_re_admission_dossier,
@@ -18,7 +17,7 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.planting_base import PlantingHost
 from evals.honeypots import REPO_ROOT
-from tests.unit.support.test_nuisance_committed_admission_given import (
+from tests.unit.support.committed_nuisance_admission import (
     the_committed_admission,
     the_committed_walk_inputs,
 )
@@ -36,7 +35,7 @@ def a_server_on_a_per_launch_backend() -> AdmittedServer:
     backend = BackendFixture(
         provisioner="fake_per_launch", images=["fake/engine:1.0"], network=PER_LAUNCH_NETWORK_PREFIX
     )
-    return mutations.with_a_backend(admission_given.an_admitted_server(), backend)
+    return mutations.with_a_backend(admissions.an_admitted_server(), backend)
 
 
 def _never_stood(
@@ -51,10 +50,6 @@ def shared_backends() -> dict[str, RegisteredBackend]:
         for key, entry in BACKENDS.items()
         if isinstance(entry.lifecycle, BackendLifecycle)
     }
-
-
-def a_committed_server_with_fix_checks() -> AdmittedServer:
-    return next(server for server in the_committed_admission().servers if fix_check_modules(server))
 
 
 def a_committed_server_with_a_backend() -> AdmittedServer:
@@ -79,7 +74,7 @@ def the_copy_resolution() -> dict[str, str]:
 
 
 def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
-    base = admission_given.an_admitted_server()
+    base = admissions.an_admitted_server()
     first = base.flaws[0]
     flaws = [_copying(first, flaw_id) for flaw_id in a_drawn_target_and_its_sibling()]
     return base.model_copy(update={"flaws": flaws})

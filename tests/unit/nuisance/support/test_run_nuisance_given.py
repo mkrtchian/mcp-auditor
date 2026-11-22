@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from tests.unit.support import census_draws, censuses
 
 QUEUE_FLAW = "CVE-2025-7777"
@@ -18,20 +18,18 @@ def a_walk_with_a_queue_server(
     predates the fields nuisance suite rule v3 adds when `queue_server_unrecorded`."""
     census = census_draws.with_a_walk_skipping(
         censuses.with_a_cve_of(censuses.a_census(), QUEUE_FLAW, QUEUE_SERVER),
-        admission_given.FIRST_FLAW,
+        admissions.FIRST_FLAW,
     )
     admission_path = tmp_path / "absent.json"
     if admitted:
-        admission = admission_given.an_admission()
-        queued = admission_given.admitting_the_server_of(
-            QUEUE_FLAW, QUEUE_SERVER, "queued-nuisance"
-        )
+        admission = admissions.an_admission()
+        queued = admissions.admitting_the_server_of(QUEUE_FLAW, QUEUE_SERVER, "queued-nuisance")
         if queue_server_unrecorded:
-            queued = records_given.with_every_new_field_unrecorded(queued)
+            queued = mutations.with_every_new_field_unrecorded(queued)
         both = admission.model_copy(update={"servers": [*admission.servers, *queued.servers]})
-        admission_path = admission_given.written(tmp_path, both)
+        admission_path = admissions.written(tmp_path, both)
     return [
-        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
+        *walks.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

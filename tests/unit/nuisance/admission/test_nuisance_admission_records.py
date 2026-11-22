@@ -2,8 +2,9 @@ from collections.abc import Callable
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as given
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 
 _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] = [
@@ -55,21 +56,21 @@ _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] =
 def test_each_mutation_yields_exactly_one_problem_naming_the_server_and_its_detail(
     mutate: Callable[[NuisanceAdmission], NuisanceAdmission], fragment: str
 ):
-    [problem] = admission_given.problems_of(mutate(admission_given.an_admission()))
+    [problem] = admissions.problems_of(mutate(admissions.an_admission()))
 
-    assert admission_given.SERVER_PACKAGE in problem
+    assert admissions.SERVER_PACKAGE in problem
     assert fragment in problem
 
 
 def test_two_benign_calls_for_one_tool_load_clean_when_only_one_flaw_counts():
     admission = given.with_the_second_flaw_not_counting(
-        given.with_two_benign_calls_for_one_tool(admission_given.an_admission())
+        given.with_two_benign_calls_for_one_tool(admissions.an_admission())
     )
 
-    assert admission_given.problems_of(admission) == []
+    assert admissions.problems_of(admission) == []
 
 
 def test_an_admission_predating_the_new_fields_loads_clean():
-    admission = given.with_every_new_field_unrecorded(admission_given.an_admission())
+    admission = mutations.with_every_new_field_unrecorded(admissions.an_admission())
 
-    assert admission_given.problems_of(admission) == []
+    assert admissions.problems_of(admission) == []

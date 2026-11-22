@@ -4,9 +4,9 @@ from typing import Any
 
 from pydantic import BaseModel
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps
@@ -24,11 +24,11 @@ def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) ->
     """The `run` arguments of a census with a draw walk, an empty walk record and `admission`, by
     default the admission of one fully recorded server."""
     census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
-    admitted = admission_given.written(tmp_path, admission or admission_given.an_admission())
+    admitted = admissions.written(tmp_path, admission or admissions.an_admission())
     report = tmp_path / "nuisance_report.json"
     return [
         "run",
-        *walk_given.committed_census_arguments(tmp_path, census),
+        *walks.committed_census_arguments(tmp_path, census),
         "--admission",
         str(admitted),
         "--report",

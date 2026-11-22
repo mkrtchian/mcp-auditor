@@ -20,11 +20,8 @@ from evals.cve.nuisance.fix_check_command import (
 )
 from evals.cve.run_images import DOCKER_REQUIREMENT
 from tests.unit.cve.support.test_kit_fix_check_given import a_fix_check_fixture
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
-    a_passing_fix_check,
-    an_admission,
-)
 from tests.unit.support.admission_mutations import admitting
+from tests.unit.support.nuisance_admissions import a_passing_fix_check, an_admission
 
 FIXTURE = a_fix_check_fixture(server_patched_service="server-patched")
 FIXTURE_OF_NO_ADMITTED_FLAW = dataclasses.replace(FIXTURE, flaw="CVE-2099-0002")

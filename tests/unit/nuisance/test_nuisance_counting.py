@@ -1,5 +1,5 @@
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.support.test_nuisance_counting_given as given
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.grammar import VALID_CATEGORIES, FlawClass
 from evals.cve.nuisance.counting import (
     counted_flaws,
@@ -14,41 +14,41 @@ _EXEC = FlawClass.COMMAND_EXECUTION
 
 
 def test_a_flaw_still_surfacing_on_the_patched_version_is_not_counted():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001", _READ, "1.2.0", fix_check=given.a_fix_check(patched_surfaces=True)
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert counted_flaws(server) == []
 
 
 def test_a_flaw_surfacing_on_the_servers_patched_version_is_not_counted():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001", _READ, "1.2.0", fix_check=given.a_fix_check(server_patched_surfaces=True)
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert counted_flaws(server) == []
 
 
 def test_a_flaw_without_a_grammar_class_is_not_counted():
-    flaw = admission.a_flaw_record("CVE-2025-0001", None, "1.2.0")
-    server = admission.a_server([flaw])
+    flaw = admissions.a_flaw_record("CVE-2025-0001", None, "1.2.0")
+    server = admissions.a_server([flaw])
 
     assert counted_flaws(server) == []
 
 
 def test_a_passing_flaw_is_counted():
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
-    server = admission.a_server([flaw])
+    flaw = admissions.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
+    server = admissions.a_server([flaw])
 
     assert counted_flaws(server) == [flaw]
 
 
 def test_a_tool_recorded_as_its_effect_under_a_flaw_recorded_otherwise_is_left_out_of_the_count():
     tool = given.a_tool_whose_declared_function_is_effect("probe", True)
-    server = admission.a_server(
-        [admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])]
+    server = admissions.a_server(
+        [admissions.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])]
     )
 
     assert counted_tools(server) == {}
@@ -56,7 +56,7 @@ def test_a_tool_recorded_as_its_effect_under_a_flaw_recorded_otherwise_is_left_o
 
 
 def test_the_declared_function_is_read_per_tool():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
@@ -65,7 +65,7 @@ def test_the_declared_function_is_read_per_tool():
             given.a_tool_whose_declared_function_is_effect("probe", False),
         ],
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert set(counted_tools(server)) == {"probe"}
     assert set(declared_function_tools(server)) == {"fetch"}
@@ -73,12 +73,12 @@ def test_the_declared_function_is_read_per_tool():
 
 def test_a_tool_recording_no_declared_function_follows_its_flaws_record():
     tool = given.a_tool_whose_declared_function_is_effect("probe", None)
-    otherwise = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
+    otherwise = admissions.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
     as_effect = given.a_flaw_whose_declared_function_is_effect("CVE-2025-0001", _READ, [tool])
 
     assert flaw_counted_tools(otherwise) == {"probe"}
     assert flaw_counted_tools(as_effect) == frozenset()
-    assert set(declared_function_tools(admission.a_server([as_effect]))) == {"probe"}
+    assert set(declared_function_tools(admissions.a_server([as_effect]))) == {"probe"}
 
 
 def test_tools_recorded_otherwise_under_a_flaw_recorded_as_its_effect_are_all_counted():
@@ -90,50 +90,50 @@ def test_tools_recorded_otherwise_under_a_flaw_recorded_as_its_effect_are_all_co
             given.a_tool_whose_declared_function_is_effect("query", False),
         ],
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert set(counted_tools(server)) == {"probe", "query"}
     assert declared_function_tools(server) == {}
 
 
 def test_a_removed_tool_is_never_counted_whatever_its_declared_function():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
         tools=[
-            admission.a_tool("probe", "probe", "unchanged"),
+            admissions.a_tool("probe", "probe", "unchanged"),
             given.a_removed_tool_whose_declared_function_is_effect("fetch", True),
             given.a_removed_tool_whose_declared_function_is_effect("query", False),
         ],
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert set(counted_tools(server)) == {"probe"}
     assert declared_function_tools(server) == {}
 
 
 def test_a_tool_of_two_classes_takes_the_union_of_their_categories():
-    read_flaw = admission.a_flaw_record(
-        "CVE-2025-0001", _READ, "1.2.0", tools=[admission.a_tool("probe", "probe", "unchanged")]
+    read_flaw = admissions.a_flaw_record(
+        "CVE-2025-0001", _READ, "1.2.0", tools=[admissions.a_tool("probe", "probe", "unchanged")]
     )
-    exec_flaw = admission.a_flaw_record(
-        "PYSEC-2025-1", _EXEC, "1.2.0", tools=[admission.a_tool("probe", "probe", "unchanged")]
+    exec_flaw = admissions.a_flaw_record(
+        "PYSEC-2025-1", _EXEC, "1.2.0", tools=[admissions.a_tool("probe", "probe", "unchanged")]
     )
-    server = admission.a_server([read_flaw, exec_flaw])
+    server = admissions.a_server([read_flaw, exec_flaw])
 
     assert counted_tools(server)["probe"] == VALID_CATEGORIES[_READ] | VALID_CATEGORIES[_EXEC]
 
 
 def test_the_counted_tools_of_a_flaw_are_the_patched_names_still_present():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
         tools=[
-            admission.a_tool("probe", "probe", "unchanged"),
-            admission.a_tool("old", "new", "renamed"),
-            admission.a_tool("gone", None, "removed"),
+            admissions.a_tool("probe", "probe", "unchanged"),
+            admissions.a_tool("old", "new", "renamed"),
+            admissions.a_tool("gone", None, "removed"),
         ],
     )
 
@@ -141,68 +141,68 @@ def test_the_counted_tools_of_a_flaw_are_the_patched_names_still_present():
 
 
 def test_a_backend_needing_flaw_has_no_counted_tool():
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
+    flaw = admissions.a_flaw_record("CVE-2025-0001", _READ, "1.2.0")
 
     assert flaw_counted_tools(flaw.model_copy(update={"backend_need": "external"})) == frozenset()
 
 
 def test_a_flaw_whose_backend_the_fixture_provides_keeps_its_tool():
-    flaw = admission.a_flaw_record(
-        "CVE-2025-0001", _READ, "1.2.0", tools=[admission.a_tool("probe", "probe", "unchanged")]
+    flaw = admissions.a_flaw_record(
+        "CVE-2025-0001", _READ, "1.2.0", tools=[admissions.a_tool("probe", "probe", "unchanged")]
     )
 
     assert flaw_counted_tools(flaw.model_copy(update={"backend_need": "fixture"})) == {"probe"}
 
 
 def test_a_flaw_without_a_grammar_class_has_no_counted_tool():
-    flaw = admission.a_flaw_record("CVE-2025-0001", None, "1.2.0")
+    flaw = admissions.a_flaw_record("CVE-2025-0001", None, "1.2.0")
 
     assert flaw_counted_tools(flaw) == frozenset()
 
 
 def test_a_tool_whose_real_software_does_not_answer_is_not_counted_and_its_flaw_still_counts():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
-        tools=[admission.a_tool("probe", "probe", "unchanged"), given.a_silent_tool("capture")],
+        tools=[admissions.a_tool("probe", "probe", "unchanged"), given.a_silent_tool("capture")],
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert set(counted_tools(server)) == {"probe"}
     assert counted_flaws(server) == [flaw]
 
 
 def test_a_tool_without_a_real_software_record_stays_counted():
-    tool = admission.a_tool("probe", "probe", "unchanged").model_copy(
+    tool = admissions.a_tool("probe", "probe", "unchanged").model_copy(
         update={"real_software": None}
     )
-    flaw = admission.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
+    flaw = admissions.a_flaw_record("CVE-2025-0001", _READ, "1.2.0", tools=[tool])
 
     assert flaw_counted_tools(flaw) == {"probe"}
 
 
 def test_a_flaw_whose_positive_control_rests_on_a_relaying_stand_in_is_not_counted():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
         fix_check=given.a_fix_check(relies_on_relaying_stand_in=True),
     )
-    server = admission.a_server([flaw])
+    server = admissions.a_server([flaw])
 
     assert counted_flaws(server) == []
 
 
 def test_the_tools_of_a_flaw_keep_a_tool_whose_real_software_does_not_answer():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
         tools=[
-            admission.a_tool("probe", "probe", "unchanged"),
+            admissions.a_tool("probe", "probe", "unchanged"),
             given.a_silent_tool("capture"),
-            admission.a_tool("gone", None, "removed"),
+            admissions.a_tool("gone", None, "removed"),
         ],
     )
 
@@ -214,7 +214,9 @@ def test_the_declared_function_tools_are_a_counted_flaws_tools_recorded_as_its_e
         "CVE-2025-0001", _READ, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
 
-    assert declared_function_tools(admission.a_server([flaw])) == {"probe": VALID_CATEGORIES[_READ]}
+    assert declared_function_tools(admissions.a_server([flaw])) == {
+        "probe": VALID_CATEGORIES[_READ]
+    }
 
 
 def test_a_declared_function_tool_two_flaws_reach_takes_the_union_of_their_categories():
@@ -225,7 +227,7 @@ def test_a_declared_function_tool_two_flaws_reach_takes_the_union_of_their_categ
         "PYSEC-2025-1", _EXEC, [given.a_tool_whose_declared_function_is_effect("probe", True)]
     )
 
-    assert declared_function_tools(admission.a_server([read_flaw, exec_flaw])) == {
+    assert declared_function_tools(admissions.a_server([read_flaw, exec_flaw])) == {
         "probe": VALID_CATEGORIES[_READ] | VALID_CATEGORIES[_EXEC]
     }
 
@@ -236,12 +238,12 @@ def test_the_declared_function_tools_skip_a_removed_tool_and_one_whose_software_
         _READ,
         [
             given.a_tool_whose_declared_function_is_effect("probe", True),
-            admission.a_tool("gone", None, "removed"),
+            admissions.a_tool("gone", None, "removed"),
             given.a_silent_tool("capture", declared_function_is_effect=True),
         ],
     )
 
-    assert set(declared_function_tools(admission.a_server([flaw]))) == {"probe"}
+    assert set(declared_function_tools(admissions.a_server([flaw]))) == {"probe"}
 
 
 def test_a_flaw_with_an_external_backend_has_no_declared_function_tool():
@@ -250,15 +252,15 @@ def test_a_flaw_with_an_external_backend_has_no_declared_function_tool():
     )
     flaw = flaw.model_copy(update={"backend_need": "external"})
 
-    assert declared_function_tools(admission.a_server([flaw])) == {}
+    assert declared_function_tools(admissions.a_server([flaw])) == {}
 
 
 def test_a_flaw_recorded_otherwise_has_no_declared_function_tool():
-    flaw = admission.a_flaw_record(
+    flaw = admissions.a_flaw_record(
         "CVE-2025-0001",
         _READ,
         "1.2.0",
-        tools=[admission.a_tool("probe", "probe", "unchanged")],
+        tools=[admissions.a_tool("probe", "probe", "unchanged")],
     )
 
-    assert declared_function_tools(admission.a_server([flaw])) == {}
+    assert declared_function_tools(admissions.a_server([flaw])) == {}

@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.nuisance.support.test_nuisance_assembly_given as given
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus
@@ -35,8 +35,8 @@ def test_a_counted_flaw_absent_from_the_draw_order_is_never_the_split_flaw():
 
 
 def test_a_flaw_with_no_counted_tool_is_skipped_for_the_next():
-    needing_a_backend = admission.a_flaw_record(
-        given.SECOND_FLAW, FlawClass.COMMAND_EXECUTION, admission.PATCHED_VERSION
+    needing_a_backend = admissions.a_flaw_record(
+        given.SECOND_FLAW, FlawClass.COMMAND_EXECUTION, admissions.PATCHED_VERSION
     ).model_copy(update={"backend_need": "external"})
     server = given.a_server(flaws=[given.a_two_flaw_server().flaws[0], needing_a_backend])
     draw = given.draw_entries((given.SECOND_FLAW, _LATE), (given.FIRST_FLAW, _EARLY))

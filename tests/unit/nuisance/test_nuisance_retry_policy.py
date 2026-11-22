@@ -16,13 +16,13 @@ from evals.cve.nuisance.audit import (
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import an_admitted_server
 from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
 from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
     PROVIDER_ERROR,
     ScriptedCalls,
 )
 from tests.unit.support.captured_console import CapturedOutput, a_captured_console
+from tests.unit.support.nuisance_admissions import an_admitted_server
 
 type Attempt = ScriptedCalls[NuisanceAudit | LaunchFailed | ProviderError]
 

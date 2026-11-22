@@ -9,7 +9,7 @@ from evals.cve.nuisance.backend_registry import built_backend_tags
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.images import image_tag
 from tests.fakes import FakeContainerSweep
-from tests.unit.support.test_nuisance_admission_edits_given import on_the_ckan_backend
+from tests.unit.support.admission_mutations import on_the_ckan_backend
 
 
 async def test_the_gate_removes_the_server_and_built_backend_containers_left_running(

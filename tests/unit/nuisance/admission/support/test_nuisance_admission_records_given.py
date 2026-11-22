@@ -1,5 +1,5 @@
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.fixture_provenance import SoftwareRelease, StandInOutput, StandInRecord
 from evals.cve.nuisance.admission.admission import (
     AdmittedServer,
@@ -14,12 +14,12 @@ from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord, S
 def with_a_removed_tool_carrying_a_real_software_record(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
-    removed = admission_given.a_tool("gone", None, "removed").model_copy(
+    removed = admissions.a_tool("gone", None, "removed").model_copy(
         update={"real_software": RealSoftwareRecord(answers=True)}
     )
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission,
-        lambda server: edits.with_the_first_flaw(
+        lambda server: mutations.with_the_first_flaw(
             server, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
         ),
     )
@@ -28,12 +28,12 @@ def with_a_removed_tool_carrying_a_real_software_record(
 def with_a_removed_tool_carrying_a_declared_function_record(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
-    removed = admission_given.a_tool("gone", None, "removed").model_copy(
+    removed = admissions.a_tool("gone", None, "removed").model_copy(
         update={"declared_function_is_effect": False}
     )
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission,
-        lambda server: edits.with_the_first_flaw(
+        lambda server: mutations.with_the_first_flaw(
             server, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
         ),
     )
@@ -41,7 +41,7 @@ def with_a_removed_tool_carrying_a_declared_function_record(
 
 def with_a_software_release_without_its_source(admission: NuisanceAdmission) -> NuisanceAdmission:
     release = SoftwareRelease(software="PostgreSQL", release="16.4", day=None, source=" ")
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission, lambda server: server.model_copy(update={"software_releases": [release]})
     )
 
@@ -53,8 +53,8 @@ def with_a_fix_check_record_carrying_a_holdout_fingerprint(
         check = flaw.fix_check.model_copy(update={"holdout_fingerprint": "f" * 64})
         return flaw.model_copy(update={"fix_check": check})
 
-    return edits.with_the_server(
-        admission, lambda server: edits.with_the_first_flaw(server, changed)
+    return mutations.with_the_server(
+        admission, lambda server: mutations.with_the_first_flaw(server, changed)
     )
 
 
@@ -88,15 +88,15 @@ def with_a_tool_given_two_real_software_records(admission: NuisanceAdmission) ->
 
 
 def with_an_empty_expected_text(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return edits.with_the_server(
-        admission, lambda server: edits.with_the_first_benign_call(server, expect="")
+    return mutations.with_the_server(
+        admission, lambda server: mutations.with_the_first_benign_call(server, expect="")
     )
 
 
 def with_an_expected_text_quoting_the_arguments(admission: NuisanceAdmission) -> NuisanceAdmission:
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission,
-        lambda server: edits.with_the_first_benign_call(
+        lambda server: mutations.with_the_first_benign_call(
             server, arguments={"path": "README.md"}, expect="README"
         ),
     )
@@ -106,9 +106,9 @@ def with_an_expected_text_quoting_a_prerequisite_call(
     admission: NuisanceAdmission,
 ) -> NuisanceAdmission:
     connect = ToolCall(tool="connect_to_database", arguments={"database": "app"})
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission,
-        lambda server: edits.with_the_first_benign_call(server, expect="app", before=[connect]),
+        lambda server: mutations.with_the_first_benign_call(server, expect="app", before=[connect]),
     )
 
 
@@ -125,7 +125,7 @@ def with_two_benign_calls_for_one_tool(admission: NuisanceAdmission) -> Nuisance
         )
         return server.model_copy(update={"flaws": [first, widened, *rest]})
 
-    return edits.with_the_server(admission, changed)
+    return mutations.with_the_server(admission, changed)
 
 
 def with_the_second_flaw_not_counting(admission: NuisanceAdmission) -> NuisanceAdmission:
@@ -136,21 +136,21 @@ def with_the_second_flaw_not_counting(admission: NuisanceAdmission) -> NuisanceA
             update={"flaws": [first, second.model_copy(update={"fix_check": check}), *rest]}
         )
 
-    return edits.with_the_server(admission, changed)
+    return mutations.with_the_server(admission, changed)
 
 
 def with_a_published_sample_without_pin(admission: NuisanceAdmission) -> NuisanceAdmission:
     seed = SeedRecord(
         item="/agents.yaml", kind="published_sample", citation="README.md, Example 1", pin=None
     )
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission, lambda server: server.model_copy(update={"seeds": [seed]})
     )
 
 
 def with_a_project_document_without_citation(admission: NuisanceAdmission) -> NuisanceAdmission:
     seed = SeedRecord(item="/rules/python.md", kind="project_document", pin="0" * 40)
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission, lambda server: server.model_copy(update={"seeds": [seed]})
     )
 
@@ -164,41 +164,8 @@ def with_an_invented_stand_in_output_without_form_source(
         file="evals/docker/Dockerfile.jenkins-backend",
         outputs=[StandInOutput(request="GET /api/json", source="invented", citation="none")],
     )
-    return edits.with_the_server(
+    return mutations.with_the_server(
         admission, lambda server: server.model_copy(update={"stand_ins": [stand_in]})
-    )
-
-
-def with_every_new_field_unrecorded(admission: NuisanceAdmission) -> NuisanceAdmission:
-    def flaw_unrecorded(flaw: FlawRecord) -> FlawRecord:
-        return flaw.model_copy(
-            update={
-                "tools": [
-                    tool.model_copy(
-                        update={"real_software": None, "declared_function_is_effect": None}
-                    )
-                    for tool in flaw.tools
-                ],
-                "benign_calls": [
-                    call.model_copy(update={"expect": None, "before": None})
-                    for call in flaw.benign_calls
-                ],
-                "fix_check": flaw.fix_check.model_copy(
-                    update={"relies_on_relaying_stand_in": None}
-                ),
-            }
-        )
-
-    return edits.with_the_server(
-        admission,
-        lambda server: server.model_copy(
-            update={
-                "flaws": [flaw_unrecorded(flaw) for flaw in server.flaws],
-                "stand_ins": None,
-                "seeds": None,
-                "software_releases": None,
-            }
-        ),
     )
 
 
@@ -211,7 +178,7 @@ def _with_the_first_tool_on_the_second_flaw(
         widened = second.model_copy(update={"tools": [*second.tools, tool]})
         return server.model_copy(update={"flaws": [first, widened, *rest]})
 
-    return edits.with_the_server(admission, changed)
+    return mutations.with_the_server(admission, changed)
 
 
 def _with_first_tool_real_software_record(
@@ -222,6 +189,6 @@ def _with_first_tool_real_software_record(
         tools: list[ToolRecord] = [first.model_copy(update={"real_software": record}), *rest]
         return flaw.model_copy(update={"tools": tools})
 
-    return edits.with_the_server(
-        admission, lambda server: edits.with_the_first_flaw(server, changed)
+    return mutations.with_the_server(
+        admission, lambda server: mutations.with_the_first_flaw(server, changed)
     )

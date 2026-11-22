@@ -2,10 +2,9 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.support.test_nuisance_fingerprint_given as given
 import tests.unit.support.admission_mutations as mutations
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve import planting_base
 from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
@@ -24,7 +23,7 @@ FAKE_BACKEND = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], n
 def test_the_fingerprint_is_stable_over_the_same_server(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
 
     first = nuisance_fixture_fingerprint(server, sources)
     second = nuisance_fixture_fingerprint(server, sources)
@@ -46,8 +45,8 @@ def test_the_fingerprint_moves_when_a_counted_tools_class_changes(tmp_path: Path
 def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
-    other = edits.with_the_first_benign_call(server, arguments={"path": "/etc/passwd"})
+    server = admissions.an_admission().servers[0]
+    other = mutations.with_the_first_benign_call(server, arguments={"path": "/etc/passwd"})
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
         other, sources
@@ -57,8 +56,8 @@ def test_the_fingerprint_moves_when_a_benign_calls_arguments_change(tmp_path: Pa
 def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
-    other = edits.with_the_first_benign_call(server, expect="another answer")
+    server = admissions.an_admission().servers[0]
+    other = mutations.with_the_first_benign_call(server, expect="another answer")
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
         other, sources
@@ -68,11 +67,11 @@ def test_the_fingerprint_moves_when_a_benign_calls_expected_text_changes(tmp_pat
 def test_the_fingerprint_moves_when_a_benign_calls_prerequisite_calls_change(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
-    connected = edits.with_the_first_benign_call(
+    server = admissions.an_admission().servers[0]
+    connected = mutations.with_the_first_benign_call(
         server, before=[ToolCall(tool="connect", arguments={"database": "app"})]
     )
-    unrecorded = edits.with_the_first_benign_call(server, before=None)
+    unrecorded = mutations.with_the_first_benign_call(server, before=None)
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
         connected, sources
@@ -85,7 +84,7 @@ def test_the_fingerprint_moves_when_a_benign_calls_prerequisite_calls_change(tmp
 def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     seed = SeedRecord(item="/agents.yaml", kind="written")
     stand_in = StandInRecord(
         replaces="api.example.com",
@@ -104,7 +103,7 @@ def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
 def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     given.written_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo@1.0.1\n")
@@ -115,7 +114,7 @@ def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path:
 def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     backend = BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
@@ -126,7 +125,7 @@ def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
 def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     one = mutations.with_a_backend(
         server, BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
     )
@@ -140,7 +139,7 @@ def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
 def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     other = server.model_copy(update={"launch": ["node", "other.js"]})
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
@@ -158,7 +157,7 @@ def test_the_fingerprint_moves_when_the_launch_changes(tmp_path: Path):
 def test_the_fingerprint_moves_when_a_host_field_changes(tmp_path: Path, host: PlantingHost):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
         mutations.with_host(server, host), sources
@@ -168,7 +167,7 @@ def test_the_fingerprint_moves_when_a_host_field_changes(tmp_path: Path, host: P
 def test_the_fingerprint_is_unchanged_by_a_dockerfile_comment(tmp_path: Path):
     given.written_dockerfile(tmp_path, "FROM node:22\nRUN npm install demo\n")
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     given.written_dockerfile(
@@ -181,10 +180,10 @@ def test_the_fingerprint_is_unchanged_by_a_dockerfile_comment(tmp_path: Path):
 def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
-    moved_exploit = edits.with_the_first_flaw(
+    moved_exploit = mutations.with_the_first_flaw(
         server,
         lambda flaw: flaw.model_copy(
             update={
@@ -212,7 +211,7 @@ def test_the_fingerprint_moves_when_a_served_file_of_the_backend_changes(
 ):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path, given.a_registry_serving(tmp_path))
-    server = mutations.with_a_backend(admission_given.an_admission().servers[0], FAKE_BACKEND)
+    server = mutations.with_a_backend(admissions.an_admission().servers[0], FAKE_BACKEND)
     first = nuisance_fixture_fingerprint(server, sources)
 
     (tmp_path / name).write_text(after)
@@ -225,7 +224,7 @@ def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backe
 ):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path, given.a_registry_serving(tmp_path))
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     for name, _, after in given.SERVED_CHANGES:
@@ -238,7 +237,7 @@ def test_the_fingerprint_moves_when_the_stand_in_image_of_a_public_name_changes(
     given.written_dockerfile(tmp_path)
     given.written_public_name_dockerfiles(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = given.serving_a_public_name(admission_given.an_admission().servers[0])
+    server = given.serving_a_public_name(admissions.an_admission().servers[0])
     before = nuisance_fixture_fingerprint(server, sources)
 
     given.written_public_name_dockerfiles(tmp_path, stand_in="FROM python:3.13\nRUN true\n")
@@ -252,7 +251,7 @@ def test_the_fingerprint_is_unchanged_by_the_stand_in_image_for_a_server_with_no
     given.written_dockerfile(tmp_path)
     given.written_public_name_dockerfiles(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     given.written_public_name_dockerfiles(tmp_path, stand_in="FROM python:3.13\nRUN true\n")
@@ -264,7 +263,7 @@ def test_the_fingerprint_moves_when_the_confinement_code_changes(tmp_path: Path)
     given.written_dockerfile(tmp_path)
     confinement = given.a_confinement_copy(tmp_path)
     sources = NuisanceFixtureSources(tmp_path, confinement=SuiteConfinement(source=confinement))
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     confinement.write_text(
@@ -280,7 +279,7 @@ def test_the_fingerprint_is_unchanged_by_a_comment_in_the_confinement(tmp_path: 
     given.written_dockerfile(tmp_path)
     confinement = given.a_confinement_copy(tmp_path)
     sources = NuisanceFixtureSources(tmp_path, confinement=SuiteConfinement(source=confinement))
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
     confinement.write_text(confinement.read_text() + "\n# a note on the bound\n")
@@ -290,7 +289,7 @@ def test_the_fingerprint_is_unchanged_by_a_comment_in_the_confinement(tmp_path: 
 
 def test_the_fingerprint_moves_when_the_confinement_options_change(tmp_path: Path):
     given.written_dockerfile(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, NuisanceFixtureSources(tmp_path))
     options = [*planting_base.confinement_args(), "--pids-limit", "512"]
 
@@ -301,7 +300,7 @@ def test_the_fingerprint_moves_when_the_confinement_options_change(tmp_path: Pat
 
 def test_the_fingerprint_moves_when_the_resolver_option_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
-    server = admission_given.an_admission().servers[0]
+    server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, NuisanceFixtureSources(tmp_path))
     resolver = SuiteConfinement(resolver=lambda: ["--dns-search", "fict"])
 

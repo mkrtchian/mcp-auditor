@@ -25,13 +25,13 @@ from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
+from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
+from tests.unit.support.captured_console import a_captured_console
+from tests.unit.support.nuisance_admissions import (
     a_backend_registry,
     a_fake_lifecycle,
     an_admitted_server,
 )
-from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
-from tests.unit.support.captured_console import a_captured_console
 
 
 def test_a_backend_less_server_runs_its_patched_image_as_a_single_container_with_no_mount():

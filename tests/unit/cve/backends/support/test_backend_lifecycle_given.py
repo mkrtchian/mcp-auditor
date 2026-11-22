@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve import environments
 from evals.cve.backends import (
     ckan,
@@ -146,7 +146,7 @@ def _noop_remove(name: str) -> None:
 def through_the_provisioner(
     lifecycle: BackendLifecycle | PerLaunchBackend,
 ) -> AbstractContextManager[Launch]:
-    return provisioner_of(lifecycle)(admission_given.an_admitted_server())
+    return provisioner_of(lifecycle)(admissions.an_admitted_server())
 
 
 def through_the_kit(

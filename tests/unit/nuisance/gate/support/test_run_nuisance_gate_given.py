@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.captured_console as captured_console
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
@@ -24,7 +24,7 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, s
 from tests.unit.support import census_draws, censuses
 from tests.unit.support.detection_holdout_runs import SETTINGS, ready_conditions
 
-GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
+GATE_SERVER = admissions.ACCEPTANCE_PACKAGE
 
 
 def without_any_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -40,8 +40,8 @@ def a_gate_set_of_one_server(
     admitted by `admitted`, by default fully recorded."""
     return _gate_arguments(
         tmp_path,
-        admission_given.a_census_with_an_acceptance_server(),
-        admitted or admission_given.admitting_the_acceptance_server(),
+        admissions.a_census_with_an_acceptance_server(),
+        admitted or admissions.admitting_the_acceptance_server(),
     )
 
 
@@ -56,19 +56,17 @@ def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
         censuses.with_a_cve_of(
             censuses.with_a_cve_of(
                 censuses.a_census(),
-                admission_given.ACCEPTANCE_FLAW,
-                admission_given.ACCEPTANCE_PACKAGE,
+                admissions.ACCEPTANCE_FLAW,
+                admissions.ACCEPTANCE_PACKAGE,
             ),
             OTHER_GATE_FLAW,
             OTHER_GATE_SERVER,
         ),
-        admission_given.FIRST_FLAW,
+        admissions.FIRST_FLAW,
     )
-    recorded = admission_given.admitting_the_acceptance_server()
-    other = records_given.with_every_new_field_unrecorded(
-        admission_given.admitting_the_server_of(
-            OTHER_GATE_FLAW, OTHER_GATE_SERVER, "other-nuisance"
-        )
+    recorded = admissions.admitting_the_acceptance_server()
+    other = mutations.with_every_new_field_unrecorded(
+        admissions.admitting_the_server_of(OTHER_GATE_FLAW, OTHER_GATE_SERVER, "other-nuisance")
     )
     both = recorded.model_copy(update={"servers": [*recorded.servers, *other.servers]})
     return _gate_arguments(tmp_path, census, both)
@@ -76,7 +74,7 @@ def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
 
 def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission) -> list[str]:
     return [
-        *gate_arguments(tmp_path, census, admission_given.written(tmp_path, admitted)),
+        *gate_arguments(tmp_path, census, admissions.written(tmp_path, admitted)),
         "--report",
         str(tmp_path / "nuisance_gate_report.json"),
     ]
@@ -84,7 +82,7 @@ def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission)
 
 def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
     return [
-        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
+        *walks.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

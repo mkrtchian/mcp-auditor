@@ -5,13 +5,12 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
-import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
 import tests.unit.nuisance.gate.support.test_run_nuisance_gate_given as given
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals import run_nuisance
 from evals.baseline import BaselineStatus
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
-from tests.unit.support.test_nuisance_admission_edits_given import without_stdio
 
 
 def test_gate_without_an_admission_exits_zero_and_says_so(
@@ -21,7 +20,7 @@ def test_gate_without_an_admission_exits_zero_and_says_so(
     missing = tmp_path / "absent.json"
 
     exit_code = run_nuisance.main(
-        ["gate", *given.gate_arguments(tmp_path, admission.a_census(), missing)]
+        ["gate", *given.gate_arguments(tmp_path, admissions.a_census(), missing)]
     )
 
     assert exit_code == 0
@@ -32,12 +31,12 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.without_any_llm_key(monkeypatch)
-    path = admission.written(tmp_path, admission.an_admission())
+    path = admissions.written(tmp_path, admissions.an_admission())
 
     exit_code = run_nuisance.main(
         [
             "gate",
-            *given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path),
+            *given.gate_arguments(tmp_path, admissions.a_census_with_an_acceptance_server(), path),
         ]
     )
 
@@ -49,13 +48,13 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.without_any_llm_key(monkeypatch)
-    admitted = admission.admitting_the_acceptance_server()
-    path = admission.written(tmp_path, without_stdio(admitted, given.GATE_SERVER))
+    admitted = admissions.admitting_the_acceptance_server()
+    path = admissions.written(tmp_path, mutations.without_stdio(admitted, given.GATE_SERVER))
 
     exit_code = run_nuisance.main(
         [
             "gate",
-            *given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path),
+            *given.gate_arguments(tmp_path, admissions.a_census_with_an_acceptance_server(), path),
         ]
     )
 
@@ -70,8 +69,8 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.without_any_llm_key(monkeypatch)
-    path = admission.written(tmp_path, admission.admitting_the_acceptance_server())
-    gate_set = given.gate_arguments(tmp_path, admission.a_census_with_an_acceptance_server(), path)
+    path = admissions.written(tmp_path, admissions.admitting_the_acceptance_server())
+    gate_set = given.gate_arguments(tmp_path, admissions.a_census_with_an_acceptance_server(), path)
 
     exit_code = run_nuisance.main(["gate", *gate_set, "--server", "npm:other"])
 
@@ -83,8 +82,8 @@ def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
-    unrecorded = records_given.with_every_new_field_unrecorded(
-        admission.admitting_the_acceptance_server()
+    unrecorded = mutations.with_every_new_field_unrecorded(
+        admissions.admitting_the_acceptance_server()
     )
     gate_set = given.a_gate_set_of_one_server(tmp_path, unrecorded)
 

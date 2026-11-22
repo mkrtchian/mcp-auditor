@@ -10,7 +10,7 @@ import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as b
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_vet_given as given
 import tests.unit.nuisance.support.test_run_nuisance_given as walk_given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
 from evals import run_nuisance
 from evals.cve.nuisance.commands import UNKNOWN_SERVER_EXIT
 from evals.cve.nuisance.vet_command import VetDeps, vet_servers
@@ -107,7 +107,7 @@ async def test_a_server_container_seen_only_after_the_rebuild_refuses_and_is_lef
 
 
 async def test_a_running_responder_container_is_removed_and_the_vet_goes_on():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = backends.DockerHost({backends.CKAN_TAG: ["stale_responder"]})
 
     result = await vet_servers([server], given.deps_on(host))
@@ -119,7 +119,7 @@ async def test_a_running_responder_container_is_removed_and_the_vet_goes_on():
 
 
 async def test_the_server_and_backend_containers_left_at_the_end_are_removed():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = backends.DockerHost()
 
     await vet_servers([server], given.deps_on(host))

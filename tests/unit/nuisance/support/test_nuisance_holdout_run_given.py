@@ -2,8 +2,8 @@ import asyncio
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from datetime import date
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission
 import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
@@ -25,8 +25,8 @@ from mcp_auditor.domain.models import (
 )
 from tests.fakes import FakeContainerSweep, ScriptedBenignCall
 
-FIRST_FLAW = admission.FIRST_FLAW
-SECOND_FLAW = admission.SECOND_FLAW
+FIRST_FLAW = admissions.FIRST_FLAW
+SECOND_FLAW = admissions.SECOND_FLAW
 COUNTED_TOOL = f"{FIRST_FLAW}_read"
 LUNA_PRICE = Prices(input=0.10, cached_input=0.01, output=0.50)
 SETTINGS = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
@@ -37,7 +37,7 @@ type Audit = Callable[[AdmittedServer], Awaitable[Outcome]]
 
 
 def a_server(
-    package: str = admission.SERVER_PACKAGE,
+    package: str = admissions.SERVER_PACKAGE,
     *,
     # A service whose Dockerfile exists, since the run fingerprints the server's fixture.
     service: str = "filesystem-patched",
@@ -47,12 +47,12 @@ def a_server(
         flaws
         if flaws is not None
         else [
-            admission.a_flaw_record(
-                FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, admission.PATCHED_VERSION
+            admissions.a_flaw_record(
+                FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, admissions.PATCHED_VERSION
             )
         ]
     )
-    server = admission.a_server(the_flaws)
+    server = admissions.a_server(the_flaws)
     return server.model_copy(update={"server_package": package, "service": service})
 
 

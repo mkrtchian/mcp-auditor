@@ -41,33 +41,6 @@ _FIREWORKS_RETRY = ThirdParty(
 )
 
 _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
-    "tests/integration/committed/cve/backends/support/test_backend_hostnames_given.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/cve/backends/support/test_mcp_ssh_sshd_backend_given.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/cve/support/test_committed_stand_ins_given.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/admission/test_nuisance_admission_loads.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/admission/test_nuisance_re_admission_dossier.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/fix_checks/support/test_nuisance_fix_checks_given.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/fix_checks/test_nuisance_fix_checks.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/test_nuisance_compose.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/integration/committed/nuisance/test_nuisance_fixture_sources.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
     "tests/integration/test_cve_keyed_stand_in_routes.py": (
         (FOREIGN, "test_cve_planting_stand_ins_then"),
     ),
@@ -80,18 +53,8 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/auditor/support/test_model_inputs_golden_given.py": (
         (FOREIGN, "test_llm_adapter_given"),
     ),
-    "tests/unit/cve/backends/support/test_backend_lifecycle_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/cve/backends/test_backend_lifecycle.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
     "tests/unit/cve/support/test_cve_grammar_golden_given.py": (
         (FOREIGN, "test_cve_strike_given"),
-    ),
-    "tests/unit/cve/support/test_kit_benign_probe_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/cve/test_cve_closed_network_refusal.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
@@ -146,69 +109,14 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/evals/support/test_run_judge_eval_given.py": (
         (FOREIGN, "test_judge_baseline_given"),
     ),
-    "tests/unit/nuisance/admission/support/test_nuisance_admission_given.py": (
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_admission_records_given.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_admission_walk_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_dossier_given.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_holdout_calibration_copies_given.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_re_admission_dossier_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_unrecorded_given.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_admission_records_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_walk_given.py": (
-        (FOREIGN, "test_census_grouping_given"),
-    ),
-    "tests/unit/nuisance/admission/support/test_nuisance_walk_record_given.py": (
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
-    "tests/unit/nuisance/admission/test_nuisance_admission_records.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/nuisance/admission/test_nuisance_admission_walk.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
     "tests/unit/nuisance/admission/test_nuisance_dossier.py": (
         (FOREIGN, "test_nuisance_unrecorded_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/admission/test_nuisance_re_admission_dossier.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-        (FOREIGN, "test_nuisance_dossier_given"),
         (FOREIGN, "test_nuisance_dossier_then"),
-    ),
-    "tests/unit/nuisance/fix_checks/support/recorded_exchanges.py": (
-        (FOREIGN, "test_nuisance_committed_admission_given"),
-    ),
-    "tests/unit/nuisance/fix_checks/support/test_nuisance_fix_check_command_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/fix_checks/test_nuisance_fix_check_command.py": (
         (FOREIGN, "test_kit_fix_check_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/gate/support/nuisance_gate_sessions.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
@@ -233,16 +141,8 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/gate/support/test_nuisance_gate_session_given.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
     ),
-    "tests/unit/nuisance/gate/support/test_run_nuisance_gate_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_admission_records_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
     "tests/unit/nuisance/gate/test_nuisance_gate_baseline.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
-    ),
-    "tests/unit/nuisance/gate/test_nuisance_gate_benign_calls.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
     ),
     "tests/unit/nuisance/gate/test_nuisance_gate_console.py": (
         (FOREIGN, "test_nuisance_gate_report_given"),
@@ -251,45 +151,17 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/gate/test_nuisance_gate_report.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
-    "tests/unit/nuisance/gate/test_nuisance_gate_selection.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-    ),
     "tests/unit/nuisance/gate/test_nuisance_gate_session.py": (
         (FOREIGN, "test_nuisance_gate_baseline_given"),
     ),
-    "tests/unit/nuisance/gate/test_nuisance_gate_sweep.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-    ),
-    "tests/unit/nuisance/gate/test_run_nuisance_gate.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_admission_records_given"),
-    ),
     "tests/unit/nuisance/support/test_nuisance_assembly_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
-    ),
-    "tests/unit/nuisance/support/test_nuisance_audit_once_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/nuisance/support/test_nuisance_benign_call_given.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_confinement_given.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
     ),
-    "tests/unit/nuisance/support/test_nuisance_counting_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/nuisance/support/test_nuisance_fingerprint_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
     "tests/unit/nuisance/support/test_nuisance_holdout_run_backends_given.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
-    ),
-    "tests/unit/nuisance/support/test_nuisance_holdout_run_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_holdout_servers_given.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
@@ -303,56 +175,31 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_vet_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_vet_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
     ),
     "tests/unit/nuisance/support/test_nuisance_vetting_given.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
-    "tests/unit/nuisance/support/test_run_nuisance_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_admission_records_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
     "tests/unit/nuisance/support/test_run_nuisance_holdout_run_given.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_nuisance_statistic_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
     ),
-    "tests/unit/nuisance/test_nuisance_assembly.py": ((FOREIGN, "test_nuisance_admission_given"),),
     "tests/unit/nuisance/test_nuisance_audit_once.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
-    ),
-    "tests/unit/nuisance/test_nuisance_backend_registry.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
     ),
     "tests/unit/nuisance/test_nuisance_backend_registry_built.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
-    ),
-    "tests/unit/nuisance/test_nuisance_benign_call.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
     ),
     "tests/unit/nuisance/test_nuisance_confinement.py": (
         (FOREIGN, "test_cve_planting_stand_ins_given"),
     ),
     "tests/unit/nuisance/test_nuisance_containers.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
-    "tests/unit/nuisance/test_nuisance_counting.py": ((FOREIGN, "test_nuisance_admission_given"),),
-    "tests/unit/nuisance/test_nuisance_fingerprint.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
     "tests/unit/nuisance/test_nuisance_holdout_run_backends.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/test_nuisance_holdout_run_interrupted.py": (
@@ -364,43 +211,20 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/test_nuisance_holdout_run_sweep.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
-    "tests/unit/nuisance/test_nuisance_holdout_servers.py": (
-        (FOREIGN, "test_nuisance_admission_walk_given"),
-    ),
-    "tests/unit/nuisance/test_nuisance_images.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
     "tests/unit/nuisance/test_nuisance_report.py": ((FOREIGN, "test_nuisance_statistic_given"),),
     "tests/unit/nuisance/test_nuisance_report_sections.py": (
         (FOREIGN, "test_nuisance_statistic_given"),
     ),
     "tests/unit/nuisance/test_nuisance_retry_policy.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/test_nuisance_solo.py": ((FOREIGN, "test_nuisance_holdout_run_given"),),
     "tests/unit/nuisance/test_nuisance_vet.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_run_nuisance_given"),
     ),
-    "tests/unit/nuisance/test_nuisance_vetting.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-    ),
-    "tests/unit/nuisance/test_run_nuisance.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
-    "tests/unit/nuisance/test_run_nuisance_dossier.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_re_admission_dossier_given"),
-        (FOREIGN, "test_nuisance_walk_given"),
-    ),
     "tests/unit/nuisance/test_run_nuisance_holdout_run.py": (
-        (FOREIGN, "test_nuisance_admission_given"),
-        (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_holdout_calibration_copies_given"),
     ),
     "tests/unit/nuisance/test_run_nuisance_vet.py": (
@@ -409,16 +233,13 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_vetting_given"),
         (FOREIGN, "test_run_nuisance_given"),
     ),
-    "tests/unit/support/admission_mutations.py": (
-        (FOREIGN, "test_nuisance_admission_edits_given"),
-        (FOREIGN, "test_nuisance_admission_given"),
-    ),
     "tests/unit/support/audited_launch_builders.py": (
         (FOREIGN, "test_ckan_holdout_builder_given"),
         (FOREIGN, "test_cve_planting_stand_ins_given"),
         (FOREIGN, "test_kubernetes_backend_given"),
         (FOREIGN, "test_searxng_backend_given"),
     ),
+    "tests/unit/support/nuisance_walks.py": ((FOREIGN, "test_census_grouping_given"),),
 }
 
 DEBTS: tuple[Debt, ...] = (

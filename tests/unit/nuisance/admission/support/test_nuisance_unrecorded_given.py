@@ -1,25 +1,24 @@
 from collections.abc import Callable
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 
-SERVER = admission_given.SERVER_PACKAGE
+SERVER = admissions.SERVER_PACKAGE
 
 _FlawChange = Callable[[FlawRecord], FlawRecord]
 
 
 def a_recorded_server() -> AdmittedServer:
-    return admission_given.an_admission().servers[0]
+    return admissions.an_admission().servers[0]
 
 
 def a_server_with_every_field_unrecorded() -> AdmittedServer:
-    return records_given.with_every_new_field_unrecorded(admission_given.an_admission()).servers[0]
+    return mutations.with_every_new_field_unrecorded(admissions.an_admission()).servers[0]
 
 
 def without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(
+    return mutations.with_the_first_flaw(
         server,
         lambda flaw: flaw.model_copy(
             update={
@@ -30,7 +29,7 @@ def without_a_real_software_record(server: AdmittedServer) -> AdmittedServer:
 
 
 def without_a_declared_function_record(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(server, _tools_without_a_declared_function_record)
+    return mutations.with_the_first_flaw(server, _tools_without_a_declared_function_record)
 
 
 def with_a_tool_left_out_by_its_declared_function_unrecorded(
@@ -40,11 +39,11 @@ def with_a_tool_left_out_by_its_declared_function_unrecorded(
         unrecorded = _tools_without_a_declared_function_record(flaw)
         return unrecorded.model_copy(update={"declared_function_is_effect": True})
 
-    return edits.with_the_first_flaw(server, changed)
+    return mutations.with_the_first_flaw(server, changed)
 
 
 def a_holdout_copy_without_its_fingerprint(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(server, _fix_check_copied_from_the_holdout)
+    return mutations.with_the_first_flaw(server, _fix_check_copied_from_the_holdout)
 
 
 def without_software_releases(server: AdmittedServer) -> AdmittedServer:
@@ -52,15 +51,15 @@ def without_software_releases(server: AdmittedServer) -> AdmittedServer:
 
 
 def without_an_expected_text(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(server, _benign_calls_without("expect"))
+    return mutations.with_the_first_flaw(server, _benign_calls_without("expect"))
 
 
 def without_prerequisite_calls(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(server, _benign_calls_without("before"))
+    return mutations.with_the_first_flaw(server, _benign_calls_without("before"))
 
 
 def without_a_relaying_stand_in_judgment(server: AdmittedServer) -> AdmittedServer:
-    return edits.with_the_first_flaw(server, _fix_check_without_a_relaying_judgment)
+    return mutations.with_the_first_flaw(server, _fix_check_without_a_relaying_judgment)
 
 
 def without_stand_ins(server: AdmittedServer) -> AdmittedServer:
@@ -81,8 +80,8 @@ def with_the_second_flaw_uncounted_and_unrecorded(server: AdmittedServer) -> Adm
 
 
 def with_a_removed_tool_without_its_records(server: AdmittedServer) -> AdmittedServer:
-    removed = admission_given.a_tool("gone", None, "removed")
-    return edits.with_the_first_flaw(
+    removed = admissions.a_tool("gone", None, "removed")
+    return mutations.with_the_first_flaw(
         server, lambda flaw: flaw.model_copy(update={"tools": [*flaw.tools, removed]})
     )
 

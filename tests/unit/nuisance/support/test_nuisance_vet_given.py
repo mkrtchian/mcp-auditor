@@ -2,9 +2,9 @@ import dataclasses
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as nuisance_run_given
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.vet_command import VetCommandDeps, VetDeps
@@ -13,9 +13,9 @@ from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
 from tests.unit.support import censuses
 
-SERVER = admission_given.SERVER_PACKAGE
+SERVER = admissions.SERVER_PACKAGE
 SERVER_TAG = nuisance_images.image_tag("filesystem-nuisance")
-ACCEPTANCE = admission_given.ACCEPTANCE_PACKAGE
+ACCEPTANCE = admissions.ACCEPTANCE_PACKAGE
 
 
 def deps_on(
@@ -76,13 +76,13 @@ def a_failing_rebuild(services: Sequence[str]) -> None:
 def a_vet_of_one_server_beside_the_acceptance_one(tmp_path: Path) -> list[str]:
     """The `vet` arguments of an admission of SERVER and of the nuisance acceptance server
     ACCEPTANCE."""
-    census = admission_given.a_census_with_an_acceptance_server()
-    one = admission_given.an_admission()
-    acceptance = admission_given.admitting_the_acceptance_server()
+    census = admissions.a_census_with_an_acceptance_server()
+    one = admissions.an_admission()
+    acceptance = admissions.admitting_the_acceptance_server()
     both = one.model_copy(update={"servers": [*one.servers, *acceptance.servers]})
     return [
         "vet",
-        *walk_given.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
+        *walks.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
-        str(admission_given.written(tmp_path, both)),
+        str(admissions.written(tmp_path, both)),
     ]

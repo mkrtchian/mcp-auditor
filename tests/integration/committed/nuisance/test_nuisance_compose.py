@@ -9,7 +9,7 @@ from evals.cve.images import COMPOSE_FILE
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 COMPOSE_SERVICES: dict[str, Any] = yaml.safe_load(COMPOSE_FILE.read_text())["services"]
 

@@ -6,14 +6,14 @@ import pytest
 
 import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.planting_base import STAND_IN_IMAGE
 from evals.eval_session import Refused
 
 
 async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost()
 
     await run_given.run([server], given.deps_on(host, server))
@@ -22,7 +22,7 @@ async def test_the_rebuild_builds_the_backend_service_with_the_server_service():
 
 
 async def test_a_backend_container_running_at_start_is_removed_before_the_rebuild():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost({given.CKAN_TAG: ["stale_responder"]})
 
     result = await run_given.run([server], given.deps_on(host, server))
@@ -33,7 +33,7 @@ async def test_a_backend_container_running_at_start_is_removed_before_the_rebuil
 
 
 async def test_the_containers_of_every_built_image_of_the_backend_are_removed_before_the_rebuild():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost(
         {given.CKAN_TAG: ["stale_responder"], STAND_IN_IMAGE: ["stale_stand_in"]}
     )
@@ -45,7 +45,7 @@ async def test_the_containers_of_every_built_image_of_the_backend_are_removed_be
 
 
 async def test_a_server_container_running_at_start_still_refuses_and_nothing_is_removed():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost(
         {given.SERVER_TAG: ["leftover_server"], given.CKAN_TAG: ["stale_responder"]}
     )
@@ -59,7 +59,7 @@ async def test_a_server_container_running_at_start_still_refuses_and_nothing_is_
 
 
 async def test_the_backend_container_started_during_the_run_is_removed_at_its_end():
-    server = edits.on_the_ckan_backend(run_given.a_server())
+    server = mutations.on_the_ckan_backend(run_given.a_server())
     host = given.DockerHost()
 
     await run_given.run([server], given.deps_on(host, server))
@@ -68,7 +68,7 @@ async def test_the_backend_container_started_during_the_run_is_removed_at_its_en
 
 
 async def test_a_pulled_backend_is_reset_at_start_but_neither_rebuilt_nor_swept():
-    server = edits.with_the_registered_backend(run_given.a_server(), "doris")
+    server = mutations.with_the_registered_backend(run_given.a_server(), "doris")
     host = given.DockerHost({given.DORIS_TAG: [DORIS_CONTAINER]})
 
     await run_given.run([server], given.deps_on(host, server))

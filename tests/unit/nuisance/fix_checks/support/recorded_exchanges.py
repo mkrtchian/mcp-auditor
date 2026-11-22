@@ -4,7 +4,7 @@ from evals.cve.kit.fix_check import FixCheckExploit, FixCheckFixture
 from evals.cve.nuisance.admission.admission import FlawRecord
 from evals.cve.nuisance.counting import flaw_tools
 from tests.fakes import FakeKitClient
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 async def recorded(fixture: FixCheckFixture, *calls: FixCheckExploit) -> list[Exchange]:

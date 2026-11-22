@@ -1,5 +1,5 @@
 import tests.unit.nuisance.support.test_nuisance_benign_call_given as given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
 from evals.cve.nuisance.benign_call import benign_call_failure
 from mcp_auditor.domain import ToolResponse
 from tests.unit.nuisance.support.test_nuisance_benign_call_given import (
@@ -40,7 +40,7 @@ async def test_an_empty_text_with_an_expected_text_returned_no_text():
 
 
 async def test_an_unset_expected_text_passes_on_any_text_that_is_not_an_error():
-    server = edits.with_the_first_benign_call(SERVER, expect=None)
+    server = mutations.with_the_first_benign_call(SERVER, expect=None)
     client = given.a_listing_client(responses={FIRST_TOOL: ToolResponse(content="")})
 
     reason = await benign_call_failure(server, client)

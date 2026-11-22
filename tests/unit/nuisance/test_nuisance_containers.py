@@ -6,7 +6,6 @@ also resets the Doris cluster, a pulled backend, by its container name."""
 import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as backends_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.support.admission_mutations as mutations
-import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.nuisance.containers import remove_backend_containers, run_images
 from evals.cve.planting_base import (
@@ -38,7 +37,7 @@ def test_servers_without_public_names_rebuild_no_shared_image():
 
 
 def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
-    ckan = edits.on_the_ckan_backend(run_given.a_server("npm:ckan"))
+    ckan = mutations.on_the_ckan_backend(run_given.a_server("npm:ckan"))
     served = mutations.with_host(run_given.a_server("npm:served"), SERVED)
 
     images = run_images([ckan, served])
@@ -48,7 +47,7 @@ def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
 
 
 def test_the_removal_at_start_resets_the_doris_cluster_by_its_name():
-    doris = edits.with_the_registered_backend(run_given.a_server("PyPI:d"), "doris")
+    doris = mutations.with_the_registered_backend(run_given.a_server("PyPI:d"), "doris")
     docker = backends_given.DockerHost({backends_given.DORIS_TAG: [DORIS_CONTAINER]})
 
     remove_backend_containers(backends_given.host_of(docker), run_images([doris]))
@@ -57,7 +56,7 @@ def test_the_removal_at_start_resets_the_doris_cluster_by_its_name():
 
 
 def test_the_removal_at_start_resets_no_container_by_name_for_a_built_backend():
-    ckan = edits.on_the_ckan_backend(run_given.a_server("npm:ckan"))
+    ckan = mutations.on_the_ckan_backend(run_given.a_server("npm:ckan"))
     docker = backends_given.DockerHost({backends_given.CKAN_TAG: ["stale_front"]})
 
     remove_backend_containers(backends_given.host_of(docker), run_images([ckan]))

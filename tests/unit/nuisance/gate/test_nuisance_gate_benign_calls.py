@@ -20,7 +20,7 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
     scripted,
     the_one_server_ends,
 )
-from tests.unit.support.test_nuisance_admission_edits_given import on_the_ckan_backend
+from tests.unit.support.admission_mutations import on_the_ckan_backend
 
 
 async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tmp_path: Path):

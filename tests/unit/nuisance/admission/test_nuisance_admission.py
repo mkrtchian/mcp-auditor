@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as given
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
@@ -30,8 +30,8 @@ _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] =
 
 
 def test_the_clean_admission_has_no_problems():
-    admission = given.an_admission()
-    assert given.problems_of(admission) == []
+    admission = admissions.an_admission()
+    assert admissions.problems_of(admission) == []
 
 
 @pytest.mark.parametrize(
@@ -42,91 +42,95 @@ def test_the_clean_admission_has_no_problems():
 def test_each_mutation_yields_exactly_one_problem_carrying_its_rule(
     mutate: Callable[[NuisanceAdmission], NuisanceAdmission], fragment: str
 ):
-    [problem] = given.problems_of(mutate(given.an_admission()))
+    [problem] = admissions.problems_of(mutate(admissions.an_admission()))
 
     assert fragment in problem
 
 
 def test_a_registered_backend_fixture_has_no_problem():
-    admission = mutations.with_a_registered_backend(given.an_admission())
+    admission = mutations.with_a_registered_backend(admissions.an_admission())
 
-    assert given.problems_of(admission) == []
+    assert admissions.problems_of(admission) == []
 
 
 def test_a_networked_host_with_no_backend_is_refused():
-    admission = mutations.with_a_networked_host_and_no_backend(given.an_admission())
+    admission = mutations.with_a_networked_host_and_no_backend(admissions.an_admission())
 
-    problems = given.problems_of(admission)
+    problems = admissions.problems_of(admission)
 
     assert problems == [
-        f"{given.SERVER_PACKAGE}: has_network without a backend: "
+        f"{admissions.SERVER_PACKAGE}: has_network without a backend: "
         "a server with no backend runs with no network"
     ]
 
 
 def test_a_fixture_backend_need_with_no_backend_is_allowed():
-    admission = mutations.with_every_flaw_needing_the_fixture(given.an_admission())
+    admission = mutations.with_every_flaw_needing_the_fixture(admissions.an_admission())
 
-    assert given.problems_of(admission) == []
+    assert admissions.problems_of(admission) == []
 
 
 def test_a_flaw_recorded_under_another_package_is_foreign_without_a_settlement():
-    census = given.walk_inputs_with_the_second_flaw_under_another_package()
+    census = admissions.walk_inputs_with_the_second_flaw_under_another_package()
 
-    problems = given.problems_of(given.an_admission(), census)
+    problems = admissions.problems_of(admissions.an_admission(), census)
 
-    assert any(given.SECOND_FLAW in problem and "census flaw" in problem for problem in problems)
+    assert any(
+        admissions.SECOND_FLAW in problem and "census flaw" in problem for problem in problems
+    )
 
 
 def test_a_server_package_settlement_unifies_the_foreign_flaw():
-    census = given.walk_inputs_with_the_second_flaw_under_another_package()
-    admission = mutations.with_the_second_flaw_settled_here(given.an_admission())
+    census = admissions.walk_inputs_with_the_second_flaw_under_another_package()
+    admission = mutations.with_the_second_flaw_settled_here(admissions.an_admission())
 
-    assert given.problems_of(admission, census) == []
+    assert admissions.problems_of(admission, census) == []
 
 
 def test_load_admission_returns_the_written_clean_admission(tmp_path: Path):
-    admission = given.an_admission()
-    path = given.written(tmp_path, admission)
+    admission = admissions.an_admission()
+    path = admissions.written(tmp_path, admission)
 
-    assert load_admission(path, given.walk_inputs_of()) == admission
+    assert load_admission(path, admissions.walk_inputs_of()) == admission
 
 
 def test_load_admission_reads_the_host_as_a_planting_host(tmp_path: Path):
-    path = given.written(tmp_path, given.an_admission())
+    path = admissions.written(tmp_path, admissions.an_admission())
 
-    [server] = load_admission(path, given.walk_inputs_of()).servers
+    [server] = load_admission(path, admissions.walk_inputs_of()).servers
 
     assert server.host == PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
 
 def test_load_admission_refuses_a_server_without_a_host(tmp_path: Path):
-    path = given.written(tmp_path, given.an_admission())
+    path = admissions.written(tmp_path, admissions.an_admission())
     document = json.loads(path.read_text())
     del document["servers"][0]["host"]
     path.write_text(json.dumps(document))
 
     with pytest.raises(ValueError):
-        load_admission(path, given.walk_inputs_of())
+        load_admission(path, admissions.walk_inputs_of())
 
 
 def test_load_admission_refuses_the_host_user(tmp_path: Path):
-    path = given.written(tmp_path, given.an_admission())
+    path = admissions.written(tmp_path, admissions.an_admission())
     document = json.loads(path.read_text())
     document["servers"][0]["host"]["user"] = "host"
     path.write_text(json.dumps(document))
 
     with pytest.raises(ValueError):
-        load_admission(path, given.walk_inputs_of())
+        load_admission(path, admissions.walk_inputs_of())
 
 
 def test_load_admission_on_a_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
-        load_admission(tmp_path / "absent.json", given.walk_inputs_of())
+        load_admission(tmp_path / "absent.json", admissions.walk_inputs_of())
 
 
 def test_load_admission_on_a_mutated_admission_raises_with_the_problem(tmp_path: Path):
-    path = given.written(tmp_path, mutations.with_a_flaw_of_another_server(given.an_admission()))
+    path = admissions.written(
+        tmp_path, mutations.with_a_flaw_of_another_server(admissions.an_admission())
+    )
 
     with pytest.raises(ValueError, match="is not a census flaw"):
-        load_admission(path, given.walk_inputs_of())
+        load_admission(path, admissions.walk_inputs_of())

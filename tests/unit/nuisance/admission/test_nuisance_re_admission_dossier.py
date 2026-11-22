@@ -9,12 +9,11 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_dossier_given as dossier_given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as dossier_then
 import tests.unit.nuisance.admission.support.test_nuisance_re_admission_dossier_given as given
+import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.docker_paths import image_dockerfile
 from evals.cve.dossier_closure import import_closure
 from evals.cve.kit import benign_probe
@@ -34,15 +33,20 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import user_args
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinement_args
 from evals.eval_session import Refused
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import (
+    a_committed_server_with_fix_checks,
+    a_detection_holdout_server_with_its_own_fix_check,
+    its_holdout_targets,
+    the_committed_admission,
+)
 
 type DossierOf = Callable[[AdmittedServer], Path]
 
 SHAPES = [
-    given.a_committed_server_with_fix_checks,
+    a_committed_server_with_fix_checks,
     given.a_committed_server_with_a_backend,
     given.a_committed_server_with_a_holdout_copy,
-    dossier_given.a_detection_holdout_server_with_its_own_fix_check,
+    a_detection_holdout_server_with_its_own_fix_check,
 ]
 
 
@@ -76,7 +80,7 @@ def test_every_admitted_server_has_a_clean_closure():
 def test_a_fix_check_dossier_carries_its_record_rule_dockerfiles_and_fix_checks(
     dossier_of: DossierOf,
 ):
-    server = given.a_committed_server_with_fix_checks()
+    server = a_committed_server_with_fix_checks()
 
     out = dossier_of(server)
 
@@ -131,19 +135,19 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
 def test_a_detection_holdout_server_with_its_own_fix_check_carries_its_reference_and_card(
     dossier_of: DossierOf,
 ):
-    server = dossier_given.a_detection_holdout_server_with_its_own_fix_check()
+    server = a_detection_holdout_server_with_its_own_fix_check()
 
     out = dossier_of(server)
 
-    for target in dossier_given.its_holdout_targets(server):
+    for target in its_holdout_targets(server):
         dossier_then.it_carries_the_holdout_reference_of(out, target)
 
 
 @pytest.mark.parametrize(
     "server",
     [
-        admission_given.an_admitted_server(),
-        edits.with_the_registered_backend(admission_given.an_admitted_server(), "doris"),
+        admissions.an_admitted_server(),
+        mutations.with_the_registered_backend(admissions.an_admitted_server(), "doris"),
     ],
     ids=["without a backend", "on the doris backend"],
 )
@@ -157,7 +161,7 @@ def test_the_confinement_names_every_option_the_run_sets(server: AdmittedServer)
 
 
 def test_the_readme_builds_the_run_image_and_names_the_fix_check_modules():
-    server = admission_given.an_admitted_server()
+    server = admissions.an_admitted_server()
     modules = ["evals.cve.nuisance.fix_checks.first", "evals.cve.nuisance.fix_checks.second"]
 
     readme = re_admission_readme(server, modules)
@@ -168,7 +172,7 @@ def test_the_readme_builds_the_run_image_and_names_the_fix_check_modules():
 
 
 def test_the_readme_names_the_backend_lifecycle_of_a_server_with_a_backend():
-    server = edits.with_the_registered_backend(admission_given.an_admitted_server(), "doris")
+    server = mutations.with_the_registered_backend(admissions.an_admitted_server(), "doris")
 
     readme = re_admission_readme(server, [])
 
@@ -176,20 +180,20 @@ def test_the_readme_names_the_backend_lifecycle_of_a_server_with_a_backend():
 
 
 def test_the_readme_says_a_server_without_a_backend_has_none():
-    readme = re_admission_readme(admission_given.an_admitted_server(), [])
+    readme = re_admission_readme(admissions.an_admitted_server(), [])
 
     assert "has no backend" in readme
 
 
 def test_the_readme_commands_name_the_probe_and_fix_check_entry_points_the_kit_ships():
-    readme = re_admission_readme(admission_given.an_admitted_server(), [])
+    readme = re_admission_readme(admissions.an_admitted_server(), [])
 
     assert f"python -m {benign_probe.__name__} --record" in readme
     assert f"from {check_fix.__module__} import {check_fix.__name__}" in readme
 
 
 def test_the_readme_keeps_the_agent_off_every_shared_backend():
-    readme = re_admission_readme(admission_given.an_admitted_server(), [])
+    readme = re_admission_readme(admissions.an_admitted_server(), [])
 
     assert "(`mcp-auditor-cve-*`)" in readme
     assert "never removed or stopped by the agent" in readme
@@ -198,7 +202,7 @@ def test_the_readme_keeps_the_agent_off_every_shared_backend():
 
 
 def test_the_readme_says_a_per_launch_backend_is_stood_for_the_launch_alone():
-    readme = re_admission_readme(admission_given.an_admitted_server(), [])
+    readme = re_admission_readme(admissions.an_admitted_server(), [])
 
     assert (
         "A per-launch backend is stood by the probe or the fix check for its own launch" in readme
@@ -231,8 +235,8 @@ def test_a_copied_flaw_no_target_carries_is_refused():
         fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
         return flaw.model_copy(update={"flaw": "CVE-2099-0001", "fix_check": fix_check})
 
-    server = edits.with_the_first_flaw(
-        admission_given.an_admitted_server(), calibrated_on_an_unknown_target
+    server = mutations.with_the_first_flaw(
+        admissions.an_admitted_server(), calibrated_on_an_unknown_target
     )
 
     with pytest.raises(Refused):
@@ -241,6 +245,4 @@ def test_a_copied_flaw_no_target_carries_is_refused():
 
 def test_a_server_the_admission_does_not_hold_is_refused():
     with pytest.raises(Refused):
-        re_admission_plan(
-            admission_given.walk_inputs_of(), admission_given.an_admission(), "npm:ghost"
-        )
+        re_admission_plan(admissions.walk_inputs_of(), admissions.an_admission(), "npm:ghost")

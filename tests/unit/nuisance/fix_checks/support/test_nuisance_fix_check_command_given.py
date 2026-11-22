@@ -4,9 +4,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult
 from evals.cve.nuisance.admission.admission import BackendFixture, FixCheckRecord, NuisanceAdmission
@@ -96,13 +96,11 @@ def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> 
     `admission`, written to a file, or a path to no file when it is None."""
     census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
     admitted = (
-        tmp_path / "absent.json"
-        if admission is None
-        else admission_given.written(tmp_path, admission)
+        tmp_path / "absent.json" if admission is None else admissions.written(tmp_path, admission)
     )
     return [
         "fix-check",
-        *walk_given.committed_census_arguments(tmp_path, census),
+        *walks.committed_census_arguments(tmp_path, census),
         "--admission",
         str(admitted),
     ]
@@ -111,6 +109,4 @@ def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> 
 def an_admission_on_the_ckan_backend() -> NuisanceAdmission:
     ckan = BACKENDS["ckan"]
     backend = BackendFixture(provisioner="ckan", images=list(ckan.images), network=ckan.network)
-    return mutations.admitting(
-        mutations.with_a_backend(admission_given.an_admitted_server(), backend)
-    )
+    return mutations.admitting(mutations.with_a_backend(admissions.an_admitted_server(), backend))

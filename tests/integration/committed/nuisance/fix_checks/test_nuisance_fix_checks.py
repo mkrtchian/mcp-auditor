@@ -10,7 +10,7 @@ from evals.cve.proofs import is_aimed
 from tests.integration.committed.nuisance.fix_checks.support import (
     test_nuisance_fix_checks_given as given,
 )
-from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 def test_every_counted_flaw_has_a_fix_check_fixture_unless_its_fix_check_is_a_copy():

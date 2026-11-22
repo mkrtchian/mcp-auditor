@@ -1,9 +1,10 @@
 import threading
 from collections.abc import Sequence
+from datetime import date
 from pathlib import Path
 from typing import Literal
 
-import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+import tests.unit.support.nuisance_walks as walks
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.census.census import CLASSIFIERS, Census
 from evals.cve.census.classification import Classification
@@ -23,6 +24,7 @@ from evals.cve.nuisance.admission.admission import (
 from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import RegisteredBackend
+from evals.cve.nuisance.exits import ExitReason, RecordedExit
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 from tests.unit.support import census_draws, censuses
 
@@ -44,7 +46,7 @@ def problems_of(admission: NuisanceAdmission, census: WalkInputs | None = None) 
 
 
 def walk_inputs_of() -> WalkInputs:
-    return walk_given.walk_inputs_of(a_census())
+    return walks.walk_inputs_of(a_census())
 
 
 def a_census() -> Census:
@@ -106,10 +108,10 @@ def walk_inputs_with_the_second_flaw_under_another_package() -> WalkInputs:
         classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
     }
     relabeled = census.model_copy(update={"classifications": classifications})
-    return walk_given.walk_inputs_of(relabeled)
+    return walks.walk_inputs_of(relabeled)
 
 
-ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
+ACCEPTANCE_FLAW = walks.A_CURRENT_TARGET_FLAW
 ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
 
 
@@ -241,3 +243,9 @@ def an_admitted_server() -> AdmittedServer:
 def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
     server = an_admitted_server()
     return server.model_copy(update={"flaws": flaws, "patched_version": patched_version})
+
+
+def a_recorded_exit(
+    package: str, reason: ExitReason = ExitReason.NO_COUNTED_TOOL_LEFT
+) -> RecordedExit:
+    return RecordedExit(server_package=package, reason=reason, logged_on=date(2026, 11, 9))

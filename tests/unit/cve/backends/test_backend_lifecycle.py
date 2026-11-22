@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.test_backend_lifecycle_given as given
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.registered_responders as registered_responders
-import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends import doris
 from evals.cve.backends.responder import Responder
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
@@ -35,7 +35,7 @@ def test_an_unknown_backend_key_is_refused_by_name():
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_the_kit_backend_launch_is_the_provisioner_launch(key: str):
     quiet = given.a_lifecycle_without_side_effects(key)
-    server = edits.with_the_registered_backend(admission_given.an_admitted_server(), key)
+    server = mutations.with_the_registered_backend(admissions.an_admitted_server(), key)
 
     with provisioner_of(quiet)(server) as run_launch:
         run_args = run_launch.args
@@ -184,7 +184,7 @@ def test_two_concurrent_launches_of_one_server_stand_two_backends(launch_through
 
 
 def test_the_kit_launch_of_a_per_launch_backend_is_the_provisioner_launch():
-    server = admission_given.an_admitted_server()
+    server = admissions.an_admitted_server()
 
     with provisioner_of(given.RecordingPerLaunchBackend().backend)(server) as run_launch:
         run_args = run_launch.args

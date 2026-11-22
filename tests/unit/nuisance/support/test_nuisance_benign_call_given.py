@@ -3,11 +3,8 @@ from typing import Any, override
 from evals.cve.nuisance.admission.admission import AdmittedServer, ToolCall
 from mcp_auditor.domain import ToolDefinition, ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
-from tests.unit.nuisance.admission.support.test_nuisance_admission_given import (
-    an_admitted_server,
-    expected_text,
-)
-from tests.unit.support.test_nuisance_admission_edits_given import with_the_first_benign_call
+from tests.unit.support.admission_mutations import with_the_first_benign_call
+from tests.unit.support.nuisance_admissions import an_admitted_server, expected_text
 
 SERVER = an_admitted_server()
 FIRST_TOOL, SECOND_TOOL = (flaw.benign_calls[0].tool for flaw in SERVER.flaws)

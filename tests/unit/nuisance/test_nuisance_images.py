@@ -1,7 +1,7 @@
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as given
-import tests.unit.support.test_nuisance_admission_edits_given as edits
+import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.detection import targets as detection_targets
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance import images as nuisance_images
@@ -24,10 +24,10 @@ def test_an_acceptance_service_is_a_namespace_problem(service: str):
 
 
 def test_a_clean_admission_has_no_namespace_problem():
-    assert nuisance_images.namespace_problems(given.an_admission()) == []
+    assert nuisance_images.namespace_problems(admissions.an_admission()) == []
 
 
 def _with_service(service: str) -> NuisanceAdmission:
-    return edits.with_the_server(
-        given.an_admission(), lambda server: server.model_copy(update={"service": service})
+    return mutations.with_the_server(
+        admissions.an_admission(), lambda server: server.model_copy(update={"service": service})
     )

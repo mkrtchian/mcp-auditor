@@ -4,8 +4,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, override
 
-import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.cve.kit.client import KitResponse, KitTool
@@ -21,7 +21,7 @@ def a_record_with_a_backend() -> dict[str, Any]:
 
 
 def a_server() -> AdmittedServer:
-    return admission_given.an_admission().servers[0]
+    return admissions.an_admission().servers[0]
 
 
 def the_record_of(server: AdmittedServer) -> dict[str, Any]:
