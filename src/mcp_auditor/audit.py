@@ -13,33 +13,25 @@ from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.stderr_capture import RedactingStderr
 from mcp_auditor.checkpointing import (
     CheckpointFromEarlierVersion,
-    checkpoint_db_path,
     compute_thread_id,
     resume_or_reset,
 )
 from mcp_auditor.config import Settings, load_settings
 from mcp_auditor.console import AuditDisplay, print_server_stderr, summarize_exception_group
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import AttackContext, AuditReport, Severity
+from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
-from mcp_auditor.report_files import ReportPaths
-from mcp_auditor.server_execution import LaunchOptions, ServerExecution
+from mcp_auditor.server_execution import ServerExecution
 from mcp_auditor.stream_handler import AuditProgressReporter
 
 DEFAULT_MAX_CHAIN_STEPS = 3
 
 
 @dataclass(frozen=True)
-class CIOptions:
-    enabled: bool = False
-    severity_threshold: Severity = Severity.MEDIUM
-
-
-@dataclass(frozen=True)
 class AuditRunOptions:
-    budget: int
-    chains: int
+    test_budget: int
+    chain_budget: int
     resume: bool
     dry_run: bool
 
@@ -47,9 +39,7 @@ class AuditRunOptions:
 @dataclass(frozen=True)
 class AuditConfig:
     run_options: AuditRunOptions
-    report_paths: ReportPaths
-    ci: CIOptions
-    launch: LaunchOptions
+    checkpoint_db: str
     tools_filter: frozenset[str] | None = None
 
 
@@ -112,7 +102,7 @@ class Audit:
     async def _probe_the_server(self, server_stderr: RedactingStderr) -> AuditReport | None:
         async with (
             self._execution,
-            AsyncSqliteSaver.from_conn_string(checkpoint_db_path()) as checkpointer,
+            AsyncSqliteSaver.from_conn_string(self._config.checkpoint_db) as checkpointer,
             StdioMCPClient.connect(
                 self._execution.launch,
                 errlog=server_stderr.writer,
@@ -168,8 +158,8 @@ class Audit:
     def _initial_state(self) -> dict[str, Any]:
         return {
             "server_command": self._execution.launch.server_command,
-            "test_budget": self._config.run_options.budget,
-            "chain_budget": self._config.run_options.chains,
+            "test_budget": self._config.run_options.test_budget,
+            "chain_budget": self._config.run_options.chain_budget,
             "max_chain_steps": DEFAULT_MAX_CHAIN_STEPS,
             "attack_context": AttackContext(),
         }
@@ -180,7 +170,7 @@ class Audit:
             "configurable": {"thread_id": thread_id},
             "metadata": {
                 "server_command": self._execution.launch.server_command,
-                "budget": self._config.run_options.budget,
+                "budget": self._config.run_options.test_budget,
                 "provider": settings.provider,
                 "model": settings.resolve_model(),
             },
@@ -194,7 +184,7 @@ class Audit:
             result = await graph.ainvoke(
                 {
                     "server_command": "",
-                    "test_budget": self._config.run_options.budget,
+                    "test_budget": self._config.run_options.test_budget,
                     "attack_context": AttackContext(),
                 }
             )

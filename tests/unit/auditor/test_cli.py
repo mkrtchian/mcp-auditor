@@ -1,8 +1,9 @@
+from pathlib import Path
+
 from click.testing import CliRunner
 
 import tests.unit.auditor.support.test_cli_given as given
-from mcp_auditor.audit import CIOptions
-from mcp_auditor.cli import ci_exit_code, cli, parse_tools_filter
+from mcp_auditor.cli import CIOptions, ci_exit_code, cli, parse_tools_filter
 from mcp_auditor.domain.models import MissCause, Severity
 
 CI = CIOptions(enabled=True, severity_threshold=Severity.MEDIUM)
@@ -88,6 +89,17 @@ def test_a_plain_relay_steering_the_docker_client_is_refused():
 
     assert result.exit_code == 1
     assert "DOCKER_HOST steers the docker client" in result.output
+
+
+def test_a_home_where_the_checkpoints_cannot_be_kept_stops_the_run(tmp_path: Path) -> None:
+    environ = given.an_environment_whose_home_is_a_file(tmp_path)
+
+    result = CliRunner(env=environ).invoke(cli, ["run", "--unconfined", "--", "python", "x.py"])
+
+    assert result.exit_code == 1
+    assert ".mcp-auditor" in "".join(result.output.split())
+    assert "could not initialize LLM" not in result.output
+    assert "Traceback" not in result.output
 
 
 class TestCIExitCode:

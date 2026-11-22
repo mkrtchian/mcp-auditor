@@ -21,6 +21,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | admission (plans of 2026-10-14 and 2026-10-15, holdout log, `admission_calibration.py`: a target admitted through its calibration and its layout and route checks) | calibration check, layout check, route check. "Admission" now names the nuisance admission. | moved meaning | 2026-11-11 |
 | admission, admission bars, admission probe (ADR 019, plans of 2026-09-24 and 2026-09-25: a candidate model clearing the probe's bars) | no successor: ADR 021 chooses a model on a written judgment, and the model probe reports defects | retired | 2026-09-26 |
 | alarm, false alarm (honeypot grid tag, judge plans: a FAIL on a honeypot PASS cell) | `false_positive`. "Alarm" now names a nuisance alarm. | moved meaning | 2026-11-11 |
+| `AuditRunOptions.budget`, `AuditRunOptions.chains` | `test_budget`, `chain_budget` | rename | 2026-11-22 |
 | `AuditStep` | model call kind | rename | 2026-11-11 |
 | calibrate, calibration (`--calibrate`, `run_holdout calibrate`, the no-LLM check) | calibration check (`--calibration-check`, `run_detection_holdout calibration-check`). "Calibration" now names writing or repairing a fixture. | moved meaning | 2026-11-11 |
 | calibrate (`run_nuisance calibrate`) | fix check (`run_nuisance fix-check`). "Calibration" now names writing or repairing a detection fixture. | moved meaning | 2026-11-11 |

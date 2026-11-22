@@ -15,5 +15,9 @@ def an_audit_of(launch: ServerLaunch, output: io.StringIO, llm: LLMPort | None =
     return an_unconfined_audit(launch, variant if llm is None else replace(variant, llm=llm))
 
 
+def an_audit_with_its_checkpoints_at(launch: ServerLaunch, checkpoint_db: str) -> Audit:
+    return an_unconfined_audit(launch, AuditVariant(checkpoint_db=checkpoint_db))
+
+
 def a_failing_model(error: Exception | None = None) -> RaisingLLM:
     return RaisingLLM(error or RuntimeError(PROVIDER_FAILURE))

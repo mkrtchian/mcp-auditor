@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditReport,
@@ -56,6 +58,22 @@ def a_relaunched_report() -> AuditReport:
         )
     ]
     return report
+
+
+def an_environment_whose_home_is_a_file(tmp_path: Path) -> dict[str, str]:
+    """A usable Anthropic key and default models, so the run gets past hiring its analysts and
+    stops on the checkpoint directory it cannot create, not on "could not initialize LLM"."""
+    home = tmp_path / "home"
+    home.write_text("")
+    # Set empty rather than unset, so that load_dotenv leaves them as they are.
+    return {
+        "HOME": str(home),
+        "ANTHROPIC_API_KEY": "a-dummy-key",
+        "MCP_AUDITOR_PROVIDER": "anthropic",
+        "MCP_AUDITOR_MODEL": "",
+        "MCP_AUDITOR_JUDGE_MODEL": "",
+        "MCP_AUDITOR_REASONING": "",
+    }
 
 
 def _add_a_finding(report: AuditReport, severity: Severity) -> None:

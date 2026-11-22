@@ -13,14 +13,14 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 # SDK upgrade.
 @pytest.mark.parametrize("launch", [given.HONEYPOT, given.NOISY_SHUTDOWN_SERVER])
 async def test_resuming_a_checkpoint_from_an_earlier_version_stops_with_its_message(
-    launch: ServerLaunch, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+    launch: ServerLaunch, tmp_path: pathlib.Path
 ) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-    await given.a_checkpoint_from_an_earlier_version(launch)
+    checkpoint_db = str(tmp_path / "checkpoints.db")
+    await given.a_checkpoint_from_an_earlier_version(launch, checkpoint_db)
     output = io.StringIO()
 
     with pytest.raises(SystemExit) as exited:
-        await given.an_audit_resuming(launch, output).run()
+        await given.an_audit_resuming(launch, output, checkpoint_db).run()
 
     assert exited.value.code == 1
     assert "checkpoint written by an earlier version, run without --resume" in output.getvalue()

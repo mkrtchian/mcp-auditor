@@ -154,11 +154,7 @@ async def test_a_named_declared_container_is_removed_when_its_session_fails_to_o
     assert removals(docker_on_the_host) == ["-f -v audited-stalling"]
 
 
-async def test_an_audit_relaunches_its_server_from_a_graph_node(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-
+async def test_an_audit_relaunches_its_server_from_a_graph_node() -> None:
     report = await a_scripted_audit_of(a_stalling_server(), tools=frozenset({"exit"})).run()
 
     assert report is not None

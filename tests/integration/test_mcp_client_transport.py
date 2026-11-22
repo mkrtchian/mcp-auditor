@@ -1,4 +1,3 @@
-import pathlib
 import time
 
 import pytest
@@ -49,11 +48,7 @@ async def test_a_server_that_never_answers_initialize_times_out() -> None:
     assert time.monotonic() - started < 10
 
 
-async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its_report(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-
+async def test_an_audit_of_a_server_logging_its_shutdown_to_stdout_completes_its_report() -> None:
     report = await a_scripted_audit_of(a_read_server("noisy_shutdown")).run()
 
     assert report is not None

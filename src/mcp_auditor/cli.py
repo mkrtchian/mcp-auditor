@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", message="Core Pydantic V1", category=UserWarni
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,13 +14,8 @@ import click
 
 from mcp_auditor.adapters.docker import DockerRuntime, docker_client_env
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.audit import (
-    Analysts,
-    Audit,
-    AuditConfig,
-    AuditRunOptions,
-    CIOptions,
-)
+from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions
+from mcp_auditor.checkpointing import checkpoint_db_path
 from mcp_auditor.config_file import load_config_file, merge_defaults
 from mcp_auditor.console import AuditDisplay
 from mcp_auditor.domain.models import AuditReport, Severity
@@ -35,6 +31,21 @@ from mcp_auditor.server_execution import (
 )
 
 CONFIG_FILE_NAME = ".mcp-auditor.yml"
+
+
+@dataclass(frozen=True)
+class CIOptions:
+    enabled: bool = False
+    severity_threshold: Severity = Severity.MEDIUM
+
+
+@dataclass(frozen=True)
+class CommandLineOptions:
+    run_options: AuditRunOptions
+    tools_filter: frozenset[str] | None
+    report_paths: ReportPaths
+    ci: CIOptions
+    launch: LaunchOptions
 
 
 @click.group()
@@ -107,24 +118,7 @@ def cli() -> None:
     "the report (repeatable).",
 )
 @click.pass_context
-def run(
-    ctx: click.Context,
-    server_command: tuple[str, ...],
-    budget: int,
-    output: str | None,
-    markdown: str | None,
-    tools: str | None,
-    resume: bool,
-    dry_run: bool,
-    chains: int,
-    ci: bool,
-    severity_threshold: str,
-    unconfined: bool,
-    image: str | None,
-    mount: tuple[str, ...],
-    env: tuple[str, ...],
-    env_plain: tuple[str, ...],
-) -> None:
+def run(ctx: click.Context, server_command: tuple[str, ...], **_options: object) -> None:
     """Audit an MCP server.
 
     SERVER_COMMAND is the command to start the MCP server.
@@ -136,13 +130,18 @@ def run(
         mcp-auditor run --ci --unconfined -- python my_server.py
     """
     params = _merge_with_config_file(ctx)
-    config = AuditConfig(
+    asyncio.run(_run_audit(server_command, _command_line_options(params)))
+
+
+def _command_line_options(params: dict[str, Any]) -> CommandLineOptions:
+    return CommandLineOptions(
         run_options=AuditRunOptions(
-            budget=params["budget"],
-            chains=params.get("chains", 0),
+            test_budget=params["budget"],
+            chain_budget=params["chains"],
             resume=params["resume"],
             dry_run=params["dry_run"],
         ),
+        tools_filter=parse_tools_filter(params["tools"]),
         report_paths=ReportPaths(json=params["output"], markdown=params["markdown"]),
         ci=CIOptions(
             enabled=params["ci"],
@@ -154,9 +153,7 @@ def run(
             mounts=tuple(params["mount"]),
             relay=RelayRequest(redacted=tuple(params["env"]), plain=tuple(params["env_plain"])),
         ),
-        tools_filter=parse_tools_filter(params["tools"]),
     )
-    asyncio.run(_run_audit(server_command, config))
 
 
 def _merge_with_config_file(ctx: click.Context) -> dict[str, Any]:
@@ -175,29 +172,38 @@ def parse_tools_filter(raw: str | None) -> frozenset[str] | None:
     return frozenset(name.strip() for name in raw.split(","))
 
 
-async def _run_audit(server_command: tuple[str, ...], config: AuditConfig) -> None:
+async def _run_audit(server_command: tuple[str, ...], options: CommandLineOptions) -> None:
     logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
-    display = AuditDisplay(ci_mode=config.ci.enabled)
-    context = _launch_context(config)
+    display = AuditDisplay(ci_mode=options.ci.enabled)
+    context = _launch_context(options)
     launch = _decided_launch(server_command, context, display)
     display.print_header(launch.server_command, launch.regime)
 
+    analysts = _hired_analysts(display)
     audit = Audit(
-        config=config,
+        config=AuditConfig(options.run_options, _checkpoint_db(display), options.tools_filter),
         execution=ServerExecution(launch, context.runtime),
-        analysts=_hired_analysts(display),
+        analysts=analysts,
         display=display,
     )
     report = await audit.run()
     if report is not None:
-        _deliver(report, config, display)
+        _deliver(report, options, display)
 
 
-def _deliver(report: AuditReport, config: AuditConfig, display: AuditDisplay) -> None:
+def _checkpoint_db(display: AuditDisplay) -> str:
+    try:
+        return checkpoint_db_path()
+    except OSError as exc:
+        display.print_error(str(exc))
+        raise SystemExit(1) from exc
+
+
+def _deliver(report: AuditReport, options: CommandLineOptions, display: AuditDisplay) -> None:
     display.print_summary(report)
     display.print_findings_recap(report)
-    write_reports(report, config.report_paths, display)
-    exit_code = ci_exit_code(report, config.ci)
+    write_reports(report, options.report_paths, display)
+    exit_code = ci_exit_code(report, options.ci)
     if exit_code != 0:
         raise SystemExit(exit_code)
 
@@ -210,9 +216,9 @@ def ci_exit_code(report: AuditReport, ci: CIOptions) -> int:
     return 0 if report.is_complete else 3
 
 
-def _launch_context(config: AuditConfig) -> LaunchContext:
+def _launch_context(options: CommandLineOptions) -> LaunchContext:
     return LaunchContext(
-        options=config.launch,
+        options=options.launch,
         runtime=DockerRuntime(),
         host=Host(
             uid=os.getuid(),

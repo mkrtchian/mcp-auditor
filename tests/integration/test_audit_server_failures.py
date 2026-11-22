@@ -13,11 +13,6 @@ from tests.integration.support.support_servers import (
 )
 
 
-@pytest.fixture(autouse=True)
-def _a_home_of_its_own(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-
-
 async def test_a_command_not_found_stops_with_the_os_error_alone() -> None:
     output = io.StringIO()
 
@@ -70,7 +65,7 @@ async def test_an_os_error_out_of_the_graph_stops_as_a_server_failure() -> None:
 async def test_a_local_failure_before_the_session_opens_is_not_blamed_on_the_server(
     tmp_path: pathlib.Path,
 ) -> None:
-    (tmp_path / ".mcp-auditor" / "checkpoints.db").mkdir(parents=True)
+    audit = given.an_audit_with_its_checkpoints_at(a_stalling_server(), str(tmp_path))
 
     with pytest.raises(sqlite3.OperationalError):
-        await given.an_audit_of(a_stalling_server(), io.StringIO()).run()
+        await audit.run()
