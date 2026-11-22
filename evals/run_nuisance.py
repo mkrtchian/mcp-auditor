@@ -15,43 +15,22 @@ run's images and makes each audited server's benign calls on the run's launch pa
 """
 
 import argparse
-import asyncio
-import dataclasses
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from rich.progress import Progress
-
 from evals import eval_display as display
-from evals.concurrency import positive_int
-from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
-from evals.cve.census.draw_order import draw_order
-from evals.cve.detection.baseline import fixture_fingerprint
-from evals.cve.detection.draw_record import DrawRecord, governing_steps
-from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.holdout_conditions import CONDITIONS_PATH, HoldoutConditions, load_conditions
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.detection.draw_record import governing_steps
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH
 from evals.cve.nuisance.admission.admission_walk import addition_entries
 from evals.cve.nuisance.admission.dossier import write_dossier
-from evals.cve.nuisance.admission.holdout_calibration_copies import (
-    copy_targets,
-    stale_holdout_calibration_copies,
-)
 from evals.cve.nuisance.admission.re_admission_dossier import (
     re_admission_plan,
     write_re_admission_dossier,
 )
-from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
-from evals.cve.nuisance.admission.walk import (
-    NuisanceServer,
-    acceptance_target_servers,
-    nuisance_population,
-    reached_servers,
-)
-from evals.cve.nuisance.admission.walk_record import WalkInputs
+from evals.cve.nuisance.admission.walk import NuisanceServer, nuisance_population
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     REFUSED_EXIT,
@@ -62,39 +41,17 @@ from evals.cve.nuisance.commands import (
 )
 from evals.cve.nuisance.fix_check_command import add_fix_check_arguments
 from evals.cve.nuisance.gate.gate_command import add_gate_arguments
-from evals.cve.nuisance.holdout_run import (
-    NUISANCE_CONCURRENCY,
-    NUISANCE_RUNS,
-    NuisanceDeps,
-    RunProvenance,
-    default_deps,
-    nuisance_overrides,
-    run_nuisance,
-)
-from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
-from evals.cve.nuisance.markdown import render_markdown
-from evals.cve.nuisance.report import build_report
-from evals.cve.nuisance.results import NuisanceHoldoutRunResult
+from evals.cve.nuisance.holdout_run_command import RunCommandDeps, add_run_arguments
 from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
-from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
-from evals.cve.run_files import (
-    partial_result_kept,
-    refuse_existing_report,
-    write_report,
-    write_result,
-)
-from evals.eval_session import Refused, last_commit
-from evals.honeypot.runs import tracing_enabled
+from evals.eval_session import Refused
 from evals.metrics import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
-from mcp_auditor.config import Settings, load_settings
-
-DEFAULT_REPORT_PATH = "output/nuisance_report.json"
 
 
 @dataclass(frozen=True)
 class NuisanceCommandDeps:
+    run: RunCommandDeps = field(default_factory=RunCommandDeps)
     vet: VetCommandDeps = field(default_factory=VetCommandDeps)
 
 
@@ -138,18 +95,12 @@ def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
         "--re-admission", action="store_true", help="write the re-admission dossier instead"
     )
     dossier.add_argument("--admission", type=Path, default=ADMISSION_PATH)
-    run = commands.add_parser(
-        "run", help="audit the admitted servers and report the holdout nuisance rate"
+    add_run_arguments(
+        commands.add_parser(
+            "run", help="audit the admitted servers and report the holdout nuisance rate"
+        ),
+        deps.run,
     )
-    run.set_defaults(command=_run)
-    run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
-    run.add_argument(
-        "--runs", type=positive_int, default=None, help=f"default {NUISANCE_RUNS}, lowerable to 1"
-    )
-    run.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
-    run.add_argument("--census", type=Path, default=CENSUS_PATH)
-    run.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    run.add_argument("--admission", type=Path, default=ADMISSION_PATH)
     add_fix_check_arguments(
         commands.add_parser(
             "fix-check", help="rebuild and reproduce each fix-check fixture against the admission"
@@ -229,104 +180,6 @@ def _re_admission_dossier(args: argparse.Namespace) -> int:
     write_re_admission_dossier(re_admission_plan(walk_inputs, admission, args.server), args.out)
     print(f"Re-admission dossier for {args.server} written to {args.out}")
     return 0
-
-
-def _run(args: argparse.Namespace) -> int:
-    _refuse_tracing()
-    refuse_existing_report(args.report, "nuisance holdout run refused")
-    conditions = load_conditions(CONDITIONS_PATH)
-    with malformed_input_refused():
-        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
-        admission = committed_admission(args.admission, walk_inputs)
-        if admission is None or not admission.servers:
-            print("no server is admitted")
-            return 0
-        population = run_population(
-            reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
-        )
-    refuse_unrecorded(population.audited, "nuisance holdout run refused")
-    _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
-    settings = load_settings()
-    model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
-    conditions.require_ready(model_ids)
-    run = _audit_admitted_servers(args, _ReadyRun(walk_inputs, population, conditions, settings))
-    write_result(args.report, run)
-    report = build_report(run)
-    markdown = render_markdown(report)
-    write_report(args.report, report, markdown)
-    print(markdown)
-    display.print_report_paths(args.report)
-    return 0
-
-
-@dataclass(frozen=True)
-class _ReadyRun:
-    """What a nuisance holdout run reads, once its conditions are checked ready for its models."""
-
-    walk_inputs: WalkInputs
-    population: RunPopulation
-    conditions: HoldoutConditions
-    settings: Settings
-
-
-def _audit_admitted_servers(args: argparse.Namespace, ready: _ReadyRun) -> NuisanceHoldoutRunResult:
-    deps = default_deps(nuisance_overrides(ready.conditions), args.concurrency)
-    with partial_result_kept(args.report), Progress(console=display.console) as bar:
-        return asyncio.run(
-            run_nuisance(
-                ready.population,
-                draw_order(ready.walk_inputs.census),
-                ready.conditions,
-                ready.settings,
-                RunProvenance(
-                    last_commit(args.census),
-                    last_commit(args.walk_record),
-                    last_commit(args.admission),
-                ),
-                runs=args.runs if args.runs is not None else NUISANCE_RUNS,
-                concurrency=args.concurrency,
-                deps=_tracked(deps, AuditProgress(bar)),
-            )
-        )
-
-
-def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
-    return dataclasses.replace(
-        deps, audit=progress.tracked(deps.audit), announce_audits=progress.announce
-    )
-
-
-def _refuse_stale_holdout_calibration_copies(
-    servers: Sequence[AdmittedServer], draw: DrawRecord | None
-) -> None:
-    stale = stale_holdout_calibration_copies(servers, current_copy_fingerprints(draw))
-    if stale:
-        reason = (
-            "holdout calibration copies taken from a fixture that has since changed"
-            " or left the detection holdout layer"
-        )
-        raise Refused("nuisance holdout run refused", [reason, *stale])
-
-
-def current_copy_fingerprints(draw: DrawRecord | None) -> dict[str, str]:
-    """The fixture fingerprint of the drawn target each copyable flaw's copy resolves to."""
-    places = load_places(DETECTION_PLACES)
-    fingerprints = {
-        target.flaw_id: fixture_fingerprint(target, places) for target in HOLDOUT_TARGETS
-    }
-    resolution = copy_targets([target.flaw_id for target in HOLDOUT_TARGETS], draw)
-    return {copy: fingerprints[drawn] for copy, drawn in resolution.items()}
-
-
-def _refuse_tracing() -> None:
-    if tracing_enabled():
-        raise Refused(
-            "nuisance holdout run refused",
-            [
-                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
-                "a nuisance holdout run keeps no trace"
-            ],
-        )
 
 
 if __name__ == "__main__":

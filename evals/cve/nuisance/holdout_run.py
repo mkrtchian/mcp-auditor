@@ -11,9 +11,10 @@ printed as each run finishes `holdout_run_status`'s.
 
 import dataclasses
 import functools
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any, Protocol
 
 from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
@@ -103,6 +104,22 @@ class RunProvenance:
     census_commit: str
     walk_record_commit: str
     admission_commit: str
+
+
+class RunOrchestrator(Protocol):
+    def __call__(
+        self,
+        population: RunPopulation,
+        draw_order: Sequence[DrawEntry],
+        conditions: HoldoutConditions,
+        settings: Settings,
+        provenance: RunProvenance,
+        /,
+        *,
+        runs: int = NUISANCE_RUNS,
+        concurrency: int = NUISANCE_CONCURRENCY,
+        deps: NuisanceDeps | None = None,
+    ) -> Coroutine[Any, Any, NuisanceHoldoutRunResult]: ...
 
 
 @dataclass(frozen=True)

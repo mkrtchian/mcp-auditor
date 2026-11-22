@@ -578,12 +578,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_nuisance_statistic_given"),
         (FOREIGN, "test_nuisance_walk_given"),
-        (SETATTR, "a_run_reaching_nothing:run_nuisance"),
-        (SETATTR, "a_run_refused_before_its_settings:run_nuisance"),
-        (SETATTR, "an_admitted_run_ending_in:run_nuisance.default_deps"),
-        (SETATTR, "an_admitted_run_ending_in:run_nuisance.last_commit"),
-        (SETATTR, "an_admitted_run_ending_in:run_nuisance.run_nuisance"),
-        (SETATTR, "an_admitted_run_keeping_its_provenance:run_nuisance.run_nuisance"),
     ),
     "tests/unit/nuisance/test_nuisance_assembly.py": ((FOREIGN, "test_nuisance_admission_given"),),
     "tests/unit/nuisance/test_nuisance_audit_once.py": (
@@ -673,7 +667,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_holdout_calibration_copies_given"),
         (FOREIGN, "test_run_detection_holdout_run_given"),
-        (SETATTR, "test_run_writes_its_result_before_the_report:run_nuisance.build_report"),
     ),
     "tests/unit/nuisance/test_run_nuisance_vet.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),

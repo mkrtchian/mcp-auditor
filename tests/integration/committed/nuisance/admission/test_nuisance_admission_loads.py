@@ -11,9 +11,9 @@ from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached
 from evals.cve.nuisance.admission.walk_record import load_walk_record
 from evals.cve.nuisance.commands import WALK_RECORD_PATH
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
+from evals.cve.nuisance.holdout_run_command import current_copy_fingerprints
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.honeypots import REPO_ROOT
-from evals.run_nuisance import current_copy_fingerprints
 from tests.unit.support.test_nuisance_committed_admission_given import (
     the_committed_admission,
     the_committed_walk_inputs,
