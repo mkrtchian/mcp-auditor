@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -40,7 +41,7 @@ CONFINEMENT_SOURCE = Path(confinement.__file__)
 # holder's and the stand-in's images, the planting code that stands them, the capture loader it
 # reads them through and the closed network it puts them on.
 _SHARED_SERVICES = (planting_base.SENTINEL_SERVICE, planting_base.STAND_IN_SERVICE)
-_PUBLIC_NAME_SOURCES = (
+PUBLIC_NAME_SOURCES = (
     Path(planting.__file__),
     Path(planting_base.__file__),
     Path(planting_spec.__file__),
@@ -53,10 +54,24 @@ _PUBLIC_NAME_SOURCES = (
 )
 
 
+@dataclass(frozen=True)
+class SuiteConfinement:
+    """What the suite confines every server with: the module's source and the options it sets."""
+
+    source: Path = CONFINEMENT_SOURCE
+    options: Callable[[], list[str]] = planting_base.confinement_args
+    resolver: Callable[[], list[str]] = planting_base.resolver_args
+
+
+@dataclass(frozen=True)
+class NuisanceFixtureSources:
+    docker_directory: Path = DOCKER_DIRECTORY
+    backends: Mapping[str, RegisteredBackend] = field(default_factory=lambda: BACKENDS)
+    confinement: SuiteConfinement = field(default_factory=SuiteConfinement)
+
+
 def nuisance_fixture_fingerprint(
-    server: AdmittedServer,
-    docker_directory: Path = DOCKER_DIRECTORY,
-    backends: Mapping[str, RegisteredBackend] = BACKENDS,
+    server: AdmittedServer, sources: NuisanceFixtureSources | None = None
 ) -> str:
     """What the admitted server is built, launched and judged on, so a run resets when any of it
     moves (the rule's Run conditions section).
@@ -76,17 +91,18 @@ def nuisance_fixture_fingerprint(
     fix-check records, the provenance records (`stand_ins`, `seeds`), whose content is covered
     through the Dockerfile and the backend's served files, and the recorded `software_releases`.
     """
+    sources = NuisanceFixtureSources() if sources is None else sources
     counted = counted_tools(server)
     backend = server.backend
     parts: list[object] = [
-        dockerfile_instructions(image_dockerfile(server.service, docker_directory)),
+        dockerfile_instructions(image_dockerfile(server.service, sources.docker_directory)),
         server.launch,
         planting_host_parts(server.host),
-        fingerprint_sources([CONFINEMENT_SOURCE.read_text()]),
-        planting_base.confinement_args(),
-        planting_base.resolver_args(),
+        fingerprint_sources([sources.confinement.source.read_text()]),
+        sources.confinement.options(),
+        sources.confinement.resolver(),
         None if backend is None else backend.model_dump(),
-        None if backend is None else backend_content(_served(server, backends)),
+        None if backend is None else backend_content(_served(server, sources.backends)),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             _benign_call_parts(call)
@@ -96,23 +112,23 @@ def nuisance_fixture_fingerprint(
         ],
     ]
     if _serves_public_names(server):
-        parts.append(backend_content(_public_name_launch(docker_directory)))
+        parts.append(backend_content(_public_name_launch(sources.docker_directory)))
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
 def fingerprinted_files(
-    server: AdmittedServer,
-    docker_directory: Path = DOCKER_DIRECTORY,
-    backends: Mapping[str, RegisteredBackend] = BACKENDS,
+    server: AdmittedServer, sources: NuisanceFixtureSources | None = None
 ) -> list[Path]:
     """The fixture files whose content the fingerprint reads: the patched Dockerfile, what the
     backend serves, the host's stand-in files and, for a server with no backend and public
     names, the holder's and the stand-in's Dockerfiles and the planting modules that stand them."""
+    sources = NuisanceFixtureSources() if sources is None else sources
+    directory = sources.docker_directory
     return [
-        image_dockerfile(server.service, docker_directory),
-        *_served(server, backends),
+        image_dockerfile(server.service, directory),
+        *_served(server, sources.backends),
         *host_stand_in_files(server.host),
-        *(_public_name_launch(docker_directory) if _serves_public_names(server) else ()),
+        *(_public_name_launch(directory) if _serves_public_names(server) else ()),
     ]
 
 
@@ -122,7 +138,7 @@ def _serves_public_names(server: AdmittedServer) -> bool:
 
 def _public_name_launch(docker_directory: Path) -> tuple[Path, ...]:
     dockerfiles = (image_dockerfile(service, docker_directory) for service in _SHARED_SERVICES)
-    return (*dockerfiles, *_PUBLIC_NAME_SOURCES)
+    return (*dockerfiles, *PUBLIC_NAME_SOURCES)
 
 
 def _served(server: AdmittedServer, backends: Mapping[str, RegisteredBackend]) -> tuple[Path, ...]:

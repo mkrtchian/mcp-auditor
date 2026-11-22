@@ -428,10 +428,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_committed_admission_given"),
         (FOREIGN, "test_nuisance_dossier_given"),
         (FOREIGN, "test_nuisance_dossier_then"),
-        (
-            SETATTR,
-            "test_a_closure_reaching_the_auditor_is_refused_before_writing:re_admission.closure_roots",
-        ),
     ),
     "tests/unit/nuisance/fix_checks/support/recorded_exchanges.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
@@ -538,7 +534,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/nuisance/support/test_nuisance_fingerprint_given.py": (
         (FOREIGN, "test_nuisance_admission_given"),
-        (SETATTR, "a_confinement_copy:nuisance_fingerprint.CONFINEMENT_SOURCE"),
     ),
     "tests/unit/nuisance/support/test_nuisance_holdout_run_backends_given.py": (
         (FOREIGN, "test_nuisance_holdout_run_given"),
@@ -625,14 +620,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/test_nuisance_fingerprint.py": (
         (FOREIGN, "test_nuisance_admission_edits_given"),
         (FOREIGN, "test_nuisance_admission_given"),
-        (
-            SETATTR,
-            "test_the_fingerprint_moves_when_the_confinement_options_change:planting_base.confinement_args",
-        ),
-        (
-            SETATTR,
-            "test_the_fingerprint_moves_when_the_resolver_option_changes:planting_base.resolver_args",
-        ),
     ),
     "tests/unit/nuisance/test_nuisance_holdout_run_backends.py": (
         (FOREIGN, "test_nuisance_admission_edits_given"),

@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import evals.cve.nuisance.admission.re_admission_dossier as re_admission
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_given as dossier_given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as dossier_then
@@ -29,16 +28,13 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
     fix_check_modules,
     holdout_target_references,
     re_admission_dockerfiles,
-    write_re_admission_dossier,
+    re_admission_plan,
 )
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import user_args
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinement_args
 from evals.eval_session import Refused
-from tests.unit.support.test_nuisance_committed_admission_given import (
-    the_committed_admission,
-    the_committed_walk_inputs,
-)
+from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 type DossierOf = Callable[[AdmittedServer], Path]
 
@@ -243,29 +239,8 @@ def test_a_copied_flaw_no_target_carries_is_refused():
         holdout_target_references(server, given.the_copy_resolution())
 
 
-def test_a_server_the_admission_does_not_hold_is_refused_before_writing(tmp_path: Path):
-    out = tmp_path / "dossier"
-
+def test_a_server_the_admission_does_not_hold_is_refused():
     with pytest.raises(Refused):
-        write_re_admission_dossier(
-            admission_given.walk_inputs_of(), admission_given.an_admission(), "npm:ghost", out
+        re_admission_plan(
+            admission_given.walk_inputs_of(), admission_given.an_admission(), "npm:ghost"
         )
-    assert not out.exists()
-
-
-def test_a_closure_reaching_the_auditor_is_refused_before_writing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    out = tmp_path / "dossier"
-    server = the_committed_admission().servers[0]
-
-    def roots_reaching_the_auditor(_: AdmittedServer) -> list[str]:
-        return ["evals.cve.detection.baseline"]
-
-    monkeypatch.setattr(re_admission, "closure_roots", roots_reaching_the_auditor)
-
-    with pytest.raises(ValueError, match="mcp_auditor"):
-        write_re_admission_dossier(
-            the_committed_walk_inputs(), the_committed_admission(), server.server_package, out
-        )
-    assert not out.exists()

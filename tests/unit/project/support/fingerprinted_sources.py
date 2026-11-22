@@ -33,7 +33,7 @@ def fingerprinted_sources() -> frozenset[str]:
             *ENVIRONMENT_PATHS,
             *counter._COUNTER_PATHS,
             fingerprint.CONFINEMENT_SOURCE,
-            *fingerprint._PUBLIC_NAME_SOURCES,
+            *fingerprint.PUBLIC_NAME_SOURCES,
             *backend_sources,
             *served,
             *(honeypot.server for honeypot in HONEYPOTS),

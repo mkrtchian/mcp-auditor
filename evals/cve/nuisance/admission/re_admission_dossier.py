@@ -15,6 +15,7 @@ import importlib
 import pkgutil
 import shutil
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 
 from evals.cve import dossier_closure
@@ -35,22 +36,41 @@ from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.eval_session import Refused
 
 
-def write_re_admission_dossier(
-    walk_inputs: WalkInputs, admission: NuisanceAdmission, server_package: str, out: Path
-) -> None:
+@dataclass(frozen=True)
+class ReAdmittedDossier:
+    walk_inputs: WalkInputs
+    server: AdmittedServer
+    dockerfiles: list[str]
+    closure: list[str]
+    fix_check_modules: list[str]
+
+
+def re_admission_plan(
+    walk_inputs: WalkInputs, admission: NuisanceAdmission, server_package: str
+) -> ReAdmittedDossier:
+    """Everything the dossier copies, computed and checked before anything is written."""
     server = _admitted_server(admission, server_package)
     resolution = copy_targets(
         [target.flaw_id for target in HOLDOUT_TARGETS], walk_inputs.census.draw
     )
-    dockerfiles = re_admission_dockerfiles(server, resolution)
-    closure = dossier_closure.import_closure(closure_roots(server))
-    write_dossier(walk_inputs, server_package, out)
+    return ReAdmittedDossier(
+        walk_inputs=walk_inputs,
+        server=server,
+        dockerfiles=re_admission_dockerfiles(server, resolution),
+        closure=dossier_closure.import_closure(closure_roots(server)),
+        fix_check_modules=fix_check_modules(server),
+    )
+
+
+def write_re_admission_dossier(plan: ReAdmittedDossier, out: Path) -> None:
+    server = plan.server
+    write_dossier(plan.walk_inputs, server.server_package, out)
     (out / "admission_record.json").write_text(server.model_dump_json(indent=2))
-    _copy_dockerfiles(out, [*dockerfiles, SENTINEL_SERVICE, STAND_IN_SERVICE])
-    dossier_closure.copy_closure(out, closure)
+    _copy_dockerfiles(out, [*plan.dockerfiles, SENTINEL_SERVICE, STAND_IN_SERVICE])
+    dossier_closure.copy_closure(out, plan.closure)
     (out / "confinement.md").write_text(re_admission_docs.confinement_text(server))
     with (out / "README.md").open("a") as readme:
-        readme.write(re_admission_docs.re_admission_readme(server, fix_check_modules(server)))
+        readme.write(re_admission_docs.re_admission_readme(server, plan.fix_check_modules))
 
 
 def _admitted_server(admission: NuisanceAdmission, server_package: str) -> AdmittedServer:

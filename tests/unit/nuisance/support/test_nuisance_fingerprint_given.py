@@ -1,14 +1,12 @@
 from dataclasses import replace
 from pathlib import Path
 
-import pytest
-
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance import fingerprint as nuisance_fingerprint
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import RegisteredBackend
+from evals.cve.nuisance.fingerprint import CONFINEMENT_SOURCE
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
 
 SERVICE = admission_given.a_server([]).service
@@ -33,11 +31,9 @@ def a_registry_serving(directory: Path) -> dict[str, RegisteredBackend]:
     return {"fake": replace(admission_given.a_backend_registry()["fake"], served=served)}
 
 
-def a_confinement_copy(directory: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A copy of the confinement source the fingerprint reads in place of the real one."""
+def a_confinement_copy(directory: Path) -> Path:
     copy = directory / "confinement.py"
-    copy.write_text(nuisance_fingerprint.CONFINEMENT_SOURCE.read_text())
-    monkeypatch.setattr(nuisance_fingerprint, "CONFINEMENT_SOURCE", copy)
+    copy.write_text(CONFINEMENT_SOURCE.read_text())
     return copy
 
 

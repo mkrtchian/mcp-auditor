@@ -40,7 +40,10 @@ from evals.cve.nuisance.admission.holdout_calibration_copies import (
     copy_targets,
     stale_holdout_calibration_copies,
 )
-from evals.cve.nuisance.admission.re_admission_dossier import write_re_admission_dossier
+from evals.cve.nuisance.admission.re_admission_dossier import (
+    re_admission_plan,
+    write_re_admission_dossier,
+)
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import (
     NuisanceServer,
@@ -217,7 +220,7 @@ def _re_admission_dossier(args: argparse.Namespace) -> int:
         admission = committed_admission(args.admission, walk_inputs)
     if admission is None:
         raise Refused("nuisance dossier refused", [f"no admission at {args.admission}"])
-    write_re_admission_dossier(walk_inputs, admission, args.server, args.out)
+    write_re_admission_dossier(re_admission_plan(walk_inputs, admission, args.server), args.out)
     print(f"Re-admission dossier for {args.server} written to {args.out}")
     return 0
 

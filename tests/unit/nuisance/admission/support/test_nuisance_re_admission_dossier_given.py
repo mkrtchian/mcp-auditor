@@ -12,6 +12,7 @@ from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.admission.re_admission_dossier import (
     fix_check_modules,
     holdout_target_references,
+    re_admission_plan,
     write_re_admission_dossier,
 )
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
@@ -98,9 +99,8 @@ def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:
 
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:
     out = tmp_path / "dossier"
-    write_re_admission_dossier(
-        the_committed_walk_inputs(), the_committed_admission(), server_package, out
-    )
+    plan = re_admission_plan(the_committed_walk_inputs(), the_committed_admission(), server_package)
+    write_re_admission_dossier(plan, out)
     return out
 
 
