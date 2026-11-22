@@ -1,11 +1,8 @@
 import hashlib
-import importlib
-import pkgutil
 from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from pathlib import Path
 
-import evals.cve.nuisance.fix_checks as fix_checks
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
@@ -66,14 +63,6 @@ def a_drawn_target_and_its_sibling() -> tuple[str, str]:
         (sibling, drawn) for sibling, drawn in the_copy_resolution().items() if sibling != drawn
     )
     return drawn, sibling
-
-
-def the_fix_check_package_helpers() -> list[str]:
-    """The modules of the fix-check package that define no fixture."""
-    names = [
-        f"{fix_checks.__name__}.{info.name}" for info in pkgutil.iter_modules(fix_checks.__path__)
-    ]
-    return [name for name in names if not hasattr(importlib.import_module(name), "FIXTURES")]
 
 
 def a_committed_server_with_fix_checks() -> AdmittedServer:

@@ -160,13 +160,6 @@ def test_the_confinement_names_every_option_the_run_sets(server: AdmittedServer)
         assert server.backend.network in confinement
 
 
-def test_no_committed_server_carries_a_shared_helper_of_the_fix_check_package():
-    helpers = set(given.the_fix_check_package_helpers())
-
-    for server in the_committed_admission().servers:
-        assert helpers.isdisjoint(fix_check_modules(server)), server.server_package
-
-
 def test_the_readme_builds_the_run_image_and_names_the_fix_check_modules():
     server = admission_given.an_admitted_server()
     modules = ["evals.cve.nuisance.fix_checks.first", "evals.cve.nuisance.fix_checks.second"]
@@ -226,23 +219,6 @@ def test_the_confinement_of_a_server_on_a_per_launch_backend_points_at_its_launc
     assert f"`{given.PER_LAUNCH_NETWORK_PREFIX}`" in confinement
     for option in confinement_args():
         assert option in confinement, option
-
-
-def test_every_copied_flaw_resolves_to_one_target_and_one_fixture():
-    resolution = given.the_copy_resolution()
-    for server in the_committed_admission().servers:
-        calibrated = {
-            flaw.flaw
-            for flaw in server.flaws
-            if flaw.fix_check.source == "detection_holdout_calibration"
-        }
-        assert calibrated <= resolution.keys(), server.server_package
-        targets = holdout_target_references(server, resolution)
-        assert {target.flaw_id for target in targets} == {
-            resolution[flaw] for flaw in calibrated
-        }, server.server_package
-        for target in targets:
-            assert holdout_fixture_file(target.flaw_id).is_file()
 
 
 def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
