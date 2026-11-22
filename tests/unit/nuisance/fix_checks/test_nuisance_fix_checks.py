@@ -7,25 +7,7 @@ from tests.unit.support.kit_isolation import scan_tree
 _FIX_CHECK_DIR = Path(__file__).resolve().parents[4] / "evals" / "cve" / "nuisance" / "fix_checks"
 
 
-def _cve_environments_imports(source: str, filename: str) -> list[str]:
-    offenders: list[str] = []
-    for node in ast.walk(ast.parse(source, filename=filename)):
-        if isinstance(node, ast.Import):
-            offenders += [alias.name for alias in node.names if _is_cve_environments(alias.name)]
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module is not None
-            and _is_cve_environments(node.module)
-        ):
-            offenders.append(node.module)
-    return offenders
-
-
 _ENVIRONMENTS = "evals.cve.environments"
-
-
-def _is_cve_environments(name: str) -> bool:
-    return name == _ENVIRONMENTS or name.startswith(f"{_ENVIRONMENTS}.")
 
 
 def test_the_scans_read_the_fix_check_modules():
@@ -49,3 +31,21 @@ def test_no_fix_check_module_imports_cve_environments():
         if (names := _cve_environments_imports(path.read_text(), str(path)))
     }
     assert offenders == {}
+
+
+def _cve_environments_imports(source: str, filename: str) -> list[str]:
+    offenders: list[str] = []
+    for node in ast.walk(ast.parse(source, filename=filename)):
+        if isinstance(node, ast.Import):
+            offenders += [alias.name for alias in node.names if _is_cve_environments(alias.name)]
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module is not None
+            and _is_cve_environments(node.module)
+        ):
+            offenders.append(node.module)
+    return offenders
+
+
+def _is_cve_environments(name: str) -> bool:
+    return name == _ENVIRONMENTS or name.startswith(f"{_ENVIRONMENTS}.")

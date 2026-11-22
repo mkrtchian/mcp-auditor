@@ -67,6 +67,27 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def apify_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with APIFY_LAUNCH_LOCK:
+        ensure_apify_responder()
+    _ensure_responder_image()
+    name = f"mcp-auditor-kit-apify-r-{secrets.token_hex(4)}"
+    address = _per_launch_address()
+    try:
+        subprocess.run(
+            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
+            check=True,
+            capture_output=True,
+        )
+        time.sleep(1.0)
+        yield Launch(command="docker", args=server_args(image, address))
+    finally:
+        apify_rm(name)
+
+
 def responder_args(name: str, nonce: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
@@ -94,27 +115,6 @@ def server_args(image: str, responder_address: str) -> list[str]:
         image,
         *_SERVER_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def apify_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with APIFY_LAUNCH_LOCK:
-        ensure_apify_responder()
-    _ensure_responder_image()
-    name = f"mcp-auditor-kit-apify-r-{secrets.token_hex(4)}"
-    address = _per_launch_address()
-    try:
-        subprocess.run(
-            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
-            check=True,
-            capture_output=True,
-        )
-        time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, address))
-    finally:
-        apify_rm(name)
 
 
 def _ensure_responder_image() -> None:

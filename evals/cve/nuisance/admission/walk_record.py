@@ -109,10 +109,6 @@ def walk_record_problems(walk_inputs: WalkInputs) -> list[str]:
     ]
 
 
-def reached_identifiers(census: Census) -> list[str]:
-    return list(dict.fromkeys(step.identifier for step in _draw(census).walk))
-
-
 def normalized_package(server_package: str) -> str:
     prefix = "PyPI:"
     if not server_package.startswith(prefix):
@@ -190,6 +186,10 @@ def _completeness_problems(walk_inputs: WalkInputs) -> list[str]:
                 f"{entry.identifier}: the classifiers name {sorted(packages)}, and no identity"
             )
     return problems
+
+
+def reached_identifiers(census: Census) -> list[str]:
+    return list(dict.fromkeys(step.identifier for step in _draw(census).walk))
 
 
 def _draw(census: Census) -> DrawRecord:

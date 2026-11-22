@@ -20,15 +20,15 @@ from tests.fakes import FakeMCPClient
 DEFAULT_TOOL_NAME = "file_manager"
 
 
-def a_tool(
-    name: str = DEFAULT_TOOL_NAME,
-    description: str = "Manages files",
-    input_schema: dict[str, Any] | None = None,
-) -> ToolDefinition:
-    return ToolDefinition(
-        name=name,
+def a_chain_goal(
+    description: str = "probe then exploit",
+    category: AuditCategory = AuditCategory.INJECTION,
+    first_step: AuditPayload | None = None,
+) -> ChainGoal:
+    return ChainGoal(
         description=description,
-        input_schema=input_schema or {"type": "object", "properties": {"path": {"type": "string"}}},
+        category=category,
+        first_step=first_step or a_payload(),
     )
 
 
@@ -41,18 +41,6 @@ def a_payload(
         category=category,
         description=description,
         arguments=arguments or {"path": "/etc/passwd"},
-    )
-
-
-def a_chain_goal(
-    description: str = "probe then exploit",
-    category: AuditCategory = AuditCategory.INJECTION,
-    first_step: AuditPayload | None = None,
-) -> ChainGoal:
-    return ChainGoal(
-        description=description,
-        category=category,
-        first_step=first_step or a_payload(),
     )
 
 
@@ -87,6 +75,18 @@ def a_fake_mcp_client(
     responses: dict[str, ToolResponse] | None = None,
 ) -> FakeMCPClient:
     return FakeMCPClient(tools or [a_tool()], responses)
+
+
+def a_tool(
+    name: str = DEFAULT_TOOL_NAME,
+    description: str = "Manages files",
+    input_schema: dict[str, Any] | None = None,
+) -> ToolDefinition:
+    return ToolDefinition(
+        name=name,
+        description=description,
+        input_schema=input_schema or {"type": "object", "properties": {"path": {"type": "string"}}},
+    )
 
 
 def a_chain_audit_state(

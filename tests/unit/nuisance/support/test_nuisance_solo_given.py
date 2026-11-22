@@ -62,14 +62,14 @@ class InFlight:
         return bounded(self.tracking(call), BOUND)
 
 
-async def _answering(_server: AdmittedServer) -> str | None:
-    return None
-
-
 def vet_deps(in_flight: InFlight) -> VetDeps:
     return dataclasses.replace(
         vet_given.deps_on(DockerHost()), benign_call=in_flight.bounded(_answering)
     )
+
+
+async def _answering(_server: AdmittedServer) -> str | None:
+    return None
 
 
 def run_deps(in_flight: InFlight, servers: list[AdmittedServer]) -> NuisanceDeps:

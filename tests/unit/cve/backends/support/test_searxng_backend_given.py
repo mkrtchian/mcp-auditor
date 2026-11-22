@@ -9,10 +9,6 @@ from evals.cve.planting_base import PlantingSpec
 from tests.fakes.planting_docker import FakePlantingDocker
 
 
-def the_targets_spec() -> PlantingSpec:
-    return TARGET.planting_spec(kept_records(TARGET.kept_places, load_places(DETECTION_PLACES)))
-
-
 class FakeSearxng:
     """Starts SearXNG and finds it ready at once, unless told it never answers, and records what
     it starts, waits on and removes, with the holders still standing at each removal."""
@@ -47,3 +43,7 @@ def a_searxng_that_never_answers(planting: FakePlantingDocker) -> FakeSearxng:
 
 def a_launch(planting: FakePlantingDocker, searxng: FakeSearxng) -> AbstractContextManager[Launch]:
     return searxng_env("img", the_targets_spec(), docker=planting, searxng=searxng.docker())
+
+
+def the_targets_spec() -> PlantingSpec:
+    return TARGET.planting_spec(kept_records(TARGET.kept_places, load_places(DETECTION_PLACES)))

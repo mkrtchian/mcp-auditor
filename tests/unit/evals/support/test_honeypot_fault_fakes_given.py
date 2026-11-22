@@ -25,16 +25,16 @@ A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Cell = (
 A_CELL_OUTSIDE_THE_GROUND_TRUTH: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)
 
 
-def the_fixture() -> Baseline:
-    fixture = load_baseline(FIXTURE_PATH)
-    assert fixture is not None
-    return fixture
-
-
 def the_fixture_with_uncovered(cell: Cell) -> Baseline:
     fixture = the_fixture()
     runs = [{**run, cell_key(cell): Observation.UNCOVERED} for run in fixture.runs]
     return fixture.model_copy(update={"runs": runs})
+
+
+def the_fixture() -> Baseline:
+    fixture = load_baseline(FIXTURE_PATH)
+    assert fixture is not None
+    return fixture
 
 
 def the_fixture_without(cell: Cell) -> Baseline:

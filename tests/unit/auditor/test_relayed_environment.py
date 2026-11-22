@@ -10,10 +10,6 @@ from mcp_auditor.domain.relayed_environment import (
 _ENVIRON = {"TOKEN": "s3cr3t-t0ken-value", "PIN": "1234", "EMPTY": "", "REGION": "eu-west-1"}
 
 
-def _resolved(redacted: tuple[str, ...] = (), plain: tuple[str, ...] = ()) -> RelayedEnvironment:
-    return RelayedEnvironment.resolved(RelayRequest(redacted=redacted, plain=plain), _ENVIRON)
-
-
 @pytest.mark.parametrize(
     ("redacted", "plain", "expected_message"),
     [
@@ -33,6 +29,10 @@ def test_refuses_a_relay_it_cannot_honor(
 ):
     with pytest.raises(RelayRefusedError, match=expected_message):
         _resolved(redacted, plain)
+
+
+def _resolved(redacted: tuple[str, ...] = (), plain: tuple[str, ...] = ()) -> RelayedEnvironment:
+    return RelayedEnvironment.resolved(RelayRequest(redacted=redacted, plain=plain), _ENVIRON)
 
 
 def test_refusing_env_name_value_does_not_echo_the_value():

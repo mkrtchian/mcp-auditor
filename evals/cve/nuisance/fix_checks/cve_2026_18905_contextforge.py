@@ -53,17 +53,17 @@ AIM = re.compile(r"x-ssrf-probe")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/tmp", has_network=False)
 
 
+async def _exploit_rest_invoke(places: Places, client: KitClient) -> None:
+    name = await _find_tool(client, WITNESS.id)
+    await client.call_tool(name, {"marker": "x-ssrf-probe"})
+
+
 async def _find_tool(client: KitClient, place_id: str) -> str:
     # The gateway slugifies the registered tool name, so match on the description set per place.
     for tool in await client.list_tools():
         if (tool.description or "").endswith(place_id):
             return tool.name
     raise RuntimeError(f"no tool exposed for place {place_id}")
-
-
-async def _exploit_rest_invoke(places: Places, client: KitClient) -> None:
-    name = await _find_tool(client, WITNESS.id)
-    await client.call_tool(name, {"marker": "x-ssrf-probe"})
 
 
 _GW_PUBLIC_IP = "8.8.8.8"  # the public address a GW_TOOLS hostname resolves to at tool creation

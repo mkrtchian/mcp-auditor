@@ -17,6 +17,13 @@ from mcp_auditor.domain.models import (
 TOOL = ToolDefinition(name="get_user", description="Fetches a user", input_schema={})
 
 
+def a_report_with_a_judged_case_an_unjudged_case_and_a_chain() -> AuditReport:
+    return a_report(
+        [a_judged_case(EvalVerdict.FAIL), an_unjudged_case()],
+        chains=[a_chain_with_leakage_verdict()],
+    )
+
+
 def a_judged_case(
     verdict: EvalVerdict,
     category: AuditCategory = AuditCategory.INPUT_VALIDATION,
@@ -81,11 +88,4 @@ def a_chain_with_leakage_verdict() -> AttackChain:
             justification="leaked internal data",
             severity=Severity.HIGH,
         ),
-    )
-
-
-def a_report_with_a_judged_case_an_unjudged_case_and_a_chain() -> AuditReport:
-    return a_report(
-        [a_judged_case(EvalVerdict.FAIL), an_unjudged_case()],
-        chains=[a_chain_with_leakage_verdict()],
     )

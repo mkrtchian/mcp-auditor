@@ -22,16 +22,6 @@ NONCE = "MCPAUDIT-fixcheckwitnessnonce"
 AIM = re.compile(r"cat ")
 
 
-def a_witness(path: str = "/tmp/witness") -> Place:
-    return Place(
-        id=WITNESS_ID,
-        family="fix_check",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path=path),
-    )
-
-
 def exchanges_surfacing(nonce: str, tool: str = "read_file") -> list[Exchange]:
     return [(tool, {"path": "cat /tmp/witness"}, KitResponse(f"contents: {nonce}", is_error=False))]
 
@@ -76,6 +66,16 @@ def a_fix_check_fixture(
         vulnerable_service="vuln",
         patched_service="patched",
         server_patched_service=server_patched_service,
+    )
+
+
+def a_witness(path: str = "/tmp/witness") -> Place:
+    return Place(
+        id=WITNESS_ID,
+        family="fix_check",
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path=path),
     )
 
 

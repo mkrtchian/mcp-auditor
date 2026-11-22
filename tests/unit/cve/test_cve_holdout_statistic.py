@@ -32,6 +32,19 @@ RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3
 
 
+def test_the_holdout_detection_rate_is_the_sum_of_shares_over_the_target_count():
+    results = [
+        _result("A", detected_runs=3),  # share 1.0
+        _result("B", detected_runs=1),  # share 1/3
+        _result("C", detected_runs=0),  # share 0.0
+    ]
+    expected = (3 / 3 + 1 / 3 + 0 / 3) / 3
+    assert math.isclose(holdout_detection_rate(results), expected)
+    assert math.isclose(
+        holdout_detection_rate(results), sum(r.detection_share for r in results) / 3
+    )
+
+
 def _result(
     flaw_id: str = "CVE-0000-0000",
     *,
@@ -71,19 +84,6 @@ def _result(
     )
 
 
-def test_the_holdout_detection_rate_is_the_sum_of_shares_over_the_target_count():
-    results = [
-        _result("A", detected_runs=3),  # share 1.0
-        _result("B", detected_runs=1),  # share 1/3
-        _result("C", detected_runs=0),  # share 0.0
-    ]
-    expected = (3 / 3 + 1 / 3 + 0 / 3) / 3
-    assert math.isclose(holdout_detection_rate(results), expected)
-    assert math.isclose(
-        holdout_detection_rate(results), sum(r.detection_share for r in results) / 3
-    )
-
-
 def test_cited_interval_is_wilson_on_the_sum_of_shares():
     results = [_result("A", detected_runs=3), _result("B", detected_runs=1)]
     share_sum = 3 / 3 + 1 / 3
@@ -112,6 +112,11 @@ def test_split_numbers_and_interval_are_wilson_per_side():
     assert side.interval == wilson(1.0, 2)
 
 
+def test_contrast_is_none_below_five_targets_a_side():
+    pre, post = _split_sides(4, 4, detected_runs=3)
+    assert contrast(pre, post) is None
+
+
 def _split_sides(pre: int, post: int, detected_runs: int):
     results = [
         _result(f"PRE{i}", disclosure_date=date(2026, 1, 1), detected_runs=detected_runs)
@@ -122,11 +127,6 @@ def _split_sides(pre: int, post: int, detected_runs: int):
     ]
     split = split_by_side(results, RUN_CUTOFF)
     return split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF]
-
-
-def test_contrast_is_none_below_five_targets_a_side():
-    pre, post = _split_sides(4, 4, detected_runs=3)
-    assert contrast(pre, post) is None
 
 
 def test_contrast_is_the_newcombe_interval_at_five_targets_a_side():

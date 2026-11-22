@@ -49,10 +49,6 @@ from tests.unit.support.audited_launch_builders import (
 from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
 
 
-def _root(launch: Launch) -> Path:
-    return Path(mount_of(launch.args, "/srv").split(":")[0])
-
-
 def test_the_filesystem_fixture_launches_as_a_declared_container():
     with filesystem_env("img", an_empty_spec(), docker=FakePlantingDocker()) as launch:
         assert ServerLaunch.declared_container(launch.command, launch.args, {}).regime == (
@@ -126,6 +122,10 @@ def test_an_empty_spec_still_materialises_the_universal_tree_with_neutral_conten
         assert (root / "app.git").is_dir()
         assert (root / "app" / ".git").is_dir()
         assert NEUTRAL_TOKEN in (root / ".env").read_text()
+
+
+def _root(launch: Launch) -> Path:
+    return Path(mount_of(launch.args, "/srv").split(":")[0])
 
 
 def test_the_tree_is_handed_over_once_complete_its_report_links_included():

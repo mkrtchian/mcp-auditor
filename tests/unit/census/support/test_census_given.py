@@ -96,11 +96,6 @@ def written(tmp_path: Path, census: Census) -> Path:
     return path
 
 
-def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
-    [flaw] = merge(records, recorded={})
-    return census_flaw(flaw, [Discovery.PREFILTER])
-
-
 def with_a_cve_of(census: Census, flaw_id: str, server_package: str) -> Census:
     """A valid census that also classifies `flaw_id` under `server_package`."""
     flaw = a_flaw_with_records(identity.an_nvd(flaw_id))
@@ -116,6 +111,11 @@ def with_a_cve_of(census: Census, flaw_id: str, server_package: str) -> Census:
             update={"flaws": [*census.flaws, flaw], "classifications": classifications}
         )
     )
+
+
+def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
+    [flaw] = merge(records, recorded={})
+    return census_flaw(flaw, [Discovery.PREFILTER])
 
 
 # Each defect below breaks one rule of `load_census` and keeps every derived part
@@ -235,6 +235,12 @@ def with_a_stale_known_gap(census: Census) -> Census:
     return census.model_copy(update={"known_gap": stale})
 
 
+def with_stale_date_mismatches(census: Census) -> Census:
+    return with_a_classifier_date_differing_from_the_computed_one(census).model_copy(
+        update={"date_mismatches": []}
+    )
+
+
 def with_a_classifier_date_differing_from_the_computed_one(
     census: Census,
 ) -> Census:
@@ -243,12 +249,6 @@ def with_a_classifier_date_differing_from_the_computed_one(
         return [own[0].model_copy(update={"disclosure_date": late}), *own[1:]]
 
     return _recomputed(_with_classifications(census, CLASSIFIERS[1], one_day_late))
-
-
-def with_stale_date_mismatches(census: Census) -> Census:
-    return with_a_classifier_date_differing_from_the_computed_one(census).model_copy(
-        update={"date_mismatches": []}
-    )
 
 
 def _recomputed(census: Census) -> Census:

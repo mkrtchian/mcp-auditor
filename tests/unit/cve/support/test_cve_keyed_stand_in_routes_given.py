@@ -6,6 +6,10 @@ ACTION = "DescribeDBClusters"
 ISSUE_OPERATION = "IssueView"
 
 
+def an_issue_route(number: object) -> dict[str, Any]:
+    return a_keyed_route(number, location="graphql_variable", name="number", action=ISSUE_OPERATION)
+
+
 def a_keyed_route(
     value: object,
     *,
@@ -16,10 +20,6 @@ def a_keyed_route(
     route = a_route("https", "POST", action)
     route["identifier"] = {"location": location, "name": name, "value": value}
     return route
-
-
-def an_issue_route(number: object) -> dict[str, Any]:
-    return a_keyed_route(number, location="graphql_variable", name="number", action=ISSUE_OPERATION)
 
 
 def an_error_route(action: str = ACTION) -> dict[str, Any]:

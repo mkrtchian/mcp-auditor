@@ -62,6 +62,27 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def atlassian_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with ATLASSIAN_LAUNCH_LOCK:
+        ensure_atlassian_responder()
+    token = secrets.token_hex(4)
+    name = f"mcp-auditor-kit-atlassian-r-{token}"
+    address = _per_launch_address()
+    try:
+        subprocess.run(
+            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
+            check=True,
+            capture_output=True,
+        )
+        time.sleep(1.0)
+        yield Launch(command="docker", args=server_args(image, address))
+    finally:
+        atlassian_rm(name)
+
+
 def responder_args(name: str, nonce: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
@@ -86,27 +107,6 @@ def server_args(image: str, responder_address: str) -> list[str]:
         "-w", HOST.working_directory,
         image,
     ]  # fmt: skip
-
-
-@contextmanager
-def atlassian_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with ATLASSIAN_LAUNCH_LOCK:
-        ensure_atlassian_responder()
-    token = secrets.token_hex(4)
-    name = f"mcp-auditor-kit-atlassian-r-{token}"
-    address = _per_launch_address()
-    try:
-        subprocess.run(
-            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
-            check=True,
-            capture_output=True,
-        )
-        time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, address))
-    finally:
-        atlassian_rm(name)
 
 
 def _per_launch_address() -> str:

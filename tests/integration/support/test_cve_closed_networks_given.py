@@ -53,16 +53,16 @@ def host_ipv4_addresses() -> list[str]:
     return [address for address in addresses if not address.startswith("127.")]
 
 
-def a_network_name() -> str:
-    return f"{LABEL}-closed-test-{secrets.token_hex(6)}"
-
-
 @contextlib.contextmanager
 def a_closed_network() -> Generator[str]:
     name = a_network_name()
     create_closed_network(name)
     with _removed_at_exit(name):
         yield name
+
+
+def a_network_name() -> str:
+    return f"{LABEL}-closed-test-{secrets.token_hex(6)}"
 
 
 @contextlib.contextmanager
@@ -140,13 +140,13 @@ def timed_reach(container: str, host: str, port: int) -> tuple[bool, float]:
     return reached, time.monotonic() - start
 
 
-def routes(container: str) -> str:
-    return _exec(container, "ip", "route").stdout
-
-
 def gateway(container: str) -> str:
     default = next(line for line in routes(container).splitlines() if line.startswith("default"))
     return default.split()[2]
+
+
+def routes(container: str) -> str:
+    return _exec(container, "ip", "route").stdout
 
 
 def _exec(container: str, *command: str) -> subprocess.CompletedProcess[str]:

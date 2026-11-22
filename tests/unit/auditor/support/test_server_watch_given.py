@@ -23,11 +23,11 @@ def timeouts_on(watch: ServerWatch, tool_name: str, count: int) -> WatchStep:
     return step
 
 
-def a_relaunch_from(watch: ServerWatch, tool_name: str) -> None:
-    watch.after_response(tool_name, LOST_CONNECTION)
-    watch.after_relaunch(tool_name, succeeded=True)
-
-
 def relaunches_in_a_row(watch: ServerWatch, tool_name: str) -> None:
     for _ in range(RELAUNCHES_IN_A_ROW):
         a_relaunch_from(watch, tool_name)
+
+
+def a_relaunch_from(watch: ServerWatch, tool_name: str) -> None:
+    watch.after_response(tool_name, LOST_CONNECTION)
+    watch.after_relaunch(tool_name, succeeded=True)

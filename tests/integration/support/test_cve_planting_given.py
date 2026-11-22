@@ -101,17 +101,6 @@ def host_search_domain_reaches_a_plain_container() -> bool:
     return any(line.startswith("search") for line in result.stdout.splitlines())
 
 
-def spec_of(
-    host: str, path: str, *, has_network: bool = False, file_at: str | None = None
-) -> PlantingSpec:
-    places: list[Place] = []
-    if file_at is not None:
-        places.append(_place("file-1", Coordinates(PlaceKind.FILE, path=file_at)))
-    places.append(_place("endpoint-1", Coordinates(PlaceKind.HTTP_ENDPOINT, host=host, path=path)))
-    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
-    return planting_spec(places, planting_host, RANDOM_NONCES)
-
-
 def a_work_spec(*, with_an_account: bool) -> PlantingSpec:
     places = [_place("account-1", Coordinates(PlaceKind.ACCOUNT))] if with_an_account else []
     planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/work", False)
@@ -125,6 +114,17 @@ def a_launch_of_shape(shape: str) -> PlantingSpec:
     if shape == "holder":
         return spec_of(IP_LITERAL, "/fict/secret", has_network=True)
     return spec_of("meta.fict", "/fict/secret", has_network=True)
+
+
+def spec_of(
+    host: str, path: str, *, has_network: bool = False, file_at: str | None = None
+) -> PlantingSpec:
+    places: list[Place] = []
+    if file_at is not None:
+        places.append(_place("file-1", Coordinates(PlaceKind.FILE, path=file_at)))
+    places.append(_place("endpoint-1", Coordinates(PlaceKind.HTTP_ENDPOINT, host=host, path=path)))
+    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", has_network)
+    return planting_spec(places, planting_host, RANDOM_NONCES)
 
 
 def _place(place_id: str, coordinates: Coordinates) -> Place:

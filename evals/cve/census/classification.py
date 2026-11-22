@@ -79,14 +79,6 @@ def is_consistent(classification: Classification) -> bool:
     return failed == Criterion.MCP_SERVER or not met[failed]
 
 
-def normalized_class(name: str) -> str:
-    return " ".join(name.split()).casefold()
-
-
-def in_grammar(name: str) -> bool:
-    return normalized_class(name) in GRAMMAR_CLASSES
-
-
 def _read_from_fields(classification: Classification) -> dict[Criterion, bool]:
     return {
         Criterion.MCP_SERVER: classification.software_kind == SoftwareKind.SERVER,
@@ -98,3 +90,11 @@ def _read_from_fields(classification: Classification) -> dict[Criterion, bool]:
         Criterion.GRAMMAR_CLASS: in_grammar(classification.effect_class),
         Criterion.PINNABLE: classification.pinnable,
     }
+
+
+def in_grammar(name: str) -> bool:
+    return normalized_class(name) in GRAMMAR_CLASSES
+
+
+def normalized_class(name: str) -> str:
+    return " ".join(name.split()).casefold()

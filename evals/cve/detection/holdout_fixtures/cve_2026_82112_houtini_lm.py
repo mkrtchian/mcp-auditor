@@ -87,6 +87,16 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        path = _read_path(places, place_id)
+        tasks = ENVIRON_TASKS if places[place_id].kind is PlaceKind.ENV else CAT_TASKS
+        for task in tasks:
+            await _code_task_files(client, path, task)
+
+    return run
+
+
 def _read_path(places: Places, place_id: str) -> str:
     place = places[place_id]
     if place.kind is PlaceKind.ENV:
@@ -103,16 +113,6 @@ async def _code_task_files(client: MCPClientPort, path: str, task: str) -> None:
         "code_task_files",
         {"paths": [path], "task": task, "language": "text", "max_tokens": 96},
     )
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        path = _read_path(places, place_id)
-        tasks = ENVIRON_TASKS if places[place_id].kind is PlaceKind.ENV else CAT_TASKS
-        for task in tasks:
-            await _code_task_files(client, path, task)
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

@@ -62,11 +62,6 @@ class JudgeFixture(BaseModel):
     cases: list[JudgeCase]
 
 
-def case_id(inputs: JudgeInputs) -> str:
-    canonical = json.dumps(inputs.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
-
-
 def load_fixture(path: Path) -> JudgeFixture:
     fixture = load_drawn(path)
     unlabeled = [case.id for case in fixture.cases if case.label is None]
@@ -92,6 +87,11 @@ def _identity_problems(cases: list[JudgeCase]) -> list[str]:
     counts = Counter(case.id for case in cases)
     duplicated = [f"case {id_} appears {count} times" for id_, count in counts.items() if count > 1]
     return mismatched + duplicated
+
+
+def case_id(inputs: JudgeInputs) -> str:
+    canonical = json.dumps(inputs.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
 
 
 def ground_truth_of(fixture: JudgeFixture) -> dict[str, EvalVerdict]:

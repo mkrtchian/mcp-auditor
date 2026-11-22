@@ -20,6 +20,43 @@ GROUND_TRUTH = {
 }
 
 
+def a_chain_line(tool: str, category: AuditCategory) -> dict[str, Any]:
+    return {
+        "run_index": 0,
+        "type": "chain",
+        "tool_name": tool,
+        "tool_description": None,
+        "category": category.value,
+        "goal": "Chain two calls",
+        "steps": [],
+        "verdict": "fail",
+        "justification": "Leaked.",
+        "expected_verdict": "fail",
+        "correct": True,
+    }
+
+
+def some_strata() -> Strata:
+    return Strata(
+        fail_cells={"get_user/info_leakage": some_cases(6, "get_user")},
+        pass_cells={
+            "get_user/injection": some_cases(3, "get_user_pass"),
+            "list_items/injection": some_cases(3, "list_items"),
+        },
+        targets={"CVE-2025-0001": some_detection_cases(4, "CVE-2025-0001")},
+    )
+
+
+def some_cases(count: int, tool: str = "get_user") -> list[JudgeCase]:
+    lines = lines_for(tool, INJECTION, count)
+    ground_truth = {(tool, INJECTION): EvalVerdict.PASS}
+    return candidates_from_honeypot(lines, ground_truth)[(tool, INJECTION)]
+
+
+def lines_for(tool: str, category: AuditCategory, count: int) -> list[dict[str, Any]]:
+    return [a_honeypot_line(tool, category, arguments={"id": index}) for index in range(count)]
+
+
 def a_honeypot_line(tool: str, category: AuditCategory, **overrides: Any) -> dict[str, Any]:
     return {
         "run_index": 0,
@@ -39,20 +76,9 @@ def a_honeypot_line(tool: str, category: AuditCategory, **overrides: Any) -> dic
     }
 
 
-def a_chain_line(tool: str, category: AuditCategory) -> dict[str, Any]:
-    return {
-        "run_index": 0,
-        "type": "chain",
-        "tool_name": tool,
-        "tool_description": None,
-        "category": category.value,
-        "goal": "Chain two calls",
-        "steps": [],
-        "verdict": "fail",
-        "justification": "Leaked.",
-        "expected_verdict": "fail",
-        "correct": True,
-    }
+def some_detection_cases(count: int, flaw_id: str) -> list[JudgeCase]:
+    lines = [a_detection_line(flaw_id, arguments={"id": index}) for index in range(count)]
+    return candidates_from_detection(lines)[flaw_id]
 
 
 def a_detection_line(flaw_id: str, **overrides: Any) -> dict[str, Any]:
@@ -60,32 +86,6 @@ def a_detection_line(flaw_id: str, **overrides: Any) -> dict[str, Any]:
     for honeypot_only in ("expected_verdict", "correct"):
         del line[honeypot_only]
     return {"flaw_id": flaw_id, **line}
-
-
-def lines_for(tool: str, category: AuditCategory, count: int) -> list[dict[str, Any]]:
-    return [a_honeypot_line(tool, category, arguments={"id": index}) for index in range(count)]
-
-
-def some_cases(count: int, tool: str = "get_user") -> list[JudgeCase]:
-    lines = lines_for(tool, INJECTION, count)
-    ground_truth = {(tool, INJECTION): EvalVerdict.PASS}
-    return candidates_from_honeypot(lines, ground_truth)[(tool, INJECTION)]
-
-
-def some_detection_cases(count: int, flaw_id: str) -> list[JudgeCase]:
-    lines = [a_detection_line(flaw_id, arguments={"id": index}) for index in range(count)]
-    return candidates_from_detection(lines)[flaw_id]
-
-
-def some_strata() -> Strata:
-    return Strata(
-        fail_cells={"get_user/info_leakage": some_cases(6, "get_user")},
-        pass_cells={
-            "get_user/injection": some_cases(3, "get_user_pass"),
-            "list_items/injection": some_cases(3, "list_items"),
-        },
-        targets={"CVE-2025-0001": some_detection_cases(4, "CVE-2025-0001")},
-    )
 
 
 def labeled(fixture: JudgeFixture, labels: Sequence[CaseLabel | None]) -> JudgeFixture:

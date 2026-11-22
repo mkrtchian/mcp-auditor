@@ -38,10 +38,6 @@ def export_judged_cases(
                         f.write(json.dumps(line) + "\n")
 
 
-def detection_export_path(report_path: Path) -> Path:
-    return report_path.with_name("detection_judged_cases.jsonl")
-
-
 def export_detection_judged_cases(audits: list[DetectionAudit], report_path: Path) -> None:
     """Single-step cases only: a target has no per-case ground truth, and chains are
     judged by another prompt."""
@@ -59,8 +55,8 @@ def export_detection_judged_cases(audits: list[DetectionAudit], report_path: Pat
                     f.write(json.dumps(line) + "\n")
 
 
-def nuisance_gate_export_path(report_path: Path) -> Path:
-    return report_path.with_name("nuisance_gate_judged_cases.jsonl")
+def detection_export_path(report_path: Path) -> Path:
+    return report_path.with_name("detection_judged_cases.jsonl")
 
 
 def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path) -> None:
@@ -83,6 +79,10 @@ def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path
                 ]
                 for line in lines:
                     f.write(json.dumps({**origin, **line}) + "\n")
+
+
+def nuisance_gate_export_path(report_path: Path) -> Path:
+    return report_path.with_name("nuisance_gate_judged_cases.jsonl")
 
 
 def _single_step_line(

@@ -83,6 +83,30 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def facebook_ads_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with FACEBOOK_ADS_LAUNCH_LOCK:
+        ensure_facebook_ads_responder()
+    _ensure_sentinel_image()
+    name = f"mcp-auditor-kit-facebook-ads-r-{secrets.token_hex(4)}"
+    address = _per_launch_address()
+    directory = Path(tempfile.mkdtemp(prefix="facebook-ads-trust-"))
+    try:
+        bundle = write_trust_bundle(directory, _sentinel_certificate())
+        subprocess.run(
+            ["docker", *sentinel_args(name, spec.nonces[WITNESS.id], address)],
+            check=True,
+            capture_output=True,
+        )
+        time.sleep(1.0)
+        yield Launch(command="docker", args=server_args(image, address, bundle))
+    finally:
+        facebook_ads_rm(name)
+        shutil.rmtree(directory, ignore_errors=True)
+
+
 def sentinel_args(name: str, nonce: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
@@ -110,30 +134,6 @@ def server_args(image: str, sentinel_address: str, trust_bundle: Path) -> list[s
         image,
         *_SERVER_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def facebook_ads_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with FACEBOOK_ADS_LAUNCH_LOCK:
-        ensure_facebook_ads_responder()
-    _ensure_sentinel_image()
-    name = f"mcp-auditor-kit-facebook-ads-r-{secrets.token_hex(4)}"
-    address = _per_launch_address()
-    directory = Path(tempfile.mkdtemp(prefix="facebook-ads-trust-"))
-    try:
-        bundle = write_trust_bundle(directory, _sentinel_certificate())
-        subprocess.run(
-            ["docker", *sentinel_args(name, spec.nonces[WITNESS.id], address)],
-            check=True,
-            capture_output=True,
-        )
-        time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, address, bundle))
-    finally:
-        facebook_ads_rm(name)
-        shutil.rmtree(directory, ignore_errors=True)
 
 
 def write_trust_bundle(directory: Path, sentinel_certificate: str) -> Path:

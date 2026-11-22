@@ -87,6 +87,28 @@ class ProbedDefault:
     form: CapturedResponse
 
 
+def main(argv: Sequence[str] | None = None, transport: httpx.BaseTransport | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    parsed = _parser().parse_args(arguments)
+    kept = kept_defaults(Path(parsed.out), parsed.keep_default)
+    schemes = probed_schemes(parsed.keep_default)
+    requests = [parse_request(text) for text in parsed.urls]
+    hosts = {request.url.host for request in requests}
+    if len(hosts) != 1:
+        raise SystemExit(f"every URL must share one host, got {sorted(hosts)}")
+    headers = tuple(_header(text) for text in parsed.header)
+    provenance = _provenance(hosts.pop(), arguments, headers)
+    probed_request_target = f"/{secrets.token_hex(8)}"
+    probes = default_requests(provenance.host, probed_request_target, schemes)
+    fetched = _fetch_all([*requests, *probes], headers, transport)
+    plain, form = fetched[len(requests) : -len(schemes)], fetched[-len(schemes) :]
+    defaults = [ProbedDefault(*pair) for pair in zip(plain, form, strict=True)]
+    record = capture_record(provenance, fetched[: len(requests)], defaults)
+    record = with_kept_defaults(record, kept)
+    Path(parsed.out).write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+    return 0
+
+
 def capture_record(
     provenance: CaptureProvenance,
     responses: Iterable[CapturedResponse],
@@ -116,6 +138,21 @@ def _route(response: CapturedResponse) -> dict[str, Any]:
     if response.form_field is not None:
         route["form_field"] = response.form_field
     return route
+
+
+def _text(response: CapturedResponse) -> str:
+    for name, value in response.headers:
+        if name.lower() == "content-encoding" and value.strip().lower() != "identity":
+            raise ValueError(
+                f"{response.scheme} {response.request_target}: the answer carries Content-Encoding"
+                f" {value}, and the capture stores the body decoded"
+            )
+    try:
+        return response.body.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError(
+            f"{response.scheme} {response.request_target}: the body is not UTF-8 text"
+        ) from error
 
 
 def _default(probe: ProbedDefault) -> dict[str, Any]:
@@ -174,21 +211,6 @@ def _same_answer(probe: ProbedDefault) -> str:
     return media
 
 
-def _text(response: CapturedResponse) -> str:
-    for name, value in response.headers:
-        if name.lower() == "content-encoding" and value.strip().lower() != "identity":
-            raise ValueError(
-                f"{response.scheme} {response.request_target}: the answer carries Content-Encoding"
-                f" {value}, and the capture stores the body decoded"
-            )
-    try:
-        return response.body.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ValueError(
-            f"{response.scheme} {response.request_target}: the body is not UTF-8 text"
-        ) from error
-
-
 def parse_request(text: str) -> CaptureRequest:
     words = text.split()
     match words:
@@ -213,28 +235,6 @@ def _single_form_field(body: str) -> str | None:
     if len(fields) != 1 or not fields[0][0]:
         return None
     return fields[0][0]
-
-
-def main(argv: Sequence[str] | None = None, transport: httpx.BaseTransport | None = None) -> int:
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    parsed = _parser().parse_args(arguments)
-    kept = kept_defaults(Path(parsed.out), parsed.keep_default)
-    schemes = probed_schemes(parsed.keep_default)
-    requests = [parse_request(text) for text in parsed.urls]
-    hosts = {request.url.host for request in requests}
-    if len(hosts) != 1:
-        raise SystemExit(f"every URL must share one host, got {sorted(hosts)}")
-    headers = tuple(_header(text) for text in parsed.header)
-    provenance = _provenance(hosts.pop(), arguments, headers)
-    probed_request_target = f"/{secrets.token_hex(8)}"
-    probes = default_requests(provenance.host, probed_request_target, schemes)
-    fetched = _fetch_all([*requests, *probes], headers, transport)
-    plain, form = fetched[len(requests) : -len(schemes)], fetched[-len(schemes) :]
-    defaults = [ProbedDefault(*pair) for pair in zip(plain, form, strict=True)]
-    record = capture_record(provenance, fetched[: len(requests)], defaults)
-    record = with_kept_defaults(record, kept)
-    Path(parsed.out).write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
-    return 0
 
 
 def _provenance(

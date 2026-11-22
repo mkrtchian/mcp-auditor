@@ -32,15 +32,14 @@ _SCOPED_NO_DISCLOSURE = RouteObservations(
 )
 
 
-def _observed(*, started: bool) -> RouteObservations:
-    return RouteObservations(
-        launch_command=(),
-        scope=None,
-        tool_names=(),
-        responses=(),
-        call_errored=(),
-        tools_list_succeeded=started,
-    )
+def test_unrouted_kept_places_lists_only_the_layout_place_without_a_route():
+    catalogue = _catalogue_place()
+    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
+
+    unrouted = unrouted_kept_places((catalogue, dotenv, bare_url), _SCOPED_NO_DISCLOSURE)
+
+    assert unrouted == [bare_url]
 
 
 def _layout_place(place_id: str, anchor: LayoutAnchor, kind: PlaceKind) -> Place:
@@ -63,16 +62,6 @@ def _catalogue_place() -> Place:
     )
 
 
-def test_unrouted_kept_places_lists_only_the_layout_place_without_a_route():
-    catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
-
-    unrouted = unrouted_kept_places((catalogue, dotenv, bare_url), _SCOPED_NO_DISCLOSURE)
-
-    assert unrouted == [bare_url]
-
-
 def test_unrouted_kept_places_is_empty_when_every_kept_place_has_a_route():
     catalogue = _catalogue_place()
     dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
@@ -86,6 +75,17 @@ def test_a_fallback_mode_target_gives_up_when_its_fallback_launch_fails_to_start
     assert (
         layout_check_gave_up(target, _observed(started=False))
         == "the container cannot run the server"
+    )
+
+
+def _observed(*, started: bool) -> RouteObservations:
+    return RouteObservations(
+        launch_command=(),
+        scope=None,
+        tool_names=(),
+        responses=(),
+        call_errored=(),
+        tools_list_succeeded=started,
     )
 
 

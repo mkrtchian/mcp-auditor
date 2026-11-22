@@ -28,6 +28,15 @@ def a_route(
     )
 
 
+def a_probed_default(
+    headers: tuple[tuple[str, str], ...], plain_body: str, form_body: str
+) -> ProbedDefault:
+    return ProbedDefault(
+        plain=a_not_found_answer("https", PROBED_TARGET, headers, plain_body),
+        form=a_not_found_answer("https", FORM_TARGET, headers, form_body),
+    )
+
+
 def a_not_found_answer(
     scheme: str,
     request_target: str,
@@ -41,15 +50,6 @@ def a_not_found_answer(
         status=404,
         headers=headers,
         body=body.encode(),
-    )
-
-
-def a_probed_default(
-    headers: tuple[tuple[str, str], ...], plain_body: str, form_body: str
-) -> ProbedDefault:
-    return ProbedDefault(
-        plain=a_not_found_answer("https", PROBED_TARGET, headers, plain_body),
-        form=a_not_found_answer("https", FORM_TARGET, headers, form_body),
     )
 
 

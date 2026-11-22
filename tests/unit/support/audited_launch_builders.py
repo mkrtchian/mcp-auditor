@@ -87,11 +87,6 @@ class AuditedLaunchBuilder:
     takes_an_empty_spec: bool = False  # the key itself runs on `an_empty_spec`
 
 
-def an_empty_spec(mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingSpec:
-    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=mount)
-    return planting_spec((), host, RANDOM_NONCES)
-
-
 def _on_an_empty_spec(
     builder: SpecBuilder, backend_sources: frozenset[Path] = frozenset()
 ) -> AuditedLaunchBuilder:
@@ -102,6 +97,11 @@ def _on_an_empty_spec(
             yield BuiltLaunch(launch.args, spec.host)
 
     return AuditedLaunchBuilder(launched, backend_sources, takes_an_empty_spec=True)
+
+
+def an_empty_spec(mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingSpec:
+    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=mount)
+    return planting_spec((), host, RANDOM_NONCES)
 
 
 @contextmanager

@@ -20,34 +20,6 @@ from mcp_auditor.domain.models import (
 )
 
 
-def a_two_tool_report() -> AuditReport:
-    get_user_results = [
-        a_fail_result(
-            "get_user",
-            AuditCategory.INPUT_VALIDATION,
-            Severity.HIGH,
-            justification="No input length validation",
-        ),
-        a_fail_result(
-            "get_user",
-            AuditCategory.INJECTION,
-            Severity.CRITICAL,
-            justification="SQL injection via user_id parameter",
-        ),
-    ]
-    list_items_results = [
-        a_pass_result("list_items", AuditCategory.ERROR_HANDLING),
-    ]
-    return a_report(
-        server_command="python honeypot_server.py",
-        tool_reports=[
-            a_tool_report("get_user", get_user_results),
-            a_tool_report("list_items", list_items_results),
-        ],
-        provider_usage=ProviderUsage(input_tokens=15234, output_tokens=8421),
-    )
-
-
 def a_report_with_chain_finding() -> AuditReport:
     chain = a_chain(judge_result=a_chain_fail_result())
     tool_report = ToolReport(
@@ -86,6 +58,34 @@ def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
         missing_categories=[AuditCategory.INJECTION, AuditCategory.RESOURCE_ABUSE],
     )
     return report
+
+
+def a_two_tool_report() -> AuditReport:
+    get_user_results = [
+        a_fail_result(
+            "get_user",
+            AuditCategory.INPUT_VALIDATION,
+            Severity.HIGH,
+            justification="No input length validation",
+        ),
+        a_fail_result(
+            "get_user",
+            AuditCategory.INJECTION,
+            Severity.CRITICAL,
+            justification="SQL injection via user_id parameter",
+        ),
+    ]
+    list_items_results = [
+        a_pass_result("list_items", AuditCategory.ERROR_HANDLING),
+    ]
+    return a_report(
+        server_command="python honeypot_server.py",
+        tool_reports=[
+            a_tool_report("get_user", get_user_results),
+            a_tool_report("list_items", list_items_results),
+        ],
+        provider_usage=ProviderUsage(input_tokens=15234, output_tokens=8421),
+    )
 
 
 REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"

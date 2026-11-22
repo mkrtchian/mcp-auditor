@@ -9,11 +9,6 @@ from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
 from mcp_auditor.config import Settings
 
 
-def _transport_of(chat_model: object) -> object:
-    client_args: dict[str, object] = getattr(chat_model, "client_args", None) or {}
-    return client_args.get("transport")
-
-
 class TestMakeChatModel:
     def test_google_builds_its_default_model_at_its_default_reasoning(
         self, monkeypatch: pytest.MonkeyPatch
@@ -244,6 +239,11 @@ class TestMakeChatModel:
 
         with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
             make_chat_model(settings, settings.resolve_model(), _glm_efforts())
+
+
+def _transport_of(chat_model: object) -> object:
+    client_args: dict[str, object] = getattr(chat_model, "client_args", None) or {}
+    return client_args.get("transport")
 
 
 def _openrouter_settings(model: str = "", openrouter_providers: str = "") -> Settings:

@@ -16,13 +16,6 @@ def with_the_server(
     return admission.model_copy(update={"servers": [change(admission.servers[0])]})
 
 
-def with_the_first_flaw(
-    server: AdmittedServer, change: Callable[[FlawRecord], FlawRecord]
-) -> AdmittedServer:
-    first, *rest = server.flaws
-    return server.model_copy(update={"flaws": [change(first), *rest]})
-
-
 def with_the_first_benign_call(server: AdmittedServer, **update: object) -> AdmittedServer:
     def changed(flaw: FlawRecord) -> FlawRecord:
         first, *rest = flaw.benign_calls
@@ -31,16 +24,23 @@ def with_the_first_benign_call(server: AdmittedServer, **update: object) -> Admi
     return with_the_first_flaw(server, changed)
 
 
+def with_the_first_flaw(
+    server: AdmittedServer, change: Callable[[FlawRecord], FlawRecord]
+) -> AdmittedServer:
+    first, *rest = server.flaws
+    return server.model_copy(update={"flaws": [change(first), *rest]})
+
+
+def on_the_ckan_backend(server: AdmittedServer) -> AdmittedServer:
+    return with_the_registered_backend(server, "ckan")
+
+
 def with_the_registered_backend(server: AdmittedServer, key: str) -> AdmittedServer:
     registered = BACKENDS[key]
     backend = BackendFixture(
         provisioner=key, images=list(registered.images), network=registered.network
     )
     return server.model_copy(update={"backend": backend})
-
-
-def on_the_ckan_backend(server: AdmittedServer) -> AdmittedServer:
-    return with_the_registered_backend(server, "ckan")
 
 
 def without_stdio(admission: NuisanceAdmission, package: str) -> NuisanceAdmission:

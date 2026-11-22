@@ -25,17 +25,13 @@ def admitting(*servers: AdmittedServer) -> NuisanceAdmission:
     return an_admission().model_copy(update={"servers": list(servers)})
 
 
-def with_host(server: AdmittedServer, host: PlantingHost) -> AdmittedServer:
-    return server.model_copy(update={"host": host})
+def with_a_registered_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
+    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
+    return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_a_backend(server: AdmittedServer, backend: BackendFixture) -> AdmittedServer:
     return server.model_copy(update={"backend": backend})
-
-
-def with_a_registered_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
-    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
-    return edits.with_the_server(admission, lambda server: with_a_backend(server, backend))
 
 
 def with_an_unknown_backend_provisioner(admission: NuisanceAdmission) -> NuisanceAdmission:
@@ -53,6 +49,10 @@ def with_a_backend_fixture_differing_from_its_provisioner(
 def with_a_networked_host_and_no_backend(admission: NuisanceAdmission) -> NuisanceAdmission:
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
     return edits.with_the_server(admission, lambda server: with_host(server, host))
+
+
+def with_host(server: AdmittedServer, host: PlantingHost) -> AdmittedServer:
+    return server.model_copy(update={"host": host})
 
 
 def with_a_trust_setting_and_no_stand_in(admission: NuisanceAdmission) -> NuisanceAdmission:

@@ -136,30 +136,6 @@ _PROBES: dict[str, list[str]] = {
 }
 
 
-def part_args(name: str, network: str, alias: str, image: str) -> list[str]:
-    return [
-        "run", "-d", "--rm",
-        "--name", name,
-        "--label", LABEL,
-        *own_network_args(network),
-        "--network-alias", alias,
-        *confinement_args(),
-        image,
-    ]  # fmt: skip
-
-
-def server_args(image: str, network: str) -> list[str]:
-    return [
-        "run", "-i", "--rm",
-        *confinement_args(),
-        *own_network_args(network),
-        *unprivileged_user_args(),
-        "-w", HOST.working_directory,
-        image,
-        *_SERVER_LAUNCH,
-    ]  # fmt: skip
-
-
 @contextmanager
 def gravitino_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
@@ -183,6 +159,30 @@ def gravitino_env(
         for _, name in containers:
             _rm(name)
         subprocess.run(["docker", "network", "rm", network], capture_output=True)
+
+
+def part_args(name: str, network: str, alias: str, image: str) -> list[str]:
+    return [
+        "run", "-d", "--rm",
+        "--name", name,
+        "--label", LABEL,
+        *own_network_args(network),
+        "--network-alias", alias,
+        *confinement_args(),
+        image,
+    ]  # fmt: skip
+
+
+def server_args(image: str, network: str) -> list[str]:
+    return [
+        "run", "-i", "--rm",
+        *confinement_args(),
+        *own_network_args(network),
+        *unprivileged_user_args(),
+        "-w", HOST.working_directory,
+        image,
+        *_SERVER_LAUNCH,
+    ]  # fmt: skip
 
 
 def _ensure_part_images() -> None:

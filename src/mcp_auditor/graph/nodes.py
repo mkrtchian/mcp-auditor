@@ -275,16 +275,16 @@ def route_after_discovery(state: dict[str, Any]) -> str:
     return "generate_report"
 
 
-def route_test_cases(state: dict[str, Any]) -> str:
-    if state["pending_cases"]:
-        return "execute_tool"
-    return END
-
-
 def route_after_execute(state: dict[str, Any]) -> str:
     if state["current_case"] is None:
         return route_test_cases(state)
     return "judge_response"
+
+
+def route_test_cases(state: dict[str, Any]) -> str:
+    if state["pending_cases"]:
+        return "execute_tool"
+    return END
 
 
 def make_route_tools(server: AuditedServer):

@@ -19,6 +19,11 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> Str
     return display_given.a_captured_console(monkeypatch, detection_console, width=width)
 
 
+def a_report_with_a_not_run_target(reasons: list[str], gated: bool) -> DetectionReport:
+    report = a_gated_report() if gated else a_no_baseline_report()
+    return report.model_copy(update={"results": [*report.results, a_not_run_result(reasons)]})
+
+
 def a_gated_report(**update: object) -> DetectionReport:
     report = oracle_given.a_detection_report(
         [oracle_given.a_target_result(DETECTED_FLAW, TargetStatus.DETECTED, detected_runs=3)]
@@ -38,11 +43,6 @@ def a_not_run_result(reasons: list[str]) -> TargetResult:
         status=UngradedStatus.NOT_RUN,
         not_run_reasons=reasons,
     )
-
-
-def a_report_with_a_not_run_target(reasons: list[str], gated: bool) -> DetectionReport:
-    report = a_gated_report() if gated else a_no_baseline_report()
-    return report.model_copy(update={"results": [*report.results, a_not_run_result(reasons)]})
 
 
 def a_report_gated_on_a_detail(detail: str) -> DetectionReport:

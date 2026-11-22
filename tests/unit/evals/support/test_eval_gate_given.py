@@ -7,10 +7,6 @@ VULNERABLE_CELL: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)
 SAFE_CELL: Cell = ("get_user", AuditCategory.INJECTION)
 
 
-def a_ground_truth() -> GroundTruth:
-    return {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.PASS}
-
-
 def runs_observing(cell: Cell, observations: list[Observation]) -> list[dict[Cell, Observation]]:
     return [{cell: observation} for observation in observations]
 
@@ -57,6 +53,10 @@ def a_ground_truth_with_two_cells_of_each_side() -> GroundTruth:
         OTHER_VULNERABLE_CELL: EvalVerdict.FAIL,
         OTHER_SAFE_CELL: EvalVerdict.PASS,
     }
+
+
+def a_ground_truth() -> GroundTruth:
+    return {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.PASS}
 
 
 def runs_on_two_cells_of_each_side() -> list[dict[Cell, Observation]]:

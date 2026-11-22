@@ -113,14 +113,14 @@ def a_clean_tree(commit: str = RECORDED_COMMIT) -> TreeState:
     return TreeState(commit=commit, dirty=False)
 
 
+def an_unconfirmed_baseline_file(tmp_path: Path, commit: str = RECORDED_COMMIT) -> Path:
+    return a_baseline_file(tmp_path, a_baseline(BaselineStatus.UNCONFIRMED, commit=commit))
+
+
 def a_baseline_file(tmp_path: Path, baseline: JudgeBaseline | None = None) -> Path:
     path = tmp_path / "judge.json"
     write_judge_baseline(path, baseline or a_baseline())
     return path
-
-
-def an_unconfirmed_baseline_file(tmp_path: Path, commit: str = RECORDED_COMMIT) -> Path:
-    return a_baseline_file(tmp_path, a_baseline(BaselineStatus.UNCONFIRMED, commit=commit))
 
 
 def a_broken_baseline_file(tmp_path: Path) -> Path:

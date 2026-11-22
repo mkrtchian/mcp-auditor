@@ -17,11 +17,6 @@ A_JUDGE_CALL = ProbeCall(
 )
 
 
-def _models_raising(error: Exception) -> CandidateModels:
-    llm = RaisingLLM(error)
-    return CandidateModels(candidate=REFERENCE, main=llm, judge=llm)
-
-
 async def test_unparseable_output_is_a_parse_failure():
     models = _models_raising(
         UnparseableOutput(attempts=3, truncated_attempts=0, usage=ProviderUsage())
@@ -30,6 +25,11 @@ async def test_unparseable_output_is_a_parse_failure():
     observation = await observe(models, A_JUDGE_CALL, budget=10)
 
     assert observation.outcome == CallOutcome.PARSE_FAILURE
+
+
+def _models_raising(error: Exception) -> CandidateModels:
+    llm = RaisingLLM(error)
+    return CandidateModels(candidate=REFERENCE, main=llm, judge=llm)
 
 
 async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempts():

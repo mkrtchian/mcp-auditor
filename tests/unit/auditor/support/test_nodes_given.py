@@ -17,6 +17,26 @@ from mcp_auditor.domain.ports import ProviderRefusal
 from mcp_auditor.domain.server_liveness import UnsentCause
 
 
+def a_judgment(
+    verdict: EvalVerdict = EvalVerdict.PASS,
+    severity: Severity = Severity.LOW,
+) -> Judgment:
+    return Judgment(
+        verdict=verdict,
+        justification="test justification",
+        severity=severity,
+    )
+
+
+def a_tool_report(
+    tool_name: str = "test_tool",
+    num_cases: int = 1,
+) -> ToolReport:
+    tool = a_tool(name=tool_name)
+    cases = [a_test_case(response="some response", error="some error") for _ in range(num_cases)]
+    return ToolReport(tool=tool, cases=cases)
+
+
 def a_tool(
     name: str = "test_tool",
     description: str = "A test tool",
@@ -26,18 +46,6 @@ def a_tool(
         name=name,
         description=description,
         input_schema=input_schema or {"type": "object", "properties": {}},
-    )
-
-
-def a_payload(
-    category: AuditCategory = AuditCategory.INJECTION,
-    description: str = "test payload",
-    arguments: dict[str, Any] | None = None,
-) -> AuditPayload:
-    return AuditPayload(
-        category=category,
-        description=description,
-        arguments=arguments or {"input": "malicious"},
     )
 
 
@@ -54,45 +62,16 @@ def a_test_case(
     )
 
 
-def a_judgment(
-    verdict: EvalVerdict = EvalVerdict.PASS,
-    severity: Severity = Severity.LOW,
-) -> Judgment:
-    return Judgment(
-        verdict=verdict,
-        justification="test justification",
-        severity=severity,
-    )
-
-
-def a_judge_result(
-    tool_name: str = "test_tool",
+def a_payload(
     category: AuditCategory = AuditCategory.INJECTION,
-    verdict: EvalVerdict = EvalVerdict.PASS,
-    severity: Severity = Severity.LOW,
-) -> JudgeResult:
-    payload = a_payload(category=category)
-    return JudgeResult(
-        tool_name=tool_name,
+    description: str = "test payload",
+    arguments: dict[str, Any] | None = None,
+) -> AuditPayload:
+    return AuditPayload(
         category=category,
-        arguments=payload.arguments,
-        verdict=verdict,
-        justification="test justification",
-        severity=severity,
+        description=description,
+        arguments=arguments or {"input": "malicious"},
     )
-
-
-def a_judged_case(response: str) -> TestCase:
-    return a_test_case(response=response).model_copy(update={"judge_result": a_judge_result()})
-
-
-def a_tool_report(
-    tool_name: str = "test_tool",
-    num_cases: int = 1,
-) -> ToolReport:
-    tool = a_tool(name=tool_name)
-    cases = [a_test_case(response="some response", error="some error") for _ in range(num_cases)]
-    return ToolReport(tool=tool, cases=cases)
 
 
 def a_coverage_gap() -> CoverageGap:
@@ -118,6 +97,27 @@ def a_tool_state(
         "unsent_chains": unsent_chains,
         "unsent_cause": UnsentCause.TOOL_TIMING_OUT,
     }
+
+
+def a_judged_case(response: str) -> TestCase:
+    return a_test_case(response=response).model_copy(update={"judge_result": a_judge_result()})
+
+
+def a_judge_result(
+    tool_name: str = "test_tool",
+    category: AuditCategory = AuditCategory.INJECTION,
+    verdict: EvalVerdict = EvalVerdict.PASS,
+    severity: Severity = Severity.LOW,
+) -> JudgeResult:
+    payload = a_payload(category=category)
+    return JudgeResult(
+        tool_name=tool_name,
+        category=category,
+        arguments=payload.arguments,
+        verdict=verdict,
+        justification="test justification",
+        severity=severity,
+    )
 
 
 def a_provider_refusal() -> ProviderRefusal:

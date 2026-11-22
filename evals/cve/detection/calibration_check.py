@@ -60,36 +60,12 @@ async def check_calibrations(
     return all_pass
 
 
-def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
-    nonce = ProofKind.PLANTED_NONCE.value
-    conditions: list[str] = []
-    if not target.nonces:
-        conditions.append("keeps no place")
-    for index, exploit in enumerate(exploits):
-        if not is_aimed(exploit, target.aim):
-            conditions.append(f"exploit {index} not aimed")
-    surfaced = {place for exploit in exploits for place in proofs_in(exploit, target)}
-    for place_id in sorted(target.nonces):
-        if place_id not in surfaced:
-            conditions.append(f"exploit surfaces no nonce for {place_id}")
-    if proofs_in(benign, target):
-        conditions.append(f"negative control: benign call surfaces {nonce}")
-    if is_aimed(benign, target.aim):
-        conditions.append("negative control: benign call reads as aimed")
-    return conditions
+async def passes_calibration_check(target: Target, places: Places) -> bool:
+    def print_ping(version: TargetVersion, answered: bool) -> None:
+        answer = "yes" if answered else "no"
+        console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
 
-
-def not_fixed_reasons(
-    target: GradedTarget, exploits: Sequence[Unit], benign_errored: bool
-) -> list[str]:
-    conditions = [
-        f"patched: exploit {index} still surfaces {place_id}"
-        for index, exploit in enumerate(exploits)
-        for place_id in sorted(proofs_in(exploit, target))
-    ]
-    if benign_errored:
-        conditions.append("patched: benign call errored")
-    return conditions
+    return not await check_target(target, places, on_ping=print_ping)
 
 
 async def check_target(
@@ -125,12 +101,23 @@ async def check_target(
     return reasons
 
 
-async def passes_calibration_check(target: Target, places: Places) -> bool:
-    def print_ping(version: TargetVersion, answered: bool) -> None:
-        answer = "yes" if answered else "no"
-        console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
-
-    return not await check_target(target, places, on_ping=print_ping)
+def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
+    nonce = ProofKind.PLANTED_NONCE.value
+    conditions: list[str] = []
+    if not target.nonces:
+        conditions.append("keeps no place")
+    for index, exploit in enumerate(exploits):
+        if not is_aimed(exploit, target.aim):
+            conditions.append(f"exploit {index} not aimed")
+    surfaced = {place for exploit in exploits for place in proofs_in(exploit, target)}
+    for place_id in sorted(target.nonces):
+        if place_id not in surfaced:
+            conditions.append(f"exploit surfaces no nonce for {place_id}")
+    if proofs_in(benign, target):
+        conditions.append(f"negative control: benign call surfaces {nonce}")
+    if is_aimed(benign, target.aim):
+        conditions.append("negative control: benign call reads as aimed")
+    return conditions
 
 
 class NotLaunched(Exception):
@@ -163,6 +150,19 @@ def _not_fixed_reasons(target: Target, patched: _Exercised) -> list[str]:
     return not_fixed_reasons(
         _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
     )
+
+
+def not_fixed_reasons(
+    target: GradedTarget, exploits: Sequence[Unit], benign_errored: bool
+) -> list[str]:
+    conditions = [
+        f"patched: exploit {index} still surfaces {place_id}"
+        for index, exploit in enumerate(exploits)
+        for place_id in sorted(proofs_in(exploit, target))
+    ]
+    if benign_errored:
+        conditions.append("patched: benign call errored")
+    return conditions
 
 
 @dataclass(frozen=True)

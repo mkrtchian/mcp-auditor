@@ -89,13 +89,13 @@ def _run_args(image: str, export: Path) -> list[str]:
     ]
 
 
+async def _exploit_absolute(places: Places, client: KitClient) -> None:
+    await _import_then_get(client, WITNESS_PATH)
+
+
 async def _import_then_get(client: KitClient, file_path: str) -> None:
     await client.call_tool("context_import", {"filePath": file_path})
     await client.call_tool("context_get", {"key": WITNESS_KEY})
-
-
-async def _exploit_absolute(places: Places, client: KitClient) -> None:
-    await _import_then_get(client, WITNESS_PATH)
 
 
 async def _exploit_traversal(places: Places, client: KitClient) -> None:

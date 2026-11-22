@@ -43,16 +43,6 @@ def add_measurement_flags(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def measurement_from(args: argparse.Namespace) -> MeasurementSettings | None:
-    measurement = MeasurementSettings(
-        chains=args.chains,
-        chain_steps=args.chain_steps,
-        tool_call_timeout=args.tool_call_timeout,
-        every_tool=args.no_tools_filter,
-    )
-    return None if measurement == MeasurementSettings() else measurement
-
-
 def measurement_refusal(args: argparse.Namespace) -> str | None:
     measurement = measurement_from(args)
     if measurement is None:
@@ -66,6 +56,16 @@ def measurement_refusal(args: argparse.Namespace) -> str | None:
     return None
 
 
+def measurement_from(args: argparse.Namespace) -> MeasurementSettings | None:
+    measurement = MeasurementSettings(
+        chains=args.chains,
+        chain_steps=args.chain_steps,
+        tool_call_timeout=args.tool_call_timeout,
+        every_tool=args.no_tools_filter,
+    )
+    return None if measurement == MeasurementSettings() else measurement
+
+
 def run_overrides(measurement: MeasurementSettings) -> RunOverrides:
     return RunOverrides(
         measurement.chains,
@@ -73,13 +73,6 @@ def run_overrides(measurement: MeasurementSettings) -> RunOverrides:
         measurement.tool_call_timeout,
         audit_every_tool=measurement.every_tool,
     )
-
-
-def missing_price(prices: Mapping[str, Prices], models: Sequence[str]) -> str | None:
-    missing = [model for model in dict.fromkeys(models) if model not in prices]
-    if not missing:
-        return None
-    return f"no price for {', '.join(missing)} in evals/holdout_conditions.json"
 
 
 def cost_pricing(
@@ -97,6 +90,13 @@ def cost_pricing(
     generator, judge = models
     prices = conditions.prices
     return CostPricing(prices[generator], prices[judge], conditions.prices_as_of)
+
+
+def missing_price(prices: Mapping[str, Prices], models: Sequence[str]) -> str | None:
+    missing = [model for model in dict.fromkeys(models) if model not in prices]
+    if not missing:
+        return None
+    return f"no price for {', '.join(missing)} in evals/holdout_conditions.json"
 
 
 def render_measurement(measurement: MeasurementSettings) -> str:

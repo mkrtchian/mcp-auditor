@@ -57,15 +57,15 @@ KEPT_PLACES: tuple[str, ...] = tuple(PLACE_COMMANDS)
 AIM = re.compile(r";")  # a chained command injection carries a `;`; the benign call does not
 
 
-def _payload(cmd: str) -> str:
-    return f'x"; {cmd}; echo __ok__ "y'
-
-
 def _make_exploit(cmd: str):
     async def exploit(places: Places, client: MCPClientPort) -> None:
         await client.call_tool("db-query", {"query": _payload(cmd), "format": "table"})
 
     return exploit
+
+
+def _payload(cmd: str) -> str:
+    return f'x"; {cmd}; echo __ok__ "y'
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

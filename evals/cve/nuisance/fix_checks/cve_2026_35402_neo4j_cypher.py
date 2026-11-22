@@ -76,6 +76,24 @@ _SERVER_ENVIRONMENT = [
 ]  # fmt: skip
 
 
+@contextmanager
+def neo4j_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    _ensure_sentinel_image()
+    _ensure_neo4j_image()
+    ensure_closed_network(BRIDGE)
+    sentinel = f"mcp-auditor-kit-neo4j-ssrf-sentinel-{secrets.token_hex(4)}"
+    database = f"mcp-auditor-kit-neo4j-ssrf-db-{secrets.token_hex(4)}"
+    try:
+        _run("docker", *sentinel_args(sentinel, spec.nonces[WITNESS.id]))
+        _run("docker", *neo4j_container_args(database))
+        _wait_until_ready(database)
+        yield Launch(command="docker", args=server_args(image))
+    finally:
+        _remove(sentinel, database)
+
+
 def sentinel_args(name: str, nonce: str) -> list[str]:
     return [
         "run", "-d", "--rm",
@@ -114,24 +132,6 @@ def server_args(image: str) -> list[str]:
         image,
         "--read-only",
     ]  # fmt: skip
-
-
-@contextmanager
-def neo4j_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    _ensure_sentinel_image()
-    _ensure_neo4j_image()
-    ensure_closed_network(BRIDGE)
-    sentinel = f"mcp-auditor-kit-neo4j-ssrf-sentinel-{secrets.token_hex(4)}"
-    database = f"mcp-auditor-kit-neo4j-ssrf-db-{secrets.token_hex(4)}"
-    try:
-        _run("docker", *sentinel_args(sentinel, spec.nonces[WITNESS.id]))
-        _run("docker", *neo4j_container_args(database))
-        _wait_until_ready(database)
-        yield Launch(command="docker", args=server_args(image))
-    finally:
-        _remove(sentinel, database)
 
 
 def _ensure_sentinel_image() -> None:

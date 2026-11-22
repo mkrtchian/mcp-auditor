@@ -8,14 +8,6 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 SERVER_PATH = pathlib.Path(__file__).resolve().parent.parent / "subtle_server.py"
 
 
-# Not a pytest fixture on purpose: the MCP SDK's anyio cancel scopes must be
-# entered and exited in the same task, and pytest-asyncio runs fixture
-# setup/teardown in separate tasks. The async with stays in the test body.
-def connected_subtle_server():
-    launch = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)])
-    return StdioMCPClient.connect(launch)
-
-
 class TestDiscovery:
     async def test_discovers_three_tools(self) -> None:
         async with connected_subtle_server() as client:
@@ -23,6 +15,14 @@ class TestDiscovery:
 
         assert len(tools) == 3
         assert {t.name for t in tools} == {"search_users", "delete_record", "get_service_status"}
+
+
+# Not a pytest fixture on purpose: the MCP SDK's anyio cancel scopes must be
+# entered and exited in the same task, and pytest-asyncio runs fixture
+# setup/teardown in separate tasks. The async with stays in the test body.
+def connected_subtle_server():
+    launch = ServerLaunch.unconfined("uv", ["run", "python", str(SERVER_PATH)])
+    return StdioMCPClient.connect(launch)
 
 
 class TestSearchUsers:

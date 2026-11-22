@@ -14,14 +14,14 @@ from mcp_auditor.domain import (
 )
 
 
+def a_tool_report(tool_name: str) -> ToolReport:
+    return ToolReport(tool=a_tool(name=tool_name), cases=[])
+
+
 def a_tool(name: str = "test_tool") -> ToolDefinition:
     return ToolDefinition(
         name=name, description="A test tool", input_schema={"type": "object", "properties": {}}
     )
-
-
-def a_tool_report(tool_name: str) -> ToolReport:
-    return ToolReport(tool=a_tool(name=tool_name), cases=[])
 
 
 def a_chain_audit_state(
@@ -37,12 +37,6 @@ def a_chain_audit_state(
     }
 
 
-def a_chain_goal() -> ChainGoal:
-    return ChainGoal(
-        description="probe then exploit", category=AuditCategory.INJECTION, first_step=_a_payload()
-    )
-
-
 def a_judged_chain() -> AttackChain:
     judge_result = JudgeResult(
         tool_name="test_tool",
@@ -54,6 +48,12 @@ def a_judged_chain() -> AttackChain:
     )
     step = ChainStep(payload=_a_payload(), response="ok")
     return AttackChain(goal=a_chain_goal(), steps=[step], judge_result=judge_result)
+
+
+def a_chain_goal() -> ChainGoal:
+    return ChainGoal(
+        description="probe then exploit", category=AuditCategory.INJECTION, first_step=_a_payload()
+    )
 
 
 def _a_payload() -> AuditPayload:

@@ -14,6 +14,14 @@ from evals.cve.nuisance.counting import counted_flaws, counted_tools
 from evals.eval_session import Refused
 
 
+def refuse_unrecorded(servers: Sequence[AdmittedServer], title: str) -> None:
+    gaps = unrecorded_fields(servers)
+    if gaps:
+        raise Refused(
+            title, ["fields nuisance suite rule v3 or v4 adds are not yet recorded", *gaps]
+        )
+
+
 def unrecorded_fields(servers: Sequence[AdmittedServer]) -> list[str]:
     gaps: list[str] = []
     for server in servers:
@@ -21,14 +29,6 @@ def unrecorded_fields(servers: Sequence[AdmittedServer]) -> list[str]:
         if fields:
             gaps.append(f"{server.server_package}: {', '.join(fields)}")
     return gaps
-
-
-def refuse_unrecorded(servers: Sequence[AdmittedServer], title: str) -> None:
-    gaps = unrecorded_fields(servers)
-    if gaps:
-        raise Refused(
-            title, ["fields nuisance suite rule v3 or v4 adds are not yet recorded", *gaps]
-        )
 
 
 def _unrecorded_counts(server: AdmittedServer) -> list[str]:

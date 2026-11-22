@@ -15,14 +15,14 @@ def a_report_with_a_finding(severity: Severity) -> AuditReport:
     return report
 
 
-def a_report_with_a_missed_call(cause: MissCause) -> AuditReport:
-    return models.a_report(missed_model_calls=[_a_missed_judgment(cause)])
-
-
 def a_report_with_a_finding_and_a_missed_call(severity: Severity) -> AuditReport:
     report = a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
     _add_a_finding(report, severity)
     return report
+
+
+def a_report_with_a_missed_call(cause: MissCause) -> AuditReport:
+    return models.a_report(missed_model_calls=[_a_missed_judgment(cause)])
 
 
 def a_report_with_a_coverage_gap() -> AuditReport:

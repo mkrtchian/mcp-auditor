@@ -94,6 +94,13 @@ def _probe_call(call: Mapping[str, Any]) -> ProbeCall:
     return ProbeCall(call["tool"], dict(call["arguments"]), call.get("expect"), before)
 
 
+def probe_launch(record: Mapping[str, Any], image: str) -> AbstractContextManager[Launch]:
+    if record["backend"] is None:
+        return single_container_launch(record, image)
+    lifecycle = lifecycle_of(record["backend"]["provisioner"])
+    return backend_launch(lifecycle, image, record_host(record), record["launch"])
+
+
 def record_host(record: Mapping[str, Any]) -> PlantingHost:
     host = record["host"]
     names = host["public_names"]
@@ -111,13 +118,6 @@ def record_host(record: Mapping[str, Any]) -> PlantingHost:
 def single_container_launch(record: Mapping[str, Any], image: str) -> Generator[Launch]:
     with single_container_launch_args(image, record_host(record), record["launch"]) as args:
         yield Launch("docker", args)
-
-
-def probe_launch(record: Mapping[str, Any], image: str) -> AbstractContextManager[Launch]:
-    if record["backend"] is None:
-        return single_container_launch(record, image)
-    lifecycle = lifecycle_of(record["backend"]["provisioner"])
-    return backend_launch(lifecycle, image, record_host(record), record["launch"])
 
 
 async def probe(launch: Launch, calls: Sequence[ProbeCall], tool_call_timeout: int) -> ProbeReport:

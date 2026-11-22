@@ -19,14 +19,6 @@ from evals.cve.places import Places
 from tests.integration.support.docker_prerequisites import skip_or_require
 
 
-def _check(places: Places, limit: int) -> Callable[[Target], Awaitable[bool]]:
-    return bounded(lambda target: passes_calibration_check(target, places), limit)
-
-
-def _survey(places: Places, limit: int) -> Callable[[Target], Awaitable[TargetSurvey]]:
-    return bounded(lambda target: survey_one(target, places), limit)
-
-
 @pytest.mark.usefixtures("docker_on_the_host")
 async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_still_runs(
     capsys: pytest.CaptureFixture[str],
@@ -43,6 +35,10 @@ async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_st
     assert "CVE-DEAD calibration check error" in output
     assert "no tools registered" in output
     assert "ok  CVE-LIVE" in output
+
+
+def _check(places: Places, limit: int) -> Callable[[Target], Awaitable[bool]]:
+    return bounded(lambda target: passes_calibration_check(target, places), limit)
 
 
 @pytest.mark.usefixtures("docker_on_the_host")
@@ -306,3 +302,7 @@ async def test_survey_reports_the_three_facts_per_candidate_without_a_verdict(
     assert "fict-inside (fictional): exploit no, benign yes, patched no" in output
     assert "fict-outside (fictional): exploit yes, benign no, patched yes" in output
     assert "live" not in output and "dead" not in output
+
+
+def _survey(places: Places, limit: int) -> Callable[[Target], Awaitable[TargetSurvey]]:
+    return bounded(lambda target: survey_one(target, places), limit)

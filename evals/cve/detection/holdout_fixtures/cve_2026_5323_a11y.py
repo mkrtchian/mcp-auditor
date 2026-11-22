@@ -30,10 +30,6 @@ AIM = re.compile(r"169\.254\.")
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
 
 
-def _url(place: Place) -> str:
-    return f"http://{place.coordinates.host}{place.coordinates.path}"
-
-
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool(
@@ -41,6 +37,10 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
         )
 
     return run
+
+
+def _url(place: Place) -> str:
+    return f"http://{place.coordinates.host}{place.coordinates.path}"
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

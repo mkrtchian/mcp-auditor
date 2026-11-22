@@ -24,19 +24,6 @@ from tests.integration.support.docker_prerequisites import skip_or_require
 _SERVICE = "holdout-2025-66335-doris-patched"
 
 
-def _missing_prerequisite() -> str | None:
-    if _docker("version") != 0:
-        return "the nuisance Doris backend test needs Docker"
-    return None
-
-
-def _docker(*args: str) -> int:
-    try:
-        return subprocess.run(["docker", *args], capture_output=True, text=True).returncode
-    except OSError:
-        return 127
-
-
 @pytest.fixture(autouse=True, scope="module")
 def _prerequisites() -> None:
     if os.environ.get("NUISANCE_DORIS") != "1":
@@ -52,6 +39,19 @@ def _prerequisites() -> None:
         ensure_images([_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
+
+
+def _missing_prerequisite() -> str | None:
+    if _docker("version") != 0:
+        return "the nuisance Doris backend test needs Docker"
+    return None
+
+
+def _docker(*args: str) -> int:
+    try:
+        return subprocess.run(["docker", *args], capture_output=True, text=True).returncode
+    except OSError:
+        return 127
 
 
 async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():

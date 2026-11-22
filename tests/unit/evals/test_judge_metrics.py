@@ -9,22 +9,6 @@ FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
 
 
-def _tp() -> CaseResult:
-    return (FAIL, FAIL)
-
-
-def _tn() -> CaseResult:
-    return (PASS, PASS)
-
-
-def _fp() -> CaseResult:
-    return (FAIL, PASS)
-
-
-def _fn() -> CaseResult:
-    return (PASS, FAIL)
-
-
 def test_all_correct() -> None:
     results = [_tp() for _ in range(5)] + [_tn() for _ in range(5)]
 
@@ -35,6 +19,14 @@ def test_all_correct() -> None:
     assert metrics.f1 == 1.0
 
 
+def _tp() -> CaseResult:
+    return (FAIL, FAIL)
+
+
+def _tn() -> CaseResult:
+    return (PASS, PASS)
+
+
 def test_all_wrong() -> None:
     results = [_fp() for _ in range(5)] + [_fn() for _ in range(5)]
 
@@ -43,6 +35,14 @@ def test_all_wrong() -> None:
     assert metrics.precision == 0.0
     assert metrics.recall == 0.0
     assert metrics.f1 == 0.0
+
+
+def _fp() -> CaseResult:
+    return (FAIL, PASS)
+
+
+def _fn() -> CaseResult:
+    return (PASS, FAIL)
 
 
 def test_one_false_positive() -> None:

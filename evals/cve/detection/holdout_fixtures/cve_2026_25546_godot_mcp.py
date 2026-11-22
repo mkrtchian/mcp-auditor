@@ -66,13 +66,6 @@ _SPECS: tuple[tuple[str, str], ...] = (
 AIM = re.compile(r'";')
 
 
-# The payload closes the double quote the shell string wraps projectPath in, runs the command, then
-# reopens a quote. Both calls use the same string, so the directory the first call writes is the
-# one the second call's guard checks.
-def _payload(place_id: str, command: str) -> str:
-    return f'{place_id}";{command};"'
-
-
 def _exploit(place_id: str, command: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     payload = _payload(place_id, command)
 
@@ -96,6 +89,13 @@ def _exploit(place_id: str, command: str) -> Callable[[Places, MCPClientPort], A
 
     run.__name__ = f"exploit_{place_id.replace('-', '_')}"
     return run
+
+
+# The payload closes the double quote the shell string wraps projectPath in, runs the command, then
+# reopens a quote. Both calls use the same string, so the directory the first call writes is the
+# one the second call's guard checks.
+def _payload(place_id: str, command: str) -> str:
+    return f'{place_id}";{command};"'
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

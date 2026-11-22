@@ -53,10 +53,6 @@ from evals.cve.planting import (
 from evals.cve.planting_docker import DOCKER_PLANTING
 
 
-def image_tag(name: str) -> str:
-    return f"mcp-auditor-kit-{name}:local"
-
-
 def build_images(docker_dir: Path, services: Sequence[str]) -> None:
     """Build each `docker/Dockerfile.<service>` as image_tag(service). The service name transplants
     unchanged into evals/docker/ and compose.yml, where compose rebuilds the image under the
@@ -67,6 +63,10 @@ def build_images(docker_dir: Path, services: Sequence[str]) -> None:
             ["docker", "build", "-t", image_tag(service), "-f", str(dockerfile), str(docker_dir)],
             check=True,
         )
+
+
+def image_tag(name: str) -> str:
+    return f"mcp-auditor-kit-{name}:local"
 
 
 class LaunchShape(StrEnum):

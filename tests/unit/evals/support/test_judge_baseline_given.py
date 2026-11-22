@@ -33,19 +33,6 @@ _CORRECT = {
 }
 
 
-def a_judge_fixture() -> JudgeFixture:
-    """One FAIL case, two PASS cases and one unspecified: FAIL cases are a minority."""
-    return a_fixture(FAIL_CASE, PASS_CASE, OTHER_PASS_CASE, UNSPECIFIED_CASE)
-
-
-def a_ground_truth() -> dict[str, EvalVerdict]:
-    return ground_truth_of(a_judge_fixture())
-
-
-def correct_runs(count: int = 3) -> ObservationRuns:
-    return [dict(_CORRECT) for _ in range(count)]
-
-
 def runs_where(case_id: str, *observations: Observation) -> ObservationRuns:
     """One run per observation, `case_id` observed as given, every other case correct."""
     return [{**_CORRECT, case_id: observation} for observation in observations]
@@ -55,16 +42,12 @@ def runs_failing_every_case(count: int = 3) -> ObservationRuns:
     return [dict.fromkeys(_CORRECT, Observation.FAIL) for _ in range(count)]
 
 
-def conditions(runs: int = 3, fixture: JudgeFixture | None = None) -> JudgeConditions:
-    defaults = Settings.model_construct()
-    judge_model = defaults.resolve_judge_model()
-    return JudgeConditions(
-        runs=runs,
-        provider=defaults.provider,
-        judge_model=judge_model,
-        judge_reasoning=defaults.resolve_reasoning(judge_model),
-        inputs_fingerprint=inputs_fingerprint(fixture or a_judge_fixture()),
-    )
+def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
+    written = a_baseline().model_dump(mode="json")
+    written["replay_rule"] = written.pop("retest_rule")
+    path = tmp_path / "judge.json"
+    path.write_text(json.dumps(written))
+    return path
 
 
 def a_baseline(
@@ -86,6 +69,27 @@ def a_baseline(
     )
 
 
+def correct_runs(count: int = 3) -> ObservationRuns:
+    return [dict(_CORRECT) for _ in range(count)]
+
+
+def conditions(runs: int = 3, fixture: JudgeFixture | None = None) -> JudgeConditions:
+    defaults = Settings.model_construct()
+    judge_model = defaults.resolve_judge_model()
+    return JudgeConditions(
+        runs=runs,
+        provider=defaults.provider,
+        judge_model=judge_model,
+        judge_reasoning=defaults.resolve_reasoning(judge_model),
+        inputs_fingerprint=inputs_fingerprint(fixture or a_judge_fixture()),
+    )
+
+
+def a_judge_fixture() -> JudgeFixture:
+    """One FAIL case, two PASS cases and one unspecified: FAIL cases are a minority."""
+    return a_fixture(FAIL_CASE, PASS_CASE, OTHER_PASS_CASE, UNSPECIFIED_CASE)
+
+
 def _protected_of(runs: ObservationRuns) -> ProtectedCells:
     if not runs:
         return ProtectedCells(
@@ -94,9 +98,5 @@ def _protected_of(runs: ObservationRuns) -> ProtectedCells:
     return protected_cells(runs, a_ground_truth())
 
 
-def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
-    written = a_baseline().model_dump(mode="json")
-    written["replay_rule"] = written.pop("retest_rule")
-    path = tmp_path / "judge.json"
-    path.write_text(json.dumps(written))
-    return path
+def a_ground_truth() -> dict[str, EvalVerdict]:
+    return ground_truth_of(a_judge_fixture())

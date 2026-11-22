@@ -76,34 +76,12 @@ def _die() -> None:
     os._exit(3)
 
 
-def _log_shutdown_once_stdin_closes() -> None:
-    sys.stdin.read()
-    os.write(1, b"shutting down\n")
-    os._exit(0)
-
-
 def _orphan_holding_stdout() -> None:
     subprocess.Popen(
         [sys.executable, "-c", f"import time; time.sleep({ORPHAN_SECONDS})"],
         stdin=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-
-
-def _served_before(marker: pathlib.Path) -> bool:
-    if marker.exists():
-        return True
-    marker.touch()
-    return False
-
-
-async def _never_answered(request: PingRequest) -> ServerResult:
-    await anyio.sleep_forever()
-    return ServerResult(EmptyResult())
-
-
-async def _answered_with_an_error(request: PingRequest) -> ServerResult:
-    raise McpError(ErrorData(code=INTERNAL_ERROR, message="ping refused"))
 
 
 async def main() -> None:
@@ -125,6 +103,28 @@ async def main() -> None:
         server.request_handlers[PingRequest] = _answered_with_an_error
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
+
+
+def _log_shutdown_once_stdin_closes() -> None:
+    sys.stdin.read()
+    os.write(1, b"shutting down\n")
+    os._exit(0)
+
+
+def _served_before(marker: pathlib.Path) -> bool:
+    if marker.exists():
+        return True
+    marker.touch()
+    return False
+
+
+async def _never_answered(request: PingRequest) -> ServerResult:
+    await anyio.sleep_forever()
+    return ServerResult(EmptyResult())
+
+
+async def _answered_with_an_error(request: PingRequest) -> ServerResult:
+    raise McpError(ErrorData(code=INTERNAL_ERROR, message="ping refused"))
 
 
 if __name__ == "__main__":

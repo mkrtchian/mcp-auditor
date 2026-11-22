@@ -23,16 +23,6 @@ def a_report_throttled(times: int) -> AuditReport:
     return grammar.a_report().model_copy(update={"provider_usage": usage})
 
 
-def a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
-    return RunToCheck(
-        target=TARGET,
-        run_target=PlantedTarget(TARGET.classes, TARGET.aim, nonces or {}),
-        report=report,
-        recorded_calls=[],
-        records=(),
-    )
-
-
 def a_detecting_run() -> RunToCheck:
     report = grammar.a_report(
         cases=[
@@ -42,6 +32,16 @@ def a_detecting_run() -> RunToCheck:
         ]
     )
     return a_run(report, {grammar.PLACE: grammar.NONCE})
+
+
+def a_run(report: AuditReport, nonces: dict[str, str] | None = None) -> RunToCheck:
+    return RunToCheck(
+        target=TARGET,
+        run_target=PlantedTarget(TARGET.classes, TARGET.aim, nonces or {}),
+        report=report,
+        recorded_calls=[],
+        records=(),
+    )
 
 
 async def a_replay_that_must_not_run(_run: RunToCheck) -> ReplayOutcome:

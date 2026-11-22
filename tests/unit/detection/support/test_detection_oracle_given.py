@@ -84,26 +84,6 @@ def a_target_result(
     )
 
 
-def a_detection_report(results: list[TargetResult]) -> DetectionReport:
-    return DetectionReport(
-        conditions=DetectionRunConditions(
-            runs=3,
-            budget=10,
-            tools_filtered=True,
-            provider="openai",
-            model="gpt-6-luna",
-            judge_model="gpt-6-judge",
-            reasoning="none",
-            judge_reasoning=None,
-            grammar_fingerprint=FINGERPRINT,
-        ),
-        concurrency=CONCURRENCY,
-        commit=COMMIT,
-        dirty=False,
-        results=results,
-    )
-
-
 def a_red_gate() -> DetectionGateResult:
     return DetectionGateResult(
         outcome=GateOutcome.RED,
@@ -131,6 +111,26 @@ def a_red_gate() -> DetectionGateResult:
 def a_report_gated_on(*targets: TargetComparison) -> DetectionReport:
     gate = DetectionGateResult(outcome=GateOutcome.GREEN, reasons=[], targets=list(targets))
     return a_detection_report([]).model_copy(update={"gate": gate})
+
+
+def a_detection_report(results: list[TargetResult]) -> DetectionReport:
+    return DetectionReport(
+        conditions=DetectionRunConditions(
+            runs=3,
+            budget=10,
+            tools_filtered=True,
+            provider="openai",
+            model="gpt-6-luna",
+            judge_model="gpt-6-judge",
+            reasoning="none",
+            judge_reasoning=None,
+            grammar_fingerprint=FINGERPRINT,
+        ),
+        concurrency=CONCURRENCY,
+        commit=COMMIT,
+        dirty=False,
+        results=results,
+    )
 
 
 def a_target_cost(flaw_id: str) -> TargetCost:

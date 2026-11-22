@@ -62,13 +62,6 @@ class RunOverrides:
     audit_every_tool: bool = False
 
 
-def build_auditor(budget: int) -> Auditor:
-    # Built before any container: a bad model configuration is a crash, never a run skipped,
-    # which would read as a gate that cannot compare.
-    settings = load_settings()
-    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
-
-
 def audit_target(
     budget: int,
     throttles: SessionThrottles,
@@ -84,6 +77,13 @@ def audit_target(
         )
 
     return audit
+
+
+def build_auditor(budget: int) -> Auditor:
+    # Built before any container: a bad model configuration is a crash, never a run skipped,
+    # which would read as a gate that cannot compare.
+    settings = load_settings()
+    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
 
 
 async def attempt_once(

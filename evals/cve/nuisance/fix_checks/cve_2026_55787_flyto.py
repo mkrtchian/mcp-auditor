@@ -137,19 +137,6 @@ async def _json_to_csv(places: Places, client: KitClient) -> None:
 _HOLDER_SLEEP = "2147483647"
 
 
-def _run_detached(name: str, tail: list[str]) -> None:
-    subprocess.run(
-        ["docker", "run", "-d", "--rm", "--name", name, *confinement_args(), *tail],
-        check=True,
-        capture_output=True,
-    )
-
-
-def _remove(*names: str) -> None:
-    for name in names:
-        subprocess.run(["docker", "rm", "-f", "-v", name], capture_output=True)
-
-
 @contextmanager
 def ipv6_loopback_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
@@ -197,6 +184,19 @@ def ipv6_loopback_env(
         _remove(sentinel, holder)
 
 
+def _run_detached(name: str, tail: list[str]) -> None:
+    subprocess.run(
+        ["docker", "run", "-d", "--rm", "--name", name, *confinement_args(), *tail],
+        check=True,
+        capture_output=True,
+    )
+
+
+def _remove(*names: str) -> None:
+    for name in names:
+        subprocess.run(["docker", "rm", "-f", "-v", name], capture_output=True)
+
+
 _REDIRECTOR_TAG = "mcp-auditor-kit-flyto-redirector:local"
 # A 302 redirector: an allowlisted host that bounces to the internal sentinel. Built inline (no
 # build context, no COPY) so the fix-check is self-contained.
@@ -214,21 +214,6 @@ RUN printf '%s\\n' \\
   > /redirector.py
 ENTRYPOINT ["python", "/redirector.py"]
 """
-
-
-def _ensure_redirector_image() -> None:
-    present = (
-        subprocess.run(
-            ["docker", "image", "inspect", _REDIRECTOR_TAG], capture_output=True
-        ).returncode
-        == 0
-    )
-    if not present:
-        subprocess.run(
-            ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
-            input=_REDIRECTOR_DOCKERFILE.encode(),
-            check=True,
-        )
 
 
 @contextmanager
@@ -290,6 +275,21 @@ def redirect_ssrf_env(
         )
     finally:
         _remove(redirector, sentinel, holder)
+
+
+def _ensure_redirector_image() -> None:
+    present = (
+        subprocess.run(
+            ["docker", "image", "inspect", _REDIRECTOR_TAG], capture_output=True
+        ).returncode
+        == 0
+    )
+    if not present:
+        subprocess.run(
+            ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
+            input=_REDIRECTOR_DOCKERFILE.encode(),
+            check=True,
+        )
 
 
 FIXTURES: tuple[FixCheckFixture, ...] = (

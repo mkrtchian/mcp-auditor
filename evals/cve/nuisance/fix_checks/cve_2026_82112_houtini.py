@@ -68,16 +68,16 @@ def houtini_env(
         )
 
 
+async def _exploit(places: Places, client: KitClient) -> None:
+    for task in ECHO_TASKS:
+        await _code_task_files(client, WITNESS_PATH, task)
+
+
 async def _code_task_files(client: KitClient, path: str, task: str) -> None:
     await client.call_tool(
         "code_task_files",
         {"paths": [path], "task": task, "language": "text", "max_tokens": 96},
     )
-
-
-async def _exploit(places: Places, client: KitClient) -> None:
-    for task in ECHO_TASKS:
-        await _code_task_files(client, WITNESS_PATH, task)
 
 
 async def _benign(places: Places, client: KitClient) -> None:

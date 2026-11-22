@@ -102,20 +102,6 @@ def compose_build_batch(batch: Sequence[str]) -> subprocess.CompletedProcess[str
     return subprocess.run(command, capture_output=True, text=True)
 
 
-def compose_build(
-    services: Sequence[str], run_batch: RunBatch = compose_build_batch
-) -> FailedBuild | None:
-    """Builds the deduplicated services batch after batch, in order, and stops at the first
-    batch that fails."""
-    unique = list(dict.fromkeys(services))
-    for start in range(0, len(unique), COMPOSE_BUILD_BATCH_SIZE):
-        batch = unique[start : start + COMPOSE_BUILD_BATCH_SIZE]
-        result = run_batch(batch)
-        if result.returncode != 0:
-            return FailedBuild(batch, result.stdout, result.stderr)
-    return None
-
-
 @dataclass(frozen=True)
 class ComposeImageStore:
     run_batch: RunBatch = compose_build_batch
@@ -140,3 +126,17 @@ class ComposeImageStore:
         if failed:
             tail = "\n".join(failed.stderr.splitlines()[-_STDERR_TAIL_LINES:])
             raise ImageBuildFailed(failed.services, tail)
+
+
+def compose_build(
+    services: Sequence[str], run_batch: RunBatch = compose_build_batch
+) -> FailedBuild | None:
+    """Builds the deduplicated services batch after batch, in order, and stops at the first
+    batch that fails."""
+    unique = list(dict.fromkeys(services))
+    for start in range(0, len(unique), COMPOSE_BUILD_BATCH_SIZE):
+        batch = unique[start : start + COMPOSE_BUILD_BATCH_SIZE]
+        result = run_batch(batch)
+        if result.returncode != 0:
+            return FailedBuild(batch, result.stdout, result.stderr)
+    return None

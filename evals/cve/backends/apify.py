@@ -47,16 +47,6 @@ _AUTHORITY_PATH = "/etc/ssl/extra-ca.pem"
 APIFY_LAUNCH_LOCK = threading.Lock()
 
 
-def _read_only_mounts(host: str) -> tuple[str, ...]:
-    files = stand_in_files(host)
-    mounts = (
-        (files.capture, "capture.json"),
-        (files.certificate, "cert.pem"),
-        (files.key, "key.pem"),
-    )
-    return tuple(arg for path, name in mounts for arg in ("-v", f"{path}:/stand-in/{name}:ro"))
-
-
 def _stand_in(host: str, container: str, ip: str) -> Responder:
     return Responder(
         image=STAND_IN_IMAGE,
@@ -67,6 +57,16 @@ def _stand_in(host: str, container: str, ip: str) -> Responder:
         dockerfile=image_dockerfile(STAND_IN_SERVICE),
         run_args=_read_only_mounts(host),
     )
+
+
+def _read_only_mounts(host: str) -> tuple[str, ...]:
+    files = stand_in_files(host)
+    mounts = (
+        (files.capture, "capture.json"),
+        (files.certificate, "cert.pem"),
+        (files.key, "key.pem"),
+    )
+    return tuple(arg for path, name in mounts for arg in ("-v", f"{path}:/stand-in/{name}:ro"))
 
 
 _DOCS_STAND_IN = _stand_in(DOCS_HOST, "mcp-auditor-cve-apify-docs-stand-in", _DOCS_STAND_IN_IP)

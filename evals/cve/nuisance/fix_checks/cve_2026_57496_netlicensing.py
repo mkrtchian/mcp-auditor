@@ -57,6 +57,29 @@ HOST = PlantingHost(
 )
 
 
+@contextmanager
+def netlicensing_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    """Serve go.netlicensing.io from a scratch copy of the committed capture with the witness
+    token route appended, and launch the server over stdio against it."""
+    workdir = Path(tempfile.mkdtemp(prefix="netlicensing-standin-"))
+    try:
+        (workdir / "tls").mkdir()
+        for name in (f"{HOST_NAME}.pem", f"{HOST_NAME}-key.pem", "fixture-authority.pem"):
+            shutil.copy(TLS / name, workdir / "tls" / name)
+        capture = json.loads(COMMITTED_CAPTURE.read_text())
+        capture["routes"].append(_token_route(spec.nonces[WITNESS_ID]))
+        (workdir / f"{HOST_NAME}.json").write_text(json.dumps(capture))
+        with planted(spec, image, DOCKER_PLANTING, stand_ins_directory=workdir) as args:
+            yield Launch(
+                command="docker",
+                args=["run", "-i", "--rm", *confinement_args(), *args.run_args(), image],
+            )
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 def _token_route(nonce: str) -> dict[str, object]:
     # Shape taken from the real NetLicensing sandbox GET /core/v2/rest/token response (an APIKEY
     # token with ROLE_APIKEY_ADMIN); only the `number` value is the planted witness.
@@ -86,29 +109,6 @@ def _token_route(nonce: str) -> dict[str, object]:
         "headers": [["Content-Type", "application/json;charset=UTF-8"]],
         "body": json.dumps(body),
     }
-
-
-@contextmanager
-def netlicensing_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    """Serve go.netlicensing.io from a scratch copy of the committed capture with the witness
-    token route appended, and launch the server over stdio against it."""
-    workdir = Path(tempfile.mkdtemp(prefix="netlicensing-standin-"))
-    try:
-        (workdir / "tls").mkdir()
-        for name in (f"{HOST_NAME}.pem", f"{HOST_NAME}-key.pem", "fixture-authority.pem"):
-            shutil.copy(TLS / name, workdir / "tls" / name)
-        capture = json.loads(COMMITTED_CAPTURE.read_text())
-        capture["routes"].append(_token_route(spec.nonces[WITNESS_ID]))
-        (workdir / f"{HOST_NAME}.json").write_text(json.dumps(capture))
-        with planted(spec, image, DOCKER_PLANTING, stand_ins_directory=workdir) as args:
-            yield Launch(
-                command="docker",
-                args=["run", "-i", "--rm", *confinement_args(), *args.run_args(), image],
-            )
-    finally:
-        shutil.rmtree(workdir, ignore_errors=True)
 
 
 async def exploit_traversal(places: Places, client: KitClient) -> None:

@@ -13,12 +13,6 @@ from evals.cve.planting import (
     planted,
 )
 
-
-def _args_in(spec: PlantingSpec) -> PlantedArgs:
-    with planted(spec, "image:tag", planting.FakePlantingDocker()) as args:
-        return args
-
-
 # --- per-kind spec intents --------------------------------------------------------------
 
 
@@ -262,6 +256,11 @@ def test_a_hostname_place_without_a_holder_lands_on_the_target():
     args = _args_in(spec)
 
     assert args.hostname == ("--hostname", spec.nonces["hostname-1"])
+
+
+def _args_in(spec: PlantingSpec) -> PlantedArgs:
+    with planted(spec, "image:tag", planting.FakePlantingDocker()) as args:
+        return args
 
 
 def test_a_work_host_works_in_a_tmpfs_owned_by_the_unprivileged_account_and_sticky():

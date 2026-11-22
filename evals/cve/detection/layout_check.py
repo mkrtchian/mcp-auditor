@@ -91,81 +91,11 @@ class LayoutCheck:
     unrouted: list[str]
 
 
-def layout_failure(target: Target, check: LayoutCheck) -> str | None:
-    """Why the layout check fails a target, or None. A break fails a NORMAL target, calibrated under
-    a launch it lost, and keeps a FALLBACK one (detection-suite-rule.md, Deployment layout (A server
-    the layout breaks)). A leak fails it only on a place its calibration did not settle, by the
-    same reading (detection-suite-log.md, 2026-11-12)."""
-    if check.gave_up is not None:
-        return check.gave_up
-    if check.breaks and target.launch_mode is LaunchMode.NORMAL:
-        return "the layout breaks the server under the normal launch"
-    new_leaks = [place_id for place_id in check.leaking if place_id not in target.settled_leaks]
-    if new_leaks:
-        return "a nonce surfaces in the ordinary surface: " + ", ".join(new_leaks)
-    if check.unrouted:
-        return "kept layout place(s) without a route: " + ", ".join(check.unrouted)
-    return None
-
-
-def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
-    """Whether the layout breaks the version by the rule's criterion (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks)). The two surfaces run the same route procedure,
-    so a call's error state aligns by position."""
-    if reference.tools_list_succeeded and not with_layout.tools_list_succeeded:
-        return True
-    return any(
-        not before and after
-        for before, after in zip(reference.call_errored, with_layout.call_errored, strict=False)
-    )
-
-
-def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
-    """Whether the layout breaks any of the version pairs. The rule launches each version once with
-    and once without the layout, and a break on either version is a break (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks))."""
-    return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
-
-
-def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
-    return any(nonce in body for body in planted.responses for nonce in nonces)
-
-
-def leaking_places(planted: LayoutSurface, nonces: Mapping[str, str]) -> list[str]:
-    return [place_id for place_id, nonce in nonces.items() if nonce_in_surface(planted, (nonce,))]
-
-
-def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | None:
-    """The reason the layout check gives up on a target, or None. A target already in the fallback
-    launch-mode whose fallback launch itself fails to start cannot be run at all: the break detector
-    has no fallback left to gate (detection-suite-rule.md, Deployment layout (A server the layout
-    breaks)). A normal-mode target does not give up here, its break is only reported so the
-    maintainer sets the fallback launch-mode."""
-    if target.launch_mode is LaunchMode.FALLBACK and not planted.tools_list_succeeded:
-        return _GAVE_UP_REASON
-    return None
-
-
-def unrouted_kept_places(records: Sequence[Place], observations: RouteObservations) -> list[Place]:
-    """The kept layout places the route check finds no route to. Keeping a layout place needs a
-    route the server's own output reveals (detection-suite-rule.md, Deployment layout (A place is
-    kept for a target)), so one without a route breaks the rule's keeping condition and fails the
-    route check. A catalogue place carries no anchor and has_route always finds a route to it, so it
-    never appears here."""
-    return [place for place in records if not has_route(place, observations)]
-
-
-def layout_routes(
-    places: Places, kept: Sequence[str], planted: RouteObservations
-) -> list[LayoutRoute]:
-    """The route check's result for every layout place, kept or not, so a card records it for each
-    (a catalogue place carries no anchor and is left out). Only a kept place's missing route fails
-    the route check, which `layout_check` decides."""
-    return [
-        LayoutRoute(place.id, place.id in kept, has_route(place, planted))
-        for place in places.values()
-        if place.coordinates.anchor is not None
-    ]
+async def observe_layout(
+    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
+) -> LayoutCheck:
+    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
+    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
 
 
 def layout_check(
@@ -187,11 +117,51 @@ def layout_check(
     return LayoutCheck(gave_up, breaks, leaking, unrouted)
 
 
-async def observe_layout(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
-) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
-    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
+def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
+    """Whether the layout breaks any of the version pairs. The rule launches each version once with
+    and once without the layout, and a break on either version is a break (detection-suite-rule.md,
+    Deployment layout (A server the layout breaks))."""
+    return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
+
+
+def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
+    """Whether the layout breaks the version by the rule's criterion (detection-suite-rule.md,
+    Deployment layout (A server the layout breaks)). The two surfaces run the same route procedure,
+    so a call's error state aligns by position."""
+    if reference.tools_list_succeeded and not with_layout.tools_list_succeeded:
+        return True
+    return any(
+        not before and after
+        for before, after in zip(reference.call_errored, with_layout.call_errored, strict=False)
+    )
+
+
+def leaking_places(planted: LayoutSurface, nonces: Mapping[str, str]) -> list[str]:
+    return [place_id for place_id, nonce in nonces.items() if nonce_in_surface(planted, (nonce,))]
+
+
+def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
+    return any(nonce in body for body in planted.responses for nonce in nonces)
+
+
+def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | None:
+    """The reason the layout check gives up on a target, or None. A target already in the fallback
+    launch-mode whose fallback launch itself fails to start cannot be run at all: the break detector
+    has no fallback left to gate (detection-suite-rule.md, Deployment layout (A server the layout
+    breaks)). A normal-mode target does not give up here, its break is only reported so the
+    maintainer sets the fallback launch-mode."""
+    if target.launch_mode is LaunchMode.FALLBACK and not planted.tools_list_succeeded:
+        return _GAVE_UP_REASON
+    return None
+
+
+def unrouted_kept_places(records: Sequence[Place], observations: RouteObservations) -> list[Place]:
+    """The kept layout places the route check finds no route to. Keeping a layout place needs a
+    route the server's own output reveals (detection-suite-rule.md, Deployment layout (A place is
+    kept for a target)), so one without a route breaks the rule's keeping condition and fails the
+    route check. A catalogue place carries no anchor and has_route always finds a route to it, so it
+    never appears here."""
+    return [place for place in records if not has_route(place, observations)]
 
 
 async def observe_versions(
@@ -230,6 +200,23 @@ async def check_layouts_and_routes(
     return failures
 
 
+def layout_failure(target: Target, check: LayoutCheck) -> str | None:
+    """Why the layout check fails a target, or None. A break fails a NORMAL target, calibrated under
+    a launch it lost, and keeps a FALLBACK one (detection-suite-rule.md, Deployment layout (A server
+    the layout breaks)). A leak fails it only on a place its calibration did not settle, by the
+    same reading (detection-suite-log.md, 2026-11-12)."""
+    if check.gave_up is not None:
+        return check.gave_up
+    if check.breaks and target.launch_mode is LaunchMode.NORMAL:
+        return "the layout breaks the server under the normal launch"
+    new_leaks = [place_id for place_id in check.leaking if place_id not in target.settled_leaks]
+    if new_leaks:
+        return "a nonce surfaces in the ordinary surface: " + ", ".join(new_leaks)
+    if check.unrouted:
+        return "kept layout place(s) without a route: " + ", ".join(check.unrouted)
+    return None
+
+
 async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
     vuln, patched = await observe_versions(target, places)
     records = kept_records(target.kept_places, places)
@@ -243,6 +230,19 @@ async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
         _report_route(target.flaw_id, place, has_route(place, vuln.planted))
     _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, vuln.planted))
     return check
+
+
+def layout_routes(
+    places: Places, kept: Sequence[str], planted: RouteObservations
+) -> list[LayoutRoute]:
+    """The route check's result for every layout place, kept or not, so a card records it for each
+    (a catalogue place carries no anchor and is left out). Only a kept place's missing route fails
+    the route check, which `layout_check` decides."""
+    return [
+        LayoutRoute(place.id, place.id in kept, has_route(place, planted))
+        for place in places.values()
+        if place.coordinates.anchor is not None
+    ]
 
 
 def _report_give_up(flaw_id: str, reason: str) -> None:

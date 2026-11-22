@@ -10,6 +10,19 @@ from evals.eval_session import Refused
 from evals.probe.candidates import Prices
 
 
+def test_a_complete_file_loads(tmp_path: Path):
+    conditions = load_conditions(_write(tmp_path, _complete_payload()))
+
+    assert conditions.chain_budget == 3
+    assert conditions.max_chain_steps == 5
+    assert conditions.tool_call_timeout == 60
+    assert conditions.prices_as_of == date(2026, 10, 15)
+    assert conditions.cutoffs["gpt-6-luna"] == Cutoff(
+        date(2026, 5, 18), "training data", "https://example.test/luna", None
+    )
+    assert conditions.prices["gpt-6-luna"] == Prices(input=0.10, cached_input=0.01, output=0.50)
+
+
 def _complete_payload() -> dict[str, object]:
     return {
         "chain_budget": 3,
@@ -32,19 +45,6 @@ def _write(tmp_path: Path, payload: dict[str, object]) -> Path:
     path = tmp_path / "conditions.json"
     path.write_text(json.dumps(payload))
     return path
-
-
-def test_a_complete_file_loads(tmp_path: Path):
-    conditions = load_conditions(_write(tmp_path, _complete_payload()))
-
-    assert conditions.chain_budget == 3
-    assert conditions.max_chain_steps == 5
-    assert conditions.tool_call_timeout == 60
-    assert conditions.prices_as_of == date(2026, 10, 15)
-    assert conditions.cutoffs["gpt-6-luna"] == Cutoff(
-        date(2026, 5, 18), "training data", "https://example.test/luna", None
-    )
-    assert conditions.prices["gpt-6-luna"] == Prices(input=0.10, cached_input=0.01, output=0.50)
 
 
 def test_an_absent_file_refuses(tmp_path: Path):
@@ -94,6 +94,12 @@ def test_require_ready_refuses_a_model_with_no_price(tmp_path: Path):
     assert any("no price for gpt-7-sol" in reason for reason in excinfo.value.reasons)
 
 
+def test_require_ready_refuses_a_cutoff_with_no_type(tmp_path: Path):
+    reasons = _refusal_reasons(tmp_path, _payload_with_luna_cutoff(type=None), ["gpt-6-luna"])
+
+    assert reasons == ["no cutoff type for gpt-6-luna"]
+
+
 def _payload_with_luna_cutoff(**changes: object) -> dict[str, object]:
     payload = _complete_payload()
     cutoffs = cast(dict[str, dict[str, object]], payload["cutoffs"])
@@ -106,12 +112,6 @@ def _refusal_reasons(tmp_path: Path, payload: dict[str, object], models: list[st
     with pytest.raises(Refused) as excinfo:
         conditions.require_ready(models)
     return excinfo.value.reasons
-
-
-def test_require_ready_refuses_a_cutoff_with_no_type(tmp_path: Path):
-    reasons = _refusal_reasons(tmp_path, _payload_with_luna_cutoff(type=None), ["gpt-6-luna"])
-
-    assert reasons == ["no cutoff type for gpt-6-luna"]
 
 
 def test_require_ready_refuses_a_cutoff_with_an_empty_source(tmp_path: Path):

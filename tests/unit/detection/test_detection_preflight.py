@@ -22,8 +22,15 @@ def _a_daemon_closing_networks() -> None:
     pass
 
 
-def _a_daemon_that_cannot_close_a_network() -> None:
-    raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
+def test_the_preflight_rebuilds_a_stale_image_and_names_it(capsys: pytest.CaptureFixture[str]):
+    stale = ACCEPTANCE_TARGETS[0].patched_image
+    store = _a_store_with_one_stale(stale)
+
+    ok = preflight_ok(_a_docker(store))
+
+    assert ok
+    assert store.builds == [[stale]]
+    assert stale in capsys.readouterr().out
 
 
 def _a_store_with_one_stale(stale: str, *, build_error: str | None = None) -> FakeImageStore:
@@ -50,17 +57,6 @@ def _a_docker(
     )
 
 
-def test_the_preflight_rebuilds_a_stale_image_and_names_it(capsys: pytest.CaptureFixture[str]):
-    stale = ACCEPTANCE_TARGETS[0].patched_image
-    store = _a_store_with_one_stale(stale)
-
-    ok = preflight_ok(_a_docker(store))
-
-    assert ok
-    assert store.builds == [[stale]]
-    assert stale in capsys.readouterr().out
-
-
 def test_the_preflight_fails_and_names_the_service_whose_rebuild_fails(
     capsys: pytest.CaptureFixture[str],
 ):
@@ -85,6 +81,10 @@ def test_the_preflight_fails_on_a_daemon_that_cannot_close_a_network_before_any_
     assert store.builds == []
     assert "invalid gateway mode: isolated" in out
     assert "Docker Engine 28.0 or later is required" in out
+
+
+def _a_daemon_that_cannot_close_a_network() -> None:
+    raise ClosedNetworkUnsupported("invalid gateway mode: isolated")
 
 
 def test_the_preflight_fails_on_an_unreachable_daemon_before_any_image(

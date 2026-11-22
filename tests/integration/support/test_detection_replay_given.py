@@ -40,13 +40,6 @@ OLD_OTHER = "MCPAUDIT-" + "b" * 32
 Serve = Callable[[PlantingSpec], list[str]]
 
 
-def a_places_mapping() -> Places:
-    return {
-        FLAW_ID: a_file_place(FLAW_ID, FLAW_PATH),
-        OTHER_ID: a_file_place(OTHER_ID, OTHER_PATH),
-    }
-
-
 # --- the runs, each a RunToCheck the replay settles ---
 
 
@@ -255,6 +248,13 @@ def _run(
         recorded_calls=calls,
         records=kept_records(kept, places),
     )
+
+
+def a_places_mapping() -> Places:
+    return {
+        FLAW_ID: a_file_place(FLAW_ID, FLAW_PATH),
+        OTHER_ID: a_file_place(OTHER_ID, OTHER_PATH),
+    }
 
 
 def _flaw_report() -> AuditReport:

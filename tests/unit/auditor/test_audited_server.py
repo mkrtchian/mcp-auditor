@@ -18,10 +18,6 @@ from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
 _TOOL = ToolDefinition(name="run", description="Runs a command", input_schema={"type": "object"})
 
 
-def _a_payload(arguments: dict[str, str]) -> AuditPayload:
-    return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
-
-
 async def test_attempt_refuses_a_destructive_payload_without_touching_the_server():
     client = FakeMCPClient([_TOOL])
     server = AuditedServer(client)
@@ -31,6 +27,10 @@ async def test_attempt_refuses_a_destructive_payload_without_touching_the_server
     assert attempt == SendAttempt(BlockedPayload(reason="destructive filesystem command: rm -rf"))
     assert client.calls == []
     assert client.pings == 0
+
+
+def _a_payload(arguments: dict[str, str]) -> AuditPayload:
+    return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
 
 
 async def test_attempt_refuses_an_unencodable_payload_without_touching_the_server():

@@ -20,10 +20,6 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
 
 
-def _wire_payload(category: str, description: str, arguments: object) -> dict[str, Any]:
-    return {"category": category, "description": description, "arguments": json.dumps(arguments)}
-
-
 async def test_a_test_case_batch_decodes_each_argument():
     nested = {"query": {"nested": [1, 2]}}
     document = {
@@ -47,6 +43,10 @@ async def test_a_test_case_batch_decodes_each_argument():
         ]
     )
     assert usage == ProviderUsage(input_tokens=120, output_tokens=40, largest_input_tokens=120)
+
+
+def _wire_payload(category: str, description: str, arguments: object) -> dict[str, Any]:
+    return {"category": category, "description": description, "arguments": json.dumps(arguments)}
 
 
 async def test_a_bare_audit_payload_decodes_its_arguments():

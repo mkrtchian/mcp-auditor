@@ -19,12 +19,12 @@ from mcp_auditor.domain.container_name import declared_container_name
 from mcp_auditor.domain.models import AuditReport
 
 
-def _agree(report: AuditReport, calls: list[RecordedCall]) -> bool:
-    return arguments_agree(units_of(report), calls)
-
-
 def test_a_case_attaches_its_one_call():
     assert _agree(given.a_case_report(), given.calls(given.FLAW_PATH))
+
+
+def _agree(report: AuditReport, calls: list[RecordedCall]) -> bool:
+    return arguments_agree(units_of(report), calls)
 
 
 def test_a_blocked_case_contributes_no_call():

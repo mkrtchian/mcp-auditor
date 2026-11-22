@@ -33,27 +33,10 @@ console = Console()
 _ALONE = frozenset({PlaceKind.HOSTNAME, PlaceKind.ACCOUNT})
 
 
-def candidates_for(places: Places, reaches: frozenset[str]) -> list[Place]:
-    ordered = (places[place_id] for place_id in sorted(places))
-    return [place for place in ordered if place.reaches & reaches]
-
-
 @dataclass(frozen=True)
 class SurveyGroups:
     groups: list[tuple[Place, ...]]
     not_plantable: list[Place]
-
-
-def survey_groups(
-    candidates: Sequence[Place], host: PlantingHost, nonces: NonceSource
-) -> SurveyGroups:
-    plantable: list[Place] = []
-    not_plantable: list[Place] = []
-    for place in candidates:
-        (not_plantable if _refused_alone(place, host, nonces) else plantable).append(place)
-    singles = [(place,) for place in plantable if place.kind in _ALONE]
-    combined = _pack([place for place in plantable if place.kind not in _ALONE], host, nonces)
-    return SurveyGroups(singles + combined, not_plantable)
 
 
 async def survey_all(
@@ -97,6 +80,23 @@ async def survey_one(target: Target, places: Places) -> TargetSurvey:
                 if single is None:
                     not_surveyed.append(place)
     return TargetSurvey(target.flaw_id, facts, grouped.not_plantable, not_surveyed)
+
+
+def candidates_for(places: Places, reaches: frozenset[str]) -> list[Place]:
+    ordered = (places[place_id] for place_id in sorted(places))
+    return [place for place in ordered if place.reaches & reaches]
+
+
+def survey_groups(
+    candidates: Sequence[Place], host: PlantingHost, nonces: NonceSource
+) -> SurveyGroups:
+    plantable: list[Place] = []
+    not_plantable: list[Place] = []
+    for place in candidates:
+        (not_plantable if _refused_alone(place, host, nonces) else plantable).append(place)
+    singles = [(place,) for place in plantable if place.kind in _ALONE]
+    combined = _pack([place for place in plantable if place.kind not in _ALONE], host, nonces)
+    return SurveyGroups(singles + combined, not_plantable)
 
 
 async def _survey_group(
@@ -196,6 +196,12 @@ def _plantable_together(places: tuple[Place, ...], host: PlantingHost, nonces: N
         return False
 
 
+def _report(result: TargetSurvey) -> None:
+    console.print(f"[bold]{result.flaw_id}[/bold]")
+    for line in survey_lines(result):
+        console.print(line, highlight=False)
+
+
 def survey_lines(result: TargetSurvey) -> list[str]:
     facts = [
         f"  {_label(f.place)}: exploit {_yn(f.exploit)}, benign {_yn(f.benign)},"
@@ -207,12 +213,6 @@ def survey_lines(result: TargetSurvey) -> list[str]:
         f"  {_label(place)}: launch failed, not surveyed" for place in result.not_surveyed
     ]
     return facts + not_plantable + not_surveyed
-
-
-def _report(result: TargetSurvey) -> None:
-    console.print(f"[bold]{result.flaw_id}[/bold]")
-    for line in survey_lines(result):
-        console.print(line, highlight=False)
 
 
 def _label(place: Place) -> str:

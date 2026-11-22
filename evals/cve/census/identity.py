@@ -17,6 +17,20 @@ def merge(records: Iterable[AdvisoryRecord], recorded: Mapping[str, set[str]]) -
     return [_flaw(ids, members, recorded) for ids, members in _alias_components(records)]
 
 
+def disclosure_date(records: Sequence[SourceRecord]) -> date | None:
+    return min((record.published for record in records if record.published), default=None)
+
+
+def _flaw(ids: set[str], records: list[AdvisoryRecord], recorded: Mapping[str, set[str]]) -> Flaw:
+    met = sorted(
+        identifier for identifier, known in recorded.items() if ids & (known | {identifier})
+    )
+    if len(met) > 1:
+        raise ValueError(f"one flaw meets the recorded identifiers {', '.join(met)}")
+    identifier = met[0] if met else flaw_id_of(ids, records)
+    return Flaw(identifier=identifier, ids=ids, records=records)
+
+
 def flaw_id_of(ids: set[str], records: Sequence[SourceRecord]) -> str | None:
     rejected = {_canonical(record.id) for record in records if record.rejected}
     cves = sorted(
@@ -30,20 +44,6 @@ def flaw_id_of(ids: set[str], records: Sequence[SourceRecord]) -> str | None:
     if ghsas:
         return min(ghsas, key=lambda ghsa: (_earliest_published(ghsa, records), ghsa))
     return None
-
-
-def disclosure_date(records: Sequence[SourceRecord]) -> date | None:
-    return min((record.published for record in records if record.published), default=None)
-
-
-def _flaw(ids: set[str], records: list[AdvisoryRecord], recorded: Mapping[str, set[str]]) -> Flaw:
-    met = sorted(
-        identifier for identifier, known in recorded.items() if ids & (known | {identifier})
-    )
-    if len(met) > 1:
-        raise ValueError(f"one flaw meets the recorded identifiers {', '.join(met)}")
-    identifier = met[0] if met else flaw_id_of(ids, records)
-    return Flaw(identifier=identifier, ids=ids, records=records)
 
 
 def _alias_components(

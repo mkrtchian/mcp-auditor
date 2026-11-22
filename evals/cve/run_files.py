@@ -29,12 +29,6 @@ def refuse_existing_report(report: Path, title: str) -> None:
         )
 
 
-def write_result(report: Path, run: DetectionHoldoutRunResult | NuisanceHoldoutRunResult) -> None:
-    path = result_path(report)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(dataclasses.asdict(run), default=str, indent=2))
-
-
 @contextmanager
 def partial_result_kept(report: Path) -> Generator[None]:
     """Writes the partial result of a run stopped by an exception, then raises that exception."""
@@ -43,6 +37,12 @@ def partial_result_kept(report: Path) -> Generator[None]:
     except (holdout_results.RunInterrupted, nuisance_results.RunInterrupted) as interrupted:
         write_result(report, interrupted.partial)
         raise interrupted.cause  # noqa: B904
+
+
+def write_result(report: Path, run: DetectionHoldoutRunResult | NuisanceHoldoutRunResult) -> None:
+    path = result_path(report)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(dataclasses.asdict(run), default=str, indent=2))
 
 
 def result_path(report: Path) -> Path:

@@ -30,14 +30,6 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import c
 GATE_SERVER = admission_given.ACCEPTANCE_PACKAGE
 
 
-def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
-    return [
-        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
-        "--admission",
-        str(admission_path),
-    ]
-
-
 def without_any_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """A safety net that keeps a regression past an early return from reaching a provider."""
     for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"):
@@ -90,6 +82,14 @@ def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission)
         *gate_arguments(tmp_path, census, admission_given.written(tmp_path, admitted)),
         "--report",
         str(tmp_path / "nuisance_gate_report.json"),
+    ]
+
+
+def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
+    return [
+        *walk_given.committed_census_arguments(tmp_path, census_given.written(tmp_path, census)),
+        "--admission",
+        str(admission_path),
     ]
 
 

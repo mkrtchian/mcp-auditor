@@ -23,6 +23,17 @@ _SERVICE = "filesystem"
 _IMAGE = image_tag(_SERVICE)
 
 
+@pytest.fixture(autouse=True, scope="module")
+def _prerequisites() -> None:
+    missing = _missing_prerequisite()
+    if missing is not None:
+        skip_or_require(missing)
+    try:
+        ensure_images([_SERVICE], ComposeImageStore())
+    except ImageBuildFailed as error:
+        pytest.fail(str(error))
+
+
 def _missing_prerequisite() -> str | None:
     if _docker("version") != 0:
         return "the kit integration test needs Docker"
@@ -34,17 +45,6 @@ def _docker(*args: str) -> int:
         return subprocess.run(["docker", *args], capture_output=True, text=True).returncode
     except OSError:
         return 127
-
-
-@pytest.fixture(autouse=True, scope="module")
-def _prerequisites() -> None:
-    missing = _missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
-    try:
-        ensure_images([_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
 
 
 async def test_list_tools_and_a_benign_call_over_a_real_launch():

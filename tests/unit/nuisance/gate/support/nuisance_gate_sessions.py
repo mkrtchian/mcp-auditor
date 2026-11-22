@@ -36,12 +36,12 @@ CLEAN_TREE = TreeState(COMMIT, False)
 type GateAuditCall = Callable[[AdmittedServer], Awaitable[GateRun | None]]
 
 
-def a_gate_run(flagged: bool) -> GateRun:
-    return GateRun(flagged=flagged, report=run_given.a_report(flagged))
-
-
 def clean_runs(count: int = 3) -> list[GateRun | None]:
     return [a_gate_run(False) for _ in range(count)]
+
+
+def a_gate_run(flagged: bool) -> GateRun:
+    return GateRun(flagged=flagged, report=run_given.a_report(flagged))
 
 
 def scripted(scripts: Mapping[str, Sequence[GateRun | None]]) -> GateAuditCall:

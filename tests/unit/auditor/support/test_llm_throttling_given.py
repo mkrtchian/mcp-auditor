@@ -14,15 +14,15 @@ _URL = "https://provider.test/v1/chat/completions"
 type RateLimitBuilder = Callable[..., Exception]
 
 
+def an_openai_billing_limit(code: str = "insufficient_quota") -> openai.RateLimitError:
+    return an_openai_rate_limit(body={"message": "You exceeded your current quota", "code": code})
+
+
 def an_openai_rate_limit(
     headers: dict[str, str] | None = None, body: dict[str, Any] | None = None
 ) -> openai.RateLimitError:
     response = httpx2.Response(429, headers=headers, request=httpx2.Request("POST", _URL))
     return openai.RateLimitError("Error code: 429 - slow down", response=response, body=body)
-
-
-def an_openai_billing_limit(code: str = "insufficient_quota") -> openai.RateLimitError:
-    return an_openai_rate_limit(body={"message": "You exceeded your current quota", "code": code})
 
 
 def an_anthropic_rate_limit(headers: dict[str, str] | None = None) -> anthropic.RateLimitError:

@@ -17,10 +17,6 @@ from tests.unit.nuisance.support.nuisance_report_runs import a_run
 from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
 
 
-def a_run_result() -> NuisanceHoldoutRunResult:
-    return a_run([a_server_result()])
-
-
 def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:
     """The `run` arguments of a census with a draw walk, an empty walk record and `admission`, by
     default the admission of one fully recorded server."""
@@ -35,6 +31,27 @@ def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) ->
         "--report",
         str(report),
     ]
+
+
+def an_admitted_run_keeping_its_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An admitted run whose result carries the provenance the CLI handed the orchestrator, each
+    file's commit named after the file."""
+
+    async def orchestrator(*args: object, **__: object) -> NuisanceHoldoutRunResult:
+        provenance = next(arg for arg in args if isinstance(arg, RunProvenance))
+        return dataclasses.replace(
+            a_run_result(),
+            census_commit=provenance.census_commit,
+            walk_record_commit=provenance.walk_record_commit,
+            admission_commit=provenance.admission_commit,
+        )
+
+    an_admitted_run_ending_in(monkeypatch, a_run_result())
+    monkeypatch.setattr(run_nuisance, "run_nuisance", orchestrator)
+
+
+def a_run_result() -> NuisanceHoldoutRunResult:
+    return a_run([a_server_result()])
 
 
 def an_admitted_run_ending_in(
@@ -59,23 +76,6 @@ def an_admitted_run_ending_in(
     monkeypatch.setattr(run_nuisance, "default_deps", deps)
     monkeypatch.setattr(run_nuisance, "run_nuisance", orchestrator)
     monkeypatch.setattr(run_nuisance, "last_commit", file_commit)
-
-
-def an_admitted_run_keeping_its_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
-    """An admitted run whose result carries the provenance the CLI handed the orchestrator, each
-    file's commit named after the file."""
-
-    async def orchestrator(*args: object, **__: object) -> NuisanceHoldoutRunResult:
-        provenance = next(arg for arg in args if isinstance(arg, RunProvenance))
-        return dataclasses.replace(
-            a_run_result(),
-            census_commit=provenance.census_commit,
-            walk_record_commit=provenance.walk_record_commit,
-            admission_commit=provenance.admission_commit,
-        )
-
-    an_admitted_run_ending_in(monkeypatch, a_run_result())
-    monkeypatch.setattr(run_nuisance, "run_nuisance", orchestrator)
 
 
 def a_run_reaching_nothing(monkeypatch: pytest.MonkeyPatch) -> None:

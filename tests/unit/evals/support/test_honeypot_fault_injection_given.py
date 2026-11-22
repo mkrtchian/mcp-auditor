@@ -57,12 +57,6 @@ class FaultedCandidate:
     distribution_coverage: float
 
 
-def the_fault_injection_baseline() -> Baseline:
-    baseline = load_baseline(FIXTURE_PATH)
-    assert baseline is not None
-    return baseline
-
-
 def a_judge_passing_everything() -> FaultedCandidate:
     return _every_cell_observed(Observation.PASS, distribution_coverage=1.0)
 
@@ -138,6 +132,12 @@ def _every_cell_observed(seen: Observation, distribution_coverage: float) -> Fau
 
 def _recorded_runs() -> ObservationRuns:
     return the_fault_injection_baseline().observation_runs()
+
+
+def the_fault_injection_baseline() -> Baseline:
+    baseline = load_baseline(FIXTURE_PATH)
+    assert baseline is not None
+    return baseline
 
 
 def _coin(seed: int, run_index: int, cell: Cell) -> bool:

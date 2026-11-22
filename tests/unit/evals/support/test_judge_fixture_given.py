@@ -16,20 +16,6 @@ from mcp_auditor.domain.models import AuditCategory
 _A_DRAW = DrawRecord(seed=1, quotas={}, sources=[], shortfalls=[])
 
 
-def some_inputs(**overrides: Any) -> JudgeInputs:
-    fields: dict[str, Any] = {
-        "tool_name": "get_user",
-        "tool_description": "Look up a user by their numeric ID.",
-        "category": AuditCategory.INPUT_VALIDATION,
-        "description": "Negative user_id",
-        "arguments": {"user_id": -1, "verbose": True},
-        "response": None,
-        "error": "Invalid user_id",
-        **overrides,
-    }
-    return JudgeInputs(**fields)
-
-
 def a_case(
     label: CaseLabel | None = CaseLabel.PASS,
     clause: str | None = None,
@@ -46,14 +32,28 @@ def a_case(
     )
 
 
-def a_fixture(*cases: JudgeCase) -> JudgeFixture:
-    return JudgeFixture(draw=_A_DRAW, cases=list(cases))
+def some_inputs(**overrides: Any) -> JudgeInputs:
+    fields: dict[str, Any] = {
+        "tool_name": "get_user",
+        "tool_description": "Look up a user by their numeric ID.",
+        "category": AuditCategory.INPUT_VALIDATION,
+        "description": "Negative user_id",
+        "arguments": {"user_id": -1, "verbose": True},
+        "response": None,
+        "error": "Invalid user_id",
+        **overrides,
+    }
+    return JudgeInputs(**fields)
 
 
 def a_file_holding(tmp_path: Path, *cases: JudgeCase) -> Path:
     path = tmp_path / "judge_cases.json"
     path.write_text(a_fixture(*cases).model_dump_json())
     return path
+
+
+def a_fixture(*cases: JudgeCase) -> JudgeFixture:
+    return JudgeFixture(draw=_A_DRAW, cases=list(cases))
 
 
 def a_file_with_raw_cases(tmp_path: Path, *raw_cases: dict[str, Any]) -> Path:

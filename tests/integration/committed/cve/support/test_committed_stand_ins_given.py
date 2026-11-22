@@ -44,16 +44,16 @@ def _backend_served_in(directory: Path, suffix: str) -> set[Path]:
     }
 
 
+def host_subtree(host: str) -> str:
+    return f"{IPv4Address(host)}/32" if is_ip_literal(host) else host
+
+
 def is_ip_literal(host: str) -> bool:
     try:
         ip_address(host)
     except ValueError:
         return False
     return True
-
-
-def host_subtree(host: str) -> str:
-    return f"{IPv4Address(host)}/32" if is_ip_literal(host) else host
 
 
 def committed_authority_constraints(directory: Path) -> tuple[bool, set[str], set[str]]:

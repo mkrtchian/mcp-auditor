@@ -39,12 +39,12 @@ def an_llm(chat_model: FakeChatModel, patience: ThrottlePatience) -> LLM:
     )
 
 
-def a_throttle(headers: dict[str, str] | None = None) -> Throttled:
-    return Throttled(an_openai_rate_limit(headers))
-
-
 def throttled_forever(count: int = 20) -> list[ScriptedResponse]:
     return [a_throttle() for _ in range(count)]
+
+
+def a_throttle(headers: dict[str, str] | None = None) -> Throttled:
+    return Throttled(an_openai_rate_limit(headers))
 
 
 def an_answer(value: str = "ok") -> dict[str, Any]:

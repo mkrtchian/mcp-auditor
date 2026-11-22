@@ -22,6 +22,15 @@ class JudgeMetrics:
 CaseResult = tuple[EvalVerdict, EvalVerdict]  # (predicted, expected)
 
 
+def compute_per_category_metrics(
+    results: list[tuple[AuditCategory, CaseResult]],
+) -> dict[AuditCategory, JudgeMetrics]:
+    by_category: dict[AuditCategory, list[CaseResult]] = {}
+    for category, case_result in results:
+        by_category.setdefault(category, []).append(case_result)
+    return {cat: compute_judge_metrics(cases) for cat, cases in by_category.items()}
+
+
 def compute_judge_metrics(results: list[CaseResult]) -> JudgeMetrics:
     tp = sum(1 for p, e in results if p == EvalVerdict.FAIL and e == EvalVerdict.FAIL)
     fp = sum(1 for p, e in results if p == EvalVerdict.FAIL and e == EvalVerdict.PASS)
@@ -36,12 +45,3 @@ def compute_judge_metrics(results: list[CaseResult]) -> JudgeMetrics:
         f1=f1,
         confusion=ConfusionMatrix(tp=tp, fp=fp, tn=tn, fn=fn),
     )
-
-
-def compute_per_category_metrics(
-    results: list[tuple[AuditCategory, CaseResult]],
-) -> dict[AuditCategory, JudgeMetrics]:
-    by_category: dict[AuditCategory, list[CaseResult]] = {}
-    for category, case_result in results:
-        by_category.setdefault(category, []).append(case_result)
-    return {cat: compute_judge_metrics(cases) for cat, cases in by_category.items()}

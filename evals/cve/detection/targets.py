@@ -75,10 +75,6 @@ _NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
 FILESYSTEM_READ_TOOLS = frozenset({"read_file", "list_directory"})
 
 
-def image_tag(name: str) -> str:
-    return f"mcp-auditor-cve-{name}:local"
-
-
 @dataclass(frozen=True)
 class Target:
     flaw_id: str
@@ -148,6 +144,10 @@ class Target:
         spec = self.planting_spec(to_plant, nonces)
         async with entered_in_thread(self.environment(spec, version, shape)) as planted_launch:
             yield planted_launch
+
+
+def image_tag(name: str) -> str:
+    return f"mcp-auditor-cve-{name}:local"
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,10 @@ OTHER_BASE = "fedcba9876543210fedcba9876543210fedcba98"
 KNOWN_KEYS = frozenset({"get_user/input_validation", "get_user/error_handling"})
 
 
+def a_raw_entry(**overrides: Any) -> dict[str, Any]:
+    return {**an_entry().model_dump(mode="json"), **overrides}
+
+
 def an_entry(
     key: str = "get_user/input_validation",
     base: str = BASE,
@@ -21,10 +25,6 @@ def an_entry(
         base=base,
         runs_seen=[],
     )
-
-
-def a_raw_entry(**overrides: Any) -> dict[str, Any]:
-    return {**an_entry().model_dump(mode="json"), **overrides}
 
 
 def a_file_holding(tmp_path: Path, *entries: dict[str, Any]) -> Path:

@@ -81,6 +81,18 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     return verdicts
 
 
+def label_scores[K](
+    verdict_maps: list[KeyedVerdicts[K]], ground_truth: dict[K, EvalVerdict]
+) -> dict[str, float]:
+    """Recall and precision averaged per run, as the report computes them."""
+    runs = len(verdict_maps)
+    return {
+        "recall": sum(compute_recall(verdicts, ground_truth) for verdicts in verdict_maps) / runs,
+        "precision": sum(compute_precision(verdicts, ground_truth) for verdicts in verdict_maps)
+        / runs,
+    }
+
+
 def compute_recall[K](aggregated: KeyedVerdicts[K], ground_truth: dict[K, EvalVerdict]) -> float:
     expected_fails = [key for key, verdict in ground_truth.items() if verdict == EvalVerdict.FAIL]
     if not expected_fails:
@@ -99,18 +111,6 @@ def compute_precision[K](aggregated: KeyedVerdicts[K], ground_truth: dict[K, Eva
         return 1.0
     correct = sum(1 for key in predicted_fails if ground_truth[key] == EvalVerdict.FAIL)
     return correct / len(predicted_fails)
-
-
-def label_scores[K](
-    verdict_maps: list[KeyedVerdicts[K]], ground_truth: dict[K, EvalVerdict]
-) -> dict[str, float]:
-    """Recall and precision averaged per run, as the report computes them."""
-    runs = len(verdict_maps)
-    return {
-        "recall": sum(compute_recall(verdicts, ground_truth) for verdicts in verdict_maps) / runs,
-        "precision": sum(compute_precision(verdicts, ground_truth) for verdicts in verdict_maps)
-        / runs,
-    }
 
 
 def compute_consistency(
@@ -134,35 +134,6 @@ def compute_consistency(
         return 1.0, {}
     avg = sum(d.rate for d in details.values()) / len(details)
     return avg, details
-
-
-def compute_distribution_coverage(
-    report: AuditReport,
-    categories: list[AuditCategory],
-) -> dict[str, float]:
-    coverage: dict[str, float] = {}
-    for tool_report in report.tool_reports:
-        covered = {case.judge_result.category for case in tool_report.cases if case.judge_result}
-        coverage[tool_report.tool.name] = len(covered) / len(categories)
-    return coverage
-
-
-def blocked_reasons(report: AuditReport) -> list[str]:
-    return [
-        reason
-        for tool_report in report.tool_reports
-        for reason in (
-            [case.blocked_reason for case in tool_report.cases if case.blocked_reason]
-            + [chain.blocked_reason for chain in tool_report.chains if chain.blocked_reason]
-        )
-    ]
-
-
-def missed_model_calls(report: AuditReport) -> list[str]:
-    return [
-        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}, {missed.detail}"
-        for missed in report.missed_model_calls
-    ]
 
 
 class ThrottledAudit(Exception):
@@ -247,6 +218,35 @@ def build_run_detail(
             "output_tokens": audit_report.provider_usage.output_tokens,
         },
     )
+
+
+def compute_distribution_coverage(
+    report: AuditReport,
+    categories: list[AuditCategory],
+) -> dict[str, float]:
+    coverage: dict[str, float] = {}
+    for tool_report in report.tool_reports:
+        covered = {case.judge_result.category for case in tool_report.cases if case.judge_result}
+        coverage[tool_report.tool.name] = len(covered) / len(categories)
+    return coverage
+
+
+def blocked_reasons(report: AuditReport) -> list[str]:
+    return [
+        reason
+        for tool_report in report.tool_reports
+        for reason in (
+            [case.blocked_reason for case in tool_report.cases if case.blocked_reason]
+            + [chain.blocked_reason for chain in tool_report.chains if chain.blocked_reason]
+        )
+    ]
+
+
+def missed_model_calls(report: AuditReport) -> list[str]:
+    return [
+        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}, {missed.detail}"
+        for missed in report.missed_model_calls
+    ]
 
 
 def _verdict_detail(

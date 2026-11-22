@@ -20,6 +20,15 @@ def a_judgment(
     )
 
 
+def a_single_step_case(response: str = "ok", error: str | None = None) -> TestCase:
+    return TestCase(
+        payload=a_payload(),
+        response=response,
+        error=error,
+        judge_result=a_fail_judge_result(),
+    )
+
+
 def a_fail_judge_result() -> JudgeResult:
     return JudgeResult(
         tool_name="t",
@@ -28,15 +37,6 @@ def a_fail_judge_result() -> JudgeResult:
         verdict=EvalVerdict.FAIL,
         justification="path traversal succeeded",
         severity=Severity.HIGH,
-    )
-
-
-def a_single_step_case(response: str = "ok", error: str | None = None) -> TestCase:
-    return TestCase(
-        payload=a_payload(),
-        response=response,
-        error=error,
-        judge_result=a_fail_judge_result(),
     )
 
 

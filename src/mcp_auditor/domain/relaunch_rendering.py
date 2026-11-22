@@ -26,13 +26,6 @@ CUT_BY_RELAUNCH_LINE = (
 )
 
 
-def describe_relaunch(relaunch: Relaunch) -> str:
-    cause = RELAUNCH_CAUSE_LABELS[relaunch.cause]
-    if relaunch.succeeded:
-        return f"{cause}, the server was relaunched"
-    return f"{cause}, the relaunch failed and the server was taken as down"
-
-
 def describe_unsent_calls(gap: CoverageGap) -> str:
     counts = [_counted(gap.unsent_cases, "case"), _counted(gap.unsent_chains, "chain")]
     not_sent = [count for count in counts if count]
@@ -65,3 +58,10 @@ def render_relaunch_lines(relaunches: list[Relaunch]) -> list[str]:
         f"**Relaunch**: after `{relaunch.arguments}`, {describe_relaunch(relaunch)}\n"
         for relaunch in relaunches
     ]
+
+
+def describe_relaunch(relaunch: Relaunch) -> str:
+    cause = RELAUNCH_CAUSE_LABELS[relaunch.cause]
+    if relaunch.succeeded:
+        return f"{cause}, the server was relaunched"
+    return f"{cause}, the relaunch failed and the server was taken as down"

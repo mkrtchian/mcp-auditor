@@ -188,6 +188,10 @@ BACKENDS: dict[str, RegisteredBackend] = {
 }
 
 
+def built_backend_tags(servers: Sequence[AdmittedServer]) -> list[str]:
+    return [image_tag(service) for service in built_backend_services(servers)]
+
+
 def built_backend_services(servers: Sequence[AdmittedServer]) -> list[str]:
     services = (
         service
@@ -196,10 +200,6 @@ def built_backend_services(servers: Sequence[AdmittedServer]) -> list[str]:
         for service in BACKENDS[server.backend.provisioner].built_services
     )
     return list(dict.fromkeys(services))
-
-
-def built_backend_tags(servers: Sequence[AdmittedServer]) -> list[str]:
-    return [image_tag(service) for service in built_backend_services(servers)]
 
 
 def backend_reset_containers(servers: Sequence[AdmittedServer]) -> list[str]:

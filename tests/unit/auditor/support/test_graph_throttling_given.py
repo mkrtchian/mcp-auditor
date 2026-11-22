@@ -13,10 +13,6 @@ from tests.unit.auditor.support.test_llm_throttling_given import an_openai_rate_
 TOOL_NAMES = ["get_user", "list_users"]
 
 
-async def no_wait(_delay: float) -> None:
-    return None
-
-
 def a_provider_throttling_the_first_generation_past_every_retry() -> FakeChatModel:
     # A 15 s bound: the first wait of 10 s fits, the second of 20 s exhausts the patience.
     return FakeChatModel([Throttled(an_openai_rate_limit()), Throttled(an_openai_rate_limit())])
@@ -30,6 +26,10 @@ def an_llm_over(chat_model: FakeChatModel) -> LLM:
         max_parse_attempts=3,
         patience=ThrottlePatience(max_total_wait=15.0, sleep=no_wait, jitter=lambda: 0.0),
     )
+
+
+async def no_wait(_delay: float) -> None:
+    return None
 
 
 async def an_audit_of_two_tools(llm: LLM) -> dict[str, Any]:

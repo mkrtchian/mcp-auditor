@@ -26,16 +26,6 @@ _GENERATE_CONTENT: dict[str, Any] = {
 }
 
 
-def an_httpx_client_answering(statuses: list[int]) -> httpx.AsyncClient:
-    statuses_left = iter(statuses)
-
-    def respond(_request: httpx.Request) -> httpx.Response:
-        status = next(statuses_left)
-        return httpx.Response(status, json=_CHAT_COMPLETION if status == 200 else {})
-
-    return httpx.AsyncClient(transport=httpx.MockTransport(respond))
-
-
 def an_httpx2_client_answering(statuses: list[int]) -> httpx2.AsyncClient:
     statuses_left = iter(statuses)
 
@@ -68,6 +58,16 @@ def a_fireworks_model_answering(statuses: list[int]) -> BaseChatModel:
         max_retries=3,
         async_client=sdk_client.chat.completions,
     )
+
+
+def an_httpx_client_answering(statuses: list[int]) -> httpx.AsyncClient:
+    statuses_left = iter(statuses)
+
+    def respond(_request: httpx.Request) -> httpx.Response:
+        status = next(statuses_left)
+        return httpx.Response(status, json=_CHAT_COMPLETION if status == 200 else {})
+
+    return httpx.AsyncClient(transport=httpx.MockTransport(respond))
 
 
 def a_google_model_answering(statuses: list[int]) -> BaseChatModel:

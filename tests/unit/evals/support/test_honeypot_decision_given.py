@@ -38,6 +38,13 @@ def an_outcome(verdict_maps: list[VerdictMap]) -> RunsOutcome:
     )
 
 
+def a_baseline_without_the_flipped_cell(status: BaselineStatus) -> Baseline:
+    baseline = a_baseline_all_correct(status)
+    for run in baseline.runs:
+        del run[cell_key(FLIPPED_CELL)]
+    return baseline
+
+
 def a_baseline_all_correct(status: BaselineStatus) -> Baseline:
     """Every merged ground truth cell observed correct in each run: all stable correct."""
     observed = observe(dict(MERGED_GROUND_TRUTH), MERGED_GROUND_TRUTH)
@@ -45,13 +52,6 @@ def a_baseline_all_correct(status: BaselineStatus) -> Baseline:
     return a_baseline_at_ci_conditions(status=status).model_copy(
         update={"runs": [dict(run) for _ in range(3)]}
     )
-
-
-def a_baseline_without_the_flipped_cell(status: BaselineStatus) -> Baseline:
-    baseline = a_baseline_all_correct(status)
-    for run in baseline.runs:
-        del run[cell_key(FLIPPED_CELL)]
-    return baseline
 
 
 def a_baseline_that_saw_the_flipped_cell_pass(status: BaselineStatus) -> Baseline:

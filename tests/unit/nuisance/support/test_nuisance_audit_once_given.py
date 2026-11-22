@@ -19,6 +19,15 @@ from tests.unit.support.admission_mutations import with_a_backend
 NO_OVERRIDES = RunOverrides(None, None, None)
 
 
+def an_auditor_on_a_noisy_server(lost_calls: int) -> NuisanceAuditor:
+    """The graph sends one call per lost connection, each answered "Connection closed", to a
+    client that read two lines it could not parse."""
+    return an_auditor(
+        graphs=launch_given.graph_calling(lost_calls),
+        connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines=2)),
+    )
+
+
 def an_auditor(
     report_detail: ReportDetail = FULL_DETAIL,
     graphs: launch_given.FakeGraphs | None = None,
@@ -27,15 +36,6 @@ def an_auditor(
 ) -> NuisanceAuditor:
     return NuisanceAuditor(
         launch_given.an_auditor(report_detail, graphs, connect), overrides, SessionThrottles()
-    )
-
-
-def an_auditor_on_a_noisy_server(lost_calls: int) -> NuisanceAuditor:
-    """The graph sends one call per lost connection, each answered "Connection closed", to a
-    client that read two lines it could not parse."""
-    return an_auditor(
-        graphs=launch_given.graph_calling(lost_calls),
-        connect=launch_given.FakeConnect(launch_given.a_noisy_client(non_protocol_lines=2)),
     )
 
 

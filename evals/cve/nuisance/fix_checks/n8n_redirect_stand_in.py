@@ -110,18 +110,6 @@ ENTRYPOINT ["python", "/standin.py"]
 """
 
 
-def n8n_server_env_args() -> list[str]:
-    """The server's own env, pointed at the stand-in with telemetry off. Pure: no Docker call."""
-    return [
-        "-e",
-        f"N8N_API_URL=http://{STAND_IN_IP}/",
-        "-e",
-        "N8N_API_KEY=calib-key",
-        "-e",
-        "N8N_MCP_TELEMETRY_DISABLED=true",
-    ]
-
-
 def http_place(place_id: str) -> Place:
     return Place(
         id=place_id,
@@ -225,3 +213,15 @@ def _server_launch(holder: str, image: str) -> Launch:
             image,
         ],
     )  # fmt: skip
+
+
+def n8n_server_env_args() -> list[str]:
+    """The server's own env, pointed at the stand-in with telemetry off. Pure: no Docker call."""
+    return [
+        "-e",
+        f"N8N_API_URL=http://{STAND_IN_IP}/",
+        "-e",
+        "N8N_API_KEY=calib-key",
+        "-e",
+        "N8N_MCP_TELEMETRY_DISABLED=true",
+    ]

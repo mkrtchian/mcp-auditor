@@ -117,17 +117,16 @@ def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
     return sides
 
 
-def unconfirmed_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
-    """A baseline is confirmed at the commit of its first recording. A change that lands while
-    it is unconfirmed, a label revision included, resets it: the file is deleted and recorded
-    again twice at the new commit.
-    """
-    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
-        return []
-    return [
-        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
-        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
+def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResult) -> list[str]:
+    reasons = condition_refusals(existing, recording.conditions)
+    if gate.outcome != GateOutcome.GREEN:
+        reasons.append(f"the gate is {gate.outcome}")
+    reasons += [
+        f"gated cell {key} flipped in this run ({comparison.outcome})"
+        for key, comparison in gate.cells.items()
+        if comparison.outcome in _FLIPPED
     ]
+    return reasons
 
 
 def condition_refusals(baseline: Baseline, candidate: BaselineConditions) -> list[str]:
@@ -139,18 +138,6 @@ def condition_refusals(baseline: Baseline, candidate: BaselineConditions) -> lis
         f"to run at other conditions without changing the baseline, pass --no-baseline. To change "
         f"the baseline's conditions, {_RESET_PROCEDURE}"
     ]
-
-
-def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResult) -> list[str]:
-    reasons = condition_refusals(existing, recording.conditions)
-    if gate.outcome != GateOutcome.GREEN:
-        reasons.append(f"the gate is {gate.outcome}")
-    reasons += [
-        f"gated cell {key} flipped in this run ({comparison.outcome})"
-        for key, comparison in gate.cells.items()
-        if comparison.outcome in _FLIPPED
-    ]
-    return reasons
 
 
 def _second_recording(
@@ -213,6 +200,19 @@ def _second_recording_refusals(
         + condition_refusals(existing, combined.conditions)
         + ([NOT_MADE_AGAIN] if not_made_again else [])
     )
+
+
+def unconfirmed_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
+    """A baseline is confirmed at the commit of its first recording. A change that lands while
+    it is unconfirmed, a label revision included, resets it: the file is deleted and recorded
+    again twice at the new commit.
+    """
+    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
+        return []
+    return [
+        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
+        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
+    ]
 
 
 def _disagreements(existing: Baseline, recording: Recording) -> list[str]:

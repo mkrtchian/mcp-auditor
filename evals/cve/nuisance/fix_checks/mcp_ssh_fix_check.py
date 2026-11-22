@@ -91,61 +91,11 @@ def option_injection(path: str) -> str:
     return f'-oProxyCommand=sh -c "cat {path} 1>&2"'
 
 
-def server_args(image: str, sshd: StoodSshd, witness_file: str) -> list[str]:
-    return [
-        "run", "-i", "--rm",
-        *confinement_args(),
-        *own_network_args(sshd.network),
-        *unprivileged_user_args(),
-        "-w", HOST.working_directory,
-        "-v", f"{witness_file}:{WITNESS_PATH}:ro",
-        *sshd.mount_args(),
-        image,
-    ]  # fmt: skip
-
-
-@contextmanager
-def ssh_env(
-    image: str,
-    spec: PlantingSpec,
-    shape: LaunchShape = LaunchShape.NORMAL,
-    *,
-    stand: SshdStand = stood_sshd,
-) -> Generator[Launch]:
-    witness_file = _write_witness(spec.nonces[WITNESS.id])
-    try:
-        with stand(f"{LABEL}-mcp-ssh-sshd-{secrets.token_hex(4)}", CALLER) as sshd:
-            yield Launch(command="docker", args=server_args(image, sshd, witness_file))
-    finally:
-        os.unlink(witness_file)
-
-
-def _write_witness(nonce: str) -> str:
-    descriptor, path = tempfile.mkstemp(prefix="mcp-ssh-witness-")
-    with os.fdopen(descriptor, "w") as handle:
-        handle.write(nonce)
-    os.chmod(path, 0o644)  # the server reads it as the unprivileged account
-    return path
-
-
 def _call(tool: str, args: dict[str, object]) -> FixCheckExploit:
     async def run(places: Places, client: KitClient) -> None:
         await client.call_tool(tool, args)
 
     return run
-
-
-def _exploit(tool: str, fillers: dict[str, object], injection: Injection) -> FixCheckExploit:
-    host_alias = injection(WITNESS_PATH)
-
-    async def run(places: Places, client: KitClient) -> None:
-        await client.call_tool(tool, {"hostAlias": host_alias, **fillers})
-
-    return run
-
-
-def _exploits(injection: Injection) -> tuple[FixCheckExploit, ...]:
-    return tuple(_exploit(tool, fillers, injection) for tool, fillers in _EXPLOIT_FILLERS)
 
 
 _BENIGN_CALLS = tuple(_call(tool, args) for tool, args in _BENIGN_ARGS)
@@ -172,3 +122,53 @@ def target(
         patched_service=patched_service,
         server_patched_service=server_patched_service,
     )
+
+
+@contextmanager
+def ssh_env(
+    image: str,
+    spec: PlantingSpec,
+    shape: LaunchShape = LaunchShape.NORMAL,
+    *,
+    stand: SshdStand = stood_sshd,
+) -> Generator[Launch]:
+    witness_file = _write_witness(spec.nonces[WITNESS.id])
+    try:
+        with stand(f"{LABEL}-mcp-ssh-sshd-{secrets.token_hex(4)}", CALLER) as sshd:
+            yield Launch(command="docker", args=server_args(image, sshd, witness_file))
+    finally:
+        os.unlink(witness_file)
+
+
+def server_args(image: str, sshd: StoodSshd, witness_file: str) -> list[str]:
+    return [
+        "run", "-i", "--rm",
+        *confinement_args(),
+        *own_network_args(sshd.network),
+        *unprivileged_user_args(),
+        "-w", HOST.working_directory,
+        "-v", f"{witness_file}:{WITNESS_PATH}:ro",
+        *sshd.mount_args(),
+        image,
+    ]  # fmt: skip
+
+
+def _write_witness(nonce: str) -> str:
+    descriptor, path = tempfile.mkstemp(prefix="mcp-ssh-witness-")
+    with os.fdopen(descriptor, "w") as handle:
+        handle.write(nonce)
+    os.chmod(path, 0o644)  # the server reads it as the unprivileged account
+    return path
+
+
+def _exploits(injection: Injection) -> tuple[FixCheckExploit, ...]:
+    return tuple(_exploit(tool, fillers, injection) for tool, fillers in _EXPLOIT_FILLERS)
+
+
+def _exploit(tool: str, fillers: dict[str, object], injection: Injection) -> FixCheckExploit:
+    host_alias = injection(WITNESS_PATH)
+
+    async def run(places: Places, client: KitClient) -> None:
+        await client.call_tool(tool, {"hostAlias": host_alias, **fillers})
+
+    return run

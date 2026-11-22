@@ -24,16 +24,8 @@ def _listing(*models: dict[str, object]) -> _Listing:
     return _Listing(httpx.Response(200, json={"data": list(models)}))
 
 
-def _catalog(listing: _Listing) -> OpenRouterEffortCatalog:
-    return OpenRouterEffortCatalog(httpx.MockTransport(listing.handle))
-
-
 def _model(model_id: str, efforts: list[str] | None) -> dict[str, object]:
     return {"id": model_id, "reasoning": {"supported_efforts": efforts}}
-
-
-def _warnings(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
-    return [record for record in caplog.records if record.levelno == logging.WARNING]
 
 
 class TestOpenRouterEffortCatalog:
@@ -116,3 +108,11 @@ class TestOpenRouterEffortCatalog:
         catalog.check(_GLM, "high")
 
         assert listing.requests == 1
+
+
+def _catalog(listing: _Listing) -> OpenRouterEffortCatalog:
+    return OpenRouterEffortCatalog(httpx.MockTransport(listing.handle))
+
+
+def _warnings(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [record for record in caplog.records if record.levelno == logging.WARNING]

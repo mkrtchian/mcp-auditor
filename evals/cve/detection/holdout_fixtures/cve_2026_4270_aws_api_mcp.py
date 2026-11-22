@@ -57,6 +57,15 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        bool_field = places[place_id].kind is PlaceKind.ENV
+        command = _read_command(_readable_path(places, place_id), bool_field=bool_field)
+        await client.call_tool("call_aws", {"cli_command": command})
+
+    return run
+
+
 def _readable_path(places: Places, place_id: str) -> str:
     place = places[place_id]
     if place.kind is PlaceKind.ENV:
@@ -75,15 +84,6 @@ def _read_command(path: str, *, bool_field: bool) -> str:
         "aws ec2 run-instances --image-id ami-00000000000000000 "
         f"--block-device-mappings DeviceName=/dev/sda1,Ebs={{{field}@=file://{path}}}"
     )
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        bool_field = places[place_id].kind is PlaceKind.ENV
-        command = _read_command(_readable_path(places, place_id), bool_field=bool_field)
-        await client.call_tool("call_aws", {"cli_command": command})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

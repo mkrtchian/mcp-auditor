@@ -29,6 +29,29 @@ A_DRAWN_FLAW = "CVE-2025-0001"
 A_TWICE_GIVEN_UP_FLAW = "GHSA-dddd-eeee-ffff"
 
 
+def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
+    """`a_draw` with `flaw`, given up twice under no version, drawn again under `under`."""
+    draw = a_draw_stepping_again(flaw, outcome="drawn", under=under)
+    return draw.model_copy(
+        update={
+            "cards": [*draw.cards, a_card(flaw)],
+            "card_checks": [
+                *draw.card_checks,
+                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=11),
+            ],
+            "drawn": [*draw.drawn, flaw],
+        }
+    )
+
+
+def a_draw_stepping_again(
+    flaw: str, outcome: Literal["drawn", "skipped", "given_up", "excluded"], under: int | None
+) -> DrawRecord:
+    draw = a_draw()
+    step = DetectionWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
+    return draw.model_copy(update={"walk": [*draw.walk, step]})
+
+
 def a_draw() -> DrawRecord:
     return DrawRecord(
         rule_commit="abc1234",
@@ -73,29 +96,6 @@ def a_draw() -> DrawRecord:
     )
 
 
-def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
-    """`a_draw` with `flaw`, given up twice under no version, drawn again under `under`."""
-    draw = a_draw_stepping_again(flaw, outcome="drawn", under=under)
-    return draw.model_copy(
-        update={
-            "cards": [*draw.cards, a_card(flaw)],
-            "card_checks": [
-                *draw.card_checks,
-                CardCheck(flaw=flaw, reported_gaps=[], confirmed_gaps=[], rule_version=11),
-            ],
-            "drawn": [*draw.drawn, flaw],
-        }
-    )
-
-
-def a_draw_stepping_again(
-    flaw: str, outcome: Literal["drawn", "skipped", "given_up", "excluded"], under: int | None
-) -> DrawRecord:
-    draw = a_draw()
-    step = DetectionWalkStep(identifier=flaw, outcome=outcome, reason="", rule_version=under)
-    return draw.model_copy(update={"walk": [*draw.walk, step]})
-
-
 def with_give_ups_under(draw: DrawRecord, flaw: str, version: int) -> DrawRecord:
     give_ups = [
         give_up.model_copy(update={"rule_version": version}) if give_up.flaw == flaw else give_up
@@ -126,12 +126,12 @@ def a_card(flaw: str) -> CalibrationCard:
     )
 
 
-def a_draw_carrying(*cards: CalibrationCard) -> DrawRecord:
-    return a_draw().model_copy(update={"cards": list(cards)})
-
-
 def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
     return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]}))
+
+
+def a_draw_carrying(*cards: CalibrationCard) -> DrawRecord:
+    return a_draw().model_copy(update={"cards": list(cards)})
 
 
 def a_card_stand_in(

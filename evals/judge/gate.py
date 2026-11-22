@@ -79,16 +79,6 @@ def decide_judge_gate(gate_input: JudgeGateInput) -> JudgeGateResult:
     )
 
 
-def compare_cases(
-    baseline: JudgeBaseline,
-    runs: CaseRuns,
-    ground_truth: dict[str, EvalVerdict],
-    declared: frozenset[str],
-) -> dict[str, CellComparison]:
-    """Before any retest: the cases left in `FLIP` are the ones to retest."""
-    return apply_declarations(compare(baseline.runs, runs, ground_truth), declared)
-
-
 def _settled_cases(gate_input: JudgeGateInput) -> dict[str, CellComparison]:
     baseline = gate_input.baseline
     if baseline is None:
@@ -100,6 +90,16 @@ def _settled_cases(gate_input: JudgeGateInput) -> dict[str, CellComparison]:
         else comparison
         for case, comparison in cases.items()
     }
+
+
+def compare_cases(
+    baseline: JudgeBaseline,
+    runs: CaseRuns,
+    ground_truth: dict[str, EvalVerdict],
+    declared: frozenset[str],
+) -> dict[str, CellComparison]:
+    """Before any retest: the cases left in `FLIP` are the ones to retest."""
+    return apply_declarations(compare(baseline.runs, runs, ground_truth), declared)
 
 
 def observe_case(verdict: EvalVerdict | None) -> Observation:

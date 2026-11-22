@@ -32,6 +32,22 @@ class TargetCost(BaseModel):
     largest_input_tokens: int
 
 
+def large_request_targets(costs: Sequence[TargetCost]) -> list[str]:
+    return [
+        cost.flaw_id for cost in costs if cost.largest_input_tokens > TIERED_REQUEST_INPUT_TOKENS
+    ]
+
+
+@dataclass(frozen=True)
+class CostPricing:
+    generator: Prices
+    judge: Prices
+    as_of: date
+
+    def costs(self, by_target: Mapping[str, UsageBreakdown]) -> list[TargetCost]:
+        return target_costs(by_target, self.generator, self.judge)
+
+
 def target_costs(
     by_target: Mapping[str, UsageBreakdown], generator_prices: Prices, judge_prices: Prices
 ) -> list[TargetCost]:
@@ -53,22 +69,6 @@ def target_costs(
 
 def _priced(usage: ProviderUsage, prices: Prices | None) -> float | None:
     return None if prices is None else call_cost(usage, prices)
-
-
-def large_request_targets(costs: Sequence[TargetCost]) -> list[str]:
-    return [
-        cost.flaw_id for cost in costs if cost.largest_input_tokens > TIERED_REQUEST_INPUT_TOKENS
-    ]
-
-
-@dataclass(frozen=True)
-class CostPricing:
-    generator: Prices
-    judge: Prices
-    as_of: date
-
-    def costs(self, by_target: Mapping[str, UsageBreakdown]) -> list[TargetCost]:
-        return target_costs(by_target, self.generator, self.judge)
 
 
 COST_COLUMNS = (

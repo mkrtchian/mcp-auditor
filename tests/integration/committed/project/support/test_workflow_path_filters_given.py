@@ -11,6 +11,14 @@ from evals.honeypots import REPO_ROOT
 WORKFLOWS = sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
 
 
+def every_path_filter() -> list[tuple[str, str, str]]:
+    return [
+        (workflow.name, event, pattern)
+        for workflow in WORKFLOWS
+        for event, pattern in path_filters(workflow)
+    ]
+
+
 def path_filters(workflow: Path) -> list[tuple[str, str]]:
     """Each (event, path filter) of the workflow's push and pull_request triggers."""
     loaded: dict[Any, Any] = yaml.safe_load(workflow.read_text())
@@ -21,14 +29,6 @@ def path_filters(workflow: Path) -> list[tuple[str, str]]:
         trigger: dict[str, list[str]] = triggers.get(event) or {}
         filters += [(event, pattern) for pattern in trigger.get("paths", [])]
     return filters
-
-
-def every_path_filter() -> list[tuple[str, str, str]]:
-    return [
-        (workflow.name, event, pattern)
-        for workflow in WORKFLOWS
-        for event, pattern in path_filters(workflow)
-    ]
 
 
 def matches_a_tracked_file(pattern: str) -> bool:

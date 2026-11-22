@@ -227,17 +227,17 @@ def count_detections[K](
     )
 
 
+def floor_breaches(metrics: HoneypotMetrics, count: DetectionCount) -> list[str]:
+    recall = ["recall"] if recall_floor_breached(count) else []
+    return recall + [name for name, floor in FLOORS.items() if getattr(metrics, name) < floor]
+
+
 def recall_floor_breached(count: DetectionCount) -> bool:
     """One planted flaw found per run, on average (ADR 022): the collapse it catches, a judge
     that passes everything, finds none. A count, not a mean, so that no rounding decides it.
     A ground truth with no FAIL cell always breaches it: there is no flaw to find.
     """
     return count.detections < count.runs
-
-
-def floor_breaches(metrics: HoneypotMetrics, count: DetectionCount) -> list[str]:
-    recall = ["recall"] if recall_floor_breached(count) else []
-    return recall + [name for name, floor in FLOORS.items() if getattr(metrics, name) < floor]
 
 
 def metric_resolutions(

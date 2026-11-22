@@ -86,27 +86,12 @@ async def fetch(target: Named) -> str:
 ObservationRuns = list[dict[Cell, Observation]]
 
 
-def conditions(
-    budget: int = 10, source_fingerprint: str = "abc", ground_truth: GroundTruth | None = None
-) -> BaselineConditions:
-    return BaselineConditions(
-        runs=3,
-        budget=budget,
-        provider="google",
-        model="gemini-3.1-flash-lite",
-        judge_model="gemini-3.1-flash-lite",
-        reasoning="minimal",
-        judge_reasoning="minimal",
-        ground_truth_fingerprint=fingerprint_ground_truth(ground_truth or a_ground_truth()),
-        fixtures={
-            "honeypot": FixtureConditions(
-                source_fingerprint=source_fingerprint, chain_budget=0, max_chain_steps=3
-            ),
-            "chain_honeypot": FixtureConditions(
-                source_fingerprint="ghi", chain_budget=3, max_chain_steps=5
-            ),
-        },
-    )
+def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
+    written = a_baseline().model_dump(mode="json")
+    written["replay_rule"] = written.pop("retest_rule")
+    path = tmp_path / "honeypot.json"
+    path.write_text(json.dumps(written))
+    return path
 
 
 def a_baseline(
@@ -132,12 +117,27 @@ def a_baseline(
     )
 
 
-def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
-    written = a_baseline().model_dump(mode="json")
-    written["replay_rule"] = written.pop("retest_rule")
-    path = tmp_path / "honeypot.json"
-    path.write_text(json.dumps(written))
-    return path
+def conditions(
+    budget: int = 10, source_fingerprint: str = "abc", ground_truth: GroundTruth | None = None
+) -> BaselineConditions:
+    return BaselineConditions(
+        runs=3,
+        budget=budget,
+        provider="google",
+        model="gemini-3.1-flash-lite",
+        judge_model="gemini-3.1-flash-lite",
+        reasoning="minimal",
+        judge_reasoning="minimal",
+        ground_truth_fingerprint=fingerprint_ground_truth(ground_truth or a_ground_truth()),
+        fixtures={
+            "honeypot": FixtureConditions(
+                source_fingerprint=source_fingerprint, chain_budget=0, max_chain_steps=3
+            ),
+            "chain_honeypot": FixtureConditions(
+                source_fingerprint="ghi", chain_budget=3, max_chain_steps=5
+            ),
+        },
+    )
 
 
 def a_confirmation(runs: ObservationRuns) -> Baseline:

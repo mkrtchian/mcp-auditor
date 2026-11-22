@@ -20,6 +20,10 @@ def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
     )
 
 
+def a_run_with_incidents() -> NuisanceHoldoutRunResult:
+    return a_run([with_incidents(a_server_result("A")), a_server_result("B")])
+
+
 def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
     lost, refused, clean = server.statuses
     return dataclasses.replace(
@@ -41,10 +45,6 @@ def with_incidents(server: NuisanceServerResult) -> NuisanceServerResult:
             clean,
         ),
     )
-
-
-def a_run_with_incidents() -> NuisanceHoldoutRunResult:
-    return a_run([with_incidents(a_server_result("A")), a_server_result("B")])
 
 
 def a_run_with_a_server_only_relaunched() -> NuisanceHoldoutRunResult:

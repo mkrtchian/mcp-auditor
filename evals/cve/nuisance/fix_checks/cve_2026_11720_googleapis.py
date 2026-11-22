@@ -77,6 +77,28 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def googleapis_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with GOOGLEAPIS_LAUNCH_LOCK:
+        ensure_googleapis_responder()
+        ensure_closed_network(INTERNAL_BRIDGE, "--subnet", INTERNAL_SUBNET)
+        _ensure_witness_responder_image()
+    name = f"mcp-auditor-kit-googleapis-r-{secrets.token_hex(4)}"
+    launch_host = _per_launch_host()
+    try:
+        subprocess.run(
+            ["docker", *responder_args(name, spec.nonces[WITNESS.id], launch_host)],
+            check=True,
+            capture_output=True,
+        )
+        time.sleep(1.0)
+        yield Launch(command="docker", args=server_args(image, launch_host))
+    finally:
+        googleapis_rm(name)
+
+
 def responder_args(name: str, nonce: str, launch_host: int) -> list[str]:
     public_address = _address(GOOGLEAPIS_SUBNET, launch_host)
     return [
@@ -105,28 +127,6 @@ def server_args(image: str, launch_host: int) -> list[str]:
         image,
         *_SERVER_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def googleapis_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with GOOGLEAPIS_LAUNCH_LOCK:
-        ensure_googleapis_responder()
-        ensure_closed_network(INTERNAL_BRIDGE, "--subnet", INTERNAL_SUBNET)
-        _ensure_witness_responder_image()
-    name = f"mcp-auditor-kit-googleapis-r-{secrets.token_hex(4)}"
-    launch_host = _per_launch_host()
-    try:
-        subprocess.run(
-            ["docker", *responder_args(name, spec.nonces[WITNESS.id], launch_host)],
-            check=True,
-            capture_output=True,
-        )
-        time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, launch_host))
-    finally:
-        googleapis_rm(name)
 
 
 def _ensure_witness_responder_image() -> None:

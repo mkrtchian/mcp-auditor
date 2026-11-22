@@ -19,10 +19,6 @@ from evals.cve.run_interruption import first_failure
 SOLO_SERVERS = frozenset({"npm:@elgentos/magento2-dev-mcp"})
 
 
-def played_alone(server: AdmittedServer) -> bool:
-    return server.server_package in SOLO_SERVERS
-
-
 async def gathered_then_alone[R](
     servers: Sequence[AdmittedServer], play: Callable[[AdmittedServer], Awaitable[R]]
 ) -> list[R]:
@@ -40,6 +36,10 @@ async def gathered_then_alone[R](
         if played_alone(server):
             outcomes[server.server_package] = await play(server)
     return [outcomes[server.server_package] for server in servers]
+
+
+def played_alone(server: AdmittedServer) -> bool:
+    return server.server_package in SOLO_SERVERS
 
 
 async def first_failure_then_alone[R](

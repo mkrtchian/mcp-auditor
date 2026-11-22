@@ -32,11 +32,11 @@ def an_entry(
     }
 
 
+def loaded(tmp_path: Path, entries: list[dict[str, Any]]) -> dict[str, Place]:
+    return load_places(written(tmp_path, entries))
+
+
 def written(tmp_path: Path, entries: list[dict[str, Any]]) -> Path:
     path = tmp_path / "places.json"
     path.write_text(json.dumps(entries))
     return path
-
-
-def loaded(tmp_path: Path, entries: list[dict[str, Any]]) -> dict[str, Place]:
-    return load_places(written(tmp_path, entries))

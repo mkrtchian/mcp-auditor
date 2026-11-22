@@ -72,6 +72,14 @@ INJECTED_FILE_KEY = (
 )
 
 
+@contextmanager
+def figma_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with planted(spec, image, DockerPlanting()) as args:
+        yield Launch(command="docker", args=server_args(image, args))
+
+
 def server_args(image: str, args: PlantedArgs) -> list[str]:
     return [
         "run", "-i", "--rm",
@@ -80,14 +88,6 @@ def server_args(image: str, args: PlantedArgs) -> list[str]:
         image,
         *_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def figma_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with planted(spec, image, DockerPlanting()) as args:
-        yield Launch(command="docker", args=server_args(image, args))
 
 
 async def _exploit_get_figma_data(places: Places, client: KitClient) -> None:

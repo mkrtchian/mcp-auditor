@@ -16,10 +16,6 @@ _HEAD_LENGTH = MAX_SHOWN_LENGTH // 2
 _TAIL_LENGTH = MAX_SHOWN_LENGTH - _HEAD_LENGTH
 
 
-def rendered_response(response: dict[str, Any] | str) -> str:
-    return json.dumps(response) if isinstance(response, dict) else response
-
-
 def shown_to_model(text: str) -> str:
     if not is_cut(text):
         return text
@@ -43,3 +39,7 @@ def cut_responses(tool_report: ToolReport) -> int:
     for chain in tool_report.chains:
         shown.extend(text for step in chain.steps for text in (step.response, step.error) if text)
     return sum(1 for text in shown if is_cut(text))
+
+
+def rendered_response(response: dict[str, Any] | str) -> str:
+    return json.dumps(response) if isinstance(response, dict) else response

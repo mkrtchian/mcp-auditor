@@ -60,48 +60,37 @@ def main() -> None:
         sys.exit(REFUSED_EXIT)
 
 
-def candidates_from_honeypot(
-    lines: Iterable[dict[str, Any]], ground_truth: GroundTruth
-) -> dict[Cell, list[JudgeCase]]:
-    """Every cell of the ground truth, with its distinct single-step cases."""
-    candidates: dict[Cell, dict[str, JudgeCase]] = {cell: {} for cell in ground_truth}
-    for line in lines:
-        cell = (line["tool_name"], AuditCategory(line["category"]))
-        if line["type"] != "single_step" or cell not in candidates:
-            continue
-        case = _candidate(line, CaseSource.HONEYPOT, f"cell {cell_key(cell)}")
-        candidates[cell][case.id] = case
-    return {cell: list(cases.values()) for cell, cases in candidates.items()}
-
-
-def candidates_from_detection(lines: Iterable[dict[str, Any]]) -> dict[str, list[JudgeCase]]:
-    candidates: dict[str, dict[str, JudgeCase]] = {}
-    for line in lines:
-        case = _candidate(line, CaseSource.CVE, f"cve {line['flaw_id']}")
-        candidates.setdefault(line["flaw_id"], {})[case.id] = case
-    return {flaw_id: list(cases.values()) for flaw_id, cases in candidates.items()}
-
-
-def _candidate(line: dict[str, Any], source: CaseSource, origin: str) -> JudgeCase:
-    inputs = JudgeInputs.model_validate(line)
-    return JudgeCase(
-        id=case_id(inputs), source=source, origin=origin, inputs=inputs, label=None, clause=None
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=f"Draw the judge cases into {DRAWN_PATH.relative_to(REPO_ROOT)}"
     )
+    parser.add_argument("--honeypot-export", action="append", required=True, type=Path)
+    parser.add_argument("--detection-export", required=True, type=Path)
+    parser.add_argument(
+        "--complement",
+        action="store_true",
+        help="draw one more case per PASS cell into the labeled drawn file (complement rule)",
+    )
+    return parser.parse_args()
 
 
-def draw(
-    strata: dict[str, list[JudgeCase]], quota: int, rng: random.Random
-) -> tuple[list[JudgeCase], list[str]]:
-    drawn: list[JudgeCase] = []
-    shortfalls: list[str] = []
-    for key in sorted(strata):
-        candidates = sorted(strata[key], key=lambda case: case.id)
-        if len(candidates) < quota:
-            shortfalls.append(f"{key}: {len(candidates)} candidates for a quota of {quota}")
-            drawn.extend(candidates)
-        else:
-            drawn.extend(rng.sample(candidates, quota))
-    return drawn, shortfalls
+def _draw(args: argparse.Namespace) -> None:
+    reports = {path: path.with_name("honeypot_report.json") for path in args.honeypot_export}
+    reports[args.detection_export] = args.detection_export.with_name("detection_report.json")
+    sources = _sources(reports)
+    strata = _strata_of(
+        [line for path in args.honeypot_export for line in _lines(path)],
+        _lines(args.detection_export),
+    )
+    if args.complement:
+        fixture = _complemented(load_drawn(DRAWN_PATH), strata, sources)
+    else:
+        fixture = draw_fixture(strata, sources)
+    leaks = leaked_secrets(fixture.cases, str(Path.home()), getpass.getuser())
+    if leaks:
+        raise Refused("Draw refused: inspect and rerun the source runs.", leaks)
+    DRAWN_PATH.write_text(fixture.model_dump_json(indent=2) + "\n")
+    print(f"{len(fixture.cases)} cases written to {DRAWN_PATH}")
 
 
 def draw_fixture(strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
@@ -122,6 +111,100 @@ def draw_fixture(strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
         shortfalls=[line for _, shortfalls in draws for line in shortfalls],
     )
     return JudgeFixture(draw=record, cases=[case for cases, _ in draws for case in cases])
+
+
+def draw(
+    strata: dict[str, list[JudgeCase]], quota: int, rng: random.Random
+) -> tuple[list[JudgeCase], list[str]]:
+    drawn: list[JudgeCase] = []
+    shortfalls: list[str] = []
+    for key in sorted(strata):
+        candidates = sorted(strata[key], key=lambda case: case.id)
+        if len(candidates) < quota:
+            shortfalls.append(f"{key}: {len(candidates)} candidates for a quota of {quota}")
+            drawn.extend(candidates)
+        else:
+            drawn.extend(rng.sample(candidates, quota))
+    return drawn, shortfalls
+
+
+def _sources(report_paths: dict[Path, Path]) -> list[SourceRun]:
+    """`report_paths` maps each export to the report its run wrote beside it."""
+    reports = {
+        str(export): SourceReport.model_validate_json(report.read_text())
+        for export, report in report_paths.items()
+    }
+    refusals = source_refusals(reports)
+    if refusals:
+        raise Refused("Draw refused.", refusals)
+    return [
+        source_run(str(export), export.read_bytes(), reports[str(export)])
+        for export in report_paths
+    ]
+
+
+def _lines(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def _strata_of(
+    honeypot_lines: list[dict[str, Any]], detection_lines: list[dict[str, Any]]
+) -> Strata:
+    cells = candidates_from_honeypot(honeypot_lines, MERGED_GROUND_TRUTH)
+    # Every benchmarked target is a stratum, so one with no judged case shows as a shortfall.
+    none_judged: dict[str, list[JudgeCase]] = {target.flaw_id: [] for target in ACCEPTANCE_TARGETS}
+    targets = none_judged | candidates_from_detection(detection_lines)
+    return Strata(
+        fail_cells=_cells_labeled(cells, EvalVerdict.FAIL),
+        pass_cells=_cells_labeled(cells, EvalVerdict.PASS),
+        targets=targets,
+    )
+
+
+def candidates_from_honeypot(
+    lines: Iterable[dict[str, Any]], ground_truth: GroundTruth
+) -> dict[Cell, list[JudgeCase]]:
+    """Every cell of the ground truth, with its distinct single-step cases."""
+    candidates: dict[Cell, dict[str, JudgeCase]] = {cell: {} for cell in ground_truth}
+    for line in lines:
+        cell = (line["tool_name"], AuditCategory(line["category"]))
+        if line["type"] != "single_step" or cell not in candidates:
+            continue
+        case = _candidate(line, CaseSource.HONEYPOT, f"cell {cell_key(cell)}")
+        candidates[cell][case.id] = case
+    return {cell: list(cases.values()) for cell, cases in candidates.items()}
+
+
+def _candidate(line: dict[str, Any], source: CaseSource, origin: str) -> JudgeCase:
+    inputs = JudgeInputs.model_validate(line)
+    return JudgeCase(
+        id=case_id(inputs), source=source, origin=origin, inputs=inputs, label=None, clause=None
+    )
+
+
+def candidates_from_detection(lines: Iterable[dict[str, Any]]) -> dict[str, list[JudgeCase]]:
+    candidates: dict[str, dict[str, JudgeCase]] = {}
+    for line in lines:
+        case = _candidate(line, CaseSource.CVE, f"cve {line['flaw_id']}")
+        candidates.setdefault(line["flaw_id"], {})[case.id] = case
+    return {flaw_id: list(cases.values()) for flaw_id, cases in candidates.items()}
+
+
+def _cells_labeled(
+    cells: dict[Cell, list[JudgeCase]], verdict: EvalVerdict
+) -> dict[str, list[JudgeCase]]:
+    return {
+        cell_key(cell): cases
+        for cell, cases in cells.items()
+        if MERGED_GROUND_TRUTH[cell] == verdict
+    }
+
+
+def _complemented(fixture: JudgeFixture, strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
+    refusals = complement_refusals(fixture, sources)
+    if refusals:
+        raise Refused("Complement refused.", refusals)
+    return complement(fixture, strata)
 
 
 def complement_refusals(fixture: JudgeFixture, sources: list[SourceRun]) -> list[str]:
@@ -163,89 +246,6 @@ def complement(fixture: JudgeFixture, strata: Strata) -> JudgeFixture:
         }
     )
     return JudgeFixture(draw=record, cases=[*fixture.cases, *added])
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=f"Draw the judge cases into {DRAWN_PATH.relative_to(REPO_ROOT)}"
-    )
-    parser.add_argument("--honeypot-export", action="append", required=True, type=Path)
-    parser.add_argument("--detection-export", required=True, type=Path)
-    parser.add_argument(
-        "--complement",
-        action="store_true",
-        help="draw one more case per PASS cell into the labeled drawn file (complement rule)",
-    )
-    return parser.parse_args()
-
-
-def _draw(args: argparse.Namespace) -> None:
-    reports = {path: path.with_name("honeypot_report.json") for path in args.honeypot_export}
-    reports[args.detection_export] = args.detection_export.with_name("detection_report.json")
-    sources = _sources(reports)
-    strata = _strata_of(
-        [line for path in args.honeypot_export for line in _lines(path)],
-        _lines(args.detection_export),
-    )
-    if args.complement:
-        fixture = _complemented(load_drawn(DRAWN_PATH), strata, sources)
-    else:
-        fixture = draw_fixture(strata, sources)
-    leaks = leaked_secrets(fixture.cases, str(Path.home()), getpass.getuser())
-    if leaks:
-        raise Refused("Draw refused: inspect and rerun the source runs.", leaks)
-    DRAWN_PATH.write_text(fixture.model_dump_json(indent=2) + "\n")
-    print(f"{len(fixture.cases)} cases written to {DRAWN_PATH}")
-
-
-def _sources(report_paths: dict[Path, Path]) -> list[SourceRun]:
-    """`report_paths` maps each export to the report its run wrote beside it."""
-    reports = {
-        str(export): SourceReport.model_validate_json(report.read_text())
-        for export, report in report_paths.items()
-    }
-    refusals = source_refusals(reports)
-    if refusals:
-        raise Refused("Draw refused.", refusals)
-    return [
-        source_run(str(export), export.read_bytes(), reports[str(export)])
-        for export in report_paths
-    ]
-
-
-def _lines(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-
-
-def _strata_of(
-    honeypot_lines: list[dict[str, Any]], detection_lines: list[dict[str, Any]]
-) -> Strata:
-    cells = candidates_from_honeypot(honeypot_lines, MERGED_GROUND_TRUTH)
-    # Every benchmarked target is a stratum, so one with no judged case shows as a shortfall.
-    none_judged: dict[str, list[JudgeCase]] = {target.flaw_id: [] for target in ACCEPTANCE_TARGETS}
-    targets = none_judged | candidates_from_detection(detection_lines)
-    return Strata(
-        fail_cells=_cells_labeled(cells, EvalVerdict.FAIL),
-        pass_cells=_cells_labeled(cells, EvalVerdict.PASS),
-        targets=targets,
-    )
-
-
-def _cells_labeled(
-    cells: dict[Cell, list[JudgeCase]], verdict: EvalVerdict
-) -> dict[str, list[JudgeCase]]:
-    return {
-        cell_key(cell): cases
-        for cell, cases in cells.items()
-        if MERGED_GROUND_TRUTH[cell] == verdict
-    }
-
-
-def _complemented(fixture: JudgeFixture, strata: Strata, sources: list[SourceRun]) -> JudgeFixture:
-    refusals = complement_refusals(fixture, sources)
-    if refusals:
-        raise Refused("Complement refused.", refusals)
-    return complement(fixture, strata)
 
 
 if __name__ == "__main__":

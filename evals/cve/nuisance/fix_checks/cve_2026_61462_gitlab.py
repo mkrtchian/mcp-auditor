@@ -76,6 +76,26 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def gitlab_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with GITLAB_LAUNCH_LOCK:
+        ensure_gitlab_responder()
+    name = f"mcp-auditor-kit-gitlab-r-{secrets.token_hex(4)}"
+    address = _per_launch_address()
+    try:
+        subprocess.run(
+            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
+            check=True,
+            capture_output=True,
+        )
+        time.sleep(1.0)
+        yield Launch(command="docker", args=server_args(image, address))
+    finally:
+        gitlab_rm(name)
+
+
 def responder_args(name: str, nonce: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
@@ -101,26 +121,6 @@ def server_args(image: str, responder_address: str) -> list[str]:
         image,
         *_SERVER_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def gitlab_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with GITLAB_LAUNCH_LOCK:
-        ensure_gitlab_responder()
-    name = f"mcp-auditor-kit-gitlab-r-{secrets.token_hex(4)}"
-    address = _per_launch_address()
-    try:
-        subprocess.run(
-            ["docker", *responder_args(name, spec.nonces[WITNESS.id], address)],
-            check=True,
-            capture_output=True,
-        )
-        time.sleep(1.0)
-        yield Launch(command="docker", args=server_args(image, address))
-    finally:
-        gitlab_rm(name)
 
 
 def _per_launch_address() -> str:

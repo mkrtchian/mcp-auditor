@@ -38,12 +38,6 @@ def with_redaction_notice(prompt: str) -> str:
     return f"{prompt}\n\n{REDACTION_NOTICE}"
 
 
-def format_tool_header(tool: ToolDefinition) -> str:
-    description = tool.description or "No description provided"
-    schema_json = json.dumps(tool.input_schema, indent=2)
-    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
-
-
 def build_attack_generation_prompt(
     tool: ToolDefinition,
     budget: int,
@@ -85,6 +79,12 @@ Keep every literal short. An integer beyond any plausible limit needs at most 10
 {NON_DESTRUCTIVE_CONSTRAINT}
 
 Always send arguments that conform to the schema's type constraints. The goal is to test the TOOL's logic, not the schema validator."""
+
+
+def format_tool_header(tool: ToolDefinition) -> str:
+    description = tool.description or "No description provided"
+    schema_json = json.dumps(tool.input_schema, indent=2)
+    return f"Tool description: {description}\n\nInput schema:\n```json\n{schema_json}\n```"
 
 
 def build_context_section(attack_context: AttackContext | None) -> str:

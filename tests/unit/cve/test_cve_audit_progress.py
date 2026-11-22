@@ -5,14 +5,6 @@ import tests.unit.cve.support.test_cve_audit_progress_given as given
 from evals.cve.audit_progress import AuditProgress
 
 
-def _task(progress: Progress, description: str):
-    return next(task for task in progress.tasks if task.description == description)
-
-
-def _descriptions(progress: Progress) -> list[str]:
-    return [task.description for task in progress.tasks]
-
-
 def test_the_bar_opens_preparing():
     progress = given.a_progress()
 
@@ -20,6 +12,14 @@ def test_the_bar_opens_preparing():
 
     assert _descriptions(progress) == ["Preparing"]
     assert _task(progress, "Preparing").total is None
+
+
+def _task(progress: Progress, description: str):
+    return next(task for task in progress.tasks if task.description == description)
+
+
+def _descriptions(progress: Progress) -> list[str]:
+    return [task.description for task in progress.tasks]
 
 
 def test_announcing_swaps_preparing_for_auditing():

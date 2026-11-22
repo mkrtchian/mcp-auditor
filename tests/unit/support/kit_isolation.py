@@ -13,6 +13,16 @@ from pathlib import Path
 from evals.honeypots import REPO_ROOT as REPO_ROOT
 
 
+def scan_tree(root: Path) -> dict[str, list[str]]:
+    """Each .py file under root that imports mcp_auditor, mapped to the offending names."""
+    found: dict[str, list[str]] = {}
+    for path in sorted(root.rglob("*.py")):
+        offenders = mcp_auditor_imports(path.read_text(), str(path))
+        if offenders:
+            found[str(path)] = offenders
+    return found
+
+
 def mcp_auditor_imports(source: str, filename: str = "<string>") -> list[str]:
     """Every mcp_auditor import (the package or a submodule) in one Python source, by name."""
     offenders: list[str] = []
@@ -26,16 +36,6 @@ def mcp_auditor_imports(source: str, filename: str = "<string>") -> list[str]:
         ):
             offenders.append(node.module)
     return offenders
-
-
-def scan_tree(root: Path) -> dict[str, list[str]]:
-    """Each .py file under root that imports mcp_auditor, mapped to the offending names."""
-    found: dict[str, list[str]] = {}
-    for path in sorted(root.rglob("*.py")):
-        offenders = mcp_auditor_imports(path.read_text(), str(path))
-        if offenders:
-            found[str(path)] = offenders
-    return found
 
 
 def kit_modules(out: Path) -> list[str]:

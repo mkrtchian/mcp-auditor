@@ -105,6 +105,16 @@ def dry_run_payloads() -> list[AuditPayload]:
     ]
 
 
+def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
+    report = a_report_with_two_tools()
+    report.tool_reports[0].coverage_gap = CoverageGap(
+        requested_cases=10,
+        received_cases=7,
+        missing_categories=[AuditCategory.INJECTION],
+    )
+    return report
+
+
 def a_report_with_two_tools() -> AuditReport:
     return AuditReport(
         server_command="python server.py",
@@ -126,16 +136,6 @@ def a_report_with_two_tools() -> AuditReport:
     )
 
 
-def a_report_with_a_coverage_gap_on_get_user() -> AuditReport:
-    report = a_report_with_two_tools()
-    report.tool_reports[0].coverage_gap = CoverageGap(
-        requested_cases=10,
-        received_cases=7,
-        missing_categories=[AuditCategory.INJECTION],
-    )
-    return report
-
-
 def a_report_with_calls_not_sent_on_get_user() -> AuditReport:
     report = a_report_with_two_tools()
     report.tool_reports[0].coverage_gap = a_gap_with_calls_not_sent(UnsentCause.TOOL_TIMING_OUT)
@@ -153,6 +153,12 @@ def a_report_throttled(throttled_requests: int) -> AuditReport:
 REFUSAL_MESSAGE = "Invalid prompt: flagged as potentially violating our usage policy"
 
 
+def a_report_with_a_refused_chain_planning() -> AuditReport:
+    report = a_report_with_two_tools()
+    report.missed_model_calls = [a_refused_chain_planning_on_list_items()]
+    return report
+
+
 def a_refused_chain_planning_on_list_items() -> MissedModelCall:
     return MissedModelCall(
         tool_name="list_items",
@@ -160,12 +166,6 @@ def a_refused_chain_planning_on_list_items() -> MissedModelCall:
         cause=MissCause.PROVIDER_REFUSAL,
         detail=REFUSAL_MESSAGE,
     )
-
-
-def a_report_with_a_refused_chain_planning() -> AuditReport:
-    report = a_report_with_two_tools()
-    report.missed_model_calls = [a_refused_chain_planning_on_list_items()]
-    return report
 
 
 def _a_passing_case(tool_name: str) -> TestCase:

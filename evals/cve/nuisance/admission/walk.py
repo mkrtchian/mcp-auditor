@@ -49,40 +49,18 @@ class NuisanceServer:
     mark: ServerMark | None
 
 
-def server_of(identifier: str, walk_inputs: WalkInputs) -> str:
-    server = walk_inputs.server_by_flaw.get(identifier)
-    if server is None:
-        raise ValueError(f"no classification for flaw {identifier}")
-    return server
-
-
-def census_flaws_of(server_package: str, walk_inputs: WalkInputs) -> list[str]:
-    return [
-        flaw.identifier
-        for flaw in walk_inputs.census.flaws
-        if server_of(flaw.identifier, walk_inputs) == server_package
-    ]
-
-
-def candidate_counted_flaws(server_package: str, walk_inputs: WalkInputs) -> list[str]:
-    return [
-        flaw
-        for flaw in census_flaws_of(server_package, walk_inputs)
-        if _may_count(flaw, walk_inputs)
-    ]
-
-
-def acceptance_target_servers(walk_inputs: WalkInputs) -> set[str]:
-    """Every benchmark flaw's server, the dropped targets' included."""
-    classified = _classified(walk_inputs.census)
-    return {server_of(flaw, walk_inputs) for flaw in ACCEPTANCE_TARGET_FLAWS if flaw in classified}
-
-
 def nuisance_acceptance_servers(walk_inputs: WalkInputs) -> set[str]:
     classified = _classified(walk_inputs.census)
     return {
         server_of(t.flaw_id, walk_inputs) for t in ACCEPTANCE_TARGETS if t.flaw_id in classified
     }
+
+
+def server_of(identifier: str, walk_inputs: WalkInputs) -> str:
+    server = walk_inputs.server_by_flaw.get(identifier)
+    if server is None:
+        raise ValueError(f"no classification for flaw {identifier}")
+    return server
 
 
 def _classified(census: Census) -> set[str]:
@@ -102,6 +80,22 @@ def reached_servers(walk_inputs: WalkInputs) -> ReachedServers:
         if not candidate_counted_flaws(server, walk_inputs)
     ]
     return ReachedServers(nuisance_population(walk_inputs), without_candidates)
+
+
+def candidate_counted_flaws(server_package: str, walk_inputs: WalkInputs) -> list[str]:
+    return [
+        flaw
+        for flaw in census_flaws_of(server_package, walk_inputs)
+        if _may_count(flaw, walk_inputs)
+    ]
+
+
+def census_flaws_of(server_package: str, walk_inputs: WalkInputs) -> list[str]:
+    return [
+        flaw.identifier
+        for flaw in walk_inputs.census.flaws
+        if server_of(flaw.identifier, walk_inputs) == server_package
+    ]
 
 
 def nuisance_population(walk_inputs: WalkInputs) -> list[NuisanceServer]:
@@ -124,6 +118,12 @@ def nuisance_population(walk_inputs: WalkInputs) -> list[NuisanceServer]:
             )
         )
     return population
+
+
+def acceptance_target_servers(walk_inputs: WalkInputs) -> set[str]:
+    """Every benchmark flaw's server, the dropped targets' included."""
+    classified = _classified(walk_inputs.census)
+    return {server_of(flaw, walk_inputs) for flaw in ACCEPTANCE_TARGET_FLAWS if flaw in classified}
 
 
 @dataclass(frozen=True)

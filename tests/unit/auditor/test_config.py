@@ -64,10 +64,6 @@ def test_unknown_provider_names_every_provider(monkeypatch: pytest.MonkeyPatch) 
         assert provider in str(error.value)
 
 
-def _settings(provider: str, reasoning: str = "") -> Settings:
-    return Settings(provider=provider, model="", judge_model="", reasoning=reasoning)
-
-
 def test_google_resolves_minimal_reasoning_for_its_default_model() -> None:
     settings = _settings("google")
 
@@ -75,6 +71,10 @@ def test_google_resolves_minimal_reasoning_for_its_default_model() -> None:
 
     assert model == "gemini-3.5-flash-lite"
     assert settings.resolve_reasoning(model) == "minimal"
+
+
+def _settings(provider: str, reasoning: str = "") -> Settings:
+    return Settings(provider=provider, model="", judge_model="", reasoning=reasoning)
 
 
 def test_anthropic_resolves_low_for_its_default_model() -> None:

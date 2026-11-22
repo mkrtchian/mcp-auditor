@@ -35,17 +35,6 @@ class SendAttempt:
     relaunch: Relaunch | None = None
 
 
-def is_timeout(response: ToolResponse) -> bool:
-    return response.error_type == "TimeoutError"
-
-
-def is_lost_connection(response: ToolResponse) -> bool:
-    return response.is_error and any(
-        response.error_type == error_type and (content is None or response.content == content)
-        for error_type, content in LOST_CONNECTION_RESPONSES
-    )
-
-
 class WatchStep(StrEnum):
     NOTHING = "nothing"
     PING = "ping"
@@ -122,3 +111,14 @@ class ServerWatch:
         self._stopped[tool_name] = UnsentCause.TOOL_TIMING_OUT
         self._stopped_last_for_timing_out = tool_name
         return WatchStep.NOTHING
+
+
+def is_timeout(response: ToolResponse) -> bool:
+    return response.error_type == "TimeoutError"
+
+
+def is_lost_connection(response: ToolResponse) -> bool:
+    return response.is_error and any(
+        response.error_type == error_type and (content is None or response.content == content)
+        for error_type, content in LOST_CONNECTION_RESPONSES
+    )

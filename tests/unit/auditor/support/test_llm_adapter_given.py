@@ -101,6 +101,11 @@ def token_details(cache_read: int, reasoning: int) -> dict[str, dict[str, int]]:
     }
 
 
+def a_cut_completion(usage: CompletionUsage | None) -> openai.LengthFinishReasonError:
+    message = ChatCompletionMessage(role="assistant", content='{"value": "c')
+    return openai.LengthFinishReasonError(completion=a_completion("length", message, usage))
+
+
 def a_completion(
     finish_reason: Literal["length", "content_filter"],
     message: ChatCompletionMessage,
@@ -114,11 +119,6 @@ def a_completion(
         choices=[Choice(index=0, finish_reason=finish_reason, message=message)],
         usage=usage,
     )
-
-
-def a_cut_completion(usage: CompletionUsage | None) -> openai.LengthFinishReasonError:
-    message = ChatCompletionMessage(role="assistant", content='{"value": "c')
-    return openai.LengthFinishReasonError(completion=a_completion("length", message, usage))
 
 
 async def the_openai_request_body(schema: type[BaseModel]) -> dict[str, Any]:

@@ -33,10 +33,6 @@ def walk_inputs_with_two_queue_servers(addition_size: int) -> WalkInputs:
     return WalkInputs(census=census, record=walk_given.an_empty_record(addition_size))
 
 
-def the_queue_packages() -> list[str]:
-    return [f"npm:{flaw}" for flaw in sorted(_QUEUE_CENSUS_FLAWS, key=draw_digest)[1:]]
-
-
 def admitting_the_queue_servers() -> NuisanceAdmission:
     """Listed against their draw order, so the size check has to sort them."""
     servers = [
@@ -46,6 +42,10 @@ def admitting_the_queue_servers() -> NuisanceAdmission:
         for package in reversed(the_queue_packages())
     ]
     return admitting(*servers)
+
+
+def the_queue_packages() -> list[str]:
+    return [f"npm:{flaw}" for flaw in sorted(_QUEUE_CENSUS_FLAWS, key=draw_digest)[1:]]
 
 
 def a_recorded_exit(

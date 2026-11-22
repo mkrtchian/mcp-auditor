@@ -5,10 +5,6 @@ from evals.cve.census.sources import SourceName
 UNRELATED = {"summary": "Overflow in an image codec", "details": "A crafted PNG crashes it."}
 
 
-def a_package_term(text: str) -> PrefilterTerm:
-    return PrefilterTerm(text=text, kind="package", added_for="GHSA-gap", reason="a missed server")
-
-
 def test_mcp_in_the_summary_matches_without_regard_to_case():
     record = given.a_record(summary="Path traversal in the MCP filesystem server")
 
@@ -37,6 +33,10 @@ def test_a_package_term_matches_the_name_after_the_ecosystem():
     record = given.a_record(**UNRELATED, packages=["npm:@scope/name"])
 
     assert matches(record, [a_package_term("@Scope/Name")])
+
+
+def a_package_term(text: str) -> PrefilterTerm:
+    return PrefilterTerm(text=text, kind="package", added_for="GHSA-gap", reason="a missed server")
 
 
 def test_a_package_term_matches_a_whole_cpe_product():

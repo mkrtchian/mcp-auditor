@@ -34,6 +34,13 @@ def honeypots() -> list[HoneypotConfig]:
     ]
 
 
+def a_run(comparisons: dict[Cell, CellComparison], runs: Runs | None = None) -> RunAgainstBaseline:
+    return RunAgainstBaseline(
+        comparisons={cell_key(cell): comparison for cell, comparison in comparisons.items()},
+        runs=runs if runs is not None else baseline_runs(),
+    )
+
+
 def baseline_runs(
     overrides: dict[Cell, list[Observation | None]] | None = None, runs: int = 3
 ) -> Runs:
@@ -51,13 +58,6 @@ def baseline_runs(
         }
         for index in range(runs)
     ]
-
-
-def a_run(comparisons: dict[Cell, CellComparison], runs: Runs | None = None) -> RunAgainstBaseline:
-    return RunAgainstBaseline(
-        comparisons={cell_key(cell): comparison for cell, comparison in comparisons.items()},
-        runs=runs if runs is not None else baseline_runs(),
-    )
 
 
 def comparison(outcome: CellOutcome, retests: list[bool] | None = None) -> CellComparison:

@@ -34,16 +34,6 @@ class _FakeNonces:
         return "mcpaudit-fakeaccount"
 
 
-def _an_env_place() -> Place:
-    return Place(
-        id="fict-env",
-        family="fictional",
-        reaches=frozenset({"command_execution"}),
-        kind=PlaceKind.ENV,
-        coordinates=Coordinates(PlaceKind.ENV, name="FICT"),
-    )
-
-
 async def test_the_git_init_exploit_stages_exact_relative_paths_outside_the_checkout():
     client = FakeMCPClient([])
 
@@ -167,6 +157,16 @@ def test_an_env_place_is_planted_through_arguments_with_no_docker():
         assert "65534:65534" in args
         assert value_after(args, "-w") == PROJECT
         assert given.CONTROL_PLANE_NETWORK in values_after(args, "--network")
+
+
+def _an_env_place() -> Place:
+    return Place(
+        id="fict-env",
+        family="fictional",
+        reaches=frozenset({"command_execution"}),
+        kind=PlaceKind.ENV,
+        coordinates=Coordinates(PlaceKind.ENV, name="FICT"),
+    )
 
 
 @pytest.mark.parametrize(

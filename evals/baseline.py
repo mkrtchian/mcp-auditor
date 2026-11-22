@@ -74,9 +74,10 @@ class Baseline(BaseModel):
         ]
 
 
-def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
-    lines = sorted(f"{cell_key(cell)}={verdict.value}" for cell, verdict in ground_truth.items())
-    return hashlib.sha256("\n".join(lines).encode()).hexdigest()
+def fingerprint_sources(sources: Sequence[str]) -> str:
+    """Each module is fingerprinted on its own, so every module docstring is left out."""
+    digests = "\n".join(fingerprint_source(source) for source in sources)
+    return hashlib.sha256(digests.encode()).hexdigest()
 
 
 @functools.cache
@@ -89,12 +90,6 @@ def fingerprint_source(source: str) -> str:
     if ast.get_docstring(module, clean=False) is not None:
         module.body = module.body[1:]
     return hashlib.sha256(ast.dump(module).encode()).hexdigest()
-
-
-def fingerprint_sources(sources: Sequence[str]) -> str:
-    """Each module is fingerprinted on its own, so every module docstring is left out."""
-    digests = "\n".join(fingerprint_source(source) for source in sources)
-    return hashlib.sha256(digests.encode()).hexdigest()
 
 
 def condition_mismatches(recorded: BaselineConditions, candidate: BaselineConditions) -> list[str]:
@@ -173,6 +168,11 @@ def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[st
     for index, run in enumerate(baseline.runs):
         problems += _run_problems(index, run, ground_truth if same_ground_truth else None)
     return problems
+
+
+def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
+    lines = sorted(f"{cell_key(cell)}={verdict.value}" for cell, verdict in ground_truth.items())
+    return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
 def _run_count_problems(baseline: Baseline) -> list[str]:

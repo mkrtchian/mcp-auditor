@@ -17,10 +17,6 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     return display_given.a_captured_console(monkeypatch, nuisance_gate_console)
 
 
-def a_red_report(throttled_requests: int = 0) -> NuisanceGateReport:
-    return a_report_of(a_held_server_beside_a_regression(), throttled_requests)
-
-
 def a_not_gated_report() -> NuisanceGateReport:
     return a_report_of(a_not_gated_server_with_an_alarm())
 
@@ -33,6 +29,10 @@ def a_report_that_recorded() -> NuisanceGateReport:
             "recording_refused": ["the tree changed during the runs"],
         }
     )
+
+
+def a_red_report(throttled_requests: int = 0) -> NuisanceGateReport:
+    return a_report_of(a_held_server_beside_a_regression(), throttled_requests)
 
 
 def a_report_with_a_server_not_run(reason: str) -> NuisanceGateReport:

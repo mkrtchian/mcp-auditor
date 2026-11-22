@@ -142,19 +142,6 @@ def _blocked_count(report: AuditReport) -> int:
     )
 
 
-def describe_coverage_gap(gap: CoverageGap) -> str:
-    description = f"{gap.received_cases} cases generated for {gap.requested_cases} requested"
-    description += describe_unsent_calls(gap)
-    if gap.missing_categories:
-        missing = ", ".join(category.value for category in gap.missing_categories)
-        description += f", missing categories: {missing}"
-    return description
-
-
-def describe_missed_model_call(missed: MissedModelCall) -> str:
-    return f'{missed.kind.replace("_", " ")}, "{missed.detail}"'
-
-
 def _render_tool_section(tool_report: ToolReport, report: AuditReport) -> str:
     name = tool_report.tool.name
     lines = [f"\n## {name}\n"]
@@ -174,6 +161,19 @@ def _render_tool_section(tool_report: ToolReport, report: AuditReport) -> str:
     for chain in tool_report.chains:
         lines.append(_render_chain_section(chain))
     return "\n".join(lines)
+
+
+def describe_coverage_gap(gap: CoverageGap) -> str:
+    description = f"{gap.received_cases} cases generated for {gap.requested_cases} requested"
+    description += describe_unsent_calls(gap)
+    if gap.missing_categories:
+        missing = ", ".join(category.value for category in gap.missing_categories)
+        description += f", missing categories: {missing}"
+    return description
+
+
+def describe_missed_model_call(missed: MissedModelCall) -> str:
+    return f'{missed.kind.replace("_", " ")}, "{missed.detail}"'
 
 
 def _render_case_section(case: TestCase) -> str:
@@ -256,14 +256,14 @@ def _truncate_chain_response(text: str, max_length: int = 80) -> str:
     return text[: max_length - 1] + "..."
 
 
-def format_severity_breakdown(counts: Counter[Severity]) -> str:
-    sorted_severities = sorted(counts, reverse=True)
-    return ", ".join(f"{counts[sev]} {sev.value}" for sev in sorted_severities)
-
-
 def _severity_breakdown(findings: list[JudgeResult]) -> str:
     counts: Counter[Severity] = Counter(f.severity for f in findings)
     return format_severity_breakdown(counts)
+
+
+def format_severity_breakdown(counts: Counter[Severity]) -> str:
+    sorted_severities = sorted(counts, reverse=True)
+    return ", ".join(f"{counts[sev]} {sev.value}" for sev in sorted_severities)
 
 
 @dataclass

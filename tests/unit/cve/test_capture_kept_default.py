@@ -9,13 +9,6 @@ from evals.capture_defaults import FORM_SUFFIX
 from evals.capture_stand_in import main
 
 
-def _capture_keeping(out: Path, scheme: str, seen: list[httpx.URL]) -> None:
-    main(
-        ["--out", str(out), "--keep-default", scheme, given.AN_ADDRESS_HOST_URL],
-        transport=given.a_recording_host(seen),
-    )
-
-
 def test_a_kept_default_is_carried_over_from_the_old_file_byte_for_byte(tmp_path: Path):
     out = given.an_old_capture(tmp_path)
 
@@ -23,6 +16,13 @@ def test_a_kept_default_is_carried_over_from_the_old_file_byte_for_byte(tmp_path
 
     http = json.loads(out.read_text())["defaults"][0]
     assert json.dumps(http) == json.dumps(given.OLD_HTTP_DEFAULT)
+
+
+def _capture_keeping(out: Path, scheme: str, seen: list[httpx.URL]) -> None:
+    main(
+        ["--out", str(out), "--keep-default", scheme, given.AN_ADDRESS_HOST_URL],
+        transport=given.a_recording_host(seen),
+    )
 
 
 def test_no_request_goes_to_the_kept_scheme_and_the_other_is_probed_as_today(tmp_path: Path):

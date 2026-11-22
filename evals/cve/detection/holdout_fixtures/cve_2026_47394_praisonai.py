@@ -56,6 +56,14 @@ KEPT_PLACES: tuple[str, ...] = (
 AIM = re.compile(r"/")
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        for path in _read_paths(places[place_id]):
+            await client.call_tool(TOOL, {"file_path": path})
+
+    return run
+
+
 def _read_paths(place: Place) -> tuple[str, ...]:
     if place.kind is PlaceKind.HOSTNAME:
         return ("/etc/hostname",)
@@ -69,14 +77,6 @@ def _read_paths(place: Place) -> tuple[str, ...]:
     else:
         raise ValueError(f"{place.id}: a file place with no path coordinate")
     return tuple(resolve_container_path(raw, WORKING_DIRECTORY) for raw in raws)
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        for path in _read_paths(places[place_id]):
-            await client.call_tool(TOOL, {"file_path": path})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

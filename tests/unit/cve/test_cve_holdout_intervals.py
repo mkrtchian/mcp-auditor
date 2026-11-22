@@ -22,12 +22,6 @@ from evals.cve.holdout_intervals import (
 TOL = 1e-9
 
 
-def _close(interval: Interval, low: float, high: float) -> bool:
-    return math.isclose(interval.low, low, abs_tol=TOL) and math.isclose(
-        interval.high, high, abs_tol=TOL
-    )
-
-
 def test_z_is_the_two_sided_95_percent_normal_quantile():
     # scipy.stats.norm.ppf(0.975) == 1.959963984540054
     assert Z_95 == 1.959963984540054
@@ -48,6 +42,12 @@ def test_z_is_the_two_sided_95_percent_normal_quantile():
 )
 def test_wilson_matches_reference(count: float, n: int, low: float, high: float):
     assert _close(wilson(count, n), low, high)
+
+
+def _close(interval: Interval, low: float, high: float) -> bool:
+    return math.isclose(interval.low, low, abs_tol=TOL) and math.isclose(
+        interval.high, high, abs_tol=TOL
+    )
 
 
 # Clopper-Pearson via Beta quantiles:

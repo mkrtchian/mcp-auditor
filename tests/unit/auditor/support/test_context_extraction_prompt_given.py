@@ -10,6 +10,11 @@ from mcp_auditor.domain import (
 )
 
 
+def a_tool_report_with_a_blocked_case() -> ToolReport:
+    report = a_tool_report()
+    return report.model_copy(update={"cases": [*report.cases, _a_blocked_case()]})
+
+
 def a_tool_report(
     tool_name: str = "get_user",
     response: str | None = "some response",
@@ -27,11 +32,6 @@ def a_tool_report(
     )
     tool = ToolDefinition(name=tool_name, description="Fetch user by ID", input_schema={})
     return ToolReport(tool=tool, cases=[case])
-
-
-def a_tool_report_with_a_blocked_case() -> ToolReport:
-    report = a_tool_report()
-    return report.model_copy(update={"cases": [*report.cases, _a_blocked_case()]})
 
 
 def a_tool_report_with_only_a_blocked_case() -> ToolReport:

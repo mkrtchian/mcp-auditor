@@ -37,6 +37,11 @@ def a_target(flaw_id: str = FILESYSTEM, **changes: Any) -> Target:
     return an_acceptance_target(flaw_id, **{"tools_filter": None, **changes})
 
 
+def three_detections() -> list[Outcome]:
+    report = a_report(ProviderUsage(input_tokens=10, output_tokens=20), ProviderUsage())
+    return [graded(TargetStatus.DETECTED, report, aimed=True) for _ in range(3)]
+
+
 def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
     base = grammar.a_report()  # one tool_report, so tools_count is 1
     return base.model_copy(update={"provider_usage": provider, "judge_usage": judge})
@@ -44,11 +49,6 @@ def a_report(provider: ProviderUsage, judge: ProviderUsage) -> AuditReport:
 
 def graded(status: TargetStatus, report: AuditReport, **grade_fields: Any) -> GradedAudit:
     return GradedAudit(RunGrade(status=status, **grade_fields), report)
-
-
-def three_detections() -> list[Outcome]:
-    report = a_report(ProviderUsage(input_tokens=10, output_tokens=20), ProviderUsage())
-    return [graded(TargetStatus.DETECTED, report, aimed=True) for _ in range(3)]
 
 
 def scripted(outcomes_by_id: Mapping[str, list[Outcome]]) -> Audit:

@@ -81,6 +81,24 @@ _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 
 
+@contextmanager
+def jenkins_env(
+    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
+) -> Generator[Launch]:
+    with JENKINS_LAUNCH_LOCK:
+        ensure_jenkins_image()
+        ensure_closed_network(JENKINS_BRIDGE, "--subnet", JENKINS_SUBNET)
+    name = f"mcp-auditor-kit-jenkins-{secrets.token_hex(4)}"
+    address = _per_launch_address()
+    try:
+        _run("docker", *controller_args(name, address))
+        wait_until_up(name)
+        _run("docker", *plant_args(name, spec.nonces[WITNESS.id]))
+        yield Launch(command="docker", args=server_args(image, address))
+    finally:
+        subprocess.run(["docker", "rm", "-f", "-v", name], check=False, capture_output=True)
+
+
 def controller_args(name: str, address: str) -> list[str]:
     # The per-launch Jenkins the witness is planted in: the backend image, the confinement, no
     # capability, its own address on the backend's bridge.
@@ -117,24 +135,6 @@ def server_args(image: str, controller_address: str) -> list[str]:
         image,
         *_SERVER_LAUNCH,
     ]  # fmt: skip
-
-
-@contextmanager
-def jenkins_env(
-    image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
-) -> Generator[Launch]:
-    with JENKINS_LAUNCH_LOCK:
-        ensure_jenkins_image()
-        ensure_closed_network(JENKINS_BRIDGE, "--subnet", JENKINS_SUBNET)
-    name = f"mcp-auditor-kit-jenkins-{secrets.token_hex(4)}"
-    address = _per_launch_address()
-    try:
-        _run("docker", *controller_args(name, address))
-        wait_until_up(name)
-        _run("docker", *plant_args(name, spec.nonces[WITNESS.id]))
-        yield Launch(command="docker", args=server_args(image, address))
-    finally:
-        subprocess.run(["docker", "rm", "-f", "-v", name], check=False, capture_output=True)
 
 
 def _per_launch_address() -> str:

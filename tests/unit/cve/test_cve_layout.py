@@ -90,15 +90,6 @@ def _git(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", *args], capture_output=True, text=True)
 
 
-def _git_log_patch(bare: Path) -> str:
-    return subprocess.run(
-        ["git", "--git-dir", str(bare), "log", "--all", "-p"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-
-
 def test_an_empty_node_set_still_materialises_the_full_tree_with_neutral_content(tmp_path: Path):
     build_layout(tmp_path, [])
 
@@ -108,6 +99,15 @@ def test_an_empty_node_set_still_materialises_the_full_tree_with_neutral_content
     assert NEUTRAL_TOKEN in (tmp_path / ".env").read_text()
     assert NEUTRAL_TOKEN in (tmp_path / "app.git" / "config").read_text()
     assert NEUTRAL_TOKEN in _git_log_patch(tmp_path / "app.git")
+
+
+def _git_log_patch(bare: Path) -> str:
+    return subprocess.run(
+        ["git", "--git-dir", str(bare), "log", "--all", "-p"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
 
 
 def test_the_checkout_config_names_the_bare_as_its_origin(tmp_path: Path):

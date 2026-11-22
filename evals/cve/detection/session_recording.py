@@ -38,17 +38,6 @@ class WrittenBaseline:
     leaves_gated_set: bool
 
 
-def load_checked(directory: Path, title: str) -> Baselines:
-    try:
-        baselines = load_baselines(directory)
-    except ValueError as error:
-        raise Refused(title, [f"{directory} holds an invalid baseline file: {error}"]) from error
-    problems = [problem for b in baselines.values() for problem in baseline_integrity(b)]
-    if problems:
-        raise Refused(title, problems)
-    return baselines
-
-
 def recording_tree(session: GatedSession) -> TreeState:
     """What refuses a recording already before the runs, so no paid run is wasted."""
     if session.options.no_baseline:
@@ -113,6 +102,17 @@ def _recording_drift(session: GatedSession, tree: TreeState) -> list[str]:
     if changed:
         drift.append("the baseline files changed during the runs: record again")
     return drift
+
+
+def load_checked(directory: Path, title: str) -> Baselines:
+    try:
+        baselines = load_baselines(directory)
+    except ValueError as error:
+        raise Refused(title, [f"{directory} holds an invalid baseline file: {error}"]) from error
+    problems = [problem for b in baselines.values() for problem in baseline_integrity(b)]
+    if problems:
+        raise Refused(title, problems)
+    return baselines
 
 
 def _recordings(

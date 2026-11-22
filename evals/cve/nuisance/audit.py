@@ -47,26 +47,6 @@ _INCOMPLETE_CAUSES = frozenset(
 )
 
 
-@contextmanager
-def nuisance_environment(
-    server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
-) -> Generator[Launch]:
-    """The launch of one server on its patched image. With no backend fixture it is the
-    single-container launch under the confinement, with no mount and no network, its
-    public names served by a holder when it declares some; with one it delegates to the
-    provisioner of the registered lifecycle, which brings the backend up, shared or for this
-    launch alone, and yields the server launch wired to it. The lifecycle owns the closed network
-    that joins the server to its backend and to nothing else, if it joins one."""
-    if server.backend is None:
-        with single_container_launch_args(
-            image_tag(server.service), server.host, server.launch
-        ) as args:
-            yield Launch(command="docker", args=args)
-    else:
-        with provisioner_of(backends[server.backend.provisioner].lifecycle)(server) as launch:
-            yield launch
-
-
 @dataclass(frozen=True)
 class LaunchFailed:
     reason: str
@@ -129,6 +109,26 @@ async def audit_once(
     _print_incidents(server, audit.report, auditor.auditor.report_detail)
     print_lost_connections(server.server_package, audit.health)
     return NuisanceAudit(audit.report, audit.health)
+
+
+@contextmanager
+def nuisance_environment(
+    server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
+) -> Generator[Launch]:
+    """The launch of one server on its patched image. With no backend fixture it is the
+    single-container launch under the confinement, with no mount and no network, its
+    public names served by a holder when it declares some; with one it delegates to the
+    provisioner of the registered lifecycle, which brings the backend up, shared or for this
+    launch alone, and yields the server launch wired to it. The lifecycle owns the closed network
+    that joins the server to its backend and to nothing else, if it joins one."""
+    if server.backend is None:
+        with single_container_launch_args(
+            image_tag(server.service), server.host, server.launch
+        ) as args:
+            yield Launch(command="docker", args=args)
+    else:
+        with provisioner_of(backends[server.backend.provisioner].lifecycle)(server) as launch:
+            yield launch
 
 
 def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:

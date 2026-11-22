@@ -25,6 +25,13 @@ class AuditVariant:
     tools: frozenset[str] | None = None
 
 
+def a_scripted_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
+    # One case per tool, judged and summarized by the same scripted model.
+    batch = TestCaseBatch(cases=[a_payload(arguments={"path": "/outside/flag"})])
+    llm = FakeLLM([batch, a_judgment(), AttackContext()])
+    return an_unconfined_audit(launch, AuditVariant(llm=llm, tools=tools))
+
+
 def an_unconfined_audit(launch: ServerLaunch, variant: AuditVariant) -> Audit:
     config = AuditConfig(
         run_options=AuditRunOptions(budget=1, chains=0, resume=variant.resume, dry_run=False),
@@ -39,10 +46,3 @@ def an_unconfined_audit(launch: ServerLaunch, variant: AuditVariant) -> Audit:
         analysts=Analysts(llm=variant.llm, judge=variant.llm, settings=Settings()),
         display=AuditDisplay(console=Console(file=variant.output, width=200)),
     )
-
-
-def a_scripted_audit_of(launch: ServerLaunch, tools: frozenset[str] | None = None) -> Audit:
-    # One case per tool, judged and summarized by the same scripted model.
-    batch = TestCaseBatch(cases=[a_payload(arguments={"path": "/outside/flag"})])
-    llm = FakeLLM([batch, a_judgment(), AttackContext()])
-    return an_unconfined_audit(launch, AuditVariant(llm=llm, tools=tools))

@@ -38,24 +38,10 @@ _NO_SCOPE = RouteObservations(
 )
 
 
-def _layout_place(place_id: str, anchor: LayoutAnchor, relpath: str, kind: PlaceKind) -> Place:
-    return Place(
-        id=place_id,
-        family="deployment layout",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=kind,
-        coordinates=Coordinates(kind, anchor=anchor, relpath=relpath),
-    )
-
-
-def _catalogue_place() -> Place:
-    return Place(
-        id="etc-shadow",
-        family="fictional",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path="/etc/shadow"),
-    )
+def golden_entries() -> dict[str, bool]:
+    return {
+        name: has_route(place, observations) for name, (place, observations) in _cases().items()
+    }
 
 
 def _cases() -> dict[str, tuple[Place, RouteObservations]]:
@@ -76,10 +62,24 @@ def _cases() -> dict[str, tuple[Place, RouteObservations]]:
     }
 
 
-def golden_entries() -> dict[str, bool]:
-    return {
-        name: has_route(place, observations) for name, (place, observations) in _cases().items()
-    }
+def _layout_place(place_id: str, anchor: LayoutAnchor, relpath: str, kind: PlaceKind) -> Place:
+    return Place(
+        id=place_id,
+        family="deployment layout",
+        reaches=frozenset({"arbitrary_read"}),
+        kind=kind,
+        coordinates=Coordinates(kind, anchor=anchor, relpath=relpath),
+    )
+
+
+def _catalogue_place() -> Place:
+    return Place(
+        id="etc-shadow",
+        family="fictional",
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path="/etc/shadow"),
+    )
 
 
 if __name__ == "__main__":

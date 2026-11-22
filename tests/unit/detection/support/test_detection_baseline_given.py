@@ -42,6 +42,11 @@ def a_docker_directory(tmp_path: Path) -> Path:
     return directory
 
 
+def a_target_keeping_an_endpoint() -> tuple[Target, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_ENDPOINT_ID,))
+    return target, {KEPT_ENDPOINT_ID: _an_endpoint_record()}
+
+
 def _an_endpoint_record(
     *, path: str = "/fictional/meta", family: str = "fictional-family"
 ) -> Place:
@@ -54,29 +59,9 @@ def _an_endpoint_record(
     )
 
 
-def _a_file_record(
-    place_id: str = KEPT_FILE_ID,
-    *,
-    path: str = "/fictional/secret",
-    family: str = "fictional-family",
-) -> Place:
-    return Place(
-        id=place_id,
-        family=family,
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path=path),
-    )
-
-
-def a_target_keeping_an_endpoint() -> tuple[Target, Places]:
-    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_ENDPOINT_ID,))
-    return target, {KEPT_ENDPOINT_ID: _an_endpoint_record()}
-
-
-def a_target_keeping_a_file() -> tuple[Target, Places]:
-    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_FILE_ID,))
-    return target, {KEPT_FILE_ID: _a_file_record()}
+def a_target_keeping_a_layout_place() -> tuple[Target, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_LAYOUT_ID,))
+    return target, {KEPT_LAYOUT_ID: a_layout_record()}
 
 
 def a_layout_record(
@@ -89,11 +74,6 @@ def a_layout_record(
         kind=PlaceKind.GIT_REMOTE_URL,
         coordinates=Coordinates(PlaceKind.GIT_REMOTE_URL, anchor=anchor, relpath=relpath),
     )
-
-
-def a_target_keeping_a_layout_place() -> tuple[Target, Places]:
-    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_LAYOUT_ID,))
-    return target, {KEPT_LAYOUT_ID: a_layout_record()}
 
 
 def _appending_to_its_dockerfile(line: str) -> TargetChange:
@@ -156,6 +136,26 @@ def a_backend_source(directory: Path) -> Path:
 def a_target_seeding_a_backend(directory: Path) -> tuple[Target, Places]:
     target, places = a_target_keeping_a_file()
     return dataclasses.replace(target, backend_sources=(a_backend_source(directory),)), places
+
+
+def a_target_keeping_a_file() -> tuple[Target, Places]:
+    target = dataclasses.replace(KUBERNETES_TARGET, kept_places=(KEPT_FILE_ID,))
+    return target, {KEPT_FILE_ID: _a_file_record()}
+
+
+def _a_file_record(
+    place_id: str = KEPT_FILE_ID,
+    *,
+    path: str = "/fictional/secret",
+    family: str = "fictional-family",
+) -> Place:
+    return Place(
+        id=place_id,
+        family=family,
+        reaches=frozenset({"arbitrary_read"}),
+        kind=PlaceKind.FILE,
+        coordinates=Coordinates(PlaceKind.FILE, path=path),
+    )
 
 
 def rewriting_the_backend_source(target: Target) -> None:
@@ -279,18 +279,9 @@ STAND_IN_CHANGES: dict[str, StandInChange] = {
 }
 
 
-def conditions(runs: int = 3) -> DetectionRunConditions:
-    return DetectionRunConditions(
-        runs=runs,
-        budget=10,
-        tools_filtered=True,
-        provider="openai",
-        model="gpt-6-luna",
-        judge_model="gpt-6-luna",
-        reasoning="none",
-        judge_reasoning="none",
-        grammar_fingerprint="grammar",
-    )
+def a_confirmation(runs: list[TargetStatus]) -> DetectionBaseline:
+    first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-28T09:00:00+00:00")
+    return a_baseline(runs, status=BaselineStatus.CONFIRMED).model_copy(update={"confirms": first})
 
 
 def a_baseline(
@@ -311,6 +302,15 @@ def a_baseline(
     )
 
 
-def a_confirmation(runs: list[TargetStatus]) -> DetectionBaseline:
-    first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-28T09:00:00+00:00")
-    return a_baseline(runs, status=BaselineStatus.CONFIRMED).model_copy(update={"confirms": first})
+def conditions(runs: int = 3) -> DetectionRunConditions:
+    return DetectionRunConditions(
+        runs=runs,
+        budget=10,
+        tools_filtered=True,
+        provider="openai",
+        model="gpt-6-luna",
+        judge_model="gpt-6-luna",
+        reasoning="none",
+        judge_reasoning="none",
+        grammar_fingerprint="grammar",
+    )

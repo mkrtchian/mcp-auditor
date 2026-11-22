@@ -35,6 +35,16 @@ A_DROPPED_ACCEPTANCE_TARGET_FLAW = min(
 AN_EXCLUDED_SERVER = min(EXCLUDED_SERVERS)
 
 
+def a_census_walking_the_first(walked: int, of: list[str]) -> Census:
+    """Each flaw its own server, `npm:<flaw>`. The detection walk takes the first `walked` flaws
+    of the draw order (the salted digest order, not the order written), the queue the rest."""
+    ordered = sorted(of, key=draw_digest)
+    return a_census_walking(
+        [(identifier, "drawn", f"npm:{identifier}") for identifier in ordered[:walked]],
+        **{identifier: {"server_package": f"npm:{identifier}"} for identifier in ordered[walked:]},
+    )
+
+
 def a_census_walking(
     steps: list[tuple[str, Outcome, str]], **classification_overrides_per_flaw: dict[str, Any]
 ) -> Census:
@@ -83,16 +93,6 @@ def a_census_walking(
     return _bare_census(order).model_copy(update={"classifications": classifications, "draw": draw})
 
 
-def a_census_walking_the_first(walked: int, of: list[str]) -> Census:
-    """Each flaw its own server, `npm:<flaw>`. The detection walk takes the first `walked` flaws
-    of the draw order (the salted digest order, not the order written), the queue the rest."""
-    ordered = sorted(of, key=draw_digest)
-    return a_census_walking(
-        [(identifier, "drawn", f"npm:{identifier}") for identifier in ordered[:walked]],
-        **{identifier: {"server_package": f"npm:{identifier}"} for identifier in ordered[walked:]},
-    )
-
-
 def with_the_second_classifier_overriding(
     census: Census, flaw: str, override: dict[str, Any]
 ) -> Census:
@@ -114,6 +114,12 @@ def with_a_settlement(census: Census, flaw: str, criterion: Criterion, ruling: b
     return census.model_copy(update={"draw": draw})
 
 
+def a_walk_reaching_a_server_with_no_flaw_that_may_count() -> WalkInputs:
+    """`npm:bad`, whose one flaw the record settles not pinnable, and `npm:ok`."""
+    census = a_census_walking([("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")])
+    return with_a_record_settlement(walk_inputs_of(census), "bad", Criterion.PINNABLE, False)
+
+
 def with_a_record_settlement(
     walk_inputs: WalkInputs, flaw: str, criterion: Criterion, ruling: bool
 ) -> WalkInputs:
@@ -121,12 +127,6 @@ def with_a_record_settlement(
     settlement = Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="the record")
     settled = record.model_copy(update={"settlements": [*record.settlements, settlement]})
     return WalkInputs(census=walk_inputs.census, record=settled)
-
-
-def a_walk_reaching_a_server_with_no_flaw_that_may_count() -> WalkInputs:
-    """`npm:bad`, whose one flaw the record settles not pinnable, and `npm:ok`."""
-    census = a_census_walking([("bad", "drawn", "npm:bad"), ("ok", "drawn", "npm:ok")])
-    return with_a_record_settlement(walk_inputs_of(census), "bad", Criterion.PINNABLE, False)
 
 
 def with_an_identity(walk_inputs: WalkInputs, flaw: str, server_package: str) -> WalkInputs:

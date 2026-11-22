@@ -2,14 +2,6 @@ from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_LIST_ITEMS, M
 from mcp_auditor.domain.models import AttackContext
 
 
-def items(count: int, prefix: str = "item") -> list[str]:
-    return [f"{prefix} {index}" for index in range(count)]
-
-
-def a_text_of(length: int, seed: str = "x") -> str:
-    return (seed + " " + "a" * length)[:length]
-
-
 def a_context_over_every_bound() -> AttackContext:
     return AttackContext(
         db_engine=a_text_of(MAX_ITEM_LENGTH + 1),
@@ -18,6 +10,14 @@ def a_context_over_every_bound() -> AttackContext:
         effective_payloads=items(MAX_LIST_ITEMS + 10, "payload"),
         observations="\n".join(f"tool_{index}: {'n' * MAX_NOTE_LENGTH}" for index in range(20)),
     )
+
+
+def items(count: int, prefix: str = "item") -> list[str]:
+    return [f"{prefix} {index}" for index in range(count)]
+
+
+def a_text_of(length: int, seed: str = "x") -> str:
+    return (seed + " " + "a" * length)[:length]
 
 
 def synthetic_reports(count: int) -> list[tuple[str, AttackContext]]:

@@ -95,11 +95,6 @@ class NuisanceServerBaseline(BaseModel):
         return self.status == BaselineStatus.CONFIRMED and not self.alarmed()
 
 
-def baseline_file_name(server_package: str) -> str:
-    # A package carries ":" and "/", which a file name cannot hold portably.
-    return re.sub(r"[^A-Za-z0-9._-]", "_", server_package) + ".json"
-
-
 def load_baselines(directory: Path) -> dict[str, NuisanceServerBaseline]:
     baselines: dict[str, NuisanceServerBaseline] = {}
     for path in sorted(directory.glob("*.json")):
@@ -109,6 +104,11 @@ def load_baselines(directory: Path) -> dict[str, NuisanceServerBaseline]:
             raise ValueError(f"{path.name} holds the baseline of {package}")
         baselines[package] = baseline
     return baselines
+
+
+def baseline_file_name(server_package: str) -> str:
+    # A package carries ":" and "/", which a file name cannot hold portably.
+    return re.sub(r"[^A-Za-z0-9._-]", "_", server_package) + ".json"
 
 
 def write_baseline(directory: Path, baseline: NuisanceServerBaseline) -> None:

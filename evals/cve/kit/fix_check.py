@@ -95,14 +95,6 @@ async def check_fix(fixture: FixCheckFixture) -> FixCheckResult:
     return fix_check_result(fixture, vulnerable, patched, server_patched)
 
 
-def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
-    return "\n".join(
-        f"{flaw} {service}: benign {tool} -> {'error' if response.is_error else 'ok'} "
-        f"{response.content!r}"
-        for tool, _, response in exercise.benign
-    )
-
-
 def fix_check_result(
     fixture: FixCheckFixture,
     vulnerable: Exercised,
@@ -131,6 +123,14 @@ async def _exercise_shown(fixture: FixCheckFixture, service: str) -> Exercised:
     if exercise.benign:
         print(benign_transcript(fixture.flaw, service, exercise))
     return exercise
+
+
+def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
+    return "\n".join(
+        f"{flaw} {service}: benign {tool} -> {'error' if response.is_error else 'ok'} "
+        f"{response.content!r}"
+        for tool, _, response in exercise.benign
+    )
 
 
 async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:

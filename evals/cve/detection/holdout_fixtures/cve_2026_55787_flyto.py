@@ -27,13 +27,6 @@ AIM = re.compile(r"\[::ffff:")
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
 
 
-def _mapped_url(places: Places, place_id: str) -> str:
-    # The place's http endpoint rewritten to its IPv4-mapped IPv6 form: a bare private-range
-    # literal is blocked on both versions, so the mapped form is what carries the bypass.
-    coordinates = places[place_id].coordinates
-    return f"http://[::ffff:{coordinates.host}]:80{coordinates.path}"
-
-
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool(
@@ -42,6 +35,13 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
         )
 
     return run
+
+
+def _mapped_url(places: Places, place_id: str) -> str:
+    # The place's http endpoint rewritten to its IPv4-mapped IPv6 form: a bare private-range
+    # literal is blocked on both versions, so the mapped form is what carries the bypass.
+    coordinates = places[place_id].coordinates
+    return f"http://[::ffff:{coordinates.host}]:80{coordinates.path}"
 
 
 async def _catalogue_read(places: Places, client: MCPClientPort) -> None:

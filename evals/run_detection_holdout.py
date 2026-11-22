@@ -118,6 +118,13 @@ def _add_calibration_check(commands: "_SubParsersAction[argparse.ArgumentParser]
     check.add_argument("--concurrency", type=positive_int, default=6)
 
 
+def _calibration_dossier(args: argparse.Namespace) -> int:
+    census = _census(args.census)
+    calibration_dossier.write_kit(census, args.flaw, args.out)
+    print(f"Calibration kit for {args.flaw} written to {args.out}")
+    return 0
+
+
 def _census(path: Path) -> Census:
     """Only the census load reads a ValueError as a refusal: a malformed census must not read as
     success, and a ValueError raised later is a crash."""
@@ -125,13 +132,6 @@ def _census(path: Path) -> Census:
         return load_census(path)
     except ValueError as error:
         raise Refused("Refused: the census is malformed.", [str(error)]) from error
-
-
-def _calibration_dossier(args: argparse.Namespace) -> int:
-    census = _census(args.census)
-    calibration_dossier.write_kit(census, args.flaw, args.out)
-    print(f"Calibration kit for {args.flaw} written to {args.out}")
-    return 0
 
 
 def _run(args: argparse.Namespace) -> int:

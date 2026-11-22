@@ -37,6 +37,21 @@ _HEALTHY = LayoutSurface(
 )
 
 
+def golden_entries() -> dict[str, dict[str, Any]]:
+    entries = {
+        name: {"breaks": layout_breaks(reference, with_layout)}
+        for name, (reference, with_layout) in _break_cases().items()
+    }
+    entries |= {
+        name: {"breaks": layout_breaks_any(list(pairs))} for name, pairs in _any_cases().items()
+    }
+    entries |= {
+        name: {"leaks": nonce_in_surface(planted, nonces)}
+        for name, (planted, nonces) in _leak_cases().items()
+    }
+    return entries
+
+
 def _break_cases() -> dict[str, tuple[LayoutSurface, LayoutSurface]]:
     tools_list_lost = replace(_HEALTHY, responses=(), call_errored=(), tools_list_succeeded=False)
     call_errors = replace(_HEALTHY, call_errored=(False, True))
@@ -68,21 +83,6 @@ def _leak_cases() -> dict[str, tuple[LayoutSurface, tuple[str, ...]]]:
         "nonce_leaks_into_the_ordinary_surface": (leaking, (_NONCE,)),
         "no_nonce_in_the_ordinary_surface": (_HEALTHY, (_NONCE,)),
     }
-
-
-def golden_entries() -> dict[str, dict[str, Any]]:
-    entries = {
-        name: {"breaks": layout_breaks(reference, with_layout)}
-        for name, (reference, with_layout) in _break_cases().items()
-    }
-    entries |= {
-        name: {"breaks": layout_breaks_any(list(pairs))} for name, pairs in _any_cases().items()
-    }
-    entries |= {
-        name: {"leaks": nonce_in_surface(planted, nonces)}
-        for name, (planted, nonces) in _leak_cases().items()
-    }
-    return entries
 
 
 if __name__ == "__main__":

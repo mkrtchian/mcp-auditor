@@ -13,6 +13,14 @@ from pathlib import Path
 from evals.honeypots import REPO_ROOT
 
 
+def copy_closure(out: Path, modules: Iterable[str], root: Path = REPO_ROOT) -> None:
+    for module in import_closure(modules, root):
+        source = _source_file(module, root)
+        target = out / source.relative_to(root)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+
+
 def import_closure(modules: Iterable[str], root: Path = REPO_ROOT) -> list[str]:
     importers: dict[str, str | None] = {}
     pending: list[tuple[str, str | None]] = [(module, None) for module in modules]
@@ -38,14 +46,6 @@ def _import_chain(module: str, importers: dict[str, str | None]) -> list[str]:
     while (importer := importers[chain[0]]) is not None:
         chain.insert(0, importer)
     return chain
-
-
-def copy_closure(out: Path, modules: Iterable[str], root: Path = REPO_ROOT) -> None:
-    for module in import_closure(modules, root):
-        source = _source_file(module, root)
-        target = out / source.relative_to(root)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, target)
 
 
 def _source_file(module: str, root: Path) -> Path:

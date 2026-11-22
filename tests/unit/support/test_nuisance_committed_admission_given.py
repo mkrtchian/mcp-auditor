@@ -7,10 +7,10 @@ from evals.cve.nuisance.commands import WALK_RECORD_PATH
 
 
 @cache
-def the_committed_walk_inputs() -> WalkInputs:
-    return load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))
+def the_committed_admission() -> NuisanceAdmission:
+    return load_admission(ADMISSION_PATH, the_committed_walk_inputs())
 
 
 @cache
-def the_committed_admission() -> NuisanceAdmission:
-    return load_admission(ADMISSION_PATH, the_committed_walk_inputs())
+def the_committed_walk_inputs() -> WalkInputs:
+    return load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH))

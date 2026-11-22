@@ -162,16 +162,6 @@ def draw_problems(
     ]
 
 
-def governing_steps(draw: DrawRecord) -> dict[str, DetectionWalkStep]:
-    """Each reached flaw's step under the latest version that decided it, in order of first
-    reach."""
-    governing: dict[str, DetectionWalkStep] = {}
-    for step in draw.walk:
-        current = governing.get(step.identifier, step)
-        governing[step.identifier] = max(current, step, key=_version_order)
-    return governing
-
-
 def _membership_problems(draw: DrawRecord, in_census: set[str], order: set[str]) -> list[str]:
     problems: list[str] = []
     for label, flaw in _referenced_flaws(draw):
@@ -227,6 +217,16 @@ def _drawn_problems(draw: DrawRecord) -> list[str]:
                 f'drawn flaw {identifier}: its governing walk step is "{outcome}", not "drawn"'
             )
     return problems
+
+
+def governing_steps(draw: DrawRecord) -> dict[str, DetectionWalkStep]:
+    """Each reached flaw's step under the latest version that decided it, in order of first
+    reach."""
+    governing: dict[str, DetectionWalkStep] = {}
+    for step in draw.walk:
+        current = governing.get(step.identifier, step)
+        governing[step.identifier] = max(current, step, key=_version_order)
+    return governing
 
 
 def _calibration_problems(draw: DrawRecord) -> list[str]:

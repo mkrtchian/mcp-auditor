@@ -10,24 +10,6 @@ FIXTURE = "fixture"
 RECORDED_COMMIT = "0123abc"
 
 
-def conditions(runs: int = 3) -> NuisanceGateConditions:
-    return NuisanceGateConditions(
-        runs=runs,
-        budget=HOLDOUT_BUDGET,
-        tools_filtered=False,
-        provider="openai",
-        model="gpt-6-luna",
-        judge_model="gpt-6-luna",
-        reasoning="none",
-        judge_reasoning="none",
-        chain_budget=3,
-        max_chain_steps=5,
-        tool_call_timeout=30,
-        grammar_fingerprint=grammar_fingerprint(),
-        counter_fingerprint=counter_fingerprint(),
-    )
-
-
 def a_gated_baseline(package: str = SERVER_PACKAGE) -> NuisanceServerBaseline:
     return a_confirmed_baseline([False] * 6, package)
 
@@ -54,4 +36,22 @@ def an_unconfirmed_baseline(
         recorded_at="2026-10-22T10:00:00+00:00",
         runs=runs if runs is not None else [False] * 3,
         image_ids={"filesystem-patched": "sha256:0123"},
+    )
+
+
+def conditions(runs: int = 3) -> NuisanceGateConditions:
+    return NuisanceGateConditions(
+        runs=runs,
+        budget=HOLDOUT_BUDGET,
+        tools_filtered=False,
+        provider="openai",
+        model="gpt-6-luna",
+        judge_model="gpt-6-luna",
+        reasoning="none",
+        judge_reasoning="none",
+        chain_budget=3,
+        max_chain_steps=5,
+        tool_call_timeout=30,
+        grammar_fingerprint=grammar_fingerprint(),
+        counter_fingerprint=counter_fingerprint(),
     )

@@ -8,15 +8,6 @@ def a_judgment() -> Judgment:
     return Judgment(verdict=EvalVerdict.PASS, justification="rejected", severity=Severity.LOW)
 
 
-def a_capture(main_calls: int, judge_calls: int) -> list[ProbeCall]:
-    """Main and judge calls interleaved, the way an audit alternates generation and judging."""
-    main: list[Literal["main", "judge"]] = ["main"]
-    judge: list[Literal["main", "judge"]] = ["judge"]
-    roles = main * main_calls + judge * judge_calls
-    interleaved = sorted(range(len(roles)), key=lambda index: index % 3)
-    return [_a_call(index, roles[position]) for index, position in enumerate(interleaved)]
-
-
 def a_corpus() -> ProbeCorpus:
     return ProbeCorpus(
         captured_at="2026-09-24T10:00:00+00:00",
@@ -33,6 +24,15 @@ def a_corpus() -> ProbeCorpus:
         judge_calls_captured=2,
         calls=a_capture(main_calls=2, judge_calls=2),
     )
+
+
+def a_capture(main_calls: int, judge_calls: int) -> list[ProbeCall]:
+    """Main and judge calls interleaved, the way an audit alternates generation and judging."""
+    main: list[Literal["main", "judge"]] = ["main"]
+    judge: list[Literal["main", "judge"]] = ["judge"]
+    roles = main * main_calls + judge * judge_calls
+    interleaved = sorted(range(len(roles)), key=lambda index: index % 3)
+    return [_a_call(index, roles[position]) for index, position in enumerate(interleaved)]
 
 
 def _a_call(index: int, role: Literal["main", "judge"]) -> ProbeCall:

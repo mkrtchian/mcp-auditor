@@ -65,6 +65,18 @@ KEPT_PLACES: tuple[str, ...] = (
 )
 
 
+def _exploit_for(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        await _call(client, _payload(places[place_id]))
+
+    exploit.__name__ = f"exploit_{place_id.replace('-', '_')}"
+    return exploit
+
+
+def _payload(place: Place) -> str:
+    return _PRINTF.format(cmd=_read_command(place))
+
+
 def _read_command(place: Place) -> str:
     kind = place.kind.value
     coord = place.coordinates
@@ -91,22 +103,10 @@ def _read_command(place: Place) -> str:
     raise ValueError(f"no read command for kind {kind}")
 
 
-def _payload(place: Place) -> str:
-    return _PRINTF.format(cmd=_read_command(place))
-
-
 async def _call(client: MCPClientPort, username: str) -> None:
     await client.call_tool(
         TOOL, {"operation": "get-user-info", "username": username, "useCache": False}
     )
-
-
-def _exploit_for(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        await _call(client, _payload(places[place_id]))
-
-    exploit.__name__ = f"exploit_{place_id.replace('-', '_')}"
-    return exploit
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

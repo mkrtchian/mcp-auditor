@@ -17,17 +17,6 @@ class Interval:
     high: float
 
 
-def wilson(count: float, n: int) -> Interval:
-    """Wilson score interval, no continuity correction; `count` may be a non-integer sum of
-    detection shares."""
-    p = count / n
-    z2 = Z_95 * Z_95
-    denom = 1 + z2 / n
-    center = (p + z2 / (2 * n)) / denom
-    half = (Z_95 / denom) * math.sqrt(p * (1 - p) / n + z2 / (4 * n * n))
-    return _proportion(center - half, center + half)
-
-
 def newcombe(count_a: float, n_a: int, count_b: float, n_b: int) -> Interval:
     """Newcombe hybrid-score interval (method 10) for the difference p_a - p_b, combining each
     arm's Wilson bounds."""
@@ -39,6 +28,17 @@ def newcombe(count_a: float, n_a: int, count_b: float, n_b: int) -> Interval:
     low = diff - math.sqrt((p_a - arm_a.low) ** 2 + (arm_b.high - p_b) ** 2)
     high = diff + math.sqrt((arm_a.high - p_a) ** 2 + (p_b - arm_b.low) ** 2)
     return _contrast(low, high)
+
+
+def wilson(count: float, n: int) -> Interval:
+    """Wilson score interval, no continuity correction; `count` may be a non-integer sum of
+    detection shares."""
+    p = count / n
+    z2 = Z_95 * Z_95
+    denom = 1 + z2 / n
+    center = (p + z2 / (2 * n)) / denom
+    half = (Z_95 / denom) * math.sqrt(p * (1 - p) / n + z2 / (4 * n * n))
+    return _proportion(center - half, center + half)
 
 
 def agresti_caffo(count_a: float, n_a: int, count_b: float, n_b: int) -> Interval:

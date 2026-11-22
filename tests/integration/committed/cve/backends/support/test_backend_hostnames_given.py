@@ -11,31 +11,31 @@ from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.test_nuisance_committed_admission_given import the_committed_admission
 
 
-def admitted_servers() -> list[AdmittedServer]:
-    return list(the_committed_admission().servers)
-
-
-def the_admitted_server(service: str) -> AdmittedServer:
-    return next(server for server in admitted_servers() if server.service == service)
-
-
 def the_benign_argument(service: str, name: str) -> Any:
     server = the_admitted_server(service)
     calls = [call for flaw in server.flaws for call in flaw.benign_calls]
     return next(call.arguments[name] for call in calls if name in call.arguments)
 
 
+def the_admitted_server(service: str) -> AdmittedServer:
+    return next(server for server in admitted_servers() if server.service == service)
+
+
+def admitted_servers() -> list[AdmittedServer]:
+    return list(the_committed_admission().servers)
+
+
 def run_dockerfile_env(server: AdmittedServer) -> dict[str, str]:
     return _env_values(image_dockerfile(server.service, DOCKER_DIRECTORY))
-
-
-def part_dockerfile_env(part: GravitinoPart) -> dict[str, str]:
-    return _env_values(image_dockerfile(part.service))
 
 
 def kafka_advertised_listeners() -> str:
     kafka = next(part for part in GRAVITINO_PARTS if part.alias == "kafka")
     return part_dockerfile_env(kafka)["KAFKA_ADVERTISED_LISTENERS"]
+
+
+def part_dockerfile_env(part: GravitinoPart) -> dict[str, str]:
+    return _env_values(image_dockerfile(part.service))
 
 
 def gravitino_catalog_properties() -> dict[str, dict[str, str]]:

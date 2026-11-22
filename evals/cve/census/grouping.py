@@ -35,20 +35,6 @@ class ProofJudgment(BaseModel):
     reason: str
 
 
-def gap_population(
-    classifications: dict[str, list[Classification]], candidates: set[str]
-) -> set[str]:
-    """The flaws of `candidates` that meet the criteria of the draw order and whose server
-    either classifier finds able to run in a container: the denominator of the known gap."""
-    return {
-        flaw
-        for flaw, seen in _by_flaw(classifications).items()
-        if flaw in candidates
-        and in_draw_order(flaw, seen)
-        and any(classification.runs_in_container for classification in seen)
-    }
-
-
 def draw_order_flaws(
     classifications: dict[str, list[Classification]], candidates: set[str]
 ) -> set[str]:
@@ -69,6 +55,20 @@ def grouped_flaws(
         flaw
         for flaw in gap_population(classifications, candidates)
         if not any(in_grammar(classification.effect_class) for classification in seen[flaw])
+    }
+
+
+def gap_population(
+    classifications: dict[str, list[Classification]], candidates: set[str]
+) -> set[str]:
+    """The flaws of `candidates` that meet the criteria of the draw order and whose server
+    either classifier finds able to run in a container: the denominator of the known gap."""
+    return {
+        flaw
+        for flaw, seen in _by_flaw(classifications).items()
+        if flaw in candidates
+        and in_draw_order(flaw, seen)
+        and any(classification.runs_in_container for classification in seen)
     }
 
 

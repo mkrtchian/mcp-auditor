@@ -50,16 +50,6 @@ class _FakeGraph:
         return {"audit_report": await self.graphs.invocation(self.server)}
 
 
-def graph_reporting(reports: list[AuditReport]) -> FakeGraphs:
-    """Each audit yields to the event loop once, then returns the next report."""
-
-    async def report(_server: AuditedServer) -> AuditReport:
-        await asyncio.sleep(0)
-        return reports.pop(0)
-
-    return FakeGraphs(report)
-
-
 def graph_calling(lost_calls: int) -> FakeGraphs:
     """Each audit sends `lost_calls` calls to the server, then returns a report."""
 
@@ -165,3 +155,13 @@ def an_auditor(
         connect=connect or FakeConnect(),
         build_graph=graphs or graph_reporting([grammar.a_report()]),
     )
+
+
+def graph_reporting(reports: list[AuditReport]) -> FakeGraphs:
+    """Each audit yields to the event loop once, then returns the next report."""
+
+    async def report(_server: AuditedServer) -> AuditReport:
+        await asyncio.sleep(0)
+        return reports.pop(0)
+
+    return FakeGraphs(report)

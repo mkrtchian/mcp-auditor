@@ -36,21 +36,6 @@ type Outcome = NuisanceAudit | DroppedRun
 type Audit = Callable[[AdmittedServer], Awaitable[Outcome]]
 
 
-def conditions() -> HoldoutConditions:
-    return HoldoutConditions(
-        chain_budget=3,
-        max_chain_steps=5,
-        tool_call_timeout=30,
-        cutoffs={
-            "gpt-6-luna": Cutoff(
-                date=date(2026, 5, 18), type="training", source="https://example.test", note=None
-            )
-        },
-        prices={"gpt-6-luna": LUNA_PRICE},
-        prices_as_of=date(2026, 10, 15),
-    )
-
-
 def a_server(
     package: str = admission.SERVER_PACKAGE,
     *,
@@ -69,46 +54,6 @@ def a_server(
     )
     server = admission.a_server(the_flaws)
     return server.model_copy(update={"server_package": package, "service": service})
-
-
-def a_report(
-    flagged: bool,
-    *,
-    missed: MissCause | None = None,
-    provider: ProviderUsage | None = None,
-    judge: ProviderUsage | None = None,
-) -> AuditReport:
-    """One tool report on the counted tool: a FAIL in a category of its class when flagged, a
-    PASS otherwise, and a missed model call of the given cause."""
-    verdict = grammar.FAIL if flagged else grammar.PASS
-    tool_report = grammar.a_tool_report(COUNTED_TOOL, cases=[grammar.a_case(verdict=verdict)])
-    steps = (
-        []
-        if missed is None
-        else [
-            MissedModelCall(
-                tool_name=COUNTED_TOOL, kind=ModelCallKind.JUDGMENT, cause=missed, detail=""
-            )
-        ]
-    )
-    return AuditReport(
-        server_command="test",
-        tool_reports=[tool_report],
-        provider_usage=provider or ProviderUsage(),
-        judge_usage=judge or ProviderUsage(),
-        missed_model_calls=steps,
-    )
-
-
-def an_audit(
-    flagged: bool,
-    *,
-    missed: MissCause | None = None,
-    provider: ProviderUsage | None = None,
-    judge: ProviderUsage | None = None,
-    health: ServerHealth = NO_INCIDENTS,
-) -> NuisanceAudit:
-    return NuisanceAudit(a_report(flagged, missed=missed, provider=provider, judge=judge), health)
 
 
 def scripted(outcomes_by_package: Mapping[str, Sequence[Outcome]]) -> Audit:
@@ -155,6 +100,46 @@ class InterruptingAudit:
             self.cancelled.append(server.server_package)
             raise
         raise AssertionError("a run that never ends completed")
+
+
+def an_audit(
+    flagged: bool,
+    *,
+    missed: MissCause | None = None,
+    provider: ProviderUsage | None = None,
+    judge: ProviderUsage | None = None,
+    health: ServerHealth = NO_INCIDENTS,
+) -> NuisanceAudit:
+    return NuisanceAudit(a_report(flagged, missed=missed, provider=provider, judge=judge), health)
+
+
+def a_report(
+    flagged: bool,
+    *,
+    missed: MissCause | None = None,
+    provider: ProviderUsage | None = None,
+    judge: ProviderUsage | None = None,
+) -> AuditReport:
+    """One tool report on the counted tool: a FAIL in a category of its class when flagged, a
+    PASS otherwise, and a missed model call of the given cause."""
+    verdict = grammar.FAIL if flagged else grammar.PASS
+    tool_report = grammar.a_tool_report(COUNTED_TOOL, cases=[grammar.a_case(verdict=verdict)])
+    steps = (
+        []
+        if missed is None
+        else [
+            MissedModelCall(
+                tool_name=COUNTED_TOOL, kind=ModelCallKind.JUDGMENT, cause=missed, detail=""
+            )
+        ]
+    )
+    return AuditReport(
+        server_command="test",
+        tool_reports=[tool_report],
+        provider_usage=provider or ProviderUsage(),
+        judge_usage=judge or ProviderUsage(),
+        missed_model_calls=steps,
+    )
 
 
 def deps_auditing(
@@ -240,13 +225,6 @@ def deps_reaching_nothing() -> NuisanceDeps:
     )
 
 
-def draw_entries(*entries: tuple[str, date]) -> list[DrawEntry]:
-    return [
-        DrawEntry(digest=f"{index:064x}", identifier=identifier, disclosure_date=disclosed)
-        for index, (identifier, disclosed) in enumerate(entries)
-    ]
-
-
 async def run(
     servers: Sequence[AdmittedServer],
     deps: NuisanceDeps,
@@ -269,3 +247,25 @@ async def run(
         concurrency=concurrency,
         deps=deps,
     )
+
+
+def conditions() -> HoldoutConditions:
+    return HoldoutConditions(
+        chain_budget=3,
+        max_chain_steps=5,
+        tool_call_timeout=30,
+        cutoffs={
+            "gpt-6-luna": Cutoff(
+                date=date(2026, 5, 18), type="training", source="https://example.test", note=None
+            )
+        },
+        prices={"gpt-6-luna": LUNA_PRICE},
+        prices_as_of=date(2026, 10, 15),
+    )
+
+
+def draw_entries(*entries: tuple[str, date]) -> list[DrawEntry]:
+    return [
+        DrawEntry(digest=f"{index:064x}", identifier=identifier, disclosure_date=disclosed)
+        for index, (identifier, disclosed) in enumerate(entries)
+    ]

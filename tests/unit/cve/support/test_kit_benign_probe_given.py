@@ -17,28 +17,17 @@ from evals.cve.planting_base import PlantingHost
 from tests.fakes import FakeKitClient
 
 
+def a_record_with_a_backend() -> dict[str, Any]:
+    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
+    return the_record_of(mutations.with_a_backend(a_server(), backend))
+
+
 def a_server() -> AdmittedServer:
     return admission_given.an_admission().servers[0]
 
 
 def the_record_of(server: AdmittedServer) -> dict[str, Any]:
     return json.loads(server.model_dump_json())
-
-
-def a_record_with_benign_calls(*per_flaw: list[dict[str, Any]]) -> dict[str, Any]:
-    record = the_record_of(a_server())
-    template = record["flaws"][0]
-    record["flaws"] = [{**template, "benign_calls": calls} for calls in per_flaw]
-    return record
-
-
-def a_call(tool: str, **arguments: Any) -> dict[str, Any]:
-    return {"tool": tool, "arguments": arguments, "expect": None, "before": None}
-
-
-def a_record_with_a_backend() -> dict[str, Any]:
-    backend = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
-    return the_record_of(mutations.with_a_backend(a_server(), backend))
 
 
 def a_fake_lifecycle_resolved_by_key(monkeypatch: pytest.MonkeyPatch) -> list[str]:
@@ -118,6 +107,17 @@ def a_probe_answering(
 
 def a_record_with_one_benign_call() -> dict[str, Any]:
     return a_record_with_benign_calls([a_call("read")])
+
+
+def a_record_with_benign_calls(*per_flaw: list[dict[str, Any]]) -> dict[str, Any]:
+    record = the_record_of(a_server())
+    template = record["flaws"][0]
+    record["flaws"] = [{**template, "benign_calls": calls} for calls in per_flaw]
+    return record
+
+
+def a_call(tool: str, **arguments: Any) -> dict[str, Any]:
+    return {"tool": tool, "arguments": arguments, "expect": None, "before": None}
 
 
 def written(path: Path, content: object) -> Path:

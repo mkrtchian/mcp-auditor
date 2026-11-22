@@ -17,10 +17,6 @@ from evals.cve.census.grouping import draw_order_flaws
 DRAW_SALT = "mcp-auditor-holdout:"
 
 
-def draw_digest(identifier: str) -> str:
-    return hashlib.sha256((DRAW_SALT + identifier).encode("utf-8")).hexdigest()
-
-
 @dataclass(frozen=True)
 class DrawEntry:
     digest: str
@@ -40,3 +36,7 @@ def draw_order(census: Census) -> list[DrawEntry]:
         for identifier in identifiers
     ]
     return sorted(entries, key=lambda entry: (entry.digest, entry.identifier))
+
+
+def draw_digest(identifier: str) -> str:
+    return hashlib.sha256((DRAW_SALT + identifier).encode("utf-8")).hexdigest()

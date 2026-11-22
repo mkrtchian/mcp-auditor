@@ -115,42 +115,6 @@ def not_fixed_reasons(
     return conditions
 
 
-def launch_user_condition(
-    version: TargetVersion, options: Sequence[str], spec: PlantingSpec
-) -> str | None:
-    """A builder the agent writes can bypass the planted user, so the launch's own options are
-    read: the target runs as the unprivileged account or as the account named after a nonce."""
-    user = _last_user(options)
-    if user is None:
-        return f"{version.value}: the launch sets no --user"
-    allowed = {f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}"}
-    if spec.account is not None:
-        allowed.add(f"{spec.account.uid}:{spec.account.gid}")
-    if user in allowed:
-        return None
-    return f"{version.value}: the launch runs as {user}, not the unprivileged account"
-
-
-def _last_user(options: Sequence[str]) -> str | None:
-    # Every spelling Docker accepts: `--user <v>`, `--user=<v>`, `-u <v>`, `-u=<v>`, `-u<v>`.
-    user = None
-    tokens = iter(options)
-    for option in tokens:
-        if option in ("--user", "-u"):
-            user = next(tokens, None)
-        elif option.startswith(("--user=", "-u=")):
-            user = option.partition("=")[2]
-        elif option.startswith("-u"):
-            user = option.removeprefix("-u")
-    return user
-
-
-def options_before_image(args: Sequence[str], image: str) -> list[str]:
-    """The Docker options of a launch: a server argument after the image may spell `-u` or
-    `--user` for its own purpose."""
-    return list(args[: args.index(image)]) if image in args else list(args)
-
-
 @dataclass(frozen=True)
 class _Exercised:
     spec: PlantingSpec
@@ -190,9 +154,45 @@ async def _exercise(
     return _Exercised(spec, options, [r.exchanges for r in exploits], benign.exchanges)
 
 
+def options_before_image(args: Sequence[str], image: str) -> list[str]:
+    """The Docker options of a launch: a server argument after the image may spell `-u` or
+    `--user` for its own purpose."""
+    return list(args[: args.index(image)]) if image in args else list(args)
+
+
 def _account_conditions(version: TargetVersion, exercised: _Exercised) -> list[str]:
     condition = launch_user_condition(version, exercised.options, exercised.spec)
     return [] if condition is None else [condition]
+
+
+def launch_user_condition(
+    version: TargetVersion, options: Sequence[str], spec: PlantingSpec
+) -> str | None:
+    """A builder the agent writes can bypass the planted user, so the launch's own options are
+    read: the target runs as the unprivileged account or as the account named after a nonce."""
+    user = _last_user(options)
+    if user is None:
+        return f"{version.value}: the launch sets no --user"
+    allowed = {f"{UNPRIVILEGED_UID}:{UNPRIVILEGED_GID}"}
+    if spec.account is not None:
+        allowed.add(f"{spec.account.uid}:{spec.account.gid}")
+    if user in allowed:
+        return None
+    return f"{version.value}: the launch runs as {user}, not the unprivileged account"
+
+
+def _last_user(options: Sequence[str]) -> str | None:
+    # Every spelling Docker accepts: `--user <v>`, `--user=<v>`, `-u <v>`, `-u=<v>`, `-u<v>`.
+    user = None
+    tokens = iter(options)
+    for option in tokens:
+        if option in ("--user", "-u"):
+            user = next(tokens, None)
+        elif option.startswith(("--user=", "-u=")):
+            user = option.partition("=")[2]
+        elif option.startswith("-u"):
+            user = option.removeprefix("-u")
+    return user
 
 
 def _graded(target: KitTarget, exercised: _Exercised) -> PlantedTarget:

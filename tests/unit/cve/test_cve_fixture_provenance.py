@@ -9,6 +9,10 @@ from evals.cve.fixture_provenance import (
 _REPLACES = "the Jenkins HTTP API"
 
 
+def test_a_sourced_output_has_no_problem():
+    assert stand_in_problems(_a_stand_in(_an_output("software_sources"))) == []
+
+
 def _a_stand_in(*outputs: StandInOutput, capture: str | None = None) -> StandInRecord:
     return StandInRecord(
         replaces=_REPLACES,
@@ -31,10 +35,6 @@ def _an_output(
         form_source=form_source,
         replacements=replacements or [],
     )
-
-
-def test_a_sourced_output_has_no_problem():
-    assert stand_in_problems(_a_stand_in(_an_output("software_sources"))) == []
 
 
 def test_an_invented_output_following_a_form_has_no_problem():

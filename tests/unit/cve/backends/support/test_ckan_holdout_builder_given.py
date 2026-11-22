@@ -9,10 +9,6 @@ from evals.cve.planting_base import PlantingSpec, SentinelIntent
 from tests.fakes.planting_docker import FakePlantingDocker
 
 
-def the_targets_spec() -> PlantingSpec:
-    return TARGET.planting_spec(kept_records(TARGET.kept_places, load_places(DETECTION_PLACES)))
-
-
 @dataclass
 class FakeCkanDocker:
     """Records what the builder stands and removes, in order, without Docker."""
@@ -49,3 +45,7 @@ def a_launch() -> AbstractContextManager[Launch]:
     return ckan_ssrf_env(
         "img", the_targets_spec(), docker=FakePlantingDocker(), ckan=FakeCkanDocker().docker()
     )
+
+
+def the_targets_spec() -> PlantingSpec:
+    return TARGET.planting_spec(kept_records(TARGET.kept_places, load_places(DETECTION_PLACES)))

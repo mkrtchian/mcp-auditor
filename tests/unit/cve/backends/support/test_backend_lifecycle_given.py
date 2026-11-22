@@ -35,10 +35,6 @@ type Launch = environments.Launch | kit_launch.Launch
 type Launcher = Callable[[BackendLifecycle | PerLaunchBackend], AbstractContextManager[Launch]]
 
 
-def a_host() -> PlantingHost:
-    return PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
-
-
 def every_responder() -> list[Responder]:
     # The GitLab responder serves a fix check, not a registered backend.
     names = [*(f"evals.cve.backends.{key}" for key in BACKENDS), gitlab_responder.__name__]
@@ -115,6 +111,22 @@ def a_lifecycle_without_side_effects(key: str) -> BackendLifecycle | PerLaunchBa
             return _a_quiet_per_launch_backend(key)
 
 
+def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
+    # Each per-launch backend's own launch, with a stand-up that starts no container.
+    match key:
+        case "node_sandbox_engine":
+            launch = node_sandbox_engine.engine_launch(_a_socket_with_no_engine, _noop_remove)
+        case "gitlab":
+            launch = gitlab.gitlab_launch(_a_gitlab_with_no_container, _noop_remove)
+        case "kubernetes":
+            launch = kubernetes.control_plane_launch(
+                _a_control_plane_with_no_container, _noop_remove
+            )
+        case _:
+            raise AssertionError(f"give the per-launch backend {key} a quiet stand-up here")
+    return PerLaunchBackend(key, launch)
+
+
 @contextmanager
 def _a_socket_with_no_engine(name: str) -> Generator[Path]:
     yield Path("/tmp/engine-socket-directory/docker.sock")
@@ -130,22 +142,6 @@ def _a_control_plane_with_no_container(name: str) -> Generator[kubernetes.StoodC
     yield kubernetes.StoodControlPlane(
         f"{kubernetes.CONTROL_PLANE_NETWORK}-quiet", Path("/tmp/kubeconfig-directory/config")
     )
-
-
-def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
-    # Each per-launch backend's own launch, with a stand-up that starts no container.
-    match key:
-        case "node_sandbox_engine":
-            launch = node_sandbox_engine.engine_launch(_a_socket_with_no_engine, _noop_remove)
-        case "gitlab":
-            launch = gitlab.gitlab_launch(_a_gitlab_with_no_container, _noop_remove)
-        case "kubernetes":
-            launch = kubernetes.control_plane_launch(
-                _a_control_plane_with_no_container, _noop_remove
-            )
-        case _:
-            raise AssertionError(f"give the per-launch backend {key} a quiet stand-up here")
-    return PerLaunchBackend(key, launch)
 
 
 def a_module_whose_lifecycle_is_neither_kind(name: str) -> SimpleNamespace:
@@ -170,6 +166,10 @@ def through_the_kit(
     lifecycle: BackendLifecycle | PerLaunchBackend,
 ) -> AbstractContextManager[Launch]:
     return backend_launch(lifecycle, "image", a_host(), ["serve"])
+
+
+def a_host() -> PlantingHost:
+    return PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
 
 
 def with_the_name_masked(args: Sequence[str]) -> list[str]:

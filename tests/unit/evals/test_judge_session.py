@@ -15,12 +15,6 @@ FAIL, PASS = given.FAIL, given.PASS
 FAIL_ID, PASS_ID = given.FAIL_ID, given.PASS_ID
 
 
-async def _refused(options: JudgeOptions, harness: JudgeHarness) -> Refused:
-    with pytest.raises(Refused) as refusal:
-        await run_judge_gate(options, given.a_judge_fixture(), harness)
-    return refusal.value
-
-
 async def test_recording_without_a_baseline_is_refused_before_any_judge_call(tmp_path: Path):
     judge = given.ScriptedJudge()
 
@@ -31,6 +25,12 @@ async def test_recording_without_a_baseline_is_refused_before_any_judge_call(tmp
 
     assert "--no-baseline" in refusal.reasons[0]
     assert judge.total_calls() == 0
+
+
+async def _refused(options: JudgeOptions, harness: JudgeHarness) -> Refused:
+    with pytest.raises(Refused) as refusal:
+        await run_judge_gate(options, given.a_judge_fixture(), harness)
+    return refusal.value
 
 
 async def test_a_broken_baseline_is_refused_before_any_judge_call(tmp_path: Path):
@@ -298,13 +298,6 @@ async def test_other_conditions_than_the_baseline_are_not_comparable_and_retest_
     assert result.exit_code == 3
 
 
-def _throttle_mismatch(count: int) -> str:
-    return (
-        f"{count} judgment(s) throttled by the model provider past every retry:"
-        " the run cannot be compared"
-    )
-
-
 @pytest.mark.parametrize("no_baseline", [False, True])
 async def test_a_throttled_run_judgment_is_not_comparable_and_retests_nothing(
     tmp_path: Path, no_baseline: bool
@@ -323,6 +316,13 @@ async def test_a_throttled_run_judgment_is_not_comparable_and_retests_nothing(
     assert result.gate.reasons == [_throttle_mismatch(1)]
     assert result.throttled_judgments == [PASS_ID]
     assert result.exit_code == 3
+
+
+def _throttle_mismatch(count: int) -> str:
+    return (
+        f"{count} judgment(s) throttled by the model provider past every retry:"
+        " the run cannot be compared"
+    )
 
 
 async def test_a_throttled_retest_cannot_read_as_a_reproduced_flip(tmp_path: Path):

@@ -12,20 +12,6 @@ DETECTED = TargetStatus.DETECTED
 MISSED = TargetStatus.MISSED
 
 
-def conditions(budget: int = 10) -> DetectionRunConditions:
-    return DetectionRunConditions(
-        runs=3,
-        budget=budget,
-        tools_filtered=True,
-        provider="openai",
-        model="gpt-6-luna",
-        judge_model="gpt-6-luna",
-        reasoning="none",
-        judge_reasoning="none",
-        grammar_fingerprint="grammar",
-    )
-
-
 def a_gated_baseline(flaw_id: str = FLAW_ID) -> DetectionBaseline:
     return a_confirmed_baseline([DETECTED] * 6, flaw_id)
 
@@ -50,6 +36,20 @@ def an_unconfirmed_baseline(
         recorded_at="2026-09-28T10:00:00+00:00",
         runs=runs if runs is not None else [DETECTED] * 3,
         image_ids={"kubernetes": "sha256:0123"},
+    )
+
+
+def conditions(budget: int = 10) -> DetectionRunConditions:
+    return DetectionRunConditions(
+        runs=3,
+        budget=budget,
+        tools_filtered=True,
+        provider="openai",
+        model="gpt-6-luna",
+        judge_model="gpt-6-luna",
+        reasoning="none",
+        judge_reasoning="none",
+        grammar_fingerprint="grammar",
     )
 
 

@@ -52,19 +52,6 @@ def shared_backends() -> dict[str, RegisteredBackend]:
     }
 
 
-def the_copy_resolution() -> dict[str, str]:
-    return copy_targets(
-        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_walk_inputs().census.draw
-    )
-
-
-def a_drawn_target_and_its_sibling() -> tuple[str, str]:
-    sibling, drawn = next(
-        (sibling, drawn) for sibling, drawn in the_copy_resolution().items() if sibling != drawn
-    )
-    return drawn, sibling
-
-
 def a_committed_server_with_fix_checks() -> AdmittedServer:
     return next(server for server in the_committed_admission().servers if fix_check_modules(server))
 
@@ -84,11 +71,24 @@ def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
     )
 
 
+def the_copy_resolution() -> dict[str, str]:
+    return copy_targets(
+        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_walk_inputs().census.draw
+    )
+
+
 def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
     base = admission_given.an_admitted_server()
     first = base.flaws[0]
     flaws = [_copying(first, flaw_id) for flaw_id in a_drawn_target_and_its_sibling()]
     return base.model_copy(update={"flaws": flaws})
+
+
+def a_drawn_target_and_its_sibling() -> tuple[str, str]:
+    sibling, drawn = next(
+        (sibling, drawn) for sibling, drawn in the_copy_resolution().items() if sibling != drawn
+    )
+    return drawn, sibling
 
 
 def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:

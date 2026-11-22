@@ -18,6 +18,18 @@ from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
 
+def a_report_with_finding(severity: Severity) -> AuditReport:
+    case = TestCase(
+        payload=a_payload(category=AuditCategory.INJECTION),
+        judge_result=a_judge_result(severity=severity),
+    )
+    return AuditReport(
+        server_command="test",
+        tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
+        provider_usage=ProviderUsage(),
+    )
+
+
 def a_tool(
     name: str = "test_tool",
     input_schema: dict[str, Any] | None = None,
@@ -44,18 +56,6 @@ def a_judge_result(**overrides: Any) -> JudgeResult:
         "severity": Severity.HIGH,
     }
     return JudgeResult(**(defaults | overrides))
-
-
-def a_report_with_finding(severity: Severity) -> AuditReport:
-    case = TestCase(
-        payload=a_payload(category=AuditCategory.INJECTION),
-        judge_result=a_judge_result(severity=severity),
-    )
-    return AuditReport(
-        server_command="test",
-        tool_reports=[ToolReport(tool=a_tool(), cases=[case])],
-        provider_usage=ProviderUsage(),
-    )
 
 
 def a_tool_report_with_a_cut_response() -> ToolReport:

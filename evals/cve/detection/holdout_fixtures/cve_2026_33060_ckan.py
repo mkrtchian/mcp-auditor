@@ -37,14 +37,6 @@ EXPLOIT_TOOL = "ckan_datastore_search_sql"
 KEPT_PLACES: tuple[str, ...] = ("imds", "ecs-task-credentials", "eks-pod-identity")
 
 
-def _ssrf_base_url(places: Places, place_id: str) -> str:
-    # Terminate server_url with `?` so makeCkanRequest's appended `/api/3/action/<action>`
-    # becomes a query string busybox httpd ignores, leaving the request path equal to the
-    # planted coordinate path.
-    coordinates = places[place_id].coordinates
-    return f"http://{coordinates.host}{coordinates.path}?"
-
-
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         await client.call_tool(
@@ -52,6 +44,14 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
         )
 
     return run
+
+
+def _ssrf_base_url(places: Places, place_id: str) -> str:
+    # Terminate server_url with `?` so makeCkanRequest's appended `/api/3/action/<action>`
+    # becomes a query string busybox httpd ignores, leaving the request path equal to the
+    # planted coordinate path.
+    coordinates = places[place_id].coordinates
+    return f"http://{coordinates.host}{coordinates.path}?"
 
 
 async def _benign(places: Places, client: MCPClientPort) -> None:

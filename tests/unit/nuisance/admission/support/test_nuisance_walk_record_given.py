@@ -9,6 +9,10 @@ from evals.cve.nuisance.admission.walk_record import (
 )
 
 
+def a_census_settling(flaw: str, criterion: Criterion, ruling: bool) -> Census:
+    return walk_given.with_a_settlement(a_census(), flaw, criterion, ruling)
+
+
 def a_census() -> Census:
     """`walked` is reached by the detection walk, `queued` is a draw-order flaw past it, and
     `unpinnable` is a census flaw outside the draw order."""
@@ -17,10 +21,6 @@ def a_census() -> Census:
         queued={"server_package": "npm:srv2"},
         unpinnable={"server_package": "npm:srv3", **walk_given.NOT_PINNABLE},
     )
-
-
-def a_census_settling(flaw: str, criterion: Criterion, ruling: bool) -> Census:
-    return walk_given.with_a_settlement(a_census(), flaw, criterion, ruling)
 
 
 def a_census_split_on_the_effect_of(flaw: str) -> Census:

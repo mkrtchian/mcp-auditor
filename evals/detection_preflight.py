@@ -24,23 +24,6 @@ def vulnerable_services(targets: Sequence[Target]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(name for t in targets for name in t.images))
 
 
-def expected_services(targets: Sequence[Target]) -> tuple[str, ...]:
-    # Both versions of every server, plus the sentinel unconditionally: a kept http_endpoint
-    # and its namespace holder need it on any target, so dropping the fetch target must not
-    # drop the sentinel from the preflight.
-    stand_ins = (
-        [STAND_IN_SERVICE] if any(t.planting_host.public_names.stand_ins for t in targets) else []
-    )
-    return tuple(
-        dict.fromkeys(
-            [name for t in targets for name in t.images]
-            + [t.patched_image for t in targets]
-            + [SENTINEL_SERVICE]
-            + stand_ins
-        )
-    )
-
-
 # What capture_probe_corpus needs: it lists tools on the vulnerable images only.
 VULNERABLE_SERVICES = vulnerable_services(ACCEPTANCE_TARGETS)
 
@@ -102,6 +85,23 @@ def preflight_ok(docker: PreflightDocker = HOST_DOCKER) -> bool:
             "[yellow]This Docker host cannot enforce --pids-limit, targets run without it.[/yellow]"
         )
     return True
+
+
+def expected_services(targets: Sequence[Target]) -> tuple[str, ...]:
+    # Both versions of every server, plus the sentinel unconditionally: a kept http_endpoint
+    # and its namespace holder need it on any target, so dropping the fetch target must not
+    # drop the sentinel from the preflight.
+    stand_ins = (
+        [STAND_IN_SERVICE] if any(t.planting_host.public_names.stand_ins for t in targets) else []
+    )
+    return tuple(
+        dict.fromkeys(
+            [name for t in targets for name in t.images]
+            + [t.patched_image for t in targets]
+            + [SENTINEL_SERVICE]
+            + stand_ins
+        )
+    )
 
 
 def main() -> None:

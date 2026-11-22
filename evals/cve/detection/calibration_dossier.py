@@ -103,6 +103,11 @@ def advisory_dossier(flaw: CensusFlaw) -> Dossier:
     )
 
 
+def _copy_sources(out: Path) -> None:
+    copy_kit_sources(out, KIT_ROOTS)
+    shutil.copyfile(places.DETECTION_PLACES, out / "evals" / "detection_places.json")
+
+
 def copy_kit_sources(out: Path, kit_roots: Sequence[str]) -> None:
     """Copy the given kit modules with their import closure (every `__init__.py` on the way),
     the stand-in captures (evals/stand_ins/), the sentinel Dockerfile and the stand-in Dockerfile
@@ -115,11 +120,6 @@ def copy_kit_sources(out: Path, kit_roots: Sequence[str]) -> None:
         shutil.copyfile(DOCKER / dockerfile, docker_out / dockerfile)
 
 
-def _copy_sources(out: Path) -> None:
-    copy_kit_sources(out, KIT_ROOTS)
-    shutil.copyfile(places.DETECTION_PLACES, out / "evals" / "detection_places.json")
-
-
 def _write_docs(out: Path) -> None:
     (out / "grammar_classes.md").write_text(GRAMMAR_CLASSES)
     (out / "layout.md").write_text(_LAYOUT)
@@ -127,16 +127,16 @@ def _write_docs(out: Path) -> None:
     (out / "README.md").write_text(_readme())
 
 
+def _readme() -> str:
+    names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
+    return _README.format(acceptance_services=names)
+
+
 def acceptance_services() -> set[str]:
     services = {
         name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
     }
     return services | {SENTINEL_SERVICE}
-
-
-def _readme() -> str:
-    names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
-    return _README.format(acceptance_services=names)
 
 
 def _fixture_format() -> str:
