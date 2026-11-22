@@ -1,6 +1,6 @@
+from mcp_auditor.domain.audited_server import SendAttempt
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.server_liveness import RelaunchCause
-from mcp_auditor.domain.server_watch import SendAttempt
 from tests.integration.support.test_cve_relaunch_given import container_id
 
 

@@ -25,10 +25,10 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.adapters.session_owner import SessionEntry, SessionOwner
 from mcp_auditor.domain.container_name import Undecidable, declared_container_name
 from mcp_auditor.domain.models import ExecutionRegime, ToolDefinition, ToolResponse
-from mcp_auditor.domain.server_watch import PING_TIMEOUT_SECONDS
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
+_PING_TIMEOUT = 10
 _TEARDOWN_TIMEOUT = 30
 # Once the owner has unwound a session whose transport failed, a call reads as a lost connection.
 _SESSION_LOST = ToolResponse(
@@ -48,7 +48,7 @@ class SessionBounds:
     server's teardown."""
 
     initialize: float = _INITIALIZE_TIMEOUT
-    ping: float = PING_TIMEOUT_SECONDS
+    ping: float = _PING_TIMEOUT
     teardown: float = _TEARDOWN_TIMEOUT
 
 

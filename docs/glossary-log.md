@@ -142,3 +142,4 @@ Some older words are kept on purpose in living code and data, since changing the
 | `--ungated` | `--no-baseline` | rename | 2026-11-11 |
 | unread targets (ADR 015, three targets not yet read in 2026-09) | no successor: acceptance targets not yet read. They were never the holdout layer. | retired | 2026-11-11 |
 | `version_setting` | `candidate_counted_flaws` | rename | 2026-11-11 |
+| `WatchStep` | `WatchReaction` | rename | 2026-11-22 |

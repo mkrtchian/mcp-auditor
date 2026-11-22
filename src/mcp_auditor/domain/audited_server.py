@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 from mcp_auditor.domain.models import AuditPayload, BlockedPayload, ToolDefinition, ToolResponse
@@ -5,9 +6,15 @@ from mcp_auditor.domain.payload_safety import destructive_reason, unsendable_rea
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause, UnsentPayload
-from mcp_auditor.domain.server_watch import SendAttempt, ServerWatch, WatchStep
+from mcp_auditor.domain.server_watch import ServerWatch, WatchReaction
 
 _NO_REDACTION = Redaction.none()
+
+
+@dataclass(frozen=True)
+class SendAttempt:
+    outcome: ToolResponse | BlockedPayload | UnsentPayload
+    relaunch: Relaunch | None = None
 
 
 class AuditedServer:
@@ -70,10 +77,10 @@ class AuditedServer:
     async def _watched(
         self, tool_name: str, response: ToolResponse, arguments: dict[str, Any]
     ) -> Relaunch | None:
-        step = self._watch.after_response(tool_name, response)
-        if step is WatchStep.PING:
-            step = self._watch.after_ping(tool_name, await self._client.ping())
-        if step is not WatchStep.RELAUNCH:
+        reaction = self._watch.after_response(tool_name, response)
+        if reaction is WatchReaction.PING:
+            reaction = self._watch.after_ping(tool_name, await self._client.ping())
+        if reaction is not WatchReaction.RELAUNCH:
             return None
         cause = self._watch.relaunch_cause()
         succeeded = await self._client.relaunch()

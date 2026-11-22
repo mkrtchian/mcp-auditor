@@ -2,21 +2,14 @@
 when a tool stops being called (ADR 036). Pure: the caller sends the pings and relaunches."""
 
 from collections import Counter
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-from mcp_auditor.domain.models import BlockedPayload, ToolResponse
-from mcp_auditor.domain.server_liveness import (
-    Relaunch,
-    RelaunchCause,
-    UnsentCause,
-    UnsentPayload,
-)
+from mcp_auditor.domain.models import ToolResponse
+from mcp_auditor.domain.server_liveness import RelaunchCause, UnsentCause
 
 TIMEOUTS_IN_A_ROW: Final = 3
 RELAUNCHES_IN_A_ROW: Final = 2
-PING_TIMEOUT_SECONDS: Final = 10
 
 # A server gone mid-call looks like an ordinary error: SDK 1.30 turns a call in flight when the
 # server exits into an McpError reading "Connection closed", and the stdio transport surfaces a
@@ -29,13 +22,7 @@ LOST_CONNECTION_RESPONSES: tuple[tuple[str, str | None], ...] = (
 )
 
 
-@dataclass(frozen=True)
-class SendAttempt:
-    outcome: ToolResponse | BlockedPayload | UnsentPayload
-    relaunch: Relaunch | None = None
-
-
-class WatchStep(StrEnum):
+class WatchReaction(StrEnum):
     NOTHING = "nothing"
     PING = "ping"
     RELAUNCH = "relaunch"
@@ -63,17 +50,17 @@ class ServerWatch:
     def control_ping_answered(self, answered: bool) -> None:
         self._ping_answered = answered
 
-    def after_response(self, tool_name: str, response: ToolResponse) -> WatchStep:
+    def after_response(self, tool_name: str, response: ToolResponse) -> WatchReaction:
         if is_lost_connection(response):
             return self._relaunch_for(RelaunchCause.LOST_CONNECTION)
         if not is_timeout(response):
             self._answered(tool_name)
-            return WatchStep.NOTHING
+            return WatchReaction.NOTHING
         if self._ping_answered:
-            return WatchStep.PING
+            return WatchReaction.PING
         return self._timed_out(tool_name)
 
-    def after_ping(self, tool_name: str, answered: bool) -> WatchStep:
+    def after_ping(self, tool_name: str, answered: bool) -> WatchReaction:
         if not answered:
             return self._relaunch_for(RelaunchCause.UNANSWERED_PING)
         return self._timed_out(tool_name)
@@ -93,24 +80,24 @@ class ServerWatch:
         if self._relaunches[tool_name] >= RELAUNCHES_IN_A_ROW:
             self._stopped[tool_name] = UnsentCause.RELAUNCHES_IN_A_ROW
 
-    def _relaunch_for(self, cause: RelaunchCause) -> WatchStep:
+    def _relaunch_for(self, cause: RelaunchCause) -> WatchReaction:
         self._relaunch_cause = cause
-        return WatchStep.RELAUNCH
+        return WatchReaction.RELAUNCH
 
     def _answered(self, tool_name: str) -> None:
         self._timeouts[tool_name] = 0
         self._relaunches[tool_name] = 0
         self._stopped_last_for_timing_out = None
 
-    def _timed_out(self, tool_name: str) -> WatchStep:
+    def _timed_out(self, tool_name: str) -> WatchReaction:
         self._timeouts[tool_name] += 1
         if self._timeouts[tool_name] < TIMEOUTS_IN_A_ROW:
-            return WatchStep.NOTHING
+            return WatchReaction.NOTHING
         if self._stopped_last_for_timing_out is not None:
             return self._relaunch_for(RelaunchCause.STUCK)
         self._stopped[tool_name] = UnsentCause.TOOL_TIMING_OUT
         self._stopped_last_for_timing_out = tool_name
-        return WatchStep.NOTHING
+        return WatchReaction.NOTHING
 
 
 def is_timeout(response: ToolResponse) -> bool:

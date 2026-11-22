@@ -1,6 +1,6 @@
 import pytest
 
-from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.audited_server import AuditedServer, SendAttempt
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -10,7 +10,7 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause, UnsentPayload
-from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW, SendAttempt
+from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response
 from tests.unit.auditor.support.audited_servers import a_server_taken_as_down

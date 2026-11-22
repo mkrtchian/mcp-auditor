@@ -1,5 +1,3 @@
-# The Docker adapter: what the host tells us about the `docker` client, and the I/O
-# with the daemon.
 import logging
 import subprocess
 from collections.abc import Mapping
@@ -24,8 +22,6 @@ def docker_client_env(environ: Mapping[str, str]) -> dict[str, str]:
 
 
 class DockerRuntime:
-    """The container runtime the confined regime drives, one `docker` call per method."""
-
     def available(self) -> bool:
         return _docker("version", "--format", "{{.Server.Version}}").returncode == 0
 
