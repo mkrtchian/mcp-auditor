@@ -11,8 +11,10 @@ from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import FIXTURE, kubect
 from tests.fakes.planting_docker import FakePlantingDocker
 
 
-def test_the_control_plane_runs_unprivileged_on_its_own_network(monkeypatch: pytest.MonkeyPatch):
-    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch)
+def test_the_control_plane_runs_unprivileged_on_its_own_network(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
         pass
@@ -21,9 +23,9 @@ def test_the_control_plane_runs_unprivileged_on_its_own_network(monkeypatch: pyt
 
 
 def test_the_nuisance_server_joins_its_control_plane_with_its_admin_conf_mounted_read_only(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch)
+    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server:
         then.the_server_joins_the_network_of_its_control_plane(docker, server)
@@ -34,9 +36,9 @@ def test_the_nuisance_server_joins_its_control_plane_with_its_admin_conf_mounted
 
 
 def test_the_control_plane_its_network_and_its_kubeconfig_are_removed_when_the_body_raises(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch)
+    docker = given.a_docker_whose_control_plane_comes_up(monkeypatch, tmp_path)
     kubeconfigs: list[Path] = []
 
     with (

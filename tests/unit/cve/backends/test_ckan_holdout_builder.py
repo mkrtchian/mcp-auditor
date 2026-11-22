@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as given
@@ -5,9 +7,9 @@ import tests.unit.cve.backends.support.test_ckan_holdout_builder_then as then
 from evals.cve.backends.ckan import CKAN_BRIDGE, CKAN_PARTS
 from evals.cve.backends.ckan_holdout import ckan_ssrf_env
 from evals.cve.backends.doris import LINK_LOCAL_NETWORK, start_doris_sentinel
+from tests.fakes import ScriptedDockerExecutable
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import value_after
-from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_the_server_joins_the_ckan_bridge_and_the_link_local_network():
@@ -43,12 +45,14 @@ def test_the_launch_removes_its_server_and_its_sentinels_on_exit():
     assert sorted(ckan.removed) == sorted([server, *(f"sentinel-{h}" for h in ckan.sentinel_hosts)])
 
 
-def test_no_ckan_part_runs_on_the_network_the_sentinels_take(monkeypatch: pytest.MonkeyPatch):
-    commands = recorded_commands(monkeypatch)
+def test_no_ckan_part_runs_on_the_network_the_sentinels_take(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
     [sentinel] = given.the_targets_spec().sentinels[:1]
 
     start_doris_sentinel(sentinel)
 
-    then.joins_networks(commands[0], [LINK_LOCAL_NETWORK])
+    then.joins_networks(docker.commands[0], [LINK_LOCAL_NETWORK])
     for part in CKAN_PARTS:
         then.joins_networks(part.run_args(), [CKAN_BRIDGE])

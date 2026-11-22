@@ -41,7 +41,6 @@ _FIREWORKS_RETRY = ThirdParty(
 )
 
 _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
-    "tests/fakes/scripted_docker.py": ((SETATTR, "ScriptedDocker:subprocess.run"),),
     "tests/integration/committed/cve/backends/support/test_backend_hostnames_given.py": (
         (FOREIGN, "test_nuisance_committed_admission_given"),
     ),
@@ -164,9 +163,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/cve/backends/support/test_backend_lifecycle_given.py": (
         (FOREIGN, "test_nuisance_admission_given"),
-    ),
-    "tests/unit/cve/backends/support/test_node_sandbox_engine_given.py": (
-        (SETATTR, "a_docker_whose_engine_opens_its_socket:subprocess.run"),
     ),
     "tests/unit/cve/backends/test_backend_lifecycle.py": (
         (FOREIGN, "test_nuisance_admission_edits_given"),
@@ -618,7 +614,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_searxng_backend_given"),
     ),
     "tests/unit/support/detection_holdout_runs.py": ((FOREIGN, "test_cve_grammar_given"),),
-    "tests/unit/support/recorded_subprocess.py": ((SETATTR, "recorded_commands:subprocess.run"),),
 }
 
 DEBTS: tuple[Debt, ...] = (

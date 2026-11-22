@@ -7,7 +7,7 @@ from evals.cve.backends.gitlab import (
     GITLAB_PIDS_LIMIT,
     GITLAB_SHM_SIZE,
 )
-from tests.fakes import ScriptedDocker
+from tests.fakes import ScriptedDockerExecutable
 from tests.unit.support.docker_argv import carries, environment, value_after, values_after
 
 # Measured in the GitLab CE stand-up: what Omnibus needs to reconfigure and run under no new
@@ -27,7 +27,7 @@ def the_backend_is_hardened_and_named_gitlab_example_com(backend: Sequence[str])
 
 
 def the_server_joins_the_closed_network_created_for_its_backend(
-    docker: ScriptedDocker, server: Sequence[str]
+    docker: ScriptedDockerExecutable, server: Sequence[str]
 ) -> None:
     network = value_after(server, "--network")
     assert network.startswith(f"{GITLAB_NETWORK}-")
@@ -36,7 +36,7 @@ def the_server_joins_the_closed_network_created_for_its_backend(
 
 
 def the_server_takes_the_token_the_seed_created(
-    docker: ScriptedDocker, server: Sequence[str]
+    docker: ScriptedDockerExecutable, server: Sequence[str]
 ) -> None:
     token = environment(server)["GITLAB_PERSONAL_ACCESS_TOKEN"]
     assert any(
@@ -53,7 +53,7 @@ def the_two_servers_join_two_networks(first: Sequence[str], second: Sequence[str
 
 
 def the_server_its_backend_and_its_network_were_removed(
-    docker: ScriptedDocker, server: str
+    docker: ScriptedDockerExecutable, server: str
 ) -> None:
     removed = docker.removed()
     assert server in removed

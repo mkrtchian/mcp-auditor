@@ -1,4 +1,5 @@
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -14,8 +15,8 @@ from evals.cve.closed_network import (
     ensure_closed_network,
     network_facts,
 )
+from tests.fakes import ScriptedDockerExecutable
 from tests.fakes.network_docker import FakeNetworkDocker
-from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_an_absent_network_is_created_closed():
@@ -117,10 +118,10 @@ def test_a_recorded_inspect_output_is_read_into_its_facts(recorded: str, expecte
 
 
 def test_the_containers_of_an_open_network_go_with_their_anonymous_volumes(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    commands = recorded_commands(monkeypatch)
+    docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
 
     DOCKER_NETWORKS.remove_containers(["mcp-auditor-cve-backend"])
 
-    assert commands == [["docker", "rm", "-f", "-v", "mcp-auditor-cve-backend"]]
+    assert docker.commands == [["docker", "rm", "-f", "-v", "mcp-auditor-cve-backend"]]

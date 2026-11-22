@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 import tests.unit.cve.backends.support.test_gitlab_backend_given as given
@@ -7,9 +9,9 @@ from tests.unit.support.docker_argv import carries, value_after
 
 
 def test_the_backend_carries_its_hardening_and_the_gitlab_example_com_host(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
+    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]):
         pass
@@ -18,23 +20,25 @@ def test_the_backend_carries_its_hardening_and_the_gitlab_example_com_host(
 
 
 def test_the_server_joins_the_closed_network_of_its_backend(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
+    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server:
         then.the_server_joins_the_closed_network_created_for_its_backend(docker, server)
 
 
-def test_the_token_the_stand_up_created_reaches_the_server(monkeypatch: pytest.MonkeyPatch):
-    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
+def test_the_token_the_stand_up_created_reaches_the_server(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server:
         then.the_server_takes_the_token_the_seed_created(docker, server)
 
 
-def test_two_launches_stand_two_backends(monkeypatch: pytest.MonkeyPatch):
-    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
+def test_two_launches_stand_two_backends(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch, tmp_path)
 
     with (
         LIFECYCLE.launch("first", "image", given.a_host(), []) as first,
@@ -46,9 +50,9 @@ def test_two_launches_stand_two_backends(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_the_server_its_backend_and_its_network_are_removed_when_the_body_raises(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch)
+    docker = given.a_docker_whose_gitlab_comes_up(monkeypatch, tmp_path)
 
     with pytest.raises(RuntimeError), LIFECYCLE.launch("server", "image", given.a_host(), []):
         raise RuntimeError("the probe failed")
@@ -57,9 +61,9 @@ def test_the_server_its_backend_and_its_network_are_removed_when_the_body_raises
 
 
 def test_a_failed_reconfigure_is_refused_and_its_backend_removed(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    docker = given.a_docker_whose_gitlab_fails_to_reconfigure(monkeypatch)
+    docker = given.a_docker_whose_gitlab_fails_to_reconfigure(monkeypatch, tmp_path)
 
     with (
         pytest.raises(RuntimeError, match="reconfigure"),

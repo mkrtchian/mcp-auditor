@@ -18,9 +18,9 @@ from evals.cve.backends.mcp_ssh_sshd import (
     sshd_server_args,
 )
 from evals.cve.planting_base import PlantingHost, SymbolicUser
+from tests.fakes import ScriptedDockerExecutable
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, mount_of, value_after, values_after
-from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_the_sshd_runs_in_its_own_namespace_under_the_readme_hostname():
@@ -44,14 +44,14 @@ def test_known_hosts_names_the_sshd_by_the_hostname_the_config_entry_names():
 def test_known_hosts_is_installed_mode_0644_and_handed_to_its_owner_with_chown_alone(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    commands = recorded_commands(monkeypatch)
+    docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
     path = tmp_path / "known_hosts"
 
     install_known_hosts(path, "prod.example.com ssh-ed25519 AAAA\n", ROOT)
 
     assert path.read_text() == "prod.example.com ssh-ed25519 AAAA\n"
     assert stat.S_IMODE(path.stat().st_mode) == 0o644
-    [chown] = commands
+    [chown] = docker.commands
     assert chown[-3:-1] == ["chown", ROOT]
     assert carries(chown, ["--cap-drop", "ALL", "--cap-add", "CHOWN"])
     assert value_after(chown, "--network") == "none"

@@ -2,6 +2,7 @@
 
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 
@@ -12,8 +13,8 @@ from evals.cve.run_images import (
     sweep_containers,
     target_services,
 )
+from tests.fakes import ScriptedDockerExecutable
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
-from tests.unit.support.recorded_subprocess import recorded_commands
 
 
 def test_target_services_dedups_images_and_patched_images():
@@ -78,10 +79,10 @@ def test_a_sweep_removes_the_listed_containers_and_says_how_many(
 
 
 def test_the_sweep_removes_the_containers_with_their_anonymous_volumes(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    commands = recorded_commands(monkeypatch)
+    docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
 
     remove_containers(["a", "b"])
 
-    assert commands == [["docker", "rm", "-f", "-v", "a", "b"]]
+    assert docker.commands == [["docker", "rm", "-f", "-v", "a", "b"]]
