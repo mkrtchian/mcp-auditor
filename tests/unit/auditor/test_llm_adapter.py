@@ -4,7 +4,6 @@ from pydantic import BaseModel
 import tests.unit.auditor.support.scripted_llms as llms
 import tests.unit.auditor.support.test_llm_adapter_given as given
 import tests.unit.auditor.support.test_llm_adapter_then as then
-from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditPayload,
@@ -232,7 +231,6 @@ class TestTruncatedOutput:
 
 class TestThrottledRequests:
     async def test_a_throttled_request_is_counted_in_the_usage(self):
-        install_throttle_log_handler()
         responses = [Throttled(raw_response(llms.Output(value="ok"), 100, 50))]
         llm = llms.an_llm(responses, given.PYDANTIC_SCHEMA)
 
@@ -241,7 +239,6 @@ class TestThrottledRequests:
         assert usage.throttled_requests == 1
 
     async def test_throttled_requests_are_summed_across_parse_attempts(self):
-        install_throttle_log_handler()
         responses = [
             Throttled(raw_response({"unexpected": 1}, 100, 50)),
             Throttled(raw_response({"value": "ok"}, 100, 50)),
@@ -259,7 +256,7 @@ class TestPromptTooLong:
         chat_model = FakeChatModel(
             [given.CONTEXT_OVERFLOWS[provider], raw_response({"value": "ok"}, 100, 50)]
         )
-        llm = given.an_llm_over(chat_model)
+        llm = llms.an_llm_over(chat_model)
 
         with pytest.raises(PromptTooLong) as raised:
             await llm.generate_structured("prompt", llms.Output)
@@ -268,9 +265,8 @@ class TestPromptTooLong:
         assert raised.value.usage == ProviderUsage()
 
     async def test_a_throttled_overflow_carries_its_throttled_requests(self):
-        install_throttle_log_handler()
         chat_model = FakeChatModel([Throttled(given.CONTEXT_OVERFLOWS["anthropic"])])
-        llm = given.an_llm_over(chat_model)
+        llm = llms.an_llm_over(chat_model)
 
         with pytest.raises(PromptTooLong) as raised:
             await llm.generate_structured("prompt", llms.Output)

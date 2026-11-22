@@ -4,6 +4,7 @@ import logging
 import openai
 import pytest
 
+import tests.unit.auditor.support.scripted_llms as llms
 import tests.unit.auditor.support.test_llm_patience_given as given
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience, one_audit
 from mcp_auditor.domain.models import ProviderUsage
@@ -18,7 +19,7 @@ class TestPatientRetry:
     async def test_a_call_throttled_twice_then_answered_returns_the_answer(self):
         sleep = given.RecordingSleep()
         chat_model = FakeChatModel([given.a_throttle(), given.a_throttle(), given.an_answer()])
-        llm = given.an_llm(chat_model, given.a_patience(sleep))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(sleep))
 
         output, usage = await llm.generate_structured("prompt", Output)
 
@@ -30,7 +31,7 @@ class TestPatientRetry:
 
     async def test_each_wait_logs_one_warning(self, caplog: pytest.LogCaptureFixture):
         chat_model = FakeChatModel([given.a_throttle(), given.a_throttle(), given.an_answer()])
-        llm = given.an_llm(chat_model, given.a_patience(given.RecordingSleep()))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(given.RecordingSleep()))
 
         with caplog.at_level(logging.WARNING, logger=_THROTTLING_LOGGER):
             await llm.generate_structured("prompt", Output)
@@ -41,8 +42,8 @@ class TestPatientRetry:
         ]
 
     async def test_a_call_answered_at_once_logs_no_warning(self, caplog: pytest.LogCaptureFixture):
-        llm = given.an_llm(
-            FakeChatModel([given.an_answer()]), given.a_patience(given.RecordingSleep())
+        llm = llms.an_llm_over(
+            FakeChatModel([given.an_answer()]), patience=given.a_patience(given.RecordingSleep())
         )
 
         with caplog.at_level(logging.WARNING, logger=_THROTTLING_LOGGER):
@@ -53,7 +54,7 @@ class TestPatientRetry:
     async def test_the_provider_hint_sets_the_wait(self):
         sleep = given.RecordingSleep()
         chat_model = FakeChatModel([given.a_throttle({"Retry-After": "3"}), given.an_answer()])
-        llm = given.an_llm(chat_model, given.a_patience(sleep))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(sleep))
 
         await llm.generate_structured("prompt", Output)
 
@@ -63,8 +64,9 @@ class TestPatientRetry:
 class TestExhaustedPatience:
     async def test_a_call_throttled_past_the_bound_raises_with_every_429_counted(self):
         sleep = given.RecordingSleep()
-        llm = given.an_llm(
-            FakeChatModel(given.throttled_forever()), given.a_patience(sleep, max_total_wait=30.0)
+        llm = llms.an_llm_over(
+            FakeChatModel(given.throttled_forever()),
+            patience=given.a_patience(sleep, max_total_wait=30.0),
         )
 
         with pytest.raises(ProviderThrottled) as raised:
@@ -79,7 +81,7 @@ class TestExhaustedPatience:
     async def test_a_hint_past_the_bound_raises_without_waiting(self):
         sleep = given.RecordingSleep()
         chat_model = FakeChatModel([given.a_throttle({"Retry-After": "400"}), given.an_answer()])
-        llm = given.an_llm(chat_model, given.a_patience(sleep))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(sleep))
 
         with pytest.raises(ProviderThrottled):
             await llm.generate_structured("prompt", Output)
@@ -96,7 +98,7 @@ class TestExhaustedPatience:
                 *given.throttled_forever(),
             ]
         )
-        llm = given.an_llm(chat_model, given.a_patience(sleep, max_total_wait=15.0))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(sleep, max_total_wait=15.0))
 
         with pytest.raises(ProviderThrottled) as raised:
             await llm.generate_structured("prompt", Output)
@@ -108,7 +110,7 @@ class TestExhaustedPatience:
 
     async def test_a_refusal_after_a_throttled_retry_carries_the_429s(self):
         chat_model = FakeChatModel([given.a_throttle(), given.a_refusal()])
-        llm = given.an_llm(chat_model, given.a_patience(given.RecordingSleep()))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(given.RecordingSleep()))
 
         with pytest.raises(ProviderRefusal) as raised:
             await llm.generate_structured("prompt", Output)
@@ -118,7 +120,7 @@ class TestExhaustedPatience:
     async def test_a_429_marked_not_retryable_is_raised_as_is_without_waiting(self):
         sleep = given.RecordingSleep()
         chat_model = FakeChatModel([given.a_throttle({"x-should-retry": "false"})])
-        llm = given.an_llm(chat_model, given.a_patience(sleep))
+        llm = llms.an_llm_over(chat_model, patience=given.a_patience(sleep))
 
         with pytest.raises(openai.RateLimitError):
             await llm.generate_structured("prompt", Output)
@@ -131,9 +133,9 @@ class TestBreaker:
         sleep = given.RecordingSleep()
         patience = given.a_patience(sleep, max_total_wait=0.0)
         chat_model = FakeChatModel([given.a_throttle(), given.an_answer()])
-        llm = given.an_llm(chat_model, patience)
+        llm = llms.an_llm_over(chat_model, patience=patience)
         other_model = FakeChatModel([given.an_answer()])
-        other_llm = given.an_llm(other_model, patience)
+        other_llm = llms.an_llm_over(other_model, patience=patience)
 
         with one_audit():
             with pytest.raises(ProviderThrottled):
@@ -151,9 +153,9 @@ class TestBreaker:
     async def test_a_call_waiting_when_the_breaker_trips_stops_at_its_next_retry(self):
         sleep = given.GatedSleep()
         waiting_model = FakeChatModel([given.a_throttle(), given.an_answer()])
-        waiting_llm = given.an_llm(waiting_model, ThrottlePatience(sleep=sleep))
-        exhausted_llm = given.an_llm(
-            FakeChatModel(given.throttled_forever()), ThrottlePatience(max_total_wait=0.0)
+        waiting_llm = llms.an_llm_over(waiting_model, patience=ThrottlePatience(sleep=sleep))
+        exhausted_llm = llms.an_llm_over(
+            FakeChatModel(given.throttled_forever()), patience=ThrottlePatience(max_total_wait=0.0)
         )
 
         async def exhaust_then_wake() -> None:
@@ -174,7 +176,9 @@ class TestBreaker:
 
     async def test_outside_any_audit_an_exhausted_call_does_not_block_the_next(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
-        llm = given.an_llm(FakeChatModel([given.a_throttle(), given.an_answer()]), patience)
+        llm = llms.an_llm_over(
+            FakeChatModel([given.a_throttle(), given.an_answer()]), patience=patience
+        )
         with pytest.raises(ProviderThrottled):
             await llm.generate_structured("prompt", Output)
 
@@ -185,7 +189,7 @@ class TestBreaker:
     async def test_a_call_outside_any_audit_or_in_a_later_audit_is_sent(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
         chat_model = FakeChatModel([given.a_throttle(), given.an_answer(), given.an_answer()])
-        llm = given.an_llm(chat_model, patience)
+        llm = llms.an_llm_over(chat_model, patience=patience)
         with one_audit(), pytest.raises(ProviderThrottled):
             await llm.generate_structured("prompt", Output)
 
@@ -197,7 +201,9 @@ class TestBreaker:
 
     async def test_concurrent_audits_over_one_llm_each_have_their_own_breaker(self):
         patience = given.a_patience(given.RecordingSleep(), max_total_wait=0.0)
-        llm = given.an_llm(FakeChatModel([given.a_throttle(), given.an_answer()]), patience)
+        llm = llms.an_llm_over(
+            FakeChatModel([given.a_throttle(), given.an_answer()]), patience=patience
+        )
         first_audit_done = asyncio.Event()
 
         async def exhausted_audit() -> None:

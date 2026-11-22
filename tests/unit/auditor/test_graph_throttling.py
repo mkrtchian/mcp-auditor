@@ -1,13 +1,15 @@
+import tests.unit.auditor.support.scripted_llms as llms
 import tests.unit.auditor.support.test_graph_throttling_given as given
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.domain.models import MissCause, ModelCallKind
 
 
 async def test_a_call_throttled_past_every_retry_stops_every_later_call_of_the_audit():
-    chat_model = given.a_provider_throttling_the_first_generation_past_every_retry()
+    chat_model = given.a_provider_throttling_twice()
+    llm = llms.an_llm_over(chat_model, patience=given.a_patience_of(15.0))
 
     with one_audit():
-        result = await given.an_audit_of_two_tools(given.an_llm_over(chat_model))
+        result = await given.an_audit_of_two_tools(llm)
 
     report = result["audit_report"]
     assert chat_model.calls == 2

@@ -4,10 +4,8 @@ from typing import Any
 
 import openai
 
-from mcp_auditor.adapters.llm import LLM, StructuredOutput
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
-from mcp_auditor.adapters.throttling import install_throttle_log_handler
-from tests.fakes.chat_model import FakeChatModel, ScriptedResponse, Throttled, raw_response
+from tests.fakes.chat_model import ScriptedResponse, Throttled, raw_response
 from tests.unit.support.provider_errors import an_openai_bad_request, an_openai_rate_limit
 
 PROVIDER_MESSAGE = "Error code: 429 - slow down"
@@ -23,15 +21,6 @@ class RecordingSleep:
 
 def a_patience(sleep: RecordingSleep, max_total_wait: float = 300.0) -> ThrottlePatience:
     return ThrottlePatience(max_total_wait=max_total_wait, sleep=sleep, jitter=lambda: 0.0)
-
-
-def an_llm(chat_model: FakeChatModel, patience: ThrottlePatience) -> LLM:
-    install_throttle_log_handler()
-    return LLM(
-        chat_model,  # pyrefly: ignore[bad-argument-type]
-        StructuredOutput(method="json_schema", schema_as_dict=True),
-        patience=patience,
-    )
 
 
 def throttled_forever(count: int = 20) -> list[ScriptedResponse]:

@@ -1,8 +1,7 @@
 from typing import Any
 
-from mcp_auditor.adapters.llm import LLM, StructuredOutput
+from mcp_auditor.adapters.llm import LLM
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
-from mcp_auditor.adapters.throttling import install_throttle_log_handler
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.graph.builder import build_graph
 from tests.fakes import FakeMCPClient
@@ -13,21 +12,16 @@ from tests.unit.support.provider_errors import an_openai_rate_limit
 TOOL_NAMES = ["get_user", "list_users"]
 
 
-def a_provider_throttling_the_first_generation_past_every_retry() -> FakeChatModel:
-    # A 15 s bound: the first wait of 10 s fits, the second of 20 s exhausts the patience.
+def a_provider_throttling_twice() -> FakeChatModel:
     return FakeChatModel([Throttled(an_openai_rate_limit()), Throttled(an_openai_rate_limit())])
 
 
-def an_llm_over(chat_model: FakeChatModel) -> LLM:
-    install_throttle_log_handler()
-    return LLM(
-        chat_model,  # pyrefly: ignore[bad-argument-type]
-        StructuredOutput(method="json_schema", schema_as_dict=True),
-        patience=ThrottlePatience(max_total_wait=15.0, sleep=no_wait, jitter=lambda: 0.0),
-    )
+def a_patience_of(max_total_wait: float) -> ThrottlePatience:
+    # No jitter, so the waits are 10 s then 20 s.
+    return ThrottlePatience(max_total_wait=max_total_wait, sleep=_no_wait, jitter=lambda: 0.0)
 
 
-async def no_wait(_delay: float) -> None:
+async def _no_wait(_delay: float) -> None:
     return None
 
 

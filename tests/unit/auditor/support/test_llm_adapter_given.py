@@ -12,18 +12,10 @@ from langchain_openai.chat_models.base import (
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.completion_usage import CompletionUsage
 
-from mcp_auditor.adapters.llm import LLM, StructuredOutput
-from tests.fakes.chat_model import FakeChatModel
-from tests.unit.auditor.support.scripted_llms import DICT_SCHEMA, a_completion
+from mcp_auditor.adapters.llm import StructuredOutput
+from tests.unit.auditor.support.scripted_llms import a_completion
 
 PYDANTIC_SCHEMA = StructuredOutput(method="json_schema")
-
-
-def an_llm_over(chat_model: FakeChatModel) -> LLM:
-    return LLM(
-        chat_model,  # pyrefly: ignore[bad-argument-type]
-        DICT_SCHEMA,
-    )
 
 
 _OVERFLOW_MESSAGE = "prompt is too long: 1200000 tokens > 1000000 maximum"
