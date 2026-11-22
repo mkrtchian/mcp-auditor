@@ -6,17 +6,14 @@ from mcp_auditor.domain.models import (
     ProviderUsage,
     Severity,
     TestCase,
-    ToolReport,
 )
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 from tests.unit.auditor.support.report_builders import (
     a_chain,
-    a_chain_fail_result,
     a_fail_result,
     a_pass_result,
     a_report,
     a_run_command_tool_report,
-    a_tool_definition,
     a_tool_report,
     a_two_tool_report,
 )
@@ -75,19 +72,6 @@ def a_report_with_mapped_pass() -> AuditReport:
         server_command="python server.py",
         tool_reports=[a_tool_report("get_user", results)],
     )
-
-
-def a_report_with_chain_injection_finding() -> AuditReport:
-    chain = a_chain(
-        category=AuditCategory.INJECTION,
-        judge_result=a_chain_fail_result(category=AuditCategory.INJECTION),
-    )
-    tool_report = ToolReport(
-        tool=a_tool_definition(name="get_user"),
-        cases=[],
-        chains=[chain],
-    )
-    return a_report(server_command="python server.py", tool_reports=[tool_report])
 
 
 BLOCKED_CASE_REASON = "destructive filesystem command: rm -rf"

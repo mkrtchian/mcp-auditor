@@ -1,6 +1,6 @@
 import json
 
-from tests.unit.auditor.support.markdown_sections import summary_of
+from tests.unit.auditor.support.markdown_sections import section_of
 
 
 def json_has_owasp_for_category(
@@ -52,7 +52,7 @@ def markdown_summary_has_counts(
     findings: int,
     per_severity_dict: dict[str, int],
 ) -> None:
-    summary = summary_of(markdown)
+    summary = section_of(markdown, "Summary")
     assert f"**Tools audited**: {tools}\n" in summary
     assert f"**Findings**: {findings}\n" in summary
     for severity, count in per_severity_dict.items():
@@ -77,8 +77,3 @@ def json_chain_has_owasp(json_str: str, category: str, expected_code: str) -> No
                 assert result["owasp"]["code"] == expected_code
                 return
     raise AssertionError(f"No chain with category {category} found")
-
-
-def tool_section(markdown: str, tool_name: str) -> str:
-    sections = markdown.split("\n## ")
-    return next(section for section in sections if section.startswith(tool_name))

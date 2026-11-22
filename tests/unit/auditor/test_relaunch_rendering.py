@@ -9,13 +9,13 @@ from mcp_auditor.domain.rendering import describe_coverage_gap, render_json, ren
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.domain.server_watch import RELAUNCHES_IN_A_ROW, TIMEOUTS_IN_A_ROW
 from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
-from tests.unit.auditor.support.markdown_sections import summary_of
+from tests.unit.auditor.support.markdown_sections import section_of
 
 
 def test_markdown_summary_counts_the_relaunches():
     report = given.a_report_with_two_relaunches_on_get_user()
 
-    summary = summary_of(render_markdown(report))
+    summary = section_of(render_markdown(report), "Summary")
 
     assert "**Relaunches**: 2\n" in summary
 
@@ -23,7 +23,7 @@ def test_markdown_summary_counts_the_relaunches():
 def test_markdown_summary_says_when_a_relaunch_failed():
     report = given.a_report_with_two_relaunches_on_get_user(last_succeeded=False)
 
-    summary = summary_of(render_markdown(report))
+    summary = section_of(render_markdown(report), "Summary")
 
     assert "**Relaunches**: 2, 1 failed and the server was taken as down\n" in summary
 
@@ -32,7 +32,7 @@ def test_markdown_summary_counts_a_failed_relaunch_a_resumed_audit_followed_with
     report = given.a_report_with_two_relaunches_on_get_user()
     report.relaunches[0].succeeded = False
 
-    summary = summary_of(render_markdown(report))
+    summary = section_of(render_markdown(report), "Summary")
 
     assert "**Relaunches**: 2, 1 failed and the server was taken as down\n" in summary
 
@@ -48,7 +48,8 @@ def test_markdown_lists_each_relaunch_under_its_tool_with_the_call_before_it_and
 
     result = render_markdown(report)
 
-    get_user, list_items = result.split("\n## get_user\n")[1].split("\n## list_items\n")
+    get_user = section_of(result, "get_user")
+    list_items = section_of(result, "list_items")
     assert (
         f"**Relaunch**: after `{given.LOST_ARGUMENTS}`, "
         "the connection to the server was lost, the server was relaunched"

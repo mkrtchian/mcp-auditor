@@ -149,16 +149,14 @@ def a_tool_report(
 
 
 def a_chain(
-    description: str = "probe then exploit",
-    category: AuditCategory = AuditCategory.INJECTION,
     judge_result: JudgeResult | None = None,
     blocked_reason: str | None = None,
 ) -> AttackChain:
     goal = ChainGoal(
-        description=description,
-        category=category,
+        description="probe then exploit",
+        category=AuditCategory.INJECTION,
         first_step=AuditPayload(
-            category=category,
+            category=AuditCategory.INJECTION,
             description="probe",
             arguments={"id": "1"},
         ),
@@ -171,7 +169,7 @@ def a_chain(
         ),
         ChainStep(
             payload=AuditPayload(
-                category=category,
+                category=AuditCategory.INJECTION,
                 description="exploit",
                 arguments={"id": "../../etc/passwd"},
             ),
@@ -262,17 +260,12 @@ def a_tool_definition(
     )
 
 
-def a_chain_fail_result(
-    tool_name: str = "get_user",
-    category: AuditCategory = AuditCategory.INJECTION,
-    severity: Severity = Severity.HIGH,
-    justification: str = "Chain exploited",
-) -> JudgeResult:
+def a_chain_fail_result() -> JudgeResult:
     return JudgeResult(
-        tool_name=tool_name,
-        category=category,
+        tool_name="get_user",
+        category=AuditCategory.INJECTION,
         arguments={"path": "/etc/passwd"},
         verdict=EvalVerdict.FAIL,
-        justification=justification,
-        severity=severity,
+        justification="Chain exploited",
+        severity=Severity.HIGH,
     )

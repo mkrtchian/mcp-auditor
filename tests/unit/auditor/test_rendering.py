@@ -11,6 +11,7 @@ from mcp_auditor.domain.rendering import (
     summarize_tools,
 )
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
+from tests.unit.auditor.support.markdown_sections import section_of
 from tests.unit.auditor.support.report_builders import (
     a_report_with_a_coverage_gap_on_get_user,
     a_report_with_chain_finding,
@@ -44,7 +45,7 @@ def test_json_owasp_is_null_for_unmapped_category():
 
 
 def test_json_with_chains_has_owasp():
-    report = given.a_report_with_chain_injection_finding()
+    report = a_report_with_chain_finding()
 
     result = render_json(report)
 
@@ -222,7 +223,7 @@ def test_markdown_flags_a_coverage_gap_right_under_the_tool_heading():
 
     result = render_markdown(report)
 
-    section = result.split("## get_user\n")[1]
+    section = section_of(result, "get_user")
     gap_line = section.strip().splitlines()[0]
     assert gap_line.startswith("**Coverage gap**")
     assert "7 cases generated for 10 requested" in gap_line
@@ -261,8 +262,8 @@ def test_markdown_tool_section_counts_its_responses_shown_cut():
     assert (
         f"**Responses shown cut**: 1 response(s) or error(s) over {MAX_SHOWN_LENGTH:,} characters, "
         "shown to the model with their middle cut"
-    ) in then.tool_section(result, "get_user")
-    assert "Responses shown cut" not in then.tool_section(result, "list_items")
+    ) in section_of(result, "get_user")
+    assert "Responses shown cut" not in section_of(result, "list_items")
 
 
 def test_json_carries_the_coverage_gap():
