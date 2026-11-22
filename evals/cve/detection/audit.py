@@ -44,7 +44,8 @@ from evals.eval_display import console
 from evals.metrics import SessionThrottles, blocked_reasons
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
-from mcp_auditor.domain.models import AuditReport, MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AuditReport
 
 
 class LaunchError(Exception):
@@ -127,7 +128,8 @@ async def attempt_once(
     if run is None:
         return None
     if any(
-        missed.cause is MissCause.PROVIDER_THROTTLED for missed in run.report.missed_model_calls
+        missed.cause is MissedCallCause.PROVIDER_THROTTLED
+        for missed in run.report.missed_model_calls
     ):
         console.print(
             f"[yellow]{target.flaw_id} run skipped:[/yellow]"

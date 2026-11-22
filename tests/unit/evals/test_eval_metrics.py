@@ -20,7 +20,8 @@ from evals.metrics import (
     quiet_throttle_waits,
     raise_if_throttled,
 )
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict, MissCause, ProviderUsage
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict, ProviderUsage
 
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
@@ -331,7 +332,7 @@ def test_a_run_detail_lists_each_missed_model_call_with_its_cause_tool_and_detai
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
     report = given.and_a_missed_judgment(
-        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+        refused, "search", MissedCallCause.UNREADABLE_ANSWER, "no answer matched"
     )
 
     detail = build_run_detail(0, aggregate_verdicts(report), report, {})
@@ -409,7 +410,7 @@ def test_phase_usage_add_sums_each_channel():
 def test_a_report_holding_a_throttled_judgment_raises_naming_it():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     report = given.and_a_missed_judgment(
-        clean, "search", MissCause.PROVIDER_THROTTLED, "300 s waited"
+        clean, "search", MissedCallCause.PROVIDER_THROTTLED, "300 s waited"
     )
 
     with pytest.raises(ThrottledAudit, match="search: judgment, 300 s waited"):
@@ -420,10 +421,10 @@ def test_a_report_holding_only_refused_unreadable_or_too_long_steps_does_not_rai
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
     refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
     unreadable = given.and_a_missed_judgment(
-        refused, "search", MissCause.UNREADABLE_ANSWER, "no answer matched"
+        refused, "search", MissedCallCause.UNREADABLE_ANSWER, "no answer matched"
     )
     report = given.and_a_missed_judgment(
-        unreadable, "search", MissCause.PROMPT_TOO_LONG, "rejected as too long"
+        unreadable, "search", MissedCallCause.PROMPT_TOO_LONG, "rejected as too long"
     )
 
     raise_if_throttled(report)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 from typing import Annotated, TypedDict
 
+from mcp_auditor.domain.model_calls import MissedModelCall
 from mcp_auditor.domain.models import (
     AttackChain,
     AttackContext,
@@ -11,7 +12,6 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     ChainStep,
     CoverageGap,
-    MissedModelCall,
     ProviderUsage,
     StepObservation,
     TestCase,

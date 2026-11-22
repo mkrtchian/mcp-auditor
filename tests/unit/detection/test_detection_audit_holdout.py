@@ -19,7 +19,7 @@ from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.provider_errors import ProviderFatal
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support import test_detection_audit_holdout_given as given
 from tests.unit.detection.support.detection_audits import (
     TARGET,
@@ -63,7 +63,7 @@ async def test_a_missed_model_call_on_a_detection_holdout_run_shows_its_cause_no
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    refused = a_report_missing(MissCause.PROVIDER_REFUSAL)
+    refused = a_report_missing(MissedCallCause.PROVIDER_REFUSAL)
     auditor = an_auditor_reporting(refused, report_detail=TYPES_ONLY)
 
     await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -186,7 +186,7 @@ async def test_an_attempt_holding_a_throttled_model_call_is_thrown_away_before_a
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    auditor = an_auditor_reporting(a_report_missing(MissCause.PROVIDER_THROTTLED))
+    auditor = an_auditor_reporting(a_report_missing(MissedCallCause.PROVIDER_THROTTLED))
     target = a_target_launching()
 
     outcome = await attempt_once(target, auditor, SessionThrottles(), places={})
@@ -203,7 +203,7 @@ async def test_an_attempt_throttled_and_refused_reads_as_throttled(
     monkeypatch: pytest.MonkeyPatch,
 ):
     a_captured_console(capsys, monkeypatch)
-    report = a_report_missing(MissCause.PROVIDER_REFUSAL, MissCause.PROVIDER_THROTTLED)
+    report = a_report_missing(MissedCallCause.PROVIDER_REFUSAL, MissedCallCause.PROVIDER_THROTTLED)
     auditor = an_auditor_reporting(report)
 
     outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), places={})

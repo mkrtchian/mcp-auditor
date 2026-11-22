@@ -4,14 +4,9 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
-from mcp_auditor.domain.models import (
-    AuditCategory,
-    AuditReport,
-    EvalVerdict,
-    MissCause,
-    ProviderUsage,
-)
-from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.rendering import MISSED_CALL_CAUSE_LABELS
 
 type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
 VerdictMap = KeyedVerdicts[tuple[str, AuditCategory]]
@@ -145,7 +140,7 @@ def raise_if_throttled(report: AuditReport) -> None:
     throttled = [
         f"{missed.tool_name}: {missed.kind}, {missed.detail}"
         for missed in report.missed_model_calls
-        if missed.cause is MissCause.PROVIDER_THROTTLED
+        if missed.cause is MissedCallCause.PROVIDER_THROTTLED
     ]
     if throttled:
         raise ThrottledAudit(
@@ -244,7 +239,8 @@ def blocked_reasons(report: AuditReport) -> list[str]:
 
 def missed_model_calls(report: AuditReport) -> list[str]:
     return [
-        f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}, {missed.detail}"
+        f"{MISSED_CALL_CAUSE_LABELS[missed.cause]}, "
+        f"{missed.tool_name}: {missed.kind}, {missed.detail}"
         for missed in report.missed_model_calls
     ]
 

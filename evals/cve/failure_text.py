@@ -6,8 +6,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
-from mcp_auditor.domain.models import MissedModelCall
-from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
+from mcp_auditor.domain.model_calls import MissedModelCall
+from mcp_auditor.domain.rendering import MISSED_CALL_CAUSE_LABELS
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ class ReportDetail:
         return ", ".join(type(original).__name__ for original in _original_errors(error))
 
     def missed_call_detail(self, missed: MissedModelCall) -> str:
-        cause = f"{MISS_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}"
+        cause = f"{MISSED_CALL_CAUSE_LABELS[missed.cause]}, {missed.tool_name}: {missed.kind}"
         return f"{cause}, {missed.detail}" if self.shows_server_text else cause
 
     def server_lines[T](self, lines: Sequence[T]) -> list[T]:

@@ -22,7 +22,7 @@ from mcp_auditor.domain.confinement import (
     steers_docker_client,
 )
 from mcp_auditor.domain.container_name import environment_names_passed, is_declared_container
-from mcp_auditor.domain.models import ExecutionRecord
+from mcp_auditor.domain.execution import ExecutionRecord
 from mcp_auditor.domain.relayed_environment import (
     RelayedEnvironment,
     RelayRefusedError,

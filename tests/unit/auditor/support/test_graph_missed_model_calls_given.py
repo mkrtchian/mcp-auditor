@@ -1,10 +1,5 @@
-from mcp_auditor.domain.models import (
-    AttackContext,
-    ChainPlanBatch,
-    MissCause,
-    ProviderUsage,
-    StepObservation,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AttackContext, ChainPlanBatch, ProviderUsage, StepObservation
 from mcp_auditor.domain.ports import (
     PromptTooLong,
     ProviderRefusal,
@@ -66,8 +61,8 @@ def a_prompt_too_long() -> PromptTooLong:
 
 
 MODEL_FAILURES = {
-    MissCause.PROVIDER_REFUSAL: a_provider_refusal,
-    MissCause.UNREADABLE_ANSWER: an_unreadable_answer,
-    MissCause.PROVIDER_THROTTLED: a_provider_throttling,
-    MissCause.PROMPT_TOO_LONG: a_prompt_too_long,
+    MissedCallCause.PROVIDER_REFUSAL: a_provider_refusal,
+    MissedCallCause.UNREADABLE_ANSWER: an_unreadable_answer,
+    MissedCallCause.PROVIDER_THROTTLED: a_provider_throttling,
+    MissedCallCause.PROMPT_TOO_LONG: a_prompt_too_long,
 }

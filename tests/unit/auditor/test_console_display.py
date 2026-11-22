@@ -4,14 +4,9 @@ from rich.text import Text
 import tests.unit.auditor.support.audit_displays as displays
 import tests.unit.auditor.support.report_builders as reports
 import tests.unit.auditor.support.test_console_display_given as given
-from mcp_auditor.domain.models import (
-    AuditCategory,
-    ExecutionRegime,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    Severity,
-)
+from mcp_auditor.domain.execution import ExecutionRegime
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditCategory, Severity
 from mcp_auditor.domain.rendering import describe_coverage_gap
 
 
@@ -211,7 +206,7 @@ def test_a_refusal_warning_prints_the_provider_message_verbatim():
     refused = MissedModelCall(
         tool_name="get_user",
         kind=ModelCallKind.JUDGMENT,
-        cause=MissCause.PROVIDER_REFUSAL,
+        cause=MissedCallCause.PROVIDER_REFUSAL,
         detail=message,
     )
 
@@ -223,12 +218,12 @@ def test_a_refusal_warning_prints_the_provider_message_verbatim():
 @pytest.mark.parametrize(
     ("cause", "label"),
     [
-        (MissCause.PROVIDER_REFUSAL, "refused by the model provider"),
-        (MissCause.UNREADABLE_ANSWER, "unreadable answer from the model"),
-        (MissCause.PROVIDER_THROTTLED, "throttled past every retry"),
+        (MissedCallCause.PROVIDER_REFUSAL, "refused by the model provider"),
+        (MissedCallCause.UNREADABLE_ANSWER, "unreadable answer from the model"),
+        (MissedCallCause.PROVIDER_THROTTLED, "throttled past every retry"),
     ],
 )
-def test_a_missed_model_call_warning_names_its_cause(cause: MissCause, label: str):
+def test_a_missed_model_call_warning_names_its_cause(cause: MissedCallCause, label: str):
     display, buffer = displays.a_ci_display()
     missed = MissedModelCall(
         tool_name="get_user", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"

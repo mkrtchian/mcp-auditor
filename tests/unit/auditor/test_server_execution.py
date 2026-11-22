@@ -1,6 +1,6 @@
 import pytest
 
-from mcp_auditor.domain.models import ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRegime
 from mcp_auditor.server_execution import ServerExecution, decide_launch
 from tests.fakes import FakeContainerRuntime
 from tests.unit.auditor.support.launch_contexts import CONTAINER_NAME, a_context

@@ -2,15 +2,8 @@ import pytest
 from rich.text import Text
 
 import tests.unit.auditor.support.audit_displays as displays
-from mcp_auditor.domain.models import (
-    AuditCategory,
-    AuditPayload,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-    TestCase,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditCategory, AuditPayload, ProviderUsage, TestCase
 from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS, describe_relaunch
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.stream_handler import AuditProgressReporter
@@ -56,7 +49,7 @@ def test_an_unjudged_case_advances_the_progress_bar():
     reporter.on_stream_event(_a_generation_event())
 
     for _ in range(2):
-        reporter.on_stream_event(_an_unjudged_event(MissCause.PROVIDER_REFUSAL))
+        reporter.on_stream_event(_an_unjudged_event(MissedCallCause.PROVIDER_REFUSAL))
     reporter.on_stream_event(((), {"build_tool_report": {}}))
 
     output = Text.from_ansi(buffer.getvalue()).plain
@@ -67,19 +60,19 @@ def test_an_unjudged_case_advances_the_progress_bar():
 @pytest.mark.parametrize(
     ("cause", "line"),
     [
-        (MissCause.PROVIDER_REFUSAL, "? not judged, the model provider refused the judgment"),
-        (MissCause.UNREADABLE_ANSWER, "? not judged, the model's answer was unreadable"),
+        (MissedCallCause.PROVIDER_REFUSAL, "? not judged, the model provider refused the judgment"),
+        (MissedCallCause.UNREADABLE_ANSWER, "? not judged, the model's answer was unreadable"),
         (
-            MissCause.PROVIDER_THROTTLED,
+            MissedCallCause.PROVIDER_THROTTLED,
             "? not judged, the model provider throttled the judgment past every retry",
         ),
         (
-            MissCause.PROMPT_TOO_LONG,
+            MissedCallCause.PROMPT_TOO_LONG,
             "? not judged, the prompt was longer than the model's context window",
         ),
     ],
 )
-def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissCause, line: str):
+def test_an_unjudged_case_names_the_cause_of_its_missed_judgment(cause: MissedCallCause, line: str):
     display, buffer = displays.a_ci_display()
     reporter = AuditProgressReporter(display)
     reporter.on_stream_event(_a_generation_event())
@@ -160,7 +153,7 @@ def _a_usage_event(
     return (namespace, {"judge_response": {"provider_usage": [usage]}})
 
 
-def _an_unjudged_event(cause: MissCause) -> tuple[tuple[str, ...], dict[str, object]]:
+def _an_unjudged_event(cause: MissedCallCause) -> tuple[tuple[str, ...], dict[str, object]]:
     missed = MissedModelCall(
         tool_name="run_command", kind=ModelCallKind.JUDGMENT, cause=cause, detail="x"
     )

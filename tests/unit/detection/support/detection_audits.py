@@ -10,7 +10,8 @@ from evals.cve.environments import Launch, LaunchShape
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.launch_audit import Auditor
 from evals.cve.planting_base import PlantingSpec
-from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 TARGET = an_acceptance_target(FILESYSTEM)
@@ -35,7 +36,7 @@ def a_target_launching(launch: Launch = A_LAUNCH) -> Target:
     return dataclasses.replace(TARGET, kept_places=(), builder=no_container)
 
 
-def a_report_missing(*causes: MissCause) -> AuditReport:
+def a_report_missing(*causes: MissedCallCause) -> AuditReport:
     missed = [
         MissedModelCall(
             tool_name="git_init",

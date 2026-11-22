@@ -6,6 +6,7 @@ from langgraph.graph import END
 from mcp_auditor.domain.attack_context import merge_attack_context
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.coverage import completion_size, find_coverage_gap
+from mcp_auditor.domain.model_calls import MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
@@ -14,18 +15,15 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     JudgeResult,
     Judgment,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     TestCase,
     TestCaseBatch,
     ToolDefinition,
     ToolReport,
-    filter_tools,
-    order_tools_for_audit,
 )
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.domain.server_liveness import UnsentPayload
+from mcp_auditor.domain.tool_selection import filter_tools, order_tools_for_audit
 from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
 from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,

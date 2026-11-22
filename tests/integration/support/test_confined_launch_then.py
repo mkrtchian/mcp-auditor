@@ -1,7 +1,8 @@
 import pathlib
 import subprocess
 
-from mcp_auditor.domain.models import ExecutionRecord, ToolResponse
+from mcp_auditor.domain.execution import ExecutionRecord
+from mcp_auditor.domain.models import ToolResponse
 
 
 def the_read_only_mount_refused_the_write(refused: ToolResponse, reference: pathlib.Path) -> None:

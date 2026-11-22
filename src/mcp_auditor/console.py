@@ -12,12 +12,12 @@ from rich.status import Status
 from rich.table import Table
 from rich.text import Text
 
+from mcp_auditor.domain.execution import ExecutionRegime
+from mcp_auditor.domain.model_calls import MissedModelCall
 from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
-    ExecutionRegime,
     JudgeResult,
-    MissedModelCall,
     ProviderUsage,
     Severity,
     ToolReport,
@@ -25,7 +25,7 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.relaunch_rendering import describe_relaunch
 from mcp_auditor.domain.rendering import (
-    MISS_CAUSE_LABELS,
+    MISSED_CALL_CAUSE_LABELS,
     ToolSummary,
     describe_coverage_gap,
     describe_missed_model_call,
@@ -110,7 +110,7 @@ class AuditDisplay:
 
     def print_missed_model_calls(self, missed_calls: list[MissedModelCall]) -> None:
         for missed in missed_calls:
-            cause = MISS_CAUSE_LABELS[missed.cause].lower()
+            cause = MISSED_CALL_CAUSE_LABELS[missed.cause].lower()
             description = describe_missed_model_call(missed)
             self.print_warning(escape(f"{missed.tool_name}: {cause}, {description}"))
 

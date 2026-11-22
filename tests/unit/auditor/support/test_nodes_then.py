@@ -1,13 +1,7 @@
 from typing import Any
 
-from mcp_auditor.domain.models import (
-    Judgment,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    TestCase,
-    ToolDefinition,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import Judgment, TestCase, ToolDefinition
 
 
 def current_case_has_error(result: dict[str, Any], expected_error: str) -> None:
@@ -40,7 +34,7 @@ def refused_call_recorded(result: dict[str, Any], tool_name: str, kind: ModelCal
         MissedModelCall(
             tool_name=tool_name,
             kind=kind,
-            cause=MissCause.PROVIDER_REFUSAL,
+            cause=MissedCallCause.PROVIDER_REFUSAL,
             detail="flagged by policy",
         )
     ]

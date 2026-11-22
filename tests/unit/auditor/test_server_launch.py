@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.auditor.support.test_server_launch_given as given
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.domain.models import ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRegime
 
 
 def test_confined_launch_spawns_docker_and_keeps_the_user_command():

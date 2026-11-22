@@ -21,7 +21,7 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 
@@ -45,15 +45,15 @@ async def test_a_graded_audit_passes_through(
 @pytest.mark.parametrize(
     "causes",
     [
-        frozenset({MissCause.UNREADABLE_ANSWER}),
-        frozenset({MissCause.PROVIDER_REFUSAL}),
-        frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER}),
+        frozenset({MissedCallCause.UNREADABLE_ANSWER}),
+        frozenset({MissedCallCause.PROVIDER_REFUSAL}),
+        frozenset({MissedCallCause.PROVIDER_REFUSAL, MissedCallCause.UNREADABLE_ANSWER}),
     ],
 )
 async def test_an_incomplete_attempt_is_not_retried(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
-    causes: frozenset[MissCause],
+    causes: frozenset[MissedCallCause],
 ):
     a_captured_console(capsys, monkeypatch)
     report = grammar.a_report()
@@ -71,7 +71,7 @@ async def test_an_incomplete_run_carries_the_server_health_of_its_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ):
     a_captured_console(capsys, monkeypatch)
-    refused = frozenset({MissCause.PROVIDER_REFUSAL})
+    refused = frozenset({MissedCallCause.PROVIDER_REFUSAL})
     health = ServerHealth(2, 1, relaunches=1, unsent_calls=4)
     incomplete = IncompleteAttempt(grammar.a_report(), refused, health)
 
@@ -85,7 +85,7 @@ async def test_an_attempt_missing_steps_names_their_causes(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     output = a_captured_console(capsys, monkeypatch)
-    causes = frozenset({MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER})
+    causes = frozenset({MissedCallCause.PROVIDER_REFUSAL, MissedCallCause.UNREADABLE_ANSWER})
 
     await holdout_audit(TARGET, _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), causes)]))
 

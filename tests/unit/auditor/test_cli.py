@@ -4,7 +4,8 @@ from click.testing import CliRunner
 
 import tests.unit.auditor.support.test_cli_given as given
 from mcp_auditor.cli import CIOptions, ci_exit_code, cli, parse_tools_filter
-from mcp_auditor.domain.models import MissCause, Severity
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import Severity
 
 CI = CIOptions(enabled=True, severity_threshold=Severity.MEDIUM)
 
@@ -104,17 +105,17 @@ def test_a_home_where_the_checkpoints_cannot_be_kept_stops_the_run(tmp_path: Pat
 
 class TestCIExitCode:
     def test_an_incomplete_audit_without_findings_exits_3(self):
-        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
+        report = given.a_report_with_a_missed_call(MissedCallCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CI) == 3
 
     def test_an_audit_with_an_unreadable_answer_exits_3(self):
-        report = given.a_report_with_a_missed_call(MissCause.UNREADABLE_ANSWER)
+        report = given.a_report_with_a_missed_call(MissedCallCause.UNREADABLE_ANSWER)
 
         assert ci_exit_code(report, CI) == 3
 
     def test_an_audit_with_a_throttled_model_call_exits_3(self):
-        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_THROTTLED)
+        report = given.a_report_with_a_missed_call(MissedCallCause.PROVIDER_THROTTLED)
 
         assert ci_exit_code(report, CI) == 3
 
@@ -154,6 +155,6 @@ class TestCIExitCode:
         assert ci_exit_code(report, CI) == 0
 
     def test_an_incomplete_audit_exits_0_outside_ci(self):
-        report = given.a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
+        report = given.a_report_with_a_missed_call(MissedCallCause.PROVIDER_REFUSAL)
 
         assert ci_exit_code(report, CIOptions(enabled=False)) == 0

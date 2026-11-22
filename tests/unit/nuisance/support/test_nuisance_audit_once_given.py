@@ -9,7 +9,8 @@ from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import AuditReport, MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.admission_mutations import with_a_backend
 from tests.unit.support.nuisance_admissions import a_fake_lifecycle, an_admitted_server
 
@@ -95,7 +96,7 @@ def a_report_refused_with_detail(detail: str) -> AuditReport:
     refused = MissedModelCall(
         tool_name="read_file",
         kind=ModelCallKind.JUDGMENT,
-        cause=MissCause.PROVIDER_REFUSAL,
+        cause=MissedCallCause.PROVIDER_REFUSAL,
         detail=detail,
     )
     return grammar.a_report().model_copy(update={"missed_model_calls": [refused]})

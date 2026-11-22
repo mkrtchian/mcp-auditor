@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.domain.models import ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRegime
 
 
 def compute_thread_id(launch: ServerLaunch) -> str:

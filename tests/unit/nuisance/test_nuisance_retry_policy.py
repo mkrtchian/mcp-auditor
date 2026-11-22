@@ -16,7 +16,7 @@ from evals.cve.nuisance.audit import (
 )
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
     PROVIDER_ERROR,
     ScriptedCalls,
@@ -44,9 +44,13 @@ async def test_a_clean_report_stands_at_the_first_call():
 
 @pytest.mark.parametrize(
     "cause",
-    [MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG],
+    [
+        MissedCallCause.PROVIDER_REFUSAL,
+        MissedCallCause.UNREADABLE_ANSWER,
+        MissedCallCause.PROMPT_TOO_LONG,
+    ],
 )
-async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
+async def test_an_incomplete_report_stands_without_a_retry(cause: MissedCallCause):
     audit = holdout_runs.an_audit(False, missed=cause)
     attempt: Attempt = ScriptedCalls([audit])
 
@@ -60,14 +64,14 @@ async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
     ("missed", "incomplete"),
     [
         (None, False),
-        (MissCause.PROVIDER_REFUSAL, True),
-        (MissCause.UNREADABLE_ANSWER, True),
-        (MissCause.PROMPT_TOO_LONG, True),
-        (MissCause.PROVIDER_THROTTLED, False),
+        (MissedCallCause.PROVIDER_REFUSAL, True),
+        (MissedCallCause.UNREADABLE_ANSWER, True),
+        (MissedCallCause.PROMPT_TOO_LONG, True),
+        (MissedCallCause.PROVIDER_THROTTLED, False),
     ],
 )
 def test_only_a_refused_unreadable_or_too_long_step_makes_a_report_incomplete(
-    missed: MissCause | None, incomplete: bool
+    missed: MissedCallCause | None, incomplete: bool
 ):
     report = holdout_runs.a_report(False, missed=missed)
 
@@ -85,7 +89,7 @@ async def test_a_launch_failing_at_every_attempt_drops_the_run():
 
 
 async def test_a_run_throttled_at_any_attempt_drops_as_throttled(output: CapturedOutput):
-    throttled = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)
+    throttled = holdout_runs.an_audit(False, missed=MissedCallCause.PROVIDER_THROTTLED)
     attempt: Attempt = ScriptedCalls([PROVIDER_ERROR, LaunchFailed("no image"), throttled])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -148,7 +152,7 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
 
 
 async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
-    audit = holdout_runs.an_audit(True, missed=MissCause.PROVIDER_REFUSAL)
+    audit = holdout_runs.an_audit(True, missed=MissedCallCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([audit])
 
     run = await gate_run(holdout_runs.a_server(), audits)
@@ -159,9 +163,11 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
     assert audits.calls == 1
 
 
-@pytest.mark.parametrize("cause", [MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG])
+@pytest.mark.parametrize(
+    "cause", [MissedCallCause.UNREADABLE_ANSWER, MissedCallCause.PROMPT_TOO_LONG]
+)
 async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
-    cause: MissCause, output: CapturedOutput
+    cause: MissedCallCause, output: CapturedOutput
 ):
     incomplete = holdout_runs.an_audit(False, missed=cause)
     clean = holdout_runs.an_audit(False)
@@ -179,7 +185,7 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
 async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
     output: CapturedOutput,
 ):
-    incomplete = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_REFUSAL)
+    incomplete = holdout_runs.an_audit(False, missed=MissedCallCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([incomplete] * INCOMPLETE_ATTEMPTS)
 
     run = await gate_run(holdout_runs.a_server(), audits)

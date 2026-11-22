@@ -94,6 +94,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `MCP_AUDITOR_OPENROUTER_HOSTS` | `MCP_AUDITOR_OPENROUTER_PROVIDERS` | rename | 2026-11-11 |
 | `MechanismClass`, `mechanisms` | class (`FlawClass`, `classes`) | rename | 2026-11-11 |
 | `miss_causes` | `missed_call_causes` | rename | 2026-11-11 |
+| `MissCause`, `MISS_CAUSE_LABELS` | `MissedCallCause`, `MISSED_CALL_CAUSE_LABELS` | rename | 2026-11-22 |
 | `MissClass`, `miss_class` | `MissKind`, `miss_kind` | rename | 2026-11-11 |
 | missed step, refused step, `missed_steps` | missed model call (`missed_model_calls`) | rename | 2026-11-11 |
 | `not_run_conditions` | `not_run_reasons` | rename | 2026-11-11 |

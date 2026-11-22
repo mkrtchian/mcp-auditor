@@ -1,17 +1,12 @@
 from evals.honeypots import HoneypotConfig
-from mcp_auditor.domain.models import (
-    AuditReport,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditReport, ProviderUsage
 
 
 class FakeHoneypotAudit:
     """Answers every honeypot with an empty report, holding one missed judgment on `missing`."""
 
-    def __init__(self, missing: str, cause: MissCause, throttled_requests: int = 0):
+    def __init__(self, missing: str, cause: MissedCallCause, throttled_requests: int = 0):
         self._missing = missing
         self._cause = cause
         self._throttled_requests = throttled_requests

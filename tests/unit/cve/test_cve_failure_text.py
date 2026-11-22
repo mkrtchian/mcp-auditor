@@ -1,7 +1,7 @@
 from evals.cve.detection.audit import LaunchError
 from evals.cve.failure_text import FULL_DETAIL, TYPES_ONLY
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
-from mcp_auditor.domain.rendering import MISS_CAUSE_LABELS
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.rendering import MISSED_CALL_CAUSE_LABELS
 
 SECRET = "secret-nonce"
 
@@ -46,13 +46,15 @@ def test_a_missed_model_call_shows_its_cause_without_the_provider_message() -> N
     refusal = MissedModelCall(
         tool_name="git_init",
         kind=ModelCallKind.CHAIN_PLANNING,
-        cause=MissCause.PROVIDER_REFUSAL,
+        cause=MissedCallCause.PROVIDER_REFUSAL,
         detail=SECRET,
     )
 
     assert SECRET in FULL_DETAIL.missed_call_detail(refusal)
     assert SECRET not in TYPES_ONLY.missed_call_detail(refusal)
-    assert MISS_CAUSE_LABELS[MissCause.PROVIDER_REFUSAL] in TYPES_ONLY.missed_call_detail(refusal)
+    assert MISSED_CALL_CAUSE_LABELS[
+        MissedCallCause.PROVIDER_REFUSAL
+    ] in TYPES_ONLY.missed_call_detail(refusal)
 
 
 def test_only_the_full_detail_shows_the_server_lines() -> None:

@@ -1,20 +1,18 @@
 from typing import Any
 
-import pytest
 from langgraph.graph import END
 
 import tests.unit.auditor.support.test_nodes_given as given
 import tests.unit.auditor.support.test_nodes_then as then
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.model_calls import ModelCallKind
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     CoverageGap,
     EvalVerdict,
-    ModelCallKind,
     Severity,
     ToolResponse,
-    filter_tools,
 )
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from mcp_auditor.graph.nodes import (
@@ -35,35 +33,6 @@ from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 from tests.fakes.mcp_client import a_lost_connection_response
 from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
-
-
-class TestFilterTools:
-    def test_filters_tools_by_name(self):
-        tools = [given.a_tool(name="a"), given.a_tool(name="b"), given.a_tool(name="c")]
-
-        result = filter_tools(tools, frozenset({"a", "c"}))
-
-        then.discovered_tools_are(result, ["a", "c"])
-
-    def test_raises_on_unknown_tool_name(self):
-        tools = [given.a_tool(name="a"), given.a_tool(name="b")]
-
-        with pytest.raises(ValueError, match="unknown"):
-            filter_tools(tools, frozenset({"a", "unknown"}))
-
-    def test_no_filter_returns_all(self):
-        tools = [given.a_tool(name="a"), given.a_tool(name="b")]
-
-        result = filter_tools(tools, None)
-
-        then.discovered_tools_are(result, ["a", "b"])
-
-    def test_preserves_server_order(self):
-        tools = [given.a_tool(name="c"), given.a_tool(name="a"), given.a_tool(name="b")]
-
-        result = filter_tools(tools, frozenset({"b", "c"}))
-
-        then.discovered_tools_are(result, ["c", "b"])
 
 
 class TestDiscoverTools:

@@ -38,12 +38,17 @@ from evals.cve.provider_errors import (
 from evals.cve.server_health import ServerHealth
 from evals.eval_display import console
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import AuditReport, MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AuditReport
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
 
 _INCOMPLETE_CAUSES = frozenset(
-    {MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG}
+    {
+        MissedCallCause.PROVIDER_REFUSAL,
+        MissedCallCause.UNREADABLE_ANSWER,
+        MissedCallCause.PROMPT_TOO_LONG,
+    }
 )
 
 
@@ -184,7 +189,9 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> str:
 
 
 def _is_throttled(report: AuditReport) -> bool:
-    return any(missed.cause is MissCause.PROVIDER_THROTTLED for missed in report.missed_model_calls)
+    return any(
+        missed.cause is MissedCallCause.PROVIDER_THROTTLED for missed in report.missed_model_calls
+    )
 
 
 @dataclass(frozen=True)
@@ -201,7 +208,7 @@ async def gate_run(
     holdout run's. A counted alarm stands whatever model call was missed, an incomplete audit
     without one is attempted again, and the run does not complete when every attempt stays
     incomplete."""
-    causes: frozenset[MissCause] = frozenset()
+    causes: frozenset[MissedCallCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await audit()
         if isinstance(outcome, DroppedRun):
@@ -224,7 +231,7 @@ async def gate_run(
     return None
 
 
-def incomplete_causes(report: AuditReport) -> frozenset[MissCause]:
+def incomplete_causes(report: AuditReport) -> frozenset[MissedCallCause]:
     return frozenset(
         missed.cause for missed in report.missed_model_calls if missed.cause in _INCOMPLETE_CAUSES
     )

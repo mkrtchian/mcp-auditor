@@ -5,7 +5,7 @@ import pytest
 
 import tests.unit.auditor.support.test_execution_rendering_given as given
 import tests.unit.auditor.support.test_execution_rendering_then as then
-from mcp_auditor.domain.models import ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRecord, ExecutionRegime
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from tests.unit.auditor.support.report_builders import (
     a_report_with_a_refused_judgment_on_get_user,

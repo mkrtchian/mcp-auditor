@@ -7,7 +7,8 @@ from evals.cve.detection.targets import Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
-from mcp_auditor.domain.models import AuditReport, MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AuditReport
 
 # A missed model call (a policy refusal, an unreadable answer or a prompt longer than the model's
 # context window) leaves the run saying nothing of detection. The generated prompts differ from one
@@ -21,7 +22,7 @@ class IncompleteAttempt:
     """An audit that did not detect and whose report holds a missed model call, with its causes."""
 
     report: AuditReport
-    causes: frozenset[MissCause]
+    causes: frozenset[MissedCallCause]
     health: ServerHealth = NO_INCIDENTS
 
 
@@ -47,7 +48,7 @@ async def graded_despite_missed_model_calls[T](
 ) -> T | None:
     """The first complete attempt grades the run. None when every attempt missed a model call, and
     at once on a throttled attempt or a provider error, as on a run skipped at launch."""
-    causes: frozenset[MissCause] = frozenset()
+    causes: frozenset[MissedCallCause] = frozenset()
     for number in range(1, INCOMPLETE_ATTEMPTS + 1):
         outcome = await attempt()
         if isinstance(outcome, ThrottledAttempt | ProviderErrorAttempt):
@@ -67,13 +68,13 @@ async def graded_despite_missed_model_calls[T](
 
 
 _CAUSE_WORDING = {
-    MissCause.PROVIDER_REFUSAL: "refused by the model provider",
-    MissCause.UNREADABLE_ANSWER: "unreadable model answer",
-    MissCause.PROMPT_TOO_LONG: "prompt longer than the model's context window",
+    MissedCallCause.PROVIDER_REFUSAL: "refused by the model provider",
+    MissedCallCause.UNREADABLE_ANSWER: "unreadable model answer",
+    MissedCallCause.PROMPT_TOO_LONG: "prompt longer than the model's context window",
 }
 
 
-def describe_missed_call_causes(causes: frozenset[MissCause]) -> str:
+def describe_missed_call_causes(causes: frozenset[MissedCallCause]) -> str:
     return " and ".join(wording for cause, wording in _CAUSE_WORDING.items() if cause in causes)
 
 

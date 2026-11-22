@@ -7,7 +7,7 @@ import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.holdout_run_status import RunCount, run_status_line
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 
 SERVER = holdout_runs.a_server("npm:pkg")
 
@@ -18,7 +18,7 @@ SERVER = holdout_runs.a_server("npm:pkg")
         (holdout_runs.an_audit(True), "npm:pkg: flagged [1/4 runs]"),
         (holdout_runs.an_audit(False), "npm:pkg: not flagged [1/4 runs]"),
         (
-            holdout_runs.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+            holdout_runs.an_audit(False, missed=MissedCallCause.UNREADABLE_ANSWER),
             "npm:pkg: not flagged, incomplete [1/4 runs]",
         ),
         (

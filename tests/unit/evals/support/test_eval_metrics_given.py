@@ -1,3 +1,4 @@
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -6,9 +7,6 @@ from mcp_auditor.domain.models import (
     ChainGoal,
     EvalVerdict,
     JudgeResult,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -103,11 +101,11 @@ def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory)
 
 
 def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str) -> AuditReport:
-    return and_a_missed_judgment(report, tool, MissCause.PROVIDER_REFUSAL, provider_message)
+    return and_a_missed_judgment(report, tool, MissedCallCause.PROVIDER_REFUSAL, provider_message)
 
 
 def and_a_missed_judgment(
-    report: AuditReport, tool: str, cause: MissCause, detail: str
+    report: AuditReport, tool: str, cause: MissedCallCause, detail: str
 ) -> AuditReport:
     missed = MissedModelCall(
         tool_name=tool, kind=ModelCallKind.JUDGMENT, cause=cause, detail=detail

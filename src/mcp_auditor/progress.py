@@ -5,19 +5,20 @@ from collections import Counter
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TaskID, TextColumn
 
-from mcp_auditor.domain.models import EvalVerdict, JudgeResult, MissCause, Severity
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import EvalVerdict, JudgeResult, Severity
 from mcp_auditor.domain.owasp import category_with_owasp_id
 from mcp_auditor.domain.relaunch_rendering import UNSENT_CAUSE_LABELS
 from mcp_auditor.domain.rendering import format_severity_breakdown
 from mcp_auditor.domain.server_liveness import UnsentCause
 
 UNJUDGED_LINES = {
-    MissCause.PROVIDER_REFUSAL: "  ? not judged, the model provider refused the judgment",
-    MissCause.UNREADABLE_ANSWER: "  ? not judged, the model's answer was unreadable",
-    MissCause.PROVIDER_THROTTLED: (
+    MissedCallCause.PROVIDER_REFUSAL: "  ? not judged, the model provider refused the judgment",
+    MissedCallCause.UNREADABLE_ANSWER: "  ? not judged, the model's answer was unreadable",
+    MissedCallCause.PROVIDER_THROTTLED: (
         "  ? not judged, the model provider throttled the judgment past every retry"
     ),
-    MissCause.PROMPT_TOO_LONG: (
+    MissedCallCause.PROMPT_TOO_LONG: (
         "  ? not judged, the prompt was longer than the model's context window"
     ),
 }
@@ -45,7 +46,7 @@ class CIProgress:
     def advance_blocked(self, reason: str) -> None:
         self._console.print(format_blocked_line(reason))
 
-    def advance_unjudged(self, cause: MissCause) -> None:
+    def advance_unjudged(self, cause: MissedCallCause) -> None:
         self._console.print(UNJUDGED_LINES[cause])
 
     def advance_unsent(self, cause: UnsentCause) -> None:
@@ -95,7 +96,7 @@ class ToolProgress:
         if self._task_id is not None:
             self._progress.advance(self._task_id)
 
-    def advance_unjudged(self, cause: MissCause) -> None:
+    def advance_unjudged(self, cause: MissedCallCause) -> None:
         self._progress.console.print(UNJUDGED_LINES[cause])
         if self._task_id is not None:
             self._progress.advance(self._task_id)

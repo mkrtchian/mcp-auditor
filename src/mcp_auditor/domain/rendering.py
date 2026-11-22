@@ -2,17 +2,15 @@ import json
 from collections import Counter
 from dataclasses import dataclass, field
 
+from mcp_auditor.domain.execution import ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditReport,
     ChainStep,
     CoverageGap,
     EvalVerdict,
-    ExecutionRecord,
-    ExecutionRegime,
     JudgeResult,
-    MissCause,
-    MissedModelCall,
     Severity,
     TestCase,
     ToolReport,
@@ -26,11 +24,11 @@ from mcp_auditor.domain.relaunch_rendering import (
 )
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
-MISS_CAUSE_LABELS = {
-    MissCause.PROVIDER_REFUSAL: "Refused by the model provider",
-    MissCause.UNREADABLE_ANSWER: "Unreadable answer from the model",
-    MissCause.PROVIDER_THROTTLED: "Throttled past every retry",
-    MissCause.PROMPT_TOO_LONG: "Prompt longer than the model's context window",
+MISSED_CALL_CAUSE_LABELS = {
+    MissedCallCause.PROVIDER_REFUSAL: "Refused by the model provider",
+    MissedCallCause.UNREADABLE_ANSWER: "Unreadable answer from the model",
+    MissedCallCause.PROVIDER_THROTTLED: "Throttled past every retry",
+    MissedCallCause.PROMPT_TOO_LONG: "Prompt longer than the model's context window",
 }
 
 
@@ -93,7 +91,7 @@ def _render_summary_section(report: AuditReport) -> str:
 def _render_completeness_lines(report: AuditReport) -> list[str]:
     lines: list[str] = []
     missed_counts = Counter(missed.cause for missed in report.missed_model_calls)
-    for cause, label in MISS_CAUSE_LABELS.items():
+    for cause, label in MISSED_CALL_CAUSE_LABELS.items():
         count = missed_counts[cause]
         if count > 0:
             noun = "model call" if count == 1 else "model calls"
@@ -149,7 +147,7 @@ def _render_tool_section(tool_report: ToolReport, report: AuditReport) -> str:
         lines.append(f"**Coverage gap**: {describe_coverage_gap(tool_report.coverage_gap)}\n")
     lines.extend(render_relaunch_lines([r for r in report.relaunches if r.tool_name == name]))
     for missed in (r for r in report.missed_model_calls if r.tool_name == name):
-        label = MISS_CAUSE_LABELS[missed.cause]
+        label = MISSED_CALL_CAUSE_LABELS[missed.cause]
         lines.append(f"**{label}**: {describe_missed_model_call(missed)}\n")
     if tool_report.cut_responses > 0:
         lines.append(

@@ -15,7 +15,8 @@ from evals.cve.grammar import FlawClass, TargetStatus
 from evals.cve.server_health import ServerHealth
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
-from mcp_auditor.domain.models import MissCause, ProviderUsage
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import ProviderUsage
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
@@ -131,7 +132,7 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
         ),
     )
     refused = IncompleteRun(
-        given.a_report_missing(MissCause.PROVIDER_REFUSAL),
+        given.a_report_missing(MissedCallCause.PROVIDER_REFUSAL),
         ServerHealth(
             non_protocol_lines=0, lost_connection_responses=0, relaunches=2, cut_responses=1
         ),
@@ -148,7 +149,7 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
     assert (assembled.relaunches, assembled.unsent_calls, assembled.cut_responses) == (3, 4, 3)
 
 
-async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss_causes():
+async def test_each_run_status_carries_its_server_health_and_its_replay_and_missed_call_causes():
     target = detection_holdout_runs.a_target(KUBERNETES)
     detection = detection_holdout_runs.graded(
         TargetStatus.DETECTED, detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
@@ -161,7 +162,7 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
         (ReplayAttemptFailure.LAUNCH_FAILED, ReplayAttemptFailure.LOST_CONNECTION),
     )
     refused = IncompleteRun(
-        given.a_report_missing(MissCause.UNREADABLE_ANSWER, MissCause.PROVIDER_REFUSAL),
+        given.a_report_missing(MissedCallCause.UNREADABLE_ANSWER, MissedCallCause.PROVIDER_REFUSAL),
         ServerHealth(non_protocol_lines=0, lost_connection_responses=3),
     )
     audit = detection_holdout_runs.scripted({target.flaw_id: [unchecked, refused, detection]})

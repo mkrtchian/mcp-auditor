@@ -9,13 +9,8 @@ from langgraph.checkpoint.base.id import uuid6
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import (
-    AttackContext,
-    MissCause,
-    ProviderUsage,
-    ToolDefinition,
-    ToolResponse,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import AttackContext, ProviderUsage, ToolDefinition, ToolResponse
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.auditor.support.graph_builders import (
     a_complete_batch,
@@ -147,7 +142,7 @@ class _AuditStepOfAnEarlierVersion(StrEnum):
 class _MissedStepOfAnEarlierVersion(BaseModel):
     tool_name: str
     step: _AuditStepOfAnEarlierVersion
-    cause: MissCause
+    cause: MissedCallCause
     detail: str
 
 
@@ -160,6 +155,6 @@ for _earlier in (_AuditStepOfAnEarlierVersion, _MissedStepOfAnEarlierVersion):
 MISSED_STEP_OF_AN_EARLIER_VERSION = _MissedStepOfAnEarlierVersion(
     tool_name="first",
     step=_AuditStepOfAnEarlierVersion.JUDGMENT,
-    cause=MissCause.PROVIDER_REFUSAL,
+    cause=MissedCallCause.PROVIDER_REFUSAL,
     detail="refused",
 )

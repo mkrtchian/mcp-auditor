@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.auditor.support.test_launch_decision_given as given
-from mcp_auditor.domain.models import ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRegime
 from mcp_auditor.domain.relayed_environment import RelayRequest
 from mcp_auditor.server_execution import LaunchRefused, decide_launch
 from tests.fakes import FakeContainerRuntime

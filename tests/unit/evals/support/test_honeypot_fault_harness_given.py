@@ -9,6 +9,7 @@ from evals.honeypot.fault_harness import FaultedAudit
 from evals.honeypot.fault_injection import FailingJudge
 from evals.honeypots import HONEYPOTS, AuditModels, ConnectedHoneypot, HoneypotConfig
 from evals.metrics import VerdictMap
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -18,9 +19,6 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     JudgeResult,
     Judgment,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     StepObservation,
@@ -171,7 +169,7 @@ def _a_refused_judgment(tool: str) -> MissedModelCall:
     return MissedModelCall(
         tool_name=tool,
         kind=ModelCallKind.JUDGMENT,
-        cause=MissCause.PROVIDER_REFUSAL,
+        cause=MissedCallCause.PROVIDER_REFUSAL,
         detail="refused",
     )
 

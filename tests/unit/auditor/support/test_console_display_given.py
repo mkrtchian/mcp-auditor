@@ -1,11 +1,9 @@
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
     CoverageGap,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     ToolDefinition,
@@ -89,6 +87,6 @@ def a_refused_chain_planning_on_list_items() -> MissedModelCall:
     return MissedModelCall(
         tool_name="list_items",
         kind=ModelCallKind.CHAIN_PLANNING,
-        cause=MissCause.PROVIDER_REFUSAL,
+        cause=MissedCallCause.PROVIDER_REFUSAL,
         detail=REFUSAL_MESSAGE,
     )

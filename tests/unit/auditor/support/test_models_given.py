@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -8,9 +9,6 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalVerdict,
     JudgeResult,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -78,7 +76,7 @@ def a_report(
 
 def a_refused_call(kind: ModelCallKind = ModelCallKind.JUDGMENT) -> MissedModelCall:
     return MissedModelCall(
-        tool_name="test_tool", kind=kind, cause=MissCause.PROVIDER_REFUSAL, detail="flagged"
+        tool_name="test_tool", kind=kind, cause=MissedCallCause.PROVIDER_REFUSAL, detail="flagged"
     )
 
 

@@ -4,6 +4,8 @@ from typing import Any, override
 
 from pydantic import BaseModel, Field, computed_field
 
+from mcp_auditor.domain.execution import ExecutionRecord
+from mcp_auditor.domain.model_calls import MissedModelCall
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
 from mcp_auditor.domain.shown_response import is_cut, rendered_response
 
@@ -258,87 +260,6 @@ class ToolReport(BaseModel):
                 text for step in chain.steps for text in (step.response, step.error) if text
             )
         return sum(1 for text in shown if is_cut(text))
-
-
-_READ_PREFIXES = (
-    "get_",
-    "list_",
-    "read_",
-    "search_",
-    "find_",
-    "fetch_",
-    "show_",
-    "describe_",
-    "check_",
-)
-
-
-def order_tools_for_audit(tools: list[ToolDefinition]) -> list[ToolDefinition]:
-    """Read-like tools first, then by parameter count ascending. Stable sort."""
-    return sorted(tools, key=_audit_order_key)
-
-
-def _audit_order_key(tool: ToolDefinition) -> tuple[int, int]:
-    is_read = 0 if tool.name.startswith(_READ_PREFIXES) else 1
-    param_count = len(tool.input_schema.get("properties", {}))
-    return (is_read, param_count)
-
-
-def filter_tools(
-    tools: list[ToolDefinition], tools_filter: frozenset[str] | None
-) -> list[ToolDefinition]:
-    if tools_filter is None:
-        return tools
-    available_names = {t.name for t in tools}
-    unknown = tools_filter - available_names
-    if unknown:
-        raise ValueError(f"unknown tool names: {', '.join(sorted(unknown))}")
-    return [t for t in tools if t.name in tools_filter]
-
-
-class ExecutionRegime(StrEnum):
-    CONFINED = "confined"
-    DECLARED_CONTAINER = "declared_container"
-    UNCONFINED = "unconfined"
-
-
-class ExecutionRecord(BaseModel):
-    regime: ExecutionRegime
-    image: str | None = None
-    image_digest: str | None = None
-    writable_paths: list[str] | None = None
-    read_only_paths: list[str] | None = None
-    oom_killed: bool | None = None
-    """Read with the regime: under `confined`, true when any container of the audit, one per
-    launch of the server, was killed on memory, and `None` only when no container's kill state
-    could be read. Under the other regimes it is always `None`, there being no container of the
-    auditor's."""
-    redacted_variables: list[str] | None = None
-    plain_variables: dict[str, str] | None = None
-
-
-class ModelCallKind(StrEnum):
-    TEST_GENERATION = "test_generation"
-    JUDGMENT = "judgment"
-    CONTEXT_EXTRACTION = "context_extraction"
-    CHAIN_PLANNING = "chain_planning"
-    CHAIN_STEP_OBSERVATION = "chain_step_observation"
-    CHAIN_STEP_PLANNING = "chain_step_planning"
-    CHAIN_JUDGMENT = "chain_judgment"
-
-
-class MissCause(StrEnum):
-    PROVIDER_REFUSAL = "provider_refusal"
-    UNREADABLE_ANSWER = "unreadable_answer"
-    PROVIDER_THROTTLED = "provider_throttled"
-    PROMPT_TOO_LONG = "prompt_too_long"
-
-
-class MissedModelCall(BaseModel):
-    tool_name: str
-    kind: ModelCallKind
-    cause: MissCause
-    detail: str
 
 
 class AuditReport(BaseModel):

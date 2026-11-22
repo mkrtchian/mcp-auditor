@@ -15,13 +15,8 @@ from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_session import TreeState
 from evals.probe.candidates import Prices
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import (
-    AuditReport,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep, ScriptedBenignCall
 
 FIRST_FLAW = admissions.FIRST_FLAW
@@ -67,7 +62,7 @@ def scripted(outcomes_by_package: Mapping[str, Sequence[Outcome]]) -> Audit:
 def an_audit(
     flagged: bool,
     *,
-    missed: MissCause | None = None,
+    missed: MissedCallCause | None = None,
     provider: ProviderUsage | None = None,
     judge: ProviderUsage | None = None,
     health: ServerHealth = NO_INCIDENTS,
@@ -78,7 +73,7 @@ def an_audit(
 def a_report(
     flagged: bool,
     *,
-    missed: MissCause | None = None,
+    missed: MissedCallCause | None = None,
     provider: ProviderUsage | None = None,
     judge: ProviderUsage | None = None,
 ) -> AuditReport:

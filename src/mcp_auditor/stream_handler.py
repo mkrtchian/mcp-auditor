@@ -2,7 +2,8 @@ from enum import Enum
 from typing import Any
 
 from mcp_auditor.console import AuditDisplay
-from mcp_auditor.domain.models import MissedModelCall, ProviderUsage, ToolDefinition
+from mcp_auditor.domain.model_calls import MissedModelCall
+from mcp_auditor.domain.models import ProviderUsage, ToolDefinition
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
 from mcp_auditor.progress import CIProgress, ToolProgress
 

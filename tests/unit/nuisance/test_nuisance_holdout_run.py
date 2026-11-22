@@ -18,13 +18,14 @@ from evals.cve.nuisance.results import NotRunCause, ServerExit
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.eval_session import Refused, TreeState
 from evals.probe.analysis import call_cost
-from mcp_auditor.domain.models import MissCause, ProviderUsage
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import ProviderUsage
 
 
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
     first, second = holdout_runs.a_server("npm:first"), holdout_runs.a_server("npm:second")
     usage = ProviderUsage(input_tokens=10, output_tokens=20)
-    refused = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, provider=usage)
+    refused = holdout_runs.an_audit(False, missed=MissedCallCause.PROVIDER_REFUSAL, provider=usage)
     audit = holdout_runs.scripted(
         {
             "npm:first": [holdout_runs.an_audit(True, provider=usage) for _ in range(3)],
@@ -100,7 +101,7 @@ async def test_the_run_announces_each_finished_run_of_a_server_with_its_status()
     dropped_runs = [DroppedRun(NotRunCause.LAUNCH_FAILURE), holdout_runs.an_audit(False)]
     solo_runs = [
         holdout_runs.an_audit(False),
-        holdout_runs.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+        holdout_runs.an_audit(False, missed=MissedCallCause.UNREADABLE_ANSWER),
     ]
     audit = holdout_runs.scripted(
         {"npm:flagged": flagged_runs, "npm:dropped": dropped_runs, solo_package: solo_runs}

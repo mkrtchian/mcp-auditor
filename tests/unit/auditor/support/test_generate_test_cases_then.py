@@ -1,6 +1,7 @@
 from typing import Any
 
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind, TestCaseBatch
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import TestCaseBatch
 
 
 def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:
@@ -16,7 +17,7 @@ def one_generation_refusal_recorded(result: dict[str, Any]) -> None:
         MissedModelCall(
             tool_name="test_tool",
             kind=ModelCallKind.TEST_GENERATION,
-            cause=MissCause.PROVIDER_REFUSAL,
+            cause=MissedCallCause.PROVIDER_REFUSAL,
             detail="flagged by policy",
         )
     ]

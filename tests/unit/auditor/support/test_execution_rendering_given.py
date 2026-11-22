@@ -1,4 +1,5 @@
-from mcp_auditor.domain.models import AuditReport, ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRecord, ExecutionRegime
+from mcp_auditor.domain.models import AuditReport
 from tests.unit.auditor.support.report_builders import a_report
 
 FULL_DIGEST = "sha256:abc123def4567890abc123def4567890abc123def4567890abc123def4567890"

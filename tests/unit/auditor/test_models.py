@@ -6,15 +6,8 @@ Pydantic constructors work or that Python lists hold items.
 import pytest
 
 import tests.unit.auditor.support.test_models_given as given
-from mcp_auditor.domain.models import (
-    AuditReport,
-    Judgment,
-    ModelCallKind,
-    ProviderUsage,
-    Severity,
-    ToolReport,
-    order_tools_for_audit,
-)
+from mcp_auditor.domain.model_calls import ModelCallKind
+from mcp_auditor.domain.models import AuditReport, Judgment, ProviderUsage, Severity, ToolReport
 
 
 class TestEnumConstraints:
@@ -195,64 +188,3 @@ class TestToolReportCutResponses:
 
         assert dump["cut_responses"] == 1
         assert ToolReport.model_validate(dump) == tool_report
-
-
-class TestOrderToolsForAudit:
-    def test_read_like_tools_sort_before_others(self):
-        tools = [
-            given.a_tool(name="delete_user"),
-            given.a_tool(name="get_user"),
-            given.a_tool(name="list_items"),
-        ]
-
-        result = order_tools_for_audit(tools)
-
-        assert [t.name for t in result] == ["get_user", "list_items", "delete_user"]
-
-    def test_ties_broken_by_parameter_count(self):
-        three_params = given.a_tool(
-            name="get_details",
-            input_schema={
-                "type": "object",
-                "properties": {"a": {}, "b": {}, "c": {}},
-            },
-        )
-        one_param = given.a_tool(
-            name="get_summary",
-            input_schema={"type": "object", "properties": {"a": {}}},
-        )
-
-        result = order_tools_for_audit([three_params, one_param])
-
-        assert [t.name for t in result] == ["get_summary", "get_details"]
-
-    def test_stable_within_same_group(self):
-        tools = [given.a_tool(name="create_x"), given.a_tool(name="update_y")]
-
-        result = order_tools_for_audit(tools)
-
-        assert [t.name for t in result] == ["create_x", "update_y"]
-
-    def test_empty_list(self):
-        assert order_tools_for_audit([]) == []
-
-    def test_all_read_prefixes_recognized(self):
-        prefixes = [
-            "get_",
-            "list_",
-            "read_",
-            "search_",
-            "find_",
-            "fetch_",
-            "show_",
-            "describe_",
-            "check_",
-        ]
-        # delete_thing goes first: a prefix that stopped being recognized would tie with it,
-        # and the stable sort would keep it ahead, breaking the assertion.
-        tools = [given.a_tool(name="delete_thing")]
-        tools.extend(given.a_tool(name=f"{p}thing") for p in prefixes)
-
-        result = order_tools_for_audit(tools)
-
-        assert result[-1].name == "delete_thing"

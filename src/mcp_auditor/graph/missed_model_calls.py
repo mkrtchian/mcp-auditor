@@ -3,12 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.models import (
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import ProviderUsage
 from mcp_auditor.domain.ports import (
     LLMPort,
     PromptTooLong,
@@ -67,20 +63,24 @@ async def call_model[T: BaseModel](
     try:
         return await llm.generate_structured(call.prompt, call.output_schema)
     except ProviderRefusal as refusal:
-        return _missed(call, MissCause.PROVIDER_REFUSAL, refusal.provider_message, refusal.usage)
+        return _missed(
+            call, MissedCallCause.PROVIDER_REFUSAL, refusal.provider_message, refusal.usage
+        )
     except UnparseableOutput as unreadable:
         detail = (
             f"no answer matched the expected format after {unreadable.attempts} attempts"
             f" ({unreadable.truncated_attempts} cut at the output limit)"
         )
-        return _missed(call, MissCause.UNREADABLE_ANSWER, detail, unreadable.usage)
+        return _missed(call, MissedCallCause.UNREADABLE_ANSWER, detail, unreadable.usage)
     except ProviderThrottled as throttled:
-        return _missed(call, MissCause.PROVIDER_THROTTLED, str(throttled), throttled.usage)
+        return _missed(call, MissedCallCause.PROVIDER_THROTTLED, str(throttled), throttled.usage)
     except PromptTooLong as too_long:
-        return _missed(call, MissCause.PROMPT_TOO_LONG, str(too_long), too_long.usage)
+        return _missed(call, MissedCallCause.PROMPT_TOO_LONG, str(too_long), too_long.usage)
 
 
-def _missed(call: ModelCall[Any], cause: MissCause, detail: str, usage: ProviderUsage) -> Missed:
+def _missed(
+    call: ModelCall[Any], cause: MissedCallCause, detail: str, usage: ProviderUsage
+) -> Missed:
     missed_call = MissedModelCall(
         tool_name=call.tool_name, kind=call.kind, cause=cause, detail=detail
     )

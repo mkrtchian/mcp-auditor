@@ -1,7 +1,7 @@
 import json
 
 import tests.unit.auditor.support.test_missed_model_call_rendering_given as given
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.rendering import render_json, render_markdown
 from tests.unit.auditor.support.report_builders import (
     REFUSAL_MESSAGE,
@@ -83,7 +83,7 @@ def test_markdown_tool_section_lists_its_unreadable_model_call():
 
 def test_markdown_names_a_throttled_model_call_in_the_summary_and_its_tool_section():
     report = given.a_report_with_one_missed_judgment_on_get_user(
-        MissCause.PROVIDER_THROTTLED, given.THROTTLE_MESSAGE
+        MissedCallCause.PROVIDER_THROTTLED, given.THROTTLE_MESSAGE
     )
 
     summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]
@@ -97,7 +97,7 @@ def test_markdown_names_a_throttled_model_call_in_the_summary_and_its_tool_secti
 
 def test_markdown_names_a_prompt_too_long_in_the_summary_and_its_tool_section():
     report = given.a_report_with_one_missed_judgment_on_get_user(
-        MissCause.PROMPT_TOO_LONG, given.PROMPT_TOO_LONG_MESSAGE
+        MissedCallCause.PROMPT_TOO_LONG, given.PROMPT_TOO_LONG_MESSAGE
     )
 
     summary, get_user_section = render_markdown(report).split("\n## get_user")[:2]

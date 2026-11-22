@@ -1,15 +1,7 @@
 from pathlib import Path
 
-from mcp_auditor.domain.models import (
-    AuditCategory,
-    AuditReport,
-    CoverageGap,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    Severity,
-    ToolReport,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import AuditCategory, AuditReport, CoverageGap, Severity, ToolReport
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from tests.unit.auditor.support import report_builders as reports
 from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
@@ -26,12 +18,12 @@ def a_report_with_a_finding(severity: Severity) -> AuditReport:
 
 
 def a_report_with_a_finding_and_a_missed_call(severity: Severity) -> AuditReport:
-    report = a_report_with_a_missed_call(MissCause.PROVIDER_REFUSAL)
+    report = a_report_with_a_missed_call(MissedCallCause.PROVIDER_REFUSAL)
     _add_a_finding(report, severity)
     return report
 
 
-def a_report_with_a_missed_call(cause: MissCause) -> AuditReport:
+def a_report_with_a_missed_call(cause: MissedCallCause) -> AuditReport:
     return _a_report(missed_model_calls=[_a_missed_judgment(cause)])
 
 
@@ -91,7 +83,7 @@ def _a_report(
     return report
 
 
-def _a_missed_judgment(cause: MissCause) -> MissedModelCall:
+def _a_missed_judgment(cause: MissedCallCause) -> MissedModelCall:
     return MissedModelCall(
         tool_name="test_tool", kind=ModelCallKind.JUDGMENT, cause=cause, detail="missed"
     )

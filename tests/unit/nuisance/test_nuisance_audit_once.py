@@ -25,7 +25,8 @@ from evals.cve.nuisance.confinement import single_container_run_args
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
-from mcp_auditor.domain.models import MissCause, ProviderUsage
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import ProviderUsage
 from tests.unit.support.captured_console import a_captured_console
 from tests.unit.support.nuisance_admissions import (
     a_backend_registry,
@@ -148,7 +149,9 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
 ):
     a_captured_console(capsys, monkeypatch)
     throttled = holdout_runs.a_report(
-        False, missed=MissCause.PROVIDER_THROTTLED, provider=ProviderUsage(throttled_requests=3)
+        False,
+        missed=MissedCallCause.PROVIDER_THROTTLED,
+        provider=ProviderUsage(throttled_requests=3),
     )
     clean = holdout_runs.a_report(False, provider=ProviderUsage(throttled_requests=2))
     auditor = given.an_auditor(graphs=launch_audit_fakes.graph_reporting([throttled, clean]))

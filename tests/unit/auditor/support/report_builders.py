@@ -1,3 +1,5 @@
+from mcp_auditor.domain.execution import ExecutionRecord
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -7,11 +9,7 @@ from mcp_auditor.domain.models import (
     ChainStep,
     CoverageGap,
     EvalVerdict,
-    ExecutionRecord,
     JudgeResult,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
@@ -97,7 +95,7 @@ def a_report_with_a_refused_judgment_on_get_user() -> AuditReport:
         MissedModelCall(
             tool_name="get_user",
             kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROVIDER_REFUSAL,
+            cause=MissedCallCause.PROVIDER_REFUSAL,
             detail=REFUSAL_MESSAGE,
         )
     ]

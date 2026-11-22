@@ -12,7 +12,8 @@ from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus
 from evals.cve.server_health import ServerHealth
 from evals.probe.analysis import call_cost
-from mcp_auditor.domain.models import MissCause, ProviderUsage
+from mcp_auditor.domain.model_calls import MissedCallCause
+from mcp_auditor.domain.models import ProviderUsage
 
 _EARLY = date(2025, 3, 1)
 _LATE = date(2026, 4, 1)
@@ -57,10 +58,10 @@ def test_a_server_is_assembled_from_its_audits_in_run_order():
     audits = [
         holdout_runs.an_audit(True, provider=provider, judge=judge),
         holdout_runs.an_audit(
-            True, missed=MissCause.PROVIDER_REFUSAL, provider=provider, judge=judge
+            True, missed=MissedCallCause.PROVIDER_REFUSAL, provider=provider, judge=judge
         ),
         holdout_runs.an_audit(
-            False, missed=MissCause.UNREADABLE_ANSWER, provider=provider, judge=judge
+            False, missed=MissedCallCause.UNREADABLE_ANSWER, provider=provider, judge=judge
         ),
     ]
     draw = holdout_runs.draw_entries((holdout_runs.FIRST_FLAW, _EARLY))
@@ -93,9 +94,9 @@ def test_each_run_status_carries_its_server_health_and_missed_call_causes():
     audits = [
         holdout_runs.an_audit(False, health=ServerHealth(2, 1, 1, 4, 2)),
         holdout_runs.an_audit(
-            False, missed=MissCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3, 2, 0, 1)
+            False, missed=MissedCallCause.PROVIDER_REFUSAL, health=ServerHealth(0, 3, 2, 0, 1)
         ),
-        holdout_runs.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+        holdout_runs.an_audit(False, missed=MissedCallCause.UNREADABLE_ANSWER),
     ]
 
     result = assemble_server(holdout_runs.a_server(), audits, holdout_runs.draw_entries(), _PRICES)
@@ -121,8 +122,8 @@ def test_each_run_status_counts_the_fails_on_the_tools_left_out_by_their_declare
     assert result.declared_function_fail_per_run == [1, 0]
 
 
-def test_a_throttled_model_call_is_not_a_miss_cause_of_a_run():
-    audits = [holdout_runs.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)]
+def test_a_throttled_model_call_is_not_a_missed_call_cause_of_a_run():
+    audits = [holdout_runs.an_audit(False, missed=MissedCallCause.PROVIDER_THROTTLED)]
 
     result = assemble_server(holdout_runs.a_server(), audits, holdout_runs.draw_entries(), _PRICES)
 

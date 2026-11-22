@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 
 
 def audit_report_has_missed_calls(
@@ -10,7 +10,7 @@ def audit_report_has_missed_calls(
 
 
 def audit_report_misses_one_call(
-    result: dict[str, Any], tool_name: str, kind: ModelCallKind, cause: MissCause
+    result: dict[str, Any], tool_name: str, kind: ModelCallKind, cause: MissedCallCause
 ) -> None:
     report = result["audit_report"]
     assert [

@@ -126,7 +126,7 @@ def test_a_target_line_keeps_its_disclosure_date_and_the_facts_of_each_run():
     assert [run.missed_call_causes for run in line.per_run] == [[], [], ["provider_refusal"]]
 
 
-def test_a_target_line_sums_its_health_and_counts_its_replay_and_miss_causes():
+def test_a_target_line_sums_its_health_and_counts_its_replay_and_missed_call_causes():
     report = build_report(given.a_run_with_incidents(), grid=COARSE_GRID)
 
     line = next(line for line in report.targets if line.flaw_id == "CVE-A")

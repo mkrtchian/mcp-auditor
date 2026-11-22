@@ -3,6 +3,7 @@ from typing import Any
 from langgraph.graph import END
 
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.model_calls import ModelCallKind
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditPayload,
@@ -11,7 +12,6 @@ from mcp_auditor.domain.models import (
     ChainStep,
     JudgeResult,
     Judgment,
-    ModelCallKind,
     StepObservation,
 )
 from mcp_auditor.domain.ports import LLMPort

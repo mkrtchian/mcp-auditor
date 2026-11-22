@@ -37,7 +37,7 @@ from evals.cve.planting_base import (
     unprivileged_user_args,
 )
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.domain.models import ExecutionRegime
+from mcp_auditor.domain.execution import ExecutionRegime
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.audited_launch_builders import (
     AUDITED_LAUNCH_BUILDERS,

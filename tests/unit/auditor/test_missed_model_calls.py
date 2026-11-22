@@ -1,12 +1,7 @@
 import pytest
 
-from mcp_auditor.domain.models import (
-    Judgment,
-    MissCause,
-    MissedModelCall,
-    ModelCallKind,
-    ProviderUsage,
-)
+from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import Judgment, ProviderUsage
 from mcp_auditor.domain.ports import (
     PromptTooLong,
     ProviderRefusal,
@@ -28,7 +23,7 @@ async def test_an_unreadable_answer_is_a_missed_model_call_with_its_usage():
         missed_call=MissedModelCall(
             tool_name="read_file",
             kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.UNREADABLE_ANSWER,
+            cause=MissedCallCause.UNREADABLE_ANSWER,
             detail="no answer matched the expected format after 3 attempts"
             " (1 cut at the output limit)",
         ),
@@ -47,7 +42,7 @@ async def test_a_refusal_is_a_missed_model_call_with_the_provider_message():
         missed_call=MissedModelCall(
             tool_name="read_file",
             kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROVIDER_REFUSAL,
+            cause=MissedCallCause.PROVIDER_REFUSAL,
             detail="flagged by policy",
         ),
         usage=usage,
@@ -65,7 +60,7 @@ async def test_a_throttled_call_is_a_missed_model_call_with_the_provider_message
         missed_call=MissedModelCall(
             tool_name="read_file",
             kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROVIDER_THROTTLED,
+            cause=MissedCallCause.PROVIDER_THROTTLED,
             detail="the model provider throttled the request past every retry"
             " (312 s waited by the auditor): Error code: 429 - slow down",
         ),
@@ -82,7 +77,7 @@ async def test_a_prompt_too_long_is_a_missed_model_call_with_its_usage():
         missed_call=MissedModelCall(
             tool_name="read_file",
             kind=ModelCallKind.JUDGMENT,
-            cause=MissCause.PROMPT_TOO_LONG,
+            cause=MissedCallCause.PROMPT_TOO_LONG,
             detail=str(PromptTooLong(usage)),
         ),
         usage=usage,

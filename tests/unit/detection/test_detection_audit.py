@@ -22,7 +22,7 @@ from evals.cve.proofs import UnitPlace
 from evals.cve.report_units import units_of
 from evals.cve.server_health import ServerHealth
 from evals.metrics import SessionThrottles
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support import test_detection_audit_given as given
 from tests.unit.detection.support.detection_audits import (
     TARGET,
@@ -34,7 +34,7 @@ from tests.unit.detection.support.detection_audits import (
 from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 
-_REFUSED = frozenset({MissCause.PROVIDER_REFUSAL})
+_REFUSED = frozenset({MissedCallCause.PROVIDER_REFUSAL})
 
 
 def test_a_misconfigured_model_fails_before_any_target_is_launched(
@@ -115,7 +115,9 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    unreadable = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.UNREADABLE_ANSWER}))
+    unreadable = IncompleteAttempt(
+        grammar.a_report(), frozenset({MissedCallCause.UNREADABLE_ANSWER})
+    )
     outcomes: list[AttemptOutcome[GradedAudit]] = [
         IncompleteAttempt(grammar.a_report(), _REFUSED),
         *[unreadable] * (INCOMPLETE_ATTEMPTS - 1),
@@ -140,7 +142,7 @@ async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    too_long = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.PROMPT_TOO_LONG}))
+    too_long = IncompleteAttempt(grammar.a_report(), frozenset({MissedCallCause.PROMPT_TOO_LONG}))
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
     attempt = ScriptedAttempts[GradedAudit]([too_long, graded])
 
@@ -165,16 +167,18 @@ async def test_a_run_skipped_on_launch_is_not_audited_again(
     assert attempt.calls == 1
 
 
-@pytest.mark.parametrize("cause", list(MissCause))
-def test_a_detection_is_kept_whatever_model_call_was_missed(cause: MissCause):
+@pytest.mark.parametrize("cause", list(MissedCallCause))
+def test_a_detection_is_kept_whatever_model_call_was_missed(cause: MissedCallCause):
     outcome = graded_or_incomplete(a_detected_grade(), a_report_missing(cause))
 
     assert isinstance(outcome, RunGrade)
     assert outcome.status == TargetStatus.DETECTED
 
 
-@pytest.mark.parametrize("cause", list(MissCause))
-def test_a_miss_with_a_missed_model_call_is_not_graded_and_carries_its_cause(cause: MissCause):
+@pytest.mark.parametrize("cause", list(MissedCallCause))
+def test_a_miss_with_a_missed_model_call_is_not_graded_and_carries_its_cause(
+    cause: MissedCallCause,
+):
     missed = grammar.a_missed_run(MissKind.AIMED_NO_PROOF)
 
     outcome = graded_or_incomplete(missed, a_report_missing(cause))
@@ -202,7 +206,7 @@ def test_a_struck_only_credit_with_a_refused_model_call_reads_as_refused():
         struck_places=frozenset({grammar.PLACE}),
     )
 
-    outcome = graded_or_incomplete(struck, a_report_missing(MissCause.PROVIDER_REFUSAL))
+    outcome = graded_or_incomplete(struck, a_report_missing(MissedCallCause.PROVIDER_REFUSAL))
 
     assert isinstance(outcome, IncompleteAttempt)
 
