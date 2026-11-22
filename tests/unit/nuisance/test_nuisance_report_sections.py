@@ -9,8 +9,7 @@ from evals.cve.nuisance.results import (
     NotRunServer,
     ServerExit,
 )
-from tests.unit.nuisance.support.nuisance_report_runs import a_run
-from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.nuisance.support.nuisance_report_runs import a_run, a_server_result
 from tests.unit.support.coarse_grid import COARSE_GRID
 
 

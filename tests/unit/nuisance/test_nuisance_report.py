@@ -25,8 +25,12 @@ from evals.cve.nuisance.report import (
     build_report,
 )
 from evals.cve.nuisance.results import NotRunCause, NotRunServer, ServerExit
-from tests.unit.nuisance.support.nuisance_report_runs import LUNA_CUTOFF, RECORDED_AT, a_run
-from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.nuisance.support.nuisance_report_runs import (
+    LUNA_CUTOFF,
+    RECORDED_AT,
+    a_run,
+    a_server_result,
+)
 from tests.unit.support.coarse_grid import COARSE_GRID
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}

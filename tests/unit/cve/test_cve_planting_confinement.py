@@ -10,13 +10,14 @@ from evals.cve.planting_base import (
     own_network_args,
     resolver_args,
 )
+from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import carries, count, value_after
 
 
 def test_the_user_working_directory_and_network_args_follow_an_unprivileged_host():
     spec = planting.spec_of([], host=planting.unprivileged_host(working_directory="/srv/fictional"))
 
-    with planted(spec, "image:tag", planting.FakePlantingDocker()) as args:
+    with planted(spec, "image:tag", FakePlantingDocker()) as args:
         assert args.user == ("--user", "65534:65534", "-e", "HOME=/tmp")
         assert args.working_directory == ("-w", "/srv/fictional")
         assert args.network == tuple(no_network_args())
@@ -36,7 +37,7 @@ def test_only_the_holder_carries_the_resolver_option_on_a_launch_with_a_holder(h
         [planting.endpoint_place(host="198.51.100.5")],
         host=planting.unprivileged_host(has_network=has_network),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         holder = docker.holders[planting.only(docker.holders)]
@@ -57,7 +58,7 @@ def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolve
         [planting.endpoint_place(host="fictional-service")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         network = next(iter(docker.networks))
@@ -69,7 +70,7 @@ def test_the_target_its_probe_and_a_bridge_alias_sentinel_each_carry_the_resolve
 
 def test_a_launch_with_no_network_and_no_holder_takes_the_no_network_args():
     spec = planting.spec_of([planting.file_place()])
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         assert docker.holders == {}
@@ -94,7 +95,7 @@ def test_the_holder_and_a_sentinel_run_under_the_memory_bound():
         [planting.endpoint_place(host="198.51.100.5")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker):
         holder = docker.holders[planting.only(docker.holders)]

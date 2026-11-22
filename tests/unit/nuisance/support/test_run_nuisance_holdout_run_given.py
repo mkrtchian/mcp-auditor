@@ -14,8 +14,7 @@ from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.run_files import write_report
 from evals.run_nuisance import NuisanceCommandDeps
 from mcp_auditor.config import Settings
-from tests.unit.nuisance.support.nuisance_report_runs import a_run
-from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.nuisance.support.nuisance_report_runs import a_run, a_server_result
 from tests.unit.support import census_draws, censuses
 from tests.unit.support.detection_holdout_runs import ready_conditions
 

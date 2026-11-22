@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as dossier_then
 import tests.unit.nuisance.admission.support.test_nuisance_re_admission_dossier_given as given
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
@@ -33,6 +32,9 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import user_args
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinement_args
 from evals.eval_session import Refused
+from tests.unit.nuisance.admission.support.holdout_reference_checks import (
+    it_carries_the_holdout_reference_of,
+)
 from tests.unit.support.committed_nuisance_admission import (
     a_committed_server_with_fix_checks,
     a_detection_holdout_server_with_its_own_fix_check,
@@ -140,7 +142,7 @@ def test_a_detection_holdout_server_with_its_own_fix_check_carries_its_reference
     out = dossier_of(server)
 
     for target in its_holdout_targets(server):
-        dossier_then.it_carries_the_holdout_reference_of(out, target)
+        it_carries_the_holdout_reference_of(out, target)
 
 
 @pytest.mark.parametrize(

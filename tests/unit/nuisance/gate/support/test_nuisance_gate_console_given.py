@@ -1,10 +1,10 @@
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport
-from tests.unit.nuisance.gate.support.nuisance_gate_sessions import KUBERNETES
-from tests.unit.nuisance.gate.support.test_nuisance_gate_report_given import (
+from tests.unit.nuisance.gate.support.nuisance_gate_reports import (
     a_held_server_beside_a_regression,
     a_not_gated_server_with_an_alarm,
     a_report_of,
 )
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import KUBERNETES
 
 
 def a_not_gated_report() -> NuisanceGateReport:

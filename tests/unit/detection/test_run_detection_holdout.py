@@ -15,6 +15,7 @@ from evals.cve.images import dockerfile_fingerprint
 from evals.cve.kit import launch as kit_launch
 from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import RunDocker, target_services
+from evals.honeypots import REPO_ROOT
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.calibration_check_deps import deps_with
@@ -241,7 +242,7 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
         assert f"`{service}`" in readme, service
 
 
-_COMMITTED_CAPTURES = sorted((iso.REPO_ROOT / "evals" / "stand_ins").glob("*.json"))
+_COMMITTED_CAPTURES = sorted((REPO_ROOT / "evals" / "stand_ins").glob("*.json"))
 
 
 def _acceptance_services() -> set[str]:

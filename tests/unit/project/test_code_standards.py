@@ -37,8 +37,6 @@ def test_every_debt_is_blocked_by_a_fingerprinted_file_or_a_third_party():
             case ThirdParty(distribution, reason):
                 assert importlib.metadata.distribution(distribution)
                 assert reason, f"{debt}: a third-party blocker gives its reason"
-            case None:
-                pass
 
 
 @pytest.mark.parametrize("layer", given.HEXAGON)

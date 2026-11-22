@@ -7,12 +7,12 @@ from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
 from evals.cve.nuisance.gate.gate_report import GATE_LEGEND
 from evals.eval_display import print_outcome
-from tests.unit.nuisance.gate.support.nuisance_gate_sessions import FILESYSTEM, KUBERNETES
-from tests.unit.nuisance.gate.support.test_nuisance_gate_report_given import (
+from tests.unit.nuisance.gate.support.nuisance_gate_reports import (
     FLAGGED_IN_BASELINE,
     NOT_ADMITTED,
     OUTSIDE,
 )
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import FILESYSTEM, KUBERNETES
 from tests.unit.support.captured_console import a_captured_console
 from tests.unit.support.nuisance_holdout_runs import COUNTED_TOOL
 

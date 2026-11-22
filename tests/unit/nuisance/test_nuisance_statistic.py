@@ -18,11 +18,8 @@ from evals.cve.nuisance.statistic import (
     observed,
     split_by_side,
 )
-from tests.unit.nuisance.support.test_nuisance_statistic_given import (
-    RUN_CUTOFF,
-    a_server_result,
-    sides_of,
-)
+from tests.unit.nuisance.support.nuisance_report_runs import a_server_result
+from tests.unit.nuisance.support.test_nuisance_statistic_given import RUN_CUTOFF, sides_of
 from tests.unit.support.coarse_grid import COARSE_GRID
 
 RUNS = 3

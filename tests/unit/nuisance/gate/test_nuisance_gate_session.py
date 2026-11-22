@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.nuisance.gate.support.test_nuisance_gate_session_given as given
 from evals.baseline import BaselineStatus
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
@@ -25,7 +26,6 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
     scripted,
     the_one_server_ends,
 )
-from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import a_gated_baseline
 from tests.unit.support.admission_mutations import with_a_backend
 
 
@@ -156,7 +156,7 @@ async def test_a_baseline_file_written_during_the_runs_refuses_the_recording(tmp
     script = scripted({FILESYSTEM.server_package: clean_runs()})
 
     async def audit_writing_a_file(server: AdmittedServer) -> GateRun | None:
-        write_baseline(tmp_path, a_gated_baseline("npm:written-meanwhile"))
+        write_baseline(tmp_path, nuisance_gate_baselines.a_gated_baseline("npm:written-meanwhile"))
         return await script(server)
 
     harness = a_harness(tmp_path, audit_writing_a_file)

@@ -11,14 +11,19 @@ import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_given as given
 import tests.unit.nuisance.admission.support.test_nuisance_dossier_then as then
-import tests.unit.nuisance.admission.support.test_nuisance_unrecorded_given as unrecorded_given
+import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
+import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
 from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
+from evals.honeypots import REPO_ROOT
+from tests.unit.nuisance.admission.support.holdout_reference_checks import (
+    it_carries_the_holdout_reference_of,
+)
 from tests.unit.support import censuses
 from tests.unit.support.committed_nuisance_admission import (
     a_detection_holdout_server_with_its_own_fix_check,
@@ -128,7 +133,7 @@ def test_a_detection_holdout_server_dossier_carries_the_holdout_reference_of_eac
     out = given.a_written_dossier_of(tmp_path, server)
 
     for target in its_holdout_targets(server):
-        then.it_carries_the_holdout_reference_of(out, target)
+        it_carries_the_holdout_reference_of(out, target)
     assert iso.scan_tree(out) == {}
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
@@ -169,7 +174,7 @@ def test_both_readmes_state_the_mcp_specifier_of_the_project(tmp_path: Path):
 
 
 def _mcp_specifier() -> str:
-    pyproject = tomllib.loads((iso.REPO_ROOT / "pyproject.toml").read_text())
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())
     dependencies: list[str] = pyproject["project"]["dependencies"]
     return next(each for each in dependencies if re.split(r"[<>=!~\[; ]", each)[0] == "mcp")
 
@@ -193,7 +198,7 @@ def test_an_unknown_server_is_refused(tmp_path: Path):
 
 
 def test_the_fixture_format_names_every_field_the_run_refuses_unrecorded(tmp_path: Path):
-    server = unrecorded_given.a_server_with_every_field_unrecorded()
+    server = mutations.with_every_new_field_unrecorded(admissions.an_admission()).servers[0]
 
     fixture_format = (given.a_written_dossier(tmp_path) / "fixture_format.md").read_text()
 

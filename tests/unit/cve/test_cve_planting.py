@@ -12,6 +12,7 @@ from evals.cve.planting import (
     PlantingSpec,
     planted,
 )
+from tests.fakes.planting_docker import FakePlantingDocker
 
 # --- per-kind spec intents --------------------------------------------------------------
 
@@ -242,7 +243,7 @@ def test_a_hostname_place_on_a_launch_with_a_holder_lands_on_the_holder_not_the_
         [planting.hostname_place(), planting.endpoint_place(host="198.51.100.5")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         assert args.hostname == ()
@@ -259,7 +260,7 @@ def test_a_hostname_place_without_a_holder_lands_on_the_target():
 
 
 def _args_in(spec: PlantingSpec) -> PlantedArgs:
-    with planted(spec, "image:tag", planting.FakePlantingDocker()) as args:
+    with planted(spec, "image:tag", FakePlantingDocker()) as args:
         return args
 
 

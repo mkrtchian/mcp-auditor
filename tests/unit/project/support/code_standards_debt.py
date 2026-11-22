@@ -2,8 +2,7 @@
 
 An entry is added only for a violation blocked by a fingerprinted file (one an eval fingerprint
 hashes, which cannot change without moving that fingerprint) or by a third-party package, and it
-names that blocker. It is paid when the blocker changes for its own reason. The violations blocked
-by nothing, grouped by file, are still to clear: the list only shrinks.
+names that blocker. It is paid when the blocker changes for its own reason.
 """
 
 from dataclasses import dataclass
@@ -27,11 +26,10 @@ class Debt:
     path: str
     standard: CodeStandard
     symbol: str
-    blocked_by: FingerprintedFile | ThirdParty | None  # None: not blocked, to be cleared
+    blocked_by: FingerprintedFile | ThirdParty
 
 
 NEWSPAPER = CodeStandard.NEWSPAPER_ORDER
-FOREIGN = CodeStandard.FOREIGN_GIVEN_THEN
 SETATTR = CodeStandard.MONKEYPATCH_SETATTR
 
 _FIREWORKS_RETRY = ThirdParty(
@@ -39,53 +37,6 @@ _FIREWORKS_RETRY = ThirdParty(
     "langchain_fireworks retries through langchain_core's create_base_retry_decorator, whose "
     "tenacity wait_exponential(min=4) is hard-coded",
 )
-
-_UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
-    "tests/unit/nuisance/admission/test_nuisance_dossier.py": (
-        (FOREIGN, "test_nuisance_unrecorded_given"),
-    ),
-    "tests/unit/nuisance/admission/test_nuisance_re_admission_dossier.py": (
-        (FOREIGN, "test_nuisance_dossier_then"),
-    ),
-    "tests/unit/nuisance/gate/support/nuisance_gate_sessions.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-    ),
-    "tests/unit/nuisance/gate/support/test_nuisance_gate_console_given.py": (
-        (FOREIGN, "test_nuisance_gate_report_given"),
-    ),
-    "tests/unit/nuisance/gate/support/test_nuisance_gate_given.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-    ),
-    "tests/unit/nuisance/gate/support/test_nuisance_gate_recording_given.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-        (FOREIGN, "test_nuisance_gate_given"),
-    ),
-    "tests/unit/nuisance/gate/support/test_nuisance_gate_report_given.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-    ),
-    "tests/unit/nuisance/gate/support/test_nuisance_gate_session_given.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-    ),
-    "tests/unit/nuisance/gate/test_nuisance_gate_console.py": (
-        (FOREIGN, "test_nuisance_gate_report_given"),
-    ),
-    "tests/unit/nuisance/gate/test_nuisance_gate_session.py": (
-        (FOREIGN, "test_nuisance_gate_baseline_given"),
-    ),
-    "tests/unit/nuisance/support/test_nuisance_report_given.py": (
-        (FOREIGN, "test_nuisance_statistic_given"),
-    ),
-    "tests/unit/nuisance/support/test_run_nuisance_holdout_run_given.py": (
-        (FOREIGN, "test_nuisance_statistic_given"),
-    ),
-    "tests/unit/nuisance/test_nuisance_report.py": ((FOREIGN, "test_nuisance_statistic_given"),),
-    "tests/unit/nuisance/test_nuisance_report_sections.py": (
-        (FOREIGN, "test_nuisance_statistic_given"),
-    ),
-    "tests/unit/nuisance/test_run_nuisance_holdout_run.py": (
-        (FOREIGN, "test_nuisance_holdout_calibration_copies_given"),
-    ),
-}
 
 DEBTS: tuple[Debt, ...] = (
     Debt(
@@ -233,10 +184,5 @@ DEBTS: tuple[Debt, ...] = (
         SETATTR,
         "test_write_host_file_removes_the_temp_file_when_the_content_cannot_be_encoded:tempfile.tempdir",
         FingerprintedFile("evals/cve/planting_docker.py"),
-    ),
-    *(
-        Debt(path, standard, symbol, None)
-        for path, unblocked in _UNBLOCKED.items()
-        for standard, symbol in unblocked
     ),
 )

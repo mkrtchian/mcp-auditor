@@ -13,9 +13,6 @@ from evals import run_nuisance
 from evals.cve.nuisance.holdout_run import NUISANCE_RUNS
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
-from tests.unit.nuisance.admission.support import (
-    test_nuisance_holdout_calibration_copies_given as copies_given,
-)
 from tests.unit.support.admission_mutations import (
     a_server_with_a_holdout_calibration_copy_at,
     admitting,
@@ -60,7 +57,7 @@ def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     deps = given.a_run_refused_before_its_settings()
-    stale = a_server_with_a_holdout_calibration_copy_at(copies_given.RECORDED)
+    stale = a_server_with_a_holdout_calibration_copy_at(fingerprint="a" * 64)
     admission = admitting(stale)
 
     exit_code = run_nuisance.main(given.a_run_command(tmp_path, admission), deps)
@@ -70,7 +67,7 @@ def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before
     assert (
         "taken from a fixture that has since changed or left the detection holdout layer" in words
     )
-    assert f"{copies_given.COPIED_FLAW} is no longer a drawn holdout target" in words
+    assert f"{admissions.FIRST_FLAW} is no longer a drawn holdout target" in words
     assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 
 

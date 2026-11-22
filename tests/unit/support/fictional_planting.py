@@ -14,8 +14,7 @@ from evals.cve.planting import (
     planting_spec,
 )
 from evals.cve.planting_base import PublicNames
-from tests.fakes.planting_docker import FakePlantingDocker as FakePlantingDocker
-from tests.fakes.planting_docker import HostFile as HostFile
+from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import value_after
 
 

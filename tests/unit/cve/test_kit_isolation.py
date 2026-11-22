@@ -10,9 +10,10 @@ from evals.cve.detection.targets import Target
 from evals.cve.kit.fix_check import FixCheckResult
 from evals.cve.kit.target import KitTarget
 from evals.cve.nuisance.admission.admission import FixCheckRecord
+from evals.honeypots import REPO_ROOT
 from tests.unit.support import censuses
 
-_KIT_DIR = iso.REPO_ROOT / "evals" / "cve" / "kit"
+_KIT_DIR = REPO_ROOT / "evals" / "cve" / "kit"
 
 
 def test_the_written_kit_imports_from_its_own_tree_with_no_mcp_auditor_module(tmp_path: Path):

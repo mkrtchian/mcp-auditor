@@ -10,8 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from evals.honeypots import REPO_ROOT as REPO_ROOT
-
 
 def scan_tree(root: Path) -> dict[str, list[str]]:
     """Each .py file under root that imports mcp_auditor, mapped to the offending names."""

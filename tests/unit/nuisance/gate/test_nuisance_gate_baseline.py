@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given as given
+import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
@@ -29,17 +29,19 @@ def test_a_pypi_package_names_a_portable_file():
 
 
 def test_a_written_baseline_loads_back_keyed_by_its_package(tmp_path: Path):
-    baseline = given.a_gated_baseline()
+    baseline = nuisance_gate_baselines.a_gated_baseline()
 
     write_baseline(tmp_path, baseline)
 
-    assert load_baselines(tmp_path) == {given.SERVER_PACKAGE: baseline}
+    assert load_baselines(tmp_path) == {nuisance_gate_baselines.SERVER_PACKAGE: baseline}
     assert list(tmp_path.glob("*.tmp")) == []
 
 
 def test_a_file_named_after_another_package_refuses_the_load(tmp_path: Path):
-    write_baseline(tmp_path, given.a_gated_baseline())
-    (tmp_path / baseline_file_name(given.SERVER_PACKAGE)).rename(tmp_path / "other.json")
+    write_baseline(tmp_path, nuisance_gate_baselines.a_gated_baseline())
+    (tmp_path / baseline_file_name(nuisance_gate_baselines.SERVER_PACKAGE)).rename(
+        tmp_path / "other.json"
+    )
 
     with pytest.raises(ValueError, match=r"other\.json"):
         load_baselines(tmp_path)
@@ -50,36 +52,36 @@ def test_a_missing_directory_loads_as_no_baseline(tmp_path: Path):
 
 
 def test_an_unconfirmed_baseline_holding_its_runs_is_whole():
-    assert baseline_integrity(given.an_unconfirmed_baseline([False] * 3)) == []
+    assert baseline_integrity(nuisance_gate_baselines.an_unconfirmed_baseline([False] * 3)) == []
 
 
 def test_an_unconfirmed_baseline_short_of_its_runs_names_both_counts():
-    [problem] = baseline_integrity(given.an_unconfirmed_baseline([False] * 2))
+    [problem] = baseline_integrity(nuisance_gate_baselines.an_unconfirmed_baseline([False] * 2))
 
-    assert given.SERVER_PACKAGE in problem
+    assert nuisance_gate_baselines.SERVER_PACKAGE in problem
     assert "2" in problem and "3" in problem
 
 
 def test_a_confirmation_holds_the_runs_of_both_recordings():
-    assert baseline_integrity(given.a_confirmed_baseline([False] * 6)) == []
-    assert baseline_integrity(given.a_confirmed_baseline([False] * 3)) != []
+    assert baseline_integrity(nuisance_gate_baselines.a_confirmed_baseline([False] * 6)) == []
+    assert baseline_integrity(nuisance_gate_baselines.a_confirmed_baseline([False] * 3)) != []
 
 
 def test_only_a_confirmed_baseline_with_no_alarm_is_gated():
-    flagged_once = given.a_confirmed_baseline([False] * 5 + [True])
+    flagged_once = nuisance_gate_baselines.a_confirmed_baseline([False] * 5 + [True])
 
-    assert given.a_gated_baseline().gated()
-    assert not given.an_unconfirmed_baseline().gated()
+    assert nuisance_gate_baselines.a_gated_baseline().gated()
+    assert not nuisance_gate_baselines.an_unconfirmed_baseline().gated()
     assert not flagged_once.gated()
     assert flagged_once.alarmed()
 
 
 def test_a_baseline_recorded_under_other_runs_mismatches_on_runs():
-    baselines = {given.SERVER_PACKAGE: given.a_gated_baseline()}
+    baselines = {nuisance_gate_baselines.SERVER_PACKAGE: nuisance_gate_baselines.a_gated_baseline()}
 
-    [mismatch] = condition_mismatches(baselines, given.conditions(runs=1))
+    [mismatch] = condition_mismatches(baselines, nuisance_gate_baselines.conditions(runs=1))
 
-    assert baseline_file_name(given.SERVER_PACKAGE) in mismatch
+    assert baseline_file_name(nuisance_gate_baselines.SERVER_PACKAGE) in mismatch
     assert "runs" in mismatch
 
 

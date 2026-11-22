@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
 
+import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
@@ -19,10 +20,6 @@ from evals.cve.nuisance.gate.gate_session_model import (
 from evals.eval_session import TreeState
 from evals.gate_outcome import GateOutcome
 from tests.fakes import FakeContainerSweep, ScriptedBenignCall
-from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
-    a_gated_baseline,
-    conditions,
-)
 
 # Services whose Dockerfiles exist, since the session fingerprints each server's fixture.
 FILESYSTEM = holdout_runs.a_server(
@@ -106,7 +103,7 @@ def options(
     return NuisanceGateOptions(
         servers=list(servers),
         gate_packages=frozenset(packages),
-        conditions=conditions(runs),
+        conditions=nuisance_gate_baselines.conditions(runs),
         record_baseline=record,
     )
 
@@ -116,7 +113,9 @@ def a_gated_file(
     server: AdmittedServer,
     recorded: NuisanceGateConditions | None = None,
 ) -> None:
-    a_baseline_file(directory, server, a_gated_baseline(server.server_package), recorded)
+    a_baseline_file(
+        directory, server, nuisance_gate_baselines.a_gated_baseline(server.server_package), recorded
+    )
 
 
 def a_baseline_file(
@@ -127,7 +126,7 @@ def a_baseline_file(
 ) -> None:
     update = {
         "fixture_fingerprint": nuisance_fixture_fingerprint(server),
-        "conditions": recorded or conditions(),
+        "conditions": recorded or nuisance_gate_baselines.conditions(),
     }
     write_baseline(directory, baseline.model_copy(update=update))
 

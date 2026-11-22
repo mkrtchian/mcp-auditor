@@ -5,6 +5,7 @@ from evals.cve.endpoint_address import RESERVED_NAME_BLOCK
 from evals.cve.planting import PlantingFailed, planted
 from evals.cve.planting_base import PublicNames, own_network_args
 from evals.cve.planting_spec import served_file
+from tests.fakes.planting_docker import FakePlantingDocker
 
 
 def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_no_holder():
@@ -12,7 +13,7 @@ def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_n
         [planting.endpoint_place(host="fictional-service", path="/p")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         assert spec.needs_holder is False
@@ -29,7 +30,7 @@ def test_an_ip_literal_host_yields_a_holder_address_setup_sentinel_and_target_ne
         [planting.endpoint_place(host="198.51.100.5", path="/p")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         network = next(iter(docker.networks))
@@ -49,7 +50,7 @@ def test_an_ip_literal_host_without_network_holds_on_network_none():
     spec = planting.spec_of(
         [planting.endpoint_place(host="198.51.100.5")], host=planting.unprivileged_host()
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker) as args:
         assert docker.networks == set()
@@ -66,7 +67,7 @@ def test_two_ip_literal_hosts_share_one_holder():
         ],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker):
         assert len(docker.holders) == 1
@@ -82,7 +83,7 @@ def test_a_loopback_literal_and_localhost_yield_a_holder_and_no_address_setup():
         ],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker):
         assert len(docker.holders) == 1
@@ -102,7 +103,7 @@ def test_a_name_host_without_network_adds_a_reserved_address_and_binds_the_senti
 
     assert spec.host_entries == (("internal.fictional", reserved),)
     assert spec.address_setups == (reserved,)
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
     with planted(spec, "image:tag", docker):
         holder = planting.only(docker.holders)
         assert "--add-host" in docker.holders[holder]
@@ -116,7 +117,7 @@ def test_a_name_host_without_network_adds_a_reserved_address_and_binds_the_senti
 
 def test_a_sentinel_is_told_the_file_httpd_serves_the_path_from():
     spec = planting.spec_of([planting.endpoint_place(host="198.51.100.5", path="/fictional/dir/")])
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with planted(spec, "image:tag", docker):
         sentinel = docker.sentinels[planting.only(docker.sentinels)]
@@ -134,7 +135,7 @@ def test_two_holder_bound_name_hosts_differing_only_in_case_raise_and_leave_noth
         ],
         host=planting.unprivileged_host(),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
@@ -146,7 +147,7 @@ def test_an_upper_case_localhost_without_network_raises():
     spec = planting.spec_of(
         [planting.endpoint_place(host="LOCALHOST")], host=planting.unprivileged_host()
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
@@ -160,10 +161,10 @@ def test_one_network_without_a_fixed_subnet_is_created_per_launch_with_a_network
     )
     without = planting.spec_of([planting.file_place()], host=planting.unprivileged_host())
 
-    docker_a = planting.FakePlantingDocker()
+    docker_a = FakePlantingDocker()
     with planted(with_network, "image:tag", docker_a):
         assert len(docker_a.networks) == 1  # create_network takes no subnet, so none is fixed
-    docker_b = planting.FakePlantingDocker()
+    docker_b = FakePlantingDocker()
     with planted(without, "image:tag", docker_b):
         assert docker_b.networks == set()
 
@@ -173,7 +174,7 @@ def test_a_file_place_over_etc_hosts_beside_a_name_host_without_network_raises()
         [planting.file_place(path="/etc/hosts"), planting.endpoint_place(host="meta.fict")],
         host=planting.unprivileged_host(),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
@@ -189,7 +190,7 @@ def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_raises():
         ],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
@@ -203,7 +204,7 @@ def test_an_ip6_localhost_host_on_a_launch_with_a_network_raises():
         [planting.endpoint_place(host="ip6-localhost")],
         host=planting.unprivileged_host(has_network=True),
     )
-    docker = planting.FakePlantingDocker()
+    docker = FakePlantingDocker()
 
     with pytest.raises(PlantingFailed), planted(spec, "image:tag", docker):
         pass
@@ -216,7 +217,7 @@ def test_a_file_place_over_etc_hosts_beside_an_ip_literal_plants():
         [planting.file_place(path="/etc/hosts"), planting.endpoint_place(host="198.51.100.5")]
     )
 
-    with planted(spec, "image:tag", planting.FakePlantingDocker()):
+    with planted(spec, "image:tag", FakePlantingDocker()):
         pass
 
 
@@ -226,7 +227,7 @@ def test_a_file_place_over_etc_hosts_beside_a_bridge_alias_plants():
         host=planting.unprivileged_host(has_network=True),
     )
 
-    with planted(spec, "image:tag", planting.FakePlantingDocker()):
+    with planted(spec, "image:tag", FakePlantingDocker()):
         pass
 
 

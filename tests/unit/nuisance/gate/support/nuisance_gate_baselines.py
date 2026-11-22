@@ -2,6 +2,7 @@ from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
+from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
 from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
 from evals.gate import RetestRule
 
@@ -55,3 +56,7 @@ def conditions(runs: int = 3) -> NuisanceGateConditions:
         grammar_fingerprint=grammar_fingerprint(),
         counter_fingerprint=counter_fingerprint(),
     )
+
+
+def a_comparison(outcome: ServerOutcome, package: str = SERVER_PACKAGE) -> ServerComparison:
+    return ServerComparison(server_package=package, outcome=outcome, candidate_runs=[False] * 3)

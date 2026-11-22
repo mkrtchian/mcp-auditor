@@ -1,11 +1,7 @@
 from pathlib import Path
 
-from evals.cve.detection.draw_record import CalibrationCard
-from evals.cve.detection.targets import Target
-from evals.cve.docker_paths import image_dockerfile
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 
 
@@ -20,18 +16,3 @@ def grammar_classes_send_an_unclassed_flaw_to_null(out: Path) -> None:
     for flaw_class in FlawClass:
         assert f"`{flaw_class}`" in text
     assert "gets `effect_class` `null`" in text
-
-
-def it_carries_the_holdout_reference_of(out: Path, target: Target) -> None:
-    fixture = holdout_fixture_file(target.flaw_id)
-    text = (out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt").read_text()
-    assert text.startswith(fixture.read_text())
-    assert f"def {target.builder.__name__}(" in text
-    card = CalibrationCard.model_validate_json(
-        (out / "reference" / "cards" / f"{target.flaw_id}.json").read_text()
-    )
-    assert card.flaw == target.flaw_id
-    for service in (*target.images, target.patched_image):
-        dockerfile = out / "reference" / "docker" / image_dockerfile(service).name
-        assert dockerfile.exists(), service
-    assert list((out / "reference").rglob("*.py")) == []

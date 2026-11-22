@@ -2,8 +2,7 @@ import dataclasses
 
 from evals.cve.nuisance.report import ServerRunLine
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult, NuisanceServerResult
-from tests.unit.nuisance.support.nuisance_report_runs import a_run
-from tests.unit.nuisance.support.test_nuisance_statistic_given import a_server_result
+from tests.unit.nuisance.support.nuisance_report_runs import a_run, a_server_result
 
 
 def a_clean_run_line(*, flagged: bool, incomplete: bool) -> ServerRunLine:
