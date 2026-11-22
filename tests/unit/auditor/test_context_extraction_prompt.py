@@ -1,7 +1,7 @@
 import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_context_extraction_prompt_given as given
-from mcp_auditor.domain import AttackContext
 from mcp_auditor.domain.attack_context import MAX_ITEM_LENGTH, MAX_NOTE_LENGTH
+from mcp_auditor.domain.models import AttackContext
 from mcp_auditor.graph.prompts import build_context_extraction_prompt
 
 

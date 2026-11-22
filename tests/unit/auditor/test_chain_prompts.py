@@ -1,6 +1,6 @@
 import tests.unit.auditor.support.cut_responses as cuts
-from mcp_auditor.domain import AttackChain, AttackContext, AuditCategory
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
+from mcp_auditor.domain.models import AttackChain, AttackContext, AuditCategory
 from mcp_auditor.graph.chain_prompts import (
     RESPONSE_SNIPPET_LENGTH,
     build_chain_judge_prompt,

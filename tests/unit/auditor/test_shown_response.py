@@ -4,7 +4,7 @@ import pytest
 
 import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_shown_response_given as given
-from mcp_auditor.domain import ToolReport
+from mcp_auditor.domain.models import ToolReport
 from mcp_auditor.domain.shown_response import (
     MAX_SHOWN_LENGTH,
     cut_responses,

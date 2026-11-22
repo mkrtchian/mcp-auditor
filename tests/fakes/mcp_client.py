@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from mcp_auditor.domain import ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.server_watch import LOST_CONNECTION_RESPONSES
 
 

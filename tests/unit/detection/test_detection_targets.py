@@ -16,8 +16,8 @@ from evals.cve.environments import Launch, LaunchShape
 from evals.cve.layout import PROJECT
 from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting import PlantingSpec
-from mcp_auditor.domain import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.detection.support.fictional_places import a_fictional_places
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target

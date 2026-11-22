@@ -1,20 +1,22 @@
 import json
 from typing import Any
 
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     AuditReport,
     CoverageGap,
     EvalVerdict,
     JudgeResult,
+    MissCause,
+    MissedModelCall,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     TestCase,
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
 
 

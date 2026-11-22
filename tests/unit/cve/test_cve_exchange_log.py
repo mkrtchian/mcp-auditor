@@ -1,5 +1,5 @@
 from evals.cve.exchange_log import ExchangeLog
-from mcp_auditor.domain import ToolResponse
+from mcp_auditor.domain.models import ToolResponse
 from tests.fakes.mcp_client import FakeMCPClient
 
 

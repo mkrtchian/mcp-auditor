@@ -1,7 +1,7 @@
 import tests.unit.nuisance.support.test_nuisance_benign_call_given as given
 import tests.unit.support.admission_mutations as mutations
 from evals.cve.nuisance.benign_call import benign_call_failure
-from mcp_auditor.domain import ToolResponse
+from mcp_auditor.domain.models import ToolResponse
 from tests.unit.nuisance.support.test_nuisance_benign_call_given import (
     FIRST_TOOL,
     PREREQUISITE_TOOL,

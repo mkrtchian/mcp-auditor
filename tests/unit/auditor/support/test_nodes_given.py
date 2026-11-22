@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     CoverageGap,

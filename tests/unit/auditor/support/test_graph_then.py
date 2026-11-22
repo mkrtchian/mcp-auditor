@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import ProviderUsage, ToolReport
+from mcp_auditor.domain.models import ProviderUsage, ToolReport
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 

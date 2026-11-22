@@ -1,7 +1,7 @@
 import tests.unit.auditor.support.cut_responses as cuts
 import tests.unit.auditor.support.test_prompts_given as given
-from mcp_auditor.domain import AttackContext, AuditCategory
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
+from mcp_auditor.domain.models import AttackContext, AuditCategory
 from mcp_auditor.graph.prompts import (
     NON_DESTRUCTIVE_CONSTRAINT,
     REDACTION_NOTICE,

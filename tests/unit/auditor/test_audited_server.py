@@ -1,13 +1,13 @@
 import pytest
 
-from mcp_auditor.domain import (
+from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
     BlockedPayload,
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause, UnsentPayload
 from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW, SendAttempt

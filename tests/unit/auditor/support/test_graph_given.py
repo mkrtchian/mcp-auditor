@@ -2,7 +2,7 @@ from typing import override
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     ChainPlanBatch,

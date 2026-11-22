@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import ToolReport
+from mcp_auditor.domain.models import ToolReport
 
 
 def tool_report_at(result: dict[str, Any], index: int) -> ToolReport:

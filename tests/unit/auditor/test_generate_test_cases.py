@@ -1,7 +1,6 @@
 import tests.unit.auditor.support.test_generate_test_cases_given as given
 import tests.unit.auditor.support.test_generate_test_cases_then as then
-from mcp_auditor.domain import AuditCategory, TestCaseBatch
-from mcp_auditor.domain.models import CoverageGap
+from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch
 from mcp_auditor.graph.nodes import make_generate_test_cases
 from tests.fakes import FakeLLM
 

@@ -1,4 +1,4 @@
-from mcp_auditor.domain import AuditCategory, AuditPayload, TestCaseBatch
+from mcp_auditor.domain.models import AuditCategory, AuditPayload, TestCaseBatch
 
 
 def a_batch_of(num_cases: int, categories: list[AuditCategory] | None = None) -> TestCaseBatch:

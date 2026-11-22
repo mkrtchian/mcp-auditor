@@ -3,8 +3,7 @@ from click.testing import CliRunner
 import tests.unit.auditor.support.test_cli_given as given
 from mcp_auditor.audit import CIOptions
 from mcp_auditor.cli import ci_exit_code, cli, parse_tools_filter
-from mcp_auditor.domain import Severity
-from mcp_auditor.domain.models import MissCause
+from mcp_auditor.domain.models import MissCause, Severity
 
 CI = CIOptions(enabled=True, severity_threshold=Severity.MEDIUM)
 

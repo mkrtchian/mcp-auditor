@@ -5,7 +5,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 import tests.unit.auditor.support.test_graph_given as given
 import tests.unit.auditor.support.test_graph_then as then
-from mcp_auditor.domain import AttackContext, ProviderUsage
+from mcp_auditor.domain.models import AttackContext, ProviderUsage
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.auditor.support.graph_builders import (

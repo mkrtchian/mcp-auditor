@@ -1,9 +1,8 @@
 import pytest
 
 import tests.unit.auditor.support.test_coverage_given as given
-from mcp_auditor.domain import AuditCategory
 from mcp_auditor.domain.coverage import completion_size, find_coverage_gap
-from mcp_auditor.domain.models import CoverageGap
+from mcp_auditor.domain.models import AuditCategory, CoverageGap
 
 ALL_CATEGORIES = list(AuditCategory)
 

@@ -1,4 +1,4 @@
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AttackContext,
     ChainPlanBatch,
     StepObservation,

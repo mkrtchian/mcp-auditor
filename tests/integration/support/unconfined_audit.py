@@ -7,7 +7,7 @@ from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Analysts, Audit, AuditConfig, AuditRunOptions, CIOptions
 from mcp_auditor.config import Settings
 from mcp_auditor.console import AuditDisplay
-from mcp_auditor.domain import AttackContext, TestCaseBatch
+from mcp_auditor.domain.models import AttackContext, TestCaseBatch
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.report_files import ReportPaths
 from mcp_auditor.server_execution import LaunchOptions, ServerExecution

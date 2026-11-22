@@ -1,11 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import (
-    AuditCategory,
-    AuditPayload,
-    TestCase,
-    ToolDefinition,
-)
+from mcp_auditor.domain.models import AuditCategory, AuditPayload, TestCase, ToolDefinition
 
 
 def a_tool(

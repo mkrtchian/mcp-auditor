@@ -1,12 +1,12 @@
 import tests.unit.auditor.support.test_chain_nodes_given as given
 import tests.unit.auditor.support.test_chain_nodes_then as then
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AuditCategory,
     ChainPlanBatch,
     EvalVerdict,
+    ModelCallKind,
     Severity,
 )
-from mcp_auditor.domain.models import ModelCallKind
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.chain_nodes import (
     abandon_chain,

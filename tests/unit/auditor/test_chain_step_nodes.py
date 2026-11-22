@@ -1,9 +1,5 @@
-from mcp_auditor.domain import (
-    StepObservation,
-    ToolResponse,
-)
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import ModelCallKind
+from mcp_auditor.domain.models import ModelCallKind, StepObservation, ToolResponse
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.chain_nodes import (
     make_execute_step,

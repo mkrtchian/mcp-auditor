@@ -1,7 +1,13 @@
 from typing import Any
 
-from mcp_auditor.domain import Judgment, TestCase, ToolDefinition
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import (
+    Judgment,
+    MissCause,
+    MissedModelCall,
+    ModelCallKind,
+    TestCase,
+    ToolDefinition,
+)
 
 
 def current_case_has_error(result: dict[str, Any], expected_error: str) -> None:

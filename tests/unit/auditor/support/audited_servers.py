@@ -1,5 +1,5 @@
-from mcp_auditor.domain import AuditCategory, AuditPayload, ToolDefinition
 from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import AuditCategory, AuditPayload, ToolDefinition
 from mcp_auditor.domain.server_watch import TIMEOUTS_IN_A_ROW
 from tests.fakes import FakeMCPClient
 from tests.fakes.mcp_client import a_lost_connection_response, a_timeout_response

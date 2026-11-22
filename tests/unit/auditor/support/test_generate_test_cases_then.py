@@ -1,7 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import TestCaseBatch
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind, TestCaseBatch
 
 
 def pending_payloads_are(result: dict[str, Any], batch: TestCaseBatch) -> None:

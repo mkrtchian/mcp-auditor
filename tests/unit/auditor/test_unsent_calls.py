@@ -1,7 +1,7 @@
 from typing import Any
 
 import tests.unit.auditor.support.test_unsent_calls_given as given
-from mcp_auditor.domain import CoverageGap
+from mcp_auditor.domain.models import CoverageGap
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.unsent_calls import (
     count_unsent_chain,

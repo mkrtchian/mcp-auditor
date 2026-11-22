@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import CoverageGap, ToolReport
+from mcp_auditor.domain.models import CoverageGap, ToolReport
 from mcp_auditor.domain.server_liveness import UnsentCause
 
 

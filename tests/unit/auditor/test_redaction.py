@@ -1,4 +1,4 @@
-from mcp_auditor.domain import ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.redaction import Redaction, marker
 
 _TOKEN = "s3cr3t-t0ken-value"

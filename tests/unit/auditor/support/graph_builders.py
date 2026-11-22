@@ -2,7 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain import (
+from mcp_auditor.domain.audited_server import AuditedServer
+from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     AuditPayload,
@@ -16,7 +17,6 @@ from mcp_auditor.domain import (
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient

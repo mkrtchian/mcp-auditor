@@ -1,4 +1,4 @@
-from mcp_auditor.domain import EvalVerdict, Judgment, Severity
+from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
 
 
 def a_judgment(

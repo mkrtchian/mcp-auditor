@@ -9,8 +9,13 @@ from langgraph.checkpoint.base.id import uuid6
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel
 
-from mcp_auditor.domain import AttackContext
-from mcp_auditor.domain.models import MissCause, ProviderUsage, ToolDefinition, ToolResponse
+from mcp_auditor.domain.models import (
+    AttackContext,
+    MissCause,
+    ProviderUsage,
+    ToolDefinition,
+    ToolResponse,
+)
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.auditor.support.graph_builders import (
     a_complete_batch,

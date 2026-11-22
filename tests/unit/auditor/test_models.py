@@ -6,13 +6,15 @@ Pydantic constructors work or that Python lists hold items.
 import pytest
 
 import tests.unit.auditor.support.test_models_given as given
-from mcp_auditor.domain import (
+from mcp_auditor.domain.models import (
     AuditReport,
+    Judgment,
+    ModelCallKind,
     ProviderUsage,
     Severity,
     ToolReport,
+    order_tools_for_audit,
 )
-from mcp_auditor.domain.models import Judgment, ModelCallKind, order_tools_for_audit
 
 
 class TestEnumConstraints:

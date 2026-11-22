@@ -1,6 +1,6 @@
 from typing import Any
 
-from mcp_auditor.domain import AttackChain, AuditCategory, EvalVerdict
+from mcp_auditor.domain.models import AttackChain, AuditCategory, EvalVerdict
 
 
 def chain_judge_result_is(

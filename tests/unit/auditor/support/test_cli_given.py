@@ -1,5 +1,13 @@
-from mcp_auditor.domain import AuditCategory, AuditReport, CoverageGap, Severity, ToolReport
-from mcp_auditor.domain.models import MissCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.models import (
+    AuditCategory,
+    AuditReport,
+    CoverageGap,
+    MissCause,
+    MissedModelCall,
+    ModelCallKind,
+    Severity,
+    ToolReport,
+)
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause, UnsentCause
 from tests.unit.auditor.support import report_builders as reports
 from tests.unit.auditor.support.coverage_gaps import a_gap_with_calls_not_sent
