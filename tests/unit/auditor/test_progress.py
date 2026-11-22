@@ -41,7 +41,7 @@ def test_format_failure_line_includes_category_severity_justification():
 
 
 def test_format_tool_summary_all_passed():
-    summary = format_tool_summary(fail_count=0, failures=[])
+    summary = format_tool_summary(failures=[])
 
     assert "passed" in summary.lower()
 
@@ -54,7 +54,7 @@ def test_format_tool_summary_with_failures():
         ),
     ]
 
-    summary = format_tool_summary(fail_count=2, failures=failures)
+    summary = format_tool_summary(failures)
 
     assert "2" in summary
     assert "high" in summary.lower()
@@ -68,7 +68,7 @@ def test_format_tool_summary_sorts_severity_descending():
         reports.a_fail_result("get_user", AuditCategory.INJECTION, Severity.MEDIUM, "XSS"),
     ]
 
-    summary = format_tool_summary(fail_count=3, failures=failures)
+    summary = format_tool_summary(failures)
 
     assert summary.index("critical") < summary.index("medium") < summary.index("low")
 

@@ -11,6 +11,7 @@ from mcp_auditor.domain.models import (
     CoverageGap,
     EvalVerdict,
     JudgeResult,
+    ProviderUsage,
     Severity,
     TestCase,
     ToolReport,
@@ -39,7 +40,7 @@ def render_summary(report: AuditReport) -> str:
     server = report.server_command
     if finding_count == 0:
         return f"{server}: {tool_count} tools, no findings"
-    severity_breakdown = _severity_breakdown(findings)
+    severity_breakdown = severity_breakdown_of(findings)
     return f"{server}: {tool_count} tools, {finding_count} findings ({severity_breakdown})"
 
 
@@ -77,15 +78,19 @@ def _render_summary_section(report: AuditReport) -> str:
     lines.extend(_render_completeness_lines(report))
     lines.append(f"**Findings**: {finding_count}")
     if finding_count > 0:
-        lines.append(f"  {_severity_breakdown(findings)}")
-    usage = report.provider_usage
-    lines.append(f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output")
+        lines.append(f"  {severity_breakdown_of(findings)}")
+    lines.extend(_render_usage_lines(report.provider_usage))
+    return "\n".join(lines)
+
+
+def _render_usage_lines(usage: ProviderUsage) -> list[str]:
+    lines = [f"**Token usage**: {usage.input_tokens} input, {usage.output_tokens} output"]
     if usage.throttled_requests > 0:
         noun = "request" if usage.throttled_requests == 1 else "requests"
         lines.append(
             f"**Throttled by the model provider**: {usage.throttled_requests} {noun} (HTTP 429)"
         )
-    return "\n".join(lines)
+    return lines
 
 
 def _render_completeness_lines(report: AuditReport) -> list[str]:
@@ -254,7 +259,7 @@ def _truncate_chain_response(text: str, max_length: int = 80) -> str:
     return text[: max_length - 1] + "..."
 
 
-def _severity_breakdown(findings: list[JudgeResult]) -> str:
+def severity_breakdown_of(findings: list[JudgeResult]) -> str:
     counts: Counter[Severity] = Counter(f.severity for f in findings)
     return format_severity_breakdown(counts)
 

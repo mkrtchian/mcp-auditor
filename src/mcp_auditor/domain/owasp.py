@@ -9,12 +9,8 @@ OWASP_BY_CATEGORY: dict[AuditCategory, OwaspMapping] = {
 
 
 def category_with_owasp_id(category: AuditCategory) -> str:
-    return _category_qualified_by(category, owasp_id_for(category))
-
-
-def owasp_id_for(category: AuditCategory) -> str | None:
     mapping = owasp_mapping_for(category)
-    return mapping.code if mapping else None
+    return _category_qualified_by(category, mapping.code if mapping else None)
 
 
 def owasp_mapping_for(category: AuditCategory) -> OwaspMapping | None:
@@ -22,12 +18,8 @@ def owasp_mapping_for(category: AuditCategory) -> OwaspMapping | None:
 
 
 def category_with_owasp_label(category: AuditCategory) -> str:
-    return _category_qualified_by(category, owasp_label_for(category))
-
-
-def owasp_label_for(category: AuditCategory) -> str | None:
     mapping = owasp_mapping_for(category)
-    return mapping.label if mapping else None
+    return _category_qualified_by(category, mapping.label if mapping else None)
 
 
 def _category_qualified_by(category: AuditCategory, owasp: str | None) -> str:
