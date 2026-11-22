@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-22
+
 ### Added
 
 - The auditor relaunches an audited server that stops answering, from the same server command, and goes on with the audit: after a lost connection, after a call that timed out on a server that then leaves a ping unanswered, and when the calls of two tools in a row keep timing out on a server that answers the ping. A relaunch that fails takes the server as down, and the auditor writes the report on the tools it reached. Under the confined regime, a relaunch fetches the server package again, so an `npx` or `uvx` command without a pinned version can launch another version of the server ([ADR 036](docs/adr/036-stopped-server-relaunched.md)).
@@ -115,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A missed model call names its cause wherever it is shown (the Markdown report's summary, with one count per cause, and tool sections, the console, the progress line of an unjudged case, the eval and CVE benchmark output). A case left unjudged in the Markdown report gives as its reason `the judgment model call was missed, its cause is listed under the tool`.
 - `python -m evals.run_detection_holdout run` refuses up front, before any LLM spend, a drawn target absent from the census, a drawn target with an unknown kept place or a placement its spec rejects, and a dirty git tree, and refuses a run where no target survives the pre-run check (listing why each was dropped) rather than crashing on an empty result. Its hierarchical control interval integrates the Gamma(1,1) prior the rule names, no longer one conditioned on `d >= 0.1`.
 - The detection holdout run report names the run's cutoff, the latest of its models' cutoffs that splits the targets: the model that gives it, its date, type and source page. `python -m evals.run_detection_holdout run` refuses to start when a model's cutoff has no type or no source in `evals/holdout_conditions.json`, which now gives each cutoff its source page.
-- `MCP_AUDITOR_REASONING` is accepted with the `anthropic` provider: `none` turns thinking off, `low` to `max` set the effort with adaptive thinking. Unset, the default model still gets no reasoning setting.
+- `MCP_AUDITOR_REASONING` is accepted with the `anthropic` provider: `none` turns thinking off, `low` to `max` set the effort with adaptive thinking. Unset, the default model runs at `low` and any other model gets no reasoning setting.
 - The `anthropic` provider gives up on a request after 120 seconds, as `openai` and `fireworks` do, caps an answer at 16,384 output tokens, twice their cap since Anthropic counts thinking in it, and fails at startup when `ANTHROPIC_API_KEY` is unset or empty. It detects an answer cut at the output cap (`stop_reason: "max_tokens"`) and retries it as a truncated attempt, instead of accepting a repaired JSON. It uses Anthropic's native structured output, which forces the schema even with thinking on, carrying a tool call's arguments as a JSON string on that path and decoding them back, so a payload comes back with its arguments instead of being lost when the model answers without a forced tool. An answer with no valid structured output, a refusal, a cut during thinking or a non-JSON arguments string included, still reaches the refusal and truncation checks instead of failing as an unexplained parsing error.
 - A refusal by Anthropic's classifiers names its category in the coverage gap's provider message (`stop_reason refusal, category cyber`), when the API gives one.
 - A host-level block through OpenRouter (a 403 whose error metadata reads `content_policy_violation` or `refusal`, with the host's name and code in the provider message) and a `content_filter` finish on the Chat Completions path (`openrouter` and `alibaba`, with the model's refusal text when it gives one) are reported as provider refusals, a coverage gap, instead of failing the step. A `content_filter` refusal keeps the tokens its completion reports.
@@ -283,7 +285,8 @@ Initial public release on PyPI.
 - Config file support (`.mcp-auditor.yml`), `--tools` filter, `--budget` control, token usage reporting.
 - Three-level test strategy: unit tests with fakes, integration tests against a honeypot server, LLM evals scored against planted ground truth.
 
-[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/mkrtchian/mcp-auditor/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mkrtchian/mcp-auditor/compare/v0.1.0...v0.2.0

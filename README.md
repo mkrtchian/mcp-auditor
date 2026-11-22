@@ -30,8 +30,6 @@ The details are under [Confinement](docs/usage.md#confinement) and [Safety](docs
 
 ## Quick start
 
-This README describes the `main` branch. The release on PyPI is 0.4.0, and what changed since is under `[Unreleased]` in the [changelog](CHANGELOG.md). To run `main`, replace `uvx mcp-auditor` with `uvx --from git+https://github.com/mkrtchian/mcp-auditor mcp-auditor`.
-
 You need [`uv`](https://docs.astral.sh/uv/), an API key of the model provider (Anthropic by default), and Docker running, unless you pass `--unconfined`. `uv` runs the auditor on Python 3.13 or later, and installs that Python when it is missing.
 
 ```bash
