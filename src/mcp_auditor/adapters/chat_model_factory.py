@@ -29,10 +29,7 @@ def make_chat_model(
         if reasoning is not None:
             (efforts or OpenRouterEffortCatalog()).check(model, reasoning)
         return _make_openrouter_model(model, reasoning, settings.resolve_openrouter_providers())
-    raise ValueError(
-        f"Unknown provider: {settings.provider!r}. "
-        "Use 'google', 'anthropic', 'openai', 'fireworks', 'alibaba' or 'openrouter'."
-    )
+    raise AssertionError(f"No chat model factory for provider {settings.provider!r}")
 
 
 def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:
@@ -44,8 +41,6 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:
     # throttle count reads. It also reaches the sync client, which would fail a sync call:
     # the auditor makes none, LLM only calls ainvoke.
     client_args = {"transport": httpx.AsyncHTTPTransport()}
-    if reasoning is None:
-        return ChatGoogleGenerativeAI(model=model, max_retries=3, client_args=client_args)
     return ChatGoogleGenerativeAI(
         model=model,
         thinking_level=reasoning,
@@ -54,7 +49,7 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:
     )
 
 
-# Without it, a probe run once hung 17 minutes on one OpenAI response.
+# Without it, a model probe run once hung 17 minutes on one OpenAI response.
 _REQUEST_TIMEOUT_SECONDS = 120
 # Bounds a loop: gpt-6-luna was seen writing a literal "very long string" payload up to
 # its 128k-token limit. The cap counts reasoning on some providers, and a batch at
@@ -97,14 +92,6 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:
     # ChatOpenAI raises openai.OpenAIError on a missing key, which the CLI does not catch.
     if not os.environ.get("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY is not set.")
-    if reasoning is None:
-        return ChatOpenAI(
-            model=model,
-            use_responses_api=True,
-            max_retries=3,
-            timeout=_REQUEST_TIMEOUT_SECONDS,
-            max_completion_tokens=_MAX_OUTPUT_TOKENS,
-        )
     return ChatOpenAI(
         model=model,
         reasoning_effort=reasoning,
@@ -118,13 +105,6 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:
 def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:
     from langchain_fireworks import ChatFireworks
 
-    if reasoning is None:
-        return ChatFireworks(
-            model=model,
-            max_retries=3,
-            timeout=_REQUEST_TIMEOUT_SECONDS,
-            max_tokens=_MAX_OUTPUT_TOKENS,
-        )
     return ChatFireworks(
         model=model,
         reasoning_effort=reasoning,

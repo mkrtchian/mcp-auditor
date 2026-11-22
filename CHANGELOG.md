@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The error for an unknown `MCP_AUDITOR_PROVIDER` lists the accepted providers.
+
 ## [0.5.0] - 2026-11-22
 
 ### Added

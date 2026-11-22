@@ -3,9 +3,9 @@
 Anthropic's structured output forbids an open object (AuditPayload.arguments: dict[str, Any]):
 its schema transform rewrites one to an object that can only be empty. The generator schemas
 that embed AuditPayload are bound through a wire mirror that carries arguments as a JSON string,
-decoded back to a dict after the parse. Schemas with no open object bind directly, with an
-identity translation. The binding keeps with_structured_output's {"raw", "parsed"} shape, so
-LLM._unpack_raw_response stays the single coupling point.
+decoded back to a dict after the parse. Schemas with no open object bind directly. The binding
+keeps with_structured_output's {"raw", "parsed"} shape, so LLM._unpack_raw_response stays the
+single coupling point.
 """
 
 import json
@@ -29,10 +29,16 @@ def bind_anthropic_json_schema(
     output_schema: type[BaseModel],
 ) -> Runnable[str, object]:
     wire = _WIRE_SCHEMAS.get(output_schema)
-    bind_schema = wire or output_schema
-    base = model.with_structured_output(bind_schema, method="json_schema", include_raw=True)
-    translate = _to_domain_or_none if wire else _identity
-    chain = base | RunnablePassthrough.assign(parsed=lambda response: translate(response["parsed"]))  # pyrefly: ignore[unsupported-operation]
+    if wire is None:
+        return cast(
+            Runnable[str, object],
+            model.with_structured_output(output_schema, method="json_schema", include_raw=True),
+        )
+    base = model.with_structured_output(wire, method="json_schema", include_raw=True)
+    to_domain = RunnablePassthrough.assign(
+        parsed=lambda response: _to_domain_or_none(response["parsed"])
+    )
+    chain = base | to_domain  # pyrefly: ignore[unsupported-operation]
     return cast(Runnable[str, object], chain)
 
 
@@ -95,7 +101,3 @@ def _to_domain_or_none(parsed: object) -> object:
         return parsed.to_domain()  # pyrefly: ignore[missing-attribute]
     except (json.JSONDecodeError, ValidationError):
         return None
-
-
-def _identity(parsed: object) -> object:
-    return parsed

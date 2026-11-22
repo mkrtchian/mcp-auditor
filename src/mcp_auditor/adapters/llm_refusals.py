@@ -5,8 +5,8 @@ from typing import Any, cast
 import openai
 
 # OpenAI's policy flag, code "invalid_prompt", seen on 2026-09-26. Alibaba's content
-# inspection through the same SDK, code "data_inspection_failed", seen in the probe of
-# ADR 019. langchain-openai re-raises both as a subclass of openai.BadRequestError.
+# inspection through the same SDK, code "data_inspection_failed", seen in the model probe
+# of ADR 019. langchain-openai re-raises both as a subclass of openai.BadRequestError.
 _REFUSAL_CODES = frozenset({"invalid_prompt", "data_inspection_failed"})
 # Fallback on the message text, since a provider can change the code without the wording.
 _REFUSAL_WORDING = (
@@ -14,9 +14,9 @@ _REFUSAL_WORDING = (
     "flagged as potentially violating our usage policy",
     "DataInspectionFailed",
 )
-# OpenRouter reports a host-level block as a 403 whose error metadata names the host's
-# filter ("content_policy_violation") or a model refusal turned error ("refusal").
-_HOST_BLOCK_ERROR_TYPES = frozenset({"content_policy_violation", "refusal"})
+# OpenRouter reports an OpenRouter provider's block as a 403 whose error metadata names that
+# provider's filter ("content_policy_violation") or a model refusal turned error ("refusal").
+_OPENROUTER_PROVIDER_BLOCK_ERROR_TYPES = frozenset({"content_policy_violation", "refusal"})
 
 
 def refusal_from_error(error: BaseException) -> str | None:
@@ -33,7 +33,7 @@ def _refusal_of(error: BaseException) -> str | None:
     if isinstance(error, openai.BadRequestError) and _is_policy_refusal(error):
         return _provider_message(error)
     if isinstance(error, openai.PermissionDeniedError):
-        return _host_block(error)
+        return _openrouter_provider_block(error)
     if isinstance(error, openai.ContentFilterFinishReasonError):
         return _content_filter_refusal(error)
     return None
@@ -44,7 +44,7 @@ def _is_policy_refusal(error: openai.BadRequestError) -> bool:
     return error.code in _REFUSAL_CODES or any(wording in text for wording in _REFUSAL_WORDING)
 
 
-def _host_block(error: openai.PermissionDeniedError) -> str | None:
+def _openrouter_provider_block(error: openai.PermissionDeniedError) -> str | None:
     body: object = error.body
     if not isinstance(body, dict):
         return None
@@ -52,7 +52,7 @@ def _host_block(error: openai.PermissionDeniedError) -> str | None:
     if not isinstance(metadata, dict):
         return None
     fields = cast(dict[str, Any], metadata)
-    if fields.get("error_type") not in _HOST_BLOCK_ERROR_TYPES:
+    if fields.get("error_type") not in _OPENROUTER_PROVIDER_BLOCK_ERROR_TYPES:
         return None
     origin = [
         f"{label} {fields[key]}"
@@ -75,13 +75,13 @@ def _provider_message(error: openai.APIStatusError) -> str:
 def _content_filter_refusal(error: openai.ContentFilterFinishReasonError) -> str:
     # The SDK's parse path raises on finish_reason "content_filter" before any message
     # exists, on Chat Completions (OpenRouter and Alibaba). OpenRouter sets that finish for
-    # a host filter and beside message.refusal when the model itself declines.
+    # an OpenRouter provider's filter and beside message.refusal when the model itself declines.
     choices = error.completion.choices if error.completion is not None else []
     refusal = choices[0].message.refusal if choices else None
     return refusal or "finish_reason content_filter"
 
 
-def refusal_from_metadata(raw_message: Any) -> str | None:
+def refusal_from_response(raw_message: Any) -> str | None:
     return (
         _anthropic_refusal(raw_message.response_metadata)
         or _google_refusal(raw_message.response_metadata)

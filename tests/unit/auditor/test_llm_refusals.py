@@ -80,9 +80,11 @@ class TestRefusalAsAnError:
         )
 
 
-class TestHostLevelBlock:
+class TestOpenRouterProviderBlock:
     @pytest.mark.parametrize("error_type", ["content_policy_violation", "refusal"])
-    async def test_an_openrouter_403_block_raises_a_refusal_naming_the_host(self, error_type: str):
+    async def test_an_openrouter_403_block_raises_a_refusal_naming_the_openrouter_provider(
+        self, error_type: str
+    ):
         metadata = {
             "error_type": error_type,
             "provider_name": "Sail Research",

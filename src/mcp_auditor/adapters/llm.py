@@ -11,7 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 from mcp_auditor.adapters.anthropic_structured_output import bind_anthropic_json_schema
 from mcp_auditor.adapters.chat_model_factory import make_chat_model
-from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_metadata
+from mcp_auditor.adapters.llm_refusals import refusal_from_error, refusal_from_response
 from mcp_auditor.adapters.llm_throttling import (
     Throttle,
     ThrottlePatience,
@@ -222,7 +222,7 @@ class LLM:
             parsed=response["parsed"],
             usage=_to_provider_usage(metadata, throttled_requests),
             truncated=_was_truncated(raw_message.response_metadata),
-            refusal=refusal_from_metadata(raw_message),
+            refusal=refusal_from_response(raw_message),
         )
 
 

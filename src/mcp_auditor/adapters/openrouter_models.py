@@ -15,7 +15,7 @@ class OpenRouterEffortCatalog:
         self._efforts: dict[str, tuple[str, ...] | None] = {}
 
     # An effort the model does not take fails only at call time, mid-audit, so it is refused here.
-    # When the listing cannot settle it, the audit goes on and the call decides.
+    # When the listing does not say, the audit goes on and the call decides.
     def check(self, model: str, reasoning: str) -> None:
         if model not in self._efforts:
             self._efforts[model] = self._published_efforts(model)

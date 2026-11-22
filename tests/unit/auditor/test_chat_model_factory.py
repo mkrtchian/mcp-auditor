@@ -73,19 +73,6 @@ class TestMakeChatModel:
         assert getattr(chat_model, "reasoning_effort", None) == "low"
         assert getattr(chat_model, "thinking", None) == {"type": "adaptive"}
 
-    @pytest.mark.parametrize("key", [None, ""])
-    def test_anthropic_without_its_key_raises_naming_it(
-        self, monkeypatch: pytest.MonkeyPatch, key: str | None
-    ):
-        if key is None:
-            monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        else:
-            monkeypatch.setenv("ANTHROPIC_API_KEY", key)
-        settings = Settings(provider="anthropic", model="", judge_model="", reasoning="")
-
-        with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
-            make_chat_model(settings, settings.resolve_model())
-
     def test_openai_builds_its_default_model_at_its_default_reasoning(
         self, monkeypatch: pytest.MonkeyPatch
     ):
@@ -122,20 +109,6 @@ class TestMakeChatModel:
 
         assert getattr(chat_model, "reasoning_effort", None) == "high"
 
-    def test_openai_without_its_key_raises_naming_it(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        settings = Settings(provider="openai", model="", judge_model="", reasoning="")
-
-        with pytest.raises(ValueError, match="OPENAI_API_KEY"):
-            make_chat_model(settings, settings.resolve_model())
-
-    def test_openai_with_an_empty_key_raises_naming_it(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setenv("OPENAI_API_KEY", "")
-        settings = Settings(provider="openai", model="", judge_model="", reasoning="")
-
-        with pytest.raises(ValueError, match="OPENAI_API_KEY"):
-            make_chat_model(settings, settings.resolve_model())
-
     def test_alibaba_builds_its_default_model_on_chat_completions_with_thinking_off(
         self, monkeypatch: pytest.MonkeyPatch
     ):
@@ -153,19 +126,6 @@ class TestMakeChatModel:
         assert not getattr(chat_model, "use_responses_api", True)
         assert getattr(chat_model, "request_timeout", None) == 120
         assert getattr(chat_model, "max_tokens", None) == 8192
-
-    @pytest.mark.parametrize("key", [None, ""])
-    def test_alibaba_without_its_key_raises_naming_it(
-        self, monkeypatch: pytest.MonkeyPatch, key: str | None
-    ):
-        if key is None:
-            monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
-        else:
-            monkeypatch.setenv("DASHSCOPE_API_KEY", key)
-        settings = Settings(provider="alibaba", model="", judge_model="", reasoning="")
-
-        with pytest.raises(ValueError, match="DASHSCOPE_API_KEY"):
-            make_chat_model(settings, settings.resolve_model())
 
     def test_openrouter_builds_glm_at_low_reasoning_on_open_routing(
         self, monkeypatch: pytest.MonkeyPatch
@@ -185,7 +145,7 @@ class TestMakeChatModel:
             "reasoning": {"effort": "low"},
         }
 
-    def test_openrouter_pins_the_listed_hosts_without_fallback(
+    def test_openrouter_pins_the_listed_providers_without_fallback(
         self, monkeypatch: pytest.MonkeyPatch
     ):
         monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
@@ -227,17 +187,28 @@ class TestMakeChatModel:
         with pytest.raises(ValueError, match="supports reasoning efforts max, high, low"):
             make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
+    @pytest.mark.parametrize(
+        ("provider", "variable"),
+        [
+            ("anthropic", "ANTHROPIC_API_KEY"),
+            ("openai", "OPENAI_API_KEY"),
+            ("alibaba", "DASHSCOPE_API_KEY"),
+            ("openrouter", "OPENROUTER_API_KEY"),
+        ],
+    )
     @pytest.mark.parametrize("key", [None, ""])
-    def test_openrouter_without_its_key_raises_naming_it(
-        self, monkeypatch: pytest.MonkeyPatch, key: str | None
+    def test_a_provider_without_its_key_raises_naming_it(
+        self, monkeypatch: pytest.MonkeyPatch, provider: str, variable: str, key: str | None
     ):
         if key is None:
-            monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+            monkeypatch.delenv(variable, raising=False)
         else:
-            monkeypatch.setenv("OPENROUTER_API_KEY", key)
-        settings = _openrouter_settings()
+            monkeypatch.setenv(variable, key)
+        settings = Settings(
+            provider=provider, model="", judge_model="", reasoning="", openrouter_providers=""
+        )
 
-        with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
+        with pytest.raises(ValueError, match=variable):
             make_chat_model(settings, settings.resolve_model(), _glm_efforts())
 
 

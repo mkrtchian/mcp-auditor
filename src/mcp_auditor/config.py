@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     def resolve_model(self) -> str:
         if self.model:
             return self.model
-        return _default_model(self.provider)
+        return _provider_defaults(self.provider).model
 
     def resolve_judge_model(self) -> str:
         if self.judge_model:
@@ -80,16 +80,10 @@ _PROVIDERS = {
 }
 
 
-def _default_model(provider: str) -> str:
-    return _provider_defaults(provider).model
-
-
 def _provider_defaults(provider: str) -> _ProviderDefaults:
     if provider not in _PROVIDERS:
-        raise ValueError(
-            f"Unknown provider: {provider!r}. "
-            "Use 'openai', 'google', 'anthropic', 'fireworks', 'alibaba' or 'openrouter'."
-        )
+        accepted = ", ".join(_PROVIDERS)
+        raise ValueError(f"Unknown provider: {provider!r}. Use one of: {accepted}.")
     return _PROVIDERS[provider]
 
 

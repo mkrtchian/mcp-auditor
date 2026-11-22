@@ -3,7 +3,7 @@ import pytest
 from mcp_auditor.config import Settings
 
 
-def test_the_default_is_claude_haiku_5_5_at_low_on_anthropic(
+def test_an_empty_environment_selects_the_anthropic_provider(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("MCP_AUDITOR_PROVIDER", raising=False)
@@ -14,9 +14,7 @@ def test_the_default_is_claude_haiku_5_5_at_low_on_anthropic(
     settings = Settings()
 
     assert settings.provider == "anthropic"
-    assert settings.resolve_model() == "claude-haiku-5-5"
-    assert settings.resolve_judge_model() == "claude-haiku-5-5"
-    assert settings.resolve_reasoning("claude-haiku-5-5") == "low"
+    assert settings.resolve_judge_model() == settings.resolve_model()
 
 
 def test_the_provider_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -64,26 +62,28 @@ def test_unknown_provider_names_every_provider(monkeypatch: pytest.MonkeyPatch) 
         assert provider in str(error.value)
 
 
-def test_google_resolves_minimal_reasoning_for_its_default_model() -> None:
-    settings = _settings("google")
+@pytest.mark.parametrize(
+    ("provider", "model", "reasoning"),
+    [
+        ("google", "gemini-3.5-flash-lite", "minimal"),
+        ("anthropic", "claude-haiku-5-5", "low"),
+        ("openai", "gpt-6-luna", "none"),
+        ("fireworks", "accounts/fireworks/models/glm-5p3-flash", "medium"),
+        ("alibaba", "qwen3.8-flash", None),
+        ("openrouter", "z-ai/glm-5.3", "low"),
+    ],
+)
+def test_each_provider_resolves_its_default_model_at_its_default_reasoning(
+    provider: str, model: str, reasoning: str | None
+) -> None:
+    settings = _settings(provider)
 
-    model = settings.resolve_model()
-
-    assert model == "gemini-3.5-flash-lite"
-    assert settings.resolve_reasoning(model) == "minimal"
+    assert settings.resolve_model() == model
+    assert settings.resolve_reasoning(model) == reasoning
 
 
 def _settings(provider: str, reasoning: str = "") -> Settings:
     return Settings(provider=provider, model="", judge_model="", reasoning=reasoning)
-
-
-def test_anthropic_resolves_low_for_its_default_model() -> None:
-    settings = _settings("anthropic")
-
-    model = settings.resolve_model()
-
-    assert model == "claude-haiku-5-5"
-    assert settings.resolve_reasoning(model) == "low"
 
 
 def test_a_model_other_than_the_default_resolves_no_reasoning_when_unset() -> None:
@@ -102,10 +102,21 @@ def test_an_accepted_explicit_reasoning_is_returned_as_set() -> None:
     assert settings.resolve_reasoning(settings.resolve_model()) == "low"
 
 
-def test_a_reasoning_the_provider_does_not_accept_raises_naming_the_accepted_values() -> None:
-    settings = _settings("google", reasoning="max")
+@pytest.mark.parametrize(
+    ("provider", "reasoning", "accepted"),
+    [
+        ("google", "max", "minimal, low, medium, high"),
+        ("anthropic", "minimal", "none, low, medium, high, xhigh, max"),
+        ("openai", "minimal", "none, low, medium, high, xhigh, max"),
+        ("openrouter", "extreme", "none, minimal, low, medium, high, xhigh, max"),
+    ],
+)
+def test_a_reasoning_the_provider_does_not_accept_raises_naming_the_accepted_values(
+    provider: str, reasoning: str, accepted: str
+) -> None:
+    settings = _settings(provider, reasoning=reasoning)
 
-    with pytest.raises(ValueError, match="minimal, low, medium, high"):
+    with pytest.raises(ValueError, match=accepted):
         settings.resolve_reasoning(settings.resolve_model())
 
 
@@ -116,51 +127,10 @@ def test_anthropic_passes_an_accepted_reasoning_through(reasoning: str) -> None:
     assert settings.resolve_reasoning("claude-haiku-5-5") == reasoning
 
 
-def test_anthropic_rejects_minimal_naming_its_accepted_values() -> None:
-    settings = _settings("anthropic", reasoning="minimal")
-
-    with pytest.raises(ValueError, match="none, low, medium, high, xhigh, max"):
-        settings.resolve_reasoning(settings.resolve_model())
-
-
-def test_openai_resolves_luna_at_reasoning_none_by_default() -> None:
-    settings = _settings("openai")
-
-    model = settings.resolve_model()
-
-    assert model == "gpt-6-luna"
-    assert settings.resolve_reasoning(model) == "none"
-
-
-def test_fireworks_resolves_glm_at_medium_reasoning_by_default() -> None:
-    settings = _settings("fireworks")
-
-    model = settings.resolve_model()
-
-    assert model == "accounts/fireworks/models/glm-5p3-flash"
-    assert settings.resolve_reasoning(model) == "medium"
-
-
 def test_fireworks_passes_an_explicit_reasoning_through() -> None:
     settings = _settings("fireworks", reasoning="high")
 
     assert settings.resolve_reasoning(settings.resolve_model()) == "high"
-
-
-def test_openai_rejects_minimal_naming_its_accepted_values() -> None:
-    settings = _settings("openai", reasoning="minimal")
-
-    with pytest.raises(ValueError, match="none, low, medium, high, xhigh, max"):
-        settings.resolve_reasoning(settings.resolve_model())
-
-
-def test_alibaba_resolves_qwen_with_no_reasoning_setting() -> None:
-    settings = _settings("alibaba")
-
-    model = settings.resolve_model()
-
-    assert model == "qwen3.8-flash"
-    assert settings.resolve_reasoning(model) is None
 
 
 def test_alibaba_takes_no_reasoning_setting() -> None:
@@ -170,26 +140,10 @@ def test_alibaba_takes_no_reasoning_setting() -> None:
         settings.resolve_reasoning(settings.resolve_model())
 
 
-def test_openrouter_resolves_glm_at_low_reasoning_by_default() -> None:
-    settings = _settings("openrouter")
-
-    model = settings.resolve_model()
-
-    assert model == "z-ai/glm-5.3"
-    assert settings.resolve_reasoning(model) == "low"
-
-
 def test_openrouter_passes_an_explicit_reasoning_through() -> None:
     settings = _settings("openrouter", reasoning="high")
 
     assert settings.resolve_reasoning(settings.resolve_model()) == "high"
-
-
-def test_openrouter_rejects_an_unknown_reasoning_naming_its_accepted_values() -> None:
-    settings = _settings("openrouter", reasoning="extreme")
-
-    with pytest.raises(ValueError, match="none, minimal, low, medium, high, xhigh, max"):
-        settings.resolve_reasoning(settings.resolve_model())
 
 
 @pytest.mark.parametrize(

@@ -62,7 +62,7 @@ async def resume_or_reset(graph: Any, thread_id: str, requested: bool) -> bool:
     # existence of a checkpoint cannot: it is empty both for a thread never
     # audited and for one whose audit ran to the end, which are exactly the two
     # unresumable cases. Resuming a completed thread runs no node at all and
-    # replays its stored report as if it were a fresh audit.
+    # returns its stored report as if it were a fresh audit.
     if requested and snapshot.next:
         return True
     await graph.checkpointer.adelete_thread(thread_id)
