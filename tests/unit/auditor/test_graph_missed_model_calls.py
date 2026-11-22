@@ -13,9 +13,7 @@ from tests.unit.auditor.support.graph_builders import (
 )
 from tests.unit.auditor.support.graph_results import (
     report_has_a_gap_of,
-    report_has_cases,
     report_has_judged_chains,
-    report_has_no_chains,
     tool_report_at,
 )
 
@@ -49,9 +47,9 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
     result = await graph.ainvoke(state)
 
     first = tool_report_at(result, 0)
-    report_has_cases(first, 0)
+    assert len(first.cases) == 0
     report_has_a_gap_of(first, requested=2, received=0)
-    report_has_cases(tool_report_at(result, 1), 2)
+    assert len(tool_report_at(result, 1).cases) == 2
     then.audit_report_misses_one_call(result, "get_user", ModelCallKind.TEST_GENERATION, cause)
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
@@ -74,7 +72,7 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
 
     result = await graph.ainvoke(state)
 
-    report_has_no_chains(tool_report_at(result, 0))
+    assert tool_report_at(result, 0).chains == []
     then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_PLANNING)])
 
 

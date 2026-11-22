@@ -20,6 +20,7 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.redaction import Redaction
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes.llm import Billing, flat_billing
 from tests.fakes.mcp_client import a_lost_connection_response
 
 
@@ -53,12 +54,18 @@ def a_fake_llm_for_multi_tool_audit(cases_per_tool: list[int]) -> FakeLLM:
     return FakeLLM(responses)
 
 
-def a_fake_llm_for_single_tool_with_a_two_step_chain() -> FakeLLM:
+def a_fake_llm_for_single_tool_with_a_two_step_chain(
+    billing: Billing = flat_billing,
+) -> FakeLLM:
     chain_plan = ChainPlanBatch(chains=[a_chain_goal("probe then exploit")])
     continue_obs = StepObservation(observation="promising", should_continue=True)
     stop_obs = StepObservation(observation="dead end", should_continue=False)
     chain = [chain_plan, continue_obs, a_payload(), stop_obs, a_judgment()]
-    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
+    return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()], billing=billing)
+
+
+# Chain planning, two observations, one step planning and the chain judgment.
+TWO_STEP_CHAIN_CALLS = slice(2, 7)
 
 
 def a_server_echoing(tool: ToolDefinition, content: str) -> FakeMCPClient:

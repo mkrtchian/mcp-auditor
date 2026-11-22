@@ -9,6 +9,7 @@ from mcp_auditor.domain.models import AttackContext, ProviderUsage
 from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 from tests.unit.auditor.support.graph_builders import (
+    TWO_STEP_CHAIN_CALLS,
     a_dry_run_graph,
     a_fake_llm_for_multi_tool_audit,
     a_fake_llm_for_single_tool_audit,
@@ -22,10 +23,7 @@ from tests.unit.auditor.support.graph_builders import (
 )
 from tests.unit.auditor.support.graph_results import (
     report_has_a_gap_of,
-    report_has_cases,
     report_has_judged_chains,
-    report_has_no_chains,
-    report_has_no_gap,
     tool_report_at,
 )
 
@@ -39,10 +37,10 @@ async def test_single_tool_single_test_case():
 
     result = await graph.ainvoke(state)
 
-    then.has_tool_reports(result, 1)
+    assert len(result["audit_report"].tool_reports) == 1
     report = tool_report_at(result, 0)
-    report_has_cases(report, 1)
-    then.report_is_for_tool(report, "get_user")
+    assert len(report.cases) == 1
+    assert report.tool.name == "get_user"
 
 
 async def test_two_tools_two_cases_each():
@@ -55,13 +53,13 @@ async def test_two_tools_two_cases_each():
 
     result = await graph.ainvoke(state)
 
-    then.has_tool_reports(result, 2)
+    assert len(result["audit_report"].tool_reports) == 2
     first = tool_report_at(result, 0)
-    report_has_cases(first, 2)
-    then.report_is_for_tool(first, "get_user")
+    assert len(first.cases) == 2
+    assert first.tool.name == "get_user"
     second = tool_report_at(result, 1)
-    report_has_cases(second, 2)
-    then.report_is_for_tool(second, "delete_user")
+    assert len(second.cases) == 2
+    assert second.tool.name == "delete_user"
 
 
 async def test_empty_tool_list():
@@ -72,7 +70,7 @@ async def test_empty_tool_list():
 
     result = await graph.ainvoke(state)
 
-    then.has_tool_reports(result, 0)
+    assert len(result["audit_report"].tool_reports) == 0
 
 
 async def test_provider_usage_accumulated():
@@ -127,8 +125,8 @@ async def test_chain_budget_zero_skips_chains():
 
     result = await graph.ainvoke(state)
 
-    then.has_tool_reports(result, 1)
-    report_has_no_chains(tool_report_at(result, 0))
+    assert len(result["audit_report"].tool_reports) == 1
+    assert tool_report_at(result, 0).chains == []
 
 
 @pytest.mark.parametrize(
@@ -149,7 +147,7 @@ async def test_the_chain_budget_sets_the_number_of_judged_chains(
 
     result = await graph.ainvoke(state)
 
-    then.has_tool_reports(result, 1)
+    assert len(result["audit_report"].tool_reports) == 1
     report_has_judged_chains(tool_report_at(result, 0), chain_budget)
 
 
@@ -201,7 +199,7 @@ async def test_destructive_payload_is_blocked_and_never_sent():
     result = await graph.ainvoke(state)
 
     report = tool_report_at(result, 0)
-    report_has_cases(report, 2)
+    assert len(report.cases) == 2
     then.one_case_blocked_unjudged_and_not_called(report, fake_mcp_client)
 
 
@@ -214,7 +212,7 @@ async def test_a_batch_still_short_after_retry_is_flagged_on_its_tool_only():
     result = await graph.ainvoke(state)
 
     report_has_a_gap_of(tool_report_at(result, 0), requested=2, received=1)
-    report_has_no_gap(tool_report_at(result, 1))
+    assert tool_report_at(result, 1).coverage_gap is None
 
 
 async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
@@ -230,7 +228,9 @@ async def test_a_dry_run_carries_the_coverage_gap_to_its_tool_report():
 async def test_the_report_splits_judge_usage_from_generator_usage():
     judge_usage = ProviderUsage(input_tokens=3, output_tokens=2)
     generator_usage = ProviderUsage(input_tokens=11, output_tokens=7)
-    fake_llm = given.a_fake_llm_billing_judge_apart(judge_usage, generator_usage)
+    fake_llm = given.a_fake_llm_for_single_tool_with_chain(
+        billing=given.billing_judge_apart(judge_usage, generator_usage)
+    )
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=1, chain_budget=1)
 
@@ -247,13 +247,15 @@ async def test_the_report_splits_judge_usage_from_generator_usage():
 
 
 async def test_the_report_splits_chain_usage_from_single_step_usage():
-    fake_llm = given.a_fake_llm_billing_each_call_apart_with_a_two_step_chain()
+    fake_llm = a_fake_llm_for_single_tool_with_a_two_step_chain(
+        billing=given.billing_each_call_apart
+    )
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=1, chain_budget=1)
 
     result = await graph.ainvoke(state)
 
-    then.report_bills_to_chains(result, fake_llm.billed[given.TWO_STEP_CHAIN_CALLS])
+    then.report_bills_to_chains(result, fake_llm.billed[TWO_STEP_CHAIN_CALLS])
     assert result["audit_report"].provider_usage == fake_llm.total_usage
 
 

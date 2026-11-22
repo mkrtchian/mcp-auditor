@@ -5,14 +5,6 @@ from mcp_auditor.graph.prompts import REDACTION_NOTICE
 from tests.fakes import FakeLLM, FakeMCPClient
 
 
-def has_tool_reports(result: dict[str, Any], expected_count: int) -> None:
-    assert len(result["audit_report"].tool_reports) == expected_count
-
-
-def report_is_for_tool(report: ToolReport, tool_name: str) -> None:
-    assert report.tool.name == tool_name
-
-
 def one_case_blocked_unjudged_and_not_called(report: ToolReport, client: FakeMCPClient) -> None:
     [blocked] = [case for case in report.cases if case.blocked_reason is not None]
     assert blocked.judge_result is None

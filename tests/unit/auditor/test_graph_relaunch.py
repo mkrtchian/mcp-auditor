@@ -11,10 +11,7 @@ from tests.unit.auditor.support.graph_builders import (
     an_initial_state,
 )
 from tests.unit.auditor.support.graph_results import (
-    report_has_cases,
     report_has_judged_chains,
-    report_has_no_chains,
-    report_has_no_gap,
     tool_report_at,
 )
 
@@ -30,12 +27,12 @@ async def test_a_tool_timing_out_in_a_row_is_stopped_and_the_next_tool_is_audite
     result = await graph.ainvoke(state)
 
     stopped = tool_report_at(result, 0)
-    report_has_no_chains(stopped)
+    assert stopped.chains == []
     then.report_has_unsent_calls(stopped, cases=0, chains=1, cause=UnsentCause.TOOL_TIMING_OUT)
     next_tool = tool_report_at(result, 1)
-    report_has_cases(next_tool, TIMEOUTS_IN_A_ROW)
+    assert len(next_tool.cases) == TIMEOUTS_IN_A_ROW
     report_has_judged_chains(next_tool, 1)
-    report_has_no_gap(next_tool)
+    assert next_tool.coverage_gap is None
 
 
 async def test_a_server_whose_relaunch_fails_ends_the_audit_with_the_tools_left_in_gaps():
@@ -82,7 +79,7 @@ async def test_a_chain_cut_by_a_relaunch_leaves_its_tool_with_no_gap():
     report = tool_report_at(result, 0)
     report_has_judged_chains(report, 1)
     assert report.chains[0].cut_by_relaunch
-    report_has_no_gap(report)
+    assert report.coverage_gap is None
 
 
 async def test_a_server_going_down_mid_chain_judges_the_steps_made_and_counts_the_next_chain():
