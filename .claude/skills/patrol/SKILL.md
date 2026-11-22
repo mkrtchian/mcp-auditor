@@ -42,12 +42,12 @@ testing standards defined in CLAUDE.md.
    >   report it instead of applying it.
    > - Never change test assertions or production logic.
    > - If a file is too large to split, report it to the user rather than doing it.
-   > - Do NOT run pyright or the test suite — other agents are editing files at
+   > - Do NOT run the type check or the test suite — other agents are editing files at
    >   the same time, verification happens centrally afterwards.
    > - Do NOT commit anything.
 
 4. **Verify centrally.** After all 5 agents complete, if any fixes were applied,
-   run `uv run pyright` and `uv run pytest tests/unit` yourself. Running them in
+   run `uv run pyrefly check` and `uv run pytest tests/unit` yourself. Running them in
    the subagents would race: an agent would see failures caused by a neighbour's
    edit in progress and wander off fixing files outside its assignment.
 5. **Summarize results.** Output a concise summary: which files were reviewed,

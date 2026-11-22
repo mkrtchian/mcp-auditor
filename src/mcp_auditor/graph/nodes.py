@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from langgraph.graph import END  # type: ignore[import-untyped]
+from langgraph.graph import END
 
 from mcp_auditor.domain.attack_context import merge_attack_context
 from mcp_auditor.domain.audited_server import AuditedServer

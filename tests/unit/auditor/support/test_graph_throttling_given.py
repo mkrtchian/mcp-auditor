@@ -25,7 +25,7 @@ def a_provider_throttling_the_first_generation_past_every_retry() -> FakeChatMod
 def an_llm_over(chat_model: FakeChatModel) -> LLM:
     install_throttle_log_handler()
     return LLM(
-        chat_model,  # pyright: ignore[reportArgumentType]
+        chat_model,  # pyrefly: ignore[bad-argument-type]
         StructuredOutput(method="json_schema", schema_as_dict=True),
         max_parse_attempts=3,
         patience=ThrottlePatience(max_total_wait=15.0, sleep=no_wait, jitter=lambda: 0.0),

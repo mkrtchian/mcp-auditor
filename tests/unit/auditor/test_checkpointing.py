@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 import tests.unit.auditor.support.test_checkpointing_given as given
 import tests.unit.auditor.support.test_checkpointing_then as then
@@ -20,7 +20,6 @@ from tests.unit.auditor.support.graph_builders import (
     a_server_dying_on,
     a_tool,
     an_initial_state,
-    invoke_graph_with_config,
 )
 
 # Channels a graph of an earlier version declared, under names the graph no longer has.
@@ -43,11 +42,11 @@ async def test_resuming_a_crashed_audit_finishes_without_reauditing(tmp_path: Pa
         config = {"configurable": {"thread_id": "crashed-audit"}}
         assert not await resume_or_reset(graph, "crashed-audit", requested=False)
         with pytest.raises(ConnectionError):
-            await invoke_graph_with_config(graph, an_initial_state(), config)
+            await graph.ainvoke(an_initial_state(), config=config)
         calls_before_crash = list(client.calls)
 
         assert await resume_or_reset(graph, "crashed-audit", requested=True)
-        result = await invoke_graph_with_config(graph, None, config)
+        result = await graph.ainvoke(None, config=config)
 
     then.each_tool_audited_once(result, ["first", "second"])
     assert len(client.calls) == len(calls_before_crash) + 1
@@ -62,11 +61,11 @@ async def test_a_resumed_audit_of_a_server_taken_as_down_audits_the_tools_left(t
         down = a_server_dying_on(tools, "dies", relaunches=False)
         graph = a_graph_with_checkpointer(fake_llm, down, checkpointer)
         with pytest.raises(given.Interrupted):
-            await invoke_graph_with_config(graph, an_initial_state(), config)
+            await graph.ainvoke(an_initial_state(), config=config)
 
         resumed = a_graph_with_checkpointer(fake_llm, FakeMCPClient(tools), checkpointer)
         assert await resume_or_reset(resumed, "taken-as-down", requested=True)
-        result = await invoke_graph_with_config(resumed, None, config)
+        result = await resumed.ainvoke(None, config=config)
 
     then.each_tool_audited_once(result, ["dies", "second"])
     then.no_tool_in_a_server_down_gap(result)
@@ -81,10 +80,10 @@ async def test_relaunches_recorded_before_an_interruption_stay_in_the_report():
     )
     config = {"configurable": {"thread_id": "relaunched"}}
     with pytest.raises(given.Interrupted):
-        await invoke_graph_with_config(graph, an_initial_state(), config)
+        await graph.ainvoke(an_initial_state(), config=config)
 
     assert await resume_or_reset(graph, "relaunched", requested=True)
-    result = await invoke_graph_with_config(graph, None, config)
+    result = await graph.ainvoke(None, config=config)
 
     then.each_tool_audited_once(result, ["dies", "second"])
     assert [relaunch.tool_name for relaunch in result["audit_report"].relaunches] == ["dies"]
@@ -97,11 +96,11 @@ async def test_a_checkpoint_without_the_keys_of_calls_not_sent_resumes_as_before
     graph = a_graph_with_checkpointer(fake_llm, FakeMCPClient(tools), checkpointer)
     config = {"configurable": {"thread_id": "before-relaunch"}}
     with pytest.raises(given.Interrupted):
-        await invoke_graph_with_config(graph, an_initial_state(), config)
+        await graph.ainvoke(an_initial_state(), config=config)
     await given.a_latest_checkpoint_without(checkpointer, "before-relaunch", given.RELAUNCH_KEYS)
 
     assert await resume_or_reset(graph, "before-relaunch", requested=True)
-    result = await invoke_graph_with_config(graph, None, config)
+    result = await graph.ainvoke(None, config=config)
 
     then.each_tool_audited_once(result, ["first", "second"])
     then.no_tool_has_a_gap(result)
@@ -116,10 +115,10 @@ async def test_resuming_a_completed_audit_runs_a_fresh_one(tmp_path: Path):
         graph = a_graph_with_checkpointer(fake_llm, client, checkpointer)
         config = {"configurable": {"thread_id": "completed-audit"}}
         assert not await resume_or_reset(graph, "completed-audit", requested=False)
-        await invoke_graph_with_config(graph, an_initial_state(), config)
+        await graph.ainvoke(an_initial_state(), config=config)
 
         assert not await resume_or_reset(graph, "completed-audit", requested=True)
-        result = await invoke_graph_with_config(graph, an_initial_state(), config)
+        result = await graph.ainvoke(an_initial_state(), config=config)
 
     then.each_tool_audited_once(result, ["first"])
 
@@ -132,10 +131,10 @@ async def test_reauditing_the_same_server_does_not_accumulate_the_previous_repor
         graph = a_graph_with_checkpointer(fake_llm, client, checkpointer)
         config = {"configurable": {"thread_id": "same-server"}}
         await resume_or_reset(graph, "same-server", requested=False)
-        await invoke_graph_with_config(graph, an_initial_state(), config)
+        await graph.ainvoke(an_initial_state(), config=config)
 
         await resume_or_reset(graph, "same-server", requested=False)
-        result = await invoke_graph_with_config(graph, an_initial_state(), config)
+        result = await graph.ainvoke(an_initial_state(), config=config)
 
     then.each_tool_audited_once(result, ["first"])
 

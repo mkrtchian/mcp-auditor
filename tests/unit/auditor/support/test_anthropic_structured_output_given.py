@@ -18,8 +18,8 @@ def an_llm_on(chat_model: ChatAnthropic) -> LLM:
 
 
 def a_chat_model_answering(body: dict[str, Any], thinking: str = "adaptive") -> ChatAnthropic:
-    chat_model = ChatAnthropic(  # pyright: ignore[reportCallIssue]
-        model="claude-haiku-5-5",  # pyright: ignore[reportCallIssue]
+    chat_model = ChatAnthropic(
+        model="claude-haiku-5-5",
         api_key="dummy",
         thinking={"type": thinking},
         effort="low",

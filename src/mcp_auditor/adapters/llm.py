@@ -4,7 +4,7 @@ from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import openai
 from langchain_core.exceptions import ContextOverflowError
-from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
+from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
 from openai.types.completion_usage import CompletionUsage
 from pydantic import BaseModel, ValidationError
@@ -114,7 +114,7 @@ class _UsageMetadata(TypedDict):
 class LLM:
     def __init__(
         self,
-        model: BaseChatModel,  # pyright: ignore[reportMissingTypeStubs]
+        model: BaseChatModel,
         structured_output: StructuredOutput,
         max_parse_attempts: int,
         patience: ThrottlePatience = _DEFAULT_PATIENCE,
@@ -148,15 +148,13 @@ class LLM:
         if method == "anthropic_json_schema":
             return bind_anthropic_json_schema(self._model, output_schema)
         if self._structured_output.schema_as_dict:
-            return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
+            return self._model.with_structured_output(
                 output_schema.model_json_schema(),
                 method=method,
                 strict=output_schema in self._structured_output.strict_schemas,
                 include_raw=True,
             )
-        return self._model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
-            output_schema, method=method, include_raw=True
-        )
+        return self._model.with_structured_output(output_schema, method=method, include_raw=True)
 
     async def _attempt(
         self, structured: Runnable[str, object], prompt: str, state: "_CallState"

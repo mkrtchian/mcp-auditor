@@ -120,7 +120,7 @@ async def audit_connected(
     config = honeypot.config
     graph = build_graph(models.llm, AuditedServer(honeypot.client), judge_llm=models.judge_llm)
     with one_audit():
-        result = await graph.ainvoke(  # pyright: ignore[reportUnknownMemberType]
+        result = await graph.ainvoke(
             {
                 "server_command": f"uv {' '.join(config.args)}",
                 "test_budget": budget,

@@ -110,11 +110,11 @@ def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> No
     if not tracing_enabled():
         return
     try:
-        from langsmith import Client  # type: ignore[import-untyped]
+        from langsmith import Client
 
         client = Client()
         for trace_id in trace_ids:
-            client.create_feedback(trace_id, key="recall", score=run_detail.recall)  # pyright: ignore[reportUnknownMemberType]
-            client.create_feedback(trace_id, key="precision", score=run_detail.precision)  # pyright: ignore[reportUnknownMemberType]
+            client.create_feedback(trace_id, key="recall", score=run_detail.recall)
+            client.create_feedback(trace_id, key="precision", score=run_detail.precision)
     except Exception:
         pass  # Best-effort: don't fail evals because of LangSmith

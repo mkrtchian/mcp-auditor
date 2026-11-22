@@ -6,9 +6,6 @@ dist/
 build/
 .venv/
 
-# Type checker
-.pyright/
-
 # IDE
 .vscode
 .idea

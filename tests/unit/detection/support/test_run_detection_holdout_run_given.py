@@ -82,9 +82,9 @@ def result_keys(path: Path) -> set[str]:
 
 def _keys(value: Any) -> set[str]:
     if isinstance(value, dict):
-        entries: dict[str, Any] = value  # pyright: ignore[reportUnknownVariableType]
+        entries: dict[str, Any] = value
         return set(entries).union(*(_keys(item) for item in entries.values()))
     if isinstance(value, list):
-        items: list[Any] = value  # pyright: ignore[reportUnknownVariableType]
+        items: list[Any] = value
         return set[str]().union(*(_keys(item) for item in items))
     return set()

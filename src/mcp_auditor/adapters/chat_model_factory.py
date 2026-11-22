@@ -2,7 +2,7 @@ import os
 from typing import Any
 
 import httpx
-from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
+from langchain_core.language_models import BaseChatModel
 from pydantic import SecretStr
 
 from mcp_auditor.adapters.openrouter_models import OpenRouterEffortCatalog
@@ -13,7 +13,7 @@ from mcp_auditor.config import Settings
 # CLI pays for none of the others.
 def make_chat_model(
     settings: Settings, model: str, efforts: OpenRouterEffortCatalog | None = None
-) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+) -> BaseChatModel:
     reasoning = settings.resolve_reasoning(model)
     if settings.provider == "anthropic":
         return _make_anthropic_model(model, reasoning)
@@ -35,9 +35,9 @@ def make_chat_model(
     )
 
 
-def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:
     from langchain_google_genai import (
-        ChatGoogleGenerativeAI,  # pyright: ignore[reportMissingTypeStubs]
+        ChatGoogleGenerativeAI,
     )
 
     # An httpx transport keeps google-genai off aiohttp, so its 429s reach the httpx log the
@@ -45,10 +45,10 @@ def _make_google_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
     # the auditor makes none, LLM only calls ainvoke.
     client_args = {"transport": httpx.AsyncHTTPTransport()}
     if reasoning is None:
-        return ChatGoogleGenerativeAI(model=model, max_retries=3, client_args=client_args)  # pyright: ignore[reportUnknownArgumentType]
-    return ChatGoogleGenerativeAI(  # pyright: ignore[reportUnknownArgumentType]
+        return ChatGoogleGenerativeAI(model=model, max_retries=3, client_args=client_args)
+    return ChatGoogleGenerativeAI(
         model=model,
-        thinking_level=reasoning,  # pyright: ignore[reportArgumentType]
+        thinking_level=reasoning,
         max_retries=3,
         client_args=client_args,
     )
@@ -66,15 +66,15 @@ _MAX_OUTPUT_TOKENS = 8192
 ANTHROPIC_MAX_OUTPUT_TOKENS = 16384
 
 
-def _make_anthropic_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def _make_anthropic_model(model: str, reasoning: str | None) -> BaseChatModel:
     from langchain_anthropic import ChatAnthropic
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise ValueError("ANTHROPIC_API_KEY is not set.")
     return ChatAnthropic(
-        model=model,  # pyright: ignore[reportCallIssue]
+        model=model,
         max_retries=3,
-        max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,  # pyright: ignore[reportCallIssue]
+        max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
         timeout=_REQUEST_TIMEOUT_SECONDS,
         **_anthropic_thinking(reasoning),
     )
@@ -91,7 +91,7 @@ def _anthropic_thinking(reasoning: str | None) -> dict[str, Any]:
     return {"effort": reasoning, "thinking": {"type": "adaptive"}}
 
 
-def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
     # ChatOpenAI raises openai.OpenAIError on a missing key, which the CLI does not catch.
@@ -115,7 +115,7 @@ def _make_openai_model(model: str, reasoning: str | None) -> BaseChatModel:  # p
     )
 
 
-def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:
     from langchain_fireworks import ChatFireworks
 
     if reasoning is None:
@@ -137,7 +137,7 @@ def _make_fireworks_model(model: str, reasoning: str | None) -> BaseChatModel:  
 _ALIBABA_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 
 
-def _make_alibaba_model(model: str) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def _make_alibaba_model(model: str) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
     api_key = os.environ.get("DASHSCOPE_API_KEY")
@@ -161,7 +161,7 @@ _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 def _make_openrouter_model(
     model: str, reasoning: str | None, providers: tuple[str, ...]
-) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
     api_key = os.environ.get("OPENROUTER_API_KEY")

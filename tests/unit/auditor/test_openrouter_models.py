@@ -103,7 +103,7 @@ class TestOpenRouterEffortCatalog:
         assert len(_warnings(caplog)) == 1
 
     def test_an_entry_that_is_not_a_model_is_skipped(self):
-        catalog = _catalog(_listing("garbage", _model(_GLM, ["high", "low"])))  # type: ignore[arg-type]
+        catalog = _catalog(_listing("garbage", _model(_GLM, ["high", "low"])))  # pyrefly: ignore[bad-argument-type]
 
         with pytest.raises(ValueError, match="got 'medium'"):
             catalog.check(_GLM, "medium")

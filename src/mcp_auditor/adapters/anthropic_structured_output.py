@@ -11,7 +11,7 @@ LLM._unpack_raw_response stays the single coupling point.
 import json
 from typing import cast
 
-from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
+from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable, RunnablePassthrough
 from pydantic import BaseModel, Field, ValidationError
 
@@ -25,18 +25,14 @@ from mcp_auditor.domain.models import (
 
 
 def bind_anthropic_json_schema(
-    model: BaseChatModel,  # pyright: ignore[reportMissingTypeStubs]
+    model: BaseChatModel,
     output_schema: type[BaseModel],
 ) -> Runnable[str, object]:
     wire = _WIRE_SCHEMAS.get(output_schema)
     bind_schema = wire or output_schema
-    base = model.with_structured_output(  # pyright: ignore[reportUnknownMemberType]
-        bind_schema, method="json_schema", include_raw=True
-    )
+    base = model.with_structured_output(bind_schema, method="json_schema", include_raw=True)
     translate = _to_domain_or_none if wire else _identity
-    chain = base | RunnablePassthrough.assign(  # pyright: ignore[reportUnknownVariableType, reportOperatorIssue]
-        parsed=lambda response: translate(response["parsed"])
-    )
+    chain = base | RunnablePassthrough.assign(parsed=lambda response: translate(response["parsed"]))  # pyrefly: ignore[unsupported-operation]
     return cast(Runnable[str, object], chain)
 
 
@@ -96,7 +92,7 @@ def _to_domain_or_none(parsed: object) -> object:
     if parsed is None:
         return None
     try:
-        return parsed.to_domain()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
+        return parsed.to_domain()  # pyrefly: ignore[missing-attribute]
     except (json.JSONDecodeError, ValidationError):
         return None
 

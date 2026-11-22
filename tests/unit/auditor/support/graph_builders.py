@@ -73,9 +73,6 @@ def a_server_dying_on(
     return FakeMCPClient(tools, {tool_name: responses}, relaunch_answers=(relaunches,))
 
 
-# The graph wrappers below look trivial but are a typing seam: langgraph's
-# CompiledStateGraph is partially unknown under strict pyright, so tests go
-# through these Any-typed helpers instead of calling ainvoke directly.
 def a_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
     return build_graph(fake_llm, AuditedServer(fake_mcp_client))
 
@@ -90,16 +87,6 @@ def a_dry_run_graph(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient):
 
 def a_graph_with_checkpointer(fake_llm: FakeLLM, fake_mcp_client: FakeMCPClient, checkpointer: Any):
     return build_graph(fake_llm, AuditedServer(fake_mcp_client), checkpointer=checkpointer)
-
-
-async def invoke_graph(graph: Any, state: dict[str, Any]) -> dict[str, Any]:
-    return await graph.ainvoke(state)
-
-
-async def invoke_graph_with_config(
-    graph: Any, state: dict[str, Any] | None, config: dict[str, Any]
-) -> dict[str, Any]:
-    return await graph.ainvoke(state, config=config)
 
 
 def an_initial_state(

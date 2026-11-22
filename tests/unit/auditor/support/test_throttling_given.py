@@ -2,7 +2,7 @@ from typing import Any
 
 import httpx
 import httpx2
-from langchain_core.language_models import BaseChatModel  # pyright: ignore[reportMissingTypeStubs]
+from langchain_core.language_models import BaseChatModel
 from pydantic import SecretStr
 
 _URL = "https://provider.test/v1/chat/completions"
@@ -52,7 +52,7 @@ async def calls(client: httpx.AsyncClient | httpx2.AsyncClient, count: int) -> N
 
 
 # Imported in the builders, so collecting the unit tests does not load these SDKs.
-def a_fireworks_model_answering(statuses: list[int]) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def a_fireworks_model_answering(statuses: list[int]) -> BaseChatModel:
     from fireworks import AsyncFireworks
     from langchain_fireworks import ChatFireworks
 
@@ -70,9 +70,9 @@ def a_fireworks_model_answering(statuses: list[int]) -> BaseChatModel:  # pyrigh
     )
 
 
-def a_google_model_answering(statuses: list[int]) -> BaseChatModel:  # pyright: ignore[reportMissingTypeStubs]
+def a_google_model_answering(statuses: list[int]) -> BaseChatModel:
     from langchain_google_genai import (
-        ChatGoogleGenerativeAI,  # pyright: ignore[reportMissingTypeStubs]
+        ChatGoogleGenerativeAI,
     )
 
     statuses_left = iter(statuses)
@@ -81,7 +81,7 @@ def a_google_model_answering(statuses: list[int]) -> BaseChatModel:  # pyright: 
         status = next(statuses_left)
         return httpx.Response(status, json=_GENERATE_CONTENT if status == 200 else {})
 
-    return ChatGoogleGenerativeAI(  # pyright: ignore[reportUnknownVariableType]
+    return ChatGoogleGenerativeAI(
         model="test-model",
         google_api_key=SecretStr("test"),
         max_retries=3,

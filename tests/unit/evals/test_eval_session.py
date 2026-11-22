@@ -12,8 +12,8 @@ from evals.eval_session import (
     Refused,
     TreeState,
     WorkingTree,
-    _parent_commit,  # pyright: ignore[reportPrivateUsage]
-    _tree_is_dirty,  # pyright: ignore[reportPrivateUsage]
+    _parent_commit,
+    _tree_is_dirty,
     baseline_changed,
     candidate_conditions,
     ci_condition_mismatches,

@@ -1,4 +1,3 @@
-# pyright: reportArgumentType=false
 import subprocess
 import sys
 

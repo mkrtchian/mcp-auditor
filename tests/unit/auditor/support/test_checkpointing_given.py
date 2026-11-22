@@ -19,7 +19,6 @@ from tests.unit.auditor.support.graph_builders import (
     a_judgment,
     a_tool,
     an_initial_state,
-    invoke_graph_with_config,
 )
 
 
@@ -100,9 +99,7 @@ async def a_crashed_audit(checkpointer: Any, thread_id: str):
     client = ServerDyingOnCall([a_tool("first")], dies_on_call=1)
     graph = a_graph_with_checkpointer(a_fake_llm_for_multi_tool_audit([1]), client, checkpointer)
     with pytest.raises(ConnectionError):
-        await invoke_graph_with_config(
-            graph, an_initial_state(), {"configurable": {"thread_id": thread_id}}
-        )
+        await graph.ainvoke(an_initial_state(), config={"configurable": {"thread_id": thread_id}})
     return graph
 
 

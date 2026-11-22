@@ -81,7 +81,7 @@ def test_chain_verdicts_are_exported_with_steps(tmp_path: Path) -> None:
     assert set(record) == then.CHAIN_FIELDS | {"expected_verdict", "correct"}
     assert record["type"] == "chain"
     assert record["goal"] == "probe then exploit"
-    steps: list[dict[str, object]] = record["steps"]  # type: ignore[assignment]
+    steps: list[dict[str, object]] = record["steps"]  # pyrefly: ignore[bad-assignment]
     assert len(steps) == 1
     assert steps[0]["arguments"] == {"action": "list"}
     assert steps[0]["observation"] == "found ids"

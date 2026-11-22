@@ -73,7 +73,7 @@ on shared files.
    - Verify it's purely structural — no behavior change.
    - If two insights conflict (e.g. both want to rename the same thing
      differently), pick the better one and note the conflict.
-6. After all refactorings, run `uv run pyright` and
+6. After all refactorings, run `uv run pyrefly check` and
    `uv run pytest tests/unit -x` to verify nothing broke.
 7. Do NOT commit anything.
 

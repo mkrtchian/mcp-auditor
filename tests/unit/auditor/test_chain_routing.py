@@ -1,6 +1,6 @@
 from typing import Any
 
-from langgraph.graph import END  # type: ignore[import-untyped]
+from langgraph.graph import END
 
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.server_liveness import UnsentCause

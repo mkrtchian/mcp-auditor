@@ -8,7 +8,7 @@ import argparse
 import asyncio
 import dataclasses
 import sys
-from argparse import _SubParsersAction  # pyright: ignore[reportPrivateUsage]
+from argparse import _SubParsersAction
 from collections.abc import Sequence
 from pathlib import Path
 

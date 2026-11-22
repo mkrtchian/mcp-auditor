@@ -9,7 +9,6 @@ from tests.unit.auditor.support.graph_builders import (
     a_server_dying_on,
     a_tool,
     an_initial_state,
-    invoke_graph,
 )
 from tests.unit.auditor.support.graph_results import (
     report_has_cases,
@@ -28,7 +27,7 @@ async def test_a_tool_timing_out_in_a_row_is_stopped_and_the_next_tool_is_audite
     graph = a_graph(fake_llm, given.a_server_timing_out_on(tools, "stalls"))
     state = an_initial_state(test_budget=TIMEOUTS_IN_A_ROW, chain_budget=1)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     stopped = tool_report_at(result, 0)
     report_has_no_chains(stopped)
@@ -45,7 +44,7 @@ async def test_a_server_whose_relaunch_fails_ends_the_audit_with_the_tools_left_
     graph = a_graph(fake_llm, a_server_dying_on(tools, "dies", relaunches=False))
     state = an_initial_state(test_budget=2, chain_budget=1)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     then.report_has_unsent_calls(
         tool_report_at(result, 0), cases=1, chains=1, cause=UnsentCause.SERVER_DOWN
@@ -59,7 +58,7 @@ async def test_a_relaunch_that_succeeds_is_reported_and_the_audit_is_complete():
     fake_llm = a_fake_llm_for_single_tool_audit(num_cases=1)
     graph = a_graph(fake_llm, a_server_dying_on([tool], "dies", relaunches=True))
 
-    result = await invoke_graph(graph, an_initial_state(test_budget=1))
+    result = await graph.ainvoke(an_initial_state(test_budget=1))
 
     assert result["audit_report"].relaunches == [
         Relaunch(
@@ -78,7 +77,7 @@ async def test_a_chain_cut_by_a_relaunch_leaves_its_tool_with_no_gap():
     graph = a_graph(fake_llm, given.a_server_dying_on_its_first_chain_step(tool))
     state = an_initial_state(test_budget=1, chain_budget=1)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report = tool_report_at(result, 0)
     report_has_judged_chains(report, 1)
@@ -92,7 +91,7 @@ async def test_a_server_going_down_mid_chain_judges_the_steps_made_and_counts_th
     graph = a_graph(fake_llm, given.a_server_going_down_on_its_second_chain_step(tool))
     state = an_initial_state(test_budget=1, chain_budget=2, max_chain_steps=3)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report = tool_report_at(result, 0)
     report_has_judged_chains(report, 1)

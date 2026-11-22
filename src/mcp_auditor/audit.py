@@ -1,11 +1,10 @@
-# pyright: reportUnknownMemberType=false
 # One audit run: the server it probes, the models it reasons with, the budget it spends,
 # and the report it yields. Outside the hexagon, like `cli.py`, which hands it a decided
 # launch and reads back the report.
 from dataclasses import dataclass
 from typing import Any, NoReturn
 
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit

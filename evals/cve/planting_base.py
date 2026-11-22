@@ -215,7 +215,7 @@ def check_layout_outer(outer: str) -> None:
 
 def quiet(action: object, *args: object) -> None:
     try:
-        action(*args)  # type: ignore[operator]
+        action(*args)  # pyrefly: ignore[not-callable]
     except Exception as error:
         logger.warning("planting teardown failed: %s", error)
 

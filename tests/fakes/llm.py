@@ -38,7 +38,7 @@ class FakeLLM:
         if not isinstance(response, output_schema):
             raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
         self.total_usage = self.total_usage.add(FAKE_USAGE)
-        return response, FAKE_USAGE  # type: ignore[return-value]
+        return response, FAKE_USAGE
 
 
 @dataclass

@@ -55,7 +55,6 @@ from tests.unit.auditor.support.graph_builders import (
     a_graph,
     a_redacting_graph,
     a_server_echoing,
-    invoke_graph,
 )
 from tests.unit.auditor.support.test_llm_adapter_given import the_openai_request_body
 
@@ -163,10 +162,8 @@ async def _audit_prompts() -> dict[str, str]:
     server = a_server_echoing(tool, f"token={_SECRET}")
     plain_llm = a_fake_llm_for_single_tool_with_a_two_step_chain()
     redacting_llm = a_fake_llm_for_single_tool_with_a_two_step_chain()
-    await invoke_graph(a_graph(plain_llm, server), _initial_state())
-    await invoke_graph(
-        a_redacting_graph(redacting_llm, server, {"API_TOKEN": _SECRET}), _initial_state()
-    )
+    await a_graph(plain_llm, server).ainvoke(_initial_state())
+    await a_redacting_graph(redacting_llm, server, {"API_TOKEN": _SECRET}).ainvoke(_initial_state())
     return {
         **{f"audit/plain/{i:02d}": prompt for i, prompt in enumerate(plain_llm.prompts)},
         **{f"audit/redacted/{i:02d}": prompt for i, prompt in enumerate(redacting_llm.prompts)},
@@ -207,8 +204,8 @@ async def _anthropic_request_body(schema: type[BaseModel]) -> dict[str, Any]:
         error = {"type": "invalid_request_error", "message": "recorded"}
         return httpx2.Response(400, json={"type": "error", "error": error})
 
-    chat_model = ChatAnthropic(  # pyright: ignore[reportCallIssue]
-        model="claude-haiku-5-5",  # pyright: ignore[reportCallIssue]
+    chat_model = ChatAnthropic(
+        model="claude-haiku-5-5",
         api_key="dummy",
         thinking={"type": "adaptive"},
         effort="low",

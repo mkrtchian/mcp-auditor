@@ -204,7 +204,7 @@ def test_a_probe_killed_past_its_run_timeout_leaves_no_container(monkeypatch: py
 
     with given.a_listener_that_accepts_and_never_answers() as listener:
         server_args, label = given.labelled_probe_args(listener.network)
-        body = planting_docker._probe_read(server_args, f"http://{listener.name}/")  # pyright: ignore[reportPrivateUsage]
+        body = planting_docker._probe_read(server_args, f"http://{listener.name}/")
 
         assert body is None
         then.no_container_carries(label)

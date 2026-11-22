@@ -13,7 +13,7 @@ def create_graph():
     settings = load_settings()
     llm = create_llm(settings)
     judge_llm = create_judge_llm(settings)
-    mcp_client: MCPClientPort = _StudioMCPPlaceholder()  # type: ignore[assignment]
+    mcp_client: MCPClientPort = _StudioMCPPlaceholder()
     return build_graph(llm, AuditedServer(mcp_client), judge_llm=judge_llm)
 
 

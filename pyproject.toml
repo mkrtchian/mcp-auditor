@@ -45,7 +45,6 @@ dev = [
     "pytest>=9.0",
     "pytest-asyncio>=1.0",
     "ruff>=0.15",
-    "pyright>=1.1",
     "pyrefly>=1.5",
     "types-PyYAML",
     "langsmith>=0.3",
@@ -113,15 +112,6 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "src/mcp_auditor/domain/category_guidance.py" = ["E501"]
 "src/mcp_auditor/cli.py" = ["E402"]
 "evals/run_judge_eval.py" = ["E402"]
-
-[tool.pyright]
-pythonVersion = "3.13"
-typeCheckingMode = "strict"
-venvPath = "."
-venv = ".venv"
-# output/ is gitignored and holds the census agents' scripts. Setting exclude
-# replaces pyright's defaults, so they are listed again.
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", "output"]
 
 [tool.pyrefly]
 project-includes = ["src", "evals", "tests"]

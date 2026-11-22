@@ -1,7 +1,7 @@
 from typing import Any
 
 import pytest
-from langgraph.graph import END  # type: ignore[import-untyped]
+from langgraph.graph import END
 
 import tests.unit.auditor.support.test_nodes_given as given
 import tests.unit.auditor.support.test_nodes_then as then

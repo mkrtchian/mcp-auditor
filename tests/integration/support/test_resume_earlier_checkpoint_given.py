@@ -4,7 +4,7 @@ import sys
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import empty_checkpoint
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver  # type: ignore[import-untyped]
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
 from mcp_auditor.audit import Audit

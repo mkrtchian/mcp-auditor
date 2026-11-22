@@ -134,10 +134,10 @@ async def test_an_answer_cut_during_thinking_counts_as_truncated():
 
 
 _MIRROR_PAIRS: dict[type[BaseModel], type[BaseModel]] = {
-    AuditPayload: wire._AuditPayloadWire,  # pyright: ignore[reportPrivateUsage]
-    TestCaseBatch: wire._TestCaseBatchWire,  # pyright: ignore[reportPrivateUsage]
-    ChainPlanBatch: wire._ChainPlanBatchWire,  # pyright: ignore[reportPrivateUsage]
-    ChainGoal: wire._ChainGoalWire,  # pyright: ignore[reportPrivateUsage]
+    AuditPayload: wire._AuditPayloadWire,
+    TestCaseBatch: wire._TestCaseBatchWire,
+    ChainPlanBatch: wire._ChainPlanBatchWire,
+    ChainGoal: wire._ChainGoalWire,
 }
 
 

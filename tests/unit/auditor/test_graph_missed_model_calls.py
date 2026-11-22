@@ -10,7 +10,6 @@ from tests.unit.auditor.support.graph_builders import (
     a_graph,
     a_tool,
     an_initial_state,
-    invoke_graph,
 )
 from tests.unit.auditor.support.graph_results import (
     report_has_a_gap_of,
@@ -28,7 +27,7 @@ async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissCause):
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=2)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report = tool_report_at(result, 0)
     assert [case.judge_result is None for case in report.cases] == [True, False]
@@ -47,7 +46,7 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
     graph = a_graph(fake_llm, FakeMCPClient(tools))
     state = an_initial_state(test_budget=2)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     first = tool_report_at(result, 0)
     report_has_cases(first, 0)
@@ -62,7 +61,7 @@ async def test_a_dry_run_with_a_refused_generation_carries_the_missed_model_call
     graph = a_dry_run_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=3)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report_has_a_gap_of(result["tool_reports"][0], requested=3, received=0)
     then.state_has_missed_calls(result, [("get_user", ModelCallKind.TEST_GENERATION)])
@@ -73,7 +72,7 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=1, chain_budget=1)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report_has_no_chains(tool_report_at(result, 0))
     then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_PLANNING)])
@@ -85,7 +84,7 @@ async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(cau
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=1, chain_budget=2)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report_has_judged_chains(tool_report_at(result, 0), 2)
     then.audit_report_misses_one_call(
@@ -99,7 +98,7 @@ async def test_a_chain_step_planning_refusal_judges_the_chain_with_the_steps_it_
     graph = a_graph(fake_llm, fake_mcp_client)
     state = an_initial_state(test_budget=1, chain_budget=1, max_chain_steps=3)
 
-    result = await invoke_graph(graph, state)
+    result = await graph.ainvoke(state)
 
     report = tool_report_at(result, 0)
     report_has_judged_chains(report, 1)

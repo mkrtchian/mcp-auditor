@@ -75,7 +75,7 @@ class PerRoleBillingLLM(FakeLLM):
             raise TypeError(f"Expected {output_schema.__name__}, got {type(response).__name__}")
         usage = self._judge_usage if output_schema is Judgment else self._generator_usage
         self.total_usage = self.total_usage.add(usage)
-        return response, usage  # type: ignore[return-value]
+        return response, usage
 
 
 def a_fake_llm_billing_judge_apart(
@@ -108,7 +108,7 @@ class PerCallBillingLLM(FakeLLM):
         usage = ProviderUsage(input_tokens=2 ** len(self.billed), output_tokens=1)
         self.billed.append(usage)
         self.total_usage = self.total_usage.add(usage)
-        return response, usage  # type: ignore[return-value]
+        return response, usage
 
 
 # Chain planning, two observations, one step planning and the chain judgment.

@@ -19,7 +19,7 @@ uv run pytest tests/integration -n auto # integration tests
 uv run pytest tests/integration/committed -n auto # the tests of the committed content alone
 uv run ruff check .                    # lint
 uv run ruff format .                   # format
-uv run pyright                         # type-check
+uv run pyrefly check                   # type-check
 uv run python -m evals.run_honeypot_suite       # honeypot suite (requires API key)
 uv run python -m evals.run_honeypot_suite --record-baseline  # record the honeypot baseline (clean tree, see below)
 uv run python -m evals.run_honeypot_suite --no-baseline      # honeypot suite on the floors alone, at any conditions
@@ -170,7 +170,7 @@ User-facing changes (new flags, behavior changes, notable fixes) should come wit
 
 Publishing is automated: pushing a `v*` tag triggers `publish.yml`, which builds the package and publishes it to PyPI via trusted publishing. The build rewrites the README's relative links into absolute links on the tag `v` plus the `pyproject.toml` version (the `fancy-pypi-readme` hook in `pyproject.toml`), so the tag of step 7 must be exactly that, and the links in `README.md` stay relative. The manual steps are:
 
-1. Make sure `main` is green: `uv run pytest -n auto && uv run ruff check . && uv run pyright`.
+1. Make sure `main` is green: `uv run pytest -n auto && uv run ruff check . && uv run pyrefly check`.
 2. In `CHANGELOG.md`, rename the `[Unreleased]` section to the new version with today's date, add a fresh empty `[Unreleased]` section above it, and update the comparison links at the bottom.
 3. Bump `version` in `pyproject.toml`, then run `uv lock` so the lock file picks it up.
 4. Run the detection gate on the local images: `uv run python -m evals.run_detection`. A red gate stops the release. The release commit's message states the outcome: green, or not comparable with the reason.

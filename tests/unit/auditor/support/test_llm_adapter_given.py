@@ -55,7 +55,7 @@ def an_llm(
     max_parse_attempts: int = 3,
 ) -> LLM:
     return LLM(
-        FakeChatModel(responses),  # pyright: ignore[reportArgumentType]
+        FakeChatModel(responses),  # pyrefly: ignore[bad-argument-type]
         schema,
         max_parse_attempts=max_parse_attempts,
     )
@@ -63,7 +63,7 @@ def an_llm(
 
 def an_llm_over(chat_model: FakeChatModel) -> LLM:
     return LLM(
-        chat_model,  # pyright: ignore[reportArgumentType]
+        chat_model,  # pyrefly: ignore[bad-argument-type]
         DICT_SCHEMA,
         max_parse_attempts=3,
     )

@@ -1,9 +1,8 @@
-# pyright: reportUnknownMemberType=false, reportArgumentType=false
 from typing import Any
 
-from langgraph.checkpoint.base import BaseCheckpointSaver  # type: ignore[import-untyped]
-from langgraph.graph import END, START, StateGraph  # type: ignore[import-untyped]
-from langgraph.graph.state import CompiledStateGraph  # type: ignore[import-untyped]
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.ports import LLMPort
