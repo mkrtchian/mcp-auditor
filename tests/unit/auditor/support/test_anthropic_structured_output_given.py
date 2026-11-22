@@ -1,40 +1,25 @@
 import json
 from typing import Any
 
-import anthropic
 import httpx2
 from langchain_anthropic import ChatAnthropic
 
 from mcp_auditor.adapters.llm import LLM, StructuredOutput
+from tests.unit.auditor.support.anthropic_request_bodies import an_anthropic_chat_model_on
 
 
-def an_llm_answering(body: dict[str, Any], thinking: str = "adaptive") -> LLM:
-    return an_llm_on(a_chat_model_answering(body, thinking))
+def an_llm_answering(body: dict[str, Any]) -> LLM:
+    return LLM(_chat_model_answering(body), StructuredOutput(method="anthropic_json_schema"))
 
 
-def an_llm_on(chat_model: ChatAnthropic) -> LLM:
-    structured_output = StructuredOutput(method="anthropic_json_schema")
-    return LLM(chat_model, structured_output, max_parse_attempts=3)
-
-
-def a_chat_model_answering(body: dict[str, Any], thinking: str = "adaptive") -> ChatAnthropic:
-    chat_model = ChatAnthropic(
-        model="claude-haiku-5-5",
-        api_key="dummy",
-        thinking={"type": thinking},
-        effort="low",
-        max_retries=0,
+def _chat_model_answering(body: dict[str, Any]) -> ChatAnthropic:
+    return an_anthropic_chat_model_on(
+        httpx2.MockTransport(lambda _request: httpx2.Response(200, json=body))
     )
-    # ChatAnthropic takes no HTTP client: its async client is a cached_property, so the
-    # instance's cached value is seeded with one whose transport replays the body. It carries
-    # an explicit timeout, as the production client does: on the default one the SDK refuses a
-    # non-streaming call whose max_tokens could outlast 10 minutes.
-    replay = httpx2.MockTransport(lambda _request: httpx2.Response(200, json=body))
-    http_client = httpx2.AsyncClient(transport=replay)
-    vars(chat_model)["_async_client"] = anthropic.AsyncClient(
-        api_key="dummy", http_client=http_client, timeout=120
-    )
-    return chat_model
+
+
+def a_wire_payload(category: str, description: str, arguments: object) -> dict[str, Any]:
+    return {"category": category, "description": description, "arguments": json.dumps(arguments)}
 
 
 def a_json_schema_answer(

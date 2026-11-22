@@ -150,29 +150,29 @@ class TestTruncatedOutput:
     async def test_the_raised_error_counts_the_truncated_attempts_and_their_usage(self):
         responses = [
             truncated(raw_response({"value": "cut"}, 100, 8192), finish_reason="length")
-            for _ in range(2)
+            for _ in range(3)
         ]
-        llm = llms.an_llm(responses, max_parse_attempts=2)
+        llm = llms.an_llm(responses)
 
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 2
+        assert raised.value.truncated_attempts == 3
         assert raised.value.usage == ProviderUsage(
-            input_tokens=200, output_tokens=16384, largest_input_tokens=100
+            input_tokens=300, output_tokens=24576, largest_input_tokens=100
         )
 
     async def test_a_response_stopped_at_max_tokens_on_every_attempt_counts_as_truncated(self):
         responses = [
             truncated(raw_response(llms.Output(value="cut"), 100, 8192), stop_reason="max_tokens")
-            for _ in range(2)
+            for _ in range(3)
         ]
-        llm = llms.an_llm(responses, given.PYDANTIC_SCHEMA, max_parse_attempts=2)
+        llm = llms.an_llm(responses, given.PYDANTIC_SCHEMA)
 
         with pytest.raises(UnparseableOutput) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 2
+        assert raised.value.truncated_attempts == 3
 
     async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):
         responses = [

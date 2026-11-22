@@ -27,7 +27,7 @@ async def the_openai_request_body(schema: type[BaseModel]) -> dict[str, Any]:
         max_retries=3,
         http_async_client=httpx2.AsyncClient(transport=httpx2.MockTransport(record)),
     )
-    llm = LLM(chat_model, STRUCTURED_OUTPUTS["openai"], max_parse_attempts=3)
+    llm = LLM(chat_model, STRUCTURED_OUTPUTS["openai"])
     with pytest.raises(openai.BadRequestError):
         await llm.generate_structured("prompt", schema)
     if len(bodies) != 1:

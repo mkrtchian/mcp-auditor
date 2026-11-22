@@ -23,7 +23,6 @@ def an_llm_over(chat_model: FakeChatModel) -> LLM:
     return LLM(
         chat_model,  # pyrefly: ignore[bad-argument-type]
         DICT_SCHEMA,
-        max_parse_attempts=3,
     )
 
 

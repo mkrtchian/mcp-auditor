@@ -23,7 +23,6 @@ def an_llm_over(chat_model: FakeChatModel) -> LLM:
     return LLM(
         chat_model,  # pyrefly: ignore[bad-argument-type]
         StructuredOutput(method="json_schema", schema_as_dict=True),
-        max_parse_attempts=3,
         patience=ThrottlePatience(max_total_wait=15.0, sleep=no_wait, jitter=lambda: 0.0),
     )
 

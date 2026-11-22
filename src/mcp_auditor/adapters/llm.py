@@ -32,39 +32,23 @@ from mcp_auditor.domain.ports import (
 # Shared so the generator and the judge on one model fetch OpenRouter's listing once.
 _PROCESS_EFFORTS = OpenRouterEffortCatalog()
 _DEFAULT_PATIENCE = ThrottlePatience()
+_MAX_PARSE_ATTEMPTS = 3
 _THROTTLING_LOGGER = logging.getLogger("mcp_auditor.throttling")
 
 
-def create_llm(
-    settings: Settings,
-    efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS,
-    patience: ThrottlePatience = _DEFAULT_PATIENCE,
-) -> "LLM":
-    return _create_for_provider(settings, _ModelChoice(settings.resolve_model(), patience), efforts)
+def create_llm(settings: Settings, patience: ThrottlePatience = _DEFAULT_PATIENCE) -> "LLM":
+    return _create_for_provider(settings, settings.resolve_model(), patience)
 
 
-def create_judge_llm(
-    settings: Settings,
-    efforts: OpenRouterEffortCatalog = _PROCESS_EFFORTS,
-    patience: ThrottlePatience = _DEFAULT_PATIENCE,
-) -> "LLM":
-    choice = _ModelChoice(settings.resolve_judge_model(), patience)
-    return _create_for_provider(settings, choice, efforts)
+def create_judge_llm(settings: Settings, patience: ThrottlePatience = _DEFAULT_PATIENCE) -> "LLM":
+    return _create_for_provider(settings, settings.resolve_judge_model(), patience)
 
 
-@dataclass(frozen=True)
-class _ModelChoice:
-    model: str
-    patience: ThrottlePatience
-
-
-def _create_for_provider(
-    settings: Settings, choice: _ModelChoice, efforts: OpenRouterEffortCatalog
-) -> "LLM":
+def _create_for_provider(settings: Settings, model: str, patience: ThrottlePatience) -> "LLM":
     install_throttle_log_handler()
-    chat_model = make_chat_model(settings, choice.model, efforts)
+    chat_model = make_chat_model(settings, model, _PROCESS_EFFORTS)
     structured_output = STRUCTURED_OUTPUTS[settings.provider]
-    return LLM(chat_model, structured_output, max_parse_attempts=3, patience=choice.patience)
+    return LLM(chat_model, structured_output, patience)
 
 
 @dataclass(frozen=True)
@@ -116,12 +100,10 @@ class LLM:
         self,
         model: BaseChatModel,
         structured_output: StructuredOutput,
-        max_parse_attempts: int,
         patience: ThrottlePatience = _DEFAULT_PATIENCE,
     ):
         self._model = model
         self._structured_output = structured_output
-        self._max_parse_attempts = max_parse_attempts
         self._patience = patience
 
     async def generate_structured[T: BaseModel](
@@ -130,7 +112,7 @@ class LLM:
         structured = self._bind(output_schema)
         state = _CallState()
         truncated_attempts = 0
-        for _attempt in range(self._max_parse_attempts):
+        for _attempt in range(_MAX_PARSE_ATTEMPTS):
             attempt = await self._attempt(structured, prompt, state)
             state.usage = state.usage.add(attempt.usage)
             if attempt.refusal is not None:
@@ -141,7 +123,7 @@ class LLM:
             output = _validated(attempt.parsed, output_schema)
             if output is not None:
                 return output, state.usage
-        raise UnparseableOutput(self._max_parse_attempts, truncated_attempts, state.usage)
+        raise UnparseableOutput(_MAX_PARSE_ATTEMPTS, truncated_attempts, state.usage)
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method

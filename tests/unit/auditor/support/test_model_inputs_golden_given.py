@@ -18,10 +18,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import anthropic
-import httpx2
-import pytest
-from langchain_anthropic import ChatAnthropic
 from pydantic import BaseModel
 
 from evals.cve.census.classification import Classification
@@ -30,7 +26,6 @@ from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.judge.fixture import load_fixture
 from evals.probe.corpus import SCHEMA_NAMES, schema_for
 from evals.run_judge_eval import FIXTURES_PATH, judge_one_case
-from mcp_auditor.adapters.llm import LLM, STRUCTURED_OUTPUTS
 from mcp_auditor.domain.category_guidance import CATEGORY_GUIDANCE
 from mcp_auditor.domain.models import (
     AttackChain,
@@ -50,6 +45,7 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.redaction import marker
 from mcp_auditor.graph import chain_prompts, prompts
 from tests.fakes import FakeLLM
+from tests.unit.auditor.support.anthropic_request_bodies import the_anthropic_request_body
 from tests.unit.auditor.support.graph_builders import (
     a_fake_llm_for_single_tool_with_a_two_step_chain,
     a_graph,
@@ -190,38 +186,8 @@ async def _request_bodies() -> dict[str, str]:
     for name in SCHEMA_NAMES:
         schema = schema_for(name)
         entries[f"openai_request/{name}"] = json.dumps(await the_openai_request_body(schema))
-        entries[f"anthropic_request/{name}"] = json.dumps(await _anthropic_request_body(schema))
+        entries[f"anthropic_request/{name}"] = json.dumps(await the_anthropic_request_body(schema))
     return entries
-
-
-async def _anthropic_request_body(schema: type[BaseModel]) -> dict[str, Any]:
-    # The recorded request is answered with a 400, which the adapter re-raises, and the client
-    # does not retry, so one call sends exactly one request.
-    bodies: list[dict[str, Any]] = []
-
-    def record(request: httpx2.Request) -> httpx2.Response:
-        bodies.append(json.loads(request.content))
-        error = {"type": "invalid_request_error", "message": "recorded"}
-        return httpx2.Response(400, json={"type": "error", "error": error})
-
-    chat_model = ChatAnthropic(
-        model="claude-haiku-5-5",
-        api_key="dummy",
-        thinking={"type": "adaptive"},
-        effort="low",
-        max_retries=0,
-    )
-    # ChatAnthropic takes no HTTP client: its cached async client is seeded with one that records.
-    http_client = httpx2.AsyncClient(transport=httpx2.MockTransport(record))
-    vars(chat_model)["_async_client"] = anthropic.AsyncClient(
-        api_key="dummy", http_client=http_client, timeout=120
-    )
-    llm = LLM(chat_model, STRUCTURED_OUTPUTS["anthropic"], max_parse_attempts=3)
-    with pytest.raises(anthropic.BadRequestError):
-        await llm.generate_structured("prompt", schema)
-    if len(bodies) != 1:
-        raise AssertionError("expected one request")
-    return bodies[0]
 
 
 def _tool() -> ToolDefinition:

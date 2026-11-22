@@ -30,16 +30,8 @@ A_FULL_USAGE = CompletionUsage(
 )
 
 
-def an_llm(
-    responses: Sequence[ScriptedResponse],
-    schema: StructuredOutput = DICT_SCHEMA,
-    max_parse_attempts: int = 3,
-) -> LLM:
-    return LLM(
-        FakeChatModel(responses),  # pyrefly: ignore[bad-argument-type]
-        schema,
-        max_parse_attempts=max_parse_attempts,
-    )
+def an_llm(responses: Sequence[ScriptedResponse], schema: StructuredOutput = DICT_SCHEMA) -> LLM:
+    return LLM(FakeChatModel(responses), schema)  # pyrefly: ignore[bad-argument-type]
 
 
 def a_completion(

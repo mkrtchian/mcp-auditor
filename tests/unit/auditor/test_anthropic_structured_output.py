@@ -1,5 +1,4 @@
-import json
-from typing import Any, get_args, get_origin
+from typing import get_args, get_origin
 
 import pytest
 from pydantic import BaseModel
@@ -24,8 +23,8 @@ async def test_a_test_case_batch_decodes_each_argument():
     nested = {"query": {"nested": [1, 2]}}
     document = {
         "cases": [
-            _wire_payload("injection", "nested args", nested),
-            _wire_payload("input_validation", "empty args", {}),
+            given.a_wire_payload("injection", "nested args", nested),
+            given.a_wire_payload("input_validation", "empty args", {}),
         ]
     }
     llm = given.an_llm_answering(given.a_json_schema_answer(document, 120, 40))
@@ -45,12 +44,8 @@ async def test_a_test_case_batch_decodes_each_argument():
     assert usage == ProviderUsage(input_tokens=120, output_tokens=40, largest_input_tokens=120)
 
 
-def _wire_payload(category: str, description: str, arguments: object) -> dict[str, Any]:
-    return {"category": category, "description": description, "arguments": json.dumps(arguments)}
-
-
 async def test_a_bare_audit_payload_decodes_its_arguments():
-    document = _wire_payload("injection", "step", {"id": 1})
+    document = given.a_wire_payload("injection", "step", {"id": 1})
     llm = given.an_llm_answering(given.a_json_schema_answer(document, 50, 20))
 
     output, _usage = await llm.generate_structured("prompt", AuditPayload)
@@ -66,7 +61,7 @@ async def test_a_chain_plan_batch_decodes_the_first_step_arguments():
             {
                 "description": "traverse",
                 "category": "injection",
-                "first_step": _wire_payload("injection", "read", {"path": "/etc/passwd"}),
+                "first_step": given.a_wire_payload("injection", "read", {"path": "/etc/passwd"}),
             }
         ]
     }
