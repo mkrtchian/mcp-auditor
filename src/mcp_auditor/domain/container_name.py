@@ -1,3 +1,4 @@
+# Reads a declared container's own `docker run` argv.
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
@@ -5,6 +6,12 @@ from enum import Enum
 
 class Undecidable(Enum):
     NAME = "name"
+
+
+# ADR 017's passthrough rule: a command that already is a container runs as the caller
+# wrote it.
+def is_declared_container(command: str, args: Sequence[str]) -> bool:
+    return command == "docker" and tuple(args[:1]) == ("run",)
 
 
 # The name a declared container's own `docker run` gives it, read only before the image: a
@@ -30,6 +37,43 @@ def declared_container_name(args: Sequence[str]) -> str | Undecidable | None:
 
 def _names_again(arguments: Iterator[str]) -> bool:
     return any(argument == "--name" or argument.startswith("--name=") for argument in arguments)
+
+
+# The variables a declared container's own `docker run` passes, and whether it reads an env
+# file. The option table reads the options up to the image, short groups included.
+def environment_names_passed(args: Sequence[str]) -> tuple[frozenset[str], bool]:
+    remaining = iter(args[1:])
+    options = list(_valued_options_up_to_the_image(remaining))
+    names = {value.split("=", 1)[0] for long_name, value in options if long_name == "env"}
+    env_file = any(long_name == "env-file" for long_name, _ in options)
+    names_after, env_file_after = _passed_after_the_image(list(remaining))
+    return frozenset(names | names_after), env_file or env_file_after
+
+
+def _valued_options_up_to_the_image(arguments: Iterator[str]) -> Iterator[tuple[str, str]]:
+    for argument in arguments:
+        if argument in ("-", "--") or not argument.startswith("-"):
+            return
+        option = _long_option(argument) if argument.startswith("--") else _short_options(argument)
+        if option is None or option.long_name is None:
+            continue
+        value = next(arguments, None) if option.takes_next else option.inline_value
+        if value is not None:
+            yield option.long_name, value
+
+
+# Scans past the image rather than stopping at it: an `-e` after it belongs to the server's
+# own command, and counting it only suppresses a warning. The option table is not used
+# there, since a server `-v` would swallow a following `-e` and bring the warning back.
+def _passed_after_the_image(args: Sequence[str]) -> tuple[frozenset[str], bool]:
+    names: set[str] = set()
+    for flag, value in zip(args, [*args[1:], None], strict=False):
+        if flag in ("-e", "--env") and value is not None:
+            names.add(value.split("=", 1)[0])
+        elif flag.startswith("--env="):
+            names.add(flag.removeprefix("--env=").split("=", 1)[0])
+    env_file = any(arg == "--env-file" or arg.startswith("--env-file=") for arg in args)
+    return frozenset(names), env_file
 
 
 @dataclass(frozen=True)
@@ -58,7 +102,9 @@ def _short_options(argument: str) -> _RunOption | None:
         if letter not in _RUN_SHORT_OPTIONS_WITH_A_VALUE:
             return None
         rest = group[position + 1 :]
-        return _RunOption(None, rest.removeprefix("="), takes_next=not rest)
+        return _RunOption(
+            _RUN_SHORT_OPTIONS_WITH_A_VALUE[letter], rest.removeprefix("="), takes_next=not rest
+        )
     return _RunOption(None)
 
 
@@ -172,4 +218,15 @@ _RUN_LONG_OPTIONS_WITH_A_VALUE = frozenset(
     }
 )
 _RUN_SHORT_FLAGS = frozenset("diPqt")
-_RUN_SHORT_OPTIONS_WITH_A_VALUE = frozenset("acehlmpuvw")
+_RUN_SHORT_OPTIONS_WITH_A_VALUE = {
+    "a": "attach",
+    "c": "cpu-shares",
+    "e": "env",
+    "h": "hostname",
+    "l": "label",
+    "m": "memory",
+    "p": "publish",
+    "u": "user",
+    "v": "volume",
+    "w": "workdir",
+}

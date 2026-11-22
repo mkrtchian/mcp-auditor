@@ -4,7 +4,8 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from mcp_auditor.domain.confinement import MountPlan, is_declared_container
+from mcp_auditor.domain.confinement import MountPlan
+from mcp_auditor.domain.container_name import is_declared_container
 from mcp_auditor.domain.models import ExecutionRecord, ExecutionRegime
 from mcp_auditor.domain.relayed_environment import RelayedEnvironment
 

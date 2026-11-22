@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The error for an unknown `MCP_AUDITOR_PROVIDER` lists the accepted providers.
 
+### Fixed
+
+- A declared container that passes a relayed variable with a short option glued to its value (`-eNAME`) or ending a group (`-ie NAME`) no longer gets the false warning that its `docker run` does not pass the variable.
+
 ## [0.5.0] - 2026-11-22
 
 ### Added

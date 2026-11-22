@@ -17,12 +17,11 @@ from mcp_auditor.domain.confinement import (
     MountPolicy,
     RefusedMountError,
     UnspellableMountError,
-    environment_names_passed,
-    is_declared_container,
     parse_mount_option,
     refused_roots,
     steers_docker_client,
 )
+from mcp_auditor.domain.container_name import environment_names_passed, is_declared_container
 from mcp_auditor.domain.models import ExecutionRecord
 from mcp_auditor.domain.relayed_environment import (
     RelayedEnvironment,
