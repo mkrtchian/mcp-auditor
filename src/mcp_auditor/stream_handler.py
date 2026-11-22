@@ -72,26 +72,20 @@ class AuditProgressReporter:
 
     def _on_tool_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "generate_test_cases":
-            pending = state_update.get("pending_cases", [])
-            if pending:
-                progress = self._display.create_tool_progress(
-                    self._tool_index, self._tool_count, self._current_tool_name, len(pending)
-                )
-                progress.start()
-                self._active_progress = progress
+            self._on_generate_test_cases(state_update)
         elif node_name == "execute_tool":
             self._on_execute_tool(state_update)
         elif node_name == "judge_response":
-            processed = state_update.get("processed_cases", [])
-            if processed:
-                last_case = processed[-1]
-                if self._active_progress is None:
-                    return
-                if last_case.judge_result is not None:
-                    self._active_progress.advance(last_case.judge_result)
-                elif last_case.blocked_reason is None:
-                    missed: list[MissedModelCall] = state_update["missed_model_calls"]
-                    self._active_progress.advance_unjudged(missed[-1].cause)
+            self._on_judge_response(state_update)
+
+    def _on_generate_test_cases(self, state_update: dict[str, Any]) -> None:
+        pending = state_update.get("pending_cases", [])
+        if pending:
+            progress = self._display.create_tool_progress(
+                self._tool_index, self._tool_count, self._current_tool_name, len(pending)
+            )
+            progress.start()
+            self._active_progress = progress
 
     def _on_execute_tool(self, state_update: dict[str, Any]) -> None:
         if self._active_progress is None:
@@ -102,6 +96,19 @@ class AuditProgressReporter:
             self._active_progress.advance_unsent(unsent_cause)
         elif processed and processed[-1].blocked_reason:
             self._active_progress.advance_blocked(processed[-1].blocked_reason)
+
+    def _on_judge_response(self, state_update: dict[str, Any]) -> None:
+        if self._active_progress is None:
+            return
+        processed = state_update.get("processed_cases", [])
+        if not processed:
+            return
+        last_case = processed[-1]
+        if last_case.judge_result is not None:
+            self._active_progress.advance(last_case.judge_result)
+        elif last_case.blocked_reason is None:
+            missed: list[MissedModelCall] = state_update["missed_model_calls"]
+            self._active_progress.advance_unjudged(missed[-1].cause)
 
     def _on_chain_audit_event(self, node_name: str, state_update: dict[str, Any]) -> None:
         if node_name == "plan_chains":
