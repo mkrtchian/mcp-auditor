@@ -93,6 +93,7 @@ def test_declared_container_name(args: list[str], name: str | Undecidable | None
         (["run", "--env-file", "f", "img"], set[str](), True),
         (["run", "--env-file=f", "img"], set[str](), True),
         (["run", "img", "-e"], set[str](), False),
+        (["run", "-e"], set[str](), False),
         (["run", "-eA=1", "img"], {"A"}, False),
         (["run", "-e=A", "img"], {"A"}, False),
         (["run", "-ie", "A", "img"], {"A"}, False),
