@@ -196,7 +196,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/detection/support/detection_audits.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
-        (FOREIGN, "test_eval_display_given"),
     ),
     "tests/unit/detection/support/detection_sessions.py": (
         (FOREIGN, "test_cve_grammar_given"),
@@ -221,7 +220,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/support/test_detection_console_given.py": (
         (FOREIGN, "test_detection_oracle_given"),
-        (FOREIGN, "test_eval_display_given"),
     ),
     "tests/unit/detection/support/test_detection_draw_record_given.py": (
         (FOREIGN, "test_census_figures_given"),
@@ -247,9 +245,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/detection/support/test_run_detection_holdout_run_given.py": (
         (FOREIGN, "test_detection_draw_record_given"),
     ),
-    "tests/unit/detection/support/test_run_detection_recording_given.py": (
-        (FOREIGN, "test_eval_display_given"),
-    ),
     "tests/unit/detection/test_detection_audit.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
@@ -262,7 +257,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/detection/test_detection_holdout_audit.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_detection_oracle_given"),
-        (FOREIGN, "test_eval_display_given"),
     ),
     "tests/unit/detection/test_detection_holdout_card_readiness.py": (
         (FOREIGN, "test_detection_draw_record_given"),
@@ -282,10 +276,7 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_run_detection_holdout_run_given"),
     ),
     "tests/unit/evals/support/test_eval_baseline_given.py": ((FOREIGN, "test_eval_gate_given"),),
-    "tests/unit/evals/support/test_eval_display_given.py": (
-        (FOREIGN, "test_eval_baseline_given"),
-        (SETATTR, "a_captured_console:module.console"),
-    ),
+    "tests/unit/evals/support/test_eval_display_given.py": ((FOREIGN, "test_eval_baseline_given"),),
     "tests/unit/evals/support/test_eval_gate_outcome_given.py": (
         (FOREIGN, "test_eval_gate_given"),
     ),
@@ -305,7 +296,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_judge_fixture_given"),
     ),
     "tests/unit/evals/support/test_judge_display_given.py": (
-        (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_judge_outcomes_given"),
     ),
     "tests/unit/evals/support/test_judge_gate_given.py": ((FOREIGN, "test_judge_baseline_given"),),
@@ -406,7 +396,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
     "tests/unit/nuisance/gate/support/test_nuisance_gate_console_given.py": (
-        (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_nuisance_gate_report_given"),
     ),
     "tests/unit/nuisance/gate/support/test_nuisance_gate_given.py": (
@@ -428,7 +417,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/gate/support/test_run_nuisance_gate_given.py": (
         (FOREIGN, "test_census_given"),
         (FOREIGN, "test_detection_draw_record_given"),
-        (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_admission_records_given"),
         (FOREIGN, "test_nuisance_walk_given"),
@@ -530,7 +518,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     "tests/unit/nuisance/test_nuisance_audit_once.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
-        (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),
@@ -583,7 +570,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_statistic_given"),
     ),
     "tests/unit/nuisance/test_nuisance_retry_policy.py": (
-        (FOREIGN, "test_eval_display_given"),
         (FOREIGN, "test_nuisance_admission_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
     ),

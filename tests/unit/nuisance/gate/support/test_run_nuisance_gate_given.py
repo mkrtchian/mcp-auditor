@@ -1,20 +1,17 @@
 from dataclasses import dataclass, field
-from io import StringIO
 from pathlib import Path
 
 import pytest
 
 import tests.unit.census.support.test_census_given as census_given
 import tests.unit.detection.support.test_detection_draw_record_given as draw_given
-import tests.unit.evals.support.test_eval_display_given as display_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_records_given as records_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
+import tests.unit.support.captured_console as captured_console
 from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
-from evals.cve.nuisance.gate import gate_command as nuisance_gate_command
-from evals.cve.nuisance.gate import gate_console as nuisance_gate_console
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
 from evals.cve.nuisance.gate.gate_command import GateCommandDeps
 from evals.cve.nuisance.gate.gate_session_model import (
@@ -94,10 +91,10 @@ def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list
     ]
 
 
-def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(
-        monkeypatch, nuisance_gate_command, nuisance_gate_console, width=400
-    )
+def a_captured_console(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> captured_console.CapturedOutput:
+    return captured_console.a_captured_console(capsys, monkeypatch, width=400)
 
 
 @dataclass

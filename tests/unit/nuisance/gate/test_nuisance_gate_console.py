@@ -14,12 +14,15 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_report_given import (
     OUTSIDE,
 )
 from tests.unit.nuisance.support.test_nuisance_holdout_run_given import COUNTED_TOOL
+from tests.unit.support.captured_console import a_captured_console
 
 REPORT_PATH = Path("output/nuisance_gate_report.json")
 
 
-def test_the_summary_states_the_commit_and_the_model(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_states_the_commit_and_the_model(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
@@ -30,9 +33,10 @@ def test_the_summary_states_the_commit_and_the_model(monkeypatch: pytest.MonkeyP
 
 
 def test_the_table_shows_each_server_with_its_baseline_runs_and_retests(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
@@ -45,9 +49,10 @@ def test_the_table_shows_each_server_with_its_baseline_runs_and_retests(
 
 
 def test_a_not_gated_server_shows_its_detail_before_its_flagged_tools(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_not_gated_report(), REPORT_PATH)
 
@@ -55,9 +60,10 @@ def test_a_not_gated_server_shows_its_detail_before_its_flagged_tools(
 
 
 def test_the_summary_lists_the_servers_not_admitted_and_outside_the_gate(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
@@ -66,8 +72,10 @@ def test_the_summary_lists_the_servers_not_admitted_and_outside_the_gate(
     assert outside in output.getvalue()
 
 
-def test_a_not_run_reason_holding_markup_prints_literally(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_not_run_reason_holding_markup_prints_literally(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_report_with_a_server_not_run("benign call failed: [bold]boom[/bold]")
 
     print_nuisance_gate_summary(report, REPORT_PATH)
@@ -78,22 +86,24 @@ def test_a_not_run_reason_holding_markup_prints_literally(monkeypatch: pytest.Mo
 
 
 def test_the_summary_states_the_throttled_requests_only_when_there_were_some(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_red_report(throttled_requests=12), REPORT_PATH)
     throttled = output.getvalue()
-    output.truncate(0)
-    output.seek(0)
+    output = a_captured_console(capsys, monkeypatch)
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
     assert "Throttled by the model provider: 12 requests at concurrency 9" in throttled
     assert "Throttled" not in output.getvalue()
 
 
-def test_the_report_paths_name_the_judged_cases_export(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_report_paths_name_the_judged_cases_export(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
@@ -103,13 +113,14 @@ def test_the_report_paths_name_the_judged_cases_export(monkeypatch: pytest.Monke
     ) in output.getvalue()
 
 
-def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_ends_with_the_verdict_panel(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_red_report()
     print_nuisance_gate_summary(report, REPORT_PATH)
     summary = output.getvalue()
-    output.truncate(0)
-    output.seek(0)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_outcome(report.gate.outcome, report.gate.reasons)
 
@@ -117,8 +128,10 @@ def test_the_summary_ends_with_the_verdict_panel(monkeypatch: pytest.MonkeyPatch
     assert summary.count("Gate red.") == 1
 
 
-def test_the_summary_leaves_the_recording_and_the_orphans_out(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_leaves_the_recording_and_the_orphans_out(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_nuisance_gate_summary(given.a_report_that_recorded(), REPORT_PATH)
 

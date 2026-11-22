@@ -3,14 +3,11 @@ import asyncio
 import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
-import tests.unit.evals.support.test_eval_display_given as display_given
 import tests.unit.nuisance.support.test_nuisance_audit_once_given as given
-from evals.cve import launch_audit
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import UndecidableLaunch
-from evals.cve.nuisance import audit as nuisance_audit_module
 from evals.cve.nuisance.audit import (
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
@@ -34,6 +31,7 @@ from tests.unit.nuisance.admission.support.test_nuisance_admission_given import 
     an_admitted_server,
 )
 from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
+from tests.unit.support.captured_console import a_captured_console
 
 
 def test_a_backend_less_server_runs_its_patched_image_as_a_single_container_with_no_mount():
@@ -78,9 +76,10 @@ async def test_a_server_taken_as_down_is_a_launch_failure():
 
 
 async def test_a_server_taken_as_down_at_every_attempt_drops_as_a_launch_failure(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    a_captured_console(capsys, monkeypatch)
     auditor = given.an_auditor_taking_the_server_as_down(audits=NUISANCE_INFRA_ATTEMPTS)
     server = an_admitted_server()
 
@@ -115,9 +114,10 @@ async def test_a_launch_failure_on_a_nuisance_holdout_run_keeps_the_error_type_n
 
 
 async def test_a_missed_model_call_on_a_nuisance_holdout_run_prints_its_cause_not_the_provider_text(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    output = a_captured_console(capsys, monkeypatch)
     refused = given.a_report_refused_with_detail("secret-nonce")
     auditor = given.an_auditor(TYPES_ONLY, launch_given.graph_reporting([refused]))
 
@@ -127,8 +127,10 @@ async def test_a_missed_model_call_on_a_nuisance_holdout_run_prints_its_cause_no
     assert "secret-nonce" not in output.getvalue()
 
 
-async def test_the_run_overrides_reach_the_graph_and_the_client(monkeypatch: pytest.MonkeyPatch):
-    display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+async def test_the_run_overrides_reach_the_graph_and_the_client(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     graphs = launch_given.graph_reporting([grammar.a_report()])
     connect = launch_given.FakeConnect()
     auditor = given.an_auditor(graphs=graphs, connect=connect, overrides=RunOverrides(7, 9, 11))
@@ -141,9 +143,10 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(monkeypatch: pyt
 
 
 async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    a_captured_console(capsys, monkeypatch)
     throttled = run_given.a_report(
         False, missed=MissCause.PROVIDER_THROTTLED, provider=ProviderUsage(throttled_requests=3)
     )
@@ -159,9 +162,10 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
 
 
 async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    output = a_captured_console(capsys, monkeypatch)
     server = an_admitted_server()
 
     outcome = await audit_once(server, given.an_auditor_on_a_noisy_server(lost_calls=1))
@@ -172,9 +176,10 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
 
 
 async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+    output = a_captured_console(capsys, monkeypatch)
 
     await audit_once(an_admitted_server(), given.an_auditor_on_a_noisy_server(lost_calls=0))
 

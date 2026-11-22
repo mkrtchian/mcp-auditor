@@ -1,26 +1,9 @@
-from io import StringIO
-from types import ModuleType
-
-import pytest
-from rich.console import Console
-
 import tests.unit.evals.support.test_eval_baseline_given as baseline_given
-from evals import eval_display
 from evals.cell_grid import CellTag, GateGrid, GridBox, GridRow, GridSection, OutcomeRow
 from evals.gate_outcome import GateMode, GateOutcome, GateResult
 from evals.honeypot.report import HoneypotReport
 from evals.metrics import HoneypotMetrics
 from mcp_auditor.domain.models import AuditCategory
-
-
-def a_captured_console(
-    monkeypatch: pytest.MonkeyPatch, *modules: ModuleType, width: int = 200
-) -> StringIO:
-    buffer = StringIO()
-    shared = Console(file=buffer, width=width)
-    for module in (eval_display, *modules):
-        monkeypatch.setattr(module, "console", shared)
-    return buffer
 
 
 def an_eval_report(

@@ -8,9 +8,9 @@ from tests.unit.detection.support import test_run_detection_recording_given as g
 
 
 def test_an_unconfirmed_recording_names_the_command_that_confirms_it(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
     cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
@@ -23,9 +23,9 @@ def test_an_unconfirmed_recording_names_the_command_that_confirms_it(
 
 
 def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_count(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
@@ -47,9 +47,9 @@ def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_
 
 
 def test_the_confirming_command_leaves_the_default_run_count_and_budget_out(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
@@ -60,9 +60,9 @@ def test_the_confirming_command_leaves_the_default_run_count_and_budget_out(
 
 
 def test_a_confirmed_recording_says_to_commit_the_baseline(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.CONFIRMED)
 
     cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
@@ -72,9 +72,9 @@ def test_a_confirmed_recording_says_to_commit_the_baseline(
 
 
 def test_a_recording_prints_the_outcome_once_before_the_recorded_baselines(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
     cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))

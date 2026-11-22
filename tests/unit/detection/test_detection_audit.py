@@ -30,9 +30,9 @@ from tests.unit.detection.support.detection_audits import (
     a_report_missing,
     a_target_launching,
     an_auditor_reporting,
-    captured_console,
 )
 from tests.unit.detection.support.test_detection_oracle_given import a_detected_grade
+from tests.unit.support.captured_console import a_captured_console
 
 _REFUSED = frozenset({MissCause.PROVIDER_REFUSAL})
 
@@ -46,8 +46,10 @@ def test_a_misconfigured_model_fails_before_any_target_is_launched(
         audit_target(budget=10, throttles=SessionThrottles(), places={})
 
 
-async def test_a_throttled_audit_is_reported_with_its_count(monkeypatch: pytest.MonkeyPatch):
-    output = captured_console(monkeypatch)
+async def test_a_throttled_audit_is_reported_with_its_count(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(given.a_report_throttled(2))
 
     await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -57,9 +59,10 @@ async def test_a_throttled_audit_is_reported_with_its_count(monkeypatch: pytest.
 
 
 async def test_an_audit_never_throttled_says_nothing_of_throttling(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(given.a_report_throttled(0))
 
     await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -68,9 +71,10 @@ async def test_an_audit_never_throttled_says_nothing_of_throttling(
 
 
 async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_on_a_noisy_server(non_protocol_lines=2, lost_calls=1)
 
     outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -81,9 +85,10 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
 
 
 async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_on_a_noisy_server(non_protocol_lines=2, lost_calls=0)
 
     await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -92,9 +97,10 @@ async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
 
 
 async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_not_refused(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    captured_console(monkeypatch)
+    a_captured_console(capsys, monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report(server_command="second attempt"))
     attempt = ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
@@ -105,9 +111,10 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
 
 
 async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     unreadable = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.UNREADABLE_ANSWER}))
     outcomes: list[AttemptOutcome[GradedAudit]] = [
         IncompleteAttempt(grammar.a_report(), _REFUSED),
@@ -129,9 +136,10 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
 
 
 async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     too_long = IncompleteAttempt(grammar.a_report(), frozenset({MissCause.PROMPT_TOO_LONG}))
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
     attempt = ScriptedAttempts[GradedAudit]([too_long, graded])
@@ -145,8 +153,10 @@ async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
     ) in printed
 
 
-async def test_a_run_skipped_on_launch_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
-    captured_console(monkeypatch)
+async def test_a_run_skipped_on_launch_is_not_audited_again(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     attempt = ScriptedAttempts[GradedAudit]([None])
 
     grade = await graded_despite_missed_model_calls(TARGET, attempt)
@@ -217,9 +227,10 @@ async def test_a_detecting_run_is_regraded_on_the_credits_the_replay_strikes():
 
 
 async def test_an_unchecked_replay_is_printed_with_its_reason_and_attempt_causes(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     unchecked = ReplayOutcome(
         CreditCheck(frozenset(), unchecked=True),
         UncheckedReason.NO_ATTEMPT_DECIDED,
@@ -234,8 +245,10 @@ async def test_an_unchecked_replay_is_printed_with_its_reason_and_attempt_causes
     assert line in output.getvalue()
 
 
-async def test_the_run_overrides_reach_the_graph_and_the_client(monkeypatch: pytest.MonkeyPatch):
-    captured_console(monkeypatch)
+async def test_the_run_overrides_reach_the_graph_and_the_client(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     graphs = launch_given.graph_reporting([grammar.a_report()])
     connect = launch_given.FakeConnect()
     auditor = launch_given.an_auditor(graphs=graphs, connect=connect)
@@ -258,11 +271,12 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(monkeypatch: pyt
     ],
 )
 async def test_the_graph_audits_the_target_tools_filter_unless_every_tool_is_audited(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
     overrides: RunOverrides | None,
     tools_filter: frozenset[str] | None,
 ):
-    captured_console(monkeypatch)
+    a_captured_console(capsys, monkeypatch)
     graphs = launch_given.graph_reporting([grammar.a_report()])
     auditor = launch_given.an_auditor(graphs=graphs)
 
@@ -271,8 +285,10 @@ async def test_the_graph_audits_the_target_tools_filter_unless_every_tool_is_aud
     assert graphs.tools_filters == [tools_filter]
 
 
-async def test_every_attempt_of_a_target_is_billed_to_it(monkeypatch: pytest.MonkeyPatch):
-    captured_console(monkeypatch)
+async def test_every_attempt_of_a_target_is_billed_to_it(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(*[given.a_report_billed(100, 10)] * 2)
     target = a_target_launching()
     throttles = SessionThrottles()

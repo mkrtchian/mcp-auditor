@@ -27,14 +27,15 @@ from tests.unit.detection.support.detection_audits import (
     a_report_missing,
     a_target_launching,
     an_auditor_reporting,
-    captured_console,
 )
+from tests.unit.support.captured_console import a_captured_console
 
 
 async def test_a_run_skipped_on_a_detection_holdout_run_prints_the_error_type_without_its_message(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
 
     await attempt_once(target, launch_given.an_auditor(TYPES_ONLY), SessionThrottles(), {})
@@ -46,9 +47,10 @@ async def test_a_run_skipped_on_a_detection_holdout_run_prints_the_error_type_wi
 
 
 async def test_a_run_skipped_on_the_acceptance_layer_prints_the_error_message(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     target = given.a_target_failing_to_launch(LaunchError("secret-nonce"))
 
     await attempt_once(target, launch_given.an_auditor(), SessionThrottles(), {})
@@ -57,9 +59,10 @@ async def test_a_run_skipped_on_the_acceptance_layer_prints_the_error_message(
 
 
 async def test_a_missed_model_call_on_a_detection_holdout_run_shows_its_cause_not_the_provider_text(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     refused = a_report_missing(MissCause.PROVIDER_REFUSAL)
     auditor = an_auditor_reporting(refused, report_detail=TYPES_ONLY)
 
@@ -75,9 +78,9 @@ _SHAPES = pytest.mark.parametrize("grouped", [True, False], ids=["grouped", "bar
 
 @_SHAPES
 async def test_a_server_failing_inside_the_graph_is_a_run_skipped(
-    monkeypatch: pytest.MonkeyPatch, grouped: bool
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, grouped: bool
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_raising(TimeoutError("list_tools timed out"), grouped=grouped)
 
     outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -86,8 +89,10 @@ async def test_a_server_failing_inside_the_graph_is_a_run_skipped(
     assert f"{TARGET.flaw_id} run skipped" in output.getvalue()
 
 
-async def test_a_server_taken_as_down_is_a_run_skipped(monkeypatch: pytest.MonkeyPatch):
-    output = captured_console(monkeypatch)
+async def test_a_server_taken_as_down_is_a_run_skipped(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_taking_the_server_as_down()
 
     outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -97,9 +102,10 @@ async def test_a_server_taken_as_down_is_a_run_skipped(monkeypatch: pytest.Monke
 
 
 async def test_a_server_taken_as_down_on_a_detection_holdout_run_drops_the_run_as_a_launch_failure(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    captured_console(monkeypatch)
+    a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_taking_the_server_as_down(audits=HOLDOUT_INFRA_ATTEMPTS)
     target = a_target_launching()
 
@@ -111,9 +117,10 @@ async def test_a_server_taken_as_down_on_a_detection_holdout_run_drops_the_run_a
 
 
 async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    captured_console(monkeypatch)
+    a_captured_console(capsys, monkeypatch)
     target = a_target_launching(Launch("docker", ["run", "--an-unknown-option", "v", "x"]))
 
     with pytest.raises(UndecidableLaunch):
@@ -121,8 +128,10 @@ async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run(
 
 
 @_SHAPES
-async def test_a_fatal_provider_error_stops_the_run(monkeypatch: pytest.MonkeyPatch, grouped: bool):
-    captured_console(monkeypatch)
+async def test_a_fatal_provider_error_stops_the_run(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, grouped: bool
+):
+    a_captured_console(capsys, monkeypatch)
     error = ModelAuthenticationError("invalid key")
     auditor = given.an_audit_raising(error, grouped=grouped)
 
@@ -134,9 +143,9 @@ async def test_a_fatal_provider_error_stops_the_run(monkeypatch: pytest.MonkeyPa
 
 @_SHAPES
 async def test_a_transient_provider_error_throws_the_attempt_away_naming_it_without_its_message(
-    monkeypatch: pytest.MonkeyPatch, grouped: bool
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, grouped: bool
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_raising(ModelAPIError("secret-nonce"), grouped=grouped)
 
     outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
@@ -148,8 +157,10 @@ async def test_a_transient_provider_error_throws_the_attempt_away_naming_it_with
     assert "secret-nonce" not in printed
 
 
-async def test_a_provider_error_attempt_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
-    captured_console(monkeypatch)
+async def test_a_provider_error_attempt_is_not_audited_again(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     attempt = ScriptedAttempts[GradedAudit]([ProviderErrorAttempt("ModelAPIError")])
 
     grade = await graded_despite_missed_model_calls(TARGET, attempt)
@@ -158,8 +169,10 @@ async def test_a_provider_error_attempt_is_not_audited_again(monkeypatch: pytest
     assert attempt.calls == 1
 
 
-async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.MonkeyPatch):
-    captured_console(monkeypatch)
+async def test_a_throttled_attempt_is_not_audited_again(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    a_captured_console(capsys, monkeypatch)
     attempt = ScriptedAttempts[GradedAudit]([ThrottledAttempt()])
 
     grade = await graded_despite_missed_model_calls(TARGET, attempt)
@@ -169,9 +182,10 @@ async def test_a_throttled_attempt_is_not_audited_again(monkeypatch: pytest.Monk
 
 
 async def test_an_attempt_holding_a_throttled_model_call_is_thrown_away_before_any_grading(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(a_report_missing(MissCause.PROVIDER_THROTTLED))
     target = a_target_launching()
 
@@ -185,9 +199,10 @@ async def test_an_attempt_holding_a_throttled_model_call_is_thrown_away_before_a
 
 
 async def test_an_attempt_throttled_and_refused_reads_as_throttled(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    captured_console(monkeypatch)
+    a_captured_console(capsys, monkeypatch)
     report = a_report_missing(MissCause.PROVIDER_REFUSAL, MissCause.PROVIDER_THROTTLED)
     auditor = an_auditor_reporting(report)
 

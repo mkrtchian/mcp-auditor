@@ -97,9 +97,9 @@ def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
 
 
 def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_beside_an_unrecorded_server(tmp_path)
 
@@ -126,9 +126,9 @@ def test_the_gate_audits_only_the_selected_servers(tmp_path: Path):
 
 
 def test_an_unconfirmed_gate_recording_names_the_command_that_confirms_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
@@ -143,9 +143,9 @@ def test_an_unconfirmed_gate_recording_names_the_command_that_confirms_it(
 
 
 def test_the_confirming_gate_command_repeats_the_server_and_a_non_default_run_count(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
     server = given.GATE_SERVER
@@ -162,9 +162,9 @@ def test_the_confirming_gate_command_repeats_the_server_and_a_non_default_run_co
 
 
 def test_the_confirming_gate_command_leaves_the_default_run_count_out(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 
@@ -176,9 +176,9 @@ def test_the_confirming_gate_command_leaves_the_default_run_count_out(
 
 
 def test_a_recorded_gate_baseline_prints_once_after_the_verdict(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = given.a_captured_console(capsys, monkeypatch)
     recording = given.GreenRecording(tmp_path, BaselineStatus.CONFIRMED)
     gate_set = given.a_gate_set_of_one_server(tmp_path)
 

@@ -4,12 +4,15 @@ import pytest
 
 import tests.unit.evals.support.test_judge_display_given as given
 from evals.judge.display import print_summary
+from tests.unit.support.captured_console import a_captured_console
 
 REPORT_PATH = Path("output/judge_eval_report.json")
 
 
-def test_the_summary_lists_the_cases_that_left_unchanged(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_lists_the_cases_that_left_unchanged(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     result = given.a_result_with_a_flip_not_reproduced()
 
     print_summary(result, given.a_report(), REPORT_PATH, given.the_outcomes_of(result))
@@ -20,8 +23,10 @@ def test_the_summary_lists_the_cases_that_left_unchanged(monkeypatch: pytest.Mon
     assert "partial:" not in printed
 
 
-def test_the_summary_explains_a_partial_case(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_explains_a_partial_case(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     result = given.a_result_with_a_partial_case()
 
     print_summary(result, given.a_report(), REPORT_PATH, given.the_outcomes_of(result))
@@ -34,9 +39,10 @@ def test_the_summary_explains_a_partial_case(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_the_summary_states_the_throttled_requests_and_the_concurrency(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
     result = given.a_result_with_a_flip_not_reproduced()
     report = given.a_report(throttled_requests=4, concurrency=30)
 

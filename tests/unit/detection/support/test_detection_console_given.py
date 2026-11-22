@@ -1,11 +1,6 @@
 from datetime import date
-from io import StringIO
-
-import pytest
 
 import tests.unit.detection.support.test_detection_oracle_given as oracle_given
-import tests.unit.evals.support.test_eval_display_given as display_given
-from evals.cve.detection import console as detection_console
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
 from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedStatus
 from evals.cve.grammar import TargetStatus
@@ -13,10 +8,6 @@ from evals.gate_outcome import GateOutcome
 
 DETECTED_FLAW = "CVE-2025-53109"
 NOT_RUN_FLAW = "CVE-2025-68143"
-
-
-def a_captured_console(monkeypatch: pytest.MonkeyPatch, width: int = 200) -> StringIO:
-    return display_given.a_captured_console(monkeypatch, detection_console, width=width)
 
 
 def a_report_with_a_not_run_target(reasons: list[str], gated: bool) -> DetectionReport:

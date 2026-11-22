@@ -1,12 +1,7 @@
-from io import StringIO
-
 import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
-import tests.unit.evals.support.test_eval_display_given as display_given
-from evals.cve import launch_audit
 from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS
-from evals.cve.nuisance import audit as nuisance_audit_module
 from evals.cve.nuisance.audit import (
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
@@ -27,13 +22,14 @@ from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
     PROVIDER_ERROR,
     ScriptedCalls,
 )
+from tests.unit.support.captured_console import CapturedOutput, a_captured_console
 
 type Attempt = ScriptedCalls[NuisanceAudit | LaunchFailed | ProviderError]
 
 
 @pytest.fixture(autouse=True)
-def output(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(monkeypatch, nuisance_audit_module, launch_audit)
+def output(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> CapturedOutput:
+    return a_captured_console(capsys, monkeypatch)
 
 
 async def test_a_clean_report_stands_at_the_first_call():
@@ -88,7 +84,7 @@ async def test_a_launch_failing_at_every_attempt_drops_the_run():
     assert attempt.calls == NUISANCE_INFRA_ATTEMPTS
 
 
-async def test_a_run_throttled_at_any_attempt_drops_as_throttled(output: StringIO):
+async def test_a_run_throttled_at_any_attempt_drops_as_throttled(output: CapturedOutput):
     throttled = run_given.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)
     attempt: Attempt = ScriptedCalls([PROVIDER_ERROR, LaunchFailed("no image"), throttled])
 
@@ -119,7 +115,7 @@ async def test_a_fatal_provider_error_of_an_attempt_stops_the_run_at_once():
 
 
 async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_error(
-    output: StringIO,
+    output: CapturedOutput,
 ):
     attempt: Attempt = ScriptedCalls([PROVIDER_ERROR] * NUISANCE_INFRA_ATTEMPTS)
 
@@ -165,7 +161,7 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
 
 @pytest.mark.parametrize("cause", [MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG])
 async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
-    cause: MissCause, output: StringIO
+    cause: MissCause, output: CapturedOutput
 ):
     incomplete = run_given.an_audit(False, missed=cause)
     clean = run_given.an_audit(False)
@@ -181,7 +177,7 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
 
 
 async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
-    output: StringIO,
+    output: CapturedOutput,
 ):
     incomplete = run_given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([incomplete] * INCOMPLETE_ATTEMPTS)

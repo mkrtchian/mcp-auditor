@@ -1,20 +1,11 @@
-from io import StringIO
 from typing import Any
 
-import pytest
-
-import tests.unit.evals.support.test_eval_display_given as display_given
 import tests.unit.evals.support.test_judge_outcomes_given as outcomes_given
 from evals.gate import CellComparison, CellOutcome, FlipCause
-from evals.judge import display as judge_display
 from evals.judge.outcomes import CaseOutcomes, case_outcomes
 from evals.judge.session_model import JudgeSessionResult
 
 FLIPPED_ID = outcomes_given.FLIPPED_ID
-
-
-def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
-    return display_given.a_captured_console(monkeypatch, judge_display)
 
 
 def a_result_with_a_flip_not_reproduced() -> JudgeSessionResult:

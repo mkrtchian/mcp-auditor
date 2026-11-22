@@ -6,12 +6,15 @@ import tests.unit.detection.support.test_detection_console_given as given
 from evals.cve.detection.console import print_detection_summary
 from evals.eval_display import print_outcome
 from evals.gate_outcome import GateOutcome
+from tests.unit.support.captured_console import a_captured_console
 
 REPORT_PATH = Path("output/detection_report.json")
 
 
-def test_the_summary_shows_each_target_id_whole(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch, width=60)
+def test_the_summary_shows_each_target_id_whole(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch, width=60)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
@@ -20,8 +23,10 @@ def test_the_summary_shows_each_target_id_whole(monkeypatch: pytest.MonkeyPatch)
     assert sum(line.startswith("CVE-2025-53355") for line in lines) == 1  # gate row only
 
 
-def test_the_summary_states_the_tally(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_states_the_tally(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
@@ -29,9 +34,10 @@ def test_the_summary_states_the_tally(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_the_summary_states_the_throttled_requests_and_the_concurrency(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(throttled_requests=7), REPORT_PATH)
 
@@ -39,17 +45,20 @@ def test_the_summary_states_the_throttled_requests_and_the_concurrency(
 
 
 def test_the_summary_says_nothing_of_throttling_when_nothing_was_throttled(
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    output = given.a_captured_console(monkeypatch)
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
     assert "Throttled" not in output.getvalue()
 
 
-def test_the_report_paths_name_the_judged_cases_export(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_report_paths_name_the_judged_cases_export(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
@@ -59,13 +68,14 @@ def test_the_report_paths_name_the_judged_cases_export(monkeypatch: pytest.Monke
     ) in output.getvalue()
 
 
-def test_the_summary_ends_with_the_outcome_panel(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_ends_with_the_outcome_panel(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_gated_report()
     print_detection_summary(report, REPORT_PATH)
     summary = output.getvalue()
-    output.truncate(0)
-    output.seek(0)
+    output = a_captured_console(capsys, monkeypatch)
 
     assert report.gate is not None
     print_outcome(GateOutcome.RED, report.gate.reasons)
@@ -73,8 +83,10 @@ def test_the_summary_ends_with_the_outcome_panel(monkeypatch: pytest.MonkeyPatch
     assert summary.endswith(output.getvalue())
 
 
-def test_a_no_baseline_summary_says_so_and_prints_no_outcome_panel(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_no_baseline_summary_says_so_and_prints_no_outcome_panel(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_no_baseline_report(), REPORT_PATH)
 
@@ -83,24 +95,30 @@ def test_a_no_baseline_summary_says_so_and_prints_no_outcome_panel(monkeypatch: 
     assert "Not comparable." not in output.getvalue()
 
 
-def test_the_summary_never_prints_a_gate_line(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_summary_never_prints_a_gate_line(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
     assert "Gate:" not in output.getvalue()
 
 
-def test_the_commit_line_marks_a_dirty_tree(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_commit_line_marks_a_dirty_tree(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(dirty=True), REPORT_PATH)
 
     assert "Commit: c0ffee (dirty tree)" in output.getvalue()
 
 
-def test_the_commit_line_of_a_clean_tree_carries_no_mark(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_commit_line_of_a_clean_tree_carries_no_mark(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_gated_report(), REPORT_PATH)
 
@@ -108,8 +126,10 @@ def test_the_commit_line_of_a_clean_tree_carries_no_mark(monkeypatch: pytest.Mon
     assert "dirty" not in output.getvalue()
 
 
-def test_a_no_baseline_summary_lists_the_targets_not_run(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_no_baseline_summary_lists_the_targets_not_run(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_report_with_a_not_run_target(["exploit not aimed"], gated=False)
 
     print_detection_summary(report, REPORT_PATH)
@@ -118,8 +138,10 @@ def test_a_no_baseline_summary_lists_the_targets_not_run(monkeypatch: pytest.Mon
     assert f"- {given.NOT_RUN_FLAW}: exploit not aimed" in output.getvalue()
 
 
-def test_a_gated_summary_leaves_the_targets_not_run_to_the_gate(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_gated_summary_leaves_the_targets_not_run_to_the_gate(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_report_with_a_not_run_target(["exploit not aimed"], gated=True)
 
     print_detection_summary(report, REPORT_PATH)
@@ -127,8 +149,10 @@ def test_a_gated_summary_leaves_the_targets_not_run_to_the_gate(monkeypatch: pyt
     assert "Not run, pre-run check failed:" not in output.getvalue()
 
 
-def test_the_cost_title_carries_the_price_date(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_the_cost_title_carries_the_price_date(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_priced_no_baseline_report(), REPORT_PATH)
 
@@ -139,8 +163,10 @@ def test_the_cost_title_carries_the_price_date(monkeypatch: pytest.MonkeyPatch):
     assert "$0.7500" in output.getvalue()
 
 
-def test_a_not_run_condition_holding_markup_prints_literally(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_not_run_condition_holding_markup_prints_literally(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
     report = given.a_report_with_a_not_run_target(["[bold]dead[/bold]"], gated=False)
 
     print_detection_summary(report, REPORT_PATH)
@@ -148,8 +174,10 @@ def test_a_not_run_condition_holding_markup_prints_literally(monkeypatch: pytest
     assert "[bold]dead[/bold]" in output.getvalue()
 
 
-def test_a_gate_detail_holding_markup_prints_literally(monkeypatch: pytest.MonkeyPatch):
-    output = given.a_captured_console(monkeypatch)
+def test_a_gate_detail_holding_markup_prints_literally(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
 
     print_detection_summary(given.a_report_gated_on_a_detail("[bold]dead[/bold]"), REPORT_PATH)
 
