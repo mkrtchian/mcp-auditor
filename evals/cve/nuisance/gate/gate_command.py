@@ -52,6 +52,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
 )
 from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.results import ServerExit
 from evals.eval_display import console
 from evals.eval_session import Refused
 from evals.export import export_nuisance_gate_judged_cases
@@ -81,7 +82,7 @@ def gate(args: argparse.Namespace) -> int:
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
     current = nuisance_acceptance_servers(walk_inputs)
-    servers = [] if admission is None else gate_servers(admission, current)
+    servers: list[AdmittedServer] = [] if admission is None else gate_servers(admission, current)
     if admission is None or not servers:
         _print_empty_gate(admission, current)
         return 0
@@ -112,7 +113,7 @@ def _selected(servers: list[AdmittedServer], packages: list[str]) -> list[Admitt
 
 
 def _print_empty_gate(admission: NuisanceAdmission | None, current: set[str]) -> None:
-    outside = [] if admission is None else outside_gate(admission, current)
+    outside: list[ServerExit] = [] if admission is None else outside_gate(admission, current)
     if not outside:
         print("no nuisance acceptance server is admitted")
         return

@@ -17,7 +17,7 @@ _TAIL_LENGTH = MAX_SHOWN_LENGTH - _HEAD_LENGTH
 
 
 def rendered_response(response: dict[str, Any] | str) -> str:
-    return json.dumps(response) if isinstance(response, dict) else str(response)
+    return json.dumps(response) if isinstance(response, dict) else response
 
 
 def shown_to_model(text: str) -> str:

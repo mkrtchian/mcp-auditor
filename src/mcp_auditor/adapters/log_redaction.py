@@ -2,6 +2,7 @@
 import logging
 from collections.abc import Generator
 from contextlib import contextmanager
+from typing import override
 
 from mcp_auditor.domain.redaction import Redaction
 
@@ -47,6 +48,7 @@ class RedactingFilter(logging.Filter):
         super().__init__()
         self._redaction = redaction
 
+    @override
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = self._redaction.text(record.getMessage())
         record.args = None

@@ -13,6 +13,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from typing import override
 
 _HTTP_LOGGERS = ("httpx", "httpx2")
 _TOO_MANY_REQUESTS = 429
@@ -47,6 +48,7 @@ def install_throttle_log_handler() -> None:
 
 
 class _ThrottleLogHandler(logging.Handler):
+    @override
     def emit(self, record: logging.LogRecord) -> None:
         tally = _current_tally.get()
         if tally is not None and _is_throttled_response(record):

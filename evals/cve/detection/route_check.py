@@ -135,9 +135,9 @@ def _minimal_arguments(tool: ToolDefinition, scope: str | None) -> dict[str, Any
 def _filler(name: str, spec: dict[str, Any], scope: str | None) -> Any:
     json_type = spec.get("type")
     if json_type == "array":
-        return []
+        return list[Any]()
     if json_type == "object":
-        return {}
+        return dict[str, Any]()
     if json_type in ("integer", "number"):
         return 0
     if json_type == "boolean":

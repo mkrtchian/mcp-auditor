@@ -110,7 +110,7 @@ class StdioMCPClient:
         except Exception as exc:
             return ToolResponse(content=str(exc), is_error=True, error_type=type(exc).__name__)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
-        return ToolResponse(content=text, is_error=bool(result.isError))
+        return ToolResponse(content=text, is_error=result.isError)
 
     async def ping(self) -> bool:
         if self._owner.lost:

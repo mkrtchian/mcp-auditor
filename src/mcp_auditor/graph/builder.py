@@ -62,8 +62,8 @@ def build_graph(
     audit_subgraph = _build_audit_tool_subgraph(llm, server, effective_judge)
     chain_subgraph = _build_chain_audit_subgraph(llm, server, effective_judge)
 
-    builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
-    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))
+    builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
+    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))  # pyrefly: ignore[bad-argument-type]
     builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("audit_tool", audit_subgraph)
     builder.add_node("chain_audit_tool", chain_subgraph)
@@ -98,8 +98,9 @@ def _build_audit_tool_subgraph(
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     redacting = server.redacting
-    builder: StateGraph[Any, Any, Any, Any] = StateGraph(
-        AuditToolState, input_schema=AuditToolInput
+    builder: StateGraph[Any, Any, Any, Any] = StateGraph(  # pyrefly: ignore[bad-specialization]
+        AuditToolState,
+        input_schema=AuditToolInput,  # pyrefly: ignore[bad-argument-type]
     )
     builder.add_node("generate_test_cases", make_generate_test_cases(llm, redacting))
     builder.add_node("execute_tool", make_execute_tool(server))
@@ -123,8 +124,9 @@ def _build_chain_audit_subgraph(
     judge_llm: LLMPort,
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     redacting = server.redacting
-    builder: StateGraph[Any, Any, Any, Any] = StateGraph(
-        ChainAuditState, input_schema=ChainAuditInput
+    builder: StateGraph[Any, Any, Any, Any] = StateGraph(  # pyrefly: ignore[bad-specialization]
+        ChainAuditState,
+        input_schema=ChainAuditInput,  # pyrefly: ignore[bad-argument-type]
     )
     builder.add_node("plan_chains", make_plan_chains(llm, redacting))
     builder.add_node("prepare_chain", prepare_chain)
@@ -166,8 +168,8 @@ def build_dry_run_graph(
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     subgraph = _build_generate_only_subgraph(llm, server.redacting)
 
-    builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)
-    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))
+    builder: StateGraph[Any, Any, Any, Any] = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
+    builder.add_node("discover_tools", make_discover_tools(server, tools_filter=tools_filter))  # pyrefly: ignore[bad-argument-type]
     builder.add_node("prepare_tool", prepare_tool)
     builder.add_node("generate_cases", subgraph)
     builder.add_node("build_tool_report", build_tool_report)
@@ -182,8 +184,9 @@ def build_dry_run_graph(
 def _build_generate_only_subgraph(
     llm: LLMPort, redacting: bool
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
-    builder: StateGraph[Any, Any, Any, Any] = StateGraph(
-        AuditToolState, input_schema=AuditToolInput
+    builder: StateGraph[Any, Any, Any, Any] = StateGraph(  # pyrefly: ignore[bad-specialization]
+        AuditToolState,
+        input_schema=AuditToolInput,  # pyrefly: ignore[bad-argument-type]
     )
     builder.add_node("generate_test_cases", make_generate_test_cases(llm, redacting))
     builder.add_node("collect_cases", collect_generated_cases)

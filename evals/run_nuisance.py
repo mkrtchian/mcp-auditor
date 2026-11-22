@@ -18,7 +18,7 @@ import argparse
 import asyncio
 import dataclasses
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -177,7 +177,7 @@ def _walk(args: argparse.Namespace) -> int:
     return 0
 
 
-def _walk_line(server: NuisanceServer, outcomes: dict[str, str]) -> str:
+def _walk_line(server: NuisanceServer, outcomes: Mapping[str, str]) -> str:
     how = "addition" if server.in_addition else outcomes[server.reaching_flaw]
     line = (
         f"  #{server.reaching_position} {server.server_package}"

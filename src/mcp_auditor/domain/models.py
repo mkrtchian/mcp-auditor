@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, override
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -31,21 +31,25 @@ class Severity(StrEnum):
     HIGH = "high"
     CRITICAL = "critical"
 
+    @override
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, Severity):
             return NotImplemented
         return self._rank() >= other._rank()
 
+    @override
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, Severity):
             return NotImplemented
         return self._rank() > other._rank()
 
+    @override
     def __le__(self, other: object) -> bool:
         if not isinstance(other, Severity):
             return NotImplemented
         return self._rank() <= other._rank()
 
+    @override
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Severity):
             return NotImplemented

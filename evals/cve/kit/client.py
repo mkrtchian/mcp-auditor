@@ -115,7 +115,7 @@ class KitMCPClient:
         except Exception as exc:
             return KitResponse(str(exc), True)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
-        return KitResponse(text, bool(result.isError))
+        return KitResponse(text, result.isError)
 
 
 def _only_broken_streams(group: BaseExceptionGroup) -> bool:

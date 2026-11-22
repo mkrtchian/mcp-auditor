@@ -86,7 +86,7 @@ def _string_values(value: Any) -> Iterator[str]:
         yield value
     elif isinstance(value, dict):
         for item in value.values():  # pyright: ignore[reportUnknownVariableType]
-            yield from _string_values(item)
-    elif isinstance(value, list | tuple):
+            yield from _string_values(item)  # pyrefly: ignore[unknown-argument-type]
+    elif isinstance(value, list | tuple):  # pyrefly: ignore[implicit-any-type-argument]
         for item in value:  # pyright: ignore[reportUnknownVariableType]
-            yield from _string_values(item)
+            yield from _string_values(item)  # pyrefly: ignore[unknown-argument-type]
