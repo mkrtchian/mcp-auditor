@@ -1,7 +1,6 @@
 from typing import Any
 
-import tests.unit.auditor.support.test_unsent_calls_given as given
-from mcp_auditor.domain.models import CoverageGap
+from mcp_auditor.domain.models import AttackChain, CoverageGap, ToolReport
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.unsent_calls import (
     count_unsent_chain,
@@ -12,14 +11,21 @@ from tests.unit.auditor.support.audited_servers import (
     a_server_taken_as_down,
     a_server_that_stopped,
 )
+from tests.unit.auditor.support.chain_states import (
+    a_chain_audit_state,
+    a_chain_goal,
+    a_chain_step,
+    a_fail_judge_result,
+    a_tool,
+)
 
 
 class TestReportToolsLeft:
     def test_gives_each_tool_not_audited_a_server_down_gap(self):
-        tools = [given.a_tool(name="audited"), given.a_tool(name="left")]
+        tools = [a_tool(name="audited"), a_tool(name="left")]
         state: dict[str, Any] = {
             "discovered_tools": tools,
-            "tool_reports": [given.a_tool_report(tool_name="audited")],
+            "tool_reports": [ToolReport(tool=a_tool(name="audited"), cases=[])],
             "test_budget": 4,
             "chain_budget": 2,
         }
@@ -39,7 +45,7 @@ class TestReportToolsLeft:
 
 class TestCountUnsentChain:
     def test_counts_a_chain_whose_first_step_is_not_sent_and_records_none(self):
-        state = given.a_chain_audit_state(current_chain_goal=given.a_chain_goal())
+        state = a_chain_audit_state(current_chain_goal=a_chain_goal())
 
         result = count_unsent_chain(state)
 
@@ -49,16 +55,23 @@ class TestCountUnsentChain:
 
 class TestCountChainsNotPlanned:
     async def test_counts_the_chain_budget_with_the_cause(self):
-        count = make_count_chains_not_planned(await a_server_that_stopped(given.a_tool()))
+        count = make_count_chains_not_planned(await a_server_that_stopped(a_tool()))
 
-        result = count(given.a_chain_audit_state(chain_budget=3))
+        result = count(a_chain_audit_state(chain_budget=3))
 
         assert result["unsent_chains"] == 3
         assert result["unsent_cause"] == UnsentCause.TOOL_TIMING_OUT
 
     async def test_drops_the_chains_of_the_tool_audited_before(self):
-        server, _ = await a_server_taken_as_down(given.a_tool())
-        state = given.a_chain_audit_state(chain_budget=2, completed_chains=[given.a_judged_chain()])
+        server, _ = await a_server_taken_as_down(a_tool())
+        state = a_chain_audit_state(
+            chain_budget=2,
+            completed_chains=[
+                AttackChain(
+                    goal=a_chain_goal(), steps=[a_chain_step()], judge_result=a_fail_judge_result()
+                )
+            ],
+        )
 
         result = make_count_chains_not_planned(server)(state)
 

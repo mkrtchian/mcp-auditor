@@ -1,7 +1,5 @@
-import tests.unit.auditor.support.test_chain_nodes_given as given
-import tests.unit.auditor.support.test_chain_nodes_then as then
 from mcp_auditor.domain.model_calls import ModelCallKind
-from mcp_auditor.domain.models import AuditCategory, ChainPlanBatch, EvalVerdict, Severity
+from mcp_auditor.domain.models import AuditCategory, ChainPlanBatch, JudgeResult, Severity
 from mcp_auditor.domain.server_liveness import UnsentCause
 from mcp_auditor.graph.chain_nodes import (
     abandon_chain,
@@ -18,6 +16,7 @@ from tests.unit.auditor.support.chain_states import (
     a_payload,
     a_tool,
 )
+from tests.unit.auditor.support.graph_builders import a_judgment
 from tests.unit.auditor.support.missed_chain_calls import (
     refused_call_recorded,
 )
@@ -89,8 +88,8 @@ class TestPrepareChain:
 
 
 class TestMakeJudgeChain:
-    async def test_stamps_identity_and_deterministic_payload(self):
-        judgment = given.a_judgment(verdict=EvalVerdict.FAIL, severity=Severity.HIGH)
+    async def test_judges_the_chain_on_the_arguments_of_its_last_step(self):
+        judgment = a_judgment(severity=Severity.HIGH)
         llm = FakeLLM([judgment])
         node = make_judge_chain(llm)
         tool = a_tool()
@@ -107,12 +106,13 @@ class TestMakeJudgeChain:
 
         [chain] = result["completed_chains"]
         assert chain.steps == steps
-        then.chain_judge_result_is(
-            chain,
+        assert chain.judge_result == JudgeResult(
             tool_name=DEFAULT_TOOL_NAME,
             category=AuditCategory.INJECTION,
-            payload={"path": "/etc/shadow"},
-            verdict=EvalVerdict.FAIL,
+            arguments={"path": "/etc/shadow"},
+            verdict=judgment.verdict,
+            justification=judgment.justification,
+            severity=judgment.severity,
         )
 
     async def test_a_refused_judgment_completes_the_chain_unjudged(self):
@@ -143,7 +143,7 @@ class TestMakeJudgeChain:
             blocked_step_reason="destructive SQL command: DROP TABLE",
         )
 
-        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+        result = await make_judge_chain(FakeLLM([a_judgment()]))(state)
 
         [chain] = result["completed_chains"]
         assert (chain.steps, chain.blocked_reason) == (
@@ -161,7 +161,7 @@ class TestMakeJudgeChain:
             unsent_step_cause=UnsentCause.SERVER_DOWN,
         )
 
-        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+        result = await make_judge_chain(FakeLLM([a_judgment()]))(state)
 
         [chain] = result["completed_chains"]
         assert (chain.steps, chain.blocked_reason) == ([executed], None)
@@ -174,7 +174,7 @@ class TestMakeJudgeChain:
             chain_cut_by_relaunch=True,
         )
 
-        result = await make_judge_chain(FakeLLM([given.a_judgment()]))(state)
+        result = await make_judge_chain(FakeLLM([a_judgment()]))(state)
 
         [chain] = result["completed_chains"]
         assert chain.cut_by_relaunch
