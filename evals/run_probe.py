@@ -39,7 +39,7 @@ from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage, TestCaseBatch
-from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, ProviderThrottled, UnparseableOutput
+from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, ProviderThrottled, UnreadableAnswer
 
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
@@ -173,9 +173,9 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
     started = time.perf_counter()
     try:
         output, usage = await llm.generate_structured(call.prompt, schema_for(call.schema_name))
-    except UnparseableOutput as unparseable:
-        outcome, usage = CallOutcome.PARSE_FAILURE, unparseable.usage
-        truncated_attempts = unparseable.truncated_attempts
+    except UnreadableAnswer as unreadable:
+        outcome, usage = CallOutcome.PARSE_FAILURE, unreadable.usage
+        truncated_attempts = unreadable.truncated_parse_attempts
     except ProviderRefusal as refusal:
         outcome, usage = CallOutcome.PARSE_FAILURE, refusal.usage
         error = refusal.provider_message

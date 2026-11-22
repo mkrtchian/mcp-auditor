@@ -46,7 +46,7 @@ from mcp_auditor.domain.ports import (
     LLMPort,
     ProviderRefusal,
     ProviderThrottled,
-    UnparseableOutput,
+    UnreadableAnswer,
 )
 from mcp_auditor.graph.prompts import build_judge_prompt
 
@@ -154,7 +154,7 @@ async def judge_one_case(llm: LLMPort, case: JudgeCase) -> tuple[EvalVerdict | N
     turn a crash into every case uncovered and a red floor."""
     try:
         judgment, usage = await llm.generate_structured(_judge_prompt(case), Judgment)
-    except (UnparseableOutput, ProviderRefusal) as error:
+    except (UnreadableAnswer, ProviderRefusal) as error:
         return None, error.usage
     return judgment.verdict, usage
 

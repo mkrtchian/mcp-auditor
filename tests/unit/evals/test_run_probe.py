@@ -5,7 +5,7 @@ from evals.probe.candidates import REFERENCE
 from evals.probe.corpus import ProbeCall
 from evals.run_probe import CandidateModels, append_observation, observe
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, ProviderThrottled, UnreadableAnswer
 from tests.fakes import RaisingLLM
 
 A_JUDGE_CALL = ProbeCall(
@@ -17,9 +17,9 @@ A_JUDGE_CALL = ProbeCall(
 )
 
 
-async def test_unparseable_output_is_a_parse_failure():
+async def test_an_unreadable_answer_is_a_parse_failure():
     models = _models_raising(
-        UnparseableOutput(attempts=3, truncated_attempts=0, usage=ProviderUsage())
+        UnreadableAnswer(parse_attempts=3, truncated_parse_attempts=0, usage=ProviderUsage())
     )
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
@@ -34,7 +34,9 @@ def _models_raising(error: Exception) -> CandidateModels:
 
 async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempts():
     usage = ProviderUsage(input_tokens=100, output_tokens=8192)
-    models = _models_raising(UnparseableOutput(attempts=3, truncated_attempts=1, usage=usage))
+    models = _models_raising(
+        UnreadableAnswer(parse_attempts=3, truncated_parse_attempts=1, usage=usage)
+    )
 
     observation = await observe(models, A_JUDGE_CALL, budget=10)
 

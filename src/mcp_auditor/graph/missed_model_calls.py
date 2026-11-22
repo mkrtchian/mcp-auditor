@@ -3,15 +3,9 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
+from mcp_auditor.domain.model_calls import MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import ProviderUsage
-from mcp_auditor.domain.ports import (
-    LLMPort,
-    PromptTooLong,
-    ProviderRefusal,
-    ProviderThrottled,
-    UnparseableOutput,
-)
+from mcp_auditor.domain.ports import LLMPort, ModelCallMissed
 
 
 @dataclass(frozen=True)
@@ -62,26 +56,12 @@ async def call_model[T: BaseModel](
 ) -> tuple[T, ProviderUsage] | Missed:
     try:
         return await llm.generate_structured(call.prompt, call.output_schema)
-    except ProviderRefusal as refusal:
-        return _missed(
-            call, MissedCallCause.PROVIDER_REFUSAL, refusal.provider_message, refusal.usage
-        )
-    except UnparseableOutput as unreadable:
-        detail = (
-            f"no answer matched the expected format after {unreadable.attempts} attempts"
-            f" ({unreadable.truncated_attempts} cut at the output limit)"
-        )
-        return _missed(call, MissedCallCause.UNREADABLE_ANSWER, detail, unreadable.usage)
-    except ProviderThrottled as throttled:
-        return _missed(call, MissedCallCause.PROVIDER_THROTTLED, str(throttled), throttled.usage)
-    except PromptTooLong as too_long:
-        return _missed(call, MissedCallCause.PROMPT_TOO_LONG, str(too_long), too_long.usage)
+    except ModelCallMissed as missed:
+        return _missed(call, missed)
 
 
-def _missed(
-    call: ModelCall[Any], cause: MissedCallCause, detail: str, usage: ProviderUsage
-) -> Missed:
+def _missed(call: ModelCall[Any], missed: ModelCallMissed) -> Missed:
     missed_call = MissedModelCall(
-        tool_name=call.tool_name, kind=call.kind, cause=cause, detail=detail
+        tool_name=call.tool_name, kind=call.kind, cause=missed.cause, detail=missed.detail
     )
-    return Missed(missed_call, usage)
+    return Missed(missed_call, missed.usage)

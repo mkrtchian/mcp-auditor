@@ -26,7 +26,7 @@ from mcp_auditor.domain.ports import (
     PromptTooLong,
     ProviderRefusal,
     ProviderThrottled,
-    UnparseableOutput,
+    UnreadableAnswer,
 )
 
 # Shared so the generator and the judge on one model fetch OpenRouter's listing once.
@@ -123,7 +123,7 @@ class LLM:
             output = _validated(attempt.parsed, output_schema)
             if output is not None:
                 return output, state.usage
-        raise UnparseableOutput(_MAX_PARSE_ATTEMPTS, truncated_attempts, state.usage)
+        raise UnreadableAnswer(_MAX_PARSE_ATTEMPTS, truncated_attempts, state.usage)
 
     def _bind(self, output_schema: type[BaseModel]) -> Runnable[str, object]:
         method = self._structured_output.method

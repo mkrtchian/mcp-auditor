@@ -11,7 +11,7 @@ from mcp_auditor.domain.ports import (
     ProviderRefusal,
     ProviderThrottled,
     ProviderUsage,
-    UnparseableOutput,
+    UnreadableAnswer,
 )
 from tests.fakes import RaisingLLM
 
@@ -44,7 +44,7 @@ async def test_a_judge_call_returns_its_verdict_and_its_usage():
 @pytest.mark.parametrize(
     "error",
     [
-        UnparseableOutput(attempts=3, truncated_attempts=0, usage=THROTTLED),
+        UnreadableAnswer(parse_attempts=3, truncated_parse_attempts=0, usage=THROTTLED),
         ProviderRefusal("blocked by policy", THROTTLED),
     ],
 )

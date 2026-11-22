@@ -6,7 +6,7 @@ from mcp_auditor.domain.ports import (
     PromptTooLong,
     ProviderRefusal,
     ProviderThrottled,
-    UnparseableOutput,
+    UnreadableAnswer,
 )
 from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, billed_usage, call_model
 from tests.fakes import FakeLLM
@@ -17,7 +17,7 @@ JUDGMENT_CALL = ModelCall("read_file", ModelCallKind.JUDGMENT, "judge this", Jud
 async def test_an_unreadable_answer_is_a_missed_model_call_with_its_usage():
     usage = ProviderUsage(input_tokens=40, output_tokens=12)
 
-    outcome = await call_model(FakeLLM([UnparseableOutput(3, 1, usage)]), JUDGMENT_CALL)
+    outcome = await call_model(FakeLLM([UnreadableAnswer(3, 1, usage)]), JUDGMENT_CALL)
 
     assert outcome == Missed(
         missed_call=MissedModelCall(

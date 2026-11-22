@@ -94,7 +94,7 @@ _WIRE_SCHEMAS: dict[type[BaseModel], type[BaseModel]] = {
 
 def _to_domain_or_none(parsed: object) -> object:
     # A wire parse that fails or an arguments string that is not JSON becomes None, which the
-    # generate_structured loop retries and finally reports as UnparseableOutput.
+    # generate_structured loop retries and finally reports as UnreadableAnswer.
     if parsed is None:
         return None
     try:

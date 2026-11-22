@@ -16,7 +16,7 @@ from mcp_auditor.domain.models import (
     Severity,
     TestCaseBatch,
 )
-from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, UnreadableAnswer
 
 
 async def test_a_test_case_batch_decodes_each_argument():
@@ -99,10 +99,10 @@ async def test_non_json_arguments_is_retried_then_unparseable_with_usage():
     document = {"cases": [{"category": "injection", "description": "d", "arguments": "not json"}]}
     llm = given.an_llm_answering(given.a_json_schema_answer(document, 120, 40))
 
-    with pytest.raises(UnparseableOutput) as raised:
+    with pytest.raises(UnreadableAnswer) as raised:
         await llm.generate_structured("prompt", TestCaseBatch)
 
-    assert raised.value.truncated_attempts == 0
+    assert raised.value.truncated_parse_attempts == 0
     assert raised.value.usage == ProviderUsage(
         input_tokens=360, output_tokens=120, largest_input_tokens=120
     )
@@ -122,10 +122,10 @@ async def test_a_refusal_raises_provider_refusal_with_usage():
 async def test_an_answer_cut_during_thinking_counts_as_truncated():
     llm = given.an_llm_answering(given.a_cut_during_thinking())
 
-    with pytest.raises(UnparseableOutput) as raised:
+    with pytest.raises(UnreadableAnswer) as raised:
         await llm.generate_structured("prompt", Judgment)
 
-    assert raised.value.truncated_attempts == 3
+    assert raised.value.truncated_parse_attempts == 3
 
 
 _MIRROR_PAIRS: dict[type[BaseModel], type[BaseModel]] = {

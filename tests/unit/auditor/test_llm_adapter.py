@@ -13,7 +13,7 @@ from mcp_auditor.domain.models import (
     StepObservation,
     TestCaseBatch,
 )
-from mcp_auditor.domain.ports import PromptTooLong, UnparseableOutput
+from mcp_auditor.domain.ports import PromptTooLong, UnreadableAnswer
 from tests.fakes.chat_model import FakeChatModel, Throttled, raw_response, truncated
 from tests.unit.auditor.support.openai_request_bodies import the_openai_request_body
 
@@ -120,15 +120,13 @@ class TestDictSchema:
         responses = [raw_response({"unexpected": 1}, 100, 50 + attempt) for attempt in range(3)]
         llm = llms.an_llm(responses)
 
-        with pytest.raises(
-            UnparseableOutput, match="unparseable output after 3 attempts"
-        ) as raised:
+        with pytest.raises(UnreadableAnswer, match="unparseable output after 3 attempts") as raised:
             await llm.generate_structured("prompt", llms.Output)
 
         assert raised.value.usage == ProviderUsage(
             input_tokens=300, output_tokens=153, largest_input_tokens=100
         )
-        assert raised.value.truncated_attempts == 0
+        assert raised.value.truncated_parse_attempts == 0
 
 
 class TestTruncatedOutput:
@@ -153,10 +151,10 @@ class TestTruncatedOutput:
         ]
         llm = llms.an_llm(responses)
 
-        with pytest.raises(UnparseableOutput) as raised:
+        with pytest.raises(UnreadableAnswer) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 3
+        assert raised.value.truncated_parse_attempts == 3
         assert raised.value.usage == ProviderUsage(
             input_tokens=300, output_tokens=24576, largest_input_tokens=100
         )
@@ -168,10 +166,10 @@ class TestTruncatedOutput:
         ]
         llm = llms.an_llm(responses, given.PYDANTIC_SCHEMA)
 
-        with pytest.raises(UnparseableOutput) as raised:
+        with pytest.raises(UnreadableAnswer) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 3
+        assert raised.value.truncated_parse_attempts == 3
 
     async def test_a_truncated_attempt_among_malformed_ones_is_counted_alone(self):
         responses = [
@@ -181,18 +179,18 @@ class TestTruncatedOutput:
         ]
         llm = llms.an_llm(responses)
 
-        with pytest.raises(UnparseableOutput) as raised:
+        with pytest.raises(UnreadableAnswer) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 1
+        assert raised.value.truncated_parse_attempts == 1
 
     async def test_a_cut_on_the_parse_path_on_every_attempt_counts_as_truncated(self):
         llm = llms.an_llm([given.a_cut_completion(llms.A_FULL_USAGE) for _ in range(3)])
 
-        with pytest.raises(UnparseableOutput) as raised:
+        with pytest.raises(UnreadableAnswer) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 3
+        assert raised.value.truncated_parse_attempts == 3
         assert raised.value.usage == ProviderUsage(
             input_tokens=300,
             output_tokens=150,
@@ -222,10 +220,10 @@ class TestTruncatedOutput:
     async def test_a_cut_on_the_parse_path_without_usage_counts_no_tokens(self):
         llm = llms.an_llm([given.a_cut_completion(None) for _ in range(3)])
 
-        with pytest.raises(UnparseableOutput) as raised:
+        with pytest.raises(UnreadableAnswer) as raised:
             await llm.generate_structured("prompt", llms.Output)
 
-        assert raised.value.truncated_attempts == 3
+        assert raised.value.truncated_parse_attempts == 3
         assert raised.value.usage == ProviderUsage()
 
 

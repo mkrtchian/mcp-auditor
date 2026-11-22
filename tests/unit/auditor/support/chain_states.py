@@ -16,7 +16,7 @@ from mcp_auditor.domain.models import (
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.ports import ProviderRefusal, UnparseableOutput
+from mcp_auditor.domain.ports import ProviderRefusal, UnreadableAnswer
 from mcp_auditor.domain.server_liveness import UnsentCause
 from tests.fakes import FakeMCPClient
 
@@ -159,5 +159,5 @@ def a_provider_refusal() -> ProviderRefusal:
     return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
 
 
-def an_unreadable_answer() -> UnparseableOutput:
-    return UnparseableOutput(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))
+def an_unreadable_answer() -> UnreadableAnswer:
+    return UnreadableAnswer(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))
