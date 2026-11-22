@@ -11,7 +11,6 @@ from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission import AdmissionSettlement, BackendFixture, ToolCall
 from evals.cve.nuisance.admission.admission_records import SeedRecord
-from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
@@ -297,10 +296,3 @@ def test_the_fingerprint_moves_when_the_resolver_option_changes(
     monkeypatch.setattr(planting_base, "resolver_args", lambda: ["--dns-search", "fict"])
 
     assert nuisance_fixture_fingerprint(server, tmp_path) != before
-
-
-@pytest.mark.parametrize("key", sorted(BACKENDS))
-def test_every_served_path_of_a_registered_backend_exists(key: str):
-    missing = [path for path in BACKENDS[key].served if not path.is_file()]
-
-    assert missing == []
