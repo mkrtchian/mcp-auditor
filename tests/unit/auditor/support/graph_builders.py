@@ -13,6 +13,7 @@ from mcp_auditor.domain.models import (
     Judgment,
     Severity,
     StepObservation,
+    TestCase,
     TestCaseBatch,
     ToolDefinition,
     ToolResponse,
@@ -133,6 +134,14 @@ def a_chain_goal(
         category=category,
         first_step=a_payload(category=category),
     )
+
+
+def a_test_case(
+    payload: AuditPayload | None = None,
+    response: str | None = None,
+    error: str | None = None,
+) -> TestCase:
+    return TestCase(payload=payload or a_payload(), response=response, error=error)
 
 
 def a_payload(
