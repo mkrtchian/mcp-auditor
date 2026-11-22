@@ -1,13 +1,11 @@
-from collections.abc import AsyncGenerator, Generator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Callable, Generator, Mapping, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from typing import IO
 
-import pytest
-
 from evals.cve.environments import Launch
-from evals.cve.nuisance import vetting as nuisance_vetting
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.solo import SOLO_SERVERS
+from evals.cve.nuisance.vetting import LaunchedBenignCall, ServerLauncher
 from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes import FakeMCPClient, ScriptedBenignCall
@@ -60,7 +58,8 @@ class FlakyLaunches:
     """Stands in for the server's launch and connection: the first `failing` connections fail,
     the last of them on a timeout, and the next ones list the counted tool and answer its benign
     call with `answer` and the ping with `ping_answer`, then fail their teardown when
-    `teardown_fails`. `connected` keeps every launch it was asked to connect."""
+    `teardown_fails`. `connected` keeps every launch it was asked to connect, and `launcher`
+    launches and connects through it."""
 
     def __init__(
         self, failing: int, answer: ToolResponse, teardown_fails: bool, ping_answer: bool
@@ -71,6 +70,7 @@ class FlakyLaunches:
         self._answer = answer
         self._teardown_fails = teardown_fails
         self._ping_answer = ping_answer
+        self.launcher = ServerLauncher(self.environment, self.connect)
 
     @contextmanager
     def environment(self, _server: AdmittedServer) -> Generator[Launch]:
@@ -93,14 +93,16 @@ class FlakyLaunches:
 
 
 def launches_failing(
-    monkeypatch: pytest.MonkeyPatch,
     failing: int,
     answer: ToolResponse | None = None,
     teardown_fails: bool = False,
     ping_answer: bool = True,
 ) -> FlakyLaunches:
     expected = ToolResponse(content=f"{COUNTED_TOOL} answered")
-    flaky = FlakyLaunches(failing, answer or expected, teardown_fails, ping_answer)
-    monkeypatch.setattr(nuisance_vetting, "nuisance_environment", flaky.environment)
-    monkeypatch.setattr(nuisance_vetting, "connect", flaky.connect)
-    return flaky
+    return FlakyLaunches(failing, answer or expected, teardown_fails, ping_answer)
+
+
+def a_benign_call_on(
+    launches: FlakyLaunches, on_ping: Callable[[AdmittedServer, bool], None] | None = None
+) -> LaunchedBenignCall:
+    return LaunchedBenignCall(timeout=30, on_ping=on_ping, launcher=launches.launcher)

@@ -19,7 +19,7 @@ import asyncio
 import dataclasses
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from rich.progress import Progress
@@ -75,7 +75,7 @@ from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import build_report
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
-from evals.cve.nuisance.vet_command import add_vet_arguments
+from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import (
@@ -93,9 +93,14 @@ from mcp_auditor.config import Settings, load_settings
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+@dataclass(frozen=True)
+class NuisanceCommandDeps:
+    vet: VetCommandDeps = field(default_factory=VetCommandDeps)
+
+
+def main(argv: Sequence[str] | None = None, deps: NuisanceCommandDeps | None = None) -> int:
     quiet_throttle_waits()
-    args = _parser().parse_args(argv)
+    args = _parser(deps or NuisanceCommandDeps()).parse_args(argv)
     try:
         with silenced_stdio_logging():
             return args.command(args)
@@ -110,7 +115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return CRASHED_EXIT
 
 
-def _parser() -> argparse.ArgumentParser:
+def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Nuisance admission commands.")
     commands = parser.add_subparsers(required=True)
     walk = commands.add_parser("walk", help="print the servers the nuisance walk reached to admit")
@@ -158,7 +163,8 @@ def _parser() -> argparse.ArgumentParser:
     add_vet_arguments(
         commands.add_parser(
             "vet", help="rebuild the run's images and make each audited server's benign calls"
-        )
+        ),
+        deps.vet,
     )
     return parser
 

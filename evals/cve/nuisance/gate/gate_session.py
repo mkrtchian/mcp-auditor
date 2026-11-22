@@ -14,7 +14,6 @@ from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import image_ids
-from evals.cve.nuisance import vetting as nuisance_vetting
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.audit import (
@@ -58,6 +57,7 @@ from evals.cve.nuisance.gate.gate_session_recording import load_checked, record,
 from evals.cve.nuisance.images import backend_image_ids, image_tag
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
+from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
 from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
 from evals.metrics import SessionThrottles
@@ -98,12 +98,9 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
             server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor))
         )
 
-    benign_call = functools.partial(
-        nuisance_vetting.benign_call, timeout=conditions.tool_call_timeout
-    )
     return NuisanceGateHarness(
         audit=bounded(audit, concurrency),
-        benign_call=bounded(benign_call, concurrency),
+        benign_call=bounded(LaunchedBenignCall(conditions.tool_call_timeout), concurrency),
         announce_audits=lambda _: None,
         throttled_requests=lambda: throttles.requests,
         rebuild=rebuild_images,
@@ -165,9 +162,7 @@ async def _vetted(opened: OpenedGate) -> dict[str, str]:
     --record-baseline a server failing both passes refuses the recording."""
     servers = opened.options.servers
     opened.harness.rebuild(list(dict.fromkeys(server.service for server in servers)))
-    vetted = await nuisance_vetting.drop_failing_servers(
-        servers, opened.harness.benign_call, opened.harness.sweep
-    )
+    vetted = await drop_failing_servers(servers, opened.harness.benign_call, opened.harness.sweep)
     not_run = {entry.server_package: entry.reason for entry in vetted.not_run}
     if opened.options.record_baseline and not_run:
         reasons = [f"{package}: {failure}" for package, failure in not_run.items()]

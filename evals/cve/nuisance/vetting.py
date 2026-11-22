@@ -8,13 +8,14 @@ from its image and its seed, since a first pass can change a backend's state."""
 
 import os
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass
+from contextlib import AbstractContextManager
+from dataclasses import dataclass, field
 
 from evals.concurrency import entered_in_thread
 from evals.cve.detection.calibration_check import PRE_RUN_LAUNCH_ATTEMPTS
-from evals.cve.environments import connect
+from evals.cve.environments import Launch, connect
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.launch_audit import named
+from evals.cve.launch_audit import Connect, named
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
 from evals.cve.nuisance.benign_call import benign_call_failure
@@ -65,11 +66,14 @@ async def _second_pass(
     return await benign_call(server)
 
 
-async def benign_call(
-    server: AdmittedServer,
-    timeout: int,
-    on_ping: Callable[[AdmittedServer, bool], None] | None = None,
-) -> str | None:
+@dataclass(frozen=True)
+class ServerLauncher:
+    environment: Callable[[AdmittedServer], AbstractContextManager[Launch]] = nuisance_environment
+    connect: Connect = connect
+
+
+@dataclass(frozen=True)
+class LaunchedBenignCall:
     """The benign call's failure reason, or None when it answers. A launch or connection that
     fails is retried up to `PRE_RUN_LAUNCH_ATTEMPTS` launches and keeps the last reason. An answer
     that errors is an observation of a launch that ran, returned at once: retrying it would keep
@@ -78,21 +82,29 @@ async def benign_call(
     every first pass.
     `on_ping`, when given, gets whether the server answers a ping sent right after the handshake,
     and a server that never connects never calls it."""
-    reason = ""
-    for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
-        connected = False
-        try:
-            with open(os.devnull, "w") as devnull:
-                async with (
-                    entered_in_thread(nuisance_environment(server)) as launch,
-                    connect(named(launch), devnull, tool_call_timeout=timeout) as client,
-                ):
-                    connected = True
-                    if on_ping is not None:
-                        on_ping(server, await client.ping())
-                    return await benign_call_failure(server, client)
-        except Exception as exc:
-            reason = f"failed to connect for the benign call: {TYPES_ONLY.describe(exc)}"
-            if connected:
-                return reason
-    return reason
+
+    timeout: int
+    on_ping: Callable[[AdmittedServer, bool], None] | None = None
+    launcher: ServerLauncher = field(default_factory=ServerLauncher)
+
+    async def __call__(self, server: AdmittedServer) -> str | None:
+        reason = ""
+        for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
+            connected = False
+            try:
+                with open(os.devnull, "w") as devnull:
+                    async with (
+                        entered_in_thread(self.launcher.environment(server)) as launch,
+                        self.launcher.connect(
+                            named(launch), devnull, tool_call_timeout=self.timeout
+                        ) as client,
+                    ):
+                        connected = True
+                        if self.on_ping is not None:
+                            self.on_ping(server, await client.ping())
+                        return await benign_call_failure(server, client)
+            except Exception as exc:
+                reason = f"failed to connect for the benign call: {TYPES_ONLY.describe(exc)}"
+                if connected:
+                    return reason
+        return reason

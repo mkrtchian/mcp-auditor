@@ -54,7 +54,7 @@ from evals.cve.nuisance.results import (
     RunInterrupted,
 )
 from evals.cve.nuisance.solo import first_failure_then_alone, played_alone
-from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
+from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,
@@ -206,7 +206,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
 
     return NuisanceDeps(
         bounded(audit, concurrency),
-        bounded(functools.partial(benign_call, timeout=timeout), concurrency),
+        bounded(LaunchedBenignCall(timeout), concurrency),
         rebuild_images,
         functools.partial(image_ids, tag=nuisance_images.image_tag),
         nuisance_images.backend_image_ids,

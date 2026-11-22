@@ -559,14 +559,10 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
         (FOREIGN, "test_nuisance_walk_given"),
-        (SETATTR, "VetHarness:nuisance_vet_command.default_vet_deps"),
-        (SETATTR, "VetHarness:nuisance_vet_command.load_conditions"),
     ),
     "tests/unit/nuisance/support/test_nuisance_vetting_given.py": (
         (FOREIGN, "test_nuisance_holdout_run_backends_given"),
         (FOREIGN, "test_nuisance_holdout_run_given"),
-        (SETATTR, "launches_failing:nuisance_vetting.connect"),
-        (SETATTR, "launches_failing:nuisance_vetting.nuisance_environment"),
     ),
     "tests/unit/nuisance/support/test_run_nuisance_given.py": (
         (FOREIGN, "test_census_given"),

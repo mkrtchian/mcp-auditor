@@ -10,60 +10,52 @@ import tests.unit.support.test_nuisance_admission_edits_given as edits
 from evals.cve.backends.doris import DORIS_CONTAINER
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.results import NotRunCause, NotRunServer
-from evals.cve.nuisance.vetting import benign_call, drop_failing_servers
+from evals.cve.nuisance.vetting import drop_failing_servers
 from mcp_auditor.domain.container_name import declared_container_name
 from mcp_auditor.domain.models import ToolResponse
 
 
-async def test_a_benign_call_whose_connection_fails_twice_then_answers_passes(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    launches = given.launches_failing(monkeypatch, failing=2)
+async def test_a_benign_call_whose_connection_fails_twice_then_answers_passes():
+    launches = given.launches_failing(failing=2)
 
-    reason = await benign_call(given.a_server(), timeout=30)
+    reason = await given.a_benign_call_on(launches)(given.a_server())
 
     assert reason is None
     assert launches.launches == 3
 
 
-async def test_a_benign_call_whose_connection_fails_three_times_keeps_the_last_reason(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    launches = given.launches_failing(monkeypatch, failing=3)
+async def test_a_benign_call_whose_connection_fails_three_times_keeps_the_last_reason():
+    launches = given.launches_failing(failing=3)
 
-    reason = await benign_call(given.a_server(), timeout=30)
+    reason = await given.a_benign_call_on(launches)(given.a_server())
 
     assert reason == "failed to connect for the benign call: TimeoutError"
     assert launches.launches == 3
 
 
-async def test_a_benign_call_launches_a_named_container(monkeypatch: pytest.MonkeyPatch):
-    launches = given.launches_failing(monkeypatch, failing=0)
+async def test_a_benign_call_launches_a_named_container():
+    launches = given.launches_failing(failing=0)
 
-    await benign_call(given.a_server(), timeout=30)
+    await given.a_benign_call_on(launches)(given.a_server())
 
     (connected,) = launches.connected
     assert isinstance(declared_container_name(connected.args), str)
 
 
-async def test_a_benign_call_answering_with_an_error_is_not_retried(
-    monkeypatch: pytest.MonkeyPatch,
-):
+async def test_a_benign_call_answering_with_an_error_is_not_retried():
     answer = ToolResponse(content="denied", is_error=True)
-    launches = given.launches_failing(monkeypatch, failing=0, answer=answer)
+    launches = given.launches_failing(failing=0, answer=answer)
 
-    reason = await benign_call(given.a_server(), timeout=30)
+    reason = await given.a_benign_call_on(launches)(given.a_server())
 
     assert reason == f"benign call of {given.COUNTED_TOOL!r} returned an error: denied"
     assert launches.launches == 1
 
 
-async def test_a_benign_call_whose_teardown_fails_once_connected_is_not_retried(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    launches = given.launches_failing(monkeypatch, failing=0, teardown_fails=True)
+async def test_a_benign_call_whose_teardown_fails_once_connected_is_not_retried():
+    launches = given.launches_failing(failing=0, teardown_fails=True)
 
-    reason = await benign_call(given.a_server(), timeout=30)
+    reason = await given.a_benign_call_on(launches)(given.a_server())
 
     assert reason == "failed to connect for the benign call: OSError"
     assert launches.launches == 1
@@ -71,28 +63,28 @@ async def test_a_benign_call_whose_teardown_fails_once_connected_is_not_retried(
 
 @pytest.mark.parametrize("answered", [True, False])
 async def test_a_benign_call_hands_whether_the_server_answered_the_ping_to_its_callback(
-    monkeypatch: pytest.MonkeyPatch, answered: bool
+    answered: bool,
 ):
-    given.launches_failing(monkeypatch, failing=2, ping_answer=answered)
+    launches = given.launches_failing(failing=2, ping_answer=answered)
     answers: list[tuple[AdmittedServer, bool]] = []
-
-    reason = await benign_call(
-        given.a_server(), timeout=30, on_ping=lambda server, ping: answers.append((server, ping))
+    benign_call = given.a_benign_call_on(
+        launches, lambda server, ping: answers.append((server, ping))
     )
+
+    reason = await benign_call(given.a_server())
 
     assert reason is None
     assert answers == [(given.a_server(), answered)]
 
 
-async def test_a_server_that_never_connects_hands_no_ping_answer_to_the_callback(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    given.launches_failing(monkeypatch, failing=3)
+async def test_a_server_that_never_connects_hands_no_ping_answer_to_the_callback():
+    launches = given.launches_failing(failing=3)
     answers: list[tuple[AdmittedServer, bool]] = []
-
-    await benign_call(
-        given.a_server(), timeout=30, on_ping=lambda server, ping: answers.append((server, ping))
+    benign_call = given.a_benign_call_on(
+        launches, lambda server, ping: answers.append((server, ping))
     )
+
+    await benign_call(given.a_server())
 
     assert answers == []
 

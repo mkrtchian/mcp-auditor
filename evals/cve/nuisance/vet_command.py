@@ -10,12 +10,13 @@ import traceback
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Protocol
 
 from evals.concurrency import bounded, positive_int
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT
-from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
@@ -35,7 +36,12 @@ from evals.cve.nuisance.containers import (
 )
 from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.holdout_servers import run_population
-from evals.cve.nuisance.vetting import VetResult, benign_call, drop_failing_servers
+from evals.cve.nuisance.vetting import (
+    LaunchedBenignCall,
+    ServerLauncher,
+    VetResult,
+    drop_failing_servers,
+)
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,
@@ -58,8 +64,37 @@ class VetDeps:
     ping_answers: dict[str, bool] = field(default_factory=dict[str, bool])
 
 
-def add_vet_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.set_defaults(command=vet)
+class VetDepsFactory(Protocol):
+    def __call__(self, tool_call_timeout: int, concurrency: int, /) -> VetDeps: ...
+
+
+def default_vet_deps(
+    tool_call_timeout: int, concurrency: int, launcher: ServerLauncher | None = None
+) -> VetDeps:
+    ping_answers: dict[str, bool] = {}
+
+    def record_ping(server: AdmittedServer, answered: bool) -> None:
+        ping_answers[server.server_package] = answered
+
+    call = LaunchedBenignCall(tool_call_timeout, record_ping, launcher or ServerLauncher())
+    return VetDeps(
+        rebuild=rebuild_images,
+        running_containers=running_containers,
+        remove_containers=remove_containers,
+        benign_call=bounded(call, concurrency),
+        check_networks=check_closed_network_support,
+        ping_answers=ping_answers,
+    )
+
+
+@dataclass(frozen=True)
+class VetCommandDeps:
+    conditions: Callable[[], HoldoutConditions] = committed_conditions
+    vet_deps: VetDepsFactory = default_vet_deps
+
+
+def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> None:
+    parser.set_defaults(command=functools.partial(vet, deps=deps))
     parser.add_argument(
         "--server", action="append", default=[], help="vet only this server, repeatable"
     )
@@ -75,7 +110,7 @@ def add_vet_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
-def vet(args: argparse.Namespace) -> int:
+def vet(args: argparse.Namespace, deps: VetCommandDeps) -> int:
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
@@ -92,39 +127,24 @@ def vet(args: argparse.Namespace) -> int:
         return UNKNOWN_SERVER_EXIT
     servers = [s for s in audited if not args.server or s.server_package in args.server]
     try:
-        deps = default_vet_deps(_tool_call_timeout(args), args.concurrency)
-        result = asyncio.run(vet_servers(servers, deps))
+        vet_deps = deps.vet_deps(_tool_call_timeout(args, deps.conditions), args.concurrency)
+        result = asyncio.run(vet_servers(servers, vet_deps))
     except Refused:
         raise
     except Exception:
         traceback.print_exc()
         return CRASHED_EXIT
-    _print_vet_results(servers, result, deps.ping_answers)
+    _print_vet_results(servers, result, vet_deps.ping_answers)
     _print_unrecorded(servers)
     return 0 if not result.not_run else 1
 
 
-def _tool_call_timeout(args: argparse.Namespace) -> int:
+def _tool_call_timeout(
+    args: argparse.Namespace, conditions: Callable[[], HoldoutConditions]
+) -> int:
     if args.tool_call_timeout is not None:
         return args.tool_call_timeout
-    return load_conditions(CONDITIONS_PATH).tool_call_timeout or TOOL_CALL_TIMEOUT
-
-
-def default_vet_deps(tool_call_timeout: int, concurrency: int) -> VetDeps:
-    ping_answers: dict[str, bool] = {}
-
-    def record_ping(server: AdmittedServer, answered: bool) -> None:
-        ping_answers[server.server_package] = answered
-
-    call = functools.partial(benign_call, timeout=tool_call_timeout, on_ping=record_ping)
-    return VetDeps(
-        rebuild=rebuild_images,
-        running_containers=running_containers,
-        remove_containers=remove_containers,
-        benign_call=bounded(call, concurrency),
-        check_networks=check_closed_network_support,
-        ping_answers=ping_answers,
-    )
+    return conditions().tool_call_timeout or TOOL_CALL_TIMEOUT
 
 
 async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetResult:

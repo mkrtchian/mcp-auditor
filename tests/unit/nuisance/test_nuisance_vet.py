@@ -19,12 +19,12 @@ from tests.fakes import FakeContainerSweep
 
 
 def test_every_server_answering_exits_zero_with_the_count(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost()))
+    harness = given.VetHarness(given.deps_on(backends.DockerHost()))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -34,13 +34,13 @@ def test_every_server_answering_exits_zero_with_the_count(
 
 
 def test_a_server_failing_its_benign_call_exits_one_with_its_reason(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     failures = {walk_given.QUEUE_SERVER: "benign call errored: ValueError"}
-    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    harness = given.VetHarness(given.deps_on(backends.DockerHost(), failures))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     out = capsys.readouterr().out
     assert exit_code == 1
@@ -49,26 +49,26 @@ def test_a_server_failing_its_benign_call_exits_one_with_its_reason(
 
 
 def test_a_server_answering_only_its_second_pass_exits_zero_among_the_answering_count(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     failures = {walk_given.QUEUE_SERVER: ["benign call errored: ValueError", None]}
-    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    harness = given.VetHarness(given.deps_on(backends.DockerHost(), failures))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     assert exit_code == 0
     assert "2 of 2 servers answer their benign calls" in capsys.readouterr().out
 
 
 def test_a_server_failing_both_passes_exits_one_with_its_second_reason(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     failures = {walk_given.QUEUE_SERVER: ["first failure", "second failure"]}
-    given.VetHarness(monkeypatch, given.deps_on(backends.DockerHost(), failures))
+    harness = given.VetHarness(given.deps_on(backends.DockerHost(), failures))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     out = capsys.readouterr().out
     assert exit_code == 1
@@ -77,13 +77,13 @@ def test_a_server_failing_both_passes_exits_one_with_its_second_reason(
 
 
 def test_a_server_container_running_at_start_refuses_with_nothing_rebuilt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     host = backends.DockerHost({given.SERVER_TAG: ["leftover_server"]})
-    given.VetHarness(monkeypatch, given.deps_on(host))
+    harness = given.VetHarness(given.deps_on(host))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     assert exit_code == run_nuisance.REFUSED_EXIT
     assert "leftover_server" in capsys.readouterr().out
@@ -128,28 +128,30 @@ async def test_the_server_and_backend_containers_left_at_the_end_are_removed():
 
 
 def test_a_failing_rebuild_exits_four_and_prints_the_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     deps: VetDeps = dataclasses.replace(
         given.deps_on(backends.DockerHost()), rebuild=given.a_failing_rebuild
     )
-    given.VetHarness(monkeypatch, deps)
+    harness = given.VetHarness(deps)
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments])
+    exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
     assert exit_code == run_nuisance.CRASHED_EXIT
     assert "docker compose build failed for filesystem-nuisance" in capsys.readouterr().err
 
 
 def test_the_server_option_restricts_the_vet_to_the_named_servers(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     host = backends.DockerHost()
-    given.VetHarness(monkeypatch, given.deps_on(host))
+    harness = given.VetHarness(given.deps_on(host))
     arguments = walk_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
-    exit_code = run_nuisance.main(["vet", *arguments, "--server", walk_given.QUEUE_SERVER])
+    exit_code = run_nuisance.main(
+        ["vet", *arguments, "--server", walk_given.QUEUE_SERVER], harness.deps
+    )
 
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -160,13 +162,13 @@ def test_the_server_option_restricts_the_vet_to_the_named_servers(
 
 @pytest.mark.parametrize("named", ["npm:ghost", given.ACCEPTANCE])
 def test_the_server_option_naming_no_audited_server_exits_two_naming_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], named: str
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], named: str
 ):
     host = backends.DockerHost()
-    given.VetHarness(monkeypatch, given.deps_on(host))
+    harness = given.VetHarness(given.deps_on(host))
     arguments = given.a_vet_of_one_server_beside_the_acceptance_one(tmp_path)
 
-    exit_code = run_nuisance.main([*arguments, "--server", named])
+    exit_code = run_nuisance.main([*arguments, "--server", named], harness.deps)
 
     assert exit_code == UNKNOWN_SERVER_EXIT
     assert named in capsys.readouterr().err
@@ -174,13 +176,13 @@ def test_the_server_option_naming_no_audited_server_exits_two_naming_it(
 
 
 def test_a_nuisance_acceptance_server_is_not_vetted(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     host = backends.DockerHost()
-    given.VetHarness(monkeypatch, given.deps_on(host))
+    harness = given.VetHarness(given.deps_on(host))
     arguments = given.a_vet_of_one_server_beside_the_acceptance_one(tmp_path)
 
-    exit_code = run_nuisance.main(arguments)
+    exit_code = run_nuisance.main(arguments, harness.deps)
 
     out = capsys.readouterr().out
     assert exit_code == 0

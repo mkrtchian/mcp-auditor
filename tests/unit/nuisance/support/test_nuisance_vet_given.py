@@ -2,17 +2,14 @@ import dataclasses
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-import pytest
-
 import tests.unit.census.support.test_census_given as census_given
 import tests.unit.nuisance.admission.support.test_nuisance_admission_given as admission_given
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as walk_given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_given as nuisance_run_given
-from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance import images as nuisance_images
-from evals.cve.nuisance import vet_command as nuisance_vet_command
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.vet_command import VetDeps
+from evals.cve.nuisance.vet_command import VetCommandDeps, VetDeps
+from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
 
@@ -53,30 +50,23 @@ def deps_on(
 
 
 class VetHarness:
-    """Hands the vet command `deps` in place of the live ones and run conditions whose tool-call
-    timeout is `run_conditions_timeout`, recording the tool-call timeout and the concurrency it
-    built the deps with."""
+    """The vet command's `deps`, handing it `vet_deps` in place of the live ones and run conditions
+    whose tool-call timeout is `run_conditions_timeout`, recording the tool-call timeout and the
+    concurrency it built the deps with."""
 
-    def __init__(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        deps: VetDeps,
-        run_conditions_timeout: int | None = None,
-    ) -> None:
+    def __init__(self, vet_deps: VetDeps, run_conditions_timeout: int | None = None) -> None:
         self.built_with: tuple[int, int] | None = None
+        self._vet_deps = vet_deps
         conditions = dataclasses.replace(
             nuisance_run_given.conditions(), tool_call_timeout=run_conditions_timeout
         )
+        self.deps = NuisanceCommandDeps(
+            vet=VetCommandDeps(conditions=lambda: conditions, vet_deps=self._built)
+        )
 
-        def load_conditions(_path: Path) -> HoldoutConditions:
-            return conditions
-
-        def default_vet_deps(tool_call_timeout: int, concurrency: int) -> VetDeps:
-            self.built_with = (tool_call_timeout, concurrency)
-            return deps
-
-        monkeypatch.setattr(nuisance_vet_command, "load_conditions", load_conditions)
-        monkeypatch.setattr(nuisance_vet_command, "default_vet_deps", default_vet_deps)
+    def _built(self, tool_call_timeout: int, concurrency: int) -> VetDeps:
+        self.built_with = (tool_call_timeout, concurrency)
+        return self._vet_deps
 
 
 def a_failing_rebuild(services: Sequence[str]) -> None:
