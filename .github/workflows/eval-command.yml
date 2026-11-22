@@ -101,7 +101,7 @@ jobs:
         id: judge
         if: (steps.cmd.outputs.mode == 'judge' || steps.cmd.outputs.mode == 'full') && steps.pr.outputs.fork == 'false'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set +e
           uv run python -m evals.run_judge_eval
@@ -113,7 +113,7 @@ jobs:
         id: honeypot
         if: steps.cmd.outputs.mode == 'full' && steps.pr.outputs.fork == 'false'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TTY_COMPATIBLE: "1"
           TTY_INTERACTIVE: "0"
         run: |

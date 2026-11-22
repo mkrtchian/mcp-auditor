@@ -49,9 +49,9 @@ class TestMakeChatModel:
 
         chat_model = make_chat_model(settings, model)
 
-        assert getattr(chat_model, "model", None) == model
-        assert getattr(chat_model, "reasoning_effort", "unset") == settings.resolve_reasoning(model)
-        assert getattr(chat_model, "thinking", "unset") is None
+        assert getattr(chat_model, "model", None) == "claude-haiku-5-5"
+        assert getattr(chat_model, "reasoning_effort", None) == "low"
+        assert getattr(chat_model, "thinking", None) == {"type": "adaptive"}
         assert getattr(chat_model, "max_tokens", None) == ANTHROPIC_MAX_OUTPUT_TOKENS
         assert getattr(chat_model, "default_request_timeout", None) == 120
 

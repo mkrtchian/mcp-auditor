@@ -4,7 +4,7 @@ Two measured rates are published for `mcp-auditor`, both at commit `1765d9f`: th
 
 ## What the numbers do not say
 
-**The measured configuration is not the default one.** The detection holdout run and the nuisance holdout run used the `anthropic` provider with `claude-haiku-5-5` as generator and judge at reasoning `high`, 3 chains of 3 steps per tool, a test budget of 10, a tool call timeout of 60 seconds and no tools filter. The provider, model, reasoning and chains are not the auditor's defaults (`openai`, `gpt-6-luna` at `none`, chains off), and the default configuration has no holdout number.
+**The measured configuration is not the default one.** The detection holdout run and the nuisance holdout run used the `anthropic` provider with `claude-haiku-5-5` as generator and judge at reasoning `high`, 3 chains of 3 steps per tool, a test budget of 10, a tool call timeout of 60 seconds and no tools filter. The provider and the model are the auditor's defaults, the reasoning and the chains are not (`low`, chains off), so the default configuration has no holdout number.
 
 **The detection rate covers only the flaws the detection suite rule makes eligible**, those whose effect a tool response can show and whose calibration passes, in the mix the draw gave: to take its 37 targets, the detection walk reached 90 flaws, gave up on 29 of them at calibration and skipped or excluded 24 others at the draw's other steps (the walk is recorded in `evals/census.json`).
 

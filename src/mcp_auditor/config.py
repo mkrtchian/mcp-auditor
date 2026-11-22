@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     model_config = {"env_prefix": "MCP_AUDITOR_"}
 
-    provider: str = "openai"
+    provider: str = "anthropic"
     model: str = ""
     judge_model: str = ""
     reasoning: str = ""
@@ -52,8 +52,8 @@ _PROVIDERS = {
         accepted_reasoning=("minimal", "low", "medium", "high"),
     ),
     "anthropic": _ProviderDefaults(
-        model="claude-haiku-4-5-20251001",
-        reasoning=None,
+        model="claude-haiku-5-5",
+        reasoning="low",
         accepted_reasoning=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     "openai": _ProviderDefaults(

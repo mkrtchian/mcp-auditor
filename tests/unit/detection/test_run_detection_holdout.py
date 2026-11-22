@@ -187,6 +187,7 @@ def _a_calibration_check(monkeypatch: pytest.MonkeyPatch, deps: CalibrationCheck
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "openai")
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")  # the auditor is built, never called
     monkeypatch.setattr(run_detection_holdout, "HOLDOUT_TARGETS", (ACCEPTANCE_TARGETS[0],))

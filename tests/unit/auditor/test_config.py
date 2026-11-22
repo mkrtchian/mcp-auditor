@@ -3,7 +3,9 @@ import pytest
 from mcp_auditor.config import Settings
 
 
-def test_the_provider_defaults_to_openai(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_default_is_claude_haiku_5_5_at_low_on_anthropic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("MCP_AUDITOR_PROVIDER", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_MODEL", raising=False)
     monkeypatch.delenv("MCP_AUDITOR_JUDGE_MODEL", raising=False)
@@ -11,10 +13,19 @@ def test_the_provider_defaults_to_openai(monkeypatch: pytest.MonkeyPatch) -> Non
 
     settings = Settings()
 
-    assert settings.provider == "openai"
+    assert settings.provider == "anthropic"
+    assert settings.resolve_model() == "claude-haiku-5-5"
+    assert settings.resolve_judge_model() == "claude-haiku-5-5"
+    assert settings.resolve_reasoning("claude-haiku-5-5") == "low"
+
+
+def test_openai_keeps_gpt_6_luna_at_none() -> None:
+    settings = _settings("openai")
+
     model = settings.resolve_model()
-    assert model == _settings("openai").resolve_model()
-    assert settings.resolve_reasoning(model) == _settings("openai").resolve_reasoning(model)
+
+    assert model == "gpt-6-luna"
+    assert settings.resolve_reasoning(model) == "none"
 
 
 def test_the_provider_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -75,13 +86,13 @@ def test_google_resolves_minimal_reasoning_for_its_default_model() -> None:
     assert settings.resolve_reasoning(model) == "minimal"
 
 
-def test_anthropic_resolves_no_reasoning_for_its_default_model() -> None:
+def test_anthropic_resolves_low_for_its_default_model() -> None:
     settings = _settings("anthropic")
 
     model = settings.resolve_model()
 
-    assert model == "claude-haiku-4-5-20251001"
-    assert settings.resolve_reasoning(model) is None
+    assert model == "claude-haiku-5-5"
+    assert settings.resolve_reasoning(model) == "low"
 
 
 def test_a_model_other_than_the_default_resolves_no_reasoning_when_unset() -> None:

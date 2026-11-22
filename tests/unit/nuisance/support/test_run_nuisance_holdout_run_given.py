@@ -99,4 +99,5 @@ def a_run_refused_before_its_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "openai")
     monkeypatch.setenv("MCP_AUDITOR_MODEL", "gpt-6-luna")

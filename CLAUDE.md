@@ -11,11 +11,11 @@ uv run pytest tests/integration/committed -n auto  # The tests of the committed 
 uv run ruff check .              # Lint
 uv run ruff format .             # Format
 uv run pyrefly check             # Type check (strict, see [tool.pyrefly])
-uv run python -m evals.run_honeypot_suite       # Honeypot suite (the honeypot servers, needs an LLM key: OPENAI_API_KEY by default)
+uv run python -m evals.run_honeypot_suite       # Honeypot suite (the honeypot servers, needs an LLM key: ANTHROPIC_API_KEY by default)
 uv run python -m evals.run_honeypot_suite --record-baseline  # Record evals/baselines/honeypot.json from a clean tree: run it twice at the same commit (unconfirmed, then confirmed), then commit it by hand
 uv run python -m evals.run_honeypot_suite --no-baseline      # Floors only (recall one detection per run, precision and coverage 0.50), any conditions, no baseline comparison (never in CI)
 uv run python -m evals.run_honeypot_suite --concurrency N    # Honeypot audits in flight at once, runs and retests alike, default 9, 1 for the old sequence (recorded in the report, never in the baseline)
-uv run python -m evals.run_judge_eval  # Judge eval (needs an LLM key: OPENAI_API_KEY by default)
+uv run python -m evals.run_judge_eval  # Judge eval (needs an LLM key: ANTHROPIC_API_KEY by default)
 uv run python -m evals.run_judge_eval --record-baseline  # Record evals/baselines/judge.json from a clean tree: run it twice at the same commit (unconfirmed, then confirmed), then commit it by hand
 uv run python -m evals.run_judge_eval --no-baseline      # Floors only (recall one detection per run, precision 0.50), any conditions, no baseline read (never in CI), exit 3 on a judgment throttled past every retry
 uv run python -m evals.run_judge_eval --runs N           # Judge each case N times, default 3 (the baseline's conditions)

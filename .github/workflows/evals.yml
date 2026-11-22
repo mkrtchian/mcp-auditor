@@ -31,7 +31,7 @@ jobs:
 
       - name: Run judge eval
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         # Half the default: the honeypot suite job runs alongside and draws on the same tokens-per-minute limit
         run: uv run python -m evals.run_judge_eval --concurrency 15
 
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run the honeypot suite
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TTY_COMPATIBLE: "1"
           TTY_INTERACTIVE: "0"
         run: uv run python -m evals.run_honeypot_suite

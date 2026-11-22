@@ -31,7 +31,7 @@ uv run python -m evals.run_judge_eval --runs N           # judge each case N tim
 uv run python -m evals.run_judge_eval --concurrency N    # judge calls in flight at once (default 30)
 ```
 
-Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `OPENAI_API_KEY` (default provider), `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `FIREWORKS_API_KEY`, `DASHSCOPE_API_KEY` or `OPENROUTER_API_KEY`. Unit and integration tests don't need any key.
+Evals run real LLM calls and require an API key. Copy `.env.example` to `.env` and set the key of the provider you use: `ANTHROPIC_API_KEY` (default provider), `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `FIREWORKS_API_KEY`, `DASHSCOPE_API_KEY` or `OPENROUTER_API_KEY`. Unit and integration tests don't need any key.
 
 ### CVE benchmark
 

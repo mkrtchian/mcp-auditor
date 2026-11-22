@@ -32,11 +32,11 @@ The details are under [Confinement](docs/usage.md#confinement) and [Safety](docs
 
 This README describes the `main` branch. The release on PyPI is 0.4.0, and what changed since is under `[Unreleased]` in the [changelog](CHANGELOG.md). To run `main`, replace `uvx mcp-auditor` with `uvx --from git+https://github.com/mkrtchian/mcp-auditor mcp-auditor`.
 
-You need [`uv`](https://docs.astral.sh/uv/), an API key of the model provider (OpenAI by default), and Docker running, unless you pass `--unconfined`. `uv` runs the auditor on Python 3.13 or later, and installs that Python when it is missing.
+You need [`uv`](https://docs.astral.sh/uv/), an API key of the model provider (Anthropic by default), and Docker running, unless you pass `--unconfined`. `uv` runs the auditor on Python 3.13 or later, and installs that Python when it is missing.
 
 ```bash
-# Set your API key (create one at platform.openai.com/api-keys)
-export OPENAI_API_KEY=your-key-here
+# Set your API key (create one at platform.claude.com/settings/keys)
+export ANTHROPIC_API_KEY=your-key-here
 
 # Audit an MCP server (the server runs in a Docker container, so Docker must be running)
 mkdir -p /tmp/sandbox
@@ -46,7 +46,7 @@ uvx mcp-auditor run -- npx @modelcontextprotocol/server-filesystem /tmp/sandbox
 uvx mcp-auditor run --unconfined -- python my_server.py
 ```
 
-Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server. As an order of magnitude, the [example below](#example-auditing-a-real-server) audited 21 tools at a budget of 10 with the default model in about 9 minutes, for about $0.05.
+Cost and runtime scale with `--budget`, the number of test cases asked of the generator for each tool (10 by default), so start low to size a run against your own server. As an order of magnitude, the [example below](#example-auditing-a-real-server) audited 21 tools at a budget of 10 with the default model in about 11 minutes, for about $0.10.
 
 ## What it does
 
@@ -84,23 +84,23 @@ uvx mcp-auditor run \
 
 This command audits `mcp-server-kubernetes` 2.4.9 with the default configuration, in the default container, which holds no cluster and no `kubectl`. Version 2.4.9 has a published command injection ([CVE-2025-53355](https://github.com/advisories/GHSA-gjv4-ghm7-q58q)), fixed in 2.5.0.
 
-Results of one run of `main`, on 2026-11-21 at commit `d7dc9ef`: **210 test cases on 21 tools, 57 findings** (10 high, 30 medium, 17 low). 12 of the findings are injections on 9 tools, and in each of them the server's response shows that the injected command ran. Two of them, with the response as the JSON report records it:
+Results of one run of `main`, on 2026-11-22 at commit `8efaa0d`, with `claude-haiku-5-5` at `low`: **210 test cases on 21 tools, 60 findings** (2 critical, 9 high, 35 medium, 14 low). 11 of the findings are injections on 8 tools, and in each of them the server's response shows that the injected command ran. Two of them, with the response as the JSON report records it:
+
+### kubectl_describe / injection / MCP-05 (critical)
+
+**Arguments**: `{"resourceType": "services", "name": "apps", "namespace": "default; echo mcp-auditor-probe"}`
+
+**Response**: `mcp-auditor-probe`
 
 ### kubectl_generic / injection / MCP-05 (high)
 
-**Arguments**: `{"command": "get", "resourceType": "pods", "namespace": "default; echo mcp-auditor-probe", "args": ["-o", "name"]}`
+**Arguments**: `{"command": "get", "resourceType": "pods", "name": "web; echo mcp-auditor-probe", "namespace": "default"}`
 
-**Response**: `mcp-auditor-probe -o name`
-
-### kubectl_logs / injection / MCP-05 (high)
-
-**Arguments**: `{"resourceType": "pod", "name": "demo-pod", "namespace": "default; echo mcp-auditor-probe"}`
-
-**Response**: `{"name": "demo-pod", "logs": "mcp-auditor-probe logs demo-pod\n"}`
+**Response**: `mcp-auditor-probe --namespace=default`
 
 The advisory's proof of concept goes through the same `namespace` parameter of another tool, `kubectl_scale`.
 
-The same command run again gave 50 findings, 10 of them injections, so one run does not measure a rate. This server is also one whose audits were read while the auditor was developed, unlike the servers measured below. 44 of the 45 other findings of the first run come from the container lacking `kubectl` and `helm`: the server relays their `not found` or `ENOENT` error. The last one is a false positive. The injection shows without `kubectl` because the server passes the argument to a shell, which runs the injected command whether `kubectl` exists or not. The `mcp-auditor-probe` marker that comes back shows that the command ran, but it says nothing about what the command can reach (see [what a detection proves](docs/evals.md#what-a-detection-proves)).
+The same command run again gave 58 findings, 9 of them injections, so one run does not measure a rate. This server is also one whose audits were read while the auditor was developed, unlike the servers measured below. 43 of the 49 other findings of the first run come from the container lacking `kubectl` and `helm`: the server relays their `not found` or `ENOENT` error. The 6 others are raw errors of the Kubernetes client, the shell and Node that the server relays, a response the MCP library rejects for lacking content, and a cleanup the server reports as a success on a resource that does not exist. The injection shows without `kubectl` because the server passes the argument to a shell, which runs the injected command whether `kubectl` exists or not. The `mcp-auditor-probe` marker that comes back shows that the command ran, but it says nothing about what the command can reach (see [what a detection proves](docs/evals.md#what-a-detection-proves)).
 
 ## Measurement
 
@@ -123,7 +123,7 @@ By class of flaw, 12 of the 22 targets with command execution among their classe
 
 What these numbers do not say:
 
-- **The measured configuration is not the default one** (`openai`, `gpt-6-luna` at `none`, chains off), which has no holdout number.
+- **The measured configuration is not the default one**: the default runs the same model at reasoning `low` with chains off, and has no holdout number.
 - **The detection rate covers only the flaws the detection suite rule makes eligible**, those whose effect a tool response can show and whose calibration passes, in the mix the draw gave.
 - **The two rates count different things.** An alarm needs only a FAIL verdict, where a detection needs a planted nonce in a FAIL, and the two sets of servers overlap only in part, at different versions.
 - **The false-positive rate on a healthy server is not measured.** The nuisance rate counts alarms on the tools of a fixed flaw only. It is published as "at most" because some counted alarms can be true when a fix is incomplete.
@@ -199,7 +199,7 @@ Options go before the `--` that starts the server's own command.
 | `--env`      | none       | Relay the variable `NAME` from your environment to the server, its value redacted from everything the server sends back (repeatable) |
 | `--env-plain` | none      | Relay `NAME` or `NAME=value` to the server without redaction, the value recorded in the report (repeatable) |
 
-`MCP_AUDITOR_PROVIDER` selects a provider other than `openai` (`google`, `anthropic`, `fireworks`, `alibaba` or `openrouter`), and each provider reads its own API key. The other variables and the configuration file are in [`docs/usage.md`](docs/usage.md#configuration).
+`MCP_AUDITOR_PROVIDER` selects a provider other than `anthropic` (`openai`, `google`, `fireworks`, `alibaba` or `openrouter`), and each provider reads its own API key. The other variables and the configuration file are in [`docs/usage.md`](docs/usage.md#configuration).
 
 ## Run in CI
 
