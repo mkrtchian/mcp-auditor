@@ -21,6 +21,17 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.server_liveness import Relaunch, UnsentCause
 
 
+class DryRunInput(TypedDict):
+    server_command: str
+    test_budget: int
+    attack_context: AttackContext
+
+
+class AuditInput(DryRunInput):
+    chain_budget: int
+    max_chain_steps: int
+
+
 class GraphState(TypedDict):
     server_command: str
     discovered_tools: list[ToolDefinition]

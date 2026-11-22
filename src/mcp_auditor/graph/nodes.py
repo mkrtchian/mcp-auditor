@@ -13,7 +13,6 @@ from mcp_auditor.domain.models import (
     AuditReport,
     BlockedPayload,
     CoverageGap,
-    JudgeResult,
     Judgment,
     ProviderUsage,
     TestCase,
@@ -29,7 +28,6 @@ from mcp_auditor.graph.prompts import (
     build_attack_generation_prompt,
     build_context_extraction_prompt,
     build_judge_prompt,
-    with_redaction_notice,
 )
 from mcp_auditor.graph.unsent_calls import case_not_sent, coverage_gap_of_tool
 
@@ -62,14 +60,11 @@ class GenerationRequest:
     budget: int
     categories: list[AuditCategory]
     attack_context: AttackContext
-    redacting: bool = False
 
     def call_for(self, categories: list[AuditCategory], budget: int) -> ModelCall[TestCaseBatch]:
         prompt = build_attack_generation_prompt(
             tool=self.tool, budget=budget, categories=categories, attack_context=self.attack_context
         )
-        if self.redacting:
-            prompt = with_redaction_notice(prompt)
         return ModelCall(self.tool.name, ModelCallKind.TEST_GENERATION, prompt, TestCaseBatch)
 
     def gap_in(self, batch: TestCaseBatch) -> CoverageGap | None:
@@ -102,14 +97,13 @@ class GenerationOutcome:
         )
 
 
-def make_generate_test_cases(llm: LLMPort, redacting: bool = False):
+def make_generate_test_cases(llm: LLMPort):
     async def generate_test_cases(state: dict[str, Any]) -> dict[str, Any]:
         request = GenerationRequest(
             tool=state["current_tool"],
             budget=state["test_budget"],
             categories=list(AuditCategory),
             attack_context=state["attack_context"],
-            redacting=redacting,
         )
         outcome = await _generate_covering_batch(llm, request)
         return {
@@ -179,26 +173,17 @@ def make_execute_tool(server: AuditedServer):
     return execute_tool
 
 
-def make_judge_response(llm: LLMPort, redacting: bool = False):
+def make_judge_response(llm: LLMPort):
     async def judge_response(state: dict[str, Any]) -> dict[str, Any]:
         case = state["current_case"]
         tool = state["current_tool"]
         prompt = build_judge_prompt(tool=tool, test_case=case)
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, ModelCallKind.JUDGMENT, prompt, Judgment)
         answer = await call_model(llm, call)
         if isinstance(answer, Missed):
             return {"processed_cases": [case], "current_case": None, **answer.state_update()}
         judgment, usage = answer
-        judge_result = JudgeResult(
-            tool_name=tool.name,
-            category=case.payload.category,
-            arguments=case.payload.arguments,
-            verdict=judgment.verdict,
-            justification=judgment.justification,
-            severity=judgment.severity,
-        )
+        judge_result = judgment.stamped(tool.name, case.payload.category, case.payload.arguments)
         judged_case = case.model_copy(update={"judge_result": judge_result})
         return {
             "processed_cases": [judged_case],
@@ -223,13 +208,11 @@ async def build_tool_report(state: dict[str, Any]) -> dict[str, Any]:
     return {"tool_reports": [report]}
 
 
-def make_extract_attack_context(llm: LLMPort, redacting: bool = False):
+def make_extract_attack_context(llm: LLMPort):
     async def extract_attack_context(state: dict[str, Any]) -> dict[str, Any]:
         tool_report = state["tool_reports"][-1]
         existing_context = state["attack_context"]
         prompt = build_context_extraction_prompt(tool_report, existing_context)
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(
             tool_report.tool.name, ModelCallKind.CONTEXT_EXTRACTION, prompt, AttackContext
         )

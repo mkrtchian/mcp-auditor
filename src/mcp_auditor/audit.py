@@ -22,6 +22,7 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.builder import build_dry_run_graph, build_graph
+from mcp_auditor.graph.state import AuditInput, DryRunInput
 from mcp_auditor.server_execution import ServerExecution
 from mcp_auditor.stream_handler import AuditProgressReporter
 
@@ -139,7 +140,7 @@ class Audit:
             return await self._stream(graph, thread_id, None if resuming else self._initial_state())
 
     async def _stream(
-        self, graph: Any, thread_id: str, initial_state: dict[str, Any] | None
+        self, graph: Any, thread_id: str, initial_state: AuditInput | None
     ) -> AuditReport:
         config = self._graph_config(thread_id)
         reporter = AuditProgressReporter(self._display)
@@ -155,14 +156,14 @@ class Audit:
             raise SystemExit(1)
         return report
 
-    def _initial_state(self) -> dict[str, Any]:
-        return {
-            "server_command": self._execution.launch.server_command,
-            "test_budget": self._config.run_options.test_budget,
-            "chain_budget": self._config.run_options.chain_budget,
-            "max_chain_steps": DEFAULT_MAX_CHAIN_STEPS,
-            "attack_context": AttackContext(),
-        }
+    def _initial_state(self) -> AuditInput:
+        return AuditInput(
+            server_command=self._execution.launch.server_command,
+            test_budget=self._config.run_options.test_budget,
+            chain_budget=self._config.run_options.chain_budget,
+            max_chain_steps=DEFAULT_MAX_CHAIN_STEPS,
+            attack_context=AttackContext(),
+        )
 
     def _graph_config(self, thread_id: str) -> dict[str, Any]:
         settings = self._analysts.settings
@@ -182,11 +183,11 @@ class Audit:
         )
         with one_audit():
             result = await graph.ainvoke(
-                {
-                    "server_command": "",
-                    "test_budget": self._config.run_options.test_budget,
-                    "attack_context": AttackContext(),
-                }
+                DryRunInput(
+                    server_command="",
+                    test_budget=self._config.run_options.test_budget,
+                    attack_context=AttackContext(),
+                )
             )
         tools = result.get("discovered_tools", [])
         self._display.print_discovery(len(tools), [t.name for t in tools])

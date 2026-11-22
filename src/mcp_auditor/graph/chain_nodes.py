@@ -23,10 +23,9 @@ from mcp_auditor.graph.chain_prompts import (
     build_step_planning_prompt,
 )
 from mcp_auditor.graph.missed_model_calls import Missed, ModelCall, call_model
-from mcp_auditor.graph.prompts import with_redaction_notice
 
 
-def make_plan_chains(llm: LLMPort, redacting: bool = False):
+def make_plan_chains(llm: LLMPort):
     async def plan_chains(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         cases = state["processed_cases"]
@@ -38,8 +37,6 @@ def make_plan_chains(llm: LLMPort, redacting: bool = False):
             attack_context=context,
             chain_budget=budget,
         )
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, ModelCallKind.CHAIN_PLANNING, prompt, ChainPlanBatch)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Missed):
@@ -86,7 +83,7 @@ def make_execute_step(server: AuditedServer):
     return execute_step
 
 
-def make_observe_step(llm: LLMPort, redacting: bool = False):
+def make_observe_step(llm: LLMPort):
     async def observe_step(state: dict[str, Any]) -> dict[str, Any]:
         steps = list(state["current_chain_steps"])
         goal = state["current_chain_goal"]
@@ -96,8 +93,6 @@ def make_observe_step(llm: LLMPort, redacting: bool = False):
             goal=goal,
             chain_steps=steps,
         )
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, ModelCallKind.CHAIN_STEP_OBSERVATION, prompt, StepObservation)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Missed):
@@ -114,7 +109,7 @@ def make_observe_step(llm: LLMPort, redacting: bool = False):
     return observe_step
 
 
-def make_plan_step(llm: LLMPort, redacting: bool = False):
+def make_plan_step(llm: LLMPort):
     async def plan_step(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         goal = state["current_chain_goal"]
@@ -127,8 +122,6 @@ def make_plan_step(llm: LLMPort, redacting: bool = False):
             chain_history=steps,
             observation_hint=hint,
         )
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, ModelCallKind.CHAIN_STEP_PLANNING, prompt, AuditPayload)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Missed):
@@ -139,7 +132,7 @@ def make_plan_step(llm: LLMPort, redacting: bool = False):
     return plan_step
 
 
-def make_judge_chain(llm: LLMPort, redacting: bool = False):
+def make_judge_chain(llm: LLMPort):
     async def judge_chain(state: dict[str, Any]) -> dict[str, Any]:
         tool = state["current_tool"]
         chain = AttackChain(
@@ -149,8 +142,6 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
             cut_by_relaunch=state.get("chain_cut_by_relaunch", False),
         )
         prompt = build_chain_judge_prompt(tool=tool, chain=chain)
-        if redacting:
-            prompt = with_redaction_notice(prompt)
         call = ModelCall(tool.name, ModelCallKind.CHAIN_JUDGMENT, prompt, Judgment)
         outcome = await call_model(llm, call)
         if isinstance(outcome, Missed):
@@ -168,14 +159,7 @@ def make_judge_chain(llm: LLMPort, redacting: bool = False):
 
 def _chain_judge_result(tool_name: str, chain: AttackChain, judgment: Judgment) -> JudgeResult:
     last_payload = chain.steps[-1].payload if chain.steps else chain.goal.first_step
-    return JudgeResult(
-        tool_name=tool_name,
-        category=chain.goal.category,
-        arguments=last_payload.arguments,
-        verdict=judgment.verdict,
-        justification=judgment.justification,
-        severity=judgment.severity,
-    )
+    return judgment.stamped(tool_name, chain.goal.category, last_payload.arguments)
 
 
 def abandon_chain(state: dict[str, Any]) -> dict[str, Any]:

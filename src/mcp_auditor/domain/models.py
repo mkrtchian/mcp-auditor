@@ -140,6 +140,18 @@ class Judgment(BaseModel):
     verdict: EvalVerdict
     severity: Severity
 
+    def stamped(
+        self, tool_name: str, category: AuditCategory, arguments: dict[str, Any]
+    ) -> JudgeResult:
+        return JudgeResult(
+            tool_name=tool_name,
+            category=category,
+            arguments=arguments,
+            verdict=self.verdict,
+            justification=self.justification,
+            severity=self.severity,
+        )
+
 
 class TestCase(BaseModel):
     payload: AuditPayload
