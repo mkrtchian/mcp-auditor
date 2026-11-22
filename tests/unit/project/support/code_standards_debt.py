@@ -232,14 +232,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
         (FOREIGN, "test_detection_gate_given"),
         (FOREIGN, "test_detection_oracle_given"),
     ),
-    "tests/unit/detection/support/run_detection_cli.py": (
-        (SETATTR, "a_session_under_priced_models:run_detection.audit_target"),
-        (SETATTR, "a_session_under_priced_models:run_detection.preflight_ok"),
-        (SETATTR, "a_session_under_priced_models:run_detection.read_tree"),
-        (SETATTR, "a_session_under_priced_models:run_detection.run_gated"),
-        (SETATTR, "a_sweep_finding:run_detection.DOCKER_SWEEP"),
-        (SETATTR, "exit_code_of:'sys.argv'"),
-    ),
     "tests/unit/detection/support/test_detection_audit_given.py": (
         (FOREIGN, "test_cve_grammar_given"),
         (FOREIGN, "test_cve_launch_audit_given"),
@@ -283,11 +275,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/support/test_run_detection_given.py": (
         (FOREIGN, "test_detection_calibration_check_exit_given"),
-        (SETATTR, "a_calibration:no_llm_modes.default_calibration_check_deps"),
-        (SETATTR, "a_calibration:run_detection.preflight_ok"),
-        (SETATTR, "a_session_recording_options:run_detection.run_gated"),
-        (SETATTR, "a_survey:no_llm_modes.survey_all"),
-        (SETATTR, "a_survey:run_detection.preflight_ok"),
     ),
     "tests/unit/detection/support/test_run_detection_holdout_run_given.py": (
         (SETATTR, "a_drawn_run_ending_in:run_detection_holdout.default_deps"),
@@ -300,7 +287,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/support/test_run_detection_recording_given.py": (
         (FOREIGN, "test_eval_display_given"),
-        (SETATTR, "a_recording_session_writing:run_detection.run_gated"),
     ),
     "tests/unit/detection/test_detection_audit.py": (
         (FOREIGN, "test_cve_grammar_given"),
@@ -327,16 +313,6 @@ _UNBLOCKED: dict[str, tuple[tuple[CodeStandard, str], ...]] = {
     ),
     "tests/unit/detection/test_detection_route_check.py": (
         (FOREIGN, "test_detection_route_check_golden_given"),
-    ),
-    "tests/unit/detection/test_run_detection.py": (
-        (
-            SETATTR,
-            "test_a_graded_run_that_crashes_still_removes_the_containers_left_running:run_detection.run_gated",
-        ),
-        (
-            SETATTR,
-            "test_a_measurement_run_with_an_unpriced_model_is_refused_before_any_audit:run_detection.run_gated",
-        ),
     ),
     "tests/unit/detection/test_run_detection_holdout.py": (
         (FOREIGN, "test_census_given"),

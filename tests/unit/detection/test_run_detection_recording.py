@@ -7,18 +7,13 @@ from tests.unit.detection.support import run_detection_cli as cli
 from tests.unit.detection.support import test_run_detection_recording_given as given
 
 
-@pytest.fixture(autouse=True)
-def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
-    cli.a_sweep_finding(monkeypatch)
-
-
 def test_an_unconfirmed_recording_names_the_command_that_confirms_it(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
+    deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
-    cli.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+    cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
 
     assert (
         "Run uv run python -m evals.run_detection --record-baseline again now, at this commit"
@@ -31,11 +26,11 @@ def test_the_confirming_command_repeats_the_target_filter_and_a_non_default_run_
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
+    deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
     cli.exit_code_of(
-        monkeypatch,
+        deps,
         "--record-baseline",
         "--flaw",
         cli.RECORDED_FLAW,
@@ -55,10 +50,10 @@ def test_the_confirming_command_leaves_the_default_run_count_and_budget_out(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
+    deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
     report = str(tmp_path / "r.json")
 
-    cli.exit_code_of(monkeypatch, "--record-baseline", "--runs", "3", "--report", report)
+    cli.exit_code_of(deps, "--record-baseline", "--runs", "3", "--report", report)
 
     assert "--runs" not in output.getvalue()
     assert "--budget" not in output.getvalue()
@@ -68,9 +63,9 @@ def test_a_confirmed_recording_says_to_commit_the_baseline(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.CONFIRMED)
+    deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.CONFIRMED)
 
-    cli.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+    cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
 
     assert "Commit evals/baselines/detection/ by hand." in output.getvalue()
     assert "again now" not in output.getvalue()
@@ -80,9 +75,9 @@ def test_a_recording_prints_the_outcome_once_before_the_recorded_baselines(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     output = given.a_captured_console(monkeypatch)
-    given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
+    deps = given.a_recording_session_writing(monkeypatch, BaselineStatus.UNCONFIRMED)
 
-    cli.exit_code_of(monkeypatch, "--record-baseline", "--report", str(tmp_path / "r.json"))
+    cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
 
     printed = output.getvalue()
     assert printed.count("Gate green.") == 1

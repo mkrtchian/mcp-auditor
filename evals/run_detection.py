@@ -3,6 +3,7 @@ import asyncio
 import json
 import sys
 import traceback
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,8 +13,6 @@ from rich.progress import Progress
 from evals import eval_display as display
 from evals.concurrency import bounded, positive_int
 from evals.cve.audit_progress import AuditProgress
-from evals.cve.detection import no_llm_modes
-from evals.cve.detection.audit import audit_target
 from evals.cve.detection.baseline import (
     DETECTION_BASELINE_DIRECTORY,
     DetectionRunConditions,
@@ -21,6 +20,8 @@ from evals.cve.detection.baseline import (
     run_conditions,
 )
 from evals.cve.detection.calibration_check import check_target
+from evals.cve.detection.calibration_check_exit import run_calibration_check
+from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.console import print_detection_summary
 from evals.cve.detection.costs import CostPricing
 from evals.cve.detection.layout_check import observe_layout
@@ -41,8 +42,9 @@ from evals.cve.detection.oracle import (
     result_for,
 )
 from evals.cve.detection.recording_console import print_recording
-from evals.cve.detection.session import DetectionSessionResult, run_gated
+from evals.cve.detection.session import DetectionSessionResult
 from evals.cve.detection.session_model import DetectionHarness, DetectionOptions
+from evals.cve.detection.survey import survey_all
 from evals.cve.detection.targets import (
     ACCEPTANCE_TARGETS,
     OUT_OF_SCOPE_FLAWS,
@@ -52,10 +54,9 @@ from evals.cve.detection.targets import (
 )
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.places import DETECTION_PLACES, Places, load_places
-from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, sweep_containers, target_services
-from evals.detection_preflight import preflight_ok
+from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
-from evals.eval_session import RECORDING_REFUSED, Refused, read_tree
+from evals.eval_session import RECORDING_REFUSED, Refused
 from evals.export import export_detection_judged_cases
 from evals.metrics import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
@@ -69,55 +70,73 @@ NOT_COMPARABLE_EXIT = 3
 CRASHED_EXIT = 4
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = None) -> int:
+    deps = DetectionCommandDeps() if deps is None else deps
     quiet_throttle_waits()
-    args = _parse_args()
-    graded = _filter_by_flaw(ACCEPTANCE_TARGETS, args.flaw)
-    tracked = _filter_by_flaw(OUT_OF_SCOPE_FLAWS, args.flaw)
-    _reject_unknown_flaws(args.flaw, {t.flaw_id for t in (*graded, *tracked)})
+    args = _parse_args(argv)
+    flaws = _FlawSelection(
+        graded=_filter_by_flaw(ACCEPTANCE_TARGETS, args.flaw),
+        tracked=_filter_by_flaw(OUT_OF_SCOPE_FLAWS, args.flaw),
+    )
+    _reject_unknown_flaws(args.flaw, {t.flaw_id for t in (*flaws.graded, *flaws.tracked)})
     refusal = _flag_refusal(args)
     if refusal:
         display.print_refusal(RECORDING_REFUSED if args.record_baseline else "Refused.", [refusal])
-        sys.exit(NOT_COMPARABLE_EXIT)
+        return NOT_COMPARABLE_EXIT
 
     # Says nothing of detection nor of the fixtures, so a crash in every mode.
-    if not preflight_ok():
-        sys.exit(CRASHED_EXIT)
+    if not deps.preflight():
+        return CRASHED_EXIT
 
     try:
         with silenced_stdio_logging():
-            code = asyncio.run(_run(args, graded, tracked, DOCKER_SWEEP))
+            return asyncio.run(_run(args, flaws, deps))
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
-        code = NOT_COMPARABLE_EXIT
+        return NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()
-        code = CRASHED_EXIT
-    sys.exit(code)
+        return CRASHED_EXIT
 
 
-async def _run(
-    args: argparse.Namespace,
-    graded: list[Target],
-    tracked: list[OutOfScopeFlaw],
-    sweep: ContainerSweep,
-) -> int:
+@dataclass(frozen=True)
+class _FlawSelection:
+    graded: list[Target]
+    tracked: list[OutOfScopeFlaw]
+
+
+@dataclass(frozen=True)
+class _CommandRun:
+    places: Places
+    deps: DetectionCommandDeps
+
+
+async def _run(args: argparse.Namespace, flaws: _FlawSelection, deps: DetectionCommandDeps) -> int:
     # The calibration check and the survey run under the same crash handler as the graded path, so
     # a configuration error out of either exits 4, not Python's exit 1, which reads as a target out
     # of calibration.
     places = load_places(DETECTION_PLACES)
-    tags = [image_tag(service) for service in target_services(graded)]
+    tags = [image_tag(service) for service in target_services(flaws.graded)]
     try:
         if args.survey:
-            return await no_llm_modes.survey(args, graded, places)
+            await survey_all(
+                flaws.graded,
+                bounded(lambda target: deps.survey_one(target, places), args.concurrency),
+            )
+            return 0
         if args.calibration_check:
-            return await no_llm_modes.calibration_check(args, graded, places)
-        return await _run_graded(args, graded, tracked, places)
+            # ADR 031 layout and route checks, confirmed before a draw: Docker-dependent,
+            # deterministic, run only under the maintainer paths (--calibration-check and
+            # --record-baseline), never on a gated comparison and not beside the synchronous
+            # preflight (no container exists there).
+            checks = deps.calibration_check(args.concurrency, args.ci)
+            return await run_calibration_check(flaws.graded, places, checks)
+        return await _run_graded(args, flaws, _CommandRun(places, deps))
     finally:
-        sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
+        sweep_containers(tags, deps.sweep.running_containers, deps.sweep.remove_containers)
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the detection suite of the CVE benchmark")
     parser.add_argument("--runs", type=int, default=DETECTION_RUNS)
     parser.add_argument("--budget", type=int, default=DETECTION_TEST_BUDGET)
@@ -172,7 +191,7 @@ def _parse_args() -> argparse.Namespace:
         help="Run and report without comparing to evals/baselines/detection/ (exit 0).",
     )
     add_measurement_flags(parser)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _flag_refusal(args: argparse.Namespace) -> str | None:
@@ -187,23 +206,18 @@ def _flag_refusal(args: argparse.Namespace) -> str | None:
     return measurement_refusal(args)
 
 
-async def _run_graded(
-    args: argparse.Namespace,
-    graded: list[Target],
-    tracked: list[OutOfScopeFlaw],
-    places: Places,
-) -> int:
-    tree = read_tree()
+async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _CommandRun) -> int:
+    tree = run.deps.read_tree()
     conditions = run_conditions(load_settings(), args.runs, args.budget)
     measurement = measurement_from(args)
     pricing = _cost_pricing(args.no_baseline, measurement, conditions)
-    options = DetectionOptions(graded, conditions, args.no_baseline, args.record_baseline)
+    options = DetectionOptions(flaws.graded, conditions, args.no_baseline, args.record_baseline)
     throttles = SessionThrottles()
     with Progress(console=console) as bar:
         tracking = _Tracking(throttles, AuditProgress(bar))
-        session = await run_gated(options, _harness(args, places, tracking))
-    results = [_result(target, session, args.budget) for target in graded]
-    results.extend(out_of_scope_results(tracked))
+        session = await run.deps.session(options, _harness(args, run, tracking))
+    results = [_result(target, session, args.budget) for target in flaws.graded]
+    results.extend(out_of_scope_results(flaws.tracked))
     report = DetectionReport(
         conditions=conditions,
         concurrency=args.concurrency,
@@ -254,17 +268,18 @@ class _Tracking:
     progress: AuditProgress
 
 
-def _harness(args: argparse.Namespace, places: Places, tracking: _Tracking) -> DetectionHarness:
+def _harness(args: argparse.Namespace, run: _CommandRun, tracking: _Tracking) -> DetectionHarness:
     measurement = measurement_from(args)
     overrides = None if measurement is None else run_overrides(measurement)
-    audit = audit_target(args.budget, tracking.throttles, places, overrides)
+    places = run.places
+    audit = run.deps.audit_target(args.budget, tracking.throttles, places, overrides)
     return DetectionHarness(
         audit=tracking.progress.tracked(bounded(audit, args.concurrency)),
         check=bounded(lambda target: check_target(target, places), args.concurrency),
         layout=bounded(lambda target: observe_layout(target, places), args.concurrency),
         announce_audits=tracking.progress.announce,
         baselines=DETECTION_BASELINE_DIRECTORY,
-        read_tree=read_tree,
+        read_tree=run.deps.read_tree,
         image_ids=image_ids,
         clock=lambda: datetime.now(UTC).isoformat(),
         places=places,
@@ -306,4 +321,4 @@ def _reject_unknown_flaws(ids: list[str] | None, known: set[str]) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

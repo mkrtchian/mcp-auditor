@@ -1,49 +1,60 @@
-from collections.abc import Callable
+from dataclasses import replace
 
 import pytest
 
-from evals import run_detection
-from evals.cve.detection import no_llm_modes
-from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
+from evals.cve.detection.command_deps import AuditTargetFactory, DetectionCommandDeps
 from evals.cve.detection.session import DetectionSessionResult
 from evals.cve.detection.session_model import AuditTarget, DetectionHarness, DetectionOptions
+from evals.cve.detection.survey import TargetSurvey
+from evals.cve.detection.targets import Target
 from evals.metrics import SessionThrottles
+from tests.fakes import FakeContainerSweep
 from tests.unit.detection.support.run_detection_cli import (
     a_billing_audit_target,
     a_session_auditing_nothing,
     a_session_under_priced_models,
+    deps_reaching_nothing,
 )
 from tests.unit.detection.support.test_detection_calibration_check_exit_given import deps_with
 
 
 def a_calibration(
-    monkeypatch: pytest.MonkeyPatch, *, raises: bool = False, checked: list[str] | None = None
-) -> None:
+    *,
+    sweep: FakeContainerSweep | None = None,
+    raises: bool = False,
+    checked: list[str] | None = None,
+) -> DetectionCommandDeps:
     """Past the preflight, every fixture admitted and live, or a configuration error. The flaw
     IDs it checks are appended to checked."""
-    monkeypatch.setattr(run_detection, "preflight_ok", lambda: True)
-
-    def default_calibration_check_deps(*_args: object, **_kwargs: object) -> CalibrationCheckDeps:
-        return deps_with(raises=raises, checked=checked)
-
-    monkeypatch.setattr(
-        no_llm_modes, "default_calibration_check_deps", default_calibration_check_deps
+    return replace(
+        deps_reaching_nothing(sweep),
+        calibration_check=lambda concurrency, ci: deps_with(raises=raises, checked=checked),
     )
 
 
-def a_survey(monkeypatch: pytest.MonkeyPatch, *, raises: bool = False) -> None:
-    monkeypatch.setattr(run_detection, "preflight_ok", lambda: True)
+def a_survey(
+    *,
+    sweep: FakeContainerSweep | None = None,
+    raises: bool = False,
+    surveyed: list[str] | None = None,
+) -> DetectionCommandDeps:
+    """Past the preflight, a survey finding no candidate place, or a configuration error. The flaw
+    IDs it surveys are appended to surveyed."""
 
-    async def survey_all(*_args: object, **_kwargs: object) -> None:
+    async def survey_one(target: Target, places: object) -> TargetSurvey:
+        if surveyed is not None:
+            surveyed.append(target.flaw_id)
         if raises:
             raise ValueError("a kept id with no record")
+        return TargetSurvey(target.flaw_id, facts=[], not_plantable=[], not_surveyed=[])
 
-    monkeypatch.setattr(no_llm_modes, "survey_all", survey_all)
+    return replace(deps_reaching_nothing(sweep), survey_one=survey_one)
 
 
-def a_session_recording_options(monkeypatch: pytest.MonkeyPatch) -> list[DetectionOptions]:
+def a_session_recording_options(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[DetectionCommandDeps, list[DetectionOptions]]:
     """A graded session auditing nothing, under priced models, that keeps the options it gets."""
-    a_session_under_priced_models(monkeypatch)
     received: list[DetectionOptions] = []
 
     async def session(
@@ -52,11 +63,10 @@ def a_session_recording_options(monkeypatch: pytest.MonkeyPatch) -> list[Detecti
         received.append(options)
         return await a_session_auditing_nothing(options, harness)
 
-    monkeypatch.setattr(run_detection, "run_gated", session)
-    return received
+    return replace(a_session_under_priced_models(monkeypatch), session=session), received
 
 
-def an_audit_target_recording(forced: list[object]) -> Callable[..., AuditTarget]:
+def an_audit_target_recording(forced: list[object]) -> AuditTargetFactory:
     def audit_target(
         budget: int, throttles: SessionThrottles, places: object, overrides: object = None
     ) -> AuditTarget:

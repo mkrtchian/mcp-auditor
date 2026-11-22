@@ -1,22 +1,21 @@
 import json
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from evals import run_detection
 from evals.cve.detection.audit import RunOverrides
+from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.measurement import MEASUREMENT_NEEDS_NO_BASELINE, STEPS_WITHOUT_CHAINS
+from evals.cve.detection.session import run_gated
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
 from evals.cve.run_images import target_services
+from evals.detection_preflight import preflight_ok
 from tests.unit.detection.support import run_detection_cli as cli
 from tests.unit.detection.support import test_run_detection_given as given
 from tests.unit.support.acceptance_targets import an_acceptance_target
-
-
-@pytest.fixture(autouse=True)
-def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
-    cli.a_sweep_finding(monkeypatch)
 
 
 @pytest.mark.parametrize(
@@ -30,10 +29,8 @@ def _no_docker_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
         ["--survey", "--no-baseline"],
     ],
 )
-def test_incompatible_flags_are_refused_as_not_comparable(
-    monkeypatch: pytest.MonkeyPatch, flags: list[str]
-):
-    assert cli.exit_code_of(monkeypatch, *flags) == 3
+def test_incompatible_flags_are_refused_as_not_comparable(flags: list[str]):
+    assert cli.exit_code_of(cli.deps_reaching_nothing(), *flags) == 3
 
 
 @pytest.mark.parametrize(
@@ -47,9 +44,9 @@ def test_incompatible_flags_are_refused_as_not_comparable(
     ],
 )
 def test_a_measurement_flag_outside_a_no_baseline_run_is_refused(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], flags: list[str]
+    capsys: pytest.CaptureFixture[str], flags: list[str]
 ):
-    code = cli.exit_code_of(monkeypatch, *flags)
+    code = cli.exit_code_of(cli.deps_reaching_nothing(), *flags)
 
     assert code == 3
     assert MEASUREMENT_NEEDS_NO_BASELINE in " ".join("".join(capsys.readouterr()).split())
@@ -63,9 +60,9 @@ def test_a_measurement_flag_outside_a_no_baseline_run_is_refused(
     ],
 )
 def test_chain_steps_without_chains_are_refused(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], flags: list[str]
+    capsys: pytest.CaptureFixture[str], flags: list[str]
 ):
-    code = cli.exit_code_of(monkeypatch, *flags)
+    code = cli.exit_code_of(cli.deps_reaching_nothing(), *flags)
 
     assert code == 3
     assert STEPS_WITHOUT_CHAINS in " ".join("".join(capsys.readouterr()).split())
@@ -73,35 +70,72 @@ def test_chain_steps_without_chains_are_refused(
 
 @pytest.mark.parametrize("mode", ["--calibration-check", "--survey"])
 def test_a_measurement_flag_on_a_mode_that_runs_no_audit_is_refused_for_that_reason(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mode: str
+    capsys: pytest.CaptureFixture[str], mode: str
 ):
-    code = cli.exit_code_of(monkeypatch, mode, "--chains", "3")
+    code = cli.exit_code_of(cli.deps_reaching_nothing(), mode, "--chains", "3")
 
     assert code == 3
     assert "run no audit" in "".join(capsys.readouterr())
 
 
-def test_a_negative_chain_count_is_refused_by_the_parser(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-):
-    code = cli.exit_code_of(monkeypatch, "--no-baseline", "--chains", "-1")
+def test_a_negative_chain_count_is_refused_by_the_parser(capsys: pytest.CaptureFixture[str]):
+    with pytest.raises(SystemExit) as exit_:
+        run_detection.main(["--no-baseline", "--chains", "-1"], cli.deps_reaching_nothing())
 
-    assert code == 2
+    assert exit_.value.code == 2
     assert "--chains: expected at least 0" in capsys.readouterr().err
+
+
+def test_an_unknown_flaw_id_is_refused_before_the_preflight(capsys: pytest.CaptureFixture[str]):
+    deps = replace(cli.deps_reaching_nothing(), preflight=_a_preflight_that_must_not_run)
+
+    with pytest.raises(SystemExit) as exit_:
+        run_detection.main(["--flaw", "CVE-0000-0000"], deps)
+
+    assert exit_.value.code == 2
+    assert "CVE-0000-0000" in capsys.readouterr().out
+
+
+def _a_preflight_that_must_not_run() -> bool:
+    raise AssertionError("the preflight must not run")
+
+
+def test_a_failed_preflight_exits_as_a_crash_before_the_session_starts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    deps, received = given.a_session_recording_options(monkeypatch)
+
+    code = cli.exit_code_of(
+        replace(deps, preflight=lambda: False), "--no-baseline", "--report", str(tmp_path / "r")
+    )
+
+    assert code == 4
+    assert received == []
+
+
+def test_a_recording_from_a_dirty_tree_is_refused_as_not_comparable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+):
+    deps = replace(cli.a_session_under_priced_models(monkeypatch, dirty=True), session=run_gated)
+
+    code = cli.exit_code_of(deps, "--record-baseline", "--report", str(tmp_path / "r.json"))
+
+    assert code == 3
+    assert "record from a clean tree" in " ".join(capsys.readouterr().out.split())
 
 
 @pytest.mark.parametrize("unpriced", ["MCP_AUDITOR_MODEL", "MCP_AUDITOR_JUDGE_MODEL"])
 def test_a_measurement_run_with_an_unpriced_model_is_refused_before_any_audit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unpriced: str
 ):
-    cli.a_session_under_priced_models(monkeypatch)
+    deps = replace(
+        cli.a_session_under_priced_models(monkeypatch),
+        session=given.a_session_that_crashes_if_started,
+    )
     monkeypatch.setenv(unpriced, "an-unpriced-model")
-    monkeypatch.setattr(run_detection, "run_gated", given.a_session_that_crashes_if_started)
     report_path = tmp_path / "detection_report.json"
 
-    code = cli.exit_code_of(
-        monkeypatch, "--no-baseline", "--chains", "3", "--report", str(report_path)
-    )
+    code = cli.exit_code_of(deps, "--no-baseline", "--chains", "3", "--report", str(report_path))
 
     assert code == 3
     assert not report_path.exists()
@@ -110,10 +144,10 @@ def test_a_measurement_run_with_an_unpriced_model_is_refused_before_any_audit(
 def test_a_no_baseline_run_with_priced_models_reports_a_cost_per_billed_target(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    cli.a_session_under_priced_models(monkeypatch)
+    deps = cli.a_session_under_priced_models(monkeypatch)
     report_path = tmp_path / "detection_report.json"
 
-    cli.exit_code_of(monkeypatch, "--no-baseline", "--report", str(report_path))
+    cli.exit_code_of(deps, "--no-baseline", "--report", str(report_path))
 
     report = json.loads(report_path.read_text())
     assert [cost["flaw_id"] for cost in report["costs"]] == [cli.BILLED_FLAW]
@@ -125,17 +159,14 @@ def test_a_measurement_run_forces_its_settings_on_the_audit_and_records_them(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     forced: list[object] = []
-    cli.a_session_under_priced_models(monkeypatch, given.an_audit_target_recording(forced))
+    deps = replace(
+        cli.a_session_under_priced_models(monkeypatch),
+        audit_target=given.an_audit_target_recording(forced),
+    )
     report_path = tmp_path / "detection_report.json"
 
     cli.exit_code_of(
-        monkeypatch,
-        "--no-baseline",
-        "--chains",
-        "3",
-        "--no-tools-filter",
-        "--report",
-        str(report_path),
+        deps, "--no-baseline", "--chains", "3", "--no-tools-filter", "--report", str(report_path)
     )
 
     assert forced == [RunOverrides(3, None, None, audit_every_tool=True)]
@@ -147,32 +178,37 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     monkeypatch.setenv("PATH", str(tmp_path))  # no docker binary to find
+    deps = replace(cli.deps_reaching_nothing(), preflight=preflight_ok)
 
-    assert cli.exit_code_of(monkeypatch, "--calibration-check") == 4
-
-
-def test_a_calibration_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
-    given.a_calibration(monkeypatch, raises=True)
-
-    assert cli.exit_code_of(monkeypatch, "--calibration-check") == 4
+    assert cli.exit_code_of(deps, "--calibration-check") == 4
 
 
-def test_a_survey_that_raises_exits_as_a_crash(monkeypatch: pytest.MonkeyPatch):
-    given.a_survey(monkeypatch, raises=True)
+def test_a_calibration_that_raises_exits_as_a_crash():
+    assert cli.exit_code_of(given.a_calibration(raises=True), "--calibration-check") == 4
 
-    assert cli.exit_code_of(monkeypatch, "--survey") == 4
+
+def test_a_survey_that_raises_exits_as_a_crash():
+    assert cli.exit_code_of(given.a_survey(raises=True), "--survey") == 4
+
+
+def test_the_survey_surveys_every_target_and_exits_zero():
+    surveyed: list[str] = []
+
+    code = cli.exit_code_of(given.a_survey(surveyed=surveyed), "--survey")
+
+    assert code == 0
+    assert sorted(surveyed) == sorted(target.flaw_id for target in ACCEPTANCE_TARGETS)
 
 
 @pytest.mark.parametrize("mode", [given.a_calibration, given.a_survey])
 @pytest.mark.parametrize("raises", [False, True])
 def test_a_maintainer_mode_removes_the_containers_left_running_even_when_it_raises(
-    monkeypatch: pytest.MonkeyPatch, mode: Callable[..., None], raises: bool
+    mode: Callable[..., DetectionCommandDeps], raises: bool
 ):
-    containers = cli.a_sweep_finding(monkeypatch, "leftover_filesystem")
-    mode(monkeypatch, raises=raises)
+    containers = cli.a_sweep_finding("leftover_filesystem")
     flag = "--calibration-check" if mode is given.a_calibration else "--survey"
 
-    cli.exit_code_of(monkeypatch, flag, "--flaw", cli.RECORDED_FLAW)
+    cli.exit_code_of(mode(sweep=containers, raises=raises), flag, "--flaw", cli.RECORDED_FLAW)
 
     assert containers.removed == ["leftover_filesystem"]
     assert containers.listed_tags == [_tags_of(cli.RECORDED_FLAW)]
@@ -181,11 +217,11 @@ def test_a_maintainer_mode_removes_the_containers_left_running_even_when_it_rais
 def test_a_graded_run_removes_the_containers_of_its_images_left_running(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    containers = cli.a_sweep_finding(monkeypatch, "leftover_filesystem")
-    cli.a_session_under_priced_models(monkeypatch)
+    containers = cli.a_sweep_finding("leftover_filesystem")
+    deps = replace(cli.a_session_under_priced_models(monkeypatch), sweep=containers.sweep)
     report = str(tmp_path / "r.json")
 
-    cli.exit_code_of(monkeypatch, "--no-baseline", "--flaw", cli.RECORDED_FLAW, "--report", report)
+    cli.exit_code_of(deps, "--no-baseline", "--flaw", cli.RECORDED_FLAW, "--report", report)
 
     assert containers.removed == ["leftover_filesystem"]
     assert containers.listed_tags == [_tags_of(cli.RECORDED_FLAW)]
@@ -194,11 +230,14 @@ def test_a_graded_run_removes_the_containers_of_its_images_left_running(
 def test_a_graded_run_that_crashes_still_removes_the_containers_left_running(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    containers = cli.a_sweep_finding(monkeypatch, "leftover_filesystem")
-    cli.a_session_under_priced_models(monkeypatch)
-    monkeypatch.setattr(run_detection, "run_gated", given.a_session_that_crashes_if_started)
+    containers = cli.a_sweep_finding("leftover_filesystem")
+    deps = replace(
+        cli.a_session_under_priced_models(monkeypatch),
+        sweep=containers.sweep,
+        session=given.a_session_that_crashes_if_started,
+    )
 
-    code = cli.exit_code_of(monkeypatch, "--no-baseline", "--report", str(tmp_path / "r.json"))
+    code = cli.exit_code_of(deps, "--no-baseline", "--report", str(tmp_path / "r.json"))
 
     assert code == 4
     assert containers.removed == ["leftover_filesystem"]
@@ -208,22 +247,21 @@ def _tags_of(flaw_id: str) -> list[str]:
     return [image_tag(service) for service in target_services([an_acceptance_target(flaw_id)])]
 
 
-def test_a_concurrency_below_one_is_refused_by_the_parser(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-):
-    code = cli.exit_code_of(monkeypatch, "--concurrency", "0")
+def test_a_concurrency_below_one_is_refused_by_the_parser(capsys: pytest.CaptureFixture[str]):
+    with pytest.raises(SystemExit) as exit_:
+        run_detection.main(["--concurrency", "0"], cli.deps_reaching_nothing())
 
-    assert code == 2
+    assert exit_.value.code == 2
     assert "--concurrency: expected at least 1" in capsys.readouterr().err
 
 
 def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    cli.a_session_under_priced_models(monkeypatch, dirty=True)
+    deps = cli.a_session_under_priced_models(monkeypatch, dirty=True)
     report_path = tmp_path / "detection_report.json"
 
-    cli.exit_code_of(monkeypatch, "--no-baseline", "--report", str(report_path))
+    cli.exit_code_of(deps, "--no-baseline", "--report", str(report_path))
 
     report = json.loads(report_path.read_text())
     assert (report["commit"], report["dirty"]) == ("c0ffee", True)
@@ -238,21 +276,20 @@ def test_a_graded_run_reports_the_tree_it_ran_on_and_the_tokens_billed(
     ],
 )
 def test_the_calibration_check_runs_on_every_target_or_on_the_flaws_named(
-    monkeypatch: pytest.MonkeyPatch, flags: list[str], expected: list[str]
+    flags: list[str], expected: list[str]
 ):
     checked: list[str] = []
-    given.a_calibration(monkeypatch, checked=checked)
 
-    code = cli.exit_code_of(monkeypatch, "--calibration-check", *flags)
+    code = cli.exit_code_of(given.a_calibration(checked=checked), "--calibration-check", *flags)
 
     assert code == 0
     assert checked == expected
 
 
 def test_the_no_baseline_flag_reaches_the_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    received = given.a_session_recording_options(monkeypatch)
+    deps, received = given.a_session_recording_options(monkeypatch)
 
-    code = cli.exit_code_of(monkeypatch, "--no-baseline", "--report", str(tmp_path / "r.json"))
+    code = cli.exit_code_of(deps, "--no-baseline", "--report", str(tmp_path / "r.json"))
 
     assert code == 0
     assert [options.no_baseline for options in received] == [True]

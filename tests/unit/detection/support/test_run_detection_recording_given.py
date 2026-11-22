@@ -1,3 +1,4 @@
+from dataclasses import replace
 from io import StringIO
 
 import pytest
@@ -7,6 +8,7 @@ from evals import run_detection
 from evals.baseline import BaselineStatus
 from evals.cve.detection import console as detection_console
 from evals.cve.detection import recording_console
+from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.gate import DetectionGateResult
 from evals.cve.detection.session import DetectionSessionResult
 from evals.cve.detection.session_model import DetectionHarness, DetectionOptions
@@ -24,9 +26,10 @@ def a_captured_console(monkeypatch: pytest.MonkeyPatch) -> StringIO:
     )
 
 
-def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: BaselineStatus) -> None:
+def a_recording_session_writing(
+    monkeypatch: pytest.MonkeyPatch, status: BaselineStatus
+) -> DetectionCommandDeps:
     """A green recording run that writes one baseline file with this status, reaching no Docker."""
-    a_session_under_priced_models(monkeypatch)
 
     async def session(
         options: DetectionOptions, harness: DetectionHarness
@@ -42,4 +45,4 @@ def a_recording_session_writing(monkeypatch: pytest.MonkeyPatch, status: Baselin
             exit_code=0,
         )
 
-    monkeypatch.setattr(run_detection, "run_gated", session)
+    return replace(a_session_under_priced_models(monkeypatch), session=session)

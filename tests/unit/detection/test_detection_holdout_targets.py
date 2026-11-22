@@ -13,7 +13,7 @@ _INSTRUMENTS = (
     "draw_judge_cases.py",
     "capture_probe_corpus.py",
     "run_detection.py",
-    "cve/detection/no_llm_modes.py",
+    "cve/detection/command_deps.py",
     "cve/detection/calibration_check_exit.py",
     "cve/launch_audit.py",
 )
