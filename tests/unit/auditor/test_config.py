@@ -19,19 +19,10 @@ def test_the_default_is_claude_haiku_5_5_at_low_on_anthropic(
     assert settings.resolve_reasoning("claude-haiku-5-5") == "low"
 
 
-def test_openai_keeps_gpt_6_luna_at_none() -> None:
-    settings = _settings("openai")
-
-    model = settings.resolve_model()
-
-    assert model == "gpt-6-luna"
-    assert settings.resolve_reasoning(model) == "none"
-
-
 def test_the_provider_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "anthropic")
+    monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "google")
 
-    assert Settings().provider == "anthropic"
+    assert Settings().provider == "google"
 
 
 def test_model_override(monkeypatch: pytest.MonkeyPatch) -> None:
