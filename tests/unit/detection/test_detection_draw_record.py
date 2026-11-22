@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 import tests.unit.census.support.test_census_given as census
 import tests.unit.detection.support.test_detection_draw_record_given as given
-from evals.cve.census.census import CENSUS_PATH, load_census
+from evals.cve.census.census import load_census
 from evals.cve.census.classification import Criterion
 from evals.cve.census.work import AgentRole
 from evals.cve.detection.draw_record import GiveUp, GiveUpReason, KeptPlace, Settlement
@@ -24,12 +24,6 @@ def test_a_well_formed_draw_loads(tmp_path: Path):
     loaded = load_census(census.written(tmp_path, with_draw))
 
     assert loaded.draw == given.a_draw()
-
-
-def test_the_committed_census_draw_validates_clean():
-    # load_census runs draw_problems on a present draw and raises on any problem, so a clean load
-    # with the draw present is the committed draw validating.
-    assert load_census(CENSUS_PATH).draw is not None
 
 
 def test_a_settlement_is_written_and_read_back_under_its_committed_key():

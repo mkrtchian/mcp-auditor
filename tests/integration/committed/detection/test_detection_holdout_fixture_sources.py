@@ -1,8 +1,10 @@
 import pytest
 
-import tests.unit.detection.support.test_detection_holdout_fixture_sources_then as then
 from evals.cve.census.census import CENSUS_PATH, load_census
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
+from tests.integration.committed.detection.support import (
+    test_detection_holdout_fixture_sources_then as then,
+)
 
 
 def test_every_committed_card_stand_in_is_a_file_the_target_fingerprint_covers():

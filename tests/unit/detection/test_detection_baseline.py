@@ -13,11 +13,9 @@ from evals.cve.detection.baseline import (
     planting_host_parts,
     write_baseline,
 )
-from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.grammar import TargetStatus
 from evals.cve.places import LayoutAnchor
-from evals.cve.planting_base import STAND_IN_SERVICE, PlantingHost, SymbolicUser
+from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 DETECTED = TargetStatus.DETECTED
 MISSED = TargetStatus.MISSED
@@ -89,16 +87,6 @@ def test_a_target_without_public_names_reads_no_stand_in(tmp_path: Path):
     absent = fixture_fingerprint(target, places, stand_ins_directory=tmp_path / "absent")
 
     assert absent == fixture_fingerprint(target, places)
-
-
-def test_a_target_declaring_a_stand_in_builds_the_stand_in_image():
-    declaring = [
-        target
-        for target in (*ACCEPTANCE_TARGETS, *HOLDOUT_TARGETS)
-        if target.planting_host.public_names.stand_ins
-    ]
-
-    assert not [target.flaw_id for target in declaring if STAND_IN_SERVICE not in target.images]
 
 
 def test_two_targets_sharing_an_image_and_a_builder_but_not_an_aim_differ():

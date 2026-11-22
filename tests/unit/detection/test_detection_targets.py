@@ -1,72 +1,29 @@
 import dataclasses
-from collections.abc import Awaitable, Callable, Generator
+from collections.abc import Generator
 from contextlib import contextmanager
-from pathlib import Path
 
 import pytest
-import yaml
 
 import tests.unit.detection.support.test_detection_targets_given as given
 from evals.cve.detection import exploits
 from evals.cve.detection.targets import (
-    ACCEPTANCE_TARGETS,
-    OUT_OF_SCOPE_FLAWS,
-    FallbackScope,
     FallbackScopeKind,
     LaunchMode,
-    Target,
     TargetVersion,
     image_tag,
 )
 from evals.cve.environments import Launch, LaunchShape
-from evals.cve.exchange_log import ExchangeLog
 from evals.cve.layout import PROJECT
-from evals.cve.places import Coordinates, Place, PlaceKind, Places
+from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting import PlantingSpec
-from evals.cve.planting_base import LayoutMount
-from evals.cve.proofs import is_aimed
-from evals.cve.units import Unit, unit_of_exchanges
 from mcp_auditor.domain import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from mcp_auditor.domain.audited_server import AuditedServer
-from mcp_auditor.domain.models import ToolResponse
-from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
+from tests.unit.detection.support.fictional_places import a_fictional_places
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
 from tests.unit.support.docker_argv import value_after, values_after
 
 SSRF_TARGET = an_acceptance_target("CVE-2025-65513")
-COMPOSE_PATH = Path(__file__).resolve().parents[3] / "evals" / "docker" / "compose.yml"
-
-ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
-
-
-def _a_fictional_places() -> Places:
-    """One place per catalogue reach the sweeping exploits read: a command-execution file and
-    env for the kubernetes sweep, an internal-fetch endpoint for the SSRF sweep. The layout
-    exploits read the frozen /srv constants, not these records."""
-    return {
-        "fict-file": Place(
-            id="fict-file",
-            family="fictional",
-            reaches=frozenset({"arbitrary_read", "command_execution"}),
-            kind=PlaceKind.FILE,
-            coordinates=Coordinates(PlaceKind.FILE, path="/etc/fict-secret"),
-        ),
-        "fict-env": Place(
-            id="fict-env",
-            family="fictional",
-            reaches=frozenset({"command_execution"}),
-            kind=PlaceKind.ENV,
-            coordinates=Coordinates(PlaceKind.ENV, name="FICT_SECRET"),
-        ),
-        "fict-endpoint": Place(
-            id="fict-endpoint",
-            family="fictional",
-            reaches=frozenset({"internal_fetch"}),
-            kind=PlaceKind.HTTP_ENDPOINT,
-            coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="169.254.169.254", path="/fict"),
-        ),
-    }
 
 
 class _FakeNonces:
@@ -87,21 +44,10 @@ def _an_env_place() -> Place:
     )
 
 
-@pytest.mark.parametrize(
-    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
-)
-async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target: Target):
-    for exploit in target.exploits:
-        assert is_aimed(await _recorded(exploit), target.aim)
-    benign = await _recorded(target.benign)
-
-    assert not is_aimed(benign, target.aim)
-
-
 async def test_the_git_init_exploit_stages_exact_relative_paths_outside_the_checkout():
     client = FakeMCPClient([])
 
-    await exploits.exploit_git_init_traversal(_a_fictional_places(), client)
+    await exploits.exploit_git_init_traversal(a_fictional_places(), client)
 
     staged = [args for name, args in client.calls if name == "git_add"]
     assert staged == [{"repo_path": "/srv", "files": ["app.git/config", ".env"]}]
@@ -112,7 +58,7 @@ async def test_the_git_init_exploit_stages_exact_relative_paths_outside_the_chec
 
 async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv():
     client = FakeMCPClient([])
-    await exploits.exploit_git_init_traversal(_a_fictional_places(), client)
+    await exploits.exploit_git_init_traversal(a_fictional_places(), client)
     guard = AuditedServer(FakeMCPClient([]))
     tool = ToolDefinition(name="git", description="git", input_schema={"type": "object"})
 
@@ -121,54 +67,11 @@ async def test_the_destructive_payload_guard_permits_the_git_init_chain_on_srv()
         assert not isinstance(outcome, BlockedPayload), args
 
 
-def test_four_targets_remain_and_the_prefix_collision_merged_into_the_symlink_target():
-    ids = [target.flaw_id for target in ACCEPTANCE_TARGETS]
-
-    assert len(ids) == 4
-    assert "CVE-2025-53110" not in ids
-    assert "CVE-2025-68145" not in ids
-
-
 def test_the_filesystem_target_aims_at_both_scope_escapes():
     filesystem = an_acceptance_target(FILESYSTEM)
 
     assert filesystem.aim.search("/srv/app/archive0/report")  # the symlink out of scope
     assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
-
-
-def test_the_repository_bypass_cve_is_out_of_scope_with_a_reason():
-    assert "CVE-2025-68145" not in {target.flaw_id for target in ACCEPTANCE_TARGETS}
-
-    bypass = next(cve for cve in OUT_OF_SCOPE_FLAWS if cve.flaw_id == "CVE-2025-68145")
-    assert bypass.reason
-
-
-@pytest.mark.parametrize(
-    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
-)
-async def test_the_tools_filter_names_exactly_the_tools_its_exploits_call(target: Target):
-    called: set[str] = set()
-    for exploit in target.exploits:
-        client = FakeMCPClient(
-            [],
-            responses={"list_directory": ToolResponse(content="archive0\n")},
-        )
-        await exploit(_a_fictional_places(), client)
-        called.update(name for name, _ in client.calls)
-
-    assert target.tools_filter == frozenset(called)
-
-
-@pytest.mark.parametrize(
-    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
-)
-def test_every_server_and_patched_image_of_a_target_is_a_compose_service(target: Target):
-    services = yaml.safe_load(COMPOSE_PATH.read_text())["services"]
-
-    assert target.images
-    assert set(target.images) <= set(services)
-    assert target.server_image in services
-    assert target.patched_image in services
 
 
 def test_the_environment_calls_its_builder_with_the_server_image_and_spec_and_yields_its_nonces():
@@ -224,17 +127,6 @@ def test_the_environment_picks_the_fallback_launch_for_both_versions_in_fallback
     assert shapes == [LaunchShape.FALLBACK, LaunchShape.FALLBACK]
 
 
-@pytest.mark.parametrize(
-    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
-)
-def test_every_surviving_target_carries_a_fallback_scope_and_the_normal_launch_mode(
-    target: Target,
-):
-    assert target.launch_mode is LaunchMode.NORMAL
-    assert isinstance(target.fallback_scope, FallbackScope)
-    assert isinstance(target.fallback_scope.kind, FallbackScopeKind)
-
-
 def test_the_git_target_falls_back_to_no_scope_because_its_scope_is_optional():
     git = an_acceptance_target(GIT)
 
@@ -255,21 +147,6 @@ def test_the_patched_version_launches_the_patched_image_tag():
         pass
 
     assert calls == [image_tag(SSRF_TARGET.patched_image)]
-
-
-def test_only_the_git_target_declares_a_read_write_layout():
-    mounts = {t.flaw_id: t.planting_host.layout_mount for t in ACCEPTANCE_TARGETS}
-
-    assert [cve for cve, mount in mounts.items() if mount is LayoutMount.READ_WRITE] == [
-        "CVE-2025-68143"
-    ]
-
-
-@pytest.mark.parametrize(
-    "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
-)
-def test_every_acceptance_target_runs_from_the_checkout(target: Target):
-    assert target.planting_host.working_directory == PROJECT
 
 
 def test_an_empty_spec_plants_no_nonce():
@@ -332,12 +209,3 @@ def test_the_ssrf_aim_does_not_read_a_public_host_as_aimed(url: str):
 
 def _a_payload(arguments: dict[str, object]) -> AuditPayload:
     return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
-
-
-async def _recorded(call: ExploitCall) -> Unit:
-    # The symlink traversal discovers the planted links by listing the checkout, so the fake
-    # names at least one archive<N> for its read chain to issue an aimed read_file.
-    listing = ToolResponse(content="archive0\narchive7\n")
-    recorder = ExchangeLog(FakeMCPClient([], responses={"list_directory": listing}))
-    await call(_a_fictional_places(), recorder)
-    return unit_of_exchanges([(args, response.content) for _, args, response in recorder.exchanges])
