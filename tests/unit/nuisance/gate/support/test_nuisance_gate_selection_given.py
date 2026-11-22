@@ -1,6 +1,6 @@
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 
 
 def a_server_outside_the_census(package: str) -> AdmittedServer:
-    return run_given.a_server(package)
+    return holdout_runs.a_server(package)

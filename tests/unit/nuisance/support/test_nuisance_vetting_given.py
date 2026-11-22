@@ -1,22 +1,11 @@
-from collections.abc import AsyncGenerator, Callable, Generator, Mapping, Sequence
-from contextlib import asynccontextmanager, contextmanager
-from typing import IO
+from collections.abc import Callable, Mapping, Sequence
 
-from evals.cve.environments import Launch
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.solo import SOLO_SERVERS
-from evals.cve.nuisance.vetting import LaunchedBenignCall, ServerLauncher
-from mcp_auditor.domain.models import ToolDefinition, ToolResponse
-from mcp_auditor.domain.ports import MCPClientPort
-from tests.fakes import FakeMCPClient, ScriptedBenignCall
-from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import (
-    CKAN_TAG,
-    DockerHost,
-    RemovalHost,
-)
-from tests.unit.nuisance.support.test_nuisance_holdout_run_given import COUNTED_TOOL, a_server
-
-__all__ = ["CKAN_TAG", "COUNTED_TOOL", "a_server"]
+from evals.cve.nuisance.vetting import LaunchedBenignCall
+from tests.fakes import ScriptedBenignCall
+from tests.unit.nuisance.support.flaky_launches import FlakyLaunches
+from tests.unit.support.nuisance_docker_hosts import DockerHost, RemovalHost
 
 (SOLO_SERVER,) = SOLO_SERVERS
 
@@ -52,54 +41,6 @@ class ScriptedVet:
     def _remove(self, names: Sequence[str]) -> None:
         self.events.extend(("removed", name) for name in names)
         self._docker.remove(names)
-
-
-class FlakyLaunches:
-    """Stands in for the server's launch and connection: the first `failing` connections fail,
-    the last of them on a timeout, and the next ones list the counted tool and answer its benign
-    call with `answer` and the ping with `ping_answer`, then fail their teardown when
-    `teardown_fails`. `connected` keeps every launch it was asked to connect, and `launcher`
-    launches and connects through it."""
-
-    def __init__(
-        self, failing: int, answer: ToolResponse, teardown_fails: bool, ping_answer: bool
-    ) -> None:
-        self.launches = 0
-        self.connected: list[Launch] = []
-        self._failing = failing
-        self._answer = answer
-        self._teardown_fails = teardown_fails
-        self._ping_answer = ping_answer
-        self.launcher = ServerLauncher(self.environment, self.connect)
-
-    @contextmanager
-    def environment(self, _server: AdmittedServer) -> Generator[Launch]:
-        self.launches += 1
-        yield Launch("docker", ["run", "server-image"])
-
-    @asynccontextmanager
-    async def connect(
-        self, launch: Launch, _stderr: IO[str], *, tool_call_timeout: int
-    ) -> AsyncGenerator[MCPClientPort]:
-        self.connected.append(launch)
-        if self.launches == self._failing:
-            raise TimeoutError("initialize timed out")
-        if self.launches < self._failing:
-            raise ConnectionError("Connection closed")
-        listed = [ToolDefinition(name=COUNTED_TOOL, input_schema={})]
-        yield FakeMCPClient(listed, {COUNTED_TOOL: self._answer}, ping_answers=(self._ping_answer,))
-        if self._teardown_fails:
-            raise OSError("container removal failed")
-
-
-def launches_failing(
-    failing: int,
-    answer: ToolResponse | None = None,
-    teardown_fails: bool = False,
-    ping_answer: bool = True,
-) -> FlakyLaunches:
-    expected = ToolResponse(content=f"{COUNTED_TOOL} answered")
-    return FlakyLaunches(failing, answer or expected, teardown_fails, ping_answer)
 
 
 def a_benign_call_on(

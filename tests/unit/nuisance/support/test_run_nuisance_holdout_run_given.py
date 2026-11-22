@@ -4,8 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.support.nuisance_admissions as admissions
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_walks as walks
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance
@@ -80,7 +80,7 @@ def _an_admitted_run(outcome: NuisanceHoldoutRunResult | BaseException) -> RunCo
         return outcome
 
     def deps(*_: object) -> NuisanceDeps:
-        return run_given.deps_reaching_nothing()
+        return holdout_runs.deps_reaching_nothing()
 
     def file_commit(path: Path) -> str:  # the census and the record live in tmp_path, out of git
         return f"commit-of-{path.name}"

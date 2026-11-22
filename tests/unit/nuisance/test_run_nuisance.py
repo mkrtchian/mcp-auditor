@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.nuisance.support.test_run_nuisance_given as run_given
+import tests.unit.nuisance.support.nuisance_queue_walks as queue_walks
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
@@ -37,20 +37,20 @@ def test_walk_prints_the_population_and_exits_zero(
 def test_walk_marks_a_queue_server_and_counts_the_admitted_ones(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=True)
+    arguments = queue_walks.a_walk_with_a_queue_server(tmp_path, admitted=True)
 
     exit_code = run_nuisance.main(["walk", *arguments])
 
     out = capsys.readouterr().out
     assert exit_code == 0
-    assert f"{run_given.QUEUE_SERVER}  reached by {run_given.QUEUE_FLAW} (addition)" in out
+    assert f"{queue_walks.QUEUE_SERVER}  reached by {queue_walks.QUEUE_FLAW} (addition)" in out
     assert "1 of 1 servers of the addition admitted and in the nuisance holdout layer" in out
 
 
 def test_walk_without_an_admission_prints_no_count_line(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    arguments = run_given.a_walk_with_a_queue_server(tmp_path, admitted=False)
+    arguments = queue_walks.a_walk_with_a_queue_server(tmp_path, admitted=False)
 
     exit_code = run_nuisance.main(["walk", *arguments])
 

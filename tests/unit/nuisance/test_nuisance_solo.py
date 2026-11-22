@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
 import tests.unit.nuisance.support.test_nuisance_solo_given as given
 import tests.unit.nuisance.support.test_nuisance_solo_then as then
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
@@ -56,7 +56,7 @@ async def test_run_plays_the_solo_benign_call_and_audits_alone_after_the_others(
     servers = [given.SOLO_SERVER, *others]
     in_flight = given.InFlight()
 
-    result = await run_given.run(servers, given.run_deps(in_flight, servers), runs=given.RUNS)
+    result = await holdout_runs.run(servers, given.run_deps(in_flight, servers), runs=given.RUNS)
 
     then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=1 + given.RUNS)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)

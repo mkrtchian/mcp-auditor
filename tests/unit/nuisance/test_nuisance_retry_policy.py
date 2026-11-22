@@ -1,6 +1,7 @@
 import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS
 from evals.cve.nuisance.audit import (
     NUISANCE_INFRA_ATTEMPTS,
@@ -16,7 +17,6 @@ from evals.cve.nuisance.audit import (
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from mcp_auditor.domain.models import MissCause
-from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
 from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
     PROVIDER_ERROR,
     ScriptedCalls,
@@ -33,7 +33,7 @@ def output(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) 
 
 
 async def test_a_clean_report_stands_at_the_first_call():
-    audit = run_given.an_audit(False)
+    audit = holdout_runs.an_audit(False)
     attempt: Attempt = ScriptedCalls([audit])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -47,7 +47,7 @@ async def test_a_clean_report_stands_at_the_first_call():
     [MissCause.PROVIDER_REFUSAL, MissCause.UNREADABLE_ANSWER, MissCause.PROMPT_TOO_LONG],
 )
 async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
-    audit = run_given.an_audit(False, missed=cause)
+    audit = holdout_runs.an_audit(False, missed=cause)
     attempt: Attempt = ScriptedCalls([audit])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -69,7 +69,7 @@ async def test_an_incomplete_report_stands_without_a_retry(cause: MissCause):
 def test_only_a_refused_unreadable_or_too_long_step_makes_a_report_incomplete(
     missed: MissCause | None, incomplete: bool
 ):
-    report = run_given.a_report(False, missed=missed)
+    report = holdout_runs.a_report(False, missed=missed)
 
     assert is_incomplete(report) is incomplete
     assert incomplete_causes(report) == ({missed} if incomplete else set())
@@ -85,7 +85,7 @@ async def test_a_launch_failing_at_every_attempt_drops_the_run():
 
 
 async def test_a_run_throttled_at_any_attempt_drops_as_throttled(output: CapturedOutput):
-    throttled = run_given.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)
+    throttled = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_THROTTLED)
     attempt: Attempt = ScriptedCalls([PROVIDER_ERROR, LaunchFailed("no image"), throttled])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -96,7 +96,7 @@ async def test_a_run_throttled_at_any_attempt_drops_as_throttled(output: Capture
 
 
 async def test_a_launch_failure_is_retried_and_a_later_report_stands():
-    audit = run_given.an_audit(False)
+    audit = holdout_runs.an_audit(False)
     attempt: Attempt = ScriptedCalls([LaunchFailed("no image"), audit])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -130,7 +130,7 @@ async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_err
 
 
 async def test_a_provider_error_is_retried_and_a_later_report_stands():
-    audit = run_given.an_audit(False)
+    audit = holdout_runs.an_audit(False)
     attempt: Attempt = ScriptedCalls([PROVIDER_ERROR, audit])
 
     outcome = await nuisance_audit(an_admitted_server(), attempt)
@@ -148,10 +148,10 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
 
 
 async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
-    audit = run_given.an_audit(True, missed=MissCause.PROVIDER_REFUSAL)
+    audit = holdout_runs.an_audit(True, missed=MissCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([audit])
 
-    run = await gate_run(run_given.a_server(), audits)
+    run = await gate_run(holdout_runs.a_server(), audits)
 
     assert run is not None
     assert run.flagged
@@ -163,11 +163,11 @@ async def test_a_gate_run_with_a_counted_alarm_stands_despite_a_refusal():
 async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
     cause: MissCause, output: CapturedOutput
 ):
-    incomplete = run_given.an_audit(False, missed=cause)
-    clean = run_given.an_audit(False)
+    incomplete = holdout_runs.an_audit(False, missed=cause)
+    clean = holdout_runs.an_audit(False)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([incomplete, clean])
 
-    run = await gate_run(run_given.a_server(), audits)
+    run = await gate_run(holdout_runs.a_server(), audits)
 
     assert run is not None
     assert not run.flagged
@@ -179,10 +179,10 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
 async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
     output: CapturedOutput,
 ):
-    incomplete = run_given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL)
+    incomplete = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_REFUSAL)
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([incomplete] * INCOMPLETE_ATTEMPTS)
 
-    run = await gate_run(run_given.a_server(), audits)
+    run = await gate_run(holdout_runs.a_server(), audits)
 
     assert run is None
     assert audits.calls == INCOMPLETE_ATTEMPTS
@@ -192,7 +192,7 @@ async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
 async def test_a_dropped_gate_run_does_not_complete_at_once():
     audits = ScriptedCalls[NuisanceAudit | DroppedRun]([DroppedRun(NotRunCause.THROTTLED)])
 
-    run = await gate_run(run_given.a_server(), audits)
+    run = await gate_run(holdout_runs.a_server(), audits)
 
     assert run is None
     assert audits.calls == 1

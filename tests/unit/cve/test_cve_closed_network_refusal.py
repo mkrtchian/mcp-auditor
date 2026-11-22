@@ -9,9 +9,9 @@ import pytest
 import tests.unit.cve.support.test_cve_closed_network_refusal_given as given
 import tests.unit.cve.support.test_cve_closed_network_refusal_then as then
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given as backends
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
-import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
+import tests.unit.support.nuisance_docker_hosts as docker_hosts
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
+import tests.unit.support.nuisance_vets as vets
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
 from evals.eval_session import Refused
@@ -20,27 +20,28 @@ from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_targ
 
 
 async def test_a_nuisance_holdout_run_refuses_before_any_rebuild():
-    server = run_given.a_server()
-    host = backends.DockerHost()
+    server = holdout_runs.a_server()
+    host = docker_hosts.DockerHost()
     deps = dataclasses.replace(
-        backends.deps_on(host, server), check_networks=given.a_daemon_that_cannot_close_a_network
+        docker_hosts.deps_on(host, server),
+        check_networks=given.a_daemon_that_cannot_close_a_network,
     )
 
     with pytest.raises(Refused) as refused:
-        await run_given.run([server], deps)
+        await holdout_runs.run([server], deps)
 
     then.refused_for_the_daemon(refused.value)
     assert host.rebuilt == []
 
 
 async def test_a_vet_refuses_before_any_rebuild():
-    host = backends.DockerHost()
+    host = docker_hosts.DockerHost()
     deps = dataclasses.replace(
-        vet_given.deps_on(host), check_networks=given.a_daemon_that_cannot_close_a_network
+        vets.deps_on(host), check_networks=given.a_daemon_that_cannot_close_a_network
     )
 
     with pytest.raises(Refused) as refused:
-        await vet_servers([run_given.a_server()], deps)
+        await vet_servers([holdout_runs.a_server()], deps)
 
     then.refused_for_the_daemon(refused.value)
     assert host.rebuilt == []

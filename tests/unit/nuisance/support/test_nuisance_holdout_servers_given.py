@@ -1,4 +1,4 @@
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.walk import NuisanceServer, ReachedServers, ServerMark
 
@@ -10,14 +10,14 @@ def a_listing(*walked: NuisanceServer) -> ReachedServers:
 def walked(package: str, mark: ServerMark | None) -> NuisanceServer:
     return NuisanceServer(
         server_package=package,
-        reaching_flaw=run_given.FIRST_FLAW,
+        reaching_flaw=holdout_runs.FIRST_FLAW,
         reaching_position=1,
         in_addition=False,
-        flaws=(run_given.FIRST_FLAW,),
-        candidate_counted_flaws=(run_given.FIRST_FLAW,),
+        flaws=(holdout_runs.FIRST_FLAW,),
+        candidate_counted_flaws=(holdout_runs.FIRST_FLAW,),
         mark=mark,
     )
 
 
 def admitted(package: str, **update: bool) -> AdmittedServer:
-    return run_given.a_server(package).model_copy(update=update)
+    return holdout_runs.a_server(package).model_copy(update=update)

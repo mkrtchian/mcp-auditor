@@ -6,6 +6,7 @@ from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 import tests.unit.nuisance.support.test_nuisance_audit_once_given as given
 import tests.unit.support.grammar_inputs as grammar
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
@@ -25,7 +26,6 @@ from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.models import MissCause, ProviderUsage
-from tests.unit.nuisance.support import test_nuisance_holdout_run_given as run_given
 from tests.unit.support.captured_console import a_captured_console
 from tests.unit.support.nuisance_admissions import (
     a_backend_registry,
@@ -147,10 +147,10 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
     monkeypatch: pytest.MonkeyPatch,
 ):
     a_captured_console(capsys, monkeypatch)
-    throttled = run_given.a_report(
+    throttled = holdout_runs.a_report(
         False, missed=MissCause.PROVIDER_THROTTLED, provider=ProviderUsage(throttled_requests=3)
     )
-    clean = run_given.a_report(False, provider=ProviderUsage(throttled_requests=2))
+    clean = holdout_runs.a_report(False, provider=ProviderUsage(throttled_requests=2))
     auditor = given.an_auditor(graphs=launch_audit_fakes.graph_reporting([throttled, clean]))
     server = an_admitted_server()
 

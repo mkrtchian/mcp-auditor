@@ -4,8 +4,8 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
-import tests.unit.nuisance.support.test_nuisance_vet_given as vet_given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
+import tests.unit.support.nuisance_vets as vets
 from evals.concurrency import bounded
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
@@ -13,13 +13,13 @@ from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness
 from evals.cve.nuisance.holdout_run import NuisanceDeps
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.cve.nuisance.vet_command import VetDeps
-from tests.unit.nuisance.support.test_nuisance_holdout_run_backends_given import DockerHost
+from tests.unit.support.nuisance_docker_hosts import DockerHost
 
 (_SOLO_PACKAGE,) = SOLO_SERVERS
-SOLO_SERVER = run_given.a_server(_SOLO_PACKAGE)
+SOLO_SERVER = holdout_runs.a_server(_SOLO_PACKAGE)
 HEAVY_BACKEND_SERVERS = [
-    run_given.a_server("PyPI:doris-mcp-server"),
-    run_given.a_server("npm:@zereight/mcp-gitlab"),
+    holdout_runs.a_server("PyPI:doris-mcp-server"),
+    holdout_runs.a_server("npm:@zereight/mcp-gitlab"),
 ]
 BOUND = 2
 RUNS = 3
@@ -28,7 +28,7 @@ GATE_AUDITS: list[GateRun | None] = [gate_sessions.a_gate_run(True), *gate_sessi
 
 
 def others(count: int) -> list[AdmittedServer]:
-    return [run_given.a_server(f"npm:other-{index}") for index in range(count)]
+    return [holdout_runs.a_server(f"npm:other-{index}") for index in range(count)]
 
 
 class InFlight:
@@ -64,7 +64,7 @@ class InFlight:
 
 def vet_deps(in_flight: InFlight) -> VetDeps:
     return dataclasses.replace(
-        vet_given.deps_on(DockerHost()), benign_call=in_flight.bounded(_answering)
+        vets.deps_on(DockerHost()), benign_call=in_flight.bounded(_answering)
     )
 
 
@@ -73,14 +73,14 @@ async def _answering(_server: AdmittedServer) -> str | None:
 
 
 def run_deps(in_flight: InFlight, servers: list[AdmittedServer]) -> NuisanceDeps:
-    audit = run_given.scripted(
+    audit = holdout_runs.scripted(
         {
-            server.server_package: [run_given.an_audit(False) for _ in range(RUNS)]
+            server.server_package: [holdout_runs.an_audit(False) for _ in range(RUNS)]
             for server in servers
         }
     )
     return dataclasses.replace(
-        run_given.deps_auditing(audit),
+        holdout_runs.deps_auditing(audit),
         audit=in_flight.bounded(audit),
         benign_call=in_flight.bounded(_answering),
     )

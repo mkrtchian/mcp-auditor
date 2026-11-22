@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Callable, Sequence
 
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -55,9 +55,11 @@ def host_of(docker: DockerHost) -> RemovalHost:
 
 
 def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:
-    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted(
+        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
+    )
     return dataclasses.replace(
-        given.deps_auditing(audit),
+        holdout_runs.deps_auditing(audit),
         benign_call=host.benign_call,
         rebuild=host.rebuild,
         running_containers=host.running,

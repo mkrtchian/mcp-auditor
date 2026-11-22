@@ -5,9 +5,9 @@ import dataclasses
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
 import tests.unit.nuisance.support.test_nuisance_holdout_run_then as then
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
@@ -22,23 +22,23 @@ from mcp_auditor.domain.models import MissCause, ProviderUsage
 
 
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
-    first, second = given.a_server("npm:first"), given.a_server("npm:second")
+    first, second = holdout_runs.a_server("npm:first"), holdout_runs.a_server("npm:second")
     usage = ProviderUsage(input_tokens=10, output_tokens=20)
-    refused = given.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, provider=usage)
-    audit = given.scripted(
+    refused = holdout_runs.an_audit(False, missed=MissCause.PROVIDER_REFUSAL, provider=usage)
+    audit = holdout_runs.scripted(
         {
-            "npm:first": [given.an_audit(True, provider=usage) for _ in range(3)],
-            "npm:second": [refused, given.an_audit(False), given.an_audit(False)],
+            "npm:first": [holdout_runs.an_audit(True, provider=usage) for _ in range(3)],
+            "npm:second": [refused, holdout_runs.an_audit(False), holdout_runs.an_audit(False)],
         }
     )
     exits = [ServerExit("npm:walked", ExitReason.EXCLUDED_SERVER)]
 
-    result = await given.run([first, second], given.deps_auditing(audit), exits=exits)
+    result = await holdout_runs.run([first, second], holdout_runs.deps_auditing(audit), exits=exits)
 
     assert [server.server_package for server in result.servers] == ["npm:first", "npm:second"]
     assert result.budget == HOLDOUT_BUDGET
     assert result.commit == "c0ffee"
-    assert result.recorded_at == given.RECORDED_AT
+    assert result.recorded_at == holdout_runs.RECORDED_AT
     assert result.counter_fingerprint == counter_fingerprint()
     assert result.fixture_fingerprints == {
         "npm:first": nuisance_fixture_fingerprint(first),
@@ -49,13 +49,15 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
     assert result.not_run == []
     assert result.incomplete_run_count == 1
     assert result.total_cost == pytest.approx(sum(s.run_cost for s in result.servers))
-    assert result.total_cost == pytest.approx(4 * call_cost(usage, given.LUNA_PRICE))
+    assert result.total_cost == pytest.approx(4 * call_cost(usage, holdout_runs.LUNA_PRICE))
 
 
 async def test_a_run_records_the_census_walk_record_and_admission_commits_apart():
-    audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
 
-    result = await given.run([given.a_server("npm:first")], given.deps_auditing(audit))
+    result = await holdout_runs.run(
+        [holdout_runs.a_server("npm:first")], holdout_runs.deps_auditing(audit)
+    )
 
     assert (result.census_commit, result.walk_record_commit, result.admission_commit) == (
         "cafe",
@@ -65,43 +67,48 @@ async def test_a_run_records_the_census_walk_record_and_admission_commits_apart(
 
 
 async def test_a_run_carries_the_servers_whose_admission_is_pending():
-    audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
 
-    result = await given.run(
-        [given.a_server("npm:first")], given.deps_auditing(audit), pending=["npm:pending"]
+    result = await holdout_runs.run(
+        [holdout_runs.a_server("npm:first")],
+        holdout_runs.deps_auditing(audit),
+        pending=["npm:pending"],
     )
 
     assert result.pending_admission == ["npm:pending"]
 
 
 async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
-    failing, healthy = given.a_server("npm:failing"), given.a_server("npm:healthy")
-    audit = given.scripted({"npm:healthy": [given.an_audit(False) for _ in range(3)]})
+    failing, healthy = holdout_runs.a_server("npm:failing"), holdout_runs.a_server("npm:healthy")
+    audit = holdout_runs.scripted({"npm:healthy": [holdout_runs.an_audit(False) for _ in range(3)]})
     announced: list[int] = []
     deps = dataclasses.replace(
-        given.deps_auditing(audit, benign_call={"npm:failing": "boom"}),
+        holdout_runs.deps_auditing(audit, benign_call={"npm:failing": "boom"}),
         announce_audits=announced.append,
     )
 
-    await given.run([failing, healthy], deps, runs=3)
+    await holdout_runs.run([failing, healthy], deps, runs=3)
 
     assert announced == [3]
 
 
 async def test_the_run_announces_each_finished_run_of_a_server_with_its_status():
-    flagged, dropped = given.a_server("npm:flagged"), given.a_server("npm:dropped")
+    flagged, dropped = holdout_runs.a_server("npm:flagged"), holdout_runs.a_server("npm:dropped")
     (solo_package,) = SOLO_SERVERS
-    solo = given.a_server(solo_package)
-    flagged_runs = [given.an_audit(True), given.an_audit(False)]
-    dropped_runs = [DroppedRun(NotRunCause.LAUNCH_FAILURE), given.an_audit(False)]
-    solo_runs = [given.an_audit(False), given.an_audit(False, missed=MissCause.UNREADABLE_ANSWER)]
-    audit = given.scripted(
+    solo = holdout_runs.a_server(solo_package)
+    flagged_runs = [holdout_runs.an_audit(True), holdout_runs.an_audit(False)]
+    dropped_runs = [DroppedRun(NotRunCause.LAUNCH_FAILURE), holdout_runs.an_audit(False)]
+    solo_runs = [
+        holdout_runs.an_audit(False),
+        holdout_runs.an_audit(False, missed=MissCause.UNREADABLE_ANSWER),
+    ]
+    audit = holdout_runs.scripted(
         {"npm:flagged": flagged_runs, "npm:dropped": dropped_runs, solo_package: solo_runs}
     )
     announced: list[str] = []
 
-    await given.run(
-        [solo, flagged, dropped], given.deps_auditing(audit, announced=announced), runs=2
+    await holdout_runs.run(
+        [solo, flagged, dropped], holdout_runs.deps_auditing(audit, announced=announced), runs=2
     )
 
     then.runs_announced(
@@ -116,23 +123,27 @@ async def test_the_run_announces_each_finished_run_of_a_server_with_its_status()
 
 async def test_a_run_with_no_surviving_server_announces_no_run():
     announced: list[str] = []
-    deps = given.deps_auditing(
-        given.scripted({"npm:failing": []}),
+    deps = holdout_runs.deps_auditing(
+        holdout_runs.scripted({"npm:failing": []}),
         benign_call={"npm:failing": "benign call errored"},
         announced=announced,
     )
 
     with pytest.raises(Refused):
-        await given.run([given.a_server("npm:failing")], deps)
+        await holdout_runs.run([holdout_runs.a_server("npm:failing")], deps)
 
     assert announced == []
 
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
-    server = given.a_server()
-    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
+    server = holdout_runs.a_server()
+    audit = holdout_runs.scripted(
+        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
+    )
 
-    result = await given.run([server], given.deps_auditing(audit, throttled=7), concurrency=4)
+    result = await holdout_runs.run(
+        [server], holdout_runs.deps_auditing(audit, throttled=7), concurrency=4
+    )
 
     assert result.concurrency == 4
     assert result.throttled_requests == 7
@@ -140,14 +151,16 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
 
 async def test_a_backend_server_records_its_backend_image_beside_its_service():
     server = mutations.with_a_backend(
-        given.a_server(),
+        holdout_runs.a_server(),
         BackendFixture(
             provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
         ),
     )
-    audit = given.scripted({server.server_package: [given.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted(
+        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
+    )
 
-    result = await given.run([server], given.deps_auditing(audit))
+    result = await holdout_runs.run([server], holdout_runs.deps_auditing(audit))
 
     assert result.image_ids == {
         "filesystem-patched": "sha256:filesystem-patched",
@@ -159,10 +172,10 @@ async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend(
     two_images = BackendFixture(
         provisioner="doris", images=["front:1.0", "back:1.0"], network="net"
     )
-    server = mutations.with_a_backend(given.a_server(), two_images)
-    audit = given.scripted({server.server_package: [given.an_audit(False)] * 3})
+    server = mutations.with_a_backend(holdout_runs.a_server(), two_images)
+    audit = holdout_runs.scripted({server.server_package: [holdout_runs.an_audit(False)] * 3})
 
-    result = await given.run([server], given.deps_auditing(audit))
+    result = await holdout_runs.run([server], holdout_runs.deps_auditing(audit))
 
     assert result.image_ids == {
         "filesystem-patched": "sha256:filesystem-patched",
@@ -172,13 +185,13 @@ async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend(
 
 
 async def test_a_server_failing_its_benign_call_is_never_audited():
-    failing, kept = given.a_server("npm:failing"), given.a_server("npm:kept")
-    audit = given.scripted(
-        {"npm:failing": [], "npm:kept": [given.an_audit(False) for _ in range(3)]}
+    failing, kept = holdout_runs.a_server("npm:failing"), holdout_runs.a_server("npm:kept")
+    audit = holdout_runs.scripted(
+        {"npm:failing": [], "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)]}
     )
-    deps = given.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
+    deps = holdout_runs.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
 
-    result = await given.run([failing, kept], deps)
+    result = await holdout_runs.run([failing, kept], deps)
 
     (not_run,) = result.not_run
     assert (not_run.server_package, not_run.reason, not_run.cause) == (
@@ -192,16 +205,16 @@ async def test_a_server_failing_its_benign_call_is_never_audited():
 
 
 async def test_a_server_answering_only_its_second_pass_is_audited_with_its_first_reason():
-    flaky, steady = given.a_server("npm:flaky"), given.a_server("npm:steady")
-    audit = given.scripted(
+    flaky, steady = holdout_runs.a_server("npm:flaky"), holdout_runs.a_server("npm:steady")
+    audit = holdout_runs.scripted(
         {
-            package: [given.an_audit(False) for _ in range(3)]
+            package: [holdout_runs.an_audit(False) for _ in range(3)]
             for package in ("npm:flaky", "npm:steady")
         }
     )
-    deps = given.deps_auditing(audit, benign_call={"npm:flaky": ["boom", None]})
+    deps = holdout_runs.deps_auditing(audit, benign_call={"npm:flaky": ["boom", None]})
 
-    result = await given.run([flaky, steady], deps)
+    result = await holdout_runs.run([flaky, steady], deps)
 
     assert [server.server_package for server in result.servers] == ["npm:flaky", "npm:steady"]
     assert result.not_run == []
@@ -209,27 +222,29 @@ async def test_a_server_answering_only_its_second_pass_is_audited_with_its_first
 
 
 async def test_a_run_where_every_server_answers_its_first_pass_has_no_second_pass():
-    audit = given.scripted({"npm:first": [given.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
 
-    result = await given.run([given.a_server("npm:first")], given.deps_auditing(audit))
+    result = await holdout_runs.run(
+        [holdout_runs.a_server("npm:first")], holdout_runs.deps_auditing(audit)
+    )
 
     assert result.second_pass == {}
 
 
 async def test_a_server_dropped_in_one_run_is_not_run():
-    dropped, kept = given.a_server("npm:dropped"), given.a_server("npm:kept")
-    audit = given.scripted(
+    dropped, kept = holdout_runs.a_server("npm:dropped"), holdout_runs.a_server("npm:kept")
+    audit = holdout_runs.scripted(
         {
             "npm:dropped": [
-                given.an_audit(False),
+                holdout_runs.an_audit(False),
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
-                given.an_audit(False),
+                holdout_runs.an_audit(False),
             ],
-            "npm:kept": [given.an_audit(False) for _ in range(3)],
+            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
         }
     )
 
-    result = await given.run([dropped, kept], given.deps_auditing(audit))
+    result = await holdout_runs.run([dropped, kept], holdout_runs.deps_auditing(audit))
 
     (not_run,) = result.not_run
     assert (not_run.server_package, not_run.cause) == ("npm:dropped", NotRunCause.LAUNCH_FAILURE)
@@ -237,52 +252,52 @@ async def test_a_server_dropped_in_one_run_is_not_run():
 
 
 async def test_throttled_wins_over_a_launch_failure():
-    dropped, kept = given.a_server("npm:dropped"), given.a_server("npm:kept")
-    audit = given.scripted(
+    dropped, kept = holdout_runs.a_server("npm:dropped"), holdout_runs.a_server("npm:kept")
+    audit = holdout_runs.scripted(
         {
             "npm:dropped": [
                 DroppedRun(NotRunCause.THROTTLED),
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
-                given.an_audit(False),
+                holdout_runs.an_audit(False),
             ],
-            "npm:kept": [given.an_audit(False) for _ in range(3)],
+            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
         }
     )
 
-    result = await given.run([dropped, kept], given.deps_auditing(audit))
+    result = await holdout_runs.run([dropped, kept], holdout_runs.deps_auditing(audit))
 
     (not_run,) = result.not_run
     assert not_run.cause == NotRunCause.THROTTLED
 
 
 async def test_a_provider_error_wins_over_a_launch_failure():
-    dropped, kept = given.a_server("npm:dropped"), given.a_server("npm:kept")
-    audit = given.scripted(
+    dropped, kept = holdout_runs.a_server("npm:dropped"), holdout_runs.a_server("npm:kept")
+    audit = holdout_runs.scripted(
         {
             "npm:dropped": [
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
                 DroppedRun(NotRunCause.PROVIDER_ERROR),
-                given.an_audit(False),
+                holdout_runs.an_audit(False),
             ],
-            "npm:kept": [given.an_audit(False) for _ in range(3)],
+            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
         }
     )
 
-    result = await given.run([dropped, kept], given.deps_auditing(audit))
+    result = await holdout_runs.run([dropped, kept], holdout_runs.deps_auditing(audit))
 
     (not_run,) = result.not_run
     assert not_run.cause == NotRunCause.PROVIDER_ERROR
 
 
 async def test_a_run_where_every_server_drops_is_refused_with_each_reason():
-    failing, dropped = given.a_server("npm:failing"), given.a_server("npm:dropped")
-    audit = given.scripted(
+    failing, dropped = holdout_runs.a_server("npm:failing"), holdout_runs.a_server("npm:dropped")
+    audit = holdout_runs.scripted(
         {"npm:failing": [], "npm:dropped": [DroppedRun(NotRunCause.LAUNCH_FAILURE)] * 3}
     )
-    deps = given.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
+    deps = holdout_runs.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
 
     with pytest.raises(Refused) as refused:
-        await given.run([failing, dropped], deps)
+        await holdout_runs.run([failing, dropped], deps)
 
     assert "benign call errored" in refused.value.reasons
     assert "a run failed to launch after retries" in refused.value.reasons
@@ -292,13 +307,14 @@ async def test_tracing_refuses_before_the_tree_is_read(monkeypatch: pytest.Monke
     monkeypatch.setenv("LANGSMITH_TRACING", "true")
 
     with pytest.raises(Refused):
-        await given.run([given.a_server()], given.deps_reaching_nothing())
+        await holdout_runs.run([holdout_runs.a_server()], holdout_runs.deps_reaching_nothing())
 
 
 async def test_a_dirty_tree_refuses_before_any_rebuild_or_audit():
     deps = dataclasses.replace(
-        given.deps_reaching_nothing(), read_tree=lambda: TreeState(commit="c0ffee", dirty=True)
+        holdout_runs.deps_reaching_nothing(),
+        read_tree=lambda: TreeState(commit="c0ffee", dirty=True),
     )
 
     with pytest.raises(Refused):
-        await given.run([given.a_server()], deps)
+        await holdout_runs.run([holdout_runs.a_server()], deps)

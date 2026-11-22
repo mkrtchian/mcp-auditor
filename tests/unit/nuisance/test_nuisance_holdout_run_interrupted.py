@@ -3,18 +3,21 @@ cancelled and the finished ones are kept in a partial result. No Docker, no LLM.
 
 import pytest
 
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as given
+import tests.unit.nuisance.support.test_nuisance_holdout_run_interrupted_given as given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
 
 
 async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_result():
-    servers = [given.a_server(package) for package in ("npm:done", "npm:failing", "npm:pending")]
+    servers = [
+        holdout_runs.a_server(package) for package in ("npm:done", "npm:failing", "npm:pending")
+    ]
     fatal = ProviderFatal(PermissionError("the key was revoked"))
     audit = given.InterruptingAudit("npm:done", "npm:failing", fatal)
 
     with pytest.raises(RunInterrupted) as interrupted:
-        await given.run(servers, given.deps_auditing(audit))
+        await holdout_runs.run(servers, holdout_runs.deps_auditing(audit))
 
     assert interrupted.value.cause is fatal
     partial = interrupted.value.partial
@@ -23,35 +26,37 @@ async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_res
 
 
 async def test_the_runs_still_in_flight_are_cancelled():
-    servers = [given.a_server(package) for package in ("npm:done", "npm:failing", "npm:pending")]
+    servers = [
+        holdout_runs.a_server(package) for package in ("npm:done", "npm:failing", "npm:pending")
+    ]
     fatal = ProviderFatal(PermissionError("the key was revoked"))
     audit = given.InterruptingAudit("npm:done", "npm:failing", fatal)
 
     with pytest.raises(RunInterrupted):
-        await given.run(servers, given.deps_auditing(audit))
+        await holdout_runs.run(servers, holdout_runs.deps_auditing(audit))
 
     assert set(audit.cancelled) == {"npm:failing", "npm:pending"}
 
 
 async def test_any_other_exception_interrupts_the_run_the_same_way():
-    servers = [given.a_server(package) for package in ("npm:done", "npm:failing")]
+    servers = [holdout_runs.a_server(package) for package in ("npm:done", "npm:failing")]
     bug = KeyError("a bug in the run")
     audit = given.InterruptingAudit("npm:done", "npm:failing", bug)
 
     with pytest.raises(RunInterrupted) as interrupted:
-        await given.run(servers, given.deps_auditing(audit))
+        await holdout_runs.run(servers, holdout_runs.deps_auditing(audit))
 
     assert interrupted.value.cause is bug
     assert [server.server_package for server in interrupted.value.partial.servers] == ["npm:done"]
 
 
 async def test_the_partial_result_names_the_servers_run_after_their_second_pass():
-    servers = [given.a_server(package) for package in ("npm:done", "npm:failing")]
+    servers = [holdout_runs.a_server(package) for package in ("npm:done", "npm:failing")]
     audit = given.InterruptingAudit("npm:done", "npm:failing", KeyError("a bug in the run"))
-    deps = given.deps_auditing(audit, benign_call={"npm:done": ["boom", None]})
+    deps = holdout_runs.deps_auditing(audit, benign_call={"npm:done": ["boom", None]})
 
     with pytest.raises(RunInterrupted) as interrupted:
-        await given.run(servers, deps)
+        await holdout_runs.run(servers, deps)
 
     partial = interrupted.value.partial
     assert partial.partial

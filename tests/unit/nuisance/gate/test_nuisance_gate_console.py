@@ -13,8 +13,8 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_report_given import (
     NOT_ADMITTED,
     OUTSIDE,
 )
-from tests.unit.nuisance.support.test_nuisance_holdout_run_given import COUNTED_TOOL
 from tests.unit.support.captured_console import a_captured_console
+from tests.unit.support.nuisance_holdout_runs import COUNTED_TOOL
 
 REPORT_PATH = Path("output/nuisance_gate_report.json")
 

@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
 
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
@@ -25,10 +25,10 @@ from tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given import (
 )
 
 # Services whose Dockerfiles exist, since the session fingerprints each server's fixture.
-FILESYSTEM = run_given.a_server(
+FILESYSTEM = holdout_runs.a_server(
     "npm:@modelcontextprotocol/server-filesystem", service="filesystem-patched"
 )
-KUBERNETES = run_given.a_server("npm:mcp-server-kubernetes", service="kubernetes-patched")
+KUBERNETES = holdout_runs.a_server("npm:mcp-server-kubernetes", service="kubernetes-patched")
 COMMIT = "c0ffee"
 RECORDED_AT = "2026-10-22T12:00:00+00:00"
 CLEAN_TREE = TreeState(COMMIT, False)
@@ -41,7 +41,7 @@ def clean_runs(count: int = 3) -> list[GateRun | None]:
 
 
 def a_gate_run(flagged: bool) -> GateRun:
-    return GateRun(flagged=flagged, report=run_given.a_report(flagged))
+    return GateRun(flagged=flagged, report=holdout_runs.a_report(flagged))
 
 
 def scripted(scripts: Mapping[str, Sequence[GateRun | None]]) -> GateAuditCall:

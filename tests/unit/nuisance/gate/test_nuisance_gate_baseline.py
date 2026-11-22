@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_baseline_given as given
-import tests.unit.nuisance.support.test_nuisance_holdout_run_given as run_given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate.gate_baseline import (
@@ -84,21 +84,21 @@ def test_a_baseline_recorded_under_other_runs_mismatches_on_runs():
 
 
 def test_the_gate_conditions_refuse_an_unset_chain_setting():
-    unset = dataclasses.replace(run_given.conditions(), tool_call_timeout=None)
+    unset = dataclasses.replace(holdout_runs.conditions(), tool_call_timeout=None)
 
     with pytest.raises(Refused) as excinfo:
-        gate_conditions(run_given.SETTINGS, unset, 3)
+        gate_conditions(holdout_runs.SETTINGS, unset, 3)
 
     assert any("chain settings" in reason for reason in excinfo.value.reasons)
 
 
 def test_the_gate_conditions_read_the_settings_the_chain_settings_and_the_holdout_budget():
-    holdout = run_given.conditions()
+    holdout = holdout_runs.conditions()
 
-    conditions = gate_conditions(run_given.SETTINGS, holdout, 2)
+    conditions = gate_conditions(holdout_runs.SETTINGS, holdout, 2)
 
     assert conditions.model == "gpt-6-luna"
-    assert conditions.judge_model == run_given.SETTINGS.resolve_judge_model()
+    assert conditions.judge_model == holdout_runs.SETTINGS.resolve_judge_model()
     assert conditions.chain_budget == holdout.chain_budget
     assert conditions.max_chain_steps == holdout.max_chain_steps
     assert conditions.tool_call_timeout == holdout.tool_call_timeout
