@@ -23,6 +23,7 @@ from tests.unit.nuisance.support.test_nuisance_statistic_given import (
     a_server_result,
     sides_of,
 )
+from tests.unit.support.coarse_grid import COARSE_GRID
 
 RUNS = 3
 
@@ -81,13 +82,13 @@ def test_contrast_is_the_newcombe_interval_over_the_split_sums_at_five_a_side():
 
 def test_check_conclusion_is_none_below_five_servers_a_side():
     pre, post = sides_of(4, pre_flagged=3)
-    assert check_conclusion(pre, post, RUNS) is None
+    assert check_conclusion(pre, post, RUNS, grid=COARSE_GRID) is None
 
 
 def test_check_conclusion_is_inconclusive_when_counting_incomplete_runs_as_flagged_moves_the_gap():
     pre, post = sides_of(5, pre_flagged=3, post_incomplete_unflagged=3)
 
-    verdict = check_conclusion(pre, post, RUNS)
+    verdict = check_conclusion(pre, post, RUNS, grid=COARSE_GRID)
 
     assert verdict is not None
     assert (verdict.cited.method, verdict.cited.placement) == ("newcombe", Placement.ABOVE)
@@ -118,17 +119,30 @@ def test_incomplete_as_flagged_adds_the_incomplete_unflagged_runs_to_the_split_f
 
 def test_primary_controls_are_the_five_intervals_on_the_flagged_shares():
     results = [a_server_result("A", flagged_runs=3), a_server_result("B", flagged_runs=1)]
-    assert nuisance_rate_controls(results, RUNS) == {
+    assert nuisance_rate_controls(results, RUNS, grid=COARSE_GRID) == {
         "jeffreys": jeffreys(4 / 3, 2),
         "clopper_pearson": clopper_pearson(4 / 3, 2),
-        "hierarchical_gamma_1_1": hierarchical_interval([3, 1], RUNS, GammaPrior(1.0, 1.0)),
-        "hierarchical_gamma_2_2": hierarchical_interval([3, 1], RUNS, GammaPrior(2.0, 2.0)),
+        "hierarchical_gamma_1_1": hierarchical_interval(
+            [3, 1], RUNS, GammaPrior(1.0, 1.0), COARSE_GRID
+        ),
+        "hierarchical_gamma_2_2": hierarchical_interval(
+            [3, 1], RUNS, GammaPrior(2.0, 2.0), COARSE_GRID
+        ),
         "incomplete_as_flagged_wilson": wilson(4 / 3, 2),
     }
 
 
+def test_primary_controls_compute_the_hierarchical_intervals_on_the_grid_they_are_given():
+    results = [a_server_result("A", flagged_runs=3), a_server_result("B", flagged_runs=1)]
+    controls = nuisance_rate_controls(results, RUNS, grid=COARSE_GRID)
+    prior = GammaPrior(2.0, 2.0)
+    assert controls["hierarchical_gamma_2_2"] == hierarchical_interval(
+        [3, 1], RUNS, prior, COARSE_GRID
+    )
+
+
 def test_incomplete_as_flagged_control_counts_the_incomplete_unflagged_runs_as_flagged():
     results = [a_server_result("A", flagged_runs=0, incomplete_unflagged_runs=2)]
-    bound = nuisance_rate_controls(results, RUNS)["incomplete_as_flagged_wilson"]
+    bound = nuisance_rate_controls(results, RUNS, grid=COARSE_GRID)["incomplete_as_flagged_wilson"]
     assert bound == wilson(2 / 3, 1)
     assert bound != cited_interval(results)

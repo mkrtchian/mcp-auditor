@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.cve.holdout_hierarchical import DEFAULT_GRID, GammaPrior, Grid, hierarchical_interval
 from evals.cve.holdout_intervals import (
     Interval,
     clopper_pearson,
@@ -87,7 +87,7 @@ def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
 
 
 def nuisance_rate_controls(
-    results: Sequence[NuisanceServerResult], runs: int
+    results: Sequence[NuisanceServerResult], runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> dict[str, Interval]:
     count = _share_sum(results)
     n = len(results)
@@ -95,22 +95,25 @@ def nuisance_rate_controls(
     return {
         "jeffreys": jeffreys(count, n),
         "clopper_pearson": clopper_pearson(count, n),
-        "hierarchical_gamma_1_1": hierarchical_interval(flagged, runs, _GAMMA_1_1),
-        "hierarchical_gamma_2_2": hierarchical_interval(flagged, runs, _GAMMA_2_2),
+        "hierarchical_gamma_1_1": hierarchical_interval(flagged, runs, _GAMMA_1_1, grid),
+        "hierarchical_gamma_2_2": hierarchical_interval(flagged, runs, _GAMMA_2_2, grid),
         "incomplete_as_flagged_wilson": wilson(_incomplete_as_flagged_sum(results, runs), n),
     }
 
 
-def check_conclusion(side_a: SideStatistic, side_b: SideStatistic, runs: int) -> Conclusion | None:
+def check_conclusion(
+    side_a: SideStatistic, side_b: SideStatistic, runs: int, *, grid: Grid = DEFAULT_GRID
+) -> Conclusion | None:
     if side_a.servers < _MIN_SIDE or side_b.servers < _MIN_SIDE:
         return None
     cited, *others = [
-        *read_contrast(observed(side_a), observed(side_b), runs),
+        *read_contrast(observed(side_a), observed(side_b), runs, grid=grid),
         *read_contrast(
             incomplete_as_flagged(side_a, runs),
             incomplete_as_flagged(side_b, runs),
             runs,
             "_incomplete_as_flagged",
+            grid=grid,
         ),
     ]
     return conclude(cited, others)

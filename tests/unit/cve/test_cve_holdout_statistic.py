@@ -6,7 +6,7 @@ import math
 from datetime import date
 
 from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, HoldoutTargetResult
-from evals.cve.holdout_hierarchical import GammaPrior, hierarchical_interval
+from evals.cve.holdout_hierarchical import GammaPrior, contrast_hierarchical, hierarchical_interval
 from evals.cve.holdout_intervals import Interval, clopper_pearson, jeffreys, newcombe, wilson
 from evals.cve.holdout_statistic import (
     Conclusion,
@@ -26,6 +26,7 @@ from evals.cve.holdout_statistic import (
     split_by_side,
     unchecked_as_misses,
 )
+from tests.unit.support.coarse_grid import COARSE_GRID
 
 RUN_CUTOFF = date(2026, 5, 18)
 RUNS = 3
@@ -137,7 +138,7 @@ def test_contrast_is_the_newcombe_interval_at_five_targets_a_side():
 
 def test_check_conclusion_is_none_below_five_targets_a_side():
     pre, post = _split_sides(4, 4, detected_runs=3)
-    assert check_conclusion(pre, post, RUNS) is None
+    assert check_conclusion(pre, post, RUNS, grid=COARSE_GRID) is None
 
 
 def test_check_conclusion_is_inconclusive_when_counting_unchecked_runs_as_misses_moves_the_gap():
@@ -145,7 +146,9 @@ def test_check_conclusion_is_inconclusive_when_counting_unchecked_runs_as_misses
     post = [_result(f"POST{i}", disclosure_date=date(2026, 12, 1)) for i in range(5)]
     split = split_by_side(pre + post, RUN_CUTOFF)
 
-    verdict = check_conclusion(split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF], RUNS)
+    verdict = check_conclusion(
+        split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF], RUNS, grid=COARSE_GRID
+    )
 
     assert verdict is not None
     assert verdict.cited.method == "newcombe"
@@ -222,7 +225,9 @@ def test_unchecked_as_misses_reads_the_runs_detected_with_every_unchecked_run_mi
 
 
 def test_read_contrast_places_a_lopsided_gap_above_zero_under_the_four_suffixed_methods():
-    placements = read_contrast(Reading(5.0, (3,) * 5), Reading(0.0, (0,) * 5), RUNS, "_suffix")
+    placements = read_contrast(
+        Reading(5.0, (3,) * 5), Reading(0.0, (0,) * 5), RUNS, "_suffix", grid=COARSE_GRID
+    )
     assert [placement.method for placement in placements] == [
         "newcombe_suffix",
         "agresti_caffo_suffix",
@@ -232,16 +237,26 @@ def test_read_contrast_places_a_lopsided_gap_above_zero_under_the_four_suffixed_
     assert all(placement.placement is Placement.ABOVE for placement in placements)
 
 
+def test_read_contrast_computes_the_hierarchical_contrasts_on_the_grid_it_is_given():
+    coarse = read_contrast(Reading(5.0, (3,) * 5), Reading(0.0, (0,) * 5), RUNS, grid=COARSE_GRID)
+    expected = contrast_hierarchical((3,) * 5, (0,) * 5, RUNS, GammaPrior(1.0, 1.0), COARSE_GRID)
+    assert coarse[2].interval == expected
+
+
 def test_the_detection_rate_controls_are_the_five_intervals_on_the_detection_shares():
     results = [
         _result("A", detected_runs=3, detected_runs_if_unchecked_missed=2),
         _result("B", detected_runs=1, detected_runs_if_unchecked_missed=1),
     ]
-    assert detection_rate_controls(results, RUNS) == {
+    assert detection_rate_controls(results, RUNS, grid=COARSE_GRID) == {
         "jeffreys": jeffreys(4 / 3, 2),
         "clopper_pearson": clopper_pearson(4 / 3, 2),
-        "hierarchical_gamma_1_1": hierarchical_interval([3, 1], RUNS, GammaPrior(1.0, 1.0)),
-        "hierarchical_gamma_2_2": hierarchical_interval([3, 1], RUNS, GammaPrior(2.0, 2.0)),
+        "hierarchical_gamma_1_1": hierarchical_interval(
+            [3, 1], RUNS, GammaPrior(1.0, 1.0), COARSE_GRID
+        ),
+        "hierarchical_gamma_2_2": hierarchical_interval(
+            [3, 1], RUNS, GammaPrior(2.0, 2.0), COARSE_GRID
+        ),
         "unchecked_as_misses_wilson": wilson(3 / 3, 2),
     }
 
@@ -252,5 +267,5 @@ def test_unchecked_as_misses_control_is_wilson_on_the_recomputed_count():
         _result("B", detected_runs=2, detected_runs_if_unchecked_missed=0),
     ]
     recomputed = 1 / RUNS + 0 / RUNS
-    controls = detection_rate_controls(results, RUNS)
+    controls = detection_rate_controls(results, RUNS, grid=COARSE_GRID)
     assert controls["unchecked_as_misses_wilson"] == wilson(recomputed, 2)

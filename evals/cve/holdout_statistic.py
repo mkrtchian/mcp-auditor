@@ -12,7 +12,13 @@ from datetime import date
 from enum import StrEnum
 
 from evals.cve.detection.holdout_results import HoldoutTargetResult
-from evals.cve.holdout_hierarchical import GammaPrior, contrast_hierarchical, hierarchical_interval
+from evals.cve.holdout_hierarchical import (
+    DEFAULT_GRID,
+    GammaPrior,
+    Grid,
+    contrast_hierarchical,
+    hierarchical_interval,
+)
 from evals.cve.holdout_intervals import (
     Interval,
     agresti_caffo,
@@ -124,7 +130,7 @@ def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
 
 
 def detection_rate_controls(
-    results: Sequence[HoldoutTargetResult], runs: int
+    results: Sequence[HoldoutTargetResult], runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> dict[str, Interval]:
     count = _share_sum(results)
     n = len(results)
@@ -133,19 +139,25 @@ def detection_rate_controls(
     return {
         "jeffreys": jeffreys(count, n),
         "clopper_pearson": clopper_pearson(count, n),
-        "hierarchical_gamma_1_1": _hierarchical(detected, runs, _GAMMA_1_1),
-        "hierarchical_gamma_2_2": _hierarchical(detected, runs, _GAMMA_2_2),
+        "hierarchical_gamma_1_1": _hierarchical(detected, runs, _GAMMA_1_1, grid),
+        "hierarchical_gamma_2_2": _hierarchical(detected, runs, _GAMMA_2_2, grid),
         "unchecked_as_misses_wilson": wilson(unchecked, n),
     }
 
 
-def check_conclusion(side_a: SideStatistic, side_b: SideStatistic, runs: int) -> Conclusion | None:
+def check_conclusion(
+    side_a: SideStatistic, side_b: SideStatistic, runs: int, *, grid: Grid = DEFAULT_GRID
+) -> Conclusion | None:
     if side_a.targets < _MIN_SIDE or side_b.targets < _MIN_SIDE:
         return None
     cited, *others = [
-        *read_contrast(observed(side_a), observed(side_b), runs),
+        *read_contrast(observed(side_a), observed(side_b), runs, grid=grid),
         *read_contrast(
-            unchecked_as_misses(side_a, runs), unchecked_as_misses(side_b, runs), runs, "_unchecked"
+            unchecked_as_misses(side_a, runs),
+            unchecked_as_misses(side_b, runs),
+            runs,
+            "_unchecked",
+            grid=grid,
         ),
     ]
     return conclude(cited, others)
@@ -159,7 +171,12 @@ def conclude(cited: MethodPlacement, others: Sequence[MethodPlacement]) -> Concl
 
 
 def read_contrast(
-    reading_a: Reading, reading_b: Reading, runs: int, suffix: str = ""
+    reading_a: Reading,
+    reading_b: Reading,
+    runs: int,
+    suffix: str = "",
+    *,
+    grid: Grid = DEFAULT_GRID,
 ) -> list[MethodPlacement]:
     """Newcombe, Agresti-Caffo and the two hierarchical contrasts, in that order, each named
     with the suffix appended."""
@@ -168,8 +185,12 @@ def read_contrast(
     return [
         placed(f"newcombe{suffix}", newcombe(*counts)),
         placed(f"agresti_caffo{suffix}", agresti_caffo(*counts)),
-        placed(f"hierarchical_gamma_1_1{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_1_1)),
-        placed(f"hierarchical_gamma_2_2{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_2_2)),
+        placed(
+            f"hierarchical_gamma_1_1{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_1_1, grid)
+        ),
+        placed(
+            f"hierarchical_gamma_2_2{suffix}", contrast_hierarchical(a, b, runs, _GAMMA_2_2, grid)
+        ),
     ]
 
 
@@ -196,8 +217,8 @@ def placement_of(interval: Interval) -> Placement:
     return Placement.STRADDLES
 
 
-def _hierarchical(detected: list[int], runs: int, prior: GammaPrior) -> Interval:
-    return hierarchical_interval(detected, runs, prior)
+def _hierarchical(detected: list[int], runs: int, prior: GammaPrior, grid: Grid) -> Interval:
+    return hierarchical_interval(detected, runs, prior, grid)
 
 
 def _share_sum(results: Sequence[HoldoutTargetResult]) -> float:
