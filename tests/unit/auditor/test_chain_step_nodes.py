@@ -19,15 +19,14 @@ from tests.unit.auditor.support.chain_states import (
     a_chain_step,
     a_fake_mcp_client,
     a_payload,
-    a_provider_refusal,
     a_step_observation,
     a_tool,
-    an_unreadable_answer,
 )
 from tests.unit.auditor.support.missed_chain_calls import (
     refused_call_recorded,
     unreadable_call_recorded,
 )
+from tests.unit.auditor.support.model_failures import a_provider_refusal, an_unreadable_answer
 
 
 class TestMakeExecuteStep:

@@ -1,6 +1,5 @@
 from typing import Any
 
-from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import Judgment, TestCase, ToolDefinition
 
 
@@ -27,14 +26,3 @@ def judged_case_uses_judgment(result: dict[str, Any], judgment: Judgment) -> Non
     assert judge_result.verdict == judgment.verdict
     assert judge_result.justification == judgment.justification
     assert judge_result.severity == judgment.severity
-
-
-def refused_call_recorded(result: dict[str, Any], tool_name: str, kind: ModelCallKind) -> None:
-    assert result["missed_model_calls"] == [
-        MissedModelCall(
-            tool_name=tool_name,
-            kind=kind,
-            cause=MissedCallCause.PROVIDER_REFUSAL,
-            detail="flagged by policy",
-        )
-    ]

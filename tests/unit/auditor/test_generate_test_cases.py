@@ -1,8 +1,10 @@
 import tests.unit.auditor.support.test_generate_test_cases_given as given
 import tests.unit.auditor.support.test_generate_test_cases_then as then
+from mcp_auditor.domain.model_calls import ModelCallKind
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, TestCaseBatch
 from mcp_auditor.graph.nodes import make_generate_test_cases
 from tests.fakes import FakeLLM
+from tests.unit.auditor.support.model_failures import a_provider_refusal, a_recorded_refusal
 
 
 async def test_a_complete_batch_is_kept_without_retry():
@@ -103,7 +105,7 @@ async def test_a_retry_short_of_cases_only_is_not_completed():
 
 
 async def test_a_refused_first_call_leaves_no_case_and_a_gap_of_zero_received():
-    refusal = given.a_provider_refusal()
+    refusal = a_provider_refusal()
     node = make_generate_test_cases(FakeLLM([refusal]))
 
     result = await node(given.a_generation_state(test_budget=5))
@@ -112,13 +114,15 @@ async def test_a_refused_first_call_leaves_no_case_and_a_gap_of_zero_received():
     assert result["coverage_gap"] == CoverageGap(
         requested_cases=5, received_cases=0, missing_categories=list(AuditCategory)
     )
-    then.one_generation_refusal_recorded(result)
+    assert result["missed_model_calls"] == [
+        a_recorded_refusal("test_tool", ModelCallKind.TEST_GENERATION)
+    ]
     assert result["provider_usage"] == [refusal.usage]
 
 
 async def test_a_refused_retry_keeps_the_first_batch_with_its_gap():
     first = given.a_batch_of(4)
-    node = make_generate_test_cases(FakeLLM([first, given.a_provider_refusal()]))
+    node = make_generate_test_cases(FakeLLM([first, a_provider_refusal()]))
 
     result = await node(given.a_generation_state(test_budget=5))
 
@@ -126,13 +130,15 @@ async def test_a_refused_retry_keeps_the_first_batch_with_its_gap():
     assert result["coverage_gap"] == CoverageGap(
         requested_cases=5, received_cases=4, missing_categories=[AuditCategory.RESOURCE_ABUSE]
     )
-    then.one_generation_refusal_recorded(result)
+    assert result["missed_model_calls"] == [
+        a_recorded_refusal("test_tool", ModelCallKind.TEST_GENERATION)
+    ]
     assert len(result["provider_usage"]) == 2
 
 
 async def test_a_refused_completion_keeps_the_retried_batch_with_its_gap():
     retried = given.a_batch_of(3)
-    node = make_generate_test_cases(FakeLLM([retried, retried, given.a_provider_refusal()]))
+    node = make_generate_test_cases(FakeLLM([retried, retried, a_provider_refusal()]))
 
     result = await node(given.a_generation_state(test_budget=5))
 
@@ -142,7 +148,9 @@ async def test_a_refused_completion_keeps_the_retried_batch_with_its_gap():
         received_cases=3,
         missing_categories=[AuditCategory.INFO_LEAKAGE, AuditCategory.RESOURCE_ABUSE],
     )
-    then.one_generation_refusal_recorded(result)
+    assert result["missed_model_calls"] == [
+        a_recorded_refusal("test_tool", ModelCallKind.TEST_GENERATION)
+    ]
     assert len(result["provider_usage"]) == 3
 
 
@@ -152,3 +160,13 @@ async def test_a_generation_without_refusal_records_none():
     result = await node(given.a_generation_state(test_budget=5))
 
     assert result["missed_model_calls"] == []
+
+
+async def test_a_refused_generation_does_not_bill_the_judge():
+    refusal = a_provider_refusal()
+    node = make_generate_test_cases(FakeLLM([refusal]))
+
+    result = await node(given.a_generation_state(test_budget=2))
+
+    assert result["provider_usage"] == [refusal.usage]
+    assert "judge_usage" not in result

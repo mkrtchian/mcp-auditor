@@ -7,13 +7,11 @@ from mcp_auditor.domain.models import (
     EvalVerdict,
     JudgeResult,
     Judgment,
-    ProviderUsage,
     Severity,
     TestCase,
     ToolDefinition,
     ToolReport,
 )
-from mcp_auditor.domain.ports import ProviderRefusal
 from mcp_auditor.domain.server_liveness import UnsentCause
 
 
@@ -118,7 +116,3 @@ def a_judge_result(
         justification="test justification",
         severity=severity,
     )
-
-
-def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))

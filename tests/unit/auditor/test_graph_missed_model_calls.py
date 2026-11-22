@@ -16,11 +16,12 @@ from tests.unit.auditor.support.graph_results import (
     report_has_judged_chains,
     tool_report_at,
 )
+from tests.unit.auditor.support.model_failures import MODEL_FAILURES, a_provider_refusal
 
 
-@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
+@pytest.mark.parametrize("cause", list(MODEL_FAILURES))
 async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissedCallCause):
-    failure = given.MODEL_FAILURES[cause]()
+    failure = MODEL_FAILURES[cause]()
     fake_llm = given.a_fake_llm_failing_the_first_of_two_judgments(failure)
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=2)
@@ -34,12 +35,12 @@ async def test_a_missed_judgment_does_not_stop_the_audit(cause: MissedCallCause)
     assert result["audit_report"].judge_usage == failure.usage.add(FAKE_USAGE)
 
 
-@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
+@pytest.mark.parametrize("cause", list(MODEL_FAILURES))
 async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the_next(
     cause: MissedCallCause,
 ):
     tools = [a_tool(name="get_user"), a_tool(name="list_users")]
-    failure = given.MODEL_FAILURES[cause]()
+    failure = MODEL_FAILURES[cause]()
     fake_llm = given.a_fake_llm_failing_the_first_tool_generation(failure, cases_per_tool=2)
     graph = a_graph(fake_llm, FakeMCPClient(tools))
     state = an_initial_state(test_budget=2)
@@ -55,7 +56,7 @@ async def test_a_missed_first_generation_leaves_its_tool_untested_and_audits_the
 
 
 async def test_a_dry_run_with_a_refused_generation_carries_the_missed_model_call():
-    fake_llm = FakeLLM([given.a_provider_refusal()])
+    fake_llm = FakeLLM([a_provider_refusal()])
     graph = a_dry_run_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=3)
 
@@ -76,11 +77,11 @@ async def test_a_refused_chain_planning_leaves_the_tool_without_chains():
     then.audit_report_has_missed_calls(result, [("get_user", ModelCallKind.CHAIN_PLANNING)])
 
 
-@pytest.mark.parametrize("cause", list(given.MODEL_FAILURES))
+@pytest.mark.parametrize("cause", list(MODEL_FAILURES))
 async def test_a_missed_observation_judges_its_chain_and_the_next_chain_runs(
     cause: MissedCallCause,
 ):
-    fake_llm = given.a_fake_llm_failing_the_first_chain_observation(given.MODEL_FAILURES[cause]())
+    fake_llm = given.a_fake_llm_failing_the_first_chain_observation(MODEL_FAILURES[cause]())
     graph = a_graph(fake_llm, FakeMCPClient([a_tool(name="get_user")]))
     state = an_initial_state(test_budget=1, chain_budget=2)
 

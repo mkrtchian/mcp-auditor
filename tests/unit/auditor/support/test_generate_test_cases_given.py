@@ -4,11 +4,9 @@ from mcp_auditor.domain.models import (
     AttackContext,
     AuditCategory,
     AuditPayload,
-    ProviderUsage,
     TestCaseBatch,
     ToolDefinition,
 )
-from mcp_auditor.domain.ports import ProviderRefusal
 
 
 def a_batch_of(num_cases: int, categories: list[AuditCategory] | None = None) -> TestCaseBatch:
@@ -25,7 +23,3 @@ def a_generation_state(test_budget: int) -> dict[str, Any]:
         name="test_tool", description="A test tool", input_schema={"type": "object"}
     )
     return {"current_tool": tool, "test_budget": test_budget, "attack_context": AttackContext()}
-
-
-def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))

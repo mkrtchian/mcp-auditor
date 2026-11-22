@@ -16,12 +16,12 @@ from tests.unit.auditor.support.chain_states import (
     a_chain_goal,
     a_chain_step,
     a_payload,
-    a_provider_refusal,
     a_tool,
 )
 from tests.unit.auditor.support.missed_chain_calls import (
     refused_call_recorded,
 )
+from tests.unit.auditor.support.model_failures import a_provider_refusal
 
 
 class TestMakePlanChains:

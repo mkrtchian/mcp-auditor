@@ -21,7 +21,6 @@ from mcp_auditor.graph.nodes import (
     make_discover_tools,
     make_execute_tool,
     make_extract_attack_context,
-    make_generate_test_cases,
     make_judge_response,
     make_route_tools,
     prepare_tool,
@@ -33,6 +32,7 @@ from tests.fakes import FakeLLM, FakeMCPClient
 from tests.fakes.llm import FAKE_USAGE
 from tests.fakes.mcp_client import a_lost_connection_response
 from tests.unit.auditor.support.audited_servers import a_server_taken_as_down
+from tests.unit.auditor.support.model_failures import a_provider_refusal, a_recorded_refusal
 
 
 class TestDiscoverTools:
@@ -118,7 +118,7 @@ class TestExtractAttackContext:
 
     async def test_a_refused_extraction_keeps_the_previous_context(self):
         previous = AttackContext(db_engine="postgres")
-        refusal = given.a_provider_refusal()
+        refusal = a_provider_refusal()
         node = make_extract_attack_context(FakeLLM([refusal]))
         state = {
             "tool_reports": [given.a_tool_report(tool_name="read_file")],
@@ -128,9 +128,9 @@ class TestExtractAttackContext:
         result = await node(state)
 
         assert result["attack_context"] == previous
-        then.refused_call_recorded(
-            result, tool_name="read_file", kind=ModelCallKind.CONTEXT_EXTRACTION
-        )
+        assert result["missed_model_calls"] == [
+            a_recorded_refusal("read_file", ModelCallKind.CONTEXT_EXTRACTION)
+        ]
         assert result["provider_usage"] == [refusal.usage]
 
 
@@ -249,7 +249,7 @@ class TestJudgeResponse:
         then.judged_case_uses_judgment(result, judgment=judgment)
 
     async def test_a_refused_judgment_leaves_the_case_unjudged(self):
-        refusal = given.a_provider_refusal()
+        refusal = a_provider_refusal()
         node = make_judge_response(FakeLLM([refusal]))
         case = given.a_test_case(response="some output")
         tool = given.a_tool(name="read_file")
@@ -259,24 +259,12 @@ class TestJudgeResponse:
         assert result["processed_cases"] == [case]
         assert result["processed_cases"][0].judge_result is None
         assert result["current_case"] is None
-        then.refused_call_recorded(result, tool_name="read_file", kind=ModelCallKind.JUDGMENT)
+        assert result["missed_model_calls"] == [
+            a_recorded_refusal("read_file", ModelCallKind.JUDGMENT)
+        ]
         assert result["provider_usage"] == [refusal.usage]
         assert result["judge_usage"] == [refusal.usage]
         assert "chain_usage" not in result
-
-    async def test_a_refused_generation_does_not_bill_the_judge(self):
-        refusal = given.a_provider_refusal()
-        node = make_generate_test_cases(FakeLLM([refusal]))
-        state = {
-            "current_tool": given.a_tool(name="read_file"),
-            "test_budget": 2,
-            "attack_context": AttackContext(),
-        }
-
-        result = await node(state)
-
-        assert result["provider_usage"] == [refusal.usage]
-        assert "judge_usage" not in result
 
 
 class TestFinalizeToolAudit:

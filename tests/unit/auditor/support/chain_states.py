@@ -9,14 +9,12 @@ from mcp_auditor.domain.models import (
     ChainStep,
     EvalVerdict,
     JudgeResult,
-    ProviderUsage,
     Severity,
     StepObservation,
     TestCase,
     ToolDefinition,
     ToolResponse,
 )
-from mcp_auditor.domain.ports import ProviderRefusal, UnreadableAnswer
 from mcp_auditor.domain.server_liveness import UnsentCause
 from tests.fakes import FakeMCPClient
 
@@ -153,11 +151,3 @@ def a_chain_audit_state(
         "unsent_step_cause": unsent_step_cause,
         "provider_usage": [],
     }
-
-
-def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
-
-
-def an_unreadable_answer() -> UnreadableAnswer:
-    return UnreadableAnswer(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))

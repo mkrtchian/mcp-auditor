@@ -1,14 +1,8 @@
-from mcp_auditor.domain.model_calls import MissedCallCause
-from mcp_auditor.domain.models import AttackContext, ChainPlanBatch, ProviderUsage, StepObservation
-from mcp_auditor.domain.ports import (
-    ModelCallMissed,
-    PromptTooLong,
-    ProviderRefusal,
-    ProviderThrottled,
-    UnreadableAnswer,
-)
+from mcp_auditor.domain.models import AttackContext, ChainPlanBatch, StepObservation
+from mcp_auditor.domain.ports import ModelCallMissed
 from tests.fakes import FakeLLM
 from tests.unit.auditor.support.graph_builders import a_chain_goal, a_complete_batch, a_judgment
+from tests.unit.auditor.support.model_failures import a_provider_refusal
 
 
 def a_fake_llm_failing_the_first_of_two_judgments(failure: ModelCallMissed) -> FakeLLM:
@@ -42,27 +36,3 @@ def a_fake_llm_refusing_the_chain_step_planning() -> FakeLLM:
     continue_obs = StepObservation(observation="promising", should_continue=True)
     chain = [chain_plan, continue_obs, a_provider_refusal(), a_judgment()]
     return FakeLLM([a_complete_batch(1), a_judgment(), *chain, AttackContext()])
-
-
-def a_provider_refusal() -> ProviderRefusal:
-    return ProviderRefusal("flagged by policy", ProviderUsage(input_tokens=7, output_tokens=0))
-
-
-def an_unreadable_answer() -> UnreadableAnswer:
-    return UnreadableAnswer(3, 1, ProviderUsage(input_tokens=40, output_tokens=12))
-
-
-def a_provider_throttling() -> ProviderThrottled:
-    return ProviderThrottled("slow down", 300.0, ProviderUsage(throttled_requests=8))
-
-
-def a_prompt_too_long() -> PromptTooLong:
-    return PromptTooLong(ProviderUsage(throttled_requests=2))
-
-
-MODEL_FAILURES = {
-    MissedCallCause.PROVIDER_REFUSAL: a_provider_refusal,
-    MissedCallCause.UNREADABLE_ANSWER: an_unreadable_answer,
-    MissedCallCause.PROVIDER_THROTTLED: a_provider_throttling,
-    MissedCallCause.PROMPT_TOO_LONG: a_prompt_too_long,
-}
