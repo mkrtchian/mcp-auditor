@@ -166,22 +166,8 @@ def container_argv(launch: ServerLaunch, profile: ContainerProfile) -> list[str]
         # A bare name: docker reads the value from its own environment, which
         # `spawn_environment` fills, so the value never appears in the argv.
         *(flag for name in launch.relayed.names for flag in ("-e", name)),
-        *_mount_flags(plan),
+        *(flag for mount in plan.mounts for flag in ("--mount", mount.mount_argument())),
         profile.identity.image,
         launch.command,
         *(plan.rewrites.get(element, element) for element in launch.args),
     ]
-
-
-# --mount rather than -v, and each field quoted whole: -v refuses a host path holding a
-# colon, and --mount parses its fields as CSV, where an unquoted comma would split one.
-# The quotes go around `src=...`, not around the path, which is where Docker's CSV parser
-# accepts them. What no quoting can carry is refused before this runs, by
-# `_require_a_spellable_path` in the mount policy: change this spelling and that list is
-# wrong, with nothing but the Docker integration test to say so.
-def _mount_flags(plan: MountPlan) -> list[str]:
-    flags: list[str] = []
-    for mount in plan.mounts:
-        fields = f'type=bind,"src={mount.host}","dst={mount.host}"'
-        flags += ["--mount", fields if mount.writable else f"{fields},readonly"]
-    return flags

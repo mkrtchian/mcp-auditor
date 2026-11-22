@@ -87,6 +87,10 @@ class MountSpec:
     host: Path
     writable: bool
 
+    def mount_argument(self) -> str:
+        fields = f'type=bind,"src={self.host}","dst={self.host}"'
+        return fields if self.writable else f"{fields},readonly"
+
 
 @dataclass(frozen=True)
 class DeclaredMount:
@@ -94,13 +98,15 @@ class DeclaredMount:
     writable: bool
 
 
-# What the container mount argument `_mount_flags` renders in the launch adapter cannot
-# carry, so this list is tied to that spelling and goes stale if it changes. Measured
-# against Docker 29.8.1 rather than derived: a double quote closes the quoted CSV field
-# early and fails to parse, a CRLF is folded to a bare newline and would mount a path
-# nobody named, and a trailing blank is rejected by the docker CLI's own flag parser,
-# before it reaches the daemon. A bare CR, a tab and an interior blank all mount
-# correctly, so none is refused here.
+# The spelling of `MountSpec.mount_argument`, and what it cannot carry. --mount rather
+# than -v, which refuses a host path holding a colon. Each field is quoted whole, since
+# --mount parses its fields as CSV, where an unquoted comma would split one, and the
+# quotes go around `src=...`, not around the path, which is where Docker's CSV parser
+# accepts them. What no quoting carries is measured against Docker 29.8.1 rather than
+# derived: a double quote closes the quoted CSV field early and fails to parse, a CRLF
+# is folded to a bare newline and would mount a path nobody named, and a trailing blank
+# is rejected by the docker CLI's own flag parser, before it reaches the daemon. A bare
+# CR, a tab and an interior blank all mount correctly, so none is refused here.
 _UNSPELLABLE_SUBSTRINGS = (('"', "a double quote"), ("\r\n", "a carriage return and line feed"))
 
 

@@ -153,6 +153,15 @@ def test_a_declared_mount_is_refused_on_the_same_characters():
         given.a_policy(f"{spelling}:rw").plan([], {spelling: Path(spelling)})
 
 
+def test_a_mount_argument_quotes_each_field_whole_around_a_comma_and_a_colon():
+    mount = MountSpec(Path("/srv/data,v2/09:30"), writable=False)
+
+    assert (
+        mount.mount_argument()
+        == 'type=bind,"src=/srv/data,v2/09:30","dst=/srv/data,v2/09:30",readonly'
+    )
+
+
 def test_refused_roots_hold_the_home_itself_and_not_its_children():
     roots = refused_roots(Path("/home/alice"))
 
