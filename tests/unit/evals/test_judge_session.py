@@ -119,7 +119,7 @@ async def test_recording_over_an_unconfirmed_baseline_of_another_commit_is_refus
     assert judge.total_calls() == 0
 
 
-async def test_a_declaration_naming_a_case_outside_the_ground_truth_is_refused_early(
+async def test_a_declaration_naming_a_case_outside_the_fixture_is_refused_early(
     tmp_path: Path,
 ):
     judge = given.ScriptedJudge()
@@ -131,7 +131,7 @@ async def test_a_declaration_naming_a_case_outside_the_ground_truth_is_refused_e
     )
 
     assert refusal.reasons == [
-        f"declared flip {judge_baselines.UNSPECIFIED_ID} names no cell of the ground truth"
+        f"declared flip {judge_baselines.UNSPECIFIED_ID} names no judge case of the fixture"
     ]
     assert judge.total_calls() == 0
 

@@ -109,8 +109,7 @@ def test_a_judge_entry_naming_an_unknown_case_is_a_problem():
 
     problems = declaration_problems([judge], frozenset({"0123456789abcdef"}))
 
-    assert len(problems) == 1
-    assert "fedcba9876543210" in problems[0]
+    assert problems == ["declared flip fedcba9876543210 names no judge case of the fixture"]
 
 
 def test_a_key_named_twice_is_a_problem():

@@ -18,9 +18,15 @@ class Instrument(StrEnum):
     JUDGE = "judge"
 
 
+_UNKNOWN_KEY = {
+    Instrument.HONEYPOT: "cell of the ground truth",
+    Instrument.JUDGE: "judge case of the fixture",
+}
+
+
 class DeclaredFlip(BaseModel):
-    """A cell a change to the system under test is expected to lose, declared in the
-    commit that makes the change (ADR 020). `base` is that commit's parent."""
+    """A gated cell or judge case a change to the system under test is expected to lose,
+    declared in the commit that makes the change (ADR 020). `base` is that commit's parent."""
 
     instrument: Instrument
     key: str
@@ -55,9 +61,10 @@ def entries_of_commit(
 
 def declaration_problems(entries: list[DeclaredFlip], known_keys: Collection[str]) -> list[str]:
     counts = Counter(entry.key for entry in entries)
+    instruments = {entry.key: entry.instrument for entry in entries}
     unknown = [
-        f"declared flip {key} names no cell of the ground truth"
-        for key in counts
+        f"declared flip {key} names no {_UNKNOWN_KEY[instrument]}"
+        for key, instrument in instruments.items()
         if key not in known_keys
     ]
     twice = [
