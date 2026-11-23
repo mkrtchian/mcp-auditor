@@ -12,7 +12,7 @@ import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_vets as vets
 from evals import run_nuisance
 from evals.cve.environments import TOOL_CALL_TIMEOUT
-from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
+from evals.cve.nuisance.commands import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.vet_command import default_vet_deps
 
 

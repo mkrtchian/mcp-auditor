@@ -26,6 +26,7 @@ from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
+    NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,
     committed_admission,
@@ -55,7 +56,6 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateOptions,
     NuisanceGateSession,
 )
-from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.run_files import write_report
 from evals.eval_display import console

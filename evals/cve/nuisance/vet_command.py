@@ -23,6 +23,7 @@ from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
+    NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,
     committed_admission,
@@ -35,7 +36,6 @@ from evals.cve.nuisance.containers import (
     run_images,
     sweep_run_containers,
 )
-from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.vetting import (
     LaunchedBenignCall,

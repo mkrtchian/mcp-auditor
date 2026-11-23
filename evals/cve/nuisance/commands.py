@@ -1,5 +1,5 @@
-"""What the nuisance subcommands share: the walk record path, the admission they read and their
-exit codes."""
+"""What the nuisance subcommands share: the walk record path, the admission they read, their
+default concurrency and their exit codes."""
 
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -12,6 +12,7 @@ from evals.eval_session import Refused
 from evals.repository import REPO_ROOT
 
 WALK_RECORD_PATH = REPO_ROOT / "evals" / "nuisance_walk_record.json"
+NUISANCE_CONCURRENCY = 6
 UNKNOWN_SERVER_EXIT = 2
 REFUSED_EXIT = 3
 CRASHED_EXIT = 4

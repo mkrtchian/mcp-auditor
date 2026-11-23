@@ -32,13 +32,13 @@ from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.commands import (
+    NUISANCE_CONCURRENCY,
     WALK_RECORD_PATH,
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
 )
 from evals.cve.nuisance.holdout_run import (
-    NUISANCE_CONCURRENCY,
     NUISANCE_HOLDOUT_RUN_REFUSED,
     NUISANCE_RUNS,
     NuisanceDeps,

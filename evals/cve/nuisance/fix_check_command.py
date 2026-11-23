@@ -29,6 +29,7 @@ from evals.cve.nuisance.admission.admission import (
 from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
+    NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,
     committed_admission,
@@ -36,7 +37,6 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
 )
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
-from evals.cve.nuisance.holdout_run import NUISANCE_CONCURRENCY
 from evals.cve.run_images import (
     DOCKER_SWEEP,
     ContainerSweep,
