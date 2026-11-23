@@ -8,8 +8,9 @@ from uuid import UUID
 from langchain_core.tracers.context import collect_runs
 from rich.progress import Progress, TaskID
 
-from evals import eval_display as display
+from evals.eval_display import console
 from evals.honeypot.decision import CompletedRun, RunsOutcome
+from evals.honeypot.display import print_run_result
 from evals.honeypots import HONEYPOTS, HoneypotConfig, audit_honeypots
 from evals.metrics import RunDetail, VerdictMap
 from evals.tracing import tracing_enabled
@@ -31,7 +32,7 @@ class RunProgress:
 
 async def run_all(audit: AnnouncedAudit, runs: int) -> RunsOutcome:
     """Runs side by side, folded into the outcome in run index order."""
-    with Progress(console=display.console) as progress:
+    with Progress(console=console) as progress:
         task = progress.add_task("Running evals", total=runs * len(HONEYPOTS))
         tracker = RunProgress(progress, task, runs)
         completed = await asyncio.gather(
@@ -54,7 +55,7 @@ async def _run_or_warn(
         return None
     run = CompletedRun.of(index, verdicts, report)
     _post_langsmith_feedback(run.detail, trace_ids)
-    display.print_run_result(run.detail, tracker.progress)
+    print_run_result(run.detail, tracker.progress)
     return run
 
 

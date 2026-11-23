@@ -1,0 +1,228 @@
+from pathlib import Path
+
+from rich import box
+from rich.markup import escape
+from rich.panel import Panel
+from rich.progress import Progress
+from rich.table import Table
+from rich.text import Text
+
+from evals.baseline import Baseline
+from evals.cell_grid import PARTIAL, CellTag, GateGrid, GridBox, GridSection, OutcomeRow
+from evals.eval_display import (
+    PARTIAL_LEGEND,
+    RECORDING_NEXT_STEP,
+    console,
+    print_declarations,
+    print_outcome,
+    print_throttles,
+)
+from evals.gate import ProtectedCells
+from evals.gate_outcome import GateMode
+from evals.honeypot.report import HoneypotReport
+from evals.metrics import RunDetail
+from evals.recording import GatedSetChange
+from mcp_auditor.domain.models import AuditCategory
+
+
+def print_summary(
+    report: HoneypotReport,
+    report_path: str,
+    grid: GateGrid | None = None,
+    ignored_declarations: frozenset[str] = frozenset(),
+) -> None:
+    gate = report.gate
+    status = f", baseline {gate.baseline_status}" if gate.baseline_status else ""
+    console.print(f"Gate mode: [bold]{gate.mode}[/bold]{status}")
+    console.print(Panel(_metrics_table(report), title="Eval Results"))
+    if grid and grid.sections:
+        _print_grid(grid.title, grid.sections, gated_run=True)
+    if grid and grid.outcomes:
+        _print_outcomes(grid.outcomes)
+    print_declarations(gate.declared_held, ignored_declarations)
+    if gate.protected:
+        console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
+    print_throttles(report.config.get("throttled_requests", 0), report.config.get("concurrency", 0))
+    console.print(f"Report written to {report_path}")
+    print_outcome(gate.outcome, gate.reasons)
+
+
+_METRIC_LABELS = {
+    "recall": "Recall",
+    "precision": "Precision",
+    "consistency": "Consistency",
+    "distribution_coverage": "Distribution coverage",
+}
+
+
+def _metrics_table(report: HoneypotReport) -> Table:
+    legacy = report.gate.mode == GateMode.LEGACY_THRESHOLDS
+    limits = report.thresholds if legacy else report.gate.floors
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_column("Threshold" if legacy else "Floor", justify="right")
+    table.add_column("Status")
+    for name, label in _METRIC_LABELS.items():
+        value: float = getattr(report.metrics, name)
+        limit = limits.get(name)
+        if limit is None:
+            table.add_row(label, f"{value:.2f}", "-", "")
+            continue
+        # A floor's status reads from the gate: recall's floor is a count, which a rounded mean
+        # compared with 1/planted could contradict.
+        passed = value >= limit if legacy else name not in report.gate.floor_breaches
+        table.add_row(label, f"{value:.2f}", f"{limit:.2f}", _status(passed))
+    return table
+
+
+def _status(passed: bool) -> str:
+    return "[green]PASS[/green]" if passed else "[red]FAIL[/red]"
+
+
+def _print_outcomes(rows: list[OutcomeRow]) -> None:
+    console.print(_outcome_table(rows))
+    console.print("P pass, F fail, - not covered")
+    if any(row.outcome == PARTIAL for row in rows):
+        console.print(PARTIAL_LEGEND)
+
+
+def _outcome_table(rows: list[OutcomeRow]) -> Table:
+    table = Table(box=None, header_style="bold")
+    for column in ("Outcome", "Cell", "Baseline", "Run", "Retests"):
+        table.add_column(column, overflow="fold")
+    for row in rows:
+        cell = f"{row.cell}*" if row.planted else row.cell
+        table.add_row(row.outcome, cell, row.baseline, row.run, row.retests)
+    return table
+
+
+def print_recorded_grid(title: str, sections: list[GridSection]) -> None:
+    _print_grid(title, sections, gated_run=False)
+
+
+_STYLES: dict[CellTag, str] = {
+    CellTag.GATE: "black on green",
+    CellTag.UNSTABLE: "black on yellow",
+    CellTag.MISS: "white on magenta",
+    CellTag.FALSE_POSITIVE: "white on magenta",
+    CellTag.FLIP: "black on bright_yellow",
+    CellTag.DECLARED: "black on bright_blue",
+    CellTag.REGRESSION: "bold white on bright_red",
+    CellTag.IMPROVED: "black on cyan",
+    CellTag.NEW: "black on white",
+}
+
+_MEANINGS: dict[CellTag, str] = {
+    CellTag.GATE: "gated: same correct verdict in every baseline run",
+    CellTag.UNSTABLE: "not gated: verdict varies across baseline runs",
+    CellTag.MISS: "not gated: planted flaw never found",
+    CellTag.FALSE_POSITIVE: "false positive: PASS cell judged FAIL in every baseline run",
+    CellTag.FLIP: "gated cell wrong in this run, not a regression",
+    CellTag.DECLARED: (
+        "gated cell wrong in this run, declared before the run: the gate does not fail"
+    ),
+    CellTag.REGRESSION: "gated cell wrong in this run, reproduced on retest: the gate fails",
+    CellTag.IMPROVED: "miss or false-positive cell correct in every run of this one",
+    CellTag.NEW: "cell the baseline did not record",
+}
+
+_SHORT_CATEGORY: dict[AuditCategory, str] = {
+    AuditCategory.INPUT_VALIDATION: "input",
+    AuditCategory.ERROR_HANDLING: "errors",
+    AuditCategory.INJECTION: "inject",
+    AuditCategory.INFO_LEAKAGE: "leak",
+    AuditCategory.RESOURCE_ABUSE: "abuse",
+}
+
+
+def _print_grid(title: str, sections: list[GridSection], gated_run: bool) -> None:
+    console.print(title)
+    console.print(_grid_table(sections))
+    console.print(_legend(sections, gated_run))
+
+
+def _grid_table(sections: list[GridSection]) -> Table:
+    table = Table(box=box.ROUNDED)
+    table.add_column("tool", max_width=20, overflow="ellipsis")
+    for category in AuditCategory:
+        header = _SHORT_CATEGORY.get(category, category.value[:7])
+        table.add_column(header, justify="center", min_width=7)
+    empty = [""] * len(AuditCategory)
+    for section in sections:
+        table.add_row(Text(section.honeypot, style="dim italic"), *empty)
+        for index, row in enumerate(section.rows):
+            boxes = [_box_text(row.boxes[category]) for category in AuditCategory]
+            table.add_row(row.tool, *boxes, end_section=index == len(section.rows) - 1)
+    return table
+
+
+def _box_text(grid_box: GridBox | None) -> Text:
+    if grid_box is None:
+        return Text("·", style="dim")
+    star = "*" if grid_box.planted else " "
+    # Centring would strip the trailing space and shift unstarred words right of starred ones.
+    return Text(f" {grid_box.tag}{star}", style=_STYLES[grid_box.tag], justify="left")
+
+
+def _legend(sections: list[GridSection], gated_run: bool) -> Table:
+    boxes = [
+        grid_box for section in sections for row in section.rows for grid_box in row.boxes.values()
+    ]
+    present = [grid_box for grid_box in boxes if grid_box is not None]
+    legend = Table.grid(padding=(0, 2))
+    for tag in CellTag:
+        if any(grid_box.tag == tag for grid_box in present):
+            legend.add_row(Text(f" {tag} ", style=_STYLES[tag]), Text(_MEANINGS[tag], style="dim"))
+    if any(grid_box.planted for grid_box in present):
+        legend.add_row(" *", Text("planted flaw", style="dim"))
+    if len(present) < len(boxes):
+        legend.add_row(Text(" ·", style="dim"), Text("no such cell", style="dim"))
+    if gated_run:
+        legend.add_row(
+            "",
+            Text(
+                "a box counts the runs of the baseline, the outcome table the runs of this one",
+                style="dim",
+            ),
+        )
+    return legend
+
+
+def print_run_result(run_detail: RunDetail, progress: Progress) -> None:
+    for tool_name, dist in run_detail.distribution.items():
+        total_cases = sum(v.case_count for v in run_detail.verdicts.get(tool_name, {}).values())
+        progress.console.print(
+            f"  [bold]{tool_name}[/bold]: {total_cases} cases, {dist.covered} categories covered"
+        )
+    progress.console.print(
+        f"  Recall: {run_detail.recall:.2f} | Precision: {run_detail.precision:.2f}"
+    )
+    for reason in run_detail.blocked_reasons:
+        progress.console.print(f"  Payload blocked, {reason}")
+    for missed in run_detail.missed_model_calls:
+        progress.console.print(f"  {escape(missed)}")
+
+
+def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, path: Path) -> None:
+    lines = [f"[bold green]Baseline recorded ({baseline.status}) to {path}.[/bold green]"]
+    if baseline.confirms is not None or baseline.replaces is not None:
+        lines += [f"- enters the gated set: {key}" for key in gated_changes.entering]
+        lines += [f"- leaves the gated set: {key}" for key in gated_changes.leaving]
+    lines += [
+        f"- looked stable in the first recording and varied in the second: {key}"
+        for key in baseline.disagreements
+    ]
+    if baseline.protected:
+        lines.append(_protected_line(baseline.protected))
+    lines.append(RECORDING_NEXT_STEP[baseline.status])
+    console.print(Panel("\n".join(lines)))
+
+
+def _protected_line(protected: ProtectedCells) -> str:
+    return (
+        f"planted FAIL cells stable and correct: "
+        f"{protected.fail_stable_correct}/{protected.fail_total}, "
+        f"PASS cells stable and correct: {protected.pass_stable_correct}/{protected.pass_total}, "
+        f"unstable: {protected.unstable}"
+    )

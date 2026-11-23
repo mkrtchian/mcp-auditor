@@ -9,11 +9,11 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from evals import eval_display as display
 from evals.baseline import Baseline, load_baseline, write_baseline
 from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
+from evals.eval_display import console, print_refusal
 from evals.eval_session import (
     RECORDING_REFUSED,
     REPOSITORY_TREE,
@@ -27,6 +27,7 @@ from evals.export import export_judged_cases
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT, GateMode, GateOutcome
 from evals.ground_truth import parse_cell_key
 from evals.honeypot.decision import RunsOutcome, decide_runs
+from evals.honeypot.display import print_recorded_grid, print_summary, print_written_recording
 from evals.honeypot.report import HoneypotReport
 from evals.honeypot.retest import RetestAudit, Retester
 from evals.honeypot.runs import AnnouncedAudit, run_all
@@ -68,7 +69,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         code = _evaluate(args)
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        print_refusal(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()
@@ -85,7 +86,7 @@ def _evaluate(args: argparse.Namespace) -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(result.report.model_dump_json(indent=2))
     export_judged_cases(result.outcome.audits, MERGED_GROUND_TRUTH, report_path)
-    display.print_summary(
+    print_summary(
         result.report,
         options.report,
         _gate_grid(session.baseline, result),
@@ -211,11 +212,11 @@ def counted_audit(audit_one: HoneypotAudit, throttles: SessionThrottles) -> Anno
 
     async def audit(honeypot: HoneypotConfig, announcement: str | None) -> AuditReport:
         if announcement:
-            display.console.print(announcement)
+            console.print(announcement)
         report = await audit_one(honeypot)
         throttled = throttles.count(report)
         if throttled > 0:
-            display.console.print(
+            console.print(
                 f"[yellow]{honeypot.name} was throttled {throttled} time(s)"
                 " by the model provider (HTTP 429)[/yellow]"
             )
@@ -233,7 +234,7 @@ def retest_audit(audit: AnnouncedAudit) -> RetestAudit:
 
 
 def _announce_retest(message: str) -> None:
-    display.console.print(message, markup=False, highlight=False)
+    console.print(message, markup=False, highlight=False)
 
 
 def _warn_retest(message: str) -> None:
@@ -252,11 +253,11 @@ def _record(session: HoneypotSession, tree: TreeState, result: HoneypotRunResult
         raise Refused(RECORDING_REFUSED, decision.reasons)
     write_baseline(BASELINE_PATH, decision)
     changes = gated_set_changes(session.baseline, decision, MERGED_GROUND_TRUTH)
-    display.print_recorded_grid(
+    print_recorded_grid(
         f"Cells of the {decision.status} baseline ({len(decision.runs)} runs)",
         cell_grid(HONEYPOTS, decision.observation_runs()),
     )
-    display.print_written_recording(decision, changes, BASELINE_PATH)
+    print_written_recording(decision, changes, BASELINE_PATH)
     return 0
 
 
