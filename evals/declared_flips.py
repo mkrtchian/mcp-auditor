@@ -8,7 +8,7 @@ from typing import Annotated
 from pydantic import BaseModel, StringConstraints
 
 from evals.gate import CellComparison, CellOutcome
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 DECLARED_FLIPS_PATH = REPO_ROOT / "evals" / "declared_flips.json"
 

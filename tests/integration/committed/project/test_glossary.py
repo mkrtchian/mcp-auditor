@@ -1,6 +1,6 @@
 import pytest
 
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.integration.committed.project.support.retired_word_exemptions import EXEMPTIONS
 from tests.integration.committed.project.support.retired_words import RETIRED_WORDS
 from tests.unit.support.retired_word_scan import (

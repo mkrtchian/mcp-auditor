@@ -25,7 +25,6 @@ from evals.honeypot.retest import Retester
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,
-    REPO_ROOT,
     AuditModels,
     ConnectedHoneypot,
     HoneypotConfig,
@@ -35,6 +34,7 @@ from evals.honeypots import (
 )
 from evals.metrics import HoneypotMetrics, VerdictMap, aggregate_verdicts, build_run_detail
 from evals.recording import Recording, RecordingRefused, decide_recording
+from evals.repository import REPO_ROOT
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
 

@@ -17,7 +17,7 @@ from evals.cve.places import Places
 from evals.cve.planting_base import LayoutMount
 from evals.cve.proofs import is_aimed
 from evals.cve.units import Unit, unit_of_exchanges
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient

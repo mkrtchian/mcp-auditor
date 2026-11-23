@@ -44,7 +44,7 @@ from evals.cve.census.work import (
     read_jsonl,
 )
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 SOURCES = REPO_ROOT / "output" / "census" / "sources"
 WORK = REPO_ROOT / "output" / "census" / "work"

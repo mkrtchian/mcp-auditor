@@ -8,8 +8,8 @@ from pydantic import AliasChoices, BaseModel, Field
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.gate import Observation, ProtectedCells, RetestRule
-from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import JudgeFixture, inputs_fingerprint
+from evals.repository import REPO_ROOT
 
 JUDGE_BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "judge.json"
 

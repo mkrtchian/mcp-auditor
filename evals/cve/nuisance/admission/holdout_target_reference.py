@@ -17,7 +17,7 @@ from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import Target
 from evals.cve.docker_paths import image_dockerfile
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 HOLDOUT_FIXTURES = REPO_ROOT / "evals" / "cve" / "detection" / "holdout_fixtures"
 

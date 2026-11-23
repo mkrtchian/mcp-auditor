@@ -10,7 +10,7 @@ import shutil
 from collections.abc import Iterable
 from pathlib import Path
 
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 
 def copy_closure(out: Path, modules: Iterable[str], root: Path = REPO_ROOT) -> None:

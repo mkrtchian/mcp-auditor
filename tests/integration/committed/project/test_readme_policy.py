@@ -1,4 +1,4 @@
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 README = REPO_ROOT / "README.md"
 

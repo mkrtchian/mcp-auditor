@@ -20,7 +20,7 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.eval_session import Refused
 from evals.gate import Cell, cell_key
 from evals.ground_truth import GroundTruth
-from evals.honeypots import MERGED_GROUND_TRUTH, REPO_ROOT
+from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.judge.draw_checks import SourceReport, leaked_secrets, source_refusals, source_run
 from evals.judge.fixture import (
     CaseLabel,
@@ -33,6 +33,7 @@ from evals.judge.fixture import (
     case_id,
     load_drawn,
 )
+from evals.repository import REPO_ROOT
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 DRAW_SEED = 20260928

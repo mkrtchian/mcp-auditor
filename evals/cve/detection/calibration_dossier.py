@@ -24,7 +24,7 @@ from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASSES
 
 EVALS = REPO_ROOT / "evals"

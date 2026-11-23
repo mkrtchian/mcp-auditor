@@ -10,7 +10,7 @@ from evals.cve.fixture_sources import (
     unserved_captures,
 )
 from evals.cve.places import DETECTION_PLACES, PlaceKind, kept_records, load_places
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 _STAND_IN_DOCKERFILE = image_dockerfile("stand-in")
 

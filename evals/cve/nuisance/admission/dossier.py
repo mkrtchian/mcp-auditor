@@ -31,7 +31,7 @@ from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.cve.nuisance.admission.walk_record import WalkInputs, normalized_package
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASS_DEFINITIONS
 
 # Kept here, not read from the backend registry, so the dossier stays free of the

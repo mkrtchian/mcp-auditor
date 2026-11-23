@@ -9,8 +9,8 @@ import tests.unit.support.grammar_inputs as grammar
 from evals.cve.grammar import MissKind, RunGrade
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit, unit_of_exchanges
-from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
+from evals.repository import REPO_ROOT
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
 JUDGE_FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"

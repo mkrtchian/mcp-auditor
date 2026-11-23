@@ -13,6 +13,7 @@ from evals.ground_truth import (
     GroundTruth,
 )
 from evals.metrics import VerdictMap, aggregate_verdicts
+from evals.repository import REPO_ROOT
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
@@ -22,8 +23,6 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AttackContext, AuditReport, ProviderUsage
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 @dataclass(frozen=True)

@@ -9,7 +9,7 @@ from evals.cve.census.census import load_census
 from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
 from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 WALK_RECORD_PATH = REPO_ROOT / "evals" / "nuisance_walk_record.json"
 UNKNOWN_SERVER_EXIT = 2

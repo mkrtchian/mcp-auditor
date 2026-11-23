@@ -20,7 +20,7 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.environments import Launch
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.detection_preflight import VULNERABLE_SERVICES
-from evals.honeypots import HONEYPOTS, REPO_ROOT, AuditModels, audit_honeypot, models_for
+from evals.honeypots import HONEYPOTS, AuditModels, audit_honeypot, models_for
 from evals.probe.candidates import REFERENCE
 from evals.probe.corpus import (
     CapturingLLM,
@@ -30,6 +30,7 @@ from evals.probe.corpus import (
     sample_judge_calls,
     write_corpus,
 )
+from evals.repository import REPO_ROOT
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch

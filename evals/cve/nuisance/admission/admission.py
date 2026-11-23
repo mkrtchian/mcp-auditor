@@ -35,7 +35,7 @@ from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
 from evals.cve.nuisance.exits import RecordedExit
 from evals.cve.planting_base import PlantingHost
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 ADMISSION_PATH = REPO_ROOT / "evals" / "nuisance_admission.json"
 

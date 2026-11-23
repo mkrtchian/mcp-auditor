@@ -15,7 +15,7 @@ from evals.cve.images import dockerfile_fingerprint
 from evals.cve.kit import launch as kit_launch
 from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import RunDocker, target_services
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.calibration_check_deps import deps_with

@@ -20,7 +20,7 @@ from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text
 from evals.eval_session import Refused
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.unit.nuisance.admission.support.holdout_reference_checks import (
     it_carries_the_holdout_reference_of,
 )

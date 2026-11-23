@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 WORKFLOWS = sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
 

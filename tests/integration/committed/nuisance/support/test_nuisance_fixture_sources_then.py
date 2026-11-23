@@ -11,7 +11,7 @@ from evals.cve.fixture_sources import (
 from evals.cve.images import dockerfile_instructions
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.fingerprint import fingerprinted_files
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 _STAND_IN_DOCKERFILE = image_dockerfile("stand-in")
 

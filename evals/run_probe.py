@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
-from evals.honeypots import REPO_ROOT
 from evals.probe.analysis import (
     CallOutcome,
     CandidateStats,
@@ -35,6 +34,7 @@ from evals.probe.subset import (
     select_calls,
     select_candidates,
 )
+from evals.repository import REPO_ROOT
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.domain.coverage import find_coverage_gap

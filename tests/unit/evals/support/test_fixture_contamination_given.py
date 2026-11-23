@@ -4,8 +4,8 @@ from pathlib import Path
 
 from evals.cve.census.census import CENSUS_PATH, load_census
 from evals.cve.census.exclusions import EXCLUDED_SERVERS
-from evals.honeypots import REPO_ROOT
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
+from evals.repository import REPO_ROOT
 from mcp_auditor.domain.models import AuditCategory
 
 _TESTS_DIR = REPO_ROOT / "tests"

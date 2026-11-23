@@ -28,8 +28,9 @@ from evals.declared_flips import (
 from evals.gate import cell_key
 from evals.gate_outcome import GateMode
 from evals.ground_truth import GroundTruth
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, REPO_ROOT
+from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
+from evals.repository import REPO_ROOT
 from mcp_auditor.config import Settings, load_settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot.json"

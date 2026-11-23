@@ -16,7 +16,7 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
 )
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.planting_base import PlantingHost
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.unit.support.committed_nuisance_admission import (
     the_committed_admission,
     the_committed_walk_inputs,

@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 
 LINK_KINDS_README = """\
 # Fixture

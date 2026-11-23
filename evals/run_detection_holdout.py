@@ -43,8 +43,8 @@ from evals.cve.run_images import (
 )
 from evals.eval_session import Refused
 from evals.honeypot.runs import tracing_enabled
-from evals.honeypots import REPO_ROOT
 from evals.metrics import quiet_throttle_waits
+from evals.repository import REPO_ROOT
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 

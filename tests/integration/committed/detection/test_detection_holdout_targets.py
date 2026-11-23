@@ -17,7 +17,7 @@ from evals.cve.places import (
 )
 from evals.cve.planting import planting_spec
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.unit.support.audited_launch_builders import AUDITED_LAUNCH_BUILDERS
 
 _EVALS = REPO_ROOT / "evals"

@@ -10,7 +10,7 @@ from evals.cve.detection.targets import Target
 from evals.cve.kit.fix_check import FixCheckResult
 from evals.cve.kit.target import KitTarget
 from evals.cve.nuisance.admission.admission import FixCheckRecord
-from evals.honeypots import REPO_ROOT
+from evals.repository import REPO_ROOT
 from tests.unit.support import censuses
 
 _KIT_DIR = REPO_ROOT / "evals" / "cve" / "kit"
