@@ -6,17 +6,21 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, verdict_maps_of
-from evals.declared_flips import apply_declarations
+from evals.declared_flips import apply_declarations, held_declarations
 from evals.gate import (
-    FLOORS,
     CellComparison,
     CellOutcome,
     Observation,
     ProtectedCells,
     apply_retests,
     compare,
-    count_detections,
     protected_cells,
+)
+from evals.gate_metrics import (
+    FLOORS,
+    count_detections,
+    floor_breach_reason,
+    recall_breach_reason,
     recall_floor_breached,
 )
 from evals.gate_outcome import GateMode, GateOutcome
@@ -74,7 +78,7 @@ def decide_judge_gate(gate_input: JudgeGateInput) -> JudgeGateResult:
         baseline_status=baseline.status if baseline else None,
         cases=cases,
         floor_breaches=breaches,
-        declared_held=_declared_held(gate_input.declared, cases),
+        declared_held=sorted(held_declarations(cases, gate_input.declared)),
         protected=protected_cells(baseline.runs, gate_input.ground_truth) if baseline else None,
     )
 
@@ -138,12 +142,10 @@ def _breach_reasons(gate_input: JudgeGateInput, breaches: list[str]) -> list[str
     reasons: list[str] = []
     if "recall" in breaches:
         count = count_detections(gate_input.runs, gate_input.ground_truth)
-        reasons.append(
-            f"recall: {count.detections} detection(s) over {count.runs} runs, under one per run"
-        )
+        reasons.append(recall_breach_reason(count))
     if "precision" in breaches:
         precision = _precision(gate_input.runs, gate_input.ground_truth)
-        reasons.append(f"precision {precision:.2f} under its floor {FLOORS['precision']:.2f}")
+        reasons.append(floor_breach_reason("precision", precision))
     return reasons
 
 
@@ -153,9 +155,3 @@ def _regressions(cases: dict[str, CellComparison]) -> list[str]:
         for case, comparison in cases.items()
         if comparison.outcome == CellOutcome.REGRESSION
     ]
-
-
-def _declared_held(declared: frozenset[str], cases: dict[str, CellComparison]) -> list[str]:
-    return sorted(
-        case for case in declared if case in cases and cases[case].outcome != CellOutcome.DECLARED
-    )

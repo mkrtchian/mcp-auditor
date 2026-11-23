@@ -9,7 +9,8 @@ import tests.unit.evals.support.honeypot_sessions as honeypot_sessions
 import tests.unit.evals.support.test_honeypot_decision_given as given
 from evals.baseline import BaselineStatus
 from evals.declared_flips import ActiveDeclarations
-from evals.gate import LEGACY_THRESHOLDS, CellOutcome
+from evals.gate import CellOutcome
+from evals.gate_metrics import LEGACY_THRESHOLDS
 from evals.gate_outcome import GateMode, GateOutcome
 from evals.ground_truth import cell_key
 from evals.honeypot.decision import decide_runs

@@ -4,15 +4,16 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
-from evals.gate import (
+from evals.declared_flips import held_declarations
+from evals.gate import CellComparison, CellOutcome, ProtectedCells
+from evals.gate_metrics import (
     FLOORS,
     LEGACY_THRESHOLDS,
-    CellComparison,
-    CellOutcome,
     DetectionCount,
     MetricDelta,
-    ProtectedCells,
+    floor_breach_reason,
     floor_breaches,
+    recall_breach_reason,
 )
 from evals.ground_truth import Cell, cell_key
 from evals.metrics import HoneypotMetrics
@@ -77,15 +78,9 @@ def decide_gate(gate_input: GateInput) -> GateResult:
         floor_breaches=breaches,
         deltas=gate_input.deltas,
         protected=gate_input.protected,
-        declared_held=_declared_held(gate_input),
-    )
-
-
-def _declared_held(gate_input: GateInput) -> list[str]:
-    return sorted(
-        cell_key(cell)
-        for cell in gate_input.declared
-        if cell in gate_input.cells and gate_input.cells[cell].outcome != CellOutcome.DECLARED
+        declared_held=sorted(
+            cell_key(cell) for cell in held_declarations(gate_input.cells, gate_input.declared)
+        ),
     )
 
 
@@ -122,9 +117,8 @@ def _breach_reasons(gate_input: GateInput, breaches: list[str]) -> list[str]:
 
 def _breach_reason(gate_input: GateInput, name: str) -> str:
     if name == "recall":
-        count = gate_input.detections
-        return f"recall: {count.detections} detection(s) over {count.runs} runs, under one per run"
-    return f"{name} {getattr(gate_input.metrics, name):.2f} under its floor {FLOORS[name]:.2f}"
+        return recall_breach_reason(gate_input.detections)
+    return floor_breach_reason(name, getattr(gate_input.metrics, name))
 
 
 def _regressions(cells: dict[Cell, CellComparison]) -> list[str]:

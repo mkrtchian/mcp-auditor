@@ -2,17 +2,13 @@ from dataclasses import dataclass, field
 
 from evals.baseline import RescoredBaseline, rescore
 from evals.declared_flips import apply_declarations
-from evals.gate import (
+from evals.gate import Observation, ProtectedCells, compare, observe, protected_cells
+from evals.gate_metrics import (
     DetectionCount,
     MetricDelta,
-    Observation,
-    ProtectedCells,
-    compare,
     count_detections,
     metric_deltas,
     metric_resolutions,
-    observe,
-    protected_cells,
 )
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
 from evals.ground_truth import Cell, parse_cell_key

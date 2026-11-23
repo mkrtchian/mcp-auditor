@@ -84,3 +84,7 @@ def _declared(comparison: CellComparison) -> CellComparison:
     if comparison.outcome != CellOutcome.FLIP:
         return comparison
     return comparison.model_copy(update={"outcome": CellOutcome.DECLARED})
+
+
+def held_declarations[K](cells: dict[K, CellComparison], declared: frozenset[K]) -> list[K]:
+    return [key for key in declared if key in cells and cells[key].outcome != CellOutcome.DECLARED]

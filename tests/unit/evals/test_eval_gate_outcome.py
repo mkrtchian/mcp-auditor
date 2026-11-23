@@ -2,7 +2,8 @@ import pytest
 
 import tests.unit.evals.support.honeypot_gate_inputs as honeypot_gate_inputs
 import tests.unit.evals.support.test_eval_gate_outcome_given as given
-from evals.gate import LEGACY_THRESHOLDS, CellOutcome
+from evals.gate import CellOutcome
+from evals.gate_metrics import LEGACY_THRESHOLDS
 from evals.gate_outcome import GateInput, GateMode, GateOutcome, decide_gate
 
 

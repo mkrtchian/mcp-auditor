@@ -19,9 +19,9 @@ from evals.gate import (
     FlipCause,
     apply_retests,
     compare,
-    count_detections,
     protected_cells,
 )
+from evals.gate_metrics import count_detections
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
 from evals.ground_truth import Cell
 from evals.honeypots import MERGED_GROUND_TRUTH
