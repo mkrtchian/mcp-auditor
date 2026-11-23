@@ -254,6 +254,6 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **rule vN**: always "detection suite rule v12" or "nuisance suite rule v5", never "rule v12" alone.
 - **rule**: the detection suite rule or the nuisance suite rule. The rules the oracle grades with are the grammar.
 - **run**: an instrument run (one invocation), or a repetition (one of the `--runs` passes inside an instrument run).
-- **scope**: a target's scope (the checkout), or the root a tool declares.
+- **scope**: a target's scope (the checkout), the root a tool declares, or the scope of the detection acceptance layer (a flaw out of it is a census flaw the layer reports with its reason and has no target for, since no tool response shows its effect or its target was dropped for keeping no place). Code: `OUT_OF_SCOPE_FLAWS`, `out_of_scope` in a detection report.
 - **step**: chain step, walk step (one stage a reached flaw goes through in a walk), calibration step (one stage of the detection walk's calibration at the draw, an addition, a replacement or a re-walk: the calibration of its candidates, second calibrations included, or the check of their cards), or census step (one stage of building the census, such as the collection, the recall or the classification). A model call is not a step.
 - **tools filter**: the user's `--tools`, or a target's tools filter.
