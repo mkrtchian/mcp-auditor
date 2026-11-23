@@ -8,7 +8,7 @@ import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_vets as vets
 from evals.concurrency import bounded
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.audit import GateRun
+from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateHarness
 from evals.cve.nuisance.holdout_run import NuisanceDeps
 from evals.cve.nuisance.solo import SOLO_SERVERS

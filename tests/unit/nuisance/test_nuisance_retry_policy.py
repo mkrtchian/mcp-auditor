@@ -8,11 +8,11 @@ from evals.cve.nuisance.audit import (
     DroppedRun,
     LaunchFailed,
     NuisanceAudit,
-    gate_run,
     incomplete_causes,
     is_incomplete,
     nuisance_audit,
 )
+from evals.cve.nuisance.gate.gate_audit import gate_run
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import ProviderFatal
 from mcp_auditor.domain.model_calls import MissedCallCause

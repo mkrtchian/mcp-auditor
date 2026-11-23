@@ -8,8 +8,8 @@ from pathlib import Path
 
 from evals.baseline import BaselineStatus
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
+from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_baseline import (
     NuisanceGateConditions,
     NuisanceServerBaseline,

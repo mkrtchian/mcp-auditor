@@ -4,9 +4,9 @@ from pathlib import Path
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.audit import GateRun
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
+from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_baseline import (
     NuisanceGateConditions,
     NuisanceServerBaseline,

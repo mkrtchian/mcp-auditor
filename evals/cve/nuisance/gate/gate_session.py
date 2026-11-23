@@ -17,12 +17,7 @@ from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_walk import standing_exit
-from evals.cve.nuisance.audit import (
-    GateRun,
-    audit_once,
-    gate_run,
-    nuisance_audit,
-)
+from evals.cve.nuisance.audit import audit_once, nuisance_audit
 from evals.cve.nuisance.containers import (
     remove_backend_containers,
     run_images,
@@ -38,6 +33,7 @@ from evals.cve.nuisance.gate.gate import (
     compare_server,
     decide,
 )
+from evals.cve.nuisance.gate.gate_audit import GateRun, gate_run
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_BASELINE_STORE,

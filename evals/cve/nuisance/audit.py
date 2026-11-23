@@ -10,13 +10,7 @@ from dataclasses import dataclass
 from rich.markup import escape
 
 from evals.concurrency import entered_in_thread
-from evals.cve.audit_attempts import (
-    AttemptOutcome,
-    IncompleteAttempt,
-    MissedCallWording,
-    ProviderErrorAttempt,
-    graded_despite_missed_model_calls,
-)
+from evals.cve.audit_attempts import ProviderErrorAttempt
 from evals.cve.environments import Launch
 from evals.cve.launch_audit import (
     SessionAuditor,
@@ -28,8 +22,6 @@ from evals.cve.launch_audit import (
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import single_container_launch_args
-from evals.cve.nuisance.counter import flagged_tools
-from evals.cve.nuisance.counting import counted_tools
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioner_of
 from evals.cve.nuisance.results import NotRunCause
@@ -165,37 +157,6 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderErrorAttempt) -> st
     if isinstance(outcome, ProviderErrorAttempt):
         return f"provider error ({outcome.description})"
     return f"run failed to launch ({escape(outcome.reason)})"
-
-
-_GATE_WORDING = MissedCallWording("no counted alarm, attempted again", "run did not complete")
-
-
-@dataclass(frozen=True)
-class GateRun:
-    flagged: bool
-    report: AuditReport
-
-
-async def gate_run(
-    server: AdmittedServer, audit: Callable[[], Awaitable[NuisanceAudit | DroppedRun]]
-) -> GateRun | None:
-    """One run of the nuisance gate, at most `INCOMPLETE_ATTEMPTS` audits: the detection gate's
-    policy on an incomplete attempt, with an alarm in place of a detection, unlike the nuisance
-    holdout run's. A counted alarm stands whatever model call was missed, an incomplete audit
-    without one is attempted again, and the run does not complete when every attempt stays
-    incomplete."""
-
-    async def attempt() -> AttemptOutcome[GateRun]:
-        outcome = await audit()
-        if isinstance(outcome, DroppedRun):
-            return None
-        report = outcome.report
-        flagged = bool(flagged_tools(report, counted_tools(server)))
-        if not flagged and is_incomplete(report):
-            return IncompleteAttempt(report, incomplete_causes(report))
-        return GateRun(flagged=flagged, report=report)
-
-    return await graded_despite_missed_model_calls(server.server_package, attempt, _GATE_WORDING)
 
 
 def incomplete_causes(report: AuditReport) -> frozenset[MissedCallCause]:
