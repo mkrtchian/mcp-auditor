@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from evals.pricing import call_cost
 from evals.probe.candidates import Candidate
-from evals.probe.corpus import Role
+from evals.probe.corpus import ProbeCorpus, Role
 from mcp_auditor.domain.models import CoverageGap, ProviderUsage, TestCaseBatch
 
 _GENERATION_SCHEMA = TestCaseBatch.__name__
@@ -20,8 +20,8 @@ _GENERATION_SCHEMA = TestCaseBatch.__name__
 
 class CallOutcome(StrEnum):
     PARSED = "parsed"
-    PARSE_FAILURE = "parse_failure"  # ValueError from the adapter after its attempts
-    ERROR = "error"  # any other exception (API error, timeout)
+    PARSE_FAILURE = "parse_failure"
+    ERROR = "error"
 
 
 class ProbeObservation(BaseModel):
@@ -66,6 +66,10 @@ def summarize(
         reasoning_tokens=sum(o.usage.reasoning_tokens for o in observations),
         reasoning_expected=candidate.reasoning_expected,
     )
+
+
+def judge_call_weight(corpus: ProbeCorpus) -> float:
+    return corpus.judge_calls_captured / sum(call.role == "judge" for call in corpus.calls)
 
 
 class DefectCounts(BaseModel):

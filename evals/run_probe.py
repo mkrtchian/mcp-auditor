@@ -23,10 +23,11 @@ from evals.probe.analysis import (
     CallOutcome,
     CandidateStats,
     ProbeObservation,
+    judge_call_weight,
     list_defects,
     summarize,
 )
-from evals.probe.candidates import MEASURED, PRICES_DATE, Candidate
+from evals.probe.candidates import CANDIDATES, MEASURED, PRICES_DATE, REFERENCE, Candidate
 from evals.probe.corpus import (
     CORPUS_PATH,
     SCHEMA_NAMES,
@@ -174,21 +175,8 @@ def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateM
 
 async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
     llm = models.judge if call.role == "judge" else models.main
-    outcome, usage, output, error = CallOutcome.PARSED, ProviderUsage(), None, None
-    truncated_attempts = 0
     started = time.perf_counter()
-    try:
-        output, usage = await llm.generate_structured(call.prompt, schema_for(call.schema_name))
-    except UnreadableAnswer as unreadable:
-        outcome, usage = CallOutcome.PARSE_FAILURE, unreadable.usage
-        truncated_attempts = unreadable.truncated_parse_attempts
-    except ProviderRefusal as refusal:
-        outcome, usage = CallOutcome.PARSE_FAILURE, refusal.usage
-        error = refusal.provider_message
-    except ProviderThrottled as throttled:
-        outcome, usage, error = CallOutcome.ERROR, throttled.usage, str(throttled)
-    except Exception as exception:
-        outcome, error = CallOutcome.ERROR, f"{type(exception).__name__}: {exception}"
+    answer = await _answer(llm, call)
     seconds = time.perf_counter() - started
     return ProbeObservation(
         candidate=models.candidate.name,
@@ -196,12 +184,41 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
         schema_name=call.schema_name,
         role=call.role,
         seconds=seconds,
-        usage=usage,
-        outcome=outcome,
-        coverage_gap=_coverage_gap(output, budget),
-        error=error,
-        truncated_attempts=truncated_attempts,
+        usage=answer.usage,
+        outcome=answer.outcome,
+        coverage_gap=_coverage_gap(answer.output, budget),
+        error=answer.error,
+        truncated_attempts=answer.truncated_attempts,
     )
+
+
+@dataclass(frozen=True)
+class _Answer:
+    outcome: CallOutcome
+    usage: ProviderUsage
+    output: object = None
+    error: str | None = None
+    truncated_attempts: int = 0
+
+
+async def _answer(llm: LLMPort, call: ProbeCall) -> _Answer:
+    try:
+        output, usage = await llm.generate_structured(call.prompt, schema_for(call.schema_name))
+        return _Answer(CallOutcome.PARSED, usage, output)
+    except UnreadableAnswer as unreadable:
+        return _Answer(
+            CallOutcome.PARSE_FAILURE,
+            unreadable.usage,
+            truncated_attempts=unreadable.truncated_parse_attempts,
+        )
+    except ProviderRefusal as refusal:
+        return _Answer(CallOutcome.PARSE_FAILURE, refusal.usage, error=refusal.provider_message)
+    except ProviderThrottled as throttled:
+        return _Answer(CallOutcome.ERROR, throttled.usage, error=str(throttled))
+    except Exception as exception:
+        return _Answer(
+            CallOutcome.ERROR, ProviderUsage(), error=f"{type(exception).__name__}: {exception}"
+        )
 
 
 def _coverage_gap(output: object, budget: int) -> CoverageGap | None:
@@ -211,17 +228,18 @@ def _coverage_gap(output: object, budget: int) -> CoverageGap | None:
 
 
 def _analyze(corpus: ProbeCorpus, observations: list[ProbeObservation]) -> ProbeResult:
-    judge_weight = corpus.judge_calls_captured / sum(c.role == "judge" for c in corpus.calls)
-    stats = [
-        summarize(c, [o for o in observations if o.candidate == c.name], judge_weight)
-        for c in MEASURED
-    ]
+    weight = judge_call_weight(corpus)
+
+    def stats_of(candidate: Candidate) -> CandidateStats:
+        of_candidate = [o for o in observations if o.candidate == candidate.name]
+        return summarize(candidate, of_candidate, weight)
+
     return ProbeResult(
         corpus=corpus,
-        judge_weight=judge_weight,
+        judge_weight=weight,
         observations=observations,
-        reference=stats[0],
-        candidates=stats[1:],
+        reference=stats_of(REFERENCE),
+        candidates=[stats_of(candidate) for candidate in CANDIDATES],
     )
 
 

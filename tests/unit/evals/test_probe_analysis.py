@@ -8,6 +8,7 @@ from evals.probe.analysis import (
     CallOutcome,
     ProbeObservation,
     count_defects,
+    judge_call_weight,
     list_defects,
     summarize,
 )
@@ -16,11 +17,10 @@ from mcp_auditor.domain.models import ProviderUsage
 
 class TestSummarize:
     def test_weights_judge_calls_and_leaves_the_others_at_one(self):
+        usage = ProviderUsage(input_tokens=1_000_000)
         observations = [
-            probe_observations.an_observation(role="main", usage=given.a_million_input_tokens()),
-            probe_observations.an_observation(
-                role="judge", schema_name="Judgment", usage=given.a_million_input_tokens()
-            ),
+            probe_observations.an_observation(role="main", usage=usage),
+            probe_observations.an_observation(role="judge", schema_name="Judgment", usage=usage),
         ]
 
         stats = summarize(given.a_candidate(), observations, judge_weight=2.5)
@@ -98,6 +98,13 @@ class TestSummarize:
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
 
         assert (stats.errors, stats.reasoning_tokens, stats.reasoning_expected) == (1, 42, True)
+
+
+class TestJudgeCallWeight:
+    def test_weights_judge_calls_by_captured_over_sampled(self):
+        corpus = given.a_corpus_of_judge_calls(20).model_copy(update={"judge_calls_captured": 60})
+
+        assert judge_call_weight(corpus) == 3.0
 
 
 class TestCountDefects:

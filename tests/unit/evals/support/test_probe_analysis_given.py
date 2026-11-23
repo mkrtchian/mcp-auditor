@@ -3,8 +3,10 @@ from typing import Any
 from evals.pricing import Prices
 from evals.probe.analysis import CandidateStats
 from evals.probe.candidates import Candidate
+from evals.probe.corpus import ProbeCall, ProbeCorpus
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage
+from mcp_auditor.domain.models import AuditCategory, CoverageGap
+from tests.unit.evals.support.probe_corpora import a_probe_corpus
 
 ONE_DOLLAR_PER_MILLION_INPUT = Prices(input=1.0, cached_input=0.0, output=0.0)
 
@@ -18,8 +20,19 @@ def a_candidate(prices: Prices = ONE_DOLLAR_PER_MILLION_INPUT) -> Candidate:
     )
 
 
-def a_million_input_tokens() -> ProviderUsage:
-    return ProviderUsage(input_tokens=1_000_000)
+def a_corpus_of_judge_calls(sampled: int) -> ProbeCorpus:
+    return a_probe_corpus(
+        [
+            ProbeCall(
+                call_id=f"honeypot/Judgment/{index:03d}",
+                schema_name="Judgment",
+                role="judge",
+                source="honeypot",
+                prompt=f"prompt {index}",
+            )
+            for index in range(sampled)
+        ]
+    )
 
 
 def a_coverage_gap() -> CoverageGap:

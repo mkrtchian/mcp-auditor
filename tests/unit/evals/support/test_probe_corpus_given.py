@@ -1,8 +1,6 @@
-from typing import Literal
-
-from evals.model_conditions import ModelConditions
-from evals.probe.corpus import ProbeCall, ProbeCorpus
+from evals.probe.corpus import ProbeCall, ProbeCorpus, Role
 from mcp_auditor.domain.models import EvalVerdict, Judgment, Severity
+from tests.unit.evals.support.probe_corpora import a_probe_corpus
 
 
 def a_judgment() -> Judgment:
@@ -10,33 +8,19 @@ def a_judgment() -> Judgment:
 
 
 def a_corpus() -> ProbeCorpus:
-    return ProbeCorpus(
-        captured_at="2026-09-24T10:00:00+00:00",
-        commit="8457fcc",
-        reference=ModelConditions(
-            provider="google",
-            model="gemini-3.1-flash-lite",
-            judge_model="gemini-3.1-flash-lite",
-            reasoning="minimal",
-            judge_reasoning="minimal",
-        ),
-        budget=10,
-        judge_sample_seed=7,
-        judge_calls_captured=2,
-        calls=a_capture(main_calls=2, judge_calls=2),
-    )
+    return a_probe_corpus(a_capture(main_calls=2, judge_calls=2))
 
 
 def a_capture(main_calls: int, judge_calls: int) -> list[ProbeCall]:
     """Main and judge calls interleaved, the way an audit alternates generation and judging."""
-    main: list[Literal["main", "judge"]] = ["main"]
-    judge: list[Literal["main", "judge"]] = ["judge"]
+    main: list[Role] = ["main"]
+    judge: list[Role] = ["judge"]
     roles = main * main_calls + judge * judge_calls
     interleaved = sorted(range(len(roles)), key=lambda index: index % 3)
     return [_a_call(index, roles[position]) for index, position in enumerate(interleaved)]
 
 
-def _a_call(index: int, role: Literal["main", "judge"]) -> ProbeCall:
+def _a_call(index: int, role: Role) -> ProbeCall:
     schema_name = "TestCaseBatch" if role == "main" else "Judgment"
     return ProbeCall(
         call_id=f"honeypot/{schema_name}/{index:03d}",
