@@ -10,6 +10,8 @@ starts, so `load_settings` reads only the real environment.
 
 import pytest
 
+from evals.tracing import TRACING_VARIABLES
+
 
 @pytest.fixture(autouse=True)
 def _no_dotenv_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -20,5 +22,5 @@ def _no_dotenv_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
 def _no_tracing_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
     """`.env` loading is disabled already, but a tracing flag exported in the shell still reaches
     the tests."""
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
+    for name in TRACING_VARIABLES:
+        monkeypatch.delenv(name, raising=False)

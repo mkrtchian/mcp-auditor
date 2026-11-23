@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A declared container that passes a relayed variable with a short option glued to its value (`-eNAME`) or ending a group (`-ie NAME`) no longer gets the false warning that its `docker run` does not pass the variable.
 - The progress display shows again, during an audit, the planning of the attack chains, each chain step executed and each chain's verdict, which it had stopped printing.
 - A declared flip naming an unknown judge case is now reported as naming no judge case of the fixture, not no cell of the ground truth.
+- The detection and nuisance holdout runs refuse to start, and the honeypot suite posts its LangSmith feedback, under every variable LangSmith turns tracing on from: `LANGSMITH_TRACING_V2` and `LANGCHAIN_TRACING` were let through, so a holdout run could be traced.
 
 ## [0.5.0] - 2026-11-22
 

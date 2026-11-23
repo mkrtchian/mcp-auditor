@@ -32,7 +32,12 @@ def test_tracing_enabled_is_false_when_unset(monkeypatch: pytest.MonkeyPatch) ->
     assert tracing_enabled() is False
 
 
-def test_tracing_enabled_reads_langchain_v2(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
+@pytest.mark.parametrize(
+    "name",
+    ["LANGSMITH_TRACING", "LANGSMITH_TRACING_V2", "LANGCHAIN_TRACING", "LANGCHAIN_TRACING_V2"],
+)
+def test_tracing_enabled_reads_each_variable_langsmith_reads(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    monkeypatch.setenv(name, "true")
     assert tracing_enabled() is True

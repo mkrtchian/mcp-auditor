@@ -66,7 +66,7 @@ from evals.cve.run_interruption import sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.pricing import Prices
 from evals.session_usage import SessionThrottles
-from evals.tracing import tracing_enabled
+from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
@@ -190,10 +190,7 @@ def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
             _REFUSAL,
-            [
-                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
-                "a nuisance holdout run keeps no trace"
-            ],
+            [f"{TRACING_ON}; a nuisance holdout run keeps no trace"],
         )
 
 

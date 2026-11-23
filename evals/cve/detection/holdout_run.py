@@ -53,7 +53,7 @@ from evals.cve.run_images import (
 from evals.cve.run_interruption import first_failure, sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.session_usage import SessionThrottles
-from evals.tracing import tracing_enabled
+from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged
@@ -181,10 +181,7 @@ def _refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
             "detection holdout run refused",
-            [
-                "LANGSMITH_TRACING or LANGCHAIN_TRACING_V2 is set; "
-                "a detection holdout run keeps no trace"
-            ],
+            [f"{TRACING_ON}; a detection holdout run keeps no trace"],
         )
 
 
