@@ -10,6 +10,7 @@ from evals.declared_flips import DeclaredFlip, Instrument
 from evals.eval_session import TreeState
 from evals.judge.baseline import JudgeBaseline, write_judge_baseline
 from evals.judge.fixture import JudgeCase
+from evals.judge.retest import JudgeCallVerdict
 from evals.judge.session_model import JudgeHarness, JudgeOptions
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
@@ -28,25 +29,22 @@ type ScriptedVerdict = EvalVerdict | Literal["throttled"] | None
 
 @dataclass
 class ScriptedJudge:
-    """Plays each case's script in call order, then judges it correctly. A throttled judgment
-    gives no verdict and is recorded, as the composition root's tracking does."""
+    """Plays each case's script in call order, then judges it correctly."""
 
     scripts: dict[str, list[ScriptedVerdict]] = field(
         default_factory=dict[str, list[ScriptedVerdict]]
     )
     calls: Counter[str] = field(default_factory=Counter[str])
-    throttled: list[str] = field(default_factory=list[str])
 
-    async def __call__(self, case: JudgeCase) -> EvalVerdict | None:
+    async def __call__(self, case: JudgeCase) -> JudgeCallVerdict:
         self.calls[case.id] += 1
         script = self.scripts.get(case.id)
         if not script:
-            return a_ground_truth().get(case.id, PASS)
+            return JudgeCallVerdict(a_ground_truth().get(case.id, PASS))
         verdict = script.pop(0)
         if verdict == THROTTLED_JUDGMENT:
-            self.throttled.append(case.id)
-            return None
-        return verdict
+            return JudgeCallVerdict(None, throttled=True)
+        return JudgeCallVerdict(verdict)
 
     def total_calls(self) -> int:
         return sum(self.calls.values())
@@ -84,7 +82,6 @@ def a_harness(
         declarations=lambda: (declarations or [], False),
         clock=lambda: datetime(2026, 9, 28, 14, tzinfo=UTC),
         on_retests=on_retests,
-        throttled_judgments=lambda: judge.throttled,
     )
 
 

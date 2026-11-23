@@ -34,7 +34,6 @@ class JudgeHarness:
     declarations: Callable[[], tuple[list[DeclaredFlip], bool]]
     clock: Callable[[], datetime]
     on_retests: Callable[[int], None]
-    throttled_judgments: Callable[[], list[str]]
 
 
 @dataclass(frozen=True)

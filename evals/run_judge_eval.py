@@ -23,6 +23,7 @@ from evals.judge.fixture import JudgeCase, load_fixture
 from evals.judge.gate import DEFAULT_JUDGE_RUNS
 from evals.judge.outcomes import case_outcomes
 from evals.judge.report import JudgeRunFacts, build_judge_report
+from evals.judge.retest import JudgeCallVerdict
 from evals.judge.session import run_judge_gate
 from evals.judge.session_model import JudgeHarness, JudgeOptions
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
@@ -106,29 +107,27 @@ def _harness(tracking: "JudgeCallTracking") -> JudgeHarness:
         declarations=lambda: declarations_of_head(Instrument.JUDGE, REPOSITORY_TREE),
         clock=lambda: datetime.now(UTC),
         on_retests=tracking.on_retests,
-        throttled_judgments=lambda: tracking.throttled_cases,
     )
 
 
 class JudgeCallTracking:
     """Advances the progress of the judge calls and counts their throttled requests, warning
     once, at the first one: at 30 calls in flight, a line per throttled call would flood. A
-    judgment throttled past every retry gives no verdict and is recorded."""
+    judgment throttled past every retry gives no verdict and says it was throttled."""
 
     def __init__(self, llm: LLMPort, progress: Progress, run_calls: int) -> None:
         self.throttles = SessionThrottles()
-        self.throttled_cases: list[str] = []
         self._llm = llm
         self._progress = progress
         self._task = progress.add_task("Judging", total=run_calls)
         self._warned = False
 
-    async def judge(self, case: JudgeCase) -> EvalVerdict | None:
+    async def judge(self, case: JudgeCase) -> JudgeCallVerdict:
         try:
             verdict, usage = await judge_one_case(self._llm, case)
+            answer = JudgeCallVerdict(verdict)
         except ProviderThrottled as throttled:
-            self.throttled_cases.append(case.id)
-            verdict, usage = None, throttled.usage
+            answer, usage = JudgeCallVerdict(None, throttled=True), throttled.usage
         if self.throttles.count_usage(usage) > 0 and not self._warned:
             self._warned = True
             self._progress.console.print(
@@ -136,7 +135,7 @@ class JudgeCallTracking:
                 " the total is in the summary.[/yellow]"
             )
         self._progress.advance(self._task)
-        return verdict
+        return answer
 
     def on_retests(self, count: int) -> None:
         """Called once the run calls are all done, so later calls are retests."""

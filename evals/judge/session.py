@@ -33,9 +33,18 @@ from evals.judge.gate import (
     decide_judge_gate,
 )
 from evals.judge.recording import judge_rescore_refusals
-from evals.judge.retest import JudgeCall, RetestContext, reproductions, retest_flips
+from evals.judge.retest import (
+    JudgeCall,
+    JudgeCallVerdict,
+    RetestContext,
+    reproductions,
+    retest_flips,
+)
 from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSession, JudgeSessionResult
 from evals.judge.session_recording import record, recording_refusals
+
+type RunAnswers = list[dict[str, JudgeCallVerdict]]
+type RetestAnswers = dict[str, list[JudgeCallVerdict]]
 
 
 async def run_judge_gate(
@@ -43,16 +52,20 @@ async def run_judge_gate(
 ) -> JudgeSessionResult:
     """Raises Refused on a run that cannot be compared or recorded before it starts."""
     session = _open(options, fixture, harness)
-    runs = await _judge_runs(fixture, options.runs, session.judge)
-    gate, retest_observations = await _gate(session, runs)
+    answers = await _judge_runs(fixture, options.runs, session.judge)
+    runs = [
+        {case: Observation.of(answer.verdict) for case, answer in run.items()} for run in answers
+    ]
+    run_throttled = _throttled_in_runs(answers)
+    gate, retests = await _gate(session, runs, run_throttled)
     written, refused = record(session, runs, gate)
     return JudgeSessionResult(
         conditions=session.conditions,
         runs=runs,
         gate=gate,
         baseline=session.baseline,
-        retest_observations=retest_observations,
-        throttled_judgments=list(harness.throttled_judgments()),
+        retest_observations=_observations(retests),
+        throttled_judgments=run_throttled + _throttled_in_retests(retests),
         declarations=session.declarations,
         written=written,
         recording_refused=refused,
@@ -108,41 +121,52 @@ def _pre_run_refusals(session: JudgeSession) -> list[str]:
     return reasons
 
 
-async def _judge_runs(fixture: JudgeFixture, runs: int, judge: JudgeCall) -> CaseRuns:
-    async def one_run() -> dict[str, Observation]:
-        verdicts = await asyncio.gather(*(judge(case) for case in fixture.cases))
-        return {
-            case.id: Observation.of(verdict)
-            for case, verdict in zip(fixture.cases, verdicts, strict=True)
-        }
+async def _judge_runs(fixture: JudgeFixture, runs: int, judge: JudgeCall) -> RunAnswers:
+    async def one_run() -> dict[str, JudgeCallVerdict]:
+        answers = await asyncio.gather(*(judge(case) for case in fixture.cases))
+        return {case.id: answer for case, answer in zip(fixture.cases, answers, strict=True)}
 
     return list(await asyncio.gather(*(one_run() for _ in range(runs))))
 
 
+def _throttled_in_runs(answers: RunAnswers) -> list[str]:
+    return [case for run in answers for case, answer in run.items() if answer.throttled]
+
+
 async def _gate(
-    session: JudgeSession, runs: CaseRuns
-) -> tuple[JudgeGateResult, dict[str, list[Observation]]]:
+    session: JudgeSession, runs: CaseRuns, run_throttled: list[str]
+) -> tuple[JudgeGateResult, RetestAnswers]:
     baseline = session.baseline
     mismatches = (
         judge_condition_mismatches(baseline.conditions, session.conditions) if baseline else []
-    ) + _throttle_mismatches(session)
-    observations: dict[str, list[Observation]] = {}
+    ) + _throttle_mismatches(run_throttled)
+    retests: RetestAnswers = {}
     if baseline is not None and _paired(session) and not mismatches:
-        observations = await retest_flips(_retest_context(session), baseline, runs)
+        retests = await retest_flips(_retest_context(session), baseline, runs)
         # A throttled retest reads as reproduced, so it would turn the gate red.
-        mismatches = _throttle_mismatches(session)
-    gate_input = _gate_input(session, runs, observations)
-    return decide_judge_gate(replace(gate_input, mismatches=mismatches)), observations
+        mismatches = _throttle_mismatches(run_throttled + _throttled_in_retests(retests))
+    gate_input = _gate_input(session, runs, _observations(retests))
+    return decide_judge_gate(replace(gate_input, mismatches=mismatches)), retests
 
 
-def _throttle_mismatches(session: JudgeSession) -> list[str]:
-    throttled = len(session.harness.throttled_judgments())
+def _throttle_mismatches(throttled: list[str]) -> list[str]:
     if not throttled:
         return []
     return [
-        f"{throttled} judgment(s) throttled by the model provider past every retry:"
+        f"{len(throttled)} judgment(s) throttled by the model provider past every retry:"
         " the run cannot be compared"
     ]
+
+
+def _throttled_in_retests(retests: RetestAnswers) -> list[str]:
+    return [case for case, answers in retests.items() for answer in answers if answer.throttled]
+
+
+def _observations(retests: RetestAnswers) -> dict[str, list[Observation]]:
+    return {
+        case: [Observation.of(answer.verdict) for answer in answers]
+        for case, answers in retests.items()
+    }
 
 
 def _gate_input(
