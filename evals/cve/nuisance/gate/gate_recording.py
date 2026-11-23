@@ -16,7 +16,8 @@ from evals.cve.nuisance.gate.gate_baseline import (
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
-# INCONCLUSIVE has no CVE counterpart: a server already unstable stays recordable over.
+# INCONCLUSIVE has no counterpart in the detection gate: a server already unstable stays recordable
+# over.
 _GREEN = {
     ServerOutcome.HELD,
     ServerOutcome.NOT_GATED,

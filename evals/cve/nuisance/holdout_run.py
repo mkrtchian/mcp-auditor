@@ -2,11 +2,11 @@
 commit under the run conditions of a detection holdout run, keep no per-case trace, and assemble the
 run result.
 
-A sibling of `holdout_run.run_holdout_targets`. The servers are passed in, so the tests hand it
-crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the unit tests and built from
-the live settings by `default_deps`. The vet is `vetting`'s, the container hygiene
-`containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s, the status line
-printed as each run finishes `holdout_run_status`'s.
+The counterpart of `evals.cve.detection.holdout_run.run_holdout_targets`. The servers are passed
+in, so the tests hand it crafted ones. The heavy I/O is grouped in `NuisanceDeps`, faked by the
+unit tests and built from the live settings by `default_deps`. The vet is `vetting`'s, the
+container hygiene `containers`', the per-server assembly `assembly`'s, the retry policy `audit`'s,
+the status line printed as each run finishes `holdout_run_status`'s.
 """
 
 import dataclasses
@@ -64,6 +64,7 @@ from evals.cve.run_images import (
 )
 from evals.cve.run_interruption import sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
+from evals.model_conditions import ModelConditions
 from evals.pricing import Prices
 from evals.session_usage import SessionThrottles
 from evals.tracing import TRACING_ON, tracing_enabled
@@ -287,18 +288,12 @@ def _assemble_run(
     not_run: list[NotRunServer],
     tree: TreeState,
 ) -> NuisanceHoldoutRunResult:
-    settings = ctx.settings
-    model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     servers = [server for server, _ in assembled]
     results = [result for _, result in assembled]
     return NuisanceHoldoutRunResult(
         runs=ctx.runs,
         budget=HOLDOUT_TEST_BUDGET,
-        provider=settings.provider,
-        model=model,
-        judge_model=judge_model,
-        reasoning=settings.resolve_reasoning(model),
-        judge_reasoning=settings.resolve_reasoning(judge_model),
+        **ModelConditions.of(ctx.settings).model_dump(),
         cutoffs={model_id: ctx.conditions.cutoffs[model_id] for model_id in ctx.model_ids},
         chain_budget=ctx.conditions.chain_budget,
         max_chain_steps=ctx.conditions.max_chain_steps,

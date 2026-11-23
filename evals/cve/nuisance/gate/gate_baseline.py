@@ -1,6 +1,6 @@
 """The nuisance gate's baseline: the run conditions it records and, under
-`evals/baselines/nuisance/`, one file per nuisance acceptance server, the sibling of the baseline
-half of `evals.cve.detection.baseline`.
+`evals/baselines/nuisance/`, one file per nuisance acceptance server, the counterpart of the
+baseline half of `evals.cve.detection.baseline`.
 
 The conditions are the nuisance holdout run's (the holdout test budget, no tools filter, the chain
 settings and tool call timeout of `evals/holdout_conditions.json`), since the gate gates what the
@@ -21,6 +21,7 @@ from evals.cve.file_baselines import BaselineStore, condition_mismatches_by_file
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.gate import RetestRule
+from evals.model_conditions import ModelConditions
 from mcp_auditor.config import Settings
 
 NUISANCE_GATE_RUNS = 3
@@ -53,16 +54,11 @@ def gate_conditions(
     chain, steps = conditions.chain_budget, conditions.max_chain_steps
     timeout = conditions.tool_call_timeout
     assert chain is not None and steps is not None and timeout is not None
-    model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     return NuisanceGateConditions(
         runs=runs,
         budget=HOLDOUT_TEST_BUDGET,
         tools_filtered=False,
-        provider=settings.provider,
-        model=model,
-        judge_model=judge_model,
-        reasoning=settings.resolve_reasoning(model),
-        judge_reasoning=settings.resolve_reasoning(judge_model),
+        **ModelConditions.of(settings).model_dump(),
         chain_budget=chain,
         max_chain_steps=steps,
         tool_call_timeout=timeout,
