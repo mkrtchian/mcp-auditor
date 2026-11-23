@@ -1,89 +1,71 @@
 from pathlib import Path
-from typing import Any
 
 from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
-from evals.baseline import BaselineStatus
 from evals.cell_grid import PARTIAL
-from evals.eval_display import console, print_refusal
+from evals.eval_display import (
+    PARTIAL_LEGEND,
+    RECORDING_NEXT_STEP,
+    console,
+    print_declarations,
+    print_outcome,
+    print_refusal,
+    print_throttles,
+)
 from evals.gate import ProtectedCells
-from evals.gate_outcome import GateOutcome
 from evals.judge.baseline import JUDGE_BASELINE_PATH, JudgeBaseline
+from evals.judge.metrics import JudgeMetrics
 from evals.judge.outcomes import CaseOutcomes, JudgeOutcomeRow
+from evals.judge.report import JudgeReport
 from evals.judge.session_model import JudgeSessionResult
-
-__all__ = ["console", "print_refusal", "print_summary"]
-
-_OUTCOME_STYLES = {
-    GateOutcome.GREEN: "[bold green]Gate green.[/bold green]",
-    GateOutcome.RED: "[bold red]Gate red.[/bold red]",
-    GateOutcome.NOT_COMPARABLE: "[bold red]Not comparable.[/bold red]",
-}
-
-_NEXT_STEP = {
-    BaselineStatus.UNCONFIRMED: (
-        "Run --record-baseline again now, at this commit and before committing, to confirm it. "
-        "Commit the file once confirmed."
-    ),
-    BaselineStatus.CONFIRMED: "Commit the file by hand.",
-}
+from mcp_auditor.domain.models import AuditCategory
 
 
 def print_summary(
-    result: JudgeSessionResult, report: dict[str, Any], report_path: Path, outcomes: CaseOutcomes
+    result: JudgeSessionResult, report: JudgeReport, report_path: Path, outcomes: CaseOutcomes
 ) -> None:
     gate = result.gate
     status = f", baseline {gate.baseline_status}" if gate.baseline_status else ""
     console.print(f"Gate mode: [bold]{gate.mode}[/bold]{status}")
-    console.print(Panel(_runs_table(report["per_run"]), title="Judge Eval Diagnostics"))
-    console.print(_category_table(report["per_category"]))
+    console.print(Panel(_runs_table(report.per_run), title="Judge Eval Diagnostics"))
+    console.print(_category_table(report.per_category))
     _print_case_outcomes(outcomes)
-    for case in gate.declared_held:
-        console.print(f"declared, did not flip: {case}")
-    if result.declarations.ignored:
-        ignored = ", ".join(sorted(result.declarations.ignored))
-        console.print(
-            "[yellow]Declarations of HEAD ignored, the tree has tracked changes:"
-            f" {escape(ignored)}[/yellow]"
-        )
+    print_declarations(gate.declared_held, result.declarations.ignored)
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
-    if report["throttled_requests"] > 0:
-        console.print(
-            f"[yellow]Throttled by the model provider: {report['throttled_requests']} requests"
-            f" at concurrency {report['concurrency']}[/yellow]"
-        )
+    print_throttles(report.throttled_requests, report.concurrency)
     console.print(f"Report written to {report_path}")
-    console.print(Panel("\n".join([_OUTCOME_STYLES[gate.outcome], *_bullets(gate.reasons)])))
+    print_outcome(gate.outcome, gate.reasons)
     if result.written:
         _print_written(result.written)
     if result.recording_refused:
         print_refusal("Recording refused.", result.recording_refused)
 
 
-def _runs_table(per_run: list[dict[str, Any]]) -> Table:
+def _runs_table(per_run: list[JudgeMetrics]) -> Table:
     table = Table(show_header=True, header_style="bold")
     for column in ("Run", "P", "R", "F1", "TP", "FP", "FN", "TN"):
         table.add_column(column, justify="right")
     for index, metrics in enumerate(per_run, start=1):
-        confusion = metrics["confusion_matrix"]
+        confusion = metrics.confusion_matrix
         table.add_row(
             str(index),
-            *(f"{metrics[name]:.2f}" for name in ("precision", "recall", "f1")),
-            *(str(confusion[name]) for name in ("tp", "fp", "fn", "tn")),
+            *(f"{score:.2f}" for score in (metrics.precision, metrics.recall, metrics.f1)),
+            *(str(count) for count in (confusion.tp, confusion.fp, confusion.fn, confusion.tn)),
         )
     return table
 
 
-def _category_table(per_category: dict[str, dict[str, Any]]) -> Table:
+def _category_table(per_category: dict[AuditCategory, JudgeMetrics]) -> Table:
     table = Table(show_header=True, header_style="bold", title="All runs, per category")
     table.add_column("Category")
     for column in ("P", "R", "F1"):
         table.add_column(column, justify="right")
     for category, metrics in per_category.items():
-        table.add_row(category, *(f"{metrics[name]:.2f}" for name in ("precision", "recall", "f1")))
+        scores = (metrics.precision, metrics.recall, metrics.f1)
+        table.add_row(category.value, *(f"{score:.2f}" for score in scores))
     return table
 
 
@@ -95,9 +77,7 @@ def _print_case_outcomes(outcomes: CaseOutcomes) -> None:
         console.print(_outcome_table(outcomes.rows))
         console.print("P pass, F fail, - no verdict")
         if any(row.outcome == PARTIAL for row in outcomes.rows):
-            console.print(
-                "partial: wrong in every baseline run, right in some runs of this one, not gated"
-            )
+            console.print(PARTIAL_LEGEND)
 
 
 _OUTCOME_COLUMNS = (
@@ -140,7 +120,7 @@ def _print_written(baseline: JudgeBaseline) -> None:
             for case in baseline.disagreements
         ),
         _protected_line(baseline.protected),
-        _NEXT_STEP[baseline.status],
+        RECORDING_NEXT_STEP[baseline.status],
     ]
     console.print(Panel("\n".join(lines)))
 
@@ -151,7 +131,3 @@ def _protected_line(protected: ProtectedCells) -> str:
         f"PASS cases stable and correct: {protected.pass_stable_correct}/{protected.pass_total}, "
         f"unstable: {protected.unstable}"
     )
-
-
-def _bullets(reasons: list[str]) -> list[str]:
-    return [f"- {escape(reason)}" for reason in reasons]

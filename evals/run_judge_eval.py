@@ -9,28 +9,22 @@ import traceback
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from rich.progress import Progress
 
 from evals.cli_arguments import positive_int
 from evals.declared_flips import Instrument
+from evals.eval_display import console, print_refusal
 from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
-from evals.gate import Observation
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
-from evals.judge import display
 from evals.judge.baseline import JUDGE_BASELINE_PATH
-from evals.judge.fixture import JudgeCase, JudgeFixture, ground_truth_of, load_fixture
+from evals.judge.display import print_summary
+from evals.judge.fixture import JudgeCase, load_fixture
 from evals.judge.gate import DEFAULT_JUDGE_RUNS
-from evals.judge.metrics import (
-    CaseResult,
-    JudgeMetrics,
-    compute_judge_metrics,
-    compute_per_category_metrics,
-)
 from evals.judge.outcomes import case_outcomes
+from evals.judge.report import JudgeRunFacts, build_judge_report
 from evals.judge.session import run_judge_gate
-from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
+from evals.judge.session_model import JudgeHarness, JudgeOptions
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
@@ -62,7 +56,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         code = _evaluate(args)
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        print_refusal(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()
@@ -73,24 +67,24 @@ def main(argv: Sequence[str] | None = None) -> None:
 def _evaluate(args: argparse.Namespace) -> int:
     options = _options(args)
     fixture = load_fixture(FIXTURES_PATH)
-    display.console.print(
+    console.print(
         f"Running judge eval ([bold]{len(fixture.cases)}[/bold] cases, {options.runs} runs)..."
     )
-    with Progress(console=display.console) as progress:
+    with Progress(console=console) as progress:
         llm = create_judge_llm(options.settings)
         tracking = JudgeCallTracking(llm, progress, options.runs * len(fixture.cases))
         # The session is one audit: once a judgment is throttled past every retry the run is
         # not comparable, so the later judgments are not sent.
         with one_audit():
             result = asyncio.run(run_judge_gate(options, fixture, _harness(tracking)))
-    report = _build_report(result, fixture) | {
-        "concurrency": options.concurrency,
-        "throttled_requests": tracking.throttles.requests,
-    }
+    facts = JudgeRunFacts(
+        datetime.now(UTC).isoformat(), tracking.throttles.requests, options.concurrency
+    )
+    report = build_judge_report(result, fixture, facts)
     path = Path(args.report)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, indent=2))
-    display.print_summary(result, report, path, case_outcomes(result, fixture))
+    path.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
+    print_summary(result, report, path, case_outcomes(result, fixture))
     return result.exit_code
 
 
@@ -198,58 +192,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     return parser.parse_args(argv)
-
-
-def _build_report(result: JudgeSessionResult, fixture: JudgeFixture) -> dict[str, Any]:
-    """Precision, recall and F1 are diagnostics: the gate is the case comparison."""
-    scored = [_scored_cases(run, fixture) for run in result.runs]
-    categories = {case.id: case.inputs.category for case in fixture.cases}
-    pooled = [(categories[case], pair) for run in scored for case, pair in run]
-    return {
-        "timestamp": datetime.now(UTC).isoformat(),
-        "conditions": result.conditions.model_dump(mode="json"),
-        "inputs_fingerprint": result.conditions.inputs_fingerprint,
-        "per_run": [_metrics_json(compute_judge_metrics([p for _, p in run])) for run in scored],
-        "per_category": {
-            category.value: _metrics_json(metrics)
-            for category, metrics in compute_per_category_metrics(pooled).items()
-        },
-        "gate": result.gate.model_dump(mode="json"),
-        "runs": [{case: seen.value for case, seen in run.items()} for run in result.runs],
-        "retest_observations": {
-            case: [seen.value for seen in observations]
-            for case, observations in result.retest_observations.items()
-        },
-        "throttled_judgments": result.throttled_judgments,
-        "recorded": result.written.status.value if result.written else None,
-        "recording_refused": result.recording_refused,
-    }
-
-
-def _scored_cases(
-    run: dict[str, Observation], fixture: JudgeFixture
-) -> list[tuple[str, CaseResult]]:
-    """The labeled cases the judge gave a verdict on, uncovered ones left out."""
-    return [
-        (case, (verdict, expected))
-        for case, expected in ground_truth_of(fixture).items()
-        if (verdict := run[case].verdict) is not None
-    ]
-
-
-def _metrics_json(metrics: JudgeMetrics) -> dict[str, Any]:
-    confusion = metrics.confusion
-    return {
-        "precision": metrics.precision,
-        "recall": metrics.recall,
-        "f1": metrics.f1,
-        "confusion_matrix": {
-            "tp": confusion.tp,
-            "fp": confusion.fp,
-            "tn": confusion.tn,
-            "fn": confusion.fn,
-        },
-    }
 
 
 if __name__ == "__main__":

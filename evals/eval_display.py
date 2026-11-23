@@ -34,6 +34,8 @@ _OUTCOME_STYLES = {
     GateOutcome.NOT_COMPARABLE: "[bold red]Not comparable.[/bold red]",
 }
 
+PARTIAL_LEGEND = "partial: wrong in every baseline run, right in some runs of this one, not gated"
+
 
 def print_summary(
     report: HoneypotReport,
@@ -48,23 +50,20 @@ def print_summary(
     if grid and grid.sections:
         _print_grid(grid.title, grid.sections, gated_run=True)
     if grid and grid.outcomes:
-        console.print(_outcome_table(grid.outcomes))
-        console.print("P pass, F fail, - not covered")
-        if any(row.outcome == PARTIAL for row in grid.outcomes):
-            console.print(
-                "partial: wrong in every baseline run, right in some runs of this one, not gated"
-            )
-    _print_declarations(gate.declared_held, ignored_declarations)
+        _print_outcomes(grid.outcomes)
+    print_declarations(gate.declared_held, ignored_declarations)
     if gate.protected:
         console.print(f"Baseline under the current labels: {_protected_line(gate.protected)}")
-    throttled = report.config.get("throttled_requests", 0)
-    if throttled > 0:
-        console.print(
-            f"[yellow]Throttled by the model provider: {throttled} requests"
-            f" at concurrency {report.config['concurrency']}[/yellow]"
-        )
+    print_throttles(report.config.get("throttled_requests", 0), report.config.get("concurrency", 0))
     console.print(f"Report written to {report_path}")
     print_outcome(gate.outcome, gate.reasons)
+
+
+def _print_outcomes(rows: list[OutcomeRow]) -> None:
+    console.print(_outcome_table(rows))
+    console.print("P pass, F fail, - not covered")
+    if any(row.outcome == PARTIAL for row in rows):
+        console.print(PARTIAL_LEGEND)
 
 
 def print_outcome(outcome: GateOutcome, reasons: list[str]) -> None:
@@ -100,13 +99,21 @@ def print_report_paths(report_path: Path, export: Path | None = None) -> None:
     console.print(Text(line))
 
 
-def _print_declarations(held: list[str], ignored: frozenset[str]) -> None:
+def print_declarations(held: list[str], ignored: frozenset[str]) -> None:
     for key in held:
         console.print(f"declared, did not flip: {key}")
     if ignored:
         console.print(
             "[yellow]Declarations of HEAD ignored, the tree has tracked changes:"
             f" {escape(', '.join(sorted(ignored)))}[/yellow]"
+        )
+
+
+def print_throttles(requests: int, concurrency: int) -> None:
+    if requests > 0:
+        console.print(
+            f"[yellow]Throttled by the model provider: {requests} requests"
+            f" at concurrency {concurrency}[/yellow]"
         )
 
 
@@ -261,7 +268,7 @@ def print_refusal(title: str, reasons: list[str]) -> None:
     console.print(Panel("\n".join(lines)))
 
 
-_NEXT_STEP = {
+RECORDING_NEXT_STEP: dict[BaselineStatus, str] = {
     BaselineStatus.UNCONFIRMED: (
         "Run --record-baseline again now, at this commit and before committing, to confirm it. "
         "Commit the file once confirmed."
@@ -281,7 +288,7 @@ def print_written_recording(baseline: Baseline, gated_changes: GatedSetChange, p
     ]
     if baseline.protected:
         lines.append(_protected_line(baseline.protected))
-    lines.append(_NEXT_STEP[baseline.status])
+    lines.append(RECORDING_NEXT_STEP[baseline.status])
     console.print(Panel("\n".join(lines)))
 
 

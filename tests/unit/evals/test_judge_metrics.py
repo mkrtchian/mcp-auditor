@@ -102,7 +102,7 @@ def test_confusion_matrix_counts() -> None:
 
     metrics = compute_judge_metrics(results)
 
-    assert metrics.confusion.tp == 3
-    assert metrics.confusion.fp == 2
-    assert metrics.confusion.tn == 1
-    assert metrics.confusion.fn == 1
+    assert metrics.confusion_matrix.tp == 3
+    assert metrics.confusion_matrix.fp == 2
+    assert metrics.confusion_matrix.tn == 1
+    assert metrics.confusion_matrix.fn == 1

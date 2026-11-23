@@ -16,7 +16,7 @@ class JudgeMetrics:
     precision: float
     recall: float
     f1: float
-    confusion: ConfusionMatrix
+    confusion_matrix: ConfusionMatrix
 
 
 CaseResult = tuple[EvalVerdict, EvalVerdict]  # (predicted, expected)
@@ -43,5 +43,5 @@ def compute_judge_metrics(results: list[CaseResult]) -> JudgeMetrics:
         precision=precision,
         recall=recall,
         f1=f1,
-        confusion=ConfusionMatrix(tp=tp, fp=fp, tn=tn, fn=fn),
+        confusion_matrix=ConfusionMatrix(tp=tp, fp=fp, tn=tn, fn=fn),
     )
