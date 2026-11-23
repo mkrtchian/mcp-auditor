@@ -119,6 +119,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `PlantKind` | `PlaceKind` | rename | 2026-11-11 |
 | `primary_number`, primary number (detection suite rule v11) | holdout detection rate (`holdout_detection_rate`) | rename | 2026-11-11 |
 | `probed_target`, `target` (stand-in captures) | `probed_request_target`, `request_target` | rename | 2026-11-11 |
+| `ProviderError` (the nuisance audit's outcome) | `ProviderErrorAttempt` | rename | 2026-11-23 |
 | `REACHABLE_BY`, `Place.reachable_by` | reach (`REACHES`, `Place.reaches`), the JSON key `reachable_by` of `evals/detection_places.json` is kept | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
 | `--readmission` | `--re-admission` | rename | 2026-11-11 |

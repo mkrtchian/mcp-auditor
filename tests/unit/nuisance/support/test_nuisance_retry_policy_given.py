@@ -1,6 +1,6 @@
-from evals.cve.nuisance.audit import ProviderError
+from evals.cve.audit_attempts import ProviderErrorAttempt
 
-PROVIDER_ERROR = ProviderError("ModelAPIError, status 500")
+PROVIDER_ERROR = ProviderErrorAttempt("ModelAPIError, status 500")
 
 
 class ScriptedCalls[T]:

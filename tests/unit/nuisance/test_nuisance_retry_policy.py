@@ -2,13 +2,12 @@ import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
-from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS
+from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, ProviderErrorAttempt
 from evals.cve.nuisance.audit import (
     NUISANCE_INFRA_ATTEMPTS,
     DroppedRun,
     LaunchFailed,
     NuisanceAudit,
-    ProviderError,
     gate_run,
     incomplete_causes,
     is_incomplete,
@@ -24,7 +23,7 @@ from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
 from tests.unit.support.captured_console import CapturedOutput, a_captured_console
 from tests.unit.support.nuisance_admissions import an_admitted_server
 
-type Attempt = ScriptedCalls[NuisanceAudit | LaunchFailed | ProviderError]
+type Attempt = ScriptedCalls[NuisanceAudit | LaunchFailed | ProviderErrorAttempt]
 
 
 @pytest.fixture(autouse=True)

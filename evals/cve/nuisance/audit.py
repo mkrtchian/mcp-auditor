@@ -10,14 +10,18 @@ from dataclasses import dataclass
 from rich.markup import escape
 
 from evals.concurrency import entered_in_thread
-from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_causes
+from evals.cve.audit_attempts import (
+    INCOMPLETE_ATTEMPTS,
+    ProviderErrorAttempt,
+    describe_missed_call_causes,
+)
 from evals.cve.environments import Launch
-from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import (
     SessionAuditor,
     UndecidableLaunch,
     audit_launch,
     print_lost_connections,
+    print_report_incidents,
 )
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
@@ -56,13 +60,6 @@ class LaunchFailed:
 
 
 @dataclass(frozen=True)
-class ProviderError:
-    """A transient provider error, its reason the error's type and status, never its message."""
-
-    reason: str
-
-
-@dataclass(frozen=True)
 class DroppedRun:
     """A run that never produced a report, which drops its server from the nuisance holdout run."""
 
@@ -85,7 +82,7 @@ async def audit_once(
     auditor: SessionAuditor,
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
-) -> NuisanceAudit | LaunchFailed | ProviderError:
+) -> NuisanceAudit | LaunchFailed | ProviderErrorAttempt:
     """Raises `ProviderFatal` on a provider error no retry cures, and `UndecidableLaunch`, a
     configuration error that stops the run as a `planting_spec` refusal does. A server taken as
     down is a launch failure."""
@@ -97,13 +94,13 @@ async def audit_once(
     except AuditFailed as failure:
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause
-        return ProviderError(describe_provider_error(failure.cause))
+        return ProviderErrorAttempt(describe_provider_error(failure.cause))
     except UndecidableLaunch:
         raise
     except Exception as exc:
         return LaunchFailed(auditor.auditor.report_detail.describe(exc))
     auditor.throttles.count(audit.report)
-    _print_incidents(server, audit.report, auditor.auditor.report_detail)
+    print_report_incidents(server.server_package, audit.report, auditor.auditor.report_detail)
     print_lost_connections(server.server_package, audit.health)
     return NuisanceAudit(audit.report, audit.health)
 
@@ -128,21 +125,9 @@ def nuisance_environment(
             yield launch
 
 
-def _print_incidents(server: AdmittedServer, report: AuditReport, detail: ReportDetail) -> None:
-    for missed in report.missed_model_calls:
-        line = escape(detail.missed_call_detail(missed))
-        console.print(f"[yellow]{server.server_package}: {line}[/yellow]")
-    throttled = report.provider_usage.throttled_requests
-    if throttled > 0:
-        console.print(
-            f"[yellow]{server.server_package}: throttled {throttled} time(s)"
-            " by the model provider (HTTP 429)[/yellow]"
-        )
-
-
 async def nuisance_audit(
     server: AdmittedServer,
-    attempt: Callable[[], Awaitable[NuisanceAudit | LaunchFailed | ProviderError]],
+    attempt: Callable[[], Awaitable[NuisanceAudit | LaunchFailed | ProviderErrorAttempt]],
 ) -> NuisanceAudit | DroppedRun:
     """One run of one server, at most `NUISANCE_INFRA_ATTEMPTS` calls. A report with no
     throttled step stands, an alarm in it whatever step was refused. A throttled report, a
@@ -164,19 +149,19 @@ async def nuisance_audit(
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 
 
-def _cause_of(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> NotRunCause:
+def _cause_of(outcome: NuisanceAudit | LaunchFailed | ProviderErrorAttempt) -> NotRunCause:
     if isinstance(outcome, NuisanceAudit):
         return NotRunCause.THROTTLED
-    if isinstance(outcome, ProviderError):
+    if isinstance(outcome, ProviderErrorAttempt):
         return NotRunCause.PROVIDER_ERROR
     return NotRunCause.LAUNCH_FAILURE
 
 
-def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> str:
+def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderErrorAttempt) -> str:
     if isinstance(outcome, NuisanceAudit):
         return "throttled by the model provider past every retry"
-    if isinstance(outcome, ProviderError):
-        return f"provider error ({outcome.reason})"
+    if isinstance(outcome, ProviderErrorAttempt):
+        return f"provider error ({outcome.description})"
     return f"run failed to launch ({escape(outcome.reason)})"
 
 

@@ -7,6 +7,7 @@ import tests.unit.nuisance.support.test_nuisance_audit_once_given as given
 import tests.unit.support.grammar_inputs as grammar
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
+from evals.cve.audit_attempts import ProviderErrorAttempt
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import RunOverrides, UndecidableLaunch
@@ -15,7 +16,6 @@ from evals.cve.nuisance.audit import (
     DroppedRun,
     LaunchFailed,
     NuisanceAudit,
-    ProviderError,
     audit_once,
     nuisance_audit,
     nuisance_environment,
@@ -233,6 +233,6 @@ async def test_a_transient_provider_error_is_named_without_its_message(grouped: 
 
     outcome = await audit_once(an_admitted_server(), auditor)
 
-    assert isinstance(outcome, ProviderError)
-    assert "ModelAPIError" in outcome.reason
-    assert "secret-nonce" not in outcome.reason
+    assert isinstance(outcome, ProviderErrorAttempt)
+    assert "ModelAPIError" in outcome.description
+    assert "secret-nonce" not in outcome.description
