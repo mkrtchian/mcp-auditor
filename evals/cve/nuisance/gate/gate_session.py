@@ -13,12 +13,11 @@ from datetime import UTC, datetime
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.images import image_ids
-from evals.cve.launch_audit import RunOverrides, build_auditor
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.audit import (
     GateRun,
-    NuisanceAuditor,
     audit_once,
     gate_run,
     nuisance_audit,
@@ -91,7 +90,7 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
         conditions.chain_budget, conditions.max_chain_steps, conditions.tool_call_timeout
     )
     throttles = SessionThrottles()
-    auditor = NuisanceAuditor(build_auditor(conditions.budget), overrides, throttles)
+    auditor = SessionAuditor(build_auditor(conditions.budget), overrides, throttles)
 
     async def audit(server: AdmittedServer) -> GateRun | None:
         return await gate_run(

@@ -23,16 +23,16 @@ from evals.cve.failure_text import ReportDetail
 from evals.cve.grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve.launch_audit import (
     NO_OVERRIDES,
-    Auditor,
     LaunchAudit,
     RunOverrides,
+    SessionAuditor,
     UndecidableLaunch,
     audit_launch,
     build_auditor,
     print_lost_connections,
     print_report_incidents,
 )
-from evals.cve.places import Places, kept_records
+from evals.cve.places import Place, Places, kept_records
 from evals.cve.planting import PlantingFailed
 from evals.cve.provider_errors import (
     AuditFailed,
@@ -59,36 +59,48 @@ def audit_target(
     overrides: RunOverrides = NO_OVERRIDES,
 ) -> AuditTarget:
     # The composition root bounds the returned audit to the chosen concurrency.
-    auditor = build_auditor(test_budget)
+    session = SessionAuditor(build_auditor(test_budget), overrides, throttles)
 
     async def audit(target: Target) -> GradedAudit | None:
         return await graded_despite_missed_model_calls(
-            target, lambda: attempt_once(target, auditor, throttles, places, overrides)
+            target, lambda: attempt_once(target, session, places)
         )
 
     return audit
 
 
 async def attempt_once(
-    target: Target,
-    auditor: Auditor,
-    throttles: SessionThrottles,
-    places: Places,
-    overrides: RunOverrides = NO_OVERRIDES,
+    target: Target, session: SessionAuditor, places: Places
 ) -> AttemptOutcome[GradedAudit]:
     """Raises `ProviderFatal` on a provider error no retry cures."""
     # An unknown kept id, a planting_spec refusal or a launch whose container name cannot be read
     # is a configuration error: it is not caught here, so it crashes the run rather than reading
-    # as a skip the gate cannot compare. A server taken as down reaches here as a `LaunchError`.
+    # as a skip the gate cannot compare.
     records = kept_records(target.kept_places, places)
+    try:
+        launched = await _launched_run(target, session, records)
+    except AuditFailed as failure:
+        return _provider_error_attempt(target, failure)
+    if launched is None:
+        return None
+    run, health = launched
+    if throttled_model_calls(run.report):
+        return _throttled_attempt(target)
+    return await _graded(run, health)
+
+
+async def _launched_run(
+    target: Target, session: SessionAuditor, records: tuple[Place, ...]
+) -> tuple[RunToCheck, ServerHealth] | None:
     run: RunToCheck | None = None
     health = NO_INCIDENTS
+    detail = session.auditor.report_detail
     try:
         async with target.launched(records) as planted:
-            audit = await _audit(planted.launch, target, auditor, overrides)
+            audit = await _audit(planted.launch, target, session)
             health = audit.health
-            throttles.count(audit.report, target.flaw_id)
-            _print_incidents(target, audit.report, auditor.report_detail)
+            session.throttles.count(audit.report, target.flaw_id)
+            _print_incidents(target, audit.report, detail)
             print_lost_connections(target.flaw_id, health)
             # Captured before the target's launch is left, so a raising exit of `target.launched`
             # cannot erase a completed run (the client's own teardown error is tolerated inside
@@ -101,21 +113,13 @@ async def attempt_once(
                 records=records,
                 relaunched_after=audit.relaunched_after,
             )
-    except AuditFailed as failure:
-        return _provider_error_attempt(target, failure)
+    # A server taken as down reaches here as a `LaunchError`.
     except (LaunchError, PlantingFailed, subprocess.CalledProcessError) as exc:
         failure = "run skipped" if run is None else "teardown failed"
-        described = auditor.report_detail.describe(exc)
-        console.print(f"[yellow]{target.flaw_id} {failure}:[/yellow] {escape(described)}")
-    if run is None:
-        return None
-    if throttled_model_calls(run.report):
         console.print(
-            f"[yellow]{target.flaw_id} run skipped:[/yellow]"
-            " throttled by the model provider past every retry"
+            f"[yellow]{target.flaw_id} {failure}:[/yellow] {escape(detail.describe(exc))}"
         )
-        return ThrottledAttempt()
-    return await _graded(run, health)
+    return None if run is None else (run, health)
 
 
 def _provider_error_attempt(target: Target, failure: AuditFailed) -> ProviderErrorAttempt:
@@ -124,6 +128,14 @@ def _provider_error_attempt(target: Target, failure: AuditFailed) -> ProviderErr
     description = describe_provider_error(failure.cause)
     console.print(f"[yellow]{target.flaw_id} run skipped:[/yellow] provider error ({description})")
     return ProviderErrorAttempt(description)
+
+
+def _throttled_attempt(target: Target) -> ThrottledAttempt:
+    console.print(
+        f"[yellow]{target.flaw_id} run skipped:[/yellow]"
+        " throttled by the model provider past every retry"
+    )
+    return ThrottledAttempt()
 
 
 async def _graded(run: RunToCheck, health: ServerHealth) -> GradedAudit | IncompleteAttempt:
@@ -176,11 +188,10 @@ def _print_incidents(target: Target, report: AuditReport, detail: ReportDetail) 
     print_report_incidents(target.flaw_id, report, detail)
 
 
-async def _audit(
-    launch: Launch, target: Target, auditor: Auditor, overrides: RunOverrides
-) -> LaunchAudit:
+async def _audit(launch: Launch, target: Target, session: SessionAuditor) -> LaunchAudit:
     try:
-        return await audit_launch(launch, auditor, overrides.shape(target.tools_filter))
+        shape = session.overrides.shape(target.tools_filter)
+        return await audit_launch(launch, session.auditor, shape)
     except (AuditFailed, UndecidableLaunch):
         raise
     except Exception as exc:

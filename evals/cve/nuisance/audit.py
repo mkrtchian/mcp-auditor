@@ -14,9 +14,8 @@ from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_c
 from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import (
-    Auditor,
     AuditShape,
-    RunOverrides,
+    SessionAuditor,
     UndecidableLaunch,
     audit_launch,
     print_lost_connections,
@@ -37,7 +36,7 @@ from evals.cve.provider_errors import (
 )
 from evals.cve.server_health import ServerHealth
 from evals.eval_display import console
-from evals.session_usage import SessionThrottles, throttled_model_calls
+from evals.session_usage import throttled_model_calls
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
@@ -77,16 +76,9 @@ class NuisanceAudit:
     health: ServerHealth
 
 
-@dataclass(frozen=True)
-class NuisanceAuditor:
-    auditor: Auditor
-    overrides: RunOverrides
-    throttles: SessionThrottles
-
-
 async def audit_once(
     server: AdmittedServer,
-    auditor: NuisanceAuditor,
+    auditor: SessionAuditor,
     *,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> NuisanceAudit | LaunchFailed | ProviderError:

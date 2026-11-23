@@ -28,6 +28,7 @@ from evals.cve.planting_base import LABEL
 from evals.cve.provider_errors import audit_failures_unwrapped, classified
 from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
+from evals.session_usage import SessionThrottles
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings
@@ -107,6 +108,13 @@ class RunOverrides:
 
 
 NO_OVERRIDES = RunOverrides()
+
+
+@dataclass(frozen=True)
+class SessionAuditor:
+    auditor: Auditor
+    overrides: RunOverrides
+    throttles: SessionThrottles
 
 
 @dataclass(frozen=True)

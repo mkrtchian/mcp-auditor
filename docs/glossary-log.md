@@ -100,6 +100,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `MissClass`, `miss_class` | `MissKind`, `miss_kind` | rename | 2026-11-11 |
 | missed step, refused step, `missed_steps` | missed model call (`missed_model_calls`) | rename | 2026-11-11 |
 | `not_run_conditions` | `not_run_reasons` | rename | 2026-11-11 |
+| `NuisanceAuditor` | `SessionAuditor`, shared by both suites | rename | 2026-11-23 |
 | `NuisanceCensus` (the census with the walk record) | `WalkInputs` | rename | 2026-11-11 |
 | nuisance rule (`docs/nuisance-rule.md`), nuisance log (`docs/nuisance-log.md`) | nuisance suite rule (`docs/nuisance-suite-rule.md`), nuisance suite log (`docs/nuisance-suite-log.md`) | rename | 2026-11-11 |
 | nuisance run (ADR 034, nuisance suite rule v1 to v6, logs, plans, code: a run of the nuisance holdout layer) | nuisance holdout run | rename | 2026-11-21 |

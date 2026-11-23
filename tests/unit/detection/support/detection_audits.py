@@ -8,8 +8,9 @@ from evals.cve.audit_attempts import AttemptOutcome
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.launch_audit import Auditor
+from evals.cve.launch_audit import NO_OVERRIDES, Auditor, RunOverrides, SessionAuditor
 from evals.cve.planting_base import PlantingSpec
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
@@ -23,6 +24,16 @@ def an_auditor_reporting(
 ) -> Auditor:
     return launch_audit_fakes.an_auditor(
         report_detail, launch_audit_fakes.graph_reporting(list(reports))
+    )
+
+
+def in_session(
+    auditor: Auditor,
+    overrides: RunOverrides = NO_OVERRIDES,
+    throttles: SessionThrottles | None = None,
+) -> SessionAuditor:
+    return SessionAuditor(
+        auditor, overrides, SessionThrottles() if throttles is None else throttles
     )
 
 

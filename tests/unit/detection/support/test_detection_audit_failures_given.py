@@ -19,6 +19,17 @@ def a_target_failing_to_launch(error: Exception) -> Target:
     return dataclasses.replace(TARGET, kept_places=(), builder=failing_container)
 
 
+def a_target_failing_at_teardown(error: Exception) -> Target:
+    @contextmanager
+    def container_failing_to_leave(
+        _tag: str, _spec: PlantingSpec, _shape: LaunchShape
+    ) -> Generator[Launch]:
+        yield A_LAUNCH
+        raise error
+
+    return dataclasses.replace(TARGET, kept_places=(), builder=container_failing_to_leave)
+
+
 def an_audit_taking_the_server_as_down(audits: int = 1) -> Auditor:
     """Each of the `audits` reports holds a relaunch that failed."""
     reports = [launch_audit_fakes.a_report_with_relaunches(False) for _ in range(audits)]

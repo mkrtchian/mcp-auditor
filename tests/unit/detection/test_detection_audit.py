@@ -20,6 +20,7 @@ from tests.unit.detection.support.detection_audits import (
     TARGET,
     a_target_launching,
     an_auditor_reporting,
+    in_session,
 )
 from tests.unit.support.captured_console import a_captured_console
 
@@ -39,7 +40,7 @@ async def test_a_throttled_audit_is_reported_with_its_count(
     output = a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(given.a_report_throttled(2))
 
-    await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
+    await attempt_once(a_target_launching(), in_session(auditor), {})
 
     line = f"{TARGET.flaw_id}: throttled 2 time(s) by the model provider (HTTP 429)"
     assert line in output.getvalue()
@@ -52,7 +53,7 @@ async def test_an_audit_never_throttled_says_nothing_of_throttling(
     output = a_captured_console(capsys, monkeypatch)
     auditor = an_auditor_reporting(given.a_report_throttled(0))
 
-    await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
+    await attempt_once(a_target_launching(), in_session(auditor), {})
 
     assert "throttled" not in output.getvalue()
 
@@ -64,7 +65,7 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
     output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_on_a_noisy_server(non_protocol_lines=2, lost_calls=1)
 
-    outcome = await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
+    outcome = await attempt_once(a_target_launching(), in_session(auditor), {})
 
     assert isinstance(outcome, GradedAudit)
     assert outcome.health == ServerHealth(2, 1)
@@ -78,7 +79,7 @@ async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
     output = a_captured_console(capsys, monkeypatch)
     auditor = given.an_audit_on_a_noisy_server(non_protocol_lines=2, lost_calls=0)
 
-    await attempt_once(a_target_launching(), auditor, SessionThrottles(), {})
+    await attempt_once(a_target_launching(), in_session(auditor), {})
 
     assert "connection lost" not in output.getvalue()
 
@@ -129,9 +130,7 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(
     connect = launch_audit_fakes.FakeConnect()
     auditor = launch_audit_fakes.an_auditor(graphs=graphs, connect=connect)
 
-    await attempt_once(
-        a_target_launching(), auditor, SessionThrottles(), {}, RunOverrides(7, 9, 11)
-    )
+    await attempt_once(a_target_launching(), in_session(auditor, RunOverrides(7, 9, 11)), {})
 
     [graph_input] = graphs.graph_inputs
     assert (graph_input["chain_budget"], graph_input["max_chain_steps"]) == (7, 9)
@@ -155,7 +154,7 @@ async def test_the_graph_audits_the_target_tools_filter_unless_every_tool_is_aud
     graphs = launch_audit_fakes.graph_reporting([grammar.a_report()])
     auditor = launch_audit_fakes.an_auditor(graphs=graphs)
 
-    await attempt_once(a_target_launching(), auditor, SessionThrottles(), {}, overrides)
+    await attempt_once(a_target_launching(), in_session(auditor, overrides), {})
 
     assert graphs.tools_filters == [tools_filter]
 
@@ -169,7 +168,7 @@ async def test_every_attempt_of_a_target_is_billed_to_it(
     throttles = SessionThrottles()
 
     for _ in range(2):
-        await attempt_once(target, auditor, throttles, places={})
+        await attempt_once(target, in_session(auditor, throttles=throttles), places={})
 
     billed = throttles.by_target[target.flaw_id].total
     assert (billed.input_tokens, billed.output_tokens) == (200, 20)

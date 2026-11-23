@@ -5,9 +5,8 @@ import tests.unit.support.grammar_inputs as grammar
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.launch_audit import NO_OVERRIDES, RunOverrides
+from evals.cve.launch_audit import NO_OVERRIDES, RunOverrides, SessionAuditor
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
-from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditReport
@@ -15,7 +14,7 @@ from tests.unit.support.admission_mutations import with_a_backend
 from tests.unit.support.nuisance_admissions import a_fake_lifecycle, an_admitted_server
 
 
-def an_auditor_on_a_noisy_server(lost_calls: int) -> NuisanceAuditor:
+def an_auditor_on_a_noisy_server(lost_calls: int) -> SessionAuditor:
     """The graph sends one call per lost connection, each answered "Connection closed", to a
     client that read two lines it could not parse."""
     return an_auditor(
@@ -31,20 +30,20 @@ def an_auditor(
     graphs: launch_audit_fakes.FakeGraphs | None = None,
     connect: launch_audit_fakes.FakeConnect | None = None,
     overrides: RunOverrides = NO_OVERRIDES,
-) -> NuisanceAuditor:
-    return NuisanceAuditor(
+) -> SessionAuditor:
+    return SessionAuditor(
         launch_audit_fakes.an_auditor(report_detail, graphs, connect), overrides, SessionThrottles()
     )
 
 
-def an_auditor_raising(error: Exception, *, grouped: bool) -> NuisanceAuditor:
+def an_auditor_raising(error: Exception, *, grouped: bool) -> SessionAuditor:
     return an_auditor(
         graphs=launch_audit_fakes.graph_raising(error),
         connect=launch_audit_fakes.FakeConnect(grouped=grouped),
     )
 
 
-def an_auditor_taking_the_server_as_down(audits: int = 1) -> NuisanceAuditor:
+def an_auditor_taking_the_server_as_down(audits: int = 1) -> SessionAuditor:
     """Each of the `audits` reports holds a relaunch that failed."""
     reports = [launch_audit_fakes.a_report_with_relaunches(False) for _ in range(audits)]
     return an_auditor(graphs=launch_audit_fakes.graph_reporting(reports))

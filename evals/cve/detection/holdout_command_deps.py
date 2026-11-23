@@ -32,7 +32,7 @@ from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.images import backend_image_ids, image_ids
-from evals.cve.launch_audit import RunOverrides, build_auditor
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.places import Places
 from evals.cve.run_files import ReportWriter, write_report
 from evals.cve.run_images import DOCKER_SWEEP, RunDocker, rebuild_images
@@ -49,11 +49,10 @@ class HoldoutDepsFactory(Protocol):
 def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:
     auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
     throttles = SessionThrottles()
+    session = SessionAuditor(auditor, overrides, throttles)
 
     async def audit(target: Target) -> GradedAudit | IncompleteRun | DroppedRun:
-        return await holdout_audit(
-            target, lambda: attempt_once(target, auditor, throttles, places, overrides)
-        )
+        return await holdout_audit(target, lambda: attempt_once(target, session, places))
 
     async def check(target: Target) -> list[str]:
         return await check_target(target, places, options=CheckOptions(report_detail=TYPES_ONLY))

@@ -25,14 +25,13 @@ from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import image_ids
-from evals.cve.launch_audit import RunOverrides, build_auditor
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.assembly import assemble_server
 from evals.cve.nuisance.audit import (
     DroppedRun,
     NuisanceAudit,
-    NuisanceAuditor,
     audit_once,
     nuisance_audit,
 )
@@ -213,7 +212,7 @@ def nuisance_overrides(conditions: HoldoutConditions) -> RunOverrides:
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     throttles = SessionThrottles()
     run_auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
-    auditor = NuisanceAuditor(run_auditor, overrides, throttles)
+    auditor = SessionAuditor(run_auditor, overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
     async def audit(server: AdmittedServer) -> NuisanceAudit | DroppedRun:
