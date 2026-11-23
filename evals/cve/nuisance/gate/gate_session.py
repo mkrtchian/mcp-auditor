@@ -59,6 +59,7 @@ async def run_gate(
         # A built backend left running by a killed command never serves a gate: its provisioner
         # stands it again from its image and its seed.
         remove_backend_containers(harness.sweep, images)
+        harness.rebuild(images.services)
         return await _run_opened(opened)
     finally:
         sweep_run_containers(harness.sweep, images)
@@ -97,7 +98,6 @@ async def _vetted(opened: OpenedGate) -> dict[str, str]:
     """The benign call of every server before any audit, with the vet's second pass. Under
     --record-baseline a server failing both passes refuses the recording."""
     servers = opened.options.servers
-    opened.harness.rebuild(list(dict.fromkeys(server.service for server in servers)))
     vetted = await drop_failing_servers(servers, opened.harness.benign_call, opened.harness.sweep)
     not_run = {entry.server_package: entry.reason for entry in vetted.not_run}
     if opened.options.record_baseline and not_run:

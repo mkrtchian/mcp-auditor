@@ -9,8 +9,8 @@ its seed; the end sweep leaves it running, as the calibration check of a holdout
 A server's own backend containers, the Doris cluster by name included, are removed again before
 that server's second pass of the vet (`vetting.drop_failing_servers`), so its provisioner stands
 them again for that pass. A backend-less server with public names launches a holder and
-stand-ins, whose images the run rebuilds but never sweeps by tag: the launch removes its own
-containers, and a calibration check may run containers of the same images."""
+stand-ins, whose images a run, a vet and a gate rebuild but never sweep by tag: the launch removes
+its own containers, and a calibration check may run containers of the same images."""
 
 from __future__ import annotations
 

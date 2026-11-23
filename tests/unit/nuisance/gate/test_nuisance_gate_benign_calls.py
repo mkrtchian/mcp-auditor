@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_benign_calls_given as given
+from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.gate.gate import ServerOutcome
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.eval_session import RECORDING_REFUSED, Refused
@@ -112,3 +113,24 @@ async def test_a_built_backend_container_left_running_is_removed_before_the_firs
     await run_gate(options([server]), harness)
 
     assert removed_at_benign_calls == [["stale_backend"]]
+
+
+async def test_the_gate_rebuilds_the_built_backend_service_with_the_server_service(
+    tmp_path: Path,
+):
+    server = on_the_ckan_backend(FILESYSTEM)
+    a_gated_file(tmp_path, server)
+    containers = FakeContainerSweep.running_before_the_rebuild("stale_backend")
+    harness, rebuilt, removed_at_the_rebuild = given.watching_the_rebuild(
+        a_harness(
+            tmp_path,
+            scripted({server.server_package: clean_runs()}),
+            containers=containers,
+        ),
+        containers,
+    )
+
+    await run_gate(options([server]), harness)
+
+    assert rebuilt == [server.service, *BACKENDS["ckan"].built_services]
+    assert removed_at_the_rebuild == ["stale_backend"]

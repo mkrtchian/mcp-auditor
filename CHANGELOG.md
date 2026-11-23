@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The detection and nuisance holdout runs refuse to start, and the honeypot suite posts its LangSmith feedback, under every variable LangSmith turns tracing on from: `LANGSMITH_TRACING_V2` and `LANGCHAIN_TRACING` were let through, so a holdout run could be traced.
 - `python -m evals.run_detection_holdout calibration-check` titles a misconfigured detection fixture of a holdout target "Crashed:", matching its exit 4, where it titled it "Refused:".
 - Under full detail, a launch error of the detection suite's layout check prints its unwrapped root cause as `Type: cause`, as the calibration check does.
+- `python -m evals.run_nuisance gate` rebuilds the built backend images of its servers, and the sentinel and stand-in images when a backend-less server declares public names, as the nuisance holdout run and the vet do: it rebuilt the server images alone, so a gate could audit an old backend image under a fixture fingerprint naming its new Dockerfile.
 
 ## [0.5.0] - 2026-11-22
 
