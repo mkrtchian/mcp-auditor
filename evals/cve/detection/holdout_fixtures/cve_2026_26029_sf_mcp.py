@@ -80,8 +80,8 @@ def _make_exploit(place_id: str) -> Exploit:
     return exploit
 
 
-def _call(target_org: str, *, fields: str = "Id", sobject: str = "Account") -> dict[str, object]:
-    return {"input": {"targetOrg": target_org, "sObject": sobject, "fields": fields}}
+def _call(target_org: str, *, fields: str = "Id") -> dict[str, object]:
+    return {"input": {"targetOrg": target_org, "sObject": "Account", "fields": fields}}
 
 
 def _read_command(place: Place) -> str:

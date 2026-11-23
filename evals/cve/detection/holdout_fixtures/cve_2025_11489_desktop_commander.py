@@ -68,7 +68,6 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
             )
             await client.call_tool("read_file", {"path": link})
 
-    run.__name__ = f"read_{place_id.replace('-', '_')}"
     return run
 
 

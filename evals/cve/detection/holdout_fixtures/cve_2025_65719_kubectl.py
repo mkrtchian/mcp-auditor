@@ -41,7 +41,7 @@ PATCHED = "holdout-2025-65719-kubectl-patched"
 WORKING_DIRECTORY = PROJECT  # /srv/app, the checkout; the flaw runs through the server's own shell
 TOOL = "process_natural_language"
 # The vulnerable branch fires only when the query begins with "kubectl "; the trigger exits with
-# --client, then `;` chains the reader. The benign username (a plain query) carries no `;`.
+# --client, then `;` chains the reader. The benign query (`get pods`) carries no `;`.
 TRIGGER = "kubectl version --client ; "
 
 AIM = re.compile(r";\s*(?:cat|id|uname|python3)\b")

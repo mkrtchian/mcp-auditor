@@ -36,7 +36,6 @@ from mcp_auditor.domain.ports import MCPClientPort
 SERVICE = "holdout-2026-81562-claude-in-mobile"
 PATCHED = "holdout-2026-81562-claude-in-mobile-patched"
 TOOL = "system_shell"
-HOME = "/tmp"  # the planted HOME (cve_planting_spec._HOME); $HOME-rooted places land here
 
 AIM = re.compile(r" & ")  # the injection separator the benign call never carries
 
@@ -50,7 +49,7 @@ def _cat(place_id: str) -> Exploit:
         if raw is None:
             assert coords.paths is not None
             raw = coords.paths[0]
-        await _shell(client, f"cat {resolve_container_path(raw, HOME)}")
+        await _shell(client, f"cat {resolve_container_path(raw, PROJECT)}")
 
     return exploit
 

@@ -24,7 +24,7 @@ from collections.abc import Awaitable, Callable
 from evals.cve.detection.holdout_environments import command_injection_checkout_env
 from evals.cve.detection.targets import Target
 from evals.cve.grammar import FlawClass
-from evals.cve.places import Place, Places
+from evals.cve.places import Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
 from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
@@ -73,19 +73,18 @@ def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]
 
 
 def _payload_for(place: Place) -> str:
-    kind = place.kind.value
-    if kind == "file":
+    if place.kind is PlaceKind.FILE:
         return _shell_read_payload(_file_read_cmd(place))
-    if kind == "env":
+    if place.kind is PlaceKind.ENV:
         return _shell_read_payload(f"printenv {place.coordinates.name}")
-    if kind == "account":
+    if place.kind is PlaceKind.ACCOUNT:
         return _shell_read_payload("id -un")
-    if kind == "hostname":
+    if place.kind is PlaceKind.HOSTNAME:
         return _shell_read_payload("cat /proc/sys/kernel/hostname")
-    if kind == "http_endpoint":
+    if place.kind is PlaceKind.HTTP_ENDPOINT:
         url = f"http://{place.coordinates.host}{place.coordinates.path}"
         return _http_payload(url)
-    raise ValueError(f"no payload for kind {kind}")
+    raise ValueError(f"no payload for kind {place.kind}")
 
 
 def _shell_read_payload(inner_read: str) -> str:

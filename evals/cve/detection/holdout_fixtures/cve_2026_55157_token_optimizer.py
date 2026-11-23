@@ -20,7 +20,7 @@ from collections.abc import Awaitable, Callable
 from evals.cve.detection.targets import Target
 from evals.cve.environments import command_injection_env
 from evals.cve.grammar import FlawClass
-from evals.cve.places import Place, Places
+from evals.cve.places import Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
 from evals.cve.planting_spec import resolve_container_path
 from mcp_auditor.domain.ports import MCPClientPort
@@ -69,7 +69,6 @@ def _exploit_for(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[N
     async def exploit(places: Places, client: MCPClientPort) -> None:
         await _call(client, _payload(places[place_id]))
 
-    exploit.__name__ = f"exploit_{place_id.replace('-', '_')}"
     return exploit
 
 
@@ -78,29 +77,32 @@ def _payload(place: Place) -> str:
 
 
 def _read_command(place: Place) -> str:
-    kind = place.kind.value
     coord = place.coordinates
-    if kind == "file":
+    if place.kind is PlaceKind.FILE:
         raw = coord.path
         if raw is None:
             assert coord.paths is not None
             raw = coord.paths[0]
         path = resolve_container_path(raw, WORKING_DIRECTORY)
         return f'cat "{path}"'
-    if kind == "env":
+    if place.kind is PlaceKind.ENV:
         return f"printenv {coord.name}"
-    if kind == "hostname":
+    if place.kind is PlaceKind.HOSTNAME:
         return "hostname"
-    if kind == "http_endpoint":
+    if place.kind is PlaceKind.HTTP_ENDPOINT:
         assert coord.host is not None and coord.path is not None
-        js = (
-            'const h=require("http");'
-            'h.get({host:"' + coord.host + '",port:80,path:"' + coord.path + '"},'
-            'r=>{let d="";r.on("data",c=>d+=c);'
-            'r.on("end",()=>process.stdout.write(d))}).on("error",()=>{})'
-        )
-        return "node -e '" + js + "'"
-    raise ValueError(f"no read command for kind {kind}")
+        return _node_http_get(coord.host, coord.path)
+    raise ValueError(f"no read command for kind {place.kind}")
+
+
+def _node_http_get(host: str, path: str) -> str:
+    js = (
+        'const h=require("http");'
+        'h.get({host:"' + host + '",port:80,path:"' + path + '"},'
+        'r=>{let d="";r.on("data",c=>d+=c);'
+        'r.on("end",()=>process.stdout.write(d))}).on("error",()=>{})'
+    )
+    return "node -e '" + js + "'"
 
 
 async def _call(client: MCPClientPort, username: str) -> None:

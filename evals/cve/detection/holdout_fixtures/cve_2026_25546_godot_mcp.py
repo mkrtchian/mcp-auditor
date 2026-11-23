@@ -87,7 +87,6 @@ def _exploit(place_id: str, command: str) -> Callable[[Places, MCPClientPort], A
             },
         )
 
-    run.__name__ = f"exploit_{place_id.replace('-', '_')}"
     return run
 
 

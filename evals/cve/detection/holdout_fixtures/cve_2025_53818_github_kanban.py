@@ -19,7 +19,7 @@ fixture network, so it is served by a stand-in under its real name; gh trusts th
 authority through SSL_CERT_FILE (Go's documented CA-file override). The benign call is list_issues,
 one `gh issue list` the stand-in answers with gh's own three-issue test fixture. The server's only
 writes (a temp comment file under its cwd) cannot land in the read-only checkout, so the working
-directory is the v11 empty tmpfs /work outside the layout, while the checkout stays its scope.
+directory is the empty /work tmpfs outside the layout, while the checkout stays its scope.
 """
 
 import re
@@ -38,7 +38,7 @@ SERVICE = "holdout-2025-53818-github-kanban"
 PATCHED = "holdout-2025-53818-github-kanban-patched"
 REPO_PATH = "/repo"  # the git checkout baked into the image; its origin is a github.com URL
 # writeToTempFile writes comment_body.md under process.cwd()/tmp before the vulnerable gh call;
-# the checkout (the scope) is mounted read-only and the server is unprivileged, so /work (the v11
+# the checkout (the scope) is mounted read-only and the server is unprivileged, so /work (the
 # empty working directory outside the layout) is the working directory.
 WORKING_DIRECTORY = WORK
 STAND_IN_HOST = "api.github.com"
