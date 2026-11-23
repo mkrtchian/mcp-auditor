@@ -6,7 +6,8 @@ import pytest
 
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
-from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
+from evals.cve.nuisance.admission.admission import NuisanceAdmission
+from evals.cve.nuisance.admission.admission_load import load_admission
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] = [

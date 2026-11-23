@@ -1,7 +1,8 @@
 import pytest
 
 from evals.cve.census.census import CENSUS_PATH, Census, load_census
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, load_admission
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH
+from evals.cve.nuisance.admission.admission_load import load_admission
 from evals.cve.nuisance.admission.walk import NuisanceServer, nuisance_population
 from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
 from evals.cve.nuisance.commands import WALK_RECORD_PATH

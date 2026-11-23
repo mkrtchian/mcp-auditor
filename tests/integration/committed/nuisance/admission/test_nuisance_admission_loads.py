@@ -3,13 +3,10 @@ from collections import Counter
 
 import pytest
 
-from evals.cve.census.census import CENSUS_PATH, load_census
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, load_admission
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.holdout_calibration_copies import stale_holdout_calibration_copies
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
-from evals.cve.nuisance.admission.walk_record import load_walk_record
-from evals.cve.nuisance.commands import WALK_RECORD_PATH
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.holdout_run_command import current_copy_fingerprints
 from evals.cve.nuisance.holdout_servers import run_population
@@ -21,7 +18,7 @@ from tests.unit.support.committed_nuisance_admission import (
 
 
 def test_the_committed_admission_loads():
-    load_admission(ADMISSION_PATH, load_walk_record(WALK_RECORD_PATH, load_census(CENSUS_PATH)))
+    the_committed_admission()
 
 
 def test_every_holdout_calibration_copy_is_recorded_at_its_targets_current_fingerprint():

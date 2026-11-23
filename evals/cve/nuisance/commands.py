@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from evals.cve.census.census import load_census
-from evals.cve.nuisance.admission.admission import NuisanceAdmission, load_admission
+from evals.cve.nuisance.admission.admission import NuisanceAdmission
+from evals.cve.nuisance.admission.admission_load import load_admission
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
 from evals.cve.nuisance.holdout_servers import RunPopulation, run_population

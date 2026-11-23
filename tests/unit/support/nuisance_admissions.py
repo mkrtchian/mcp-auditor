@@ -19,8 +19,8 @@ from evals.cve.nuisance.admission.admission import (
     FlawRecord,
     NuisanceAdmission,
     ToolRecord,
-    admission_problems,
 )
+from evals.cve.nuisance.admission.admission_load import admission_problems
 from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import RegisteredBackend

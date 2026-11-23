@@ -7,8 +7,8 @@ from evals.cve.nuisance.admission.admission import (
     ADMISSION_PATH,
     AdmittedServer,
     NuisanceAdmission,
-    load_admission,
 )
+from evals.cve.nuisance.admission.admission_load import load_admission
 from evals.cve.nuisance.admission.re_admission_dossier import fix_check_modules
 from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
 from evals.cve.nuisance.commands import WALK_RECORD_PATH

@@ -5,19 +5,14 @@ on a server the walk lists, unmarked, not admitted and recorded once, for a reas
 not derive.
 """
 
-from __future__ import annotations
-
 from collections import Counter
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from evals.cve.nuisance.admission import walk as nuisance_walk
+from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.walk import ServerMark
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason, RecordedExit
-
-if TYPE_CHECKING:
-    from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 
 MARK_REASONS: dict[ServerMark, ExitReason] = {
     ServerMark.EXCLUDED: ExitReason.EXCLUDED_SERVER,
