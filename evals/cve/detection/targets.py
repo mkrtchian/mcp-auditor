@@ -31,7 +31,7 @@ from evals.cve.planting import (
     SymbolicUser,
 )
 from evals.cve.planting import planting_spec as compute_planting_spec
-from evals.cve.planting_base import LayoutMount, PublicNames
+from evals.cve.planting_base import SENTINEL_SERVICE, LayoutMount, PublicNames
 from mcp_auditor.domain.ports import MCPClientPort
 
 
@@ -365,6 +365,13 @@ ACCEPTANCE_TARGETS: list[Target] = [
         tools_filter=frozenset({"fetch_txt"}),
     ),
 ]
+
+
+def acceptance_services() -> set[str]:
+    services = {
+        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
+    }
+    return services | {SENTINEL_SERVICE}
 
 
 OUT_OF_SCOPE_FLAWS: list[OutOfScopeFlaw] = [

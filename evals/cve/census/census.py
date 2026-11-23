@@ -30,7 +30,8 @@ from evals.cve.census.identity import Flaw, disclosure_date, flaw_id_of
 from evals.cve.census.prefilter import PrefilterTerm
 from evals.cve.census.sources import SourceProvenance, SourceRecord
 from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
-from evals.cve.detection.draw_record import DrawRecord, draw_problems
+from evals.cve.detection.draw_record import DrawRecord
+from evals.cve.detection.draw_record_problems import draw_problems
 
 CENSUS_PATH = Path(__file__).resolve().parents[2] / "census.json"
 BOUND = date(2026, 10, 7)

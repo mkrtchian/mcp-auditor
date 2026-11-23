@@ -19,12 +19,8 @@ from pathlib import Path
 
 from evals.cve import dossier_closure
 from evals.cve.census.census import Census
-from evals.cve.detection import calibration_dossier
-from evals.cve.detection.calibration_dossier import (
-    KIT_ROOTS,
-    acceptance_services,
-    copy_kit_sources,
-)
+from evals.cve.detection.targets import acceptance_services
+from evals.cve.kit_dossier import KIT_ROOTS, advisory_dossier, copy_kit_sources
 from evals.cve.nuisance.admission import holdout_target_reference
 from evals.cve.nuisance.admission import walk as nuisance_walk
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
@@ -78,7 +74,7 @@ def _write_advisories(census: Census, identifiers: list[str], out: Path) -> None
     advisories = out / "advisories"
     advisories.mkdir(parents=True, exist_ok=True)
     for identifier in identifiers:
-        dossier = calibration_dossier.advisory_dossier(by_identifier[identifier])
+        dossier = advisory_dossier(by_identifier[identifier])
         (advisories / f"{identifier}.json").write_text(dossier.model_dump_json(indent=2))
 
 

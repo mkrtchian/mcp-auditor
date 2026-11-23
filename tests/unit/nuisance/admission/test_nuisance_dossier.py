@@ -15,7 +15,8 @@ import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
-from evals.cve.detection.calibration_dossier import acceptance_services, write_kit
+from evals.cve.detection.calibration_dossier import write_kit
+from evals.cve.detection.targets import acceptance_services
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
 from evals.cve.nuisance.admission.re_admission_docs import admission_confinement_text

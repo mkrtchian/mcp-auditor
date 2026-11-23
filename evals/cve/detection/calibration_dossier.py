@@ -11,44 +11,17 @@ the committed census (`CensusFlaw` fields alone), never from the raw hand-downlo
 
 import json
 import shutil
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from pathlib import Path
 
-from pydantic import BaseModel
-
-from evals.cve import dossier_closure, places
+from evals.cve import places
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import Classification
-from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.detection.draw_record import CalibrationCard
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.planting_base import SENTINEL_SERVICE
+from evals.cve.detection.targets import acceptance_services
+from evals.cve.kit_dossier import KIT_ROOTS, Dossier, advisory_dossier, copy_kit_sources
 from evals.eval_session import Refused
-from evals.repository import REPO_ROOT
 from evals.run_census import GRAMMAR_CLASSES
-
-EVALS = REPO_ROOT / "evals"
-DOCKER = EVALS / "docker"
-
-KIT_ROOTS = (
-    "evals.cve.kit.client",
-    "evals.cve.kit.launch",
-    "evals.cve.kit.target",
-    "evals.cve.kit.driver",
-)
-
-_ADVISORY_PAGES = {
-    SourceName.GHSA: "https://github.com/advisories/{}",
-    SourceName.NVD: "https://nvd.nist.gov/vuln/detail/{}",
-    SourceName.OSV: "https://osv.dev/vulnerability/{}",
-}
-
-
-class Dossier(BaseModel):
-    identifier: str
-    ids: list[str]
-    advisory_urls: list[str]
-    records: list[SourceRecord]
 
 
 class CandidateDossier(Dossier):
@@ -94,30 +67,9 @@ def server_packages(classifications: Mapping[str, list[Classification]]) -> dict
     return {each.flaw: each.server_package for each in classifications[CLASSIFIERS[0]]}
 
 
-def advisory_dossier(flaw: CensusFlaw) -> Dossier:
-    return Dossier(
-        identifier=flaw.identifier,
-        ids=flaw.ids,
-        advisory_urls=[_ADVISORY_PAGES[record.source].format(record.id) for record in flaw.records],
-        records=flaw.records,
-    )
-
-
 def _copy_sources(out: Path) -> None:
     copy_kit_sources(out, KIT_ROOTS)
     shutil.copyfile(places.DETECTION_PLACES, out / "evals" / "detection_places.json")
-
-
-def copy_kit_sources(out: Path, kit_roots: Sequence[str]) -> None:
-    """Copy the given kit modules with their import closure (every `__init__.py` on the way),
-    the stand-in captures (evals/stand_ins/), the sentinel Dockerfile and the stand-in Dockerfile
-    into the exported tree. The calibration kit adds its own places file."""
-    dossier_closure.copy_closure(out, kit_roots)
-    shutil.copytree(EVALS / "stand_ins", out / "evals" / "stand_ins", dirs_exist_ok=True)
-    docker_out = out / "docker"
-    docker_out.mkdir(parents=True, exist_ok=True)
-    for dockerfile in ("Dockerfile.sentinel", "Dockerfile.stand-in"):
-        shutil.copyfile(DOCKER / dockerfile, docker_out / dockerfile)
 
 
 def _write_docs(out: Path) -> None:
@@ -130,13 +82,6 @@ def _write_docs(out: Path) -> None:
 def _readme() -> str:
     names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
     return _README.format(acceptance_services=names)
-
-
-def acceptance_services() -> set[str]:
-    services = {
-        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
-    }
-    return services | {SENTINEL_SERVICE}
 
 
 def _fixture_format() -> str:

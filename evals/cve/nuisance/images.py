@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from evals.cve.detection import calibration_dossier
+from evals.cve.detection.targets import acceptance_services
 
 if TYPE_CHECKING:
     from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
@@ -43,7 +43,7 @@ def backend_images(servers: Sequence[AdmittedServer]) -> list[str]:
 
 
 def namespace_problems(admission: NuisanceAdmission) -> list[str]:
-    acceptance = calibration_dossier.acceptance_services()
+    acceptance = acceptance_services()
     return [
         f"{server.server_package}: patched service {server.service!r} is an acceptance service"
         for server in admission.servers
