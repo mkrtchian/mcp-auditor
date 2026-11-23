@@ -45,14 +45,9 @@ from evals.honeypots import (
     audit_honeypot,
     models_for,
 )
-from evals.metrics import (
-    SessionThrottles,
-    VerdictMap,
-    aggregate_verdicts,
-    quiet_throttle_waits,
-    raise_if_throttled,
-)
+from evals.metrics import VerdictMap, aggregate_verdicts
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
+from evals.session_usage import SessionThrottles, quiet_throttle_waits, raise_if_throttled
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import AuditReport
 

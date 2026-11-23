@@ -53,7 +53,7 @@ from evals.cve.run_images import (
 from evals.cve.run_interruption import first_failure, sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.honeypot.runs import tracing_enabled
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged

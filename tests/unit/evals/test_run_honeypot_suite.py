@@ -4,8 +4,8 @@ import tests.unit.evals.support.test_run_honeypot_suite_given as given
 from evals.gate import RetestRule
 from evals.honeypot.retest import Retester
 from evals.honeypot.runs import run_all, tracing_enabled
-from evals.metrics import SessionThrottles
 from evals.run_honeypot_suite import counted_audit, parse_args, retest_audit
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.evals.support import fictional_honeypots
 

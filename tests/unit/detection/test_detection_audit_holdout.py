@@ -18,7 +18,7 @@ from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.provider_errors import ProviderFatal
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support import test_detection_audit_holdout_given as given
 from tests.unit.detection.support.detection_audits import (

@@ -1,27 +1,19 @@
-import logging
-
-import pytest
-
+import tests.unit.evals.support.missed_judgments as missed_judgments
 import tests.unit.evals.support.test_eval_metrics_given as given
 from evals.ground_truth import GroundTruth
 from evals.metrics import (
-    SessionThrottles,
-    ThrottledAudit,
-    UsageBreakdown,
     VerdictMap,
     aggregate_verdicts,
     blocked_reasons,
     build_run_detail,
     compute_consistency,
-    compute_distribution_coverage,
     compute_precision,
     compute_recall,
     label_scores,
-    quiet_throttle_waits,
-    raise_if_throttled,
+    tool_distributions,
 )
 from mcp_auditor.domain.model_calls import MissedCallCause
-from mcp_auditor.domain.models import AuditCategory, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
@@ -268,9 +260,10 @@ def test_distribution_full_coverage():
         {"get_user": [given.a_result("get_user", cat, PASS) for cat in ALL_CATEGORIES]}
     )
 
-    coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
+    distribution = tool_distributions(report)["get_user"]
 
-    assert coverage["get_user"] == 1.0
+    assert distribution.coverage == 1.0
+    assert distribution.covered == 5
 
 
 def test_distribution_partial():
@@ -279,9 +272,10 @@ def test_distribution_partial():
         {"get_user": [given.a_result("get_user", cat, PASS) for cat in three_categories]}
     )
 
-    coverage = compute_distribution_coverage(report, ALL_CATEGORIES)
+    distribution = tool_distributions(report)["get_user"]
 
-    assert coverage["get_user"] == 3.0 / 5.0
+    assert distribution.coverage == 3.0 / 5.0
+    assert distribution.covered == 3
 
 
 def test_a_blocked_case_leaves_verdict_metrics_untouched():
@@ -298,9 +292,10 @@ def test_distribution_coverage_drops_when_the_only_case_of_a_category_is_blocked
     )
     injection_blocked = given.and_a_blocked_case(without_injection, "get_user", INJECTION)
 
-    coverage = compute_distribution_coverage(injection_blocked, ALL_CATEGORIES)
+    distribution = tool_distributions(injection_blocked)["get_user"]
 
-    assert coverage["get_user"] == 4.0 / 5.0
+    assert distribution.coverage == 4.0 / 5.0
+    assert distribution.covered == 4
 
 
 def test_reports_no_blocked_payload_in_a_clean_report():
@@ -330,8 +325,10 @@ def test_a_run_detail_lists_no_missed_model_call_in_a_clean_report():
 
 def test_a_run_detail_lists_each_missed_model_call_with_its_cause_tool_and_detail():
     clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
-    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
-    report = given.and_a_missed_judgment(
+    refused = missed_judgments.and_a_refused_judgment(
+        clean, "search", "flagged by the usage policy"
+    )
+    report = missed_judgments.and_a_missed_judgment(
         refused, "search", MissedCallCause.UNREADABLE_ANSWER, "no answer matched"
     )
 
@@ -341,108 +338,3 @@ def test_a_run_detail_lists_each_missed_model_call_with_its_cause_tool_and_detai
         "Refused by the model provider, search: judgment, flagged by the usage policy",
         "Unreadable answer from the model, search: judgment, no answer matched",
     ]
-
-
-def test_session_throttles_count_each_report_and_keep_the_total():
-    throttles = SessionThrottles()
-
-    counts = [throttles.count(given.a_report_throttled(times)) for times in (2, 0)]
-
-    assert counts == [2, 0]
-    assert throttles.requests == 2
-
-
-def test_session_throttles_sum_the_tokens_of_every_counted_report_a_refused_one_included():
-    throttles = SessionThrottles()
-    refused = given.and_a_refused_judgment(given.a_report_billed(100, 10), "search", "flagged")
-
-    throttles.count(given.a_report_billed(200, 20))
-    throttles.count(refused)
-
-    assert (throttles.usage.input_tokens, throttles.usage.output_tokens) == (300, 30)
-
-
-def test_session_throttles_count_a_bare_usage():
-    throttles = SessionThrottles()
-
-    counted = throttles.count_usage(ProviderUsage(input_tokens=50, throttled_requests=3))
-
-    assert counted == 3
-    assert (throttles.requests, throttles.usage.input_tokens) == (3, 50)
-
-
-def test_session_throttles_count_a_report_without_a_target_billing_no_target():
-    throttles = SessionThrottles()
-
-    counted = throttles.count(given.a_report_throttled(2))
-
-    assert counted == 2
-    assert throttles.requests == 2
-    assert throttles.by_target == {}
-
-
-def test_session_throttles_bill_each_phase_of_a_report_to_its_target():
-    throttles = SessionThrottles()
-
-    throttles.count(given.a_report_by_phase(total=300, chain=100, judge=50), "CVE-1")
-
-    billed = throttles.by_target["CVE-1"]
-    assert (billed.total.input_tokens, billed.chain.input_tokens, billed.judge.input_tokens) == (
-        300,
-        100,
-        50,
-    )
-
-
-def test_phase_usage_add_sums_each_channel():
-    first = UsageBreakdown.from_report(given.a_report_by_phase(total=300, chain=100, judge=50))
-    second = UsageBreakdown.from_report(given.a_report_by_phase(total=30, chain=10, judge=5))
-
-    summed = first.add(second)
-
-    assert (summed.total.input_tokens, summed.chain.input_tokens, summed.judge.input_tokens) == (
-        330,
-        110,
-        55,
-    )
-
-
-def test_a_report_holding_a_throttled_judgment_raises_naming_it():
-    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
-    report = given.and_a_missed_judgment(
-        clean, "search", MissedCallCause.PROVIDER_THROTTLED, "300 s waited"
-    )
-
-    with pytest.raises(ThrottledAudit, match="search: judgment, 300 s waited"):
-        raise_if_throttled(report)
-
-
-def test_a_report_holding_only_refused_unreadable_or_too_long_steps_does_not_raise():
-    clean = given.a_report({"search": [given.a_result("search", INPUT_VALIDATION, FAIL)]})
-    refused = given.and_a_refused_judgment(clean, "search", "flagged by the usage policy")
-    unreadable = given.and_a_missed_judgment(
-        refused, "search", MissedCallCause.UNREADABLE_ANSWER, "no answer matched"
-    )
-    report = given.and_a_missed_judgment(
-        unreadable, "search", MissedCallCause.PROMPT_TOO_LONG, "rejected as too long"
-    )
-
-    raise_if_throttled(report)
-
-
-def test_quiet_throttle_waits_drops_a_wait_warning_and_keeps_an_error(
-    caplog: pytest.LogCaptureFixture, throttling_logger: logging.Logger
-):
-    quiet_throttle_waits()
-    throttling_logger.warning("waiting 10 s (retry 1)")
-    throttling_logger.error("something broke")
-
-    assert [record.getMessage() for record in caplog.records] == ["something broke"]
-
-
-@pytest.fixture
-def throttling_logger():
-    logger = logging.getLogger("mcp_auditor.throttling")
-    level = logger.level
-    yield logger
-    logger.setLevel(level)

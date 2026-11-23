@@ -21,7 +21,7 @@ from evals.cve.grammar import CreditCheck, MissKind, RunGrade, TargetStatus, gra
 from evals.cve.proofs import UnitPlace
 from evals.cve.report_units import units_of
 from evals.cve.server_health import ServerHealth
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support import test_detection_audit_given as given
 from tests.unit.detection.support.detection_audits import (

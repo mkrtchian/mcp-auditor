@@ -19,7 +19,7 @@ from evals.cve.places import Places
 from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep
 from evals.detection_preflight import preflight_ok
 from evals.eval_session import TreeState, read_tree
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 
 
 class AuditTargetFactory(Protocol):

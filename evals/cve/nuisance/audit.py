@@ -37,7 +37,7 @@ from evals.cve.provider_errors import (
 )
 from evals.cve.server_health import ServerHealth
 from evals.eval_display import console
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles, throttled_model_calls
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
@@ -159,7 +159,7 @@ async def nuisance_audit(
     causes: set[NotRunCause] = set()
     for number in range(1, NUISANCE_INFRA_ATTEMPTS + 1):
         outcome = await attempt()
-        if isinstance(outcome, NuisanceAudit) and not _is_throttled(outcome.report):
+        if isinstance(outcome, NuisanceAudit) and not throttled_model_calls(outcome.report):
             return outcome
         causes.add(_cause_of(outcome))
         console.print(
@@ -186,12 +186,6 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderError) -> str:
     if isinstance(outcome, ProviderError):
         return f"provider error ({outcome.reason})"
     return f"run failed to launch ({escape(outcome.reason)})"
-
-
-def _is_throttled(report: AuditReport) -> bool:
-    return any(
-        missed.cause is MissedCallCause.PROVIDER_THROTTLED for missed in report.missed_model_calls
-    )
 
 
 @dataclass(frozen=True)

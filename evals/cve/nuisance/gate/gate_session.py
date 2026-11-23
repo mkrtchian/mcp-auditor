@@ -60,8 +60,8 @@ from evals.cve.nuisance.solo import gathered_then_alone, played_alone
 from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
 from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
-from evals.metrics import SessionThrottles
 from evals.recording import RecordingRefused
+from evals.session_usage import SessionThrottles
 
 
 def gate_servers(admission: NuisanceAdmission, current: set[str]) -> list[AdmittedServer]:

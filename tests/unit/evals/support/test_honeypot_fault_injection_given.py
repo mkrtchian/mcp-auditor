@@ -1,7 +1,7 @@
 """Faulted candidates built from the observations of the recording refused on 2026-09-27.
 
 A candidate holds observations, not cases, so its distribution coverage cannot be computed
-from it: each fault states the coverage its generator would give (`compute_distribution_coverage`
+from it: each fault states the coverage its generator would give (`tool_distributions`
 counts the categories among a tool's judged cases, chains excluded).
 """
 

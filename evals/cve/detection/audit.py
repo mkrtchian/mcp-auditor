@@ -41,10 +41,10 @@ from evals.cve.provider_errors import (
 from evals.cve.report_units import units_of
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
-from evals.metrics import SessionThrottles, blocked_reasons
+from evals.metrics import blocked_reasons
+from evals.session_usage import SessionThrottles, throttled_model_calls
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.config import load_settings
-from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
 
@@ -127,10 +127,7 @@ async def attempt_once(
         console.print(f"[yellow]{target.flaw_id} {failure}:[/yellow] {escape(described)}")
     if run is None:
         return None
-    if any(
-        missed.cause is MissedCallCause.PROVIDER_THROTTLED
-        for missed in run.report.missed_model_calls
-    ):
+    if throttled_model_calls(run.report):
         console.print(
             f"[yellow]{target.flaw_id} run skipped:[/yellow]"
             " throttled by the model provider past every retry"

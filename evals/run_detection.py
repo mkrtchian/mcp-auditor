@@ -58,7 +58,7 @@ from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
 from evals.eval_session import RECORDING_REFUSED, Refused
 from evals.export import export_detection_judged_cases
-from evals.metrics import SessionThrottles, quiet_throttle_waits
+from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings
 

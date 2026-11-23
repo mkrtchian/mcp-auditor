@@ -7,7 +7,7 @@ from evals.cve.detection.session import DetectionSessionResult
 from evals.cve.detection.session_model import AuditTarget, DetectionHarness, DetectionOptions
 from evals.cve.detection.survey import TargetSurvey
 from evals.cve.detection.targets import Target
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from tests.fakes import FakeContainerSweep
 from tests.unit.detection.support.calibration_check_deps import deps_with
 from tests.unit.detection.support.run_detection_cli import (

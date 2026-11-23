@@ -1,5 +1,5 @@
-from evals.metrics import UsageBreakdown
 from evals.probe.candidates import Prices
+from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 
 ONE_DOLLAR_PER_MILLION = Prices(input=1.0, cached_input=1.0, output=1.0)

@@ -5,7 +5,7 @@ from evals.cve.detection.oracle import DetectionReport, TargetResult
 from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus
 from evals.cve.units import JudgeCategory
 from evals.gate_outcome import GateOutcome
-from evals.metrics import UsageBreakdown
+from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 
 NONCE = "s3nt1nel_ab12cd34ef56"

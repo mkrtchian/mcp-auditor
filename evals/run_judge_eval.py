@@ -30,7 +30,7 @@ from evals.judge.metrics import (
 from evals.judge.outcomes import case_outcomes
 from evals.judge.session import NOT_COMPARABLE_EXIT, run_judge_gate
 from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
-from evals.metrics import SessionThrottles, quiet_throttle_waits
+from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
 from mcp_auditor.config import load_settings

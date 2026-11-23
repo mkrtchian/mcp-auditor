@@ -8,7 +8,7 @@ from evals.cve.detection.audit import RunOverrides
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import NuisanceAuditor
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.admission_mutations import with_a_backend

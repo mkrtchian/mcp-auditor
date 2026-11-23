@@ -1347,3 +1347,27 @@ Commit: the one that adds this entry.
 **Fingerprint.** The grammar fingerprint stays `58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1` and the counter fingerprint `b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161`. No fixture fingerprint moves: the change is in the suites' retry policy and reports, which no fingerprint hashes.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument: which runs the suites count as incomplete. The bound on the tool responses shown to a model and the new missed-call cause are a change to the system under test, in the commits before this one, and do not license this change, which follows from it: an audit whose prompt is too long no longer ends on an error, so the suites have to read the report it now writes. (2) It was raised by provider errors in the harness logs of the holdout run of 2026-11-17 and the nuisance run of 2026-11-18, not by a score. (3) A prompt the model provider rejects for its length is built by the auditor from what the server answered, so it is the auditor's behaviour, not the infrastructure's, as an unreadable answer is, and a retry until it fits would keep the best of several attempts. It reads no measured value. (4) It applies to every target and server of both suites, both layers and both gates, none exempted.
+
+### 2026-11-23, the scoring code of the honeypot suite and the judge eval is deduplicated
+
+Commit: the one that adds this entry, and the later commits of the same standards pass that it lists.
+
+**State.** The honeypot baseline and the judge eval baseline are both confirmed, and neither is reset. No label moves.
+
+**What changes.** The scoring code of the honeypot suite and of the judge eval, with the gate, recording and baseline code around it, moves and loses the copies the two instruments each kept. Nothing it grades moves: no label, no fixture case and no rule of the gate. In this commit, the metrics read each tool's judgments once, through the tool report's judge results, for the any-fail verdict of a cell and for its case count, and a tool's distribution coverage counts its covered categories once, over one denominator, where it used to rebuild the count from the ratio. The provider usage accounting leaves the metrics module for its own, `evals/session_usage.py`. The later commits cover:
+
+- The cell, its key and the parsing of that key, moved beside the ground truth.
+- The gate's metric floors in their own module, the set of gated metrics written once, the floor-breach reasons and the held declarations shared by both gates, and the conversion between a verdict and an observation named once.
+- The exit codes of a gate outcome written once for both instruments.
+- The protected cells of a recording computed from its runs, and the recording rules of ADR 020, 022 and 023 shared by both instruments.
+- The refusals before a recording shared by both instruments.
+- The honeypot run outcome held as a list of completed runs, its metrics averaged through the same function as the baseline's, its recording built in one place for the command and the fault harness, and the gate decision split into named steps on a narrower input.
+- The comparisons of the cell grid keyed by cell.
+- The code that applies the retests named in the glossary's words.
+- The judge answers turned into case observations, with the throttled judgments returned by the judge call instead of read from a side list.
+
+Two changes make their own commits and do change what an instrument reads or prints. The baselines no longer read the retired keys `replay_rule` and `replays`, which the 2026-11-11 entry kept through an alias until the next re-recording: no committed baseline carries them any more. And a declared flip that names an unknown judge case reads "names no judge case of the fixture" instead of "names no cell of the ground truth".
+
+**Fingerprint.** Both are unchanged: the ground truth fingerprint stays `072b33c72ecc3732df4df957ed3ff63662a6747ccb87ac29ed5332d1031cb025`, and the judge inputs fingerprint stays `638da4313024181cc88b5c54f9032ff6b1d158664046bea12ed40f2b2b7aac73`, the values both baselines record.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the structure of its scoring, gate, recording and baseline code. No prompt, guard or default of the system under test moves, no label, no fixture case and no rule of the gate. (2) It was raised by a review of the eval instruments against the coding standards, not by a measured value. (3) Each move keeps which values reach which fields, so the metrics, the cell observations and the baselines written are the same, and none of what ADR 020 resets a baseline on (a fixture, the scoring code's grading, the model, runs or budget) changes. The retired keys no longer read are in no committed baseline, and the declared-flip message changes no decision. Both baselines keep their runs and their confirmation. (4) It applies to every gated run of both instruments.

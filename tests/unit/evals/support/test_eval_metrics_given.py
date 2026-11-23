@@ -1,4 +1,3 @@
-from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -98,39 +97,3 @@ def and_a_blocked_chain(report: AuditReport, tool: str, category: AuditCategory)
         for tr in report.tool_reports
     ]
     return report.model_copy(update={"tool_reports": tool_reports})
-
-
-def and_a_refused_judgment(report: AuditReport, tool: str, provider_message: str) -> AuditReport:
-    return and_a_missed_judgment(report, tool, MissedCallCause.PROVIDER_REFUSAL, provider_message)
-
-
-def and_a_missed_judgment(
-    report: AuditReport, tool: str, cause: MissedCallCause, detail: str
-) -> AuditReport:
-    missed = MissedModelCall(
-        tool_name=tool, kind=ModelCallKind.JUDGMENT, cause=cause, detail=detail
-    )
-    return report.model_copy(update={"missed_model_calls": [*report.missed_model_calls, missed]})
-
-
-def a_report_throttled(times: int) -> AuditReport:
-    return AuditReport(
-        server_command="test",
-        tool_reports=[],
-        provider_usage=ProviderUsage(throttled_requests=times),
-    )
-
-
-def a_report_billed(input_tokens: int, output_tokens: int) -> AuditReport:
-    usage = ProviderUsage(input_tokens=input_tokens, output_tokens=output_tokens)
-    return AuditReport(server_command="test", tool_reports=[], provider_usage=usage)
-
-
-def a_report_by_phase(total: int, chain: int, judge: int) -> AuditReport:
-    return AuditReport(
-        server_command="test",
-        tool_reports=[],
-        provider_usage=ProviderUsage(input_tokens=total),
-        chain_usage=ProviderUsage(input_tokens=chain),
-        judge_usage=ProviderUsage(input_tokens=judge),
-    )

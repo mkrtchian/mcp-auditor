@@ -10,7 +10,7 @@ from evals.cve.detection.session_model import AuditTarget, DetectionHarness, Det
 from evals.cve.detection.survey import TargetSurvey
 from evals.cve.detection.targets import Target
 from evals.eval_session import TreeState
-from evals.metrics import SessionThrottles
+from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
 

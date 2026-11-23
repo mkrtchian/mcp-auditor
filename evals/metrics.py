@@ -1,11 +1,9 @@
-import logging
-from dataclasses import dataclass, field
+from collections import Counter
 
 from pydantic import BaseModel
 
 from evals.ground_truth import GroundTruth
-from mcp_auditor.domain.model_calls import MissedCallCause
-from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict, ProviderUsage
+from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict
 from mcp_auditor.domain.rendering import MISSED_CALL_CAUSE_LABELS
 
 type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
@@ -57,21 +55,9 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
     """
     verdicts: VerdictMap = {}
     for tool_report in report.tool_reports:
-        for case in tool_report.cases:
-            if case.judge_result is None:
-                continue
-            result = case.judge_result
+        for result in tool_report.judge_results:
             key = (result.tool_name, result.category)
-            current = verdicts.get(key)
-            if current is None or result.verdict == EvalVerdict.FAIL:
-                verdicts[key] = result.verdict
-        for chain in tool_report.chains:
-            if chain.judge_result is None:
-                continue
-            result = chain.judge_result
-            key = (result.tool_name, result.category)
-            current = verdicts.get(key)
-            if current is None or result.verdict == EvalVerdict.FAIL:
+            if verdicts.get(key) is None or result.verdict == EvalVerdict.FAIL:
                 verdicts[key] = result.verdict
     return verdicts
 
@@ -131,79 +117,16 @@ def compute_consistency(
     return avg, details
 
 
-class ThrottledAudit(Exception):
-    """An audit throttled by the model provider past every retry, which says nothing about
-    detection: the evals read it as infrastructure noise, not as a result."""
-
-
-def raise_if_throttled(report: AuditReport) -> None:
-    throttled = [
-        f"{missed.tool_name}: {missed.kind}, {missed.detail}"
-        for missed in report.missed_model_calls
-        if missed.cause is MissedCallCause.PROVIDER_THROTTLED
-    ]
-    if throttled:
-        raise ThrottledAudit(
-            "throttled by the model provider past every retry: " + "; ".join(throttled)
-        )
-
-
-def quiet_throttle_waits() -> None:
-    """Many audits in flight would print a line per wait, and each eval prints the throttle
-    total already."""
-    logging.getLogger("mcp_auditor.throttling").setLevel(logging.ERROR)
-
-
-class UsageBreakdown(BaseModel):
-    """An audit's usage by phase. The channels overlap (the chain judgment counts in chain and
-    judge), so the total is never their sum."""
-
-    total: ProviderUsage = ProviderUsage()
-    chain: ProviderUsage = ProviderUsage()
-    judge: ProviderUsage = ProviderUsage()
-
-    @classmethod
-    def from_report(cls, report: AuditReport) -> "UsageBreakdown":
-        return cls(total=report.provider_usage, chain=report.chain_usage, judge=report.judge_usage)
-
-    def add(self, other: "UsageBreakdown") -> "UsageBreakdown":
-        return UsageBreakdown(
-            total=self.total.add(other.total),
-            chain=self.chain.add(other.chain),
-            judge=self.judge.add(other.judge),
-        )
-
-
-@dataclass
-class SessionThrottles:
-    requests: int = 0
-    usage: ProviderUsage = field(default_factory=ProviderUsage)
-    by_target: dict[str, UsageBreakdown] = field(default_factory=dict[str, UsageBreakdown])
-
-    def count(self, report: AuditReport, target_id: str | None = None) -> int:
-        """Every report counted is billed, an incomplete attempt's and a retest's included."""
-        if target_id is not None:
-            billed = self.by_target.get(target_id, UsageBreakdown())
-            self.by_target[target_id] = billed.add(UsageBreakdown.from_report(report))
-        return self.count_usage(report.provider_usage)
-
-    def count_usage(self, usage: ProviderUsage) -> int:
-        self.requests += usage.throttled_requests
-        self.usage = self.usage.add(usage)
-        return usage.throttled_requests
-
-
 def build_run_detail(
     run_index: int,
     verdicts: VerdictMap,
     audit_report: AuditReport,
     ground_truth: GroundTruth,
 ) -> RunDetail:
-    distribution = compute_distribution_coverage(audit_report, list(AuditCategory))
     return RunDetail(
         run_index=run_index,
         verdicts=_verdict_detail(verdicts, audit_report),
-        distribution=_distribution_detail(distribution),
+        distribution=tool_distributions(audit_report),
         recall=compute_recall(verdicts, ground_truth),
         precision=compute_precision(verdicts, ground_truth),
         blocked_reasons=blocked_reasons(audit_report),
@@ -215,15 +138,17 @@ def build_run_detail(
     )
 
 
-def compute_distribution_coverage(
-    report: AuditReport,
-    categories: list[AuditCategory],
-) -> dict[str, float]:
-    coverage: dict[str, float] = {}
+def tool_distributions(report: AuditReport) -> dict[str, ToolDistribution]:
+    total = len(AuditCategory)
+    distributions: dict[str, ToolDistribution] = {}
     for tool_report in report.tool_reports:
-        covered = {case.judge_result.category for case in tool_report.cases if case.judge_result}
-        coverage[tool_report.tool.name] = len(covered) / len(categories)
-    return coverage
+        covered = len(
+            {case.judge_result.category for case in tool_report.cases if case.judge_result}
+        )
+        distributions[tool_report.tool.name] = ToolDistribution(
+            covered=covered, total=total, coverage=covered / total
+        )
+    return distributions
 
 
 def blocked_reasons(report: AuditReport) -> list[str]:
@@ -249,36 +174,18 @@ def _verdict_detail(
     verdicts: VerdictMap,
     audit_report: AuditReport,
 ) -> dict[str, dict[str, ToolVerdictDetail]]:
-    case_counts: dict[tuple[str, AuditCategory], int] = {}
-    for tool_report in audit_report.tool_reports:
-        judged = [case.judge_result for case in tool_report.cases] + [
-            chain.judge_result for chain in tool_report.chains
-        ]
-        for result in judged:
-            if result is None:
-                continue
-            key = (result.tool_name, result.category)
-            case_counts[key] = case_counts.get(key, 0) + 1
-
+    case_counts = Counter(
+        (result.tool_name, result.category)
+        for tool_report in audit_report.tool_reports
+        for result in tool_report.judge_results
+    )
     detail: dict[str, dict[str, ToolVerdictDetail]] = {}
     for (tool_name, category), verdict in verdicts.items():
         detail.setdefault(tool_name, {})[category.value] = ToolVerdictDetail(
             verdict=verdict.value if verdict is not None else "uncovered",
-            case_count=case_counts.get((tool_name, category), 0),
+            case_count=case_counts[(tool_name, category)],
         )
     return detail
-
-
-def _distribution_detail(distribution: dict[str, float]) -> dict[str, ToolDistribution]:
-    total = len(AuditCategory)
-    return {
-        tool_name: ToolDistribution(
-            covered=round(coverage * total),
-            total=total,
-            coverage=coverage,
-        )
-        for tool_name, coverage in distribution.items()
-    }
 
 
 def average_distribution_coverage(run_details: list[RunDetail]) -> float:

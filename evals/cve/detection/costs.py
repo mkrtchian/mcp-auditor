@@ -12,9 +12,9 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.metrics import UsageBreakdown
 from evals.probe.analysis import call_cost
 from evals.probe.candidates import Prices
+from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 
 # Above this many input tokens in one request, a tiered vendor (Anthropic) bills the whole
