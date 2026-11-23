@@ -110,7 +110,7 @@ def render_conditions(report: DetectionReport) -> str:
     usage = report.provider_usage
     return (
         f"Conditions: {conditions.provider}, model {model}, judge {judge}, "
-        f"{conditions.runs} runs, budget {conditions.budget}, {tools}, "
+        f"{conditions.runs} runs, test budget {conditions.budget}, {tools}, "
         f"grammar {conditions.grammar_fingerprint[:12]}, {report.concurrency} audits at once, "
         f"{usage.input_tokens} input tokens, {usage.output_tokens} output tokens."
     )

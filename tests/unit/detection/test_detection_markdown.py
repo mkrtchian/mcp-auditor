@@ -18,7 +18,7 @@ def test_render_opens_with_the_run_conditions():
     assert "gpt-6-luna (reasoning none)" in conditions
     assert "gpt-6-judge (reasoning default)" in conditions
     assert "3 runs" in conditions
-    assert "budget 10" in conditions
+    assert "test budget 10" in conditions
     assert detection_reports.FINGERPRINT[:12] in conditions
     assert detection_reports.FINGERPRINT[:13] not in conditions
 

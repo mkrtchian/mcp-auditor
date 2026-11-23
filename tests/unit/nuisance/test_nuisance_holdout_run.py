@@ -8,7 +8,7 @@ import pytest
 import tests.unit.nuisance.support.test_nuisance_holdout_run_then as then
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
-from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.nuisance.admission.admission import BackendFixture
 from evals.cve.nuisance.audit import DroppedRun
 from evals.cve.nuisance.counter import counter_fingerprint
@@ -37,7 +37,7 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
     result = await holdout_runs.run([first, second], holdout_runs.deps_auditing(audit), exits=exits)
 
     assert [server.server_package for server in result.servers] == ["npm:first", "npm:second"]
-    assert result.budget == HOLDOUT_BUDGET
+    assert result.budget == HOLDOUT_TEST_BUDGET
     assert result.commit == "c0ffee"
     assert result.recorded_at == holdout_runs.RECORDED_AT
     assert result.counter_fingerprint == counter_fingerprint()

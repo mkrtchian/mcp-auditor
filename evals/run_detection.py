@@ -254,10 +254,10 @@ def _cost_pricing(
     return pricing
 
 
-def _result(target: Target, session: DetectionSessionResult, budget: int) -> TargetResult:
+def _result(target: Target, session: DetectionSessionResult, test_budget: int) -> TargetResult:
     grades = session.grades[target.flaw_id]
     reasons = session.not_run.get(target.flaw_id, [])
-    return result_for(target, grades, budget) if grades else not_run(target, reasons)
+    return result_for(target, grades, test_budget) if grades else not_run(target, reasons)
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
 from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions, NuisanceServerBaseline
@@ -43,7 +43,7 @@ def an_unconfirmed_baseline(
 def conditions(runs: int = 3) -> NuisanceGateConditions:
     return NuisanceGateConditions(
         runs=runs,
-        budget=HOLDOUT_BUDGET,
+        budget=HOLDOUT_TEST_BUDGET,
         tools_filtered=False,
         provider="openai",
         model="gpt-6-luna",

@@ -150,7 +150,7 @@ def an_auditor(
     return Auditor(
         FakeLLM([]),
         FakeLLM([]),
-        budget=BUDGET,
+        test_budget=BUDGET,
         report_detail=report_detail,
         connect=connect or FakeConnect(),
         build_graph=graphs or graph_reporting([grammar.a_report()]),

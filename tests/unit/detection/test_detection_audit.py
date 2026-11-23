@@ -43,7 +43,7 @@ def test_a_misconfigured_model_fails_before_any_target_is_launched(
     monkeypatch.setenv("MCP_AUDITOR_PROVIDER", "no-such-provider")
 
     with pytest.raises(ValueError):
-        audit_target(budget=10, throttles=SessionThrottles(), places={})
+        audit_target(test_budget=10, throttles=SessionThrottles(), places={})
 
 
 async def test_a_throttled_audit_is_reported_with_its_count(

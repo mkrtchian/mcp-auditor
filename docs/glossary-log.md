@@ -85,6 +85,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | holdout server (the server of a holdout target) | detection holdout server. "Holdout server" is now always qualified by its suite. | moved meaning | 2026-11-11 |
 | holdout twin, drawn twin (nuisance rule, nuisance log, plans) | no successor: the holdout target of a nuisance server ("its holdout twin's calibration"), or that server itself, a detection holdout server ("the first admissions of holdout twins") | retired | 2026-11-11 |
 | holdout walk, holdout's draw order | detection walk, draw order | rename | 2026-11-11 |
+| `HOLDOUT_BUDGET` | `HOLDOUT_TEST_BUDGET` | rename | 2026-11-23 |
 | `holdout_vetting`, vet, pre-run vetting (holdout plans, `holdout_vetting` docstring) | pre-run check. "Vet" now names only the nuisance check of benign calls. | moved meaning | 2026-11-11 |
 | host (an OpenRouter provider, as in "host-level block" and "pins its hosts", plans/2026-10-15_openrouter-provider.md) | OpenRouter provider | rename | 2026-11-22 |
 | judge isolation eval | judge eval | rename | 2026-11-11 |

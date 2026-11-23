@@ -45,7 +45,8 @@ from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged
-HOLDOUT_BUDGET = 10  # detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
+# detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
+HOLDOUT_TEST_BUDGET = 10
 HOLDOUT_CONCURRENCY = 6
 
 type Audit = Callable[[Target], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
@@ -227,7 +228,7 @@ def _assemble_run(
     results = [result for _, result in assembled]
     return DetectionHoldoutRunResult(
         runs=inputs.runs,
-        budget=HOLDOUT_BUDGET,
+        budget=HOLDOUT_TEST_BUDGET,
         **ModelConditions.of(inputs.settings).model_dump(),
         cutoffs={model_id: inputs.conditions.cutoffs[model_id] for model_id in inputs.model_ids},
         chain_budget=inputs.conditions.chain_budget,

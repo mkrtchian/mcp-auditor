@@ -88,7 +88,7 @@ class DetectionReport(BaseModel):
     prices_as_of: date | None = None
 
 
-def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> TargetResult:
+def result_for(target: TargetInfo, grades: Sequence[RunGrade], test_budget: int) -> TargetResult:
     resolution = resolve(grades)
     return TargetResult(
         flaw_id=target.flaw_id,
@@ -103,7 +103,7 @@ def result_for(target: TargetInfo, grades: Sequence[RunGrade], budget: int) -> T
         surfaced_runs=resolution.surfaced_runs,
         aimed_runs=resolution.aimed_runs,
         fail_without_proof_runs=resolution.fail_without_proof_runs,
-        budget=budget,
+        budget=test_budget,
         evidence=resolution.evidence,
         category=resolution.category,
         surfaced_places=resolution.surfaced_places,

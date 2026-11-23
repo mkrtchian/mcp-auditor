@@ -20,7 +20,7 @@ from evals.cve.detection.calibration_check_exit import (
 )
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
 from evals.cve.detection.holdout_run import (
-    HOLDOUT_BUDGET,
+    HOLDOUT_TEST_BUDGET,
     HoldoutDeps,
     RunHoldoutTargets,
     run_holdout_targets,
@@ -47,7 +47,7 @@ class HoldoutDepsFactory(Protocol):
 
 
 def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:
-    auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
+    auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
     throttles = SessionThrottles()
 
     async def audit(target: Target) -> GradedAudit | IncompleteRun | DroppedRun:

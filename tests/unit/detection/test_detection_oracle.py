@@ -41,7 +41,7 @@ def test_result_for_a_detected_resolution():
         detection_reports.a_missed_grade(MissKind.NOT_AIMED),
     ]
 
-    result = result_for(detection_reports.FakeTarget(), grades, budget=10)
+    result = result_for(detection_reports.FakeTarget(), grades, test_budget=10)
 
     assert result.status == TargetStatus.DETECTED
     assert result.miss_kind is None
@@ -84,7 +84,7 @@ def test_result_for_a_missed_resolution():
         detection_reports.a_missed_grade(MissKind.NOT_AIMED),
     ]
 
-    result = result_for(detection_reports.FakeTarget(), grades, budget=10)
+    result = result_for(detection_reports.FakeTarget(), grades, test_budget=10)
 
     assert result.status == TargetStatus.MISSED
     assert result.miss_kind == MissKind.AIMED_BLOCKED

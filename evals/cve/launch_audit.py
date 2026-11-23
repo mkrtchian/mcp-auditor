@@ -56,17 +56,17 @@ class ServerTakenAsDown(Exception):
 class Auditor:
     llm: LLMPort
     judge_llm: LLMPort
-    budget: int
+    test_budget: int
     report_detail: ReportDetail = FULL_DETAIL
     connect: Connect = connect
     build_graph: Callable[..., Any] = build_graph
 
 
-def build_auditor(budget: int) -> Auditor:
+def build_auditor(test_budget: int) -> Auditor:
     # Built before any container: a bad model configuration is a crash, never a run skipped,
     # which would read as a gate that cannot compare.
     settings = load_settings()
-    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
+    return Auditor(create_llm(settings), create_judge_llm(settings), test_budget)
 
 
 @dataclass(frozen=True)
@@ -157,7 +157,7 @@ def named(launch: Launch) -> Launch:
 def _graph_input(launch: Launch, auditor: Auditor, shape: AuditShape) -> dict[str, object]:
     return {
         "server_command": f"{launch.command} {' '.join(launch.args)}",
-        "test_budget": auditor.budget,
+        "test_budget": auditor.test_budget,
         "attack_context": AttackContext(),
         "chain_budget": _either(shape.chain_budget, launch.chain_budget),
         "max_chain_steps": _either(shape.max_chain_steps, launch.max_chain_steps),

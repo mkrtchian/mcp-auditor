@@ -26,7 +26,7 @@ from evals.session_usage import SessionThrottles
 class AuditTargetFactory(Protocol):
     def __call__(
         self,
-        budget: int,
+        test_budget: int,
         throttles: SessionThrottles,
         places: Places,
         overrides: RunOverrides = NO_OVERRIDES,

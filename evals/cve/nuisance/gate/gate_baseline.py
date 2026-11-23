@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.gate import RetestRule
@@ -59,7 +59,7 @@ def gate_conditions(
     model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     return NuisanceGateConditions(
         runs=runs,
-        budget=HOLDOUT_BUDGET,
+        budget=HOLDOUT_TEST_BUDGET,
         tools_filtered=False,
         provider=settings.provider,
         model=model,

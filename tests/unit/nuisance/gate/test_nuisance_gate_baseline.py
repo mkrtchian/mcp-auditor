@@ -5,7 +5,7 @@ import pytest
 
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
-from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate.gate_baseline import (
     baseline_file_name,
@@ -104,7 +104,7 @@ def test_the_gate_conditions_read_the_settings_the_chain_settings_and_the_holdou
     assert conditions.chain_budget == holdout.chain_budget
     assert conditions.max_chain_steps == holdout.max_chain_steps
     assert conditions.tool_call_timeout == holdout.tool_call_timeout
-    assert conditions.budget == HOLDOUT_BUDGET
+    assert conditions.budget == HOLDOUT_TEST_BUDGET
     assert conditions.runs == 2
     assert not conditions.tools_filtered
     assert conditions.counter_fingerprint == counter_fingerprint()

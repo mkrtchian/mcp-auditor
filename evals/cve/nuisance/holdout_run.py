@@ -20,7 +20,7 @@ from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
+from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
@@ -74,8 +74,8 @@ NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance holdout run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
-# The budget is the detection holdout run's HOLDOUT_BUDGET: the rule reads the holdout nuisance rate
-# beside the holdout detection rate, whose budget is a constant, not a flag
+# The budget is the detection holdout run's HOLDOUT_TEST_BUDGET: the rule reads the holdout nuisance
+# rate beside the holdout detection rate, whose budget is a constant, not a flag
 # (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)), so no
 # budget of its own here.
 
@@ -212,7 +212,7 @@ def nuisance_overrides(conditions: HoldoutConditions) -> RunOverrides:
 
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     throttles = SessionThrottles()
-    run_auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
+    run_auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
     auditor = NuisanceAuditor(run_auditor, overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
@@ -294,7 +294,7 @@ def _assemble_run(
     results = [result for _, result in assembled]
     return NuisanceHoldoutRunResult(
         runs=ctx.runs,
-        budget=HOLDOUT_BUDGET,
+        budget=HOLDOUT_TEST_BUDGET,
         provider=settings.provider,
         model=model,
         judge_model=judge_model,

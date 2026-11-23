@@ -53,13 +53,13 @@ class LaunchError(Exception):
 
 
 def audit_target(
-    budget: int,
+    test_budget: int,
     throttles: SessionThrottles,
     places: Places,
     overrides: RunOverrides = NO_OVERRIDES,
 ) -> AuditTarget:
     # The composition root bounds the returned audit to the chosen concurrency.
-    auditor = build_auditor(budget)
+    auditor = build_auditor(test_budget)
 
     async def audit(target: Target) -> GradedAudit | None:
         return await graded_despite_missed_model_calls(
