@@ -13,7 +13,7 @@ from evals.cve.detection.costs import CostPricing
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.launch_audit import RunOverrides
 from evals.eval_session import Refused
-from evals.pricing import Prices
+from evals.pricing import AuditPrices, Prices
 
 MEASUREMENT_NEEDS_NO_BASELINE = "a measurement run reads no baseline: run it with --no-baseline"
 MEASUREMENT_WITHOUT_AUDIT = (
@@ -89,7 +89,7 @@ def cost_pricing(
         return missing
     generator, judge = models
     prices = conditions.prices
-    return CostPricing(prices[generator], prices[judge], conditions.prices_as_of)
+    return CostPricing(AuditPrices(prices[generator], prices[judge]), conditions.prices_as_of)
 
 
 def missing_price(prices: Mapping[str, Prices], models: Sequence[str]) -> str | None:

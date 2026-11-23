@@ -9,24 +9,22 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.holdout_conditions import HoldoutConditions
-from evals.pricing import Prices, call_cost
+from evals.pricing import AuditPrices
 from mcp_auditor.config import Settings
-from mcp_auditor.domain.models import AuditReport
 
 
-def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> tuple[Prices, Prices]:
+def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> AuditPrices:
     prices = conditions.prices
-    return prices[settings.resolve_model()], prices[settings.resolve_judge_model()]
+    return AuditPrices(prices[settings.resolve_model()], prices[settings.resolve_judge_model()])
 
 
 def assemble_target(
     target: Target,
     outcomes: Sequence[GradedAudit | IncompleteRun],
     disclosure_date: date,
-    prices: tuple[Prices, Prices],
+    prices: AuditPrices,
 ) -> HoldoutTargetResult:
     reports = [outcome.report for outcome in outcomes]
-    gen_price, judge_price = prices
     return HoldoutTargetResult(
         flaw_id=target.flaw_id,
         disclosure_date=disclosure_date,
@@ -34,7 +32,7 @@ def assemble_target(
         tools_count=len(reports[0].tool_reports),
         ran_in_fallback=target.launch_mode is LaunchMode.FALLBACK,
         statuses=tuple(_run_status(outcome) for outcome in outcomes),
-        run_cost=sum(_run_cost(report, gen_price, judge_price) for report in reports),
+        run_cost=sum(prices.cost(report.generator_usage, report.judge_usage) for report in reports),
     )
 
 
@@ -87,7 +85,3 @@ def _incomplete_status(run: IncompleteRun) -> DetectionHoldoutRunStatus:
 
 def _detected_if_unchecked_missed(grade: RunGrade) -> bool:
     return (grade.status_if_unchecked_missed or grade.status) in DETECTION_RUNGS
-
-
-def _run_cost(report: AuditReport, gen_price: Prices, judge_price: Prices) -> float:
-    return call_cost(report.generator_usage, gen_price) + call_cost(report.judge_usage, judge_price)

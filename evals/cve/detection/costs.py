@@ -12,7 +12,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.pricing import Prices, call_cost
+from evals.pricing import AuditPrices, Prices, call_cost
 from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 
@@ -39,31 +39,24 @@ def large_request_targets(costs: Sequence[TargetCost]) -> list[str]:
 
 @dataclass(frozen=True)
 class CostPricing:
-    generator: Prices
-    judge: Prices
+    prices: AuditPrices
     as_of: date
 
     def costs(self, by_target: Mapping[str, UsageBreakdown]) -> list[TargetCost]:
-        return target_costs(by_target, self.generator, self.judge)
-
-
-def target_costs(
-    by_target: Mapping[str, UsageBreakdown], generator_prices: Prices, judge_prices: Prices
-) -> list[TargetCost]:
-    shared = generator_prices if generator_prices == judge_prices else None
-    return [
-        TargetCost(
-            flaw_id=flaw_id,
-            usage=usage,
-            single_step=_priced(usage.total.sub(usage.chain), shared),
-            chains=_priced(usage.chain, shared),
-            judge=call_cost(usage.judge, judge_prices),
-            total=call_cost(usage.total.sub(usage.judge), generator_prices)
-            + call_cost(usage.judge, judge_prices),
-            largest_input_tokens=usage.total.largest_input_tokens,
-        )
-        for flaw_id, usage in sorted(by_target.items())
-    ]
+        prices = self.prices
+        shared = prices.generator if prices.generator == prices.judge else None
+        return [
+            TargetCost(
+                flaw_id=flaw_id,
+                usage=usage,
+                single_step=_priced(usage.total.sub(usage.chain), shared),
+                chains=_priced(usage.chain, shared),
+                judge=call_cost(usage.judge, prices.judge),
+                total=prices.cost(usage.total.sub(usage.judge), usage.judge),
+                largest_input_tokens=usage.total.largest_input_tokens,
+            )
+            for flaw_id, usage in sorted(by_target.items())
+        ]
 
 
 def _priced(usage: ProviderUsage, prices: Prices | None) -> float | None:

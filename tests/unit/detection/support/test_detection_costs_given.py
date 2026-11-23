@@ -1,4 +1,7 @@
-from evals.pricing import Prices
+from datetime import date
+
+from evals.cve.detection.costs import CostPricing
+from evals.pricing import AuditPrices, Prices
 from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 
@@ -13,3 +16,7 @@ def a_phase_usage(total: int, chain: int, judge: int, largest_request: int = 0) 
         chain=ProviderUsage(input_tokens=chain),
         judge=ProviderUsage(input_tokens=judge),
     )
+
+
+def a_pricing(generator: Prices, judge: Prices) -> CostPricing:
+    return CostPricing(AuditPrices(generator, judge), date(2026, 1, 1))

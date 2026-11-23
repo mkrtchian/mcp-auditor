@@ -14,6 +14,15 @@ class Prices:
     output: float
 
 
+@dataclass(frozen=True)
+class AuditPrices:
+    generator: Prices
+    judge: Prices
+
+    def cost(self, generator_usage: ProviderUsage, judge_usage: ProviderUsage) -> float:
+        return call_cost(generator_usage, self.generator) + call_cost(judge_usage, self.judge)
+
+
 def call_cost(usage: ProviderUsage, prices: Prices) -> float:
     uncached_input = usage.input_tokens - usage.cached_input_tokens
     dollars_per_million = (
