@@ -25,7 +25,7 @@ from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.kit import launch as kit_launch
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.provisioners import provisioner_of
+from evals.cve.nuisance.provisioners import provisioned_launch
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 
 type Launch = environments.Launch | kit_launch.Launch
@@ -146,7 +146,7 @@ def _noop_remove(name: str) -> None:
 def through_the_provisioner(
     lifecycle: BackendLifecycle | PerLaunchBackend,
 ) -> AbstractContextManager[Launch]:
-    return provisioner_of(lifecycle)(admissions.an_admitted_server())
+    return provisioned_launch(lifecycle, admissions.an_admitted_server())
 
 
 def through_the_kit(

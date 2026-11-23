@@ -11,7 +11,7 @@ from evals.cve.backends.responder import Responder
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.images import image_tag
-from evals.cve.nuisance.provisioners import provisioner_of
+from evals.cve.nuisance.provisioners import provisioned_launch
 from evals.cve.planting_base import (
     LABEL,
     confinement_args,
@@ -37,7 +37,7 @@ def test_the_kit_backend_launch_is_the_provisioner_launch(key: str):
     quiet = given.a_lifecycle_without_side_effects(key)
     server = mutations.with_the_registered_backend(admissions.an_admitted_server(), key)
 
-    with provisioner_of(quiet)(server) as run_launch:
+    with provisioned_launch(quiet, server) as run_launch:
         run_args = run_launch.args
     with backend_launch(quiet, image_tag(server.service), server.host, server.launch) as kit:
         kit_command, kit_args = kit.command, kit.args
@@ -186,7 +186,7 @@ def test_two_concurrent_launches_of_one_server_stand_two_backends(launch_through
 def test_the_kit_launch_of_a_per_launch_backend_is_the_provisioner_launch():
     server = admissions.an_admitted_server()
 
-    with provisioner_of(given.RecordingPerLaunchBackend().backend)(server) as run_launch:
+    with provisioned_launch(given.RecordingPerLaunchBackend().backend, server) as run_launch:
         run_args = run_launch.args
     kit_backend = given.RecordingPerLaunchBackend().backend
     with backend_launch(kit_backend, image_tag(server.service), server.host, server.launch) as kit:

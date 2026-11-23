@@ -1,10 +1,11 @@
 """The registry of the backends a nuisance fixture can provision, each a named lifecycle.
 
-A server records a `BackendFixture` naming one of these keys; the provisioner built from the key's
-lifecycle (`provisioners.provisioner_of`) brings the backend up and query-ready (a shared backend
-once for every launch, a per-launch backend for each launch) and yields the server `Launch` wired
-to it, as `holdout_environments.doris_db_env` does for the holdout target of CVE-2025-66335.
-`backend_problems` is the load check that a recorded fixture matches the backend its key defines.
+A server records a `BackendFixture` naming one of these keys; the provisioner run from the key's
+lifecycle (`provisioners.provisioned_launch`) brings the backend up and query-ready (a shared
+backend once for every launch, a per-launch backend for each launch) and yields the server
+`Launch` wired to it, as `holdout_environments.doris_db_env` does for the holdout target of
+CVE-2025-66335. `backend_problems` is the load check that a recorded fixture matches the backend
+its key defines.
 """
 
 from __future__ import annotations
@@ -78,13 +79,6 @@ def _served(backend_module: str, *built_services: str) -> tuple[Path, ...]:
     return (Path(backend_module), Path(closed_network.__file__), *dockerfiles)
 
 
-def _responder(
-    lifecycle: BackendLifecycle, backend_module: str, network: str, image: str, service: str
-) -> RegisteredBackend:
-    served = (*_served(backend_module, service), Path(responder.__file__))
-    return RegisteredBackend(lifecycle, network, (image,), (service,), served)
-
-
 _CKAN_SERVICES = tuple(part.service for part in CKAN_PARTS)
 _HTTPBIN_SERVICES = tuple(part.service for part in HTTPBIN_PARTS)
 
@@ -139,12 +133,12 @@ BACKENDS: dict[str, RegisteredBackend] = {
         (JENKINS_SERVICE,),
         _served(jenkins.__file__, JENKINS_SERVICE),
     ),
-    "atlassian": _responder(
+    "atlassian": RegisteredBackend(
         atlassian.LIFECYCLE,
-        atlassian.__file__,
         ATLASSIAN_BRIDGE,
-        ATLASSIAN_RESPONDER_IMAGE,
-        "atlassian-responder",
+        (ATLASSIAN_RESPONDER_IMAGE,),
+        ("atlassian-responder",),
+        (*_served(atlassian.__file__, "atlassian-responder"), Path(responder.__file__)),
     ),
     "gitlab": RegisteredBackend(
         gitlab.LIFECYCLE,
@@ -153,12 +147,12 @@ BACKENDS: dict[str, RegisteredBackend] = {
         (GITLAB_SERVICE,),
         (*_served(gitlab.__file__, GITLAB_SERVICE), Path(gitlab_seed.__file__)),
     ),
-    "googleapis": _responder(
+    "googleapis": RegisteredBackend(
         googleapis.LIFECYCLE,
-        googleapis.__file__,
         GOOGLEAPIS_BRIDGE,
-        GOOGLEAPIS_RESPONDER_IMAGE,
-        "googleapis-responder",
+        (GOOGLEAPIS_RESPONDER_IMAGE,),
+        ("googleapis-responder",),
+        (*_served(googleapis.__file__, "googleapis-responder"), Path(responder.__file__)),
     ),
     "facebook_ads": RegisteredBackend(
         facebook_ads.LIFECYCLE,

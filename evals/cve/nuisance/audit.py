@@ -23,7 +23,7 @@ from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import single_container_launch_args
 from evals.cve.nuisance.images import image_tag
-from evals.cve.nuisance.provisioners import provisioner_of
+from evals.cve.nuisance.provisioners import provisioned_launch
 from evals.cve.nuisance.results import NotRunCause
 from evals.cve.provider_errors import (
     AuditFailed,
@@ -115,7 +115,7 @@ def nuisance_environment(
         ) as args:
             yield Launch(command="docker", args=args)
     else:
-        with provisioner_of(backends[server.backend.provisioner].lifecycle)(server) as launch:
+        with provisioned_launch(backends[server.backend.provisioner].lifecycle, server) as launch:
             yield launch
 
 
