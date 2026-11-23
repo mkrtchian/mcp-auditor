@@ -47,6 +47,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | dead (a patched version where no exploit works) | fixed | rename | 2026-11-11 |
 | dfie (plans) | declared function is the effect | rename | 2026-11-11 |
 | Distribution (ADR 003, ADR 005, the honeypot report's label) | distribution coverage | rename | 2026-11-11 |
+| `_duplicate_benign_calls` | `_conflicting_benign_calls` | rename | 2026-11-23 |
 | e2e eval, E2E evals, end-to-end eval, honeypot e2e suite (ADR 003, ADR 006, ADR 007, ADR 015, ADR 034, CONTRIBUTING) | honeypot suite | rename | 2026-11-11 |
 | `e2e-eval` (the honeypot CI job) | `honeypot-suite` | rename | 2026-11-11 |
 | `entry_id` (of a place) | place id (`place_id`) | rename | 2026-11-11 |

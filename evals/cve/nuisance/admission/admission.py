@@ -2,13 +2,11 @@
 its own (`evals/nuisance_admission.json`), distinct from the census.
 
 The schema is filled by the two blind admission agents and the maintainer who settles their
-disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. Every list
-is empty until the admission session. `exits` records each server the walk lists and the admission
-leaves out, with its reason. `admission_problems` holds the load validation, raised joined by
-`load_admission`, so a crafted admission can be checked without a file. The file is absent until
-the session, and `load_admission` says so. The fields defaulting to `None` are those nuisance suite
-rule v3 or v4 added and not yet recorded, which `evals/cve/nuisance/admission/unrecorded.py`
-refuses at run.
+disagreements, on the model of the draw record of `evals/cve/detection/draw_record.py`. `exits`
+records each server the nuisance walk lists and the admission leaves out, with its reason.
+`admission_load.py` holds the load validation. A field defaulting to `None` is one nuisance suite
+rule v3 or v4 added and not yet recorded, which `unrecorded.py` refuses at run, except `backend`,
+which is `None` on a server with no backend.
 """
 
 from typing import Any, Literal

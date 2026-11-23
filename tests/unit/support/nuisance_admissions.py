@@ -20,7 +20,7 @@ from evals.cve.nuisance.admission.admission import (
     NuisanceAdmission,
     ToolRecord,
 )
-from evals.cve.nuisance.admission.admission_load import admission_problems
+from evals.cve.nuisance.admission.admission_load import AdmissionReferences, admission_problems
 from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.backend_registry import RegisteredBackend
@@ -37,12 +37,12 @@ PATCHED_VERSION = "1.2.0"
 
 
 def problems_of(admission: NuisanceAdmission, census: WalkInputs | None = None) -> list[str]:
-    return admission_problems(
-        admission,
+    references = AdmissionReferences(
         census if census is not None else walk_inputs_of(),
         detection_baseline.grammar_fingerprint(),
         a_backend_registry(),
     )
+    return admission_problems(admission, references)
 
 
 def walk_inputs_of() -> WalkInputs:

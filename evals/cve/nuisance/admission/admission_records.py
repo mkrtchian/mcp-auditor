@@ -1,7 +1,7 @@
 """The admission records nuisance suite rule v3 and v4 add: whether a tool's real software
 answers, what the fixture seeds, the real software's releases, a tool's declared function and the
 fingerprint of a holdout calibration copy, and their load checks, which
-`nuisance_admission.admission_problems` runs per server.
+`admission_load.admission_problems` runs per server.
 
 A field left `None` is not yet recorded and is never a load problem here: the run refuses it
 (`unrecorded`). Only the benign calls of the counted flaws are read, so a differing
@@ -45,7 +45,7 @@ def record_problems(server: AdmittedServer) -> list[str]:
         *_fix_check_fingerprints(server),
         *_real_software_conflicts(server),
         *_expectation_problems(server),
-        *_duplicate_benign_calls(server),
+        *_conflicting_benign_calls(server),
         *_seed_problems(server),
         *_stand_in_problems(server),
         *_software_release_problems(server),
@@ -128,7 +128,7 @@ def _quotes_its_arguments(call: BenignCall) -> bool:
     return any(expect in json.dumps(each.arguments, ensure_ascii=False) for each in calls)
 
 
-def _duplicate_benign_calls(server: AdmittedServer) -> list[str]:
+def _conflicting_benign_calls(server: AdmittedServer) -> list[str]:
     calls: dict[str, list[BenignCall]] = defaultdict(list)
     for flaw in counted_flaws(server):
         for call in flaw.benign_calls:

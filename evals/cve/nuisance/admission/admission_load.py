@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 
 from evals.cve.detection import baseline as detection_baseline
@@ -8,6 +9,7 @@ from evals.cve.nuisance.admission import walk as nuisance_walk
 from evals.cve.nuisance.admission.admission import (
     AdmittedServer,
     FieldAgreement,
+    FlawRecord,
     NuisanceAdmission,
     ToolRecord,
 )
@@ -23,24 +25,27 @@ def load_admission(path: Path, walk_inputs: WalkInputs) -> NuisanceAdmission:
             f"no admission at {path}: the admission session has not been committed"
         )
     admission = NuisanceAdmission.model_validate_json(path.read_text())
-    problems = admission_problems(
-        admission,
-        walk_inputs,
-        detection_baseline.grammar_fingerprint(),
-        backend_registry.BACKENDS,
+    references = AdmissionReferences(
+        walk_inputs, detection_baseline.grammar_fingerprint(), backend_registry.BACKENDS
     )
+    problems = admission_problems(admission, references)
     if problems:
         raise ValueError(f"invalid nuisance admission {path}: {'; '.join(problems)}")
     return admission
 
 
-def admission_problems(
-    admission: NuisanceAdmission,
-    walk_inputs: WalkInputs,
-    grammar_fingerprint: str,
-    backends: Mapping[str, backend_registry.RegisteredBackend],
-) -> list[str]:
-    problems = _fingerprint_problems(admission, grammar_fingerprint)
+@dataclass(frozen=True)
+class AdmissionReferences:
+    """What the admission's names and fingerprint are checked against."""
+
+    walk_inputs: WalkInputs
+    grammar_fingerprint: str
+    backends: Mapping[str, backend_registry.RegisteredBackend]
+
+
+def admission_problems(admission: NuisanceAdmission, references: AdmissionReferences) -> list[str]:
+    walk_inputs = references.walk_inputs
+    problems = _fingerprint_problems(admission, references.grammar_fingerprint)
     problems += nuisance_images.namespace_problems(admission)
     for server in admission.servers:
         problems += _unsettled_disagreements(server)
@@ -50,7 +55,7 @@ def admission_problems(
         problems += _benign_call_problems(server)
         problems += _patched_version_problems(server)
         problems += _network_problems(server)
-        problems += backend_registry.backend_problems(server, backends)
+        problems += backend_registry.backend_problems(server, references.backends)
         problems += record_problems(server)
     return problems + walk_problems(admission, walk_inputs) + exit_problems(admission, walk_inputs)
 
@@ -162,17 +167,29 @@ def _benign_call_problems(server: AdmittedServer) -> list[str]:
 
 def _patched_version_problems(server: AdmittedServer) -> list[str]:
     counted = counted_flaws(server)
+    return [
+        *_version_of_no_counted_flaw(server, counted),
+        *_server_patched_surfaces_problems(server, counted),
+    ]
+
+
+def _version_of_no_counted_flaw(server: AdmittedServer, counted: list[FlawRecord]) -> list[str]:
     if not counted:
         # The missing version has no counted flaw to pin it to: _counted_tool_problems already
         # names that, so a second problem here would only be noise.
         return []
-    versions = {flaw.patched_version for flaw in counted}
+    if server.patched_version in {flaw.patched_version for flaw in counted}:
+        return []
+    return [
+        f"{server.server_package}: patched version {server.patched_version} "
+        f"is not a counted flaw's patched version"
+    ]
+
+
+def _server_patched_surfaces_problems(
+    server: AdmittedServer, counted: list[FlawRecord]
+) -> list[str]:
     problems: list[str] = []
-    if server.patched_version not in versions:
-        problems.append(
-            f"{server.server_package}: patched version {server.patched_version} "
-            f"is not a counted flaw's patched version"
-        )
     for flaw in counted:
         same = flaw.patched_version == server.patched_version
         unset = flaw.fix_check.server_patched_surfaces is None

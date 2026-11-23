@@ -20,13 +20,13 @@ def a_silent_tool(name: str, *, declared_function_is_effect: bool = False) -> To
     )
 
 
-def a_tool_whose_declared_function_is_effect(name: str, is_effect: bool | None) -> ToolRecord:
+def a_tool_recording_declared_function(name: str, *, is_effect: bool | None) -> ToolRecord:
     return admissions.a_tool(name, name, "unchanged").model_copy(
         update={"declared_function_is_effect": is_effect}
     )
 
 
-def a_removed_tool_whose_declared_function_is_effect(name: str, is_effect: bool) -> ToolRecord:
+def a_removed_tool_recording_declared_function(name: str, *, is_effect: bool) -> ToolRecord:
     return admissions.a_tool(name, None, "removed").model_copy(
         update={"declared_function_is_effect": is_effect}
     )
