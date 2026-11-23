@@ -56,6 +56,10 @@ class FixCheckRecord(BaseModel):
     # The holdout target's fixture fingerprint a detection_holdout_calibration record was copied at.
     holdout_fingerprint: str | None = None
 
+    @property
+    def is_holdout_calibration_copy(self) -> bool:
+        return self.source == "detection_holdout_calibration"
+
 
 class FlawRecord(BaseModel):
     flaw: str

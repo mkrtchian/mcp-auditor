@@ -6,8 +6,8 @@ from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 
 
 def unrecorded_field_names(server: AdmittedServer) -> list[str]:
-    [gap] = unrecorded_fields([server])
-    listed = gap.removeprefix(f"{server.server_package}: ")
+    [line] = unrecorded_fields([server])
+    listed = line.removeprefix(f"{server.server_package}: ")
     return [item.split(" (")[0] for item in listed.split(", ")]
 
 

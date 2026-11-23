@@ -33,7 +33,7 @@ def stale_holdout_calibration_copies(
         for flaw in counted_flaws(server):
             check = flaw.fix_check
             recorded = check.holdout_fingerprint
-            if check.source != "detection_holdout_calibration" or recorded is None:
+            if not check.is_holdout_calibration_copy or recorded is None:
                 continue
             now = current.get(flaw.flaw)
             where = f"{server.server_package}: {flaw.flaw}"

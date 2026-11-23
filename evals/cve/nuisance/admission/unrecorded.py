@@ -15,20 +15,20 @@ from evals.eval_session import Refused
 
 
 def refuse_unrecorded(servers: Sequence[AdmittedServer], title: str) -> None:
-    gaps = unrecorded_fields(servers)
-    if gaps:
+    unrecorded = unrecorded_fields(servers)
+    if unrecorded:
         raise Refused(
-            title, ["fields nuisance suite rule v3 or v4 adds are not yet recorded", *gaps]
+            title, ["fields nuisance suite rule v3 or v4 adds are not yet recorded", *unrecorded]
         )
 
 
 def unrecorded_fields(servers: Sequence[AdmittedServer]) -> list[str]:
-    gaps: list[str] = []
+    unrecorded: list[str] = []
     for server in servers:
         fields = _unrecorded_counts(server) + _unrecorded_provenance(server)
         if fields:
-            gaps.append(f"{server.server_package}: {', '.join(fields)}")
-    return gaps
+            unrecorded.append(f"{server.server_package}: {', '.join(fields)}")
+    return unrecorded
 
 
 def _unrecorded_counts(server: AdmittedServer) -> list[str]:
@@ -70,7 +70,7 @@ def _undeclared_tools(server: AdmittedServer) -> set[str | None]:
 
 def _unfingerprinted_copy(flaw: FlawRecord) -> bool:
     check = flaw.fix_check
-    return check.source == "detection_holdout_calibration" and check.holdout_fingerprint is None
+    return check.is_holdout_calibration_copy and check.holdout_fingerprint is None
 
 
 def _unrecorded_provenance(server: AdmittedServer) -> list[str]:

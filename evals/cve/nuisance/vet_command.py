@@ -151,9 +151,9 @@ _PING_ANSWER = {True: "yes", False: "no", None: "unknown"}  # None: the server n
 
 
 def _print_unrecorded(servers: Sequence[AdmittedServer]) -> None:
-    gaps = unrecorded_fields(servers)
-    if gaps:
+    unrecorded = unrecorded_fields(servers)
+    if unrecorded:
         print(
-            f"{len(gaps)} of {len(servers)} servers have fields nuisance suite rule v3 or v4 adds"
-            " not yet recorded (run and gate refuse them)"
+            f"{len(unrecorded)} of {len(servers)} servers have fields nuisance suite rule v3"
+            " or v4 adds not yet recorded (run and gate refuse them)"
         )

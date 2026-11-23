@@ -147,11 +147,7 @@ def holdout_target_references(
     server: AdmittedServer, resolution: Mapping[str, str]
 ) -> list[Target]:
     by_identifier = {target.flaw_id: target for target in HOLDOUT_TARGETS}
-    copied = [
-        flaw.flaw
-        for flaw in server.flaws
-        if flaw.fix_check.source == "detection_holdout_calibration"
-    ]
+    copied = [flaw.flaw for flaw in server.flaws if flaw.fix_check.is_holdout_calibration_copy]
     unknown = [flaw for flaw in copied if flaw not in resolution]
     if unknown:
         raise Refused(

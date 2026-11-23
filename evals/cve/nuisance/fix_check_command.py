@@ -205,7 +205,7 @@ def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list
 def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
     # The admission records these two, the kit observes neither.
     skip = {"witness", "relies_on_relaying_stand_in", "holdout_fingerprint"}
-    if record.source == "detection_holdout_calibration":
+    if record.is_holdout_calibration_copy:
         skip.add("source")
     mismatches: dict[str, str] = {}
     for name in FixCheckRecord.model_fields:

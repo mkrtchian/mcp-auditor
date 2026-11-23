@@ -8,14 +8,14 @@ from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded, unrecorde
 from evals.eval_session import Refused
 
 
-def test_a_recorded_server_has_no_gap():
+def test_a_recorded_server_has_no_unrecorded_field():
     assert unrecorded_fields([given.a_recorded_server()]) == []
 
 
 def test_every_unset_field_is_named_for_its_server_with_its_count():
-    gaps = unrecorded_fields([given.a_server_with_every_field_unrecorded()])
+    unrecorded = unrecorded_fields([given.a_server_with_every_field_unrecorded()])
 
-    assert gaps == [
+    assert unrecorded == [
         f"{given.SERVER}: real_software (2 tools), declared_function_is_effect (2 tools),"
         " expect (2 benign calls), before (2 benign calls), relies_on_relaying_stand_in (2 flaws),"
         " stand_ins, seeds, software_releases"
@@ -23,7 +23,7 @@ def test_every_unset_field_is_named_for_its_server_with_its_count():
 
 
 @pytest.mark.parametrize(
-    ("unset", "gap"),
+    ("unset", "unrecorded_field"),
     [
         (given.without_a_real_software_record, "real_software (1 tool)"),
         (given.without_a_declared_function_record, "declared_function_is_effect (1 tool)"),
@@ -41,9 +41,11 @@ def test_every_unset_field_is_named_for_its_server_with_its_count():
     ],
 )
 def test_each_unset_field_is_named_alone(
-    unset: Callable[[AdmittedServer], AdmittedServer], gap: str
+    unset: Callable[[AdmittedServer], AdmittedServer], unrecorded_field: str
 ):
-    assert unrecorded_fields([unset(given.a_recorded_server())]) == [f"{given.SERVER}: {gap}"]
+    assert unrecorded_fields([unset(given.a_recorded_server())]) == [
+        f"{given.SERVER}: {unrecorded_field}"
+    ]
 
 
 def test_an_uncounted_flaw_is_never_read():
@@ -58,7 +60,7 @@ def test_a_removed_tool_needs_no_real_software_or_declared_function_record():
     assert unrecorded_fields([server]) == []
 
 
-def test_refusal_lists_the_gaps():
+def test_refusal_lists_the_unrecorded_fields():
     server = given.without_seeds(given.a_recorded_server())
 
     with pytest.raises(Refused) as refusal:
@@ -71,5 +73,5 @@ def test_refusal_lists_the_gaps():
     ]
 
 
-def test_no_refusal_without_a_gap():
+def test_no_refusal_when_every_field_is_recorded():
     refuse_unrecorded([given.a_recorded_server()], "nuisance holdout run refused")
