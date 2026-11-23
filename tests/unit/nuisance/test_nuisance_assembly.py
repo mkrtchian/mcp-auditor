@@ -11,7 +11,7 @@ from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus
 from evals.cve.server_health import ServerHealth
-from evals.probe.analysis import call_cost
+from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 

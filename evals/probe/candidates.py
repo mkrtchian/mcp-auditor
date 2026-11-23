@@ -7,18 +7,11 @@ every candidate's judge.
 
 from dataclasses import dataclass
 
+from evals.pricing import Prices
 from mcp_auditor.config import Settings
 
+# The date of the list prices given to the reference and the candidates below.
 PRICES_DATE = "2026-10-15"
-
-
-@dataclass(frozen=True)
-class Prices:
-    """Dollars per million tokens, as listed on PRICES_DATE."""
-
-    input: float
-    cached_input: float
-    output: float
 
 
 @dataclass(frozen=True)
@@ -103,3 +96,6 @@ CANDIDATES = [
         reasoning_expected=True,
     ),
 ]
+
+# The full run sends the corpus to each of these, and a subset run picks among them.
+MEASURED = [REFERENCE, *CANDIDATES]

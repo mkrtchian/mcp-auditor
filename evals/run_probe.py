@@ -26,8 +26,16 @@ from evals.probe.analysis import (
     list_defects,
     summarize,
 )
-from evals.probe.candidates import CANDIDATES, PRICES_DATE, REFERENCE, Candidate
-from evals.probe.corpus import SCHEMA_NAMES, ProbeCall, ProbeCorpus, Role, load_corpus, schema_for
+from evals.probe.candidates import MEASURED, PRICES_DATE, Candidate
+from evals.probe.corpus import (
+    CORPUS_PATH,
+    SCHEMA_NAMES,
+    ProbeCall,
+    ProbeCorpus,
+    Role,
+    load_corpus,
+    schema_for,
+)
 from evals.probe.subset import (
     UnknownCandidate,
     defect_counts,
@@ -35,17 +43,14 @@ from evals.probe.subset import (
     select_calls,
     select_candidates,
 )
-from evals.repository import REPO_ROOT
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import ThrottlePatience
 from mcp_auditor.domain.coverage import find_coverage_gap
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage, TestCaseBatch
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal, ProviderThrottled, UnreadableAnswer
 
-CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 DEFAULT_REPORT_PATH = "output/probe_report.json"
 SUBSET_REPORT_PATH = "output/probe_subset.json"
-MEASURED = [REFERENCE, *CANDIDATES]
 
 console = Console()
 

@@ -1,4 +1,4 @@
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 from evals.session_usage import UsageBreakdown
 from mcp_auditor.domain.models import ProviderUsage
 

@@ -16,8 +16,7 @@ from evals.cve.nuisance.counting import (
 )
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus, NuisanceServerResult
 from evals.cve.units import JudgeCategory
-from evals.probe.analysis import call_cost
-from evals.probe.candidates import Prices
+from evals.pricing import Prices, call_cost
 
 
 def assemble_server(

@@ -17,7 +17,7 @@ from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.results import NotRunCause, ServerExit
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.eval_session import Refused, TreeState
-from evals.probe.analysis import call_cost
+from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 

@@ -10,7 +10,8 @@ from statistics import median
 
 from pydantic import BaseModel
 
-from evals.probe.candidates import Candidate, Prices
+from evals.pricing import call_cost
+from evals.probe.candidates import Candidate
 from evals.probe.corpus import Role
 from mcp_auditor.domain.models import CoverageGap, ProviderUsage, TestCaseBatch
 
@@ -99,16 +100,6 @@ def _is_refusal(observation: ProbeObservation) -> bool:
     if observation.schema_name != _GENERATION_SCHEMA:
         return False
     return observation.outcome == CallOutcome.PARSE_FAILURE or observation.coverage_gap is not None
-
-
-def call_cost(usage: ProviderUsage, prices: Prices) -> float:
-    uncached_input = usage.input_tokens - usage.cached_input_tokens
-    dollars_per_million = (
-        uncached_input * prices.input
-        + usage.cached_input_tokens * prices.cached_input
-        + usage.output_tokens * prices.output
-    )
-    return dollars_per_million / 1_000_000
 
 
 def list_defects(stats: CandidateStats) -> list[str]:

@@ -24,6 +24,7 @@ from evals.honeypots import HONEYPOTS, AuditModels, audit_honeypot, models_for
 from evals.model_conditions import ModelConditions
 from evals.probe.candidates import REFERENCE
 from evals.probe.corpus import (
+    CORPUS_PATH,
     CapturingLLM,
     ProbeCall,
     ProbeCorpus,
@@ -42,7 +43,6 @@ from mcp_auditor.graph.prompts import build_attack_generation_prompt
 CAPTURE_TEST_BUDGET = 10
 JUDGE_SAMPLE_SIZE = 60
 JUDGE_SAMPLE_SEED = 20260924
-CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
 
 _BUILD_COMMAND = "docker compose -f evals/docker/compose.yml build"
 

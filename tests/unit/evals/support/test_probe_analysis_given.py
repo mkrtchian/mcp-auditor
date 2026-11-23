@@ -1,7 +1,8 @@
 from typing import Any
 
+from evals.pricing import Prices
 from evals.probe.analysis import CandidateStats
-from evals.probe.candidates import Candidate, Prices
+from evals.probe.candidates import Candidate
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditCategory, CoverageGap, ProviderUsage
 

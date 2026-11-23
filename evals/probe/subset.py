@@ -6,20 +6,18 @@ See the *Subset runs* section of `evals/probe_method.md`.
 from rich.table import Table
 
 from evals.probe.analysis import DefectCounts, ProbeObservation, count_defects
-from evals.probe.candidates import CANDIDATES, REFERENCE, Candidate
+from evals.probe.candidates import MEASURED, Candidate
 from evals.probe.corpus import ProbeCall, ProbeCorpus
-
-KNOWN_CANDIDATES = [REFERENCE, *CANDIDATES]
 
 
 class UnknownCandidate(ValueError):
     def __init__(self, name: str) -> None:
-        known = ", ".join(repr(candidate.name) for candidate in KNOWN_CANDIDATES)
+        known = ", ".join(repr(candidate.name) for candidate in MEASURED)
         super().__init__(f"Unknown candidate {name!r}. Known candidates: {known}")
 
 
 def select_candidates(names: list[str]) -> list[Candidate]:
-    by_name = {candidate.name: candidate for candidate in KNOWN_CANDIDATES}
+    by_name = {candidate.name: candidate for candidate in MEASURED}
     for name in names:
         if name not in by_name:
             raise UnknownCandidate(name)

@@ -1,7 +1,7 @@
 from datetime import date
 
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 
 
 def test_the_committed_file_is_ready_for_the_logged_models():

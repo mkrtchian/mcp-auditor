@@ -7,7 +7,7 @@ import pytest
 
 from evals.cve.holdout_conditions import Cutoff, load_conditions
 from evals.eval_session import Refused
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 
 
 def test_a_complete_file_loads(tmp_path: Path):

@@ -14,7 +14,7 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.grammar import FlawClass, TargetStatus
 from evals.cve.server_health import ServerHealth
 from evals.eval_session import Refused, TreeState
-from evals.probe.analysis import call_cost
+from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 from tests.unit.support import detection_holdout_runs

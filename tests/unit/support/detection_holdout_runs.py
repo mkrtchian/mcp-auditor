@@ -16,7 +16,7 @@ from evals.cve.grammar import RunGrade, TargetStatus
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.eval_session import TreeState
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep

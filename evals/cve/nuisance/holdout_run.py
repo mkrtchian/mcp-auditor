@@ -64,7 +64,7 @@ from evals.cve.run_images import (
 )
 from evals.cve.run_interruption import sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 from evals.session_usage import SessionThrottles
 from evals.tracing import tracing_enabled
 from mcp_auditor.config import Settings

@@ -13,7 +13,7 @@ from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult, ServerExit
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_session import TreeState
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditReport, ProviderUsage

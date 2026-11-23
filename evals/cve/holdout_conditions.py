@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from evals.eval_session import Refused
-from evals.probe.candidates import Prices
+from evals.pricing import Prices
 
 CONDITIONS_PATH = Path(__file__).parents[1] / "holdout_conditions.json"
 

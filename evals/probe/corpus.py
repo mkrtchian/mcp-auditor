@@ -23,6 +23,8 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.ports import LLMPort
 
+CORPUS_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "probe_corpus.json"
+
 type Role = Literal["main", "judge"]
 
 
