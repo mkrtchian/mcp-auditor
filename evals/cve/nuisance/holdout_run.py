@@ -19,13 +19,13 @@ from typing import Any, Protocol
 from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.closed_network import check_closed_network_support
-from evals.cve.detection.audit import RunOverrides, build_auditor
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_BUDGET
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import image_ids
+from evals.cve.launch_audit import RunOverrides, build_auditor
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.assembly import assemble_server

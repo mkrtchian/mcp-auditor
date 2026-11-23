@@ -28,10 +28,11 @@ from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_report import build_report
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.detection.holdout_run import HOLDOUT_RUNS, HoldoutDeps, holdout_overrides
+from evals.cve.detection.holdout_run import HOLDOUT_RUNS, HoldoutDeps
 from evals.cve.detection.targets import Target
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
+from evals.cve.launch_audit import RunOverrides
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
@@ -170,7 +171,9 @@ def _audit_drawn_targets(
 ) -> DetectionHoldoutRunResult:
     disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in ready.census.flaws}
     places = load_places(DETECTION_PLACES)
-    holdout_deps = deps.holdout_deps(places, holdout_overrides(ready.conditions), args.concurrency)
+    holdout_deps = deps.holdout_deps(
+        places, RunOverrides.of_holdout(ready.conditions), args.concurrency
+    )
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             deps.run_targets(

@@ -53,6 +53,7 @@ from evals.cve.detection.targets import (
 )
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.images import image_ids, image_tag
+from evals.cve.launch_audit import NO_OVERRIDES
 from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
@@ -267,7 +268,7 @@ class _Tracking:
 
 def _harness(args: argparse.Namespace, run: _CommandRun, tracking: _Tracking) -> DetectionHarness:
     measurement = measurement_from(args)
-    overrides = None if measurement is None else run_overrides(measurement)
+    overrides = NO_OVERRIDES if measurement is None else run_overrides(measurement)
     places = run.places
     audit = run.deps.audit_target(args.budget, tracking.throttles, places, overrides)
     return DetectionHarness(

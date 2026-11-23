@@ -16,7 +16,7 @@ from typing import Any, Protocol
 
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
-from evals.cve.detection.audit import RunOverrides, attempt_once, build_auditor
+from evals.cve.detection.audit import attempt_once
 from evals.cve.detection.baseline import fixture_fingerprint, grammar_fingerprint
 from evals.cve.detection.calibration_check import CheckOptions, check_target
 from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
@@ -36,6 +36,7 @@ from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import backend_image_ids, image_ids, image_tag
+from evals.cve.launch_audit import RunOverrides, build_auditor
 from evals.cve.places import Places, kept_records
 from evals.cve.run_images import (
     rebuild_images,
@@ -135,7 +136,7 @@ async def run_holdout_targets(
         conditions, settings, places, disclosure_dates, model_ids, runs, concurrency, census_commit
     )
     conditions.require_ready(model_ids)
-    deps = deps or default_deps(places, holdout_overrides(conditions), concurrency)
+    deps = deps or default_deps(places, RunOverrides.of_holdout(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
     refuse_without_closed_networks(deps.check_networks)
@@ -217,13 +218,6 @@ def _refuse_dirty_tree(tree: TreeState) -> None:
             "detection holdout run refused",
             ["the git tree is dirty: a detection holdout run publishes from a clean tree"],
         )
-
-
-def holdout_overrides(conditions: HoldoutConditions) -> RunOverrides:
-    chain, steps = conditions.chain_budget, conditions.max_chain_steps
-    timeout = conditions.tool_call_timeout
-    assert chain is not None and steps is not None and timeout is not None  # require_ready passed
-    return RunOverrides(chain, steps, timeout)
 
 
 def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:

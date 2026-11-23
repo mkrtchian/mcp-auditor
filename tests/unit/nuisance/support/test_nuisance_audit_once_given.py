@@ -4,8 +4,8 @@ from dataclasses import replace
 import tests.unit.support.grammar_inputs as grammar
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.backends.lifecycle import BackendLifecycle
-from evals.cve.detection.audit import RunOverrides
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.launch_audit import NO_OVERRIDES, RunOverrides
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.audit import NuisanceAuditor
 from evals.session_usage import SessionThrottles
@@ -13,8 +13,6 @@ from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, Mod
 from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.admission_mutations import with_a_backend
 from tests.unit.support.nuisance_admissions import a_fake_lifecycle, an_admitted_server
-
-NO_OVERRIDES = RunOverrides(None, None, None)
 
 
 def an_auditor_on_a_noisy_server(lost_calls: int) -> NuisanceAuditor:

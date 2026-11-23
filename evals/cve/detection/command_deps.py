@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Protocol
 
-from evals.cve.detection.audit import RunOverrides, audit_target
+from evals.cve.detection.audit import audit_target
 from evals.cve.detection.calibration_check_exit import (
     CalibrationCheckDeps,
     default_calibration_check_deps,
@@ -15,6 +15,7 @@ from evals.cve.detection.session import DetectionSessionResult, run_gated
 from evals.cve.detection.session_model import AuditTarget, DetectionHarness, DetectionOptions
 from evals.cve.detection.survey import TargetSurvey, survey_one
 from evals.cve.detection.targets import Target
+from evals.cve.launch_audit import NO_OVERRIDES, RunOverrides
 from evals.cve.places import Places
 from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep
 from evals.detection_preflight import preflight_ok
@@ -28,7 +29,7 @@ class AuditTargetFactory(Protocol):
         budget: int,
         throttles: SessionThrottles,
         places: Places,
-        overrides: RunOverrides | None = None,
+        overrides: RunOverrides = NO_OVERRIDES,
         /,
     ) -> AuditTarget: ...
 

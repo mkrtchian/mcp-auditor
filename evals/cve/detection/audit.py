@@ -4,7 +4,6 @@ import dataclasses
 import subprocess
 from collections import Counter
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 
 from rich.markup import escape
 
@@ -23,11 +22,13 @@ from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.grammar import DETECTION_RUNGS, CreditCheck, PlantedTarget, RunGrade, grade_run
 from evals.cve.launch_audit import (
+    NO_OVERRIDES,
     Auditor,
-    AuditShape,
     LaunchAudit,
+    RunOverrides,
     UndecidableLaunch,
     audit_launch,
+    build_auditor,
     print_lost_connections,
 )
 from evals.cve.places import Places, kept_records
@@ -43,8 +44,6 @@ from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
 from evals.metrics import blocked_reasons
 from evals.session_usage import SessionThrottles, throttled_model_calls
-from mcp_auditor.adapters.llm import create_judge_llm, create_llm
-from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import AuditReport
 
 
@@ -52,22 +51,11 @@ class LaunchError(Exception):
     """A pinned server failed to launch or install (infra, not a detection miss)."""
 
 
-@dataclass(frozen=True)
-class RunOverrides:
-    """Uniform run conditions applied to every target, each setting left None keeping the
-    launch's own."""
-
-    chain_budget: int | None
-    max_chain_steps: int | None
-    tool_call_timeout: int | None
-    audit_every_tool: bool = False
-
-
 def audit_target(
     budget: int,
     throttles: SessionThrottles,
     places: Places,
-    overrides: RunOverrides | None = None,
+    overrides: RunOverrides = NO_OVERRIDES,
 ) -> AuditTarget:
     # The composition root bounds the returned audit to the chosen concurrency.
     auditor = build_auditor(budget)
@@ -80,19 +68,12 @@ def audit_target(
     return audit
 
 
-def build_auditor(budget: int) -> Auditor:
-    # Built before any container: a bad model configuration is a crash, never a run skipped,
-    # which would read as a gate that cannot compare.
-    settings = load_settings()
-    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
-
-
 async def attempt_once(
     target: Target,
     auditor: Auditor,
     throttles: SessionThrottles,
     places: Places,
-    overrides: RunOverrides | None = None,
+    overrides: RunOverrides = NO_OVERRIDES,
 ) -> AttemptOutcome[GradedAudit]:
     """Raises `ProviderFatal` on a provider error no retry cures."""
     # An unknown kept id, a planting_spec refusal or a launch whose container name cannot be read
@@ -204,17 +185,10 @@ def _print_incidents(target: Target, report: AuditReport, detail: ReportDetail) 
 
 
 async def _audit(
-    launch: Launch, target: Target, auditor: Auditor, overrides: RunOverrides | None
+    launch: Launch, target: Target, auditor: Auditor, overrides: RunOverrides
 ) -> LaunchAudit:
-    forced = overrides or RunOverrides(None, None, None)
-    shape = AuditShape(
-        tools_filter=None if forced.audit_every_tool else target.tools_filter,
-        chain_budget=forced.chain_budget,
-        max_chain_steps=forced.max_chain_steps,
-        tool_call_timeout=forced.tool_call_timeout,
-    )
     try:
-        return await audit_launch(launch, auditor, shape)
+        return await audit_launch(launch, auditor, overrides.shape(target.tools_filter))
     except (AuditFailed, UndecidableLaunch):
         raise
     except Exception as exc:

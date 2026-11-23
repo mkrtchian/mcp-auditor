@@ -11,12 +11,12 @@ from rich.markup import escape
 
 from evals.concurrency import entered_in_thread
 from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_causes
-from evals.cve.detection.audit import RunOverrides
 from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import (
     Auditor,
     AuditShape,
+    RunOverrides,
     UndecidableLaunch,
     audit_launch,
     print_lost_connections,

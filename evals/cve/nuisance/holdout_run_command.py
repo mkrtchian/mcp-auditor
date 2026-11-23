@@ -18,11 +18,11 @@ from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.census.draw_order import draw_order
-from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
+from evals.cve.launch_audit import RunOverrides
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission.holdout_calibration_copies import (
     copy_targets,

@@ -9,9 +9,9 @@ from collections.abc import Mapping, Sequence
 from pydantic import BaseModel
 
 from evals.cli_arguments import non_negative_int, positive_int
-from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.costs import CostPricing
 from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.launch_audit import RunOverrides
 from evals.eval_session import Refused
 from evals.pricing import Prices
 

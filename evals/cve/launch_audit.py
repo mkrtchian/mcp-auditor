@@ -10,12 +10,14 @@ user-defined network, so it says nothing of the server or the flaw. A launch tha
 its container keeps its name. A relaunch that failed takes the server as down, which the suites
 read as a failure to launch."""
 
+from __future__ import annotations
+
 import os
 import secrets
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
@@ -24,12 +26,17 @@ from evals.cve.planting_base import LABEL
 from evals.cve.provider_errors import audit_failures_unwrapped, classified
 from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
+from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit
+from mcp_auditor.config import load_settings
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.container_name import Undecidable, declared_container_name
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
+
+if TYPE_CHECKING:
+    from evals.cve.holdout_conditions import HoldoutConditions
 
 type Connect = Callable[..., AbstractAsyncContextManager[MCPClientPort]]
 
@@ -53,6 +60,13 @@ class Auditor:
     build_graph: Callable[..., Any] = build_graph
 
 
+def build_auditor(budget: int) -> Auditor:
+    # Built before any container: a bad model configuration is a crash, never a run skipped,
+    # which would read as a gate that cannot compare.
+    settings = load_settings()
+    return Auditor(create_llm(settings), create_judge_llm(settings), budget)
+
+
 @dataclass(frozen=True)
 class AuditShape:
     """What the graph audits and how far, each setting left None keeping the launch's own."""
@@ -61,6 +75,36 @@ class AuditShape:
     chain_budget: int | None
     max_chain_steps: int | None
     tool_call_timeout: int | None
+
+
+@dataclass(frozen=True)
+class RunOverrides:
+    """Uniform run conditions applied to every target or server, each setting left None keeping
+    the launch's own."""
+
+    chain_budget: int | None = None
+    max_chain_steps: int | None = None
+    tool_call_timeout: int | None = None
+    audit_every_tool: bool = False
+
+    @classmethod
+    def of_holdout(cls, conditions: HoldoutConditions) -> RunOverrides:
+        chain, steps = conditions.chain_budget, conditions.max_chain_steps
+        timeout = conditions.tool_call_timeout
+        # `require_ready` passed, so every setting is recorded.
+        assert chain is not None and steps is not None and timeout is not None
+        return cls(chain, steps, timeout)
+
+    def shape(self, tools_filter: frozenset[str] | None) -> AuditShape:
+        return AuditShape(
+            None if self.audit_every_tool else tools_filter,
+            self.chain_budget,
+            self.max_chain_steps,
+            self.tool_call_timeout,
+        )
+
+
+NO_OVERRIDES = RunOverrides()
 
 
 @dataclass(frozen=True)

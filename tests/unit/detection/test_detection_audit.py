@@ -10,7 +10,6 @@ from evals.cve.audit_attempts import (
     graded_or_incomplete,
 )
 from evals.cve.detection.audit import (
-    RunOverrides,
     attempt_once,
     audit_target,
     checked_grade,
@@ -18,6 +17,7 @@ from evals.cve.detection.audit import (
 from evals.cve.detection.replay import ReplayAttemptFailure, ReplayOutcome, UncheckedReason
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.grammar import CreditCheck, MissKind, RunGrade, TargetStatus, grade_run
+from evals.cve.launch_audit import RunOverrides
 from evals.cve.proofs import UnitPlace
 from evals.cve.report_units import units_of
 from evals.cve.server_health import ServerHealth
@@ -269,15 +269,14 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(
 @pytest.mark.parametrize(
     ("overrides", "tools_filter"),
     [
-        (None, TARGET.tools_filter),
-        (RunOverrides(None, None, None), TARGET.tools_filter),
-        (RunOverrides(None, None, None, audit_every_tool=True), None),
+        (RunOverrides(), TARGET.tools_filter),
+        (RunOverrides(audit_every_tool=True), None),
     ],
 )
 async def test_the_graph_audits_the_target_tools_filter_unless_every_tool_is_audited(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
-    overrides: RunOverrides | None,
+    overrides: RunOverrides,
     tools_filter: frozenset[str] | None,
 ):
     a_captured_console(capsys, monkeypatch)
