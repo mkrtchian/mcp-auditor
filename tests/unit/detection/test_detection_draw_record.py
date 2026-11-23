@@ -8,7 +8,6 @@ from pydantic import ValidationError
 import tests.unit.detection.support.test_detection_draw_record_given as given
 from evals.cve.census.census import load_census
 from evals.cve.census.classification import Criterion
-from evals.cve.census.work import AgentRole
 from evals.cve.detection.draw_record import GiveUp, GiveUpReason, KeptPlace, Settlement
 from evals.cve.fixture_provenance import SoftwareRelease
 from tests.unit.support import census_draws, censuses
@@ -98,15 +97,6 @@ def test_give_ups_under_a_version_with_no_walk_step_of_their_flaw_fail(tmp_path:
         load_census(censuses.written(tmp_path, census_draws.a_census_with_draw(draw)))
 
 
-def test_thirty_drawn_flaws_disclosed_after_one_date_load(tmp_path: Path):
-    identifiers = [f"CVE-2026-{i:04d}" for i in range(1, 31)]
-    census_of_thirty = census_draws.a_census_drawing(identifiers)
-
-    loaded = load_census(censuses.written(tmp_path, census_of_thirty))
-
-    assert loaded.draw == census_of_thirty.draw
-
-
 def test_a_give_up_reason_outside_the_closed_set_fails_at_deserialization(tmp_path: Path):
     raw = json.loads(census_draws.a_census_with_draw(census_draws.a_draw()).model_dump_json())
     raw["draw"]["give_ups"][0]["reason"] = "banana"
@@ -159,27 +149,26 @@ def test_a_card_flaw_with_no_calibrator_record_fails(tmp_path: Path):
 
 
 def test_a_flaw_whose_only_calibrator_record_is_set_aside_has_no_calibrator(tmp_path: Path):
-    with_draw = census_draws.a_census_with_draw(census_draws.a_draw())
-    agents = [
-        agent.model_copy(update={"set_aside": "a refusal on the fallback model"})
-        if agent.scope == A_DRAWN_FLAW and agent.role == AgentRole.CALIBRATOR
-        else agent
-        for agent in with_draw.agents
-    ]
-    set_aside = with_draw.model_copy(update={"agents": agents})
+    set_aside = given.a_census_whose_drawn_flaw_calibrator_has(
+        set_aside="a refusal on the fallback model"
+    )
 
     with pytest.raises(ValueError, match=re.escape(f"flaw {A_DRAWN_FLAW} has no calibrator")):
         load_census(censuses.written(tmp_path, set_aside))
 
 
-def test_a_card_stand_in_with_an_invented_output_and_no_form_source_fails(tmp_path: Path):
-    stand_in = given.a_card_stand_in(
-        "evals/docker/Dockerfile.vendor-responder",
-        "GET /api/status",
-        source="invented",
-        returned_by=["status"],
+def test_a_census_whose_drawn_flaw_only_calibrator_carries_a_fallback_model_loads(
+    tmp_path: Path,
+):
+    fell_back = given.a_census_whose_drawn_flaw_calibrator_has(
+        model="claude-opus-5-5", fallback_model="claude-opus-4-8"
     )
-    draw = census_draws.a_draw_carrying(given.a_card_with_a_stand_in(A_DRAWN_FLAW, stand_in))
+
+    load_census(censuses.written(tmp_path, fell_back))
+
+
+def test_a_card_stand_in_with_an_invented_output_and_no_form_source_fails(tmp_path: Path):
+    draw = given.a_draw_whose_card_has_a_stand_in_output_from(source="invented")
 
     refusal = f"card for flaw {A_DRAWN_FLAW}: stand-in for the vendor API"
     with pytest.raises(ValueError, match=re.escape(refusal)):

@@ -31,7 +31,7 @@ from evals.cve.census.prefilter import PrefilterTerm
 from evals.cve.census.sources import SourceProvenance, SourceRecord
 from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
 from evals.cve.detection.draw_record import DrawRecord
-from evals.cve.detection.draw_record_problems import draw_problems
+from evals.cve.detection.draw_record_problems import DrawReferences, draw_problems
 
 CENSUS_PATH = Path(__file__).resolve().parents[2] / "census.json"
 BOUND = date(2026, 10, 7)
@@ -129,10 +129,15 @@ def load_census(path: Path) -> Census:
     if not coverage:
         problems += _grouping_problems(census) + _derived_problems(census)
     if census.draw is not None:
-        order = draw_order_flaws(census.classifications, draw_candidates(census.flaws))
-        place_ids = set(places.load_places(places.DETECTION_PLACES))
-        disclosure_dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
-        problems += draw_problems(census.draw, order, disclosure_dates, place_ids, census.agents)
+        references = DrawReferences(
+            census_flaws=frozenset(flaw.identifier for flaw in census.flaws),
+            draw_order_candidates=frozenset(
+                draw_order_flaws(census.classifications, draw_candidates(census.flaws))
+            ),
+            place_ids=frozenset(places.load_places(places.DETECTION_PLACES)),
+            agents=census.agents,
+        )
+        problems += draw_problems(census.draw, references)
     if problems:
         raise ValueError(f"invalid census {path}: {'; '.join(problems)}")
     return census

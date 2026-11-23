@@ -4,10 +4,11 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 import tests.unit.census.support.test_census_given as given
 from evals.cve.census.census import Census, DateMismatch, load_census
-from evals.cve.census.work import HitDecision, read_jsonl
+from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, read_jsonl
 from tests.unit.census.support import advisory_sources
 from tests.unit.support import censuses
 
@@ -126,3 +127,13 @@ def test_a_malformed_work_file_line_is_refused_with_its_file_and_line_number(tmp
 
     with pytest.raises(ValueError, match=re.escape(f"{decisions}, line 2")):
         read_jsonl(decisions, HitDecision)
+
+
+def test_a_fallback_model_equal_to_the_requested_model_is_refused():
+    with pytest.raises(ValidationError, match="fallback_model"):
+        AgentRecord(
+            role=AgentRole.CALIBRATOR,
+            scope="CVE-2025-0001",
+            model="claude-opus-5-5",
+            fallback_model="claude-opus-5-5",
+        )

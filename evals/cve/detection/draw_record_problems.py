@@ -2,8 +2,8 @@
 present. Like the draw record, it imports nothing from the census module."""
 
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
-from datetime import date
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection.draw_record import (
@@ -16,25 +16,31 @@ from evals.cve.fixture_provenance import software_release_problems, stand_in_pro
 from evals.cve.places import REACHES
 
 
-def draw_problems(
-    draw: DrawRecord,
-    order: set[str],
-    disclosure_dates: Mapping[str, date],
-    place_ids: set[str],
-    agents: Sequence[AgentRecord],
-) -> list[str]:
+@dataclass(frozen=True)
+class DrawReferences:
+    """What the draw record's names must resolve to."""
+
+    census_flaws: frozenset[str]
+    draw_order_candidates: frozenset[str]
+    place_ids: frozenset[str]
+    agents: Sequence[AgentRecord]
+
+
+def draw_problems(draw: DrawRecord, references: DrawReferences) -> list[str]:
     return [
-        *_membership_problems(draw, set(disclosure_dates), order),
-        *_walk_problems(draw, order),
+        *_membership_problems(draw, references.census_flaws, references.draw_order_candidates),
+        *_walk_problems(draw, references.draw_order_candidates),
         *_calibration_problems(draw),
-        *_place_problems(draw, place_ids),
+        *_place_problems(draw, references.place_ids),
         *_stand_in_problems(draw),
         *_software_release_problems(draw),
-        *_agent_problems(draw, agents),
+        *_agent_problems(draw, references.agents),
     ]
 
 
-def _membership_problems(draw: DrawRecord, in_census: set[str], order: set[str]) -> list[str]:
+def _membership_problems(
+    draw: DrawRecord, in_census: frozenset[str], order: frozenset[str]
+) -> list[str]:
     problems: list[str] = []
     for label, flaw in _referenced_flaws(draw):
         if flaw not in in_census:
@@ -53,7 +59,7 @@ def _referenced_flaws(draw: DrawRecord) -> list[tuple[str, str]]:
     ]
 
 
-def _walk_problems(draw: DrawRecord, order: set[str]) -> list[str]:
+def _walk_problems(draw: DrawRecord, order: frozenset[str]) -> list[str]:
     outcomes = _walk_outcomes(draw)
     listed = Counter((step.identifier, step.rule_version) for step in draw.walk)
     problems = [
@@ -137,7 +143,7 @@ def _governing_give_up_problems(
     return problems
 
 
-def _place_problems(draw: DrawRecord, place_ids: set[str]) -> list[str]:
+def _place_problems(draw: DrawRecord, place_ids: frozenset[str]) -> list[str]:
     problems: list[str] = []
     for card in draw.cards:
         for place in (*card.kept, *card.unkept):

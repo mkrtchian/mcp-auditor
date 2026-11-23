@@ -1,8 +1,8 @@
-from collections.abc import Sequence
 from typing import Literal
 
+from evals.cve.census.census import Census
+from evals.cve.census.work import AgentRole
 from evals.cve.detection.draw_record import (
-    CalibrationCard,
     CardCheck,
     CardStandIn,
     DetectionWalkStep,
@@ -14,7 +14,13 @@ from evals.cve.fixture_provenance import (
     StandInOutput,
     StandInRecord,
 )
-from tests.unit.support.census_draws import A_DRAWN_FLAW, a_card, a_draw, a_draw_carrying
+from tests.unit.support.census_draws import (
+    A_DRAWN_FLAW,
+    a_card,
+    a_census_with_draw,
+    a_draw,
+    a_draw_carrying,
+)
 
 
 def a_draw_re_walking(flaw: str, under: int | None) -> DrawRecord:
@@ -52,23 +58,24 @@ def a_draw_whose_card_records(release: SoftwareRelease) -> DrawRecord:
     return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"software_releases": [release]}))
 
 
-def a_card_stand_in(
-    file: str,
-    request: str,
-    *,
-    source: SourceKind = "software_sources",
-    replaces: str = "the vendor API",
-    returned_by: Sequence[str] = (),
-) -> CardStandIn:
-    output = StandInOutput(request=request, source=source, citation="API reference")
+def a_draw_whose_card_has_a_stand_in_output_from(source: SourceKind) -> DrawRecord:
+    output = StandInOutput(request="GET /api/status", source=source, citation="API reference")
     stand_in = StandInRecord(
-        replaces=replaces,
-        reason=f"{replaces} is a public host the closed network cannot reach",
-        file=file,
+        replaces="the vendor API",
+        reason="the vendor API is a public host the closed network cannot reach",
+        file="evals/docker/Dockerfile.vendor-responder",
         outputs=[output],
     )
-    return CardStandIn(stand_in=stand_in, returned_by=list(returned_by), used_by_default_by=[])
+    card_stand_in = CardStandIn(stand_in=stand_in, returned_by=["status"], used_by_default_by=[])
+    return a_draw_carrying(a_card(A_DRAWN_FLAW).model_copy(update={"stand_ins": [card_stand_in]}))
 
 
-def a_card_with_a_stand_in(flaw: str, stand_in: CardStandIn) -> CalibrationCard:
-    return a_card(flaw).model_copy(update={"stand_ins": [stand_in]})
+def a_census_whose_drawn_flaw_calibrator_has(**update: object) -> Census:
+    with_draw = a_census_with_draw(a_draw())
+    agents = [
+        agent.model_copy(update=update)
+        if agent.scope == A_DRAWN_FLAW and agent.role == AgentRole.CALIBRATOR
+        else agent
+        for agent in with_draw.agents
+    ]
+    return with_draw.model_copy(update={"agents": agents})
