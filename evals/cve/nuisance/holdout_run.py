@@ -11,7 +11,7 @@ the status line printed as each run finishes `holdout_run_status`'s.
 
 import dataclasses
 import functools
-from collections.abc import Awaitable, Callable, Coroutine, Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol
@@ -34,6 +34,7 @@ from evals.cve.nuisance.audit import (
     audit_once,
     nuisance_audit,
 )
+from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.commands import NUISANCE_CONCURRENCY
 from evals.cve.nuisance.containers import rebuilt_run_images, server_services
 from evals.cve.nuisance.counter import counter_fingerprint
@@ -64,7 +65,7 @@ NUISANCE_HOLDOUT_RUN_REFUSED = "nuisance holdout run refused"
 @dataclass(frozen=True)
 class NuisanceDeps:
     audit: Audit
-    benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
+    benign_call: BenignCallCheck
     rebuild: Callable[[Sequence[str]], None]
     image_ids: Callable[[Sequence[str]], dict[str, str]]
     backend_image_ids: Callable[[Sequence[str]], dict[str, str]]

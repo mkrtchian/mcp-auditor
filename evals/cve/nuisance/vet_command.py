@@ -7,10 +7,9 @@ import asyncio
 import functools
 import sys
 import traceback
-from collections.abc import Awaitable, Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
 
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
@@ -20,18 +19,15 @@ from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
-from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
+from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
     WALK_RECORD_PATH,
-    committed_admission,
-    committed_walk_inputs,
-    malformed_input_refused,
+    committed_run_population,
 )
 from evals.cve.nuisance.containers import rebuilt_run_images
-from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.vetting import (
     LaunchedBenignCall,
     ServerLauncher,
@@ -48,14 +44,10 @@ _REFUSAL = "nuisance vet refused"
 class VetDeps:
     rebuild: Callable[[Sequence[str]], None]
     sweep: ContainerSweep
-    benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
+    benign_call: BenignCallCheck
     check_networks: Callable[[], None]
     # Whether each server answered a ping after its handshake, by package, filled by benign_call.
-    ping_answers: dict[str, bool] = field(default_factory=dict[str, bool])
-
-
-class VetDepsFactory(Protocol):
-    def __call__(self, tool_call_timeout: int, concurrency: int, /) -> VetDeps: ...
+    ping_answers: dict[str, bool]
 
 
 def default_vet_deps(
@@ -79,7 +71,7 @@ def default_vet_deps(
 @dataclass(frozen=True)
 class VetCommandDeps:
     conditions: Callable[[], HoldoutConditions] = committed_conditions
-    vet_deps: VetDepsFactory = default_vet_deps
+    vet_deps: Callable[[int, int], VetDeps] = default_vet_deps
 
 
 def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> None:
@@ -100,15 +92,12 @@ def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> 
 
 
 def vet(args: argparse.Namespace, deps: VetCommandDeps) -> int:
-    with malformed_input_refused():
-        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
-        admission = committed_admission(args.admission, walk_inputs)
-        if admission is None or not admission.servers:
-            print("no server is admitted")
-            return 0
-        audited = run_population(
-            reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
-        ).audited
+    committed = committed_run_population(args.census, args.walk_record, args.admission)
+    if committed is None:
+        print("no server is admitted")
+        return 0
+    _, population = committed
+    audited = population.audited
     packages = [server.server_package for server in audited]
     unknown = [package for package in args.server if package not in packages]
     if unknown:

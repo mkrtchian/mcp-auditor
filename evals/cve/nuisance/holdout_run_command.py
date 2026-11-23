@@ -29,14 +29,11 @@ from evals.cve.nuisance.admission.holdout_calibration_copies import (
     stale_holdout_calibration_copies,
 )
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
-from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.commands import (
     NUISANCE_CONCURRENCY,
     WALK_RECORD_PATH,
-    committed_admission,
-    committed_walk_inputs,
-    malformed_input_refused,
+    committed_run_population,
 )
 from evals.cve.nuisance.holdout_run import (
     NUISANCE_HOLDOUT_RUN_REFUSED,
@@ -48,7 +45,7 @@ from evals.cve.nuisance.holdout_run import (
     refuse_tracing,
     run_nuisance,
 )
-from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
+from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import build_report
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
@@ -92,15 +89,11 @@ def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:
     refuse_tracing()
     refuse_existing_report(args.report, NUISANCE_HOLDOUT_RUN_REFUSED)
     conditions = deps.conditions()
-    with malformed_input_refused():
-        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
-        admission = committed_admission(args.admission, walk_inputs)
-        if admission is None or not admission.servers:
-            print("no server is admitted")
-            return 0
-        population = run_population(
-            reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
-        )
+    committed = committed_run_population(args.census, args.walk_record, args.admission)
+    if committed is None:
+        print("no server is admitted")
+        return 0
+    walk_inputs, population = committed
     refuse_unrecorded(population.audited, NUISANCE_HOLDOUT_RUN_REFUSED)
     _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
     settings = deps.settings()

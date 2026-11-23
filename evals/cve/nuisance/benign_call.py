@@ -3,9 +3,14 @@ benign call): every counted tool and every prerequisite tool is in the server's 
 prerequisite call returns without error, and each counted tool's benign call returns without error
 and, when the admission records an expected text, with that text in its response."""
 
+from collections.abc import Awaitable, Callable
+
 from evals.cve.nuisance.admission.admission import AdmittedServer, BenignCall, ToolCall
 from evals.cve.nuisance.counting import counted_flaws, counted_tools
+from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
+
+type BenignCallCheck = Callable[[AdmittedServer], Awaitable[str | None]]  # failure reason, or None
 
 _NOT_LISTED = "is not in the server's tools/list"
 
@@ -15,8 +20,8 @@ async def benign_call_failure(server: AdmittedServer, mcp_client: MCPClientPort)
     failure = await _listing_failure(mcp_client, calls)
     if failure is not None:
         return failure
-    for tool, call in calls.items():
-        failure = await _chain_failure(mcp_client, tool, call)
+    for call in calls.values():
+        failure = await _failure_with_prerequisites(mcp_client, call)
         if failure is not None:
             return failure
     return None
@@ -48,29 +53,26 @@ async def _listing_failure(mcp_client: MCPClientPort, calls: dict[str, BenignCal
     return None
 
 
-async def _chain_failure(mcp_client: MCPClientPort, tool: str, call: BenignCall) -> str | None:
+async def _failure_with_prerequisites(mcp_client: MCPClientPort, call: BenignCall) -> str | None:
     for prior in call.before or []:
-        label = f"prerequisite call of {prior.tool!r} before {tool!r}"
-        failure = await _call_failure(mcp_client, prior, label)
-        if failure is not None:
-            return failure
-    try:
-        response = await mcp_client.call_tool(tool, call.arguments)
-    except Exception as exc:
-        return f"benign call of {tool!r} failed: {exc}"
-    if response.is_error:
-        return f"benign call of {tool!r} returned an error: {response.content}"
-    return _expectation_failure(call, response.content)
+        label = f"prerequisite call of {prior.tool!r} before {call.tool!r}"
+        answer = await _answer(mcp_client, prior, label)
+        if isinstance(answer, str):
+            return answer
+    answer = await _answer(mcp_client, call, f"benign call of {call.tool!r}")
+    if isinstance(answer, str):
+        return answer
+    return _expectation_failure(call, answer.content)
 
 
-async def _call_failure(mcp_client: MCPClientPort, call: ToolCall, label: str) -> str | None:
+async def _answer(mcp_client: MCPClientPort, call: ToolCall, label: str) -> ToolResponse | str:
     try:
         response = await mcp_client.call_tool(call.tool, call.arguments)
     except Exception as exc:
         return f"{label} failed: {exc}"
     if response.is_error:
         return f"{label} returned an error: {response.content}"
-    return None
+    return response
 
 
 def _expectation_failure(call: BenignCall, content: str) -> str | None:

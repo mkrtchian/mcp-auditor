@@ -7,7 +7,7 @@ pass, the server's backend containers are removed, so its provisioner stands the
 from its image and its seed, since a first pass can change a backend's state."""
 
 import os
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 
@@ -18,13 +18,11 @@ from evals.cve.launch_audit import Connect, named
 from evals.cve.launch_retry import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
-from evals.cve.nuisance.benign_call import benign_call_failure
+from evals.cve.nuisance.benign_call import BenignCallCheck, benign_call_failure
 from evals.cve.nuisance.containers import remove_backend_containers, run_images
 from evals.cve.nuisance.results import NotRunCause, NotRunServer
 from evals.cve.nuisance.solo import gathered_then_alone
 from evals.cve.run_images import ContainerSweep
-
-type BenignCall = Callable[[AdmittedServer], Awaitable[str | None]]
 
 
 @dataclass(frozen=True)
@@ -37,7 +35,7 @@ class VetResult:
 
 
 async def drop_failing_servers(
-    servers: Sequence[AdmittedServer], benign_call: BenignCall, sweep: ContainerSweep
+    servers: Sequence[AdmittedServer], benign_call: BenignCallCheck, sweep: ContainerSweep
 ) -> VetResult:
     first_reasons = await gathered_then_alone(servers, benign_call)
     final_reasons = [  # one second pass at a time, in the servers' order
@@ -61,7 +59,7 @@ async def drop_failing_servers(
 
 
 async def _second_pass(
-    server: AdmittedServer, benign_call: BenignCall, sweep: ContainerSweep
+    server: AdmittedServer, benign_call: BenignCallCheck, sweep: ContainerSweep
 ) -> str | None:
     remove_backend_containers(sweep, run_images([server]))
     return await benign_call(server)

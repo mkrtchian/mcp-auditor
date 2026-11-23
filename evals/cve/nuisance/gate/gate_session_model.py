@@ -8,6 +8,7 @@ from pathlib import Path
 
 from evals.baseline import BaselineStatus
 from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
 from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_baseline import (
@@ -27,7 +28,7 @@ class NuisanceGateHarness:
     # One run of one server, None when it did not complete. Called concurrently, it bounds
     # itself how many audits run at once.
     audit: Callable[[AdmittedServer], Awaitable[GateRun | None]]
-    benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure, or None
+    benign_call: BenignCallCheck
     announce_audits: Callable[[int], None]  # the main runs about to start, once vetted
     throttled_requests: Callable[[], int]  # the session's total so far
     rebuild: Callable[[Sequence[str]], None]
