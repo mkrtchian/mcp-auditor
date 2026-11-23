@@ -6,6 +6,7 @@ from evals.cve.holdout_report_lines import ConclusionLine, IntervalModel, RunCut
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from evals.cve.nuisance.report import NotRunLine, NuisanceReport, ServerLine
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
+from evals.eval_display import throttled_lines
 
 
 def render_markdown(report: NuisanceReport) -> str:
@@ -28,7 +29,7 @@ def render_markdown(report: NuisanceReport) -> str:
             *_not_run_section(report.not_run, len(report.servers), report.second_pass),
             *_health_section(report.servers),
             *_incomplete_runs_lines(report),
-            *_throttled_lines(report),
+            *throttled_lines(report.throttled_requests, report.concurrency),
             f"Total cost: ${report.total_cost:.2f}",
         ]
     )
@@ -185,15 +186,6 @@ def _incomplete_runs_lines(report: NuisanceReport) -> list[str]:
         for cause, runs in sorted(report.incomplete_runs_by_cause.items())
     ]
     return [f"{count} ({', '.join(touched)})" if touched else count, *by_cause]
-
-
-def _throttled_lines(report: NuisanceReport) -> list[str]:
-    if report.throttled_requests == 0:
-        return []
-    return [
-        f"Throttled by the model provider: {report.throttled_requests} requests"
-        f" at concurrency {report.concurrency}"
-    ]
 
 
 def _span(interval: IntervalModel) -> str:

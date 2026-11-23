@@ -15,6 +15,7 @@ from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison
 from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateSession
 from evals.cve.nuisance.results import ServerExit
+from evals.eval_display import throttled_lines
 
 
 class GateServerLine(BaseModel):
@@ -68,7 +69,7 @@ def render_markdown(report: NuisanceGateReport) -> str:
             "# Nuisance gate",
             "",
             *render_conditions(report),
-            *render_throttled(report),
+            *throttled_lines(report.throttled_requests, report.concurrency),
             "",
             f"Outcome: **{report.gate.outcome.value}**",
             *[f"- {reason}" for reason in report.gate.reasons],
@@ -96,15 +97,6 @@ def render_conditions(report: NuisanceGateReport) -> list[str]:
         f"Commit: {report.commit}{dirty}",
         f"Model: {conditions.provider} {conditions.model}, judge {conditions.judge_model}, "
         f"{conditions.runs} run(s), concurrency {report.concurrency}",
-    ]
-
-
-def render_throttled(report: NuisanceGateReport) -> list[str]:
-    if report.throttled_requests == 0:
-        return []
-    return [
-        f"Throttled by the model provider: {report.throttled_requests} requests "
-        f"at concurrency {report.concurrency}"
     ]
 
 

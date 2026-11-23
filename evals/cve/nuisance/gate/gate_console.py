@@ -12,11 +12,17 @@ from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
     NuisanceGateReport,
     render_conditions,
-    render_throttled,
     server_detail,
     server_letters,
 )
-from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
+from evals.eval_display import (
+    GateRow,
+    console,
+    gate_table,
+    print_outcome,
+    print_report_paths,
+    print_throttles,
+)
 
 
 def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -> None:
@@ -29,8 +35,7 @@ def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -
         "Outside the gate:",
         [f"{e.server_package}: {EXIT_REASON_TEXTS[e.reason]}" for e in report.outside_gate],
     )
-    for line in render_throttled(report):
-        console.print(Text(line, style="yellow"))
+    print_throttles(report.throttled_requests, report.concurrency)
     print_report_paths(report_path, nuisance_gate_export_path(report_path))
     print_outcome(report.gate.outcome, report.gate.reasons)
 
