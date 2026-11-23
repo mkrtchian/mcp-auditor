@@ -248,7 +248,6 @@ def _record(session: HoneypotSession, tree: TreeState, result: HoneypotRunResult
         runs=result.outcome.observations(),
         metrics=result.report.metrics,
         completed_all=result.outcome.completed_all(session.conditions.runs),
-        protected=result.outcome.protected(),
         ground_truth=MERGED_GROUND_TRUTH,
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)

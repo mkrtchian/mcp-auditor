@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from typing import Protocol
 
 from pydantic import BaseModel
 
@@ -38,9 +39,24 @@ class BaselineConditions(BaseModel):
     fixtures: dict[str, FixtureConditions]
 
 
+class RecordedBaseline(Protocol):
+    @property
+    def status(self) -> BaselineStatus: ...
+
+    @property
+    def commit(self) -> str: ...
+
+    @property
+    def recorded_at(self) -> str: ...
+
+
 class RecordingRef(BaseModel):
     commit: str
     recorded_at: str
+
+    @classmethod
+    def of(cls, baseline: RecordedBaseline) -> "RecordingRef":
+        return cls(commit=baseline.commit, recorded_at=baseline.recorded_at)
 
 
 class Baseline(BaseModel):
@@ -85,7 +101,7 @@ def fingerprint_source(source: str) -> str:
 def condition_mismatches(recorded: BaselineConditions, candidate: BaselineConditions) -> list[str]:
     # The ground truth fingerprint is provenance: a label revision re-scores (ADR 020).
     excluded = {"fixtures", "ground_truth_fingerprint"}
-    mismatches = _field_mismatches(
+    mismatches = field_mismatches(
         "", recorded.model_dump(exclude=excluded), candidate.model_dump(exclude=excluded)
     )
     for name in sorted(recorded.fixtures.keys() | candidate.fixtures.keys()):
@@ -96,13 +112,13 @@ def condition_mismatches(recorded: BaselineConditions, candidate: BaselineCondit
                 f"fixtures.{name}: baseline {recorded_fixture}, candidate {candidate_fixture}"
             )
             continue
-        mismatches += _field_mismatches(
+        mismatches += field_mismatches(
             f"fixtures.{name}.", recorded_fixture.model_dump(), candidate_fixture.model_dump()
         )
     return mismatches
 
 
-def _field_mismatches(
+def field_mismatches(
     prefix: str, recorded: dict[str, object], candidate: dict[str, object]
 ) -> list[str]:
     return [
@@ -145,7 +161,7 @@ def verdict_maps_of[K](runs: list[dict[K, Observation]]) -> list[KeyedVerdicts[K
 
 def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:
     """What the file holds that its conditions do not claim, checked when the runner loads it."""
-    problems = _run_count_problems(baseline)
+    problems = run_count_problems(len(baseline.runs), baseline.conditions.runs, baseline.confirms)
     same_ground_truth = baseline.conditions.ground_truth_fingerprint == fingerprint_ground_truth(
         ground_truth
     )
@@ -159,14 +175,13 @@ def fingerprint_ground_truth(ground_truth: GroundTruth) -> str:
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
-def _run_count_problems(baseline: Baseline) -> list[str]:
-    held = len(baseline.runs)
+def run_count_problems(held: int, claimed_runs: int, confirms: RecordingRef | None) -> list[str]:
     if not held:
         return ["the baseline holds no run"]
-    if baseline.confirms is None:
-        claimed, claimants = baseline.conditions.runs, "its conditions"
+    if confirms is None:
+        claimed, claimants = claimed_runs, "its conditions"
     else:  # a confirmation holds the runs of both recordings (ADR 023)
-        claimed, claimants = baseline.conditions.runs * 2, "its conditions and its confirmation"
+        claimed, claimants = claimed_runs * 2, "its conditions and its confirmation"
     if held == claimed:
         return []
     return [f"the baseline holds {held} runs, {claimants} claim {claimed}"]
@@ -181,13 +196,17 @@ def _run_problems(
     if ground_truth is None:
         return []
     expected = {cell_key(cell) for cell in ground_truth}
-    missing, extra = sorted(expected - run.keys()), sorted(run.keys() - expected)
+    return missing_and_unknown_keys(f"run {index}: cells", set(run), expected)
+
+
+def missing_and_unknown_keys(prefix: str, held: set[str], expected: set[str]) -> list[str]:
+    missing, extra = sorted(expected - held), sorted(held - expected)
     sides: list[str] = []
     if missing:
         sides.append(f"{missing} missing")
     if extra:
         sides.append(f"{extra} unknown")
-    return [f"run {index}: cells {', '.join(sides)}"] if sides else []
+    return [f"{prefix} {', '.join(sides)}"] if sides else []
 
 
 def _unreadable(key: str) -> bool:
@@ -205,7 +224,11 @@ def load_baseline(path: Path) -> Baseline | None:
 
 
 def write_baseline(path: Path, baseline: Baseline) -> None:
+    write_json_atomically(path, baseline)
+
+
+def write_json_atomically(path: Path, model: BaseModel) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(baseline.model_dump_json(indent=2))
+    temporary.write_text(model.model_dump_json(indent=2))
     os.replace(temporary, path)

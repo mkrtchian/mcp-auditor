@@ -6,14 +6,9 @@ from pydantic import ValidationError
 from evals.eval_session import TreeState, tree_drift
 from evals.judge.baseline import JudgeBaseline, load_judge_baseline, write_judge_baseline
 from evals.judge.gate import CaseRuns, JudgeGateResult, judge_ci_condition_mismatches
-from evals.judge.recording import (
-    JudgeRecording,
-    decide_judge_recording,
-    judge_condition_refusals,
-    judge_unconfirmed_commit_refusal,
-)
+from evals.judge.recording import JudgeRecording, decide_judge_recording, judge_condition_refusals
 from evals.judge.session_model import JudgeSession
-from evals.recording import RecordingRefused
+from evals.recording import RecordingRefused, unconfirmed_commit_refusal
 
 
 def recording_refusals(session: JudgeSession, tree: TreeState) -> list[str]:
@@ -24,7 +19,7 @@ def recording_refusals(session: JudgeSession, tree: TreeState) -> list[str]:
     if tree.dirty:
         reasons.append("the git tree has tracked modifications: record from a clean tree")
     if session.baseline is not None:
-        reasons += judge_unconfirmed_commit_refusal(session.baseline, tree.commit)
+        reasons += unconfirmed_commit_refusal(session.baseline, tree.commit)
         reasons += judge_condition_refusals(session.baseline, session.conditions)
     return reasons
 

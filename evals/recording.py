@@ -4,6 +4,7 @@ from evals.baseline import (
     Baseline,
     BaselineConditions,
     BaselineStatus,
+    RecordedBaseline,
     RecordingRef,
     condition_mismatches,
     rescore,
@@ -41,7 +42,11 @@ NOT_MADE_AGAIN = (
 
 _FAILED_RUN = "a run failed: a baseline must hold every run its conditions claim"
 
-_FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
+_FAIL_SIDE, _PASS_SIDE = "planted FAIL cell", "PASS cell"
+
+FLIPPED_OUTCOMES = frozenset(
+    {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
+)
 
 
 class Recording(BaseModel):
@@ -51,8 +56,11 @@ class Recording(BaseModel):
     runs: list[dict[Cell, Observation]]
     metrics: HoneypotMetrics
     completed_all: bool
-    protected: ProtectedCells
     ground_truth: GroundTruth
+
+    @property
+    def protected(self) -> ProtectedCells:
+        return protected_cells(self.runs, self.ground_truth)
 
 
 class RecordingRefused(BaseModel):
@@ -75,7 +83,7 @@ def decide_recording(
     if existing is None:
         return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
     return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
-        update={"replaces": _ref(existing)}
+        update={"replaces": RecordingRef.of(existing)}
     )
 
 
@@ -86,7 +94,7 @@ def _refusals(existing: Baseline | None, recording: Recording, gate: GateResult)
     reasons += [f"{name} under its floor" for name in gate.floor_breaches]
     reasons += [
         f"no {side} is stable and correct: the gate could not see {miss}"
-        for side, miss in _blind_sides(recording.protected)
+        for side, miss in blind_sides(recording.protected, _FAIL_SIDE, _PASS_SIDE)
     ]
     if existing is None:
         return reasons
@@ -102,16 +110,18 @@ def rescore_refusals(baseline: Baseline, ground_truth: GroundTruth) -> list[str]
     return [
         f"under the current labels the baseline holds no stable and correct {side}: delete the "
         f"baseline file in a commit of its own and record twice at that commit (ADR 022)"
-        for side, _ in _blind_sides(protected)
+        for side, _ in blind_sides(protected, _FAIL_SIDE, _PASS_SIDE)
     ]
 
 
-def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
+def blind_sides(protected: ProtectedCells, fail_side: str, pass_side: str) -> list[tuple[str, str]]:
+    """Each side with no stable and correct key, named, with the miss the gate could not see
+    there (ADR 022)."""
     sides: list[tuple[str, str]] = []
     if protected.fail_stable_correct == 0:
-        sides.append(("planted FAIL cell", "a lost detection"))
+        sides.append((fail_side, "a lost detection"))
     if protected.pass_stable_correct == 0:
-        sides.append(("PASS cell", "a new false positive"))
+        sides.append((pass_side, "a new false positive"))
     return sides
 
 
@@ -122,19 +132,25 @@ def _confirmed_refusals(existing: Baseline, recording: Recording, gate: GateResu
     reasons += [
         f"gated cell {key} flipped in this run ({comparison.outcome})"
         for key, comparison in gate.cells.items()
-        if comparison.outcome in _FLIPPED
+        if comparison.outcome in FLIPPED_OUTCOMES
     ]
     return reasons
 
 
 def condition_refusals(baseline: Baseline, candidate: BaselineConditions) -> list[str]:
     mismatches = condition_mismatches(baseline.conditions, candidate)
+    return conditions_differ_refusal(baseline, mismatches, _RESET_PROCEDURE)
+
+
+def conditions_differ_refusal(
+    baseline: RecordedBaseline, mismatches: list[str], reset_procedure: str
+) -> list[str]:
     if not mismatches:
         return []
     return [
         f"conditions differ from the {baseline.status} baseline ({'; '.join(mismatches)}): "
         f"to run at other conditions without changing the baseline, pass --no-baseline. To change "
-        f"the baseline's conditions, {_RESET_PROCEDURE}"
+        f"the baseline's conditions, {reset_procedure}"
     ]
 
 
@@ -147,8 +163,12 @@ def _second_recording(
     reasons = _second_recording_refusals(existing, combined, gate)
     if reasons:
         return RecordingRefused(reasons=reasons)
+    stable_then_varying = disagreements(existing.observation_runs(), recording.runs)
     return _baseline_from(combined, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
-        update={"confirms": _ref(existing), "disagreements": _disagreements(existing, recording)}
+        update={
+            "confirms": RecordingRef.of(existing),
+            "disagreements": sorted(cell_key(cell) for cell in stable_then_varying),
+        }
     )
 
 
@@ -158,7 +178,6 @@ def _combined(existing: Baseline, recording: Recording) -> Recording:
         update={
             "runs": runs,
             "metrics": _combined_metrics(existing, recording, runs),
-            "protected": protected_cells(runs, recording.ground_truth),
         }
     )
 
@@ -189,7 +208,7 @@ def _second_recording_refusals(
     not_made_again = [f"{name} under its floor" for name in gate.floor_breaches] + [
         f"no {side} is stable and correct over the runs of both recordings: the gate could not "
         f"see {miss}"
-        for side, miss in _blind_sides(combined.protected)
+        for side, miss in blind_sides(combined.protected, _FAIL_SIDE, _PASS_SIDE)
     ]
     return (
         failed_run
@@ -200,7 +219,7 @@ def _second_recording_refusals(
     )
 
 
-def unconfirmed_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
+def unconfirmed_commit_refusal(baseline: RecordedBaseline, commit: str) -> list[str]:
     """A baseline is confirmed at the commit of its first recording. A change that lands while
     it is unconfirmed, a label revision included, resets it: the file is deleted and recorded
     again twice at the new commit.
@@ -213,14 +232,17 @@ def unconfirmed_commit_refusal(baseline: Baseline, commit: str) -> list[str]:
     ]
 
 
-def _disagreements(existing: Baseline, recording: Recording) -> list[str]:
-    first = existing.observation_runs()
-    return sorted(
-        cell_key(cell)
-        for cell, seen in first[0].items()
-        if all(run[cell] == seen for run in first)
-        and any(run.get(cell) != seen for run in recording.runs)
-    )
+def disagreements[K](
+    first_runs: list[dict[K, Observation]], second_runs: list[dict[K, Observation]]
+) -> list[K]:
+    """The keys stable over the first recording's runs that a run of the second sees otherwise
+    (ADR 023)."""
+    return [
+        key
+        for key, seen in first_runs[0].items()
+        if all(run[key] == seen for run in first_runs)
+        and any(run.get(key) != seen for run in second_runs)
+    ]
 
 
 def _baseline_from(recording: Recording, status: BaselineStatus, rule: RetestRule) -> Baseline:
@@ -234,10 +256,6 @@ def _baseline_from(recording: Recording, status: BaselineStatus, rule: RetestRul
         metrics=recording.metrics,
         protected=recording.protected,
     )
-
-
-def _ref(baseline: Baseline) -> RecordingRef:
-    return RecordingRef(commit=baseline.commit, recorded_at=baseline.recorded_at)
 
 
 def gated_set_changes(

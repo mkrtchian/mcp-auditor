@@ -50,7 +50,9 @@ def test_a_first_recording_breaching_a_floor_is_refused():
 
 
 def test_a_recording_with_no_stable_and_correct_fail_cell_is_refused():
-    recording = given.a_recording(protected=given.no_stable_and_correct_fail_cell())
+    recording = given.a_recording(
+        runs=honeypot_baselines.runs_where_vulnerable_cell_is(PASS, PASS, PASS)
+    )
 
     result = decide_recording(None, recording, given.a_gate())
 
@@ -61,7 +63,7 @@ def test_a_recording_with_no_stable_and_correct_fail_cell_is_refused():
 
 
 def test_a_recording_with_no_stable_and_correct_pass_cell_is_refused():
-    recording = given.a_recording(protected=given.no_stable_and_correct_pass_cell())
+    recording = given.a_recording(runs=given.runs_where_safe_cell_is(FAIL))
 
     result = decide_recording(None, recording, given.a_gate())
 
@@ -72,20 +74,23 @@ def test_a_recording_with_no_stable_and_correct_pass_cell_is_refused():
 
 
 def test_a_recording_with_one_stable_and_correct_cell_on_each_side_is_written():
-    recording = given.a_recording(protected=given.protected_on_both_sides())
-
-    result = decide_recording(None, recording, given.a_gate())
+    result = decide_recording(None, given.a_recording(), given.a_gate())
 
     assert isinstance(result, Baseline)
 
 
 def test_a_written_baseline_carries_the_recording_protected_cells():
-    protected = given.protected_on_both_sides().model_copy(update={"unstable": 2})
+    recording = given.a_recording(
+        runs=given.four_cell_runs(vulnerable=(FAIL, PASS, FAIL)),
+        ground_truth=honeypot_gate_inputs.a_ground_truth_with_two_cells_of_each_side(),
+    )
 
-    result = decide_recording(None, given.a_recording(protected=protected), given.a_gate())
+    result = decide_recording(None, recording, given.a_gate())
 
     assert isinstance(result, Baseline)
-    assert result.protected == protected
+    assert result.protected == ProtectedCells(
+        fail_stable_correct=1, fail_total=2, pass_stable_correct=2, pass_total=2, unstable=1
+    )
 
 
 def test_a_recording_with_a_failed_run_is_refused():

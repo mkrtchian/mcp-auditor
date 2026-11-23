@@ -1,4 +1,4 @@
-from evals.gate import CellComparison, CellOutcome, Observation, ProtectedCells
+from evals.gate import CellComparison, CellOutcome, Observation
 from evals.gate_outcome import GateMode, GateOutcome, GateResult
 from evals.ground_truth import GroundTruth, cell_key
 from evals.metrics import HoneypotMetrics
@@ -47,7 +47,6 @@ def a_recording(
     commit: str = RECORDED_COMMIT,
     completed_all: bool = True,
     budget: int = 10,
-    protected: ProtectedCells | None = None,
     ground_truth: GroundTruth | None = None,
 ) -> Recording:
     return Recording(
@@ -59,23 +58,8 @@ def a_recording(
             recall=0.9, precision=0.9, consistency=0.9, distribution_coverage=0.9
         ),
         completed_all=completed_all,
-        protected=protected or protected_on_both_sides(),
         ground_truth=ground_truth or a_ground_truth(),
     )
-
-
-def protected_on_both_sides() -> ProtectedCells:
-    return ProtectedCells(
-        fail_stable_correct=1, fail_total=1, pass_stable_correct=1, pass_total=1, unstable=0
-    )
-
-
-def no_stable_and_correct_fail_cell() -> ProtectedCells:
-    return protected_on_both_sides().model_copy(update={"fail_stable_correct": 0})
-
-
-def no_stable_and_correct_pass_cell() -> ProtectedCells:
-    return protected_on_both_sides().model_copy(update={"pass_stable_correct": 0})
 
 
 def a_gate(

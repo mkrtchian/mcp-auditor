@@ -1,14 +1,22 @@
-"""Whether a recording of the judge eval is written, and as what: the rules of
-`evals/recording.py` (ADR 020, 022, 023) with the case in place of the cell."""
+"""Whether a recording of the judge eval is written, and as what: the judge's own recording
+decision, which applies the shared rules of `evals/recording.py` (ADR 020, 022, 023) to cases."""
 
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
-from evals.gate import CellOutcome, Observation, ProtectedCells, RetestRule, protected_cells
+from evals.gate import Observation, RetestRule, protected_cells
 from evals.gate_outcome import GateOutcome
 from evals.judge.baseline import JudgeBaseline, JudgeConditions, judge_condition_mismatches
 from evals.judge.gate import JudgeGateResult
-from evals.recording import NOT_MADE_AGAIN, RecordingRefused
+from evals.recording import (
+    FLIPPED_OUTCOMES,
+    NOT_MADE_AGAIN,
+    RecordingRefused,
+    blind_sides,
+    conditions_differ_refusal,
+    disagreements,
+    unconfirmed_commit_refusal,
+)
 from mcp_auditor.domain.models import EvalVerdict
 
 _RESET_PROCEDURE = (
@@ -19,7 +27,7 @@ _RESET_PROCEDURE = (
     "change is reverted. Runs change and a new draw is made only from a green gate (ADR 025)"
 )
 
-_FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
+_FAIL_SIDE, _PASS_SIDE = "FAIL case", "PASS case"
 
 
 class JudgeRecording(BaseModel):
@@ -42,7 +50,7 @@ def decide_judge_recording(
     if existing is None:
         return _baseline_from(recording, BaselineStatus.UNCONFIRMED, recording.retest_rule)
     return _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
-        update={"replaces": _ref(existing)}
+        update={"replaces": RecordingRef.of(existing)}
     )
 
 
@@ -54,7 +62,9 @@ def _refusals(
     ]
     reasons += [
         f"no {side} is stable and correct: the gate could not see {miss}"
-        for side, miss in _blind_sides(protected_cells(recording.runs, recording.ground_truth))
+        for side, miss in blind_sides(
+            protected_cells(recording.runs, recording.ground_truth), _FAIL_SIDE, _PASS_SIDE
+        )
     ]
     if existing is None:
         return reasons
@@ -81,7 +91,7 @@ def _confirmed_refusals(
     reasons += [
         f"gated case {case} flipped in this run ({comparison.outcome})"
         for case, comparison in gate.cases.items()
-        if comparison.outcome in _FLIPPED
+        if comparison.outcome in FLIPPED_OUTCOMES
     ]
     return reasons
 
@@ -95,28 +105,15 @@ def judge_rescore_refusals(
     return [
         f"under the current labels the baseline holds no stable and correct {side}: delete the "
         f"baseline file in a commit of its own and record twice at that commit (ADR 022)"
-        for side, _ in _blind_sides(protected_cells(baseline.runs, ground_truth))
+        for side, _ in blind_sides(
+            protected_cells(baseline.runs, ground_truth), _FAIL_SIDE, _PASS_SIDE
+        )
     ]
-
-
-def _blind_sides(protected: ProtectedCells) -> list[tuple[str, str]]:
-    sides: list[tuple[str, str]] = []
-    if protected.fail_stable_correct == 0:
-        sides.append(("FAIL case", "a lost detection"))
-    if protected.pass_stable_correct == 0:
-        sides.append(("PASS case", "a new false positive"))
-    return sides
 
 
 def judge_condition_refusals(baseline: JudgeBaseline, candidate: JudgeConditions) -> list[str]:
     mismatches = judge_condition_mismatches(baseline.conditions, candidate)
-    if not mismatches:
-        return []
-    return [
-        f"conditions differ from the {baseline.status} baseline ({'; '.join(mismatches)}): "
-        f"to run at other conditions without changing the baseline, pass --no-baseline. To change "
-        f"the baseline's conditions, {_RESET_PROCEDURE}"
-    ]
+    return conditions_differ_refusal(baseline, mismatches, _RESET_PROCEDURE)
 
 
 def _second_recording(
@@ -129,7 +126,10 @@ def _second_recording(
     if reasons:
         return RecordingRefused(reasons=reasons)
     return _baseline_from(combined, BaselineStatus.CONFIRMED, existing.retest_rule).model_copy(
-        update={"confirms": _ref(existing), "disagreements": _disagreements(existing, recording)}
+        update={
+            "confirms": RecordingRef.of(existing),
+            "disagreements": sorted(disagreements(existing.runs, recording.runs)),
+        }
     )
 
 
@@ -141,33 +141,14 @@ def _second_recording_refusals(
     not_made_again = [f"{name} under its floor" for name in gate.floor_breaches] + [
         f"no {side} is stable and correct over the runs of both recordings: the gate could not "
         f"see {miss}"
-        for side, miss in _blind_sides(protected)
+        for side, miss in blind_sides(protected, _FAIL_SIDE, _PASS_SIDE)
     ]
     return (
         _uncovered(combined.runs)
         + not_made_again
-        + judge_unconfirmed_commit_refusal(existing, combined.commit)
+        + unconfirmed_commit_refusal(existing, combined.commit)
         + judge_condition_refusals(existing, combined.conditions)
         + ([NOT_MADE_AGAIN] if not_made_again else [])
-    )
-
-
-def judge_unconfirmed_commit_refusal(baseline: JudgeBaseline, commit: str) -> list[str]:
-    if baseline.status != BaselineStatus.UNCONFIRMED or baseline.commit == commit:
-        return []
-    return [
-        f"the unconfirmed baseline was recorded at {baseline.commit}, this run at "
-        f"{commit}: confirm it at its own commit, or delete it in a commit of its own"
-    ]
-
-
-def _disagreements(existing: JudgeBaseline, recording: JudgeRecording) -> list[str]:
-    first = existing.runs
-    return sorted(
-        case
-        for case, seen in first[0].items()
-        if all(run[case] == seen for run in first)
-        and any(run.get(case) != seen for run in recording.runs)
     )
 
 
@@ -183,7 +164,3 @@ def _baseline_from(
         runs=recording.runs,
         protected=protected_cells(recording.runs, recording.ground_truth),
     )
-
-
-def _ref(baseline: JudgeBaseline) -> RecordingRef:
-    return RecordingRef(commit=baseline.commit, recorded_at=baseline.recorded_at)

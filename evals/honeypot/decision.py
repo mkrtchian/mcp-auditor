@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from evals.baseline import RescoredBaseline, rescore
 from evals.declared_flips import apply_declarations
-from evals.gate import Observation, ProtectedCells, compare, observe, protected_cells
+from evals.gate import Observation, compare, observe
 from evals.gate_metrics import (
     DetectionCount,
     MetricDelta,
@@ -41,9 +41,6 @@ class RunsOutcome:
 
     def detections(self) -> DetectionCount:
         return count_detections(self.observations(), MERGED_GROUND_TRUTH)
-
-    def protected(self) -> ProtectedCells:
-        return protected_cells(self.observations(), MERGED_GROUND_TRUTH)
 
     def metrics(self) -> tuple[HoneypotMetrics, dict[str, ConsistencyDetail]]:
         consistency, consistency_details = compute_consistency(

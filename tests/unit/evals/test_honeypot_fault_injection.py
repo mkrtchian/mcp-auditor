@@ -13,14 +13,7 @@ import pytest
 import tests.unit.evals.support.test_honeypot_fault_injection_given as given
 import tests.unit.evals.support.test_honeypot_fault_injection_then as then
 from evals.baseline import Baseline
-from evals.gate import (
-    CellComparison,
-    CellOutcome,
-    FlipCause,
-    apply_retests,
-    compare,
-    protected_cells,
-)
+from evals.gate import CellComparison, CellOutcome, FlipCause, apply_retests, compare
 from evals.gate_metrics import count_detections
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
 from evals.ground_truth import Cell
@@ -169,7 +162,6 @@ def _through_the_gate(candidate: given.FaultedCandidate, retests: list[bool]) ->
         runs=candidate.runs,
         metrics=metrics,
         completed_all=True,
-        protected=protected_cells(candidate.runs, MERGED_GROUND_TRUTH),
         ground_truth=MERGED_GROUND_TRUTH,
     )
     return _GateRun(cells, paired, floors_only, decide_recording(None, recording, floors_only))
