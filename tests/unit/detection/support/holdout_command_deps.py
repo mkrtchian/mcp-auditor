@@ -7,13 +7,13 @@ import pytest
 
 from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.detection.holdout_run import HoldoutDeps
+from evals.cve.detection.holdout_run import HoldoutDeps, RunHoldoutTargets
 from evals.cve.detection.targets import Target
 from evals.cve.run_files import write_report
 from evals.cve.run_images import RunDocker
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
-from tests.unit.support import detection_holdout_runs
+from tests.unit.support import censuses, detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 from tests.unit.support.census_draws import a_census_drawing
 
@@ -41,10 +41,16 @@ def a_drawn_run_ending_in(
             raise outcome
         return outcome
 
+    return a_drawn_run_through(orchestrator)
+
+
+def a_drawn_run_through(run_targets: RunHoldoutTargets) -> HoldoutCommandDeps:
+    """A drawn target with a ready card whose run, past the CLI's own checks, goes through
+    `run_targets`, every Docker and LLM dependency reaching nothing."""
     return replace(
         a_drawn_run_reaching_nothing(),
         holdout_deps=_holdout_deps_reaching_nothing,
-        run_targets=orchestrator,
+        run_targets=run_targets,
         last_commit=lambda _census: "cafe",
         write_report=write_report,
     )
@@ -82,13 +88,7 @@ def a_drawn_target(**changes: Any) -> Target:
 
 
 def a_census_with_a_ready_card(tmp_path: Path) -> Path:
-    return _written(tmp_path, a_census_drawing([DRAWN_FLAW]).model_dump_json())
-
-
-def _written(tmp_path: Path, census: str) -> Path:
-    path = tmp_path / "census.json"
-    path.write_text(census)
-    return path
+    return censuses.written(tmp_path, a_census_drawing([DRAWN_FLAW]))
 
 
 def a_ready_run(monkeypatch: pytest.MonkeyPatch) -> None:

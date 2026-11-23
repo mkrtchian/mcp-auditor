@@ -1,5 +1,5 @@
-"""The holdout `run` command around its orchestrator: the report refusal, the result file written
-before the report, and a run stopped by an exception. No Docker, no LLM."""
+"""The holdout `run` command around its orchestrator: no drawn target, the refusals before the run,
+the result file written before the report, and a run stopped by an exception. No Docker, no LLM."""
 
 import dataclasses
 import json
@@ -10,9 +10,46 @@ import pytest
 import tests.unit.detection.support.holdout_command_deps as command_deps
 import tests.unit.detection.support.test_run_detection_holdout_run_given as given
 from evals import run_detection_holdout
+from evals.cve.detection.holdout_run import run_holdout_targets
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import RunInterrupted
 from tests.unit.support import holdout_result_keys
+
+
+def test_run_without_a_drawn_target_exits_zero_and_says_so(capsys: pytest.CaptureFixture[str]):
+    deps = dataclasses.replace(command_deps.a_drawn_run_reaching_nothing(), drawn=())
+
+    exit_code = run_detection_holdout.main(["run"], deps)
+
+    assert exit_code == 0
+    assert "no holdout target is drawn" in capsys.readouterr().out
+
+
+def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+
+    exit_code = run_detection_holdout.main(["run"], command_deps.a_command_reaching_nothing())
+
+    assert exit_code == run_detection_holdout.REFUSED_EXIT
+
+
+def test_run_refuses_an_acceptance_target_for_its_tools_filter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    command_deps.a_ready_run(monkeypatch)
+    deps = dataclasses.replace(
+        command_deps.a_drawn_run_through(run_holdout_targets),
+        drawn=(command_deps.a_drawn_target(),),
+    )
+    census = command_deps.a_census_with_a_ready_card(tmp_path)
+
+    exit_code = run_detection_holdout.main(["run", "--census", str(census)], deps)
+
+    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert (
+        f"the rule runs with no tools filter, but {command_deps.DRAWN_FLAW} carries one"
+        in capsys.readouterr().out
+    )
 
 
 @pytest.mark.parametrize("suffix", [".json", ".md", ".result.json"])
