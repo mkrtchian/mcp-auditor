@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import tests.unit.evals.support.judge_baselines as judge_baselines
-import tests.unit.evals.support.test_judge_baseline_given as given
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.gate import RetestRule
 from evals.judge.baseline import (
@@ -127,19 +126,10 @@ def test_loading_an_absent_baseline_gives_none(tmp_path: Path):
     assert load_judge_baseline(tmp_path / "missing.json") is None
 
 
-def test_a_baseline_file_still_keyed_replay_rule_loads_its_retest_rule(tmp_path: Path):
-    path = given.a_baseline_file_keyed_replay_rule(tmp_path)
-
-    baseline = load_judge_baseline(path)
-
-    assert baseline is not None and baseline.retest_rule == RetestRule()
-
-
-def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
+def test_a_written_baseline_keys_its_retest_rule(tmp_path: Path):
     path = tmp_path / "judge.json"
 
     write_judge_baseline(path, judge_baselines.a_baseline())
 
     written = json.loads(path.read_text())
     assert written["retest_rule"] == RetestRule().model_dump()
-    assert "replay_rule" not in written

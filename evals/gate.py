@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Self
 
-from pydantic import AliasChoices, BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
 
 from evals.ground_truth import Cell, GroundTruth
 from evals.metrics import VerdictMap
@@ -53,8 +53,7 @@ class RetestRule(BaseModel):
     `evals/fault_injection_method.md`.
     """
 
-    # Read from `replays` too, the key of the committed baselines until their next re-recording.
-    retests: int = Field(default=5, validation_alias=AliasChoices("retests", "replays"))
+    retests: int = 5
     required: int = 4
 
     @model_validator(mode="after")

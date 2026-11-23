@@ -88,24 +88,6 @@ ALLOWLIST = (
         "asserts that the product report carries none of the old keys",
     ),
     AllowedLine(
-        "evals/baseline.py",
-        "replay-retest",
-        'AliasChoices("retest_rule", "replay_rule")',
-        "read alias of the committed honeypot baseline until its next re-recording",
-    ),
-    AllowedLine(
-        "evals/judge/baseline.py",
-        "replay-retest",
-        'AliasChoices("retest_rule", "replay_rule")',
-        "read alias of the committed judge baseline until its next re-recording",
-    ),
-    AllowedLine(
-        "tests/unit/evals/*test_*baseline*.py",
-        "replay-retest",
-        "replay_rule",
-        "the tests that a committed baseline loads through the alias",
-    ),
-    AllowedLine(
         "evals/cve/census/work.py",
         "cve-id",
         "cve_id: str",

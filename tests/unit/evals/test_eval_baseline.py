@@ -186,22 +186,13 @@ def test_a_baseline_written_before_the_protected_summary_loads_without_it(tmp_pa
     assert loaded is not None and loaded.protected is None
 
 
-def test_a_baseline_file_still_keyed_replay_rule_loads_its_retest_rule(tmp_path: Path):
-    path = given.a_baseline_file_keyed_replay_rule(tmp_path)
-
-    baseline = load_baseline(path)
-
-    assert baseline is not None and baseline.retest_rule == RetestRule()
-
-
-def test_a_written_baseline_carries_the_retest_keys_only(tmp_path: Path):
+def test_a_written_baseline_keys_its_retest_rule(tmp_path: Path):
     path = tmp_path / "honeypot.json"
 
     write_baseline(path, honeypot_baselines.a_baseline())
 
     written = json.loads(path.read_text())
     assert written["retest_rule"] == RetestRule().model_dump()
-    assert "replay_rule" not in written
 
 
 def test_observation_runs_parse_the_keys_back_to_cells():

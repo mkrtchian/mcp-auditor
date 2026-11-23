@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel
 
 from evals.gate import Observation, ProtectedCells, RetestRule, protected_cells
 from evals.ground_truth import Cell, GroundTruth, cell_key, parse_cell_key
@@ -46,8 +46,7 @@ class RecordingRef(BaseModel):
 class Baseline(BaseModel):
     status: BaselineStatus
     conditions: BaselineConditions
-    # The committed baseline still carries the old key, until its next re-recording.
-    retest_rule: RetestRule = Field(validation_alias=AliasChoices("retest_rule", "replay_rule"))
+    retest_rule: RetestRule
     commit: str
     recorded_at: str
     runs: list[dict[str, Observation]]

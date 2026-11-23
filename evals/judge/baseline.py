@@ -4,7 +4,7 @@ with no label, so a rubric revision re-scores it and a redraw resets it."""
 import os
 from pathlib import Path
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.gate import Observation, ProtectedCells, RetestRule
@@ -25,8 +25,7 @@ class JudgeConditions(BaseModel):
 class JudgeBaseline(BaseModel):
     status: BaselineStatus
     conditions: JudgeConditions
-    # The committed baseline still carries the old key, until its next re-recording.
-    retest_rule: RetestRule = Field(validation_alias=AliasChoices("retest_rule", "replay_rule"))
+    retest_rule: RetestRule
     commit: str
     recorded_at: str
     runs: list[dict[str, Observation]]  # case id -> observation, every case of the fixture

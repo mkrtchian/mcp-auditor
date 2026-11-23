@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 from evals.baseline import Baseline, BaselineStatus, RecordingRef
 from tests.unit.evals.support.honeypot_baselines import RECORDED_COMMIT, ObservationRuns, a_baseline
 
@@ -65,14 +62,6 @@ async def fetch(target: Named) -> str:
     except (OSError, ValueError) as error:
         return f"{type(error).__name__}"
 '''
-
-
-def a_baseline_file_keyed_replay_rule(tmp_path: Path) -> Path:
-    written = a_baseline().model_dump(mode="json")
-    written["replay_rule"] = written.pop("retest_rule")
-    path = tmp_path / "honeypot.json"
-    path.write_text(json.dumps(written))
-    return path
 
 
 def a_confirmation(runs: ObservationRuns) -> Baseline:
