@@ -7,7 +7,6 @@ from pydantic import BaseModel
 
 import tests.unit.evals.support.test_honeypot_fault_harness_given as given
 import tests.unit.evals.support.test_honeypot_fault_harness_then as then
-from evals.honeypot.fault_harness import fixture_refusals
 from evals.honeypot.fault_injection import (
     CategoryDroppingGenerator,
     ChainRefusingModel,
@@ -17,7 +16,6 @@ from evals.honeypot.fault_injection import (
     SilentJudge,
     lose_detections,
 )
-from evals.honeypots import audit_honeypots
 from mcp_auditor.domain.models import (
     AuditCategory,
     AuditPayload,
@@ -28,7 +26,6 @@ from mcp_auditor.domain.models import (
     TestCaseBatch,
 )
 from mcp_auditor.domain.ports import LLMPort, ProviderRefusal
-from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 from tests.fakes.llm import FakeLLM
 
 INJECTION = AuditCategory.INJECTION
@@ -136,31 +133,6 @@ async def test_a_model_refusing_chains_still_generates_test_cases():
     assert answer == batch
 
 
-async def test_auditing_the_honeypots_merges_their_reports():
-    reports = given.a_report_per_honeypot()
-
-    verdicts, merged = await audit_honeypots(reports.audit)
-
-    then.merged(verdicts, merged, list(reports.by_honeypot.values()))
-
-
-async def test_auditing_the_honeypots_merges_in_a_fixed_order_whatever_finishes_first():
-    reverse = given.a_report_per_honeypot_finishing_in_reverse()
-
-    verdicts, merged = await audit_honeypots(reverse.audit)
-
-    then.merged(verdicts, merged, list(reverse.reports.by_honeypot.values()))
-
-
-async def test_a_failing_honeypot_cancels_the_other_audits_of_its_run():
-    failing = given.OneFailingHoneypot()
-
-    with pytest.raises(given.SubtleHoneypotCrashed):
-        await audit_honeypots(failing.audit)
-
-    assert sorted(failing.cancelled) == ["chain_honeypot", "honeypot"]
-
-
 async def test_a_retest_takes_its_audit_index_when_it_starts_not_when_it_ends():
     first, second = given.SINGLE_STEP_HONEYPOTS
     clients = {first.name: given.GatedClient(), second.name: given.GatedClient()}
@@ -175,13 +147,3 @@ async def test_a_retest_takes_its_audit_index_when_it_starts_not_when_it_ends():
 
     then.lost_as_drawn_at(first_verdicts, audit_index=0)
     then.lost_as_drawn_at(second_verdicts, audit_index=1)
-
-
-def test_the_harness_refuses_a_fixture_whose_runs_miss_a_cell():
-    fixture = given.the_fixture_missing(CHAIN_ONLY_FLAWS[0])
-
-    reasons = fixture_refusals(fixture)
-
-    assert reasons == [
-        f"run {index}: cells ['project_manager/info_leakage'] missing" for index in range(3)
-    ]

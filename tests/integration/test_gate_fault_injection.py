@@ -7,8 +7,9 @@ import tests.integration.support.test_gate_fault_injection_given as given
 import tests.integration.support.test_gate_fault_injection_then as then
 from evals.honeypot.fault_catalog import FAULTS, Fault
 from mcp_auditor.domain.models import AuditCategory
+from tests.unit.evals.support.fault_injection_baseline import the_fault_injection_baseline
 
-FIXTURE = given.the_fixture()
+FIXTURE = the_fault_injection_baseline()
 RANDOM_JUDGE = "judge_fails_at_random"
 HALF_LOSS = "half_the_detections_lost"
 DECLARED_DROP = "generator_drops_error_handling_declared"
