@@ -184,18 +184,41 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
     assert assembled.incomplete_runs_by_cause == {"provider_refusal": 1, "unreadable_answer": 1}
 
 
-async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run():
+_DETECTED = detection_holdout_runs.graded(
+    TargetStatus.DETECTED,
+    detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage()),
+    aimed=True,
+)
+_LAUNCH_FAILURE = DroppedRun(NotRunCause.LAUNCH_FAILURE)
+
+
+@pytest.mark.parametrize(
+    "sick_outcomes, cause, reason",
+    [
+        (
+            [_DETECTED, _LAUNCH_FAILURE, _LAUNCH_FAILURE],
+            NotRunCause.LAUNCH_FAILURE,
+            "a run failed to launch after retries",
+        ),
+        (
+            [_LAUNCH_FAILURE, DroppedRun(NotRunCause.THROTTLED), _DETECTED],
+            NotRunCause.THROTTLED,
+            "throttled by the model provider past every retry",
+        ),
+        (
+            [_LAUNCH_FAILURE, DroppedRun(NotRunCause.PROVIDER_ERROR), _DETECTED],
+            NotRunCause.PROVIDER_ERROR,
+            "a run hit a provider error past every retry",
+        ),
+    ],
+)
+async def test_a_target_with_a_dropped_run_is_dropped_for_the_whole_run(
+    sick_outcomes: list[detection_holdout_runs.Outcome], cause: NotRunCause, reason: str
+):
     sick, healthy = (
         detection_holdout_runs.a_target(KUBERNETES),
         detection_holdout_runs.a_target(FILESYSTEM),
     )
-    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
-    launch_failure = DroppedRun(NotRunCause.LAUNCH_FAILURE)
-    sick_outcomes: list[detection_holdout_runs.Outcome] = [
-        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
-        launch_failure,
-        launch_failure,
-    ]
     audit = detection_holdout_runs.scripted(
         {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
     )
@@ -207,57 +230,8 @@ async def test_a_target_whose_run_fails_to_launch_is_dropped_for_the_whole_run()
     assert [t.flaw_id for t in result.targets] == [healthy.flaw_id]
     (not_run,) = result.not_run
     assert not_run.flaw_id == sick.flaw_id
-    assert not_run.reason == "a run failed to launch after retries"
-    assert not_run.cause is NotRunCause.LAUNCH_FAILURE
-
-
-async def test_a_target_with_any_throttled_run_is_dropped_as_throttled():
-    sick, healthy = (
-        detection_holdout_runs.a_target(KUBERNETES),
-        detection_holdout_runs.a_target(FILESYSTEM),
-    )
-    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
-    sick_outcomes: list[detection_holdout_runs.Outcome] = [
-        DroppedRun(NotRunCause.LAUNCH_FAILURE),
-        DroppedRun(NotRunCause.THROTTLED),
-        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
-    ]
-    audit = detection_holdout_runs.scripted(
-        {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
-    )
-
-    result = await detection_holdout_runs.run(
-        [sick, healthy], detection_holdout_runs.deps_auditing(audit)
-    )
-
-    (not_run,) = result.not_run
-    assert not_run.flaw_id == sick.flaw_id
-    assert not_run.reason == "throttled by the model provider past every retry"
-    assert not_run.cause is NotRunCause.THROTTLED
-
-
-async def test_a_provider_error_wins_over_a_launch_failure():
-    sick, healthy = (
-        detection_holdout_runs.a_target(KUBERNETES),
-        detection_holdout_runs.a_target(FILESYSTEM),
-    )
-    report = detection_holdout_runs.a_report(ProviderUsage(), ProviderUsage())
-    sick_outcomes: list[detection_holdout_runs.Outcome] = [
-        DroppedRun(NotRunCause.LAUNCH_FAILURE),
-        DroppedRun(NotRunCause.PROVIDER_ERROR),
-        detection_holdout_runs.graded(TargetStatus.DETECTED, report, aimed=True),
-    ]
-    audit = detection_holdout_runs.scripted(
-        {sick.flaw_id: sick_outcomes, healthy.flaw_id: detection_holdout_runs.three_detections()}
-    )
-
-    result = await detection_holdout_runs.run(
-        [sick, healthy], detection_holdout_runs.deps_auditing(audit)
-    )
-
-    (not_run,) = result.not_run
-    assert not_run.reason == "a run hit a provider error past every retry"
-    assert not_run.cause is NotRunCause.PROVIDER_ERROR
+    assert not_run.reason == reason
+    assert not_run.cause is cause
 
 
 async def test_the_run_announces_the_audits_of_the_surviving_targets_only():

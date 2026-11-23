@@ -1,5 +1,3 @@
-from collections.abc import Sequence
-
 import pytest
 from langchain_core.exceptions import ModelAuthenticationError
 
@@ -22,6 +20,7 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
 from mcp_auditor.domain.model_calls import MissedCallCause
+from tests.unit.detection.support.detection_audits import ScriptedAttempts
 from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
 
@@ -34,7 +33,7 @@ async def test_a_graded_audit_passes_through(
 ):
     a_captured_console(capsys, monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
-    attempt = _ScriptedAttempts([graded])
+    attempt = ScriptedAttempts[GradedAudit]([graded])
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -57,7 +56,7 @@ async def test_an_incomplete_attempt_is_not_retried(
 ):
     a_captured_console(capsys, monkeypatch)
     report = grammar.a_report()
-    attempt = _ScriptedAttempts([IncompleteAttempt(report, causes)])
+    attempt = ScriptedAttempts[GradedAudit]([IncompleteAttempt(report, causes)])
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -75,7 +74,7 @@ async def test_an_incomplete_run_carries_the_server_health_of_its_attempt(
     health = ServerHealth(2, 1, relaunches=1, unsent_calls=4)
     incomplete = IncompleteAttempt(grammar.a_report(), refused, health)
 
-    outcome = await holdout_audit(TARGET, _ScriptedAttempts([incomplete]))
+    outcome = await holdout_audit(TARGET, ScriptedAttempts[GradedAudit]([incomplete]))
 
     assert isinstance(outcome, IncompleteRun)
     assert outcome.health == health
@@ -87,7 +86,9 @@ async def test_an_attempt_missing_steps_names_their_causes(
     output = a_captured_console(capsys, monkeypatch)
     causes = frozenset({MissedCallCause.PROVIDER_REFUSAL, MissedCallCause.UNREADABLE_ANSWER})
 
-    await holdout_audit(TARGET, _ScriptedAttempts([IncompleteAttempt(grammar.a_report(), causes)]))
+    await holdout_audit(
+        TARGET, ScriptedAttempts[GradedAudit]([IncompleteAttempt(grammar.a_report(), causes)])
+    )
 
     assert (
         f"{TARGET.flaw_id}: refused by the model provider and unreadable model answer,"
@@ -101,7 +102,7 @@ async def test_an_infra_failure_is_retried_and_a_later_graded_attempt_stands(
 ):
     a_captured_console(capsys, monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
-    attempt = _ScriptedAttempts([None, graded])
+    attempt = ScriptedAttempts[GradedAudit]([None, graded])
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -113,7 +114,7 @@ async def test_an_infra_failure_is_retried_twice_then_gives_up(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     a_captured_console(capsys, monkeypatch)
-    attempt = _ScriptedAttempts([None, None, None])
+    attempt = ScriptedAttempts[GradedAudit]([None, None, None])
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -127,7 +128,7 @@ async def test_a_throttled_attempt_is_retried_and_a_later_graded_attempt_stands(
 ):
     output = a_captured_console(capsys, monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
-    attempt = _ScriptedAttempts([ThrottledAttempt(), graded])
+    attempt = ScriptedAttempts[GradedAudit]([ThrottledAttempt(), graded])
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -154,7 +155,7 @@ async def test_a_run_throttled_at_any_attempt_is_dropped_as_throttled(
 ):
     a_captured_console(capsys, monkeypatch)
 
-    outcome = await holdout_audit(TARGET, _ScriptedAttempts([*outcomes]))
+    outcome = await holdout_audit(TARGET, ScriptedAttempts[GradedAudit]([*outcomes]))
 
     assert outcome == DroppedRun(NotRunCause.THROTTLED)
 
@@ -163,7 +164,9 @@ async def test_a_fatal_provider_error_stops_the_run_at_once(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     a_captured_console(capsys, monkeypatch)
-    attempt = _ScriptedAttempts([ProviderFatal(ModelAuthenticationError("invalid key"))])
+    attempt = ScriptedAttempts[GradedAudit](
+        [ProviderFatal(ModelAuthenticationError("invalid key"))]
+    )
 
     with pytest.raises(ProviderFatal):
         await holdout_audit(TARGET, attempt)
@@ -176,7 +179,7 @@ async def test_a_provider_error_at_every_attempt_drops_the_run_as_a_provider_err
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    attempt = _ScriptedAttempts([_PROVIDER_ERROR] * HOLDOUT_INFRA_ATTEMPTS)
+    attempt = ScriptedAttempts[GradedAudit]([_PROVIDER_ERROR] * HOLDOUT_INFRA_ATTEMPTS)
 
     outcome = await holdout_audit(TARGET, attempt)
 
@@ -194,7 +197,7 @@ async def test_a_provider_error_is_retried_and_a_later_graded_attempt_stands(
     a_captured_console(capsys, monkeypatch)
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
 
-    outcome = await holdout_audit(TARGET, _ScriptedAttempts([_PROVIDER_ERROR, graded]))
+    outcome = await holdout_audit(TARGET, ScriptedAttempts[GradedAudit]([_PROVIDER_ERROR, graded]))
 
     assert outcome is graded
 
@@ -205,19 +208,8 @@ async def test_a_run_failing_on_a_provider_error_and_a_launch_drops_as_a_provide
 ):
     a_captured_console(capsys, monkeypatch)
 
-    outcome = await holdout_audit(TARGET, _ScriptedAttempts([None, _PROVIDER_ERROR, None]))
+    outcome = await holdout_audit(
+        TARGET, ScriptedAttempts[GradedAudit]([None, _PROVIDER_ERROR, None])
+    )
 
     assert outcome == DroppedRun(NotRunCause.PROVIDER_ERROR)
-
-
-class _ScriptedAttempts:
-    def __init__(self, outcomes: Sequence[AttemptOutcome[GradedAudit] | ProviderFatal]) -> None:
-        self._outcomes = list(outcomes)
-        self.calls = 0
-
-    async def __call__(self) -> AttemptOutcome[GradedAudit]:
-        self.calls += 1
-        outcome = self._outcomes.pop(0)
-        if isinstance(outcome, ProviderFatal):
-            raise outcome
-        return outcome

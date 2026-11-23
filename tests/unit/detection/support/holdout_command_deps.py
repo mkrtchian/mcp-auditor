@@ -21,7 +21,7 @@ DRAWN_FLAW = "CVE-2026-0001"
 
 
 def a_run_result() -> DetectionHoldoutRunResult:
-    target = an_acceptance_target(FILESYSTEM, tools_filter=None)
+    target = detection_holdout_runs.a_target(FILESYSTEM)
     audit = detection_holdout_runs.scripted(
         {target.flaw_id: detection_holdout_runs.three_detections()}
     )

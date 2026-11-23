@@ -12,7 +12,9 @@ from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, KUBERNETES
 
 
 async def test_a_fatal_provider_error_keeps_the_finished_target_in_a_partial_result():
-    finished, failing, pending = given.holdout_targets(FILESYSTEM, KUBERNETES, GIT)
+    finished, failing, pending = (
+        detection_holdout_runs.a_target(flaw_id) for flaw_id in (FILESYSTEM, KUBERNETES, GIT)
+    )
     fatal = ProviderFatal(PermissionError("the key was revoked"))
     audit = given.InterruptingAudit(finished.flaw_id, failing.flaw_id, fatal)
 
@@ -29,7 +31,9 @@ async def test_a_fatal_provider_error_keeps_the_finished_target_in_a_partial_res
 
 
 async def test_the_runs_still_in_flight_are_cancelled():
-    finished, failing, pending = given.holdout_targets(FILESYSTEM, KUBERNETES, GIT)
+    finished, failing, pending = (
+        detection_holdout_runs.a_target(flaw_id) for flaw_id in (FILESYSTEM, KUBERNETES, GIT)
+    )
     fatal = ProviderFatal(PermissionError("the key was revoked"))
     audit = given.InterruptingAudit(finished.flaw_id, failing.flaw_id, fatal)
 
@@ -42,7 +46,10 @@ async def test_the_runs_still_in_flight_are_cancelled():
 
 
 async def test_any_other_exception_interrupts_the_run_the_same_way():
-    finished, failing = given.holdout_targets(FILESYSTEM, KUBERNETES)
+    finished, failing = (
+        detection_holdout_runs.a_target(FILESYSTEM),
+        detection_holdout_runs.a_target(KUBERNETES),
+    )
     bug = KeyError("a bug in the run")
     audit = given.InterruptingAudit(finished.flaw_id, failing.flaw_id, bug)
 

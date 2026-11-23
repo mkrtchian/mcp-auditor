@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 
 import tests.unit.support.grammar_inputs as grammar
@@ -50,10 +50,13 @@ def a_report_missing(*causes: MissedCallCause) -> AuditReport:
 
 
 class ScriptedAttempts[T]:
-    def __init__(self, outcomes: list[AttemptOutcome[T]]) -> None:
-        self._outcomes = outcomes
+    def __init__(self, outcomes: Sequence[AttemptOutcome[T] | BaseException]) -> None:
+        self._outcomes = list(outcomes)
         self.calls = 0
 
     async def __call__(self) -> AttemptOutcome[T]:
         self.calls += 1
-        return self._outcomes.pop(0)
+        outcome = self._outcomes.pop(0)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome

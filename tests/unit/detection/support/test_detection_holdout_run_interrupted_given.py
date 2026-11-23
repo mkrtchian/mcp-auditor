@@ -1,13 +1,7 @@
 import asyncio
 
 from evals.cve.detection.targets import Target
-from tests.unit.support.acceptance_targets import an_acceptance_target
 from tests.unit.support.detection_holdout_runs import Outcome, three_detections
-
-
-def holdout_targets(*flaw_ids: str) -> tuple[Target, ...]:
-    """With no tools filter, which the detection holdout run refuses."""
-    return tuple(an_acceptance_target(flaw_id, tools_filter=None) for flaw_id in flaw_ids)
 
 
 class InterruptingAudit:
