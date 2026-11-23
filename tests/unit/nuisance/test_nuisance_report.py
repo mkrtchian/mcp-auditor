@@ -6,7 +6,7 @@ import re
 from datetime import date
 
 import tests.unit.nuisance.support.test_nuisance_report_given as given
-from evals.cve.detection.holdout_report import (
+from evals.cve.holdout_report_lines import (
     ConclusionLine,
     CutoffModel,
     IntervalModel,

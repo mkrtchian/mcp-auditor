@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from evals.cve.detection.holdout_report import ConclusionLine, IntervalModel, RunCutoffModel
+from evals.cve.holdout_report_lines import ConclusionLine, IntervalModel, RunCutoffModel
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from evals.cve.nuisance.report import NotRunLine, NuisanceReport, ServerLine
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause

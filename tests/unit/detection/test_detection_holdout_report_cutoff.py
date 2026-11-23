@@ -5,8 +5,9 @@ import dataclasses
 from datetime import date
 
 from evals.cve.detection.holdout_markdown import render_markdown
-from evals.cve.detection.holdout_report import RunCutoffModel, build_report
+from evals.cve.detection.holdout_report import build_report
 from evals.cve.holdout_conditions import Cutoff
+from evals.cve.holdout_report_lines import RunCutoffModel
 from evals.cve.holdout_statistic import Side
 from tests.unit.detection.support.holdout_report_runs import a_run_result, a_target_result
 from tests.unit.support.coarse_grid import COARSE_GRID

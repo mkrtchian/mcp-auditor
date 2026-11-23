@@ -3,7 +3,6 @@ lines (place ids and counts), never evidence, judge input or a per-case verdict,
 holdout run cannot write proof text even by mistake."""
 
 from collections import Counter
-from collections.abc import Mapping
 from datetime import date
 
 from pydantic import BaseModel
@@ -11,11 +10,15 @@ from pydantic import BaseModel
 from evals.cve.detection.holdout_not_run import NotRunLine
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_target_line import TargetLine
-from evals.cve.holdout_conditions import Cutoff
 from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
-from evals.cve.holdout_intervals import Interval
+from evals.cve.holdout_report_lines import (
+    ConclusionLine,
+    CutoffModel,
+    IntervalModel,
+    RunCutoffModel,
+    two_sides,
+)
 from evals.cve.holdout_statistic import (
-    MethodPlacement,
     Side,
     SideStatistic,
     check_conclusion,
@@ -27,60 +30,11 @@ from evals.cve.holdout_statistic import (
 )
 
 
-class IntervalModel(BaseModel):
-    low: float
-    high: float
-
-    @classmethod
-    def of(cls, interval: Interval) -> "IntervalModel":
-        return cls(low=interval.low, high=interval.high)
-
-
-class MethodLine(BaseModel):
-    method: str
-    interval: IntervalModel
-    placement: str
-
-    @classmethod
-    def of(cls, method: MethodPlacement) -> "MethodLine":
-        return cls(
-            method=method.method,
-            interval=IntervalModel.of(method.interval),
-            placement=method.placement.value,
-        )
-
-
-class ConclusionLine(BaseModel):
-    placement: str | None
-    inconclusive: bool
-    cited: MethodLine
-    disagreeing: list[MethodLine]
-
-
 class SideLine(BaseModel):
     side: Side
     number: float
     interval: IntervalModel
     targets: int
-
-
-class CutoffModel(BaseModel):
-    date: date
-    type: str | None
-    source: str | None
-    note: str | None
-
-    @classmethod
-    def of(cls, cutoff: Cutoff) -> "CutoffModel":
-        return cls(date=cutoff.date, type=cutoff.type, source=cutoff.source, note=cutoff.note)
-
-
-class RunCutoffModel(BaseModel):
-    model: str
-    date: date
-    type: str | None
-    source: str | None
-    note: str | None
 
 
 class HoldoutReport(BaseModel):
@@ -123,9 +77,9 @@ class HoldoutReport(BaseModel):
 
 
 def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -> HoldoutReport:
-    model, cutoff = run_cutoff(run.cutoffs)
+    cutoff = RunCutoffModel.latest(run.cutoffs)
     split = split_by_side(run.targets, cutoff.date)
-    pair = _two_sides(split)
+    pair = two_sides(split)
     return HoldoutReport(
         holdout_detection_rate=holdout_detection_rate(run.targets),
         cited_interval=IntervalModel.of(cited_interval(run.targets)),
@@ -133,13 +87,7 @@ def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -
             name: IntervalModel.of(interval)
             for name, interval in detection_rate_controls(run.targets, run.runs, grid=grid).items()
         },
-        run_cutoff=RunCutoffModel(
-            model=model,
-            date=cutoff.date,
-            type=cutoff.type,
-            source=cutoff.source,
-            note=cutoff.note,
-        ),
+        run_cutoff=cutoff,
         sides=[_side_line(side) for side in split.values()],
         contrast=_contrast_line(pair),
         conclusion=_conclusion_line(pair, run.runs, grid),
@@ -180,17 +128,6 @@ def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -
     )
 
 
-def run_cutoff(cutoffs: Mapping[str, Cutoff]) -> tuple[str, Cutoff]:
-    # max keeps the first on a tie, so the generator is named when it shares the judge's date.
-    return max(cutoffs.items(), key=lambda item: item[1].date)
-
-
-def _two_sides(split: dict[Side, SideStatistic]) -> tuple[SideStatistic, SideStatistic] | None:
-    if Side.PRE_CUTOFF in split and Side.POST_CUTOFF in split:
-        return split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF]
-    return None
-
-
 def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> IntervalModel | None:
     if pair is None:
         return None
@@ -206,12 +143,7 @@ def _conclusion_line(
     conclusion = check_conclusion(*pair, runs, grid=grid)
     if conclusion is None:
         return None
-    return ConclusionLine(
-        placement=None if conclusion.placement is None else conclusion.placement.value,
-        inconclusive=conclusion.inconclusive,
-        cited=MethodLine.of(conclusion.cited),
-        disagreeing=[MethodLine.of(method) for method in conclusion.disagreeing],
-    )
+    return ConclusionLine.of(conclusion)
 
 
 def _side_line(side: SideStatistic) -> SideLine:

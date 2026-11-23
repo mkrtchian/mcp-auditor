@@ -7,18 +7,16 @@ from datetime import date
 import tests.unit.detection.support.test_detection_holdout_report_given as given
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_not_run import NotRunLine
-from evals.cve.detection.holdout_report import (
+from evals.cve.detection.holdout_report import HoldoutReport, SideLine, build_report
+from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
+from evals.cve.detection.holdout_target_line import TargetLine, TargetRunLine
+from evals.cve.holdout_report_lines import (
     ConclusionLine,
     CutoffModel,
-    HoldoutReport,
     IntervalModel,
     MethodLine,
     RunCutoffModel,
-    SideLine,
-    build_report,
 )
-from evals.cve.detection.holdout_results import NotRunCause, NotRunTarget
-from evals.cve.detection.holdout_target_line import TargetLine, TargetRunLine
 from evals.cve.holdout_statistic import Side
 from tests.unit.detection.support.holdout_report_runs import RECORDED_AT, RUNS, a_run_result
 from tests.unit.support.coarse_grid import COARSE_GRID

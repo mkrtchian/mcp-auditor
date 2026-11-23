@@ -7,15 +7,14 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from evals.cve.detection.holdout_report import (
+from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
+from evals.cve.holdout_report_lines import (
     ConclusionLine,
     CutoffModel,
     IntervalModel,
     MethodLine,
     RunCutoffModel,
-    run_cutoff,
 )
-from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
 from evals.cve.holdout_statistic import Side
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import (
@@ -140,7 +139,7 @@ class NuisanceReport(BaseModel):
 
 
 def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -> NuisanceReport:
-    model, cutoff = run_cutoff(run.cutoffs)
+    cutoff = RunCutoffModel.latest(run.cutoffs)
     split = split_by_side(run.servers, cutoff.date)
     pair = _two_sides(split)
     return NuisanceReport(
@@ -150,13 +149,7 @@ def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) ->
             name: IntervalModel.of(interval)
             for name, interval in nuisance_rate_controls(run.servers, run.runs, grid=grid).items()
         },
-        run_cutoff=RunCutoffModel(
-            model=model,
-            date=cutoff.date,
-            type=cutoff.type,
-            source=cutoff.source,
-            note=cutoff.note,
-        ),
+        run_cutoff=cutoff,
         sides=[_side_line(side) for side in split.values()],
         contrast=_contrast_line(pair),
         conclusion=_conclusion_line(pair, run.runs, grid),
