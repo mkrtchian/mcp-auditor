@@ -1,7 +1,7 @@
 import tests.unit.evals.support.judge_session_results as judge_session_results
 from evals.gate import CellComparison, CellOutcome, FlipCause
 from evals.judge.fixture import CaseLabel
-from evals.judge.outcomes import JudgeOutcomeRow, case_outcomes, judge_outcome_rows
+from evals.judge.outcomes import JudgeOutcomeRow, case_outcomes
 
 F, P, U = judge_session_results.F, judge_session_results.P, judge_session_results.U
 
@@ -19,7 +19,7 @@ def test_rows_list_only_the_cases_that_left_unchanged():
         retest_observations={judge_session_results.FLIPPED_ID: [F, P, U]},
     )
 
-    rows = judge_outcome_rows(result, judge_session_results.a_judge_fixture())
+    rows = case_outcomes(result, judge_session_results.a_judge_fixture()).rows
 
     assert rows == [
         JudgeOutcomeRow(
@@ -41,7 +41,7 @@ def test_a_case_with_no_retest_and_no_cause_shows_dashes():
         {judge_session_results.FLIPPED_ID: CellComparison(outcome=CellOutcome.FLIP)}
     )
 
-    [row] = judge_outcome_rows(result, judge_session_results.a_judge_fixture())
+    [row] = case_outcomes(result, judge_session_results.a_judge_fixture()).rows
 
     assert (row.retests, row.cause) == ("-", "-")
 
@@ -51,7 +51,7 @@ def test_a_case_the_baseline_lacks_reads_as_no_verdict():
         {judge_session_results.NEW_ID: CellComparison(outcome=CellOutcome.NOT_RECORDED)}
     )
 
-    [row] = judge_outcome_rows(result, judge_session_results.a_judge_fixture())
+    [row] = case_outcomes(result, judge_session_results.a_judge_fixture()).rows
 
     assert (row.tool_category, row.label, row.baseline, row.run) == (
         "read_file/info_leakage",
@@ -70,7 +70,7 @@ def test_rows_are_sorted_by_outcome_then_case():
         }
     )
 
-    rows = judge_outcome_rows(result, judge_session_results.a_judge_fixture())
+    rows = case_outcomes(result, judge_session_results.a_judge_fixture()).rows
 
     assert [(row.outcome, row.case) for row in rows] == [
         *sorted(
@@ -123,7 +123,7 @@ def test_a_case_always_wrong_in_the_baseline_and_right_in_some_runs_shows_as_par
         }
     )
 
-    rows = judge_outcome_rows(result, judge_session_results.a_judge_fixture())
+    rows = case_outcomes(result, judge_session_results.a_judge_fixture()).rows
 
     assert [row.case for row in rows] == [
         judge_session_results.FLIPPED_ID,

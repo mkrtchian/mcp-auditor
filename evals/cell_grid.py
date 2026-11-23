@@ -1,13 +1,16 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Final, Literal
 
 from evals.gate import CellComparison, CellOutcome, CellState, Observation, classify
 from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.honeypots import HoneypotConfig
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
-PARTIAL = "partial"
+PARTIAL: Final = "partial"
+
+DisplayedOutcome = CellOutcome | Literal["partial"]
 
 
 class CellTag(StrEnum):
@@ -48,7 +51,7 @@ class RunAgainstBaseline:
 
 @dataclass(frozen=True)
 class OutcomeRow:
-    outcome: str  # a CellOutcome, or PARTIAL
+    outcome: DisplayedOutcome
     cell: str
     planted: bool
     baseline: str

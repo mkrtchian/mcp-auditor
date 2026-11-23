@@ -5,7 +5,7 @@ import pytest
 from rich.console import Console
 
 import tests.unit.evals.support.test_eval_display_given as given
-from evals.cell_grid import CellTag
+from evals.cell_grid import PARTIAL, CellTag
 from evals.eval_display import (
     GateRow,
     gate_table,
@@ -14,6 +14,7 @@ from evals.eval_display import (
     print_report_paths,
     print_summary,
 )
+from evals.gate import CellOutcome
 from evals.gate_outcome import GateOutcome
 from tests.unit.support.captured_console import a_captured_console
 
@@ -86,7 +87,7 @@ def test_the_summary_explains_a_partial_row(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     output = a_captured_console(capsys, monkeypatch)
-    grid = given.a_gate_grid_with_an_outcome_row("partial")
+    grid = given.a_gate_grid_with_an_outcome_row(PARTIAL)
 
     print_summary(given.an_eval_report(), "report.json", grid)
 
@@ -101,7 +102,7 @@ def test_the_summary_says_nothing_of_partial_rows_when_there_are_none(
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
-    grid = given.a_gate_grid_with_an_outcome_row("regression")
+    grid = given.a_gate_grid_with_an_outcome_row(CellOutcome.REGRESSION)
 
     print_summary(given.an_eval_report(), "report.json", grid)
 

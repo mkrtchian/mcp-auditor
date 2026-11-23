@@ -1,5 +1,13 @@
 import tests.unit.evals.support.honeypot_baselines as honeypot_baselines
-from evals.cell_grid import CellTag, GateGrid, GridBox, GridRow, GridSection, OutcomeRow
+from evals.cell_grid import (
+    CellTag,
+    DisplayedOutcome,
+    GateGrid,
+    GridBox,
+    GridRow,
+    GridSection,
+    OutcomeRow,
+)
 from evals.gate_outcome import GateMode, GateOutcome, GateResult
 from evals.honeypot.report import HoneypotReport
 from evals.metrics import HoneypotMetrics
@@ -37,7 +45,7 @@ def an_eval_report(
     )
 
 
-def a_gate_grid_with_an_outcome_row(outcome: str) -> GateGrid:
+def a_gate_grid_with_an_outcome_row(outcome: DisplayedOutcome) -> GateGrid:
     row = OutcomeRow(
         outcome=outcome,
         cell="list_dir/error_handling",

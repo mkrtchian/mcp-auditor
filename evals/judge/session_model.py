@@ -66,3 +66,7 @@ class JudgeSessionResult:
     written: JudgeBaseline | None
     recording_refused: list[str]
     exit_code: int
+
+    @property
+    def baseline_runs(self) -> list[dict[str, Observation]]:
+        return self.baseline.runs if self.baseline else []
