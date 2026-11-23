@@ -22,7 +22,7 @@ async def test_an_unreadable_answer_is_a_parse_failure():
         UnreadableAnswer(parse_attempts=3, truncated_parse_attempts=0, usage=ProviderUsage())
     )
 
-    observation = await observe(models, A_JUDGE_CALL, budget=10)
+    observation = await observe(models, A_JUDGE_CALL, test_budget=10)
 
     assert observation.outcome == CallOutcome.PARSE_FAILURE
 
@@ -38,7 +38,7 @@ async def test_a_parse_failure_keeps_the_usage_and_the_truncation_of_its_attempt
         UnreadableAnswer(parse_attempts=3, truncated_parse_attempts=1, usage=usage)
     )
 
-    observation = await observe(models, A_JUDGE_CALL, budget=10)
+    observation = await observe(models, A_JUDGE_CALL, test_budget=10)
 
     assert observation.outcome == CallOutcome.PARSE_FAILURE
     assert observation.usage == usage
@@ -49,7 +49,7 @@ async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_mess
     usage = ProviderUsage(input_tokens=120, output_tokens=5)
     models = _models_raising(ProviderRefusal("flagged by the usage policy", usage))
 
-    observation = await observe(models, A_JUDGE_CALL, budget=10)
+    observation = await observe(models, A_JUDGE_CALL, test_budget=10)
 
     assert observation.outcome == CallOutcome.PARSE_FAILURE
     assert observation.usage == usage
@@ -59,7 +59,7 @@ async def test_a_provider_refusal_is_a_parse_failure_carrying_its_usage_and_mess
 async def test_any_other_value_error_is_an_error_carrying_its_message():
     models = _models_raising(ValueError("400 invalid request"))
 
-    observation = await observe(models, A_JUDGE_CALL, budget=10)
+    observation = await observe(models, A_JUDGE_CALL, test_budget=10)
 
     assert observation.outcome == CallOutcome.ERROR
     assert observation.error == "ValueError: 400 invalid request"
@@ -70,7 +70,7 @@ async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_
     throttled = ProviderThrottled("Error code: 429 - slow down", 0.0, usage)
     models = _models_raising(throttled)
 
-    observation = await observe(models, A_JUDGE_CALL, budget=10)
+    observation = await observe(models, A_JUDGE_CALL, test_budget=10)
 
     assert observation.outcome == CallOutcome.ERROR
     assert observation.usage == usage
@@ -79,8 +79,8 @@ async def test_a_throttled_call_is_an_error_carrying_its_usage_and_the_provider_
 
 async def test_each_observation_is_appended_as_one_json_line(tmp_path: Path):
     sink = tmp_path / "probe_report.jsonl"
-    first = await observe(_models_raising(ValueError("first")), A_JUDGE_CALL, budget=10)
-    second = await observe(_models_raising(ValueError("second")), A_JUDGE_CALL, budget=10)
+    first = await observe(_models_raising(ValueError("first")), A_JUDGE_CALL, test_budget=10)
+    second = await observe(_models_raising(ValueError("second")), A_JUDGE_CALL, test_budget=10)
 
     append_observation(sink, first)
     append_observation(sink, second)

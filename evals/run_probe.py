@@ -173,7 +173,7 @@ def _rotation(models: list[CandidateModels], call_index: int) -> list[CandidateM
     return models[start:] + models[:start]
 
 
-async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> ProbeObservation:
+async def observe(models: CandidateModels, call: ProbeCall, test_budget: int) -> ProbeObservation:
     llm = models.judge if call.role == "judge" else models.main
     started = time.perf_counter()
     answer = await _answer(llm, call)
@@ -186,7 +186,7 @@ async def observe(models: CandidateModels, call: ProbeCall, budget: int) -> Prob
         seconds=seconds,
         usage=answer.usage,
         outcome=answer.outcome,
-        coverage_gap=_coverage_gap(answer.output, budget),
+        coverage_gap=_coverage_gap(answer.output, test_budget),
         error=answer.error,
         truncated_attempts=answer.truncated_attempts,
     )
@@ -221,10 +221,10 @@ async def _answer(llm: LLMPort, call: ProbeCall) -> _Answer:
         )
 
 
-def _coverage_gap(output: object, budget: int) -> CoverageGap | None:
+def _coverage_gap(output: object, test_budget: int) -> CoverageGap | None:
     if not isinstance(output, TestCaseBatch):
         return None
-    return find_coverage_gap(output, budget, list(AuditCategory))
+    return find_coverage_gap(output, test_budget, list(AuditCategory))
 
 
 def _analyze(corpus: ProbeCorpus, observations: list[ProbeObservation]) -> ProbeResult:
