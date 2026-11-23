@@ -9,7 +9,6 @@ from evals.cve.detection.gate import (
     compare_target,
     condition_mismatches,
     decide,
-    exit_code,
 )
 from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
@@ -260,11 +259,3 @@ def test_green(outcomes: list[TargetOutcome]):
     ]
 
     assert decide(comparisons, []).outcome == GateOutcome.GREEN
-
-
-@pytest.mark.parametrize(
-    ("outcome", "code"),
-    [(GateOutcome.GREEN, 0), (GateOutcome.RED, 1), (GateOutcome.NOT_COMPARABLE, 3)],
-)
-def test_exit_code(outcome: GateOutcome, code: int):
-    assert exit_code(outcome) == code

@@ -57,8 +57,9 @@ from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
-from evals.eval_session import RECORDING_REFUSED, Refused
+from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
 from evals.export import export_detection_judged_cases
+from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings
@@ -67,8 +68,6 @@ DETECTION_RUNS = 3
 DETECTION_TEST_BUDGET = 10
 DETECTION_CONCURRENCY = 6
 DEFAULT_REPORT_PATH = "output/detection_report.json"
-NOT_COMPARABLE_EXIT = 3
-CRASHED_EXIT = 4
 
 
 def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = None) -> int:
@@ -201,9 +200,7 @@ def _flag_refusal(args: argparse.Namespace) -> str | None:
     if args.calibration_check and (args.record_baseline or args.no_baseline):
         return "--calibration-check runs no audit: it neither records nor gates"
     if args.record_baseline and args.no_baseline:
-        return (
-            "--record-baseline cannot run --no-baseline: a baseline records the conditions it gates"
-        )
+        return RECORD_WITHOUT_BASELINE
     return measurement_refusal(args)
 
 

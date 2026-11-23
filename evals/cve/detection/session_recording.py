@@ -27,7 +27,14 @@ from evals.cve.detection.session_model import Baselines, GatedSession, TargetRun
 from evals.cve.detection.targets import Target
 from evals.cve.places import PlaceKind, Places, kept_records
 from evals.cve.planting import SENTINEL_SERVICE
-from evals.eval_session import RECORDING_REFUSED, Refused, TreeState, tree_drift
+from evals.eval_session import (
+    DIRTY_TREE_REFUSAL,
+    RECORD_WITHOUT_BASELINE,
+    RECORDING_REFUSED,
+    Refused,
+    TreeState,
+    tree_drift,
+)
 from evals.recording import RecordingRefused
 
 
@@ -41,15 +48,12 @@ class WrittenBaseline:
 def recording_tree(session: GatedSession) -> TreeState:
     """What refuses a recording already before the runs, so no paid run is wasted."""
     if session.options.no_baseline:
-        reason = (
-            "--record-baseline cannot run --no-baseline: a baseline records the conditions it gates"
-        )
-        raise Refused(RECORDING_REFUSED, [reason])
+        raise Refused(RECORDING_REFUSED, [RECORD_WITHOUT_BASELINE])
     tree = session.harness.read_tree()
     reasons = condition_mismatches(session.baselines(), session.options.conditions)
     reasons += [WHOLE_RESET] if reasons else []
     if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
+        reasons.append(DIRTY_TREE_REFUSAL)
     if reasons:
         raise Refused(RECORDING_REFUSED, reasons)
     return tree

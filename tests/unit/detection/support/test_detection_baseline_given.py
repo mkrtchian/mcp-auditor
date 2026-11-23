@@ -5,15 +5,12 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from evals.baseline import BaselineStatus, RecordingRef
-from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY
-from evals.cve.grammar import FlawClass, TargetStatus
+from evals.cve.grammar import FlawClass
 from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
 from evals.cve.planting_base import LayoutMount, PublicNames
-from evals.gate import RetestRule
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES, an_acceptance_target
 from tests.unit.support.fictional_stand_ins import HOST as STAND_IN_HOST
@@ -28,7 +25,6 @@ KEPT_LAYOUT_ID = "fict-layout"
 # Its backend modules dropped, so a backend source a case declares is the target's only one.
 KUBERNETES_TARGET = an_acceptance_target(KUBERNETES, backend_sources=())
 SYMLINK_TARGET = an_acceptance_target(FILESYSTEM)
-RECORDED_COMMIT = "0123abc"
 
 
 def a_docker_directory(tmp_path: Path) -> Path:
@@ -274,40 +270,3 @@ STAND_IN_CHANGES: dict[str, StandInChange] = {
     "address": _rewriting_the_capture(address="93.184.215.15"),
     "trust setting": _trusting("SSL_CERT_FILE"),
 }
-
-
-def a_confirmation(runs: list[TargetStatus]) -> DetectionBaseline:
-    first = RecordingRef(commit=RECORDED_COMMIT, recorded_at="2026-09-28T09:00:00+00:00")
-    return a_baseline(runs, status=BaselineStatus.CONFIRMED).model_copy(update={"confirms": first})
-
-
-def a_baseline(
-    runs: list[TargetStatus],
-    status: BaselineStatus = BaselineStatus.UNCONFIRMED,
-    flaw_id: str = "CVE-2025-53355",
-) -> DetectionBaseline:
-    return DetectionBaseline(
-        flaw_id=flaw_id,
-        status=status,
-        conditions=conditions(),
-        fixture_fingerprint="fixture",
-        retest_rule=RetestRule(),
-        commit=RECORDED_COMMIT,
-        recorded_at="2026-09-28T10:00:00+00:00",
-        runs=runs,
-        image_ids={"kubernetes": "sha256:0123"},
-    )
-
-
-def conditions(runs: int = 3) -> DetectionRunConditions:
-    return DetectionRunConditions(
-        runs=runs,
-        budget=10,
-        tools_filtered=True,
-        provider="openai",
-        model="gpt-6-luna",
-        judge_model="gpt-6-luna",
-        reasoning="none",
-        judge_reasoning="none",
-        grammar_fingerprint="grammar",
-    )

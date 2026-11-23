@@ -19,7 +19,6 @@ from evals.cve.detection.gate import (
     condition_mismatches,
     decide,
     depends_on_unchecked,
-    exit_code,
 )
 from evals.cve.detection.layout_check import layout_failure
 from evals.cve.detection.session_model import (
@@ -73,7 +72,7 @@ async def run_gated(options: DetectionOptions, harness: DetectionHarness) -> Det
         orphans=session.orphans(),
         written=[] if refused else recorded,
         recording_refused=recorded.reasons if refused else [],
-        exit_code=0 if gate is None else exit_code(gate.outcome),
+        exit_code=0 if gate is None else gate.outcome.exit_code,
     )
 
 

@@ -52,6 +52,7 @@ from evals.cve.run_images import (
 )
 from evals.cve.run_interruption import first_failure, sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
+from evals.model_conditions import ModelConditions
 from evals.session_usage import SessionThrottles
 from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
@@ -301,18 +302,12 @@ def _assemble_run(
     not_run: list[NotRunTarget],
     tree: TreeState,
 ) -> DetectionHoldoutRunResult:
-    settings = ctx.settings
-    model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
     targets = [target for target, _ in assembled]
     results = [result for _, result in assembled]
     return DetectionHoldoutRunResult(
         runs=ctx.runs,
         budget=HOLDOUT_BUDGET,
-        provider=settings.provider,
-        model=model,
-        judge_model=judge_model,
-        reasoning=settings.resolve_reasoning(model),
-        judge_reasoning=settings.resolve_reasoning(judge_model),
+        **ModelConditions.of(ctx.settings).model_dump(),
         cutoffs={model_id: ctx.conditions.cutoffs[model_id] for model_id in ctx.model_ids},
         chain_budget=ctx.conditions.chain_budget,
         max_chain_steps=ctx.conditions.max_chain_steps,

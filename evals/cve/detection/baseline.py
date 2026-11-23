@@ -41,6 +41,7 @@ from evals.cve.planting import PlantingHost
 from evals.cve.planting_base import LayoutMount
 from evals.cve.public_stand_ins import STAND_INS_DIRECTORY, stand_in, stand_in_files
 from evals.gate import RetestRule
+from evals.model_conditions import ModelConditions
 from mcp_auditor.config import Settings
 
 DETECTION_BASELINE_DIRECTORY = Path(__file__).parents[2] / "baselines" / "detection"
@@ -88,11 +89,7 @@ def run_conditions(settings: Settings, runs: int, budget: int) -> DetectionRunCo
         runs=runs,
         budget=budget,
         tools_filtered=True,
-        provider=settings.provider,
-        model=settings.resolve_model(),
-        judge_model=settings.resolve_judge_model(),
-        reasoning=settings.resolve_reasoning(settings.resolve_model()),
-        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
+        **ModelConditions.of(settings).model_dump(),
         grammar_fingerprint=grammar_fingerprint(),
     )
 

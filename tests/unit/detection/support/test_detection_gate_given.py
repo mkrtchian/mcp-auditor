@@ -7,11 +7,10 @@ def a_candidate(
     runs: list[TargetStatus] | None = None,
     fixture: str = FIXTURE,
     completed: bool = True,
-    flaw_id: str = FLAW_ID,
     depends_on_unchecked: bool = False,
 ) -> TargetCandidate:
     return TargetCandidate(
-        flaw_id=flaw_id,
+        flaw_id=FLAW_ID,
         fixture_fingerprint=fixture,
         runs=runs if runs is not None else [DETECTED] * 3,
         completed=completed,

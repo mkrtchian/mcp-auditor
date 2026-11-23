@@ -6,7 +6,6 @@ import dataclasses
 
 import pytest
 
-import tests.unit.detection.support.test_detection_holdout_run_given as given
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.replay import ReplayAttemptFailure, UncheckedReason
@@ -17,6 +16,7 @@ from evals.eval_session import Refused, TreeState
 from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
+from tests.unit.detection.support.detection_audits import a_report_missing
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
@@ -132,7 +132,7 @@ async def test_each_run_status_carries_the_relaunches_calls_not_sent_and_cut_res
         ),
     )
     refused = IncompleteRun(
-        given.a_report_missing(MissedCallCause.PROVIDER_REFUSAL),
+        a_report_missing(MissedCallCause.PROVIDER_REFUSAL),
         ServerHealth(
             non_protocol_lines=0, lost_connection_responses=0, relaunches=2, cut_responses=1
         ),
@@ -162,7 +162,7 @@ async def test_each_run_status_carries_its_server_health_and_its_replay_and_miss
         (ReplayAttemptFailure.LAUNCH_FAILED, ReplayAttemptFailure.LOST_CONNECTION),
     )
     refused = IncompleteRun(
-        given.a_report_missing(MissedCallCause.UNREADABLE_ANSWER, MissedCallCause.PROVIDER_REFUSAL),
+        a_report_missing(MissedCallCause.UNREADABLE_ANSWER, MissedCallCause.PROVIDER_REFUSAL),
         ServerHealth(non_protocol_lines=0, lost_connection_responses=3),
     )
     audit = detection_holdout_runs.scripted({target.flaw_id: [unchecked, refused, detection]})

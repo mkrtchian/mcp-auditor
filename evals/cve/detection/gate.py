@@ -204,7 +204,3 @@ def _result(
     outcome: GateOutcome, reasons: list[str], comparisons: Sequence[TargetComparison]
 ) -> DetectionGateResult:
     return DetectionGateResult(outcome=outcome, reasons=reasons, targets=list(comparisons))
-
-
-def exit_code(outcome: GateOutcome) -> int:
-    return {GateOutcome.GREEN: 0, GateOutcome.RED: 1, GateOutcome.NOT_COMPARABLE: 3}[outcome]

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.detection.support.detection_baselines as detection_baselines
 import tests.unit.detection.support.test_detection_baseline_given as given
 from evals.cve.detection.baseline import (
     DetectionBaseline,
@@ -112,14 +113,20 @@ def test_the_fixture_fingerprint_moves_when_a_kept_layout_coordinate_moves():
 @pytest.mark.parametrize(
     ("baseline", "detected_runs", "gated"),
     [
-        (given.a_baseline([DETECTED, DETECTED, DETECTED]), [True, True, True], False),
         (
-            given.a_confirmation([DETECTED] * 6),
+            detection_baselines.an_unconfirmed_baseline([DETECTED, DETECTED, DETECTED]),
+            [True, True, True],
+            False,
+        ),
+        (
+            detection_baselines.a_confirmed_baseline([DETECTED] * 6),
             [True] * 6,
             True,
         ),
         (
-            given.a_confirmation([DETECTED, DETECTED, DETECTED, DETECTED, MISSED, DETECTED]),
+            detection_baselines.a_confirmed_baseline(
+                [DETECTED, DETECTED, DETECTED, DETECTED, MISSED, DETECTED]
+            ),
             [True, True, True, True, False, True],
             False,
         ),
@@ -135,7 +142,10 @@ def test_only_a_confirmed_baseline_detected_in_every_run_is_gated(
 
 @pytest.mark.parametrize(
     "baseline",
-    [given.a_baseline([DETECTED] * 3), given.a_confirmation([DETECTED] * 6)],
+    [
+        detection_baselines.an_unconfirmed_baseline([DETECTED] * 3),
+        detection_baselines.a_confirmed_baseline([DETECTED] * 6),
+    ],
     ids=["runs", "twice runs with a confirmation"],
 )
 def test_integrity_accepts_the_runs_its_conditions_claim(baseline: DetectionBaseline):
@@ -144,7 +154,11 @@ def test_integrity_accepts_the_runs_its_conditions_claim(baseline: DetectionBase
 
 @pytest.mark.parametrize(
     "baseline",
-    [given.a_baseline([DETECTED] * 6), given.a_confirmation([DETECTED] * 3), given.a_baseline([])],
+    [
+        detection_baselines.an_unconfirmed_baseline([DETECTED] * 6),
+        detection_baselines.a_confirmed_baseline([DETECTED] * 3),
+        detection_baselines.an_unconfirmed_baseline([]),
+    ],
     ids=["twice runs without a confirmation", "runs with a confirmation", "no run"],
 )
 def test_integrity_names_a_run_count_its_conditions_do_not_claim(baseline: DetectionBaseline):
@@ -152,7 +166,7 @@ def test_integrity_names_a_run_count_its_conditions_do_not_claim(baseline: Detec
 
 
 def test_a_written_baseline_loads_back_keyed_by_its_cve(tmp_path: Path):
-    baseline = given.a_confirmation([DETECTED, DETECTED, MISSED] * 2)
+    baseline = detection_baselines.a_confirmed_baseline([DETECTED, DETECTED, MISSED] * 2)
 
     write_baseline(tmp_path / "detection", baseline)
 
@@ -164,7 +178,7 @@ def test_a_missing_directory_loads_as_no_baseline(tmp_path: Path):
 
 
 def test_a_file_named_after_another_cve_is_refused(tmp_path: Path):
-    baseline = given.a_baseline([DETECTED] * 3)
+    baseline = detection_baselines.an_unconfirmed_baseline([DETECTED] * 3)
     (tmp_path / "CVE-2025-65513.json").write_text(baseline.model_dump_json())
 
     with pytest.raises(ValueError, match="CVE-2025-65513"):
