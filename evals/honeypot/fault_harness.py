@@ -15,14 +15,13 @@ from datetime import UTC, datetime
 from pydantic import BaseModel
 
 from evals.baseline import Baseline, baseline_integrity
-from evals.declared_flips import ActiveDeclarations
 from evals.gate import Observation
 from evals.gate_outcome import GateMode, GateResult
-from evals.ground_truth import cell_key
-from evals.honeypot.decision import RunsOutcome, decide_runs
+from evals.ground_truth import Cell, cell_key
+from evals.honeypot.decision import CompletedRun, RunsOutcome, decide_runs
 from evals.honeypot.fault_catalog import Fault
 from evals.honeypot.retest import Retester
-from evals.honeypot.session import DEFAULT_RUNS, HoneypotSession
+from evals.honeypot.session import DEFAULT_RUNS, GateBasis
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,
@@ -33,10 +32,9 @@ from evals.honeypots import (
     audit_honeypots,
     connected,
 )
-from evals.metrics import HoneypotMetrics, VerdictMap, aggregate_verdicts, build_run_detail
-from evals.recording import Recording, RecordingRefused, decide_recording
+from evals.metrics import HoneypotMetrics, VerdictMap, aggregate_verdicts
+from evals.recording import RecordingRefused, decide_recording
 from evals.repository import REPO_ROOT
-from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import AuditReport
 
 FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "fault_injection_baseline.json"
@@ -69,53 +67,37 @@ class Harness:
             audit = FaultedAudit(fault, fault.models(self.base_models), self.budget, servers)
             outcome = await audit.runs()
             retester = Retester(audit.retest, HONEYPOTS, announce=_ignore, warn=_ignore)
-            paired = await decide_runs(self._session(GateMode.PAIRED, fault), outcome, retester)
+            paired = await decide_runs(self._gate_basis(GateMode.PAIRED, fault), outcome, retester)
             floors_only = await decide_runs(
-                self._session(GateMode.FLOORS_ONLY, fault), outcome, retester
+                self._gate_basis(GateMode.FLOORS_ONLY, fault), outcome, retester
             )
         return FaultResult(
             fault=fault.name,
-            completed_runs=len(outcome.details),
+            completed_runs=len(outcome.runs),
             observations=[
                 {cell_key(cell): seen for cell, seen in run.items()}
                 for run in outcome.observations()
             ],
-            metrics=outcome.metrics()[0],
+            metrics=outcome.metrics(),
             paired=paired,
             floors_only=floors_only,
             recording_refusals=self._recording_refusals(outcome, floors_only),
         )
 
-    def _session(self, mode: GateMode, fault: Fault) -> HoneypotSession:
-        # Only satisfies the type: decide_runs never reads it, and model_construct skips the env.
-        settings = Settings.model_construct(provider="openai", model="gpt-6-luna", reasoning="none")
-        declarations = ActiveDeclarations(keys=_declared_keys(fault))
-        return HoneypotSession(
-            settings,
-            self.fixture.conditions,
-            self.fixture,
-            mode,
-            tree=None,
-            declarations=declarations,
-        )
+    def _gate_basis(self, mode: GateMode, fault: Fault) -> GateBasis:
+        return GateBasis(mode, self.fixture, _declared_cells(fault), self.fixture.conditions.runs)
 
     def _recording_refusals(self, outcome: RunsOutcome, floors_only: GateResult) -> list[str]:
         """A first recording of the faulted runs, with no baseline before it."""
-        recording = Recording(
-            conditions=self.fixture.conditions,
-            commit="fault-injection",
-            recorded_at=datetime.now(UTC).isoformat(),
-            runs=outcome.observations(),
-            metrics=outcome.metrics()[0],
-            completed_all=outcome.completed_all(DEFAULT_RUNS),
-            ground_truth=MERGED_GROUND_TRUTH,
+        recording = outcome.recording(
+            self.fixture.conditions, "fault-injection", datetime.now(UTC).isoformat()
         )
         decision = decide_recording(None, recording, floors_only)
         return decision.reasons if isinstance(decision, RecordingRefused) else []
 
 
-def _declared_keys(fault: Fault) -> frozenset[str]:
-    return frozenset(cell_key(cell) for cell in MERGED_GROUND_TRUTH if cell[1] == fault.declares)
+def _declared_cells(fault: Fault) -> frozenset[Cell]:
+    return frozenset(cell for cell in MERGED_GROUND_TRUTH if cell[1] == fault.declares)
 
 
 @asynccontextmanager
@@ -140,14 +122,12 @@ class FaultedAudit:
     audits: "itertools.count[int]" = field(default_factory=itertools.count)
 
     async def runs(self) -> RunsOutcome:
-        outcome = RunsOutcome()
+        runs: list[CompletedRun] = []
         for index in range(DEFAULT_RUNS):
             verdicts, report = await audit_honeypots(self._report)
-            verdicts = self.fault.degrade(verdicts, next(self.audits))
-            outcome.details.append(build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH))
-            outcome.verdict_maps.append(verdicts)
-            outcome.audits.append((index, report))
-        return outcome
+            degraded = self.fault.degrade(verdicts, next(self.audits))
+            runs.append(CompletedRun.of(index, degraded, report))
+        return RunsOutcome(runs)
 
     async def retest(self, honeypot: HoneypotConfig) -> VerdictMap:
         # Taken before the audit: retests of different servers finish in any order.

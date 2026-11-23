@@ -10,20 +10,13 @@ from langchain_core.tracers.context import collect_runs
 from rich.progress import Progress, TaskID
 
 from evals import eval_display as display
-from evals.honeypot.decision import RunsOutcome
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH, HoneypotConfig, audit_honeypots
-from evals.metrics import RunDetail, VerdictMap, build_run_detail
+from evals.honeypot.decision import CompletedRun, RunsOutcome
+from evals.honeypots import HONEYPOTS, HoneypotConfig, audit_honeypots
+from evals.metrics import RunDetail, VerdictMap
 from mcp_auditor.domain.models import AuditReport
 
 AnnouncedAudit = Callable[[HoneypotConfig, str | None], Awaitable[AuditReport]]
 """Prints its announcement, if any, once the audit holds its slot."""
-
-
-@dataclass(frozen=True)
-class CompletedRun:
-    detail: RunDetail
-    verdicts: VerdictMap
-    report: AuditReport
 
 
 @dataclass(frozen=True)
@@ -44,14 +37,7 @@ async def run_all(audit: AnnouncedAudit, runs: int) -> RunsOutcome:
         completed = await asyncio.gather(
             *(_run_or_warn(audit, index, tracker) for index in range(runs))
         )
-    outcome = RunsOutcome()
-    for index, run in enumerate(completed):
-        if run is None:
-            continue
-        outcome.details.append(run.detail)
-        outcome.verdict_maps.append(run.verdicts)
-        outcome.audits.append((index, run.report))
-    return outcome
+    return RunsOutcome([run for run in completed if run is not None])
 
 
 async def _run_or_warn(
@@ -66,10 +52,10 @@ async def _run_or_warn(
         traceback.print_exc(file=sys.stderr)
         tracker.advance(len(HONEYPOTS))
         return None
-    detail = build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH)
-    _post_langsmith_feedback(detail, trace_ids)
-    display.print_run_result(detail, tracker.progress)
-    return CompletedRun(detail, verdicts, report)
+    run = CompletedRun.of(index, verdicts, report)
+    _post_langsmith_feedback(run.detail, trace_ids)
+    display.print_run_result(run.detail, tracker.progress)
+    return run
 
 
 async def _run_one(

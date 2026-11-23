@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
-from evals.baseline import RescoredBaseline, rescore
+from evals.baseline import BaselineConditions, RescoredBaseline, rescore
 from evals.declared_flips import apply_declarations
 from evals.gate import Observation, compare, observe
 from evals.gate_metrics import (
@@ -11,9 +11,9 @@ from evals.gate_metrics import (
     metric_resolutions,
 )
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
-from evals.ground_truth import Cell, parse_cell_key
+from evals.ground_truth import Cell
 from evals.honeypot.retest import Retester
-from evals.honeypot.session import HoneypotSession
+from evals.honeypot.session import GateBasis
 from evals.honeypots import MERGED_GROUND_TRUTH, TOOL_COUNT
 from evals.metrics import (
     ConsistencyDetail,
@@ -21,20 +21,43 @@ from evals.metrics import (
     RunDetail,
     VerdictMap,
     average_distribution_coverage,
+    build_run_detail,
     compute_consistency,
     label_scores,
 )
+from evals.recording import Recording
 from mcp_auditor.domain.models import AuditReport
+
+
+@dataclass(frozen=True)
+class CompletedRun:
+    detail: RunDetail
+    verdicts: VerdictMap
+    report: AuditReport
+
+    @classmethod
+    def of(cls, index: int, verdicts: VerdictMap, report: AuditReport) -> "CompletedRun":
+        return cls(build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH), verdicts, report)
 
 
 @dataclass
 class RunsOutcome:
-    details: list[RunDetail] = field(default_factory=list[RunDetail])
-    verdict_maps: list[VerdictMap] = field(default_factory=list[VerdictMap])
-    audits: list[tuple[int, AuditReport]] = field(default_factory=list[tuple[int, AuditReport]])
+    runs: list[CompletedRun] = field(default_factory=list[CompletedRun])
+
+    @property
+    def details(self) -> list[RunDetail]:
+        return [run.detail for run in self.runs]
+
+    @property
+    def verdict_maps(self) -> list[VerdictMap]:
+        return [run.verdicts for run in self.runs]
+
+    @property
+    def audits(self) -> list[tuple[int, AuditReport]]:
+        return [(run.detail.run_index, run.report) for run in self.runs]
 
     def completed_all(self, requested: int) -> bool:
-        return len(self.details) >= requested
+        return len(self.runs) >= requested
 
     def observations(self) -> list[dict[Cell, Observation]]:
         return [observe(verdicts, MERGED_GROUND_TRUTH) for verdicts in self.verdict_maps]
@@ -42,61 +65,63 @@ class RunsOutcome:
     def detections(self) -> DetectionCount:
         return count_detections(self.observations(), MERGED_GROUND_TRUTH)
 
-    def metrics(self) -> tuple[HoneypotMetrics, dict[str, ConsistencyDetail]]:
-        consistency, consistency_details = compute_consistency(
-            self.verdict_maps, MERGED_GROUND_TRUTH
-        )
-        metrics = HoneypotMetrics(
-            recall=sum(run.recall for run in self.details) / len(self.details),
-            precision=sum(run.precision for run in self.details) / len(self.details),
-            consistency=consistency,
+    def metrics(self) -> HoneypotMetrics:
+        return HoneypotMetrics(
+            **label_scores(self.verdict_maps, MERGED_GROUND_TRUTH),
+            consistency=compute_consistency(self.verdict_maps, MERGED_GROUND_TRUTH)[0],
             distribution_coverage=average_distribution_coverage(self.details),
         )
-        return metrics, consistency_details
 
+    def consistency_details(self) -> dict[str, ConsistencyDetail]:
+        return compute_consistency(self.verdict_maps, MERGED_GROUND_TRUTH)[1]
 
-async def decide_runs(
-    session: HoneypotSession, outcome: RunsOutcome, retester: Retester
-) -> GateResult:
-    metrics, _ = outcome.metrics()
-    mismatches = _incomplete_runs(session, outcome)
-    baseline = session.baseline
-    if baseline is None:
-        return decide_gate(
-            GateInput(
-                mode=session.mode,
-                metrics=metrics,
-                detections=outcome.detections(),
-                mismatches=mismatches,
-            )
+    def recording(self, conditions: BaselineConditions, commit: str, recorded_at: str) -> Recording:
+        return Recording(
+            conditions=conditions,
+            commit=commit,
+            recorded_at=recorded_at,
+            runs=self.observations(),
+            metrics=self.metrics(),
+            completed_all=self.completed_all(conditions.runs),
+            ground_truth=MERGED_GROUND_TRUTH,
         )
 
-    rescored = rescore(baseline, MERGED_GROUND_TRUTH)
-    cells = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
-    declared = frozenset(parse_cell_key(key) for key in session.declarations.keys)
-    cells = apply_declarations(cells, declared)
-    if session.mode == GateMode.PAIRED and not mismatches:
+
+async def decide_runs(basis: GateBasis, outcome: RunsOutcome, retester: Retester) -> GateResult:
+    metrics = outcome.metrics()
+    floors_input = GateInput(
+        mode=basis.mode,
+        metrics=metrics,
+        detections=outcome.detections(),
+        mismatches=_incomplete_runs(basis.requested_runs, outcome),
+    )
+    baseline = basis.baseline
+    if baseline is None:
+        return decide_gate(floors_input)
+
+    compared = compare(baseline.observation_runs(), outcome.observations(), MERGED_GROUND_TRUTH)
+    cells = apply_declarations(compared, basis.declared)
+    mismatches = floors_input.mismatches
+    if basis.mode == GateMode.PAIRED and not mismatches:
         cells, mismatches = await retester.retest_flips(cells, baseline.retest_rule)
+    rescored = rescore(baseline, MERGED_GROUND_TRUTH)
     return decide_gate(
-        GateInput(
-            mode=session.mode,
-            metrics=metrics,
-            detections=outcome.detections(),
+        replace(
+            floors_input,
             baseline_status=baseline.status,
             cells=cells,
             mismatches=mismatches,
             deltas=_deltas(rescored, outcome, metrics),
             protected=rescored.protected,
-            declared=declared,
+            declared=basis.declared,
         )
     )
 
 
-def _incomplete_runs(session: HoneypotSession, outcome: RunsOutcome) -> list[str]:
-    requested = session.conditions.runs
-    if outcome.completed_all(requested):
+def _incomplete_runs(requested_runs: int, outcome: RunsOutcome) -> list[str]:
+    if outcome.completed_all(requested_runs):
         return []
-    return [f"{len(outcome.details)} of {requested} runs completed"]
+    return [f"{len(outcome.runs)} of {requested_runs} runs completed"]
 
 
 def _deltas(

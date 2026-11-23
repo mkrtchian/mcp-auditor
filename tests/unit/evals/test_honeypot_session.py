@@ -9,7 +9,10 @@ from evals.baseline import BaselineStatus
 from evals.declared_flips import ActiveDeclarations
 from evals.eval_session import REFUSED_BEFORE_ANY_LLM_CALL, Refused, TreeState
 from evals.gate_outcome import GateMode
+from evals.ground_truth import parse_cell_key
 from evals.honeypot.session import (
+    DEFAULT_RUNS,
+    GateBasis,
     candidate_conditions,
     ci_condition_mismatches,
     open_session,
@@ -41,6 +44,21 @@ def test_a_confirmed_baseline_gates_paired():
     baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
 
     assert select_mode(baseline, no_baseline=False) == GateMode.PAIRED
+
+
+def test_a_session_gate_basis_carries_its_mode_baseline_declared_cells_and_runs():
+    baseline = honeypot_sessions.a_baseline_at_ci_conditions(BaselineStatus.CONFIRMED)
+    session = honeypot_sessions.a_session(
+        baseline=baseline,
+        declarations=ActiveDeclarations(keys=frozenset({given.A_GATED_CELL})),
+    )
+
+    assert session.gate_basis == GateBasis(
+        mode=GateMode.PAIRED,
+        baseline=baseline,
+        declared=frozenset({parse_cell_key(given.A_GATED_CELL)}),
+        requested_runs=DEFAULT_RUNS,
+    )
 
 
 def test_a_run_without_baseline_nor_recording_is_not_refused():

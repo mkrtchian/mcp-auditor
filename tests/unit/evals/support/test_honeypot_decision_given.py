@@ -1,10 +1,10 @@
 from evals.baseline import Baseline, BaselineStatus
 from evals.gate import Observation, observe, protected_cells
 from evals.ground_truth import Cell, cell_key
-from evals.honeypot.decision import RunsOutcome
+from evals.honeypot.decision import CompletedRun, RunsOutcome
 from evals.honeypot.retest import Retester
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
-from evals.metrics import VerdictMap, build_run_detail
+from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditReport, EvalVerdict, ProviderUsage
 from tests.unit.evals.support.fictional_honeypots import FakeAudit, a_retest
 from tests.unit.evals.support.honeypot_sessions import a_baseline_at_ci_conditions
@@ -28,12 +28,7 @@ def runs_missing_the_flipped_cell(completed: int = 3) -> RunsOutcome:
 def an_outcome(verdict_maps: list[VerdictMap]) -> RunsOutcome:
     report = AuditReport(server_command="evals", tool_reports=[], provider_usage=ProviderUsage())
     return RunsOutcome(
-        details=[
-            build_run_detail(index, verdicts, report, MERGED_GROUND_TRUTH)
-            for index, verdicts in enumerate(verdict_maps)
-        ],
-        verdict_maps=verdict_maps,
-        audits=[(index, report) for index in range(len(verdict_maps))],
+        [CompletedRun.of(index, verdicts, report) for index, verdicts in enumerate(verdict_maps)]
     )
 
 

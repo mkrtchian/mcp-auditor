@@ -33,7 +33,7 @@ from evals.eval_session import (
     recording_tree_refusals,
 )
 from evals.gate_outcome import GateMode
-from evals.ground_truth import GroundTruth, cell_key
+from evals.ground_truth import Cell, GroundTruth, cell_key, parse_cell_key
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.model_conditions import ModelConditions
 from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
@@ -58,6 +58,16 @@ class HoneypotOptions:
 
 
 @dataclass(frozen=True)
+class GateBasis:
+    """What the gate reads of a session to decide its runs."""
+
+    mode: GateMode
+    baseline: Baseline | None
+    declared: frozenset[Cell]
+    requested_runs: int
+
+
+@dataclass(frozen=True)
 class HoneypotSession:
     """Fixed before any LLM call. `baseline` is None under --no-baseline, whatever the file holds.
 
@@ -70,6 +80,15 @@ class HoneypotSession:
     mode: GateMode
     tree: TreeState | None
     declarations: ActiveDeclarations = field(default_factory=ActiveDeclarations)
+
+    @property
+    def gate_basis(self) -> GateBasis:
+        return GateBasis(
+            mode=self.mode,
+            baseline=self.baseline,
+            declared=frozenset(parse_cell_key(key) for key in self.declarations.keys),
+            requested_runs=self.conditions.runs,
+        )
 
 
 def open_session(

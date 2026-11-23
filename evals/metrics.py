@@ -65,7 +65,7 @@ def aggregate_verdicts(report: AuditReport) -> VerdictMap:
 def label_scores[K](
     verdict_maps: list[KeyedVerdicts[K]], ground_truth: dict[K, EvalVerdict]
 ) -> dict[str, float]:
-    """Recall and precision averaged per run, as the report computes them."""
+    """Recall and precision averaged per run."""
     runs = len(verdict_maps)
     return {
         "recall": sum(compute_recall(verdicts, ground_truth) for verdicts in verdict_maps) / runs,

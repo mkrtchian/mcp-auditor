@@ -47,7 +47,7 @@ from evals.honeypots import (
     models_for,
 )
 from evals.metrics import VerdictMap, aggregate_verdicts
-from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
+from evals.recording import RecordingRefused, decide_recording, gated_set_changes
 from evals.session_usage import SessionThrottles, quiet_throttle_waits, raise_if_throttled
 from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import AuditReport
@@ -157,17 +157,16 @@ async def run_honeypot_suite(session: HoneypotSession, concurrency: int) -> Hone
     throttles = SessionThrottles()
     audit = _announced_audit(session, concurrency, throttles)
     outcome = await run_all(audit, session.conditions.runs)
-    if not outcome.details:
+    if not outcome.runs:
         raise Refused("All runs failed.", ["no run completed: nothing to judge"])
 
-    metrics, consistency_details = outcome.metrics()
     retester = Retester(
         audit=retest_audit(audit),
         honeypots=HONEYPOTS,
         announce=_announce_retest,
         warn=_warn_retest,
     )
-    gate = await decide_runs(session, outcome, retester)
+    gate = await decide_runs(session.gate_basis, outcome, retester)
     report = HoneypotReport(
         timestamp=datetime.now(UTC).isoformat(),
         commit=tree.commit,
@@ -178,14 +177,14 @@ async def run_honeypot_suite(session: HoneypotSession, concurrency: int) -> Hone
             "budget": session.conditions.budget,
             "concurrency": concurrency,
             "throttled_requests": throttles.requests,
-            "completed_runs": len(outcome.details),
+            "completed_runs": len(outcome.runs),
         },
-        metrics=metrics,
+        metrics=outcome.metrics(),
         thresholds=gate.thresholds,
         passed=gate.outcome == GateOutcome.GREEN,
         gate=gate,
         runs=outcome.details,
-        consistency_details=consistency_details,
+        consistency_details=outcome.consistency_details(),
     )
     return HoneypotRunResult(report=report, outcome=outcome)
 
@@ -241,14 +240,8 @@ def _record(session: HoneypotSession, tree: TreeState, result: HoneypotRunResult
     drift = _recording_drift(session, tree)
     if drift:
         raise Refused(RECORDING_REFUSED, drift)
-    recording = Recording(
-        conditions=session.conditions,
-        commit=tree.commit,
-        recorded_at=datetime.now(UTC).isoformat(),
-        runs=result.outcome.observations(),
-        metrics=result.report.metrics,
-        completed_all=result.outcome.completed_all(session.conditions.runs),
-        ground_truth=MERGED_GROUND_TRUTH,
+    recording = result.outcome.recording(
+        session.conditions, tree.commit, datetime.now(UTC).isoformat()
     )
     decision = decide_recording(session.baseline, recording, result.report.gate)
     if isinstance(decision, RecordingRefused):
