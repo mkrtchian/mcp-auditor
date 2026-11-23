@@ -18,6 +18,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
     WrittenBaseline,
 )
+from evals.cve.provider_errors import ProviderFatal
 from evals.gate_outcome import GateOutcome
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
@@ -25,6 +26,7 @@ from tests.unit.support import census_draws, censuses
 from tests.unit.support.detection_holdout_runs import SETTINGS, ready_conditions
 
 GATE_SERVER = admissions.ACCEPTANCE_PACKAGE
+REVOKED_KEY = "sk-secret"
 
 
 def without_any_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -136,3 +138,23 @@ class GreenRecording:
             throttled_requests=0,
             exit_code=0,
         )
+
+
+def a_gate_stopped_by_a_revoked_key(directory: Path) -> NuisanceCommandDeps:
+    """A gate run that raises a fatal provider error chained, as an audit chains it, from a cause
+    whose message quotes the key."""
+
+    async def stopped(
+        _options: NuisanceGateOptions, _harness: NuisanceGateHarness
+    ) -> NuisanceGateSession:
+        cause = PermissionError(f"the key {REVOKED_KEY} was revoked")
+        raise ProviderFatal(cause) from cause
+
+    return NuisanceCommandDeps(
+        gate=GateCommandDeps(
+            conditions=ready_conditions,
+            settings=lambda: SETTINGS,
+            harness=lambda *_: a_harness(directory, scripted({})),
+            run_gate=stopped,
+        )
+    )

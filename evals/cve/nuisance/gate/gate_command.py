@@ -53,6 +53,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
 )
 from evals.cve.nuisance.results import ServerExit
+from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
@@ -92,7 +93,7 @@ def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:
     refuse_unrecorded(_selected(servers.audited, args.server), "nuisance gate refused")
     try:
         return _run_gate(args, servers, deps)
-    except Refused:
+    except (Refused, ProviderFatal):
         raise
     except Exception:
         traceback.print_exc()

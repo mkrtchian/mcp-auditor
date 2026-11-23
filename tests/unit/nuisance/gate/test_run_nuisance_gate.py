@@ -188,3 +188,18 @@ def test_a_recorded_gate_baseline_prints_once_after_the_verdict(
     assert printed.index("Gate green.") < printed.index("Baseline recorded (confirmed)")
     assert "Commit evals/baselines/nuisance/ by hand." in printed
     assert "again now" not in printed
+
+
+def test_a_fatal_provider_error_prints_the_crash_panel_without_its_message(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    deps = given.a_gate_stopped_by_a_revoked_key(tmp_path)
+    gate_set = given.a_gate_set_of_one_server(tmp_path)
+
+    exit_code = run_nuisance.main(["gate", *gate_set], deps)
+
+    captured = capsys.readouterr()
+    assert exit_code == run_nuisance.CRASHED_EXIT
+    assert given.REVOKED_KEY not in captured.err
+    assert given.REVOKED_KEY not in captured.out
+    assert "PermissionError" in captured.out
