@@ -18,11 +18,9 @@ from evals.cve.nuisance.statistic import (
     observed,
     split_by_side,
 )
-from tests.unit.nuisance.support.nuisance_report_runs import a_server_result
+from tests.unit.nuisance.support.nuisance_report_runs import RUNS, a_server_result
 from tests.unit.nuisance.support.test_nuisance_statistic_given import RUN_CUTOFF, sides_of
 from tests.unit.support.coarse_grid import COARSE_GRID
-
-RUNS = 3
 
 
 def test_the_holdout_nuisance_rate_is_the_mean_flagged_share():
@@ -85,12 +83,12 @@ def test_check_conclusion_is_none_below_five_servers_a_side():
 def test_check_conclusion_is_inconclusive_when_counting_incomplete_runs_as_flagged_moves_the_gap():
     pre, post = sides_of(5, pre_flagged=3, post_incomplete_unflagged=3)
 
-    verdict = check_conclusion(pre, post, RUNS, grid=COARSE_GRID)
+    conclusion = check_conclusion(pre, post, RUNS, grid=COARSE_GRID)
 
-    assert verdict is not None
-    assert (verdict.cited.method, verdict.cited.placement) == ("newcombe", Placement.ABOVE)
-    assert verdict.inconclusive
-    assert [method.method for method in verdict.disagreeing] == [
+    assert conclusion is not None
+    assert (conclusion.cited.method, conclusion.cited.placement) == ("newcombe", Placement.ABOVE)
+    assert conclusion.inconclusive
+    assert [method.method for method in conclusion.disagreeing] == [
         "newcombe_incomplete_as_flagged",
         "agresti_caffo_incomplete_as_flagged",
         "hierarchical_gamma_1_1_incomplete_as_flagged",

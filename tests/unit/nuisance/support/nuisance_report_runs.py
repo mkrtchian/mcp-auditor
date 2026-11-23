@@ -67,14 +67,13 @@ def a_server_result(
     *,
     split_flaw: str | None = "CVE-2025-0001",
     split_disclosure_date: date | None = date(2026, 1, 1),
-    runs: int = 3,
     flagged_runs: int = 0,
     split_flagged_runs: int | None = None,
     incomplete_unflagged_runs: int = 0,
     declared_function_fail_runs: int = 0,
 ) -> NuisanceServerResult:
     split_flagged = flagged_runs if split_flagged_runs is None else split_flagged_runs
-    first_incomplete = runs - incomplete_unflagged_runs
+    first_incomplete = RUNS - incomplete_unflagged_runs
     statuses = tuple(
         NuisanceHoldoutRunStatus(
             flagged=index < flagged_runs,
@@ -89,7 +88,7 @@ def a_server_result(
             cut_responses=0,
             missed_call_causes=[],
         )
-        for index in range(runs)
+        for index in range(RUNS)
     )
     return NuisanceServerResult(
         server_package=server_package,

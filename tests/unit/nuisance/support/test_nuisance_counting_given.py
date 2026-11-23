@@ -9,12 +9,12 @@ def a_fix_check(**overrides: object) -> FixCheckRecord:
 
 
 def a_silent_tool(name: str, *, declared_function_is_effect: bool = False) -> ToolRecord:
-    verdict = RealSoftwareRecord(
+    real_software = RealSoftwareRecord(
         answers=False, cause="container_unrepairable", evidence="needs NET_RAW"
     )
     return admissions.a_tool(name, name, "unchanged").model_copy(
         update={
-            "real_software": verdict,
+            "real_software": real_software,
             "declared_function_is_effect": declared_function_is_effect,
         }
     )

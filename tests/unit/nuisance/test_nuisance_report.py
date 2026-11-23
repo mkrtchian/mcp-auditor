@@ -6,24 +6,10 @@ import re
 from datetime import date
 
 import tests.unit.nuisance.support.test_nuisance_report_given as given
-from evals.cve.holdout_report_lines import (
-    ConclusionLine,
-    CutoffModel,
-    IntervalModel,
-    MethodLine,
-    RunCutoffModel,
-)
+from evals.cve.holdout_report_lines import CutoffModel
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.markdown import render_markdown
-from evals.cve.nuisance.report import (
-    ExitLine,
-    NotRunLine,
-    NuisanceReport,
-    ServerLine,
-    ServerRunLine,
-    SideLine,
-    build_report,
-)
+from evals.cve.nuisance.report import build_report
 from evals.cve.nuisance.results import NotRunCause, NotRunServer, ServerExit
 from tests.unit.nuisance.support.nuisance_report_runs import (
     LUNA_CUTOFF,
@@ -34,6 +20,7 @@ from tests.unit.nuisance.support.nuisance_report_runs import (
 from tests.unit.support.coarse_grid import COARSE_GRID
 
 PROOF_WORDS = {"evidence", "justification", "response", "payload", "verdict"}
+COUNTS_NAMING_RESPONSES = {"lost_connection_responses", "cut_responses"}
 
 
 def test_the_holdout_nuisance_rate_is_published_as_an_upper_bound():
@@ -248,19 +235,6 @@ def test_build_report_carries_the_run_conditions_and_provenance():
 
 
 def test_the_report_holds_no_proof_text():
-    models = [
-        NuisanceReport,
-        ServerLine,
-        ServerRunLine,
-        SideLine,
-        NotRunLine,
-        ExitLine,
-        MethodLine,
-        ConclusionLine,
-        CutoffModel,
-        RunCutoffModel,
-        IntervalModel,
-    ]
     run = a_run(
         [given.with_incidents(a_server_result("A", flagged_runs=1))],
         not_run=[NotRunServer("npm:b", "the benign call errored", NotRunCause.BENIGN_CALL_FAILED)],
@@ -272,6 +246,7 @@ def test_the_report_holds_no_proof_text():
         r"\d+ response\(s\) shown cut", "", render_markdown(build_report(run, grid=COARSE_GRID))
     )
 
-    for model in models:
-        assert set(model.model_fields).isdisjoint(PROOF_WORDS)
+    for model in given.report_models():
+        for name in model.model_fields.keys() - COUNTS_NAMING_RESPONSES:
+            assert {token.removesuffix("s") for token in name.split("_")}.isdisjoint(PROOF_WORDS)
     assert not [word for word in PROOF_WORDS if word in markdown.lower()]
