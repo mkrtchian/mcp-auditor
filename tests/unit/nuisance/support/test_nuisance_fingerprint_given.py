@@ -2,9 +2,12 @@ from dataclasses import replace
 from pathlib import Path
 
 import tests.unit.support.admission_mutations as mutations
+import tests.unit.support.fictional_stand_ins as fictional_stand_ins
 import tests.unit.support.nuisance_admissions as admissions
+from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmissionSettlement, AdmittedServer
+from evals.cve.nuisance.admission.admission_records import SeedRecord
 from evals.cve.nuisance.backend_registry import RegisteredBackend
 from evals.cve.nuisance.fingerprint import CONFINEMENT_SOURCE
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, PublicNames
@@ -50,5 +53,36 @@ def written_public_name_dockerfiles(
 
 
 def serving_a_public_name(server: AdmittedServer) -> AdmittedServer:
-    names = PublicNames(stand_ins=("example.com",))
+    names = PublicNames(stand_ins=(fictional_stand_ins.HOST,))
     return mutations.with_host(server, replace(server.host, public_names=names))
+
+
+def with_provenance_records(server: AdmittedServer) -> AdmittedServer:
+    seed = SeedRecord(item="/agents.yaml", kind="written")
+    stand_in = StandInRecord(
+        replaces="api.example.com",
+        reason="no network",
+        file="evals/docker/Dockerfile.x",
+        capture="evals/stand_ins/api.example.com.json",
+        outputs=[],
+    )
+    return server.model_copy(update={"seeds": [seed], "stand_ins": [stand_in]})
+
+
+def with_a_moved_exploit_and_a_settlement(server: AdmittedServer) -> AdmittedServer:
+    moved_exploit = mutations.with_the_first_flaw(
+        server,
+        lambda flaw: flaw.model_copy(
+            update={
+                "fix_check": flaw.fix_check.model_copy(update={"exploit_calls": ["other_tool"]})
+            }
+        ),
+    )
+    settled = AdmissionSettlement(
+        server_package=server.server_package,
+        flaw=None,
+        field="runs_under_docker",
+        value="true",
+        reason="a different reason",
+    )
+    return moved_exploit.model_copy(update={"settlements": [settled]})

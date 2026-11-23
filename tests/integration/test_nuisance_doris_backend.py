@@ -9,7 +9,6 @@ fails when CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py convention).
 """
 
 import os
-import subprocess
 
 import pytest
 
@@ -18,7 +17,7 @@ from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images,
 from evals.cve.kit.backends import doris_backend_env
 from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
-from tests.integration.support.docker_prerequisites import skip_or_require
+from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
 
 _SERVICE = "holdout-2025-66335-doris-patched"
 
@@ -31,26 +30,13 @@ def _prerequisites() -> None:
             "mysql:8.0.46, both pinned by digest, waits on the cluster and leaves it running; "
             "set NUISANCE_DORIS=1 to run"
         )
-    missing = _missing_prerequisite()
+    missing = missing_prerequisite()
     if missing is not None:
         skip_or_require(missing)
     try:
         ensure_images([_SERVICE], ComposeImageStore())
     except ImageBuildFailed as error:
         pytest.fail(str(error))
-
-
-def _missing_prerequisite() -> str | None:
-    if _docker("version") != 0:
-        return "the nuisance Doris backend test needs Docker"
-    return None
-
-
-def _docker(*args: str) -> int:
-    try:
-        return subprocess.run(["docker", *args], capture_output=True, text=True).returncode
-    except OSError:
-        return 127
 
 
 async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():

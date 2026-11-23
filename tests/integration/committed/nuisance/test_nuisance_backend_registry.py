@@ -41,3 +41,10 @@ def test_the_jenkins_run_image_bakes_the_api_token_the_controller_image_seeds(do
 @pytest.mark.parametrize("key", [key for key, entry in BACKENDS.items() if entry.built_services])
 def test_a_built_backend_removes_no_container_by_name(key: str):
     assert BACKENDS[key].containers_removed_by_name == ()
+
+
+@pytest.mark.parametrize("key", sorted(BACKENDS))
+def test_every_served_path_of_a_registered_backend_exists(key: str):
+    missing = [path for path in BACKENDS[key].served if not path.is_file()]
+
+    assert missing == []

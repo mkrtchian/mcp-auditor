@@ -68,6 +68,7 @@ class NuisanceFixtureSources:
     docker_directory: Path = DOCKER_DIRECTORY
     backends: Mapping[str, RegisteredBackend] = field(default_factory=lambda: BACKENDS)
     confinement: SuiteConfinement = field(default_factory=SuiteConfinement)
+    stand_ins_directory: Path = public_stand_ins.STAND_INS_DIRECTORY
 
 
 def nuisance_fixture_fingerprint(
@@ -97,12 +98,12 @@ def nuisance_fixture_fingerprint(
     parts: list[object] = [
         dockerfile_instructions(image_dockerfile(server.service, sources.docker_directory)),
         server.launch,
-        planting_host_parts(server.host),
+        planting_host_parts(server.host, sources.stand_ins_directory),
         fingerprint_sources([sources.confinement.source.read_text()]),
         sources.confinement.options(),
         sources.confinement.resolver(),
         None if backend is None else backend.model_dump(),
-        None if backend is None else backend_content(_served(server, sources.backends)),
+        None if backend is None else _contents_of(_served(server, sources.backends)),
         sorted((name, sorted(categories)) for name, categories in counted.items()),
         [
             _benign_call_parts(call)
@@ -112,7 +113,7 @@ def nuisance_fixture_fingerprint(
         ],
     ]
     if _serves_public_names(server):
-        parts.append(backend_content(_public_name_launch(sources.docker_directory)))
+        parts.append(_contents_of(_public_name_launch(sources.docker_directory)))
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
@@ -127,7 +128,7 @@ def fingerprinted_files(
     return [
         image_dockerfile(server.service, directory),
         *_served(server, sources.backends),
-        *host_stand_in_files(server.host),
+        *host_stand_in_files(server.host, sources.stand_ins_directory),
         *(_public_name_launch(directory) if _serves_public_names(server) else ()),
     ]
 
@@ -152,8 +153,8 @@ def _benign_call_parts(call: BenignCall) -> tuple[object, ...]:
     return (call.tool, call.arguments, call.expect, before)
 
 
-def backend_content(served: Sequence[Path]) -> list[object]:
-    return [_file_content(path) for path in served]
+def _contents_of(paths: Sequence[Path]) -> list[object]:
+    return [_file_content(path) for path in paths]
 
 
 def _file_content(path: Path) -> object:

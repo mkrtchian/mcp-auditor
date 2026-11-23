@@ -6,16 +6,16 @@ import tests.unit.nuisance.support.test_nuisance_fingerprint_given as given
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 from evals.cve import planting_base
-from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.grammar import FlawClass
-from evals.cve.nuisance.admission.admission import AdmissionSettlement, BackendFixture, ToolCall
-from evals.cve.nuisance.admission.admission_records import SeedRecord
+from evals.cve.nuisance.admission.admission import BackendFixture, ToolCall
 from evals.cve.nuisance.fingerprint import (
     NuisanceFixtureSources,
     SuiteConfinement,
+    fingerprinted_files,
     nuisance_fixture_fingerprint,
 )
 from evals.cve.planting_base import PlantingHost, SymbolicUser
+from tests.unit.support.fictional_stand_ins import HOST, a_stand_ins_directory
 
 FAKE_BACKEND = BackendFixture(provisioner="fake", images=["fake/backend:1.0"], network="fake-net")
 
@@ -85,18 +85,9 @@ def test_the_fingerprint_is_unchanged_by_the_provenance_records(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     sources = NuisanceFixtureSources(tmp_path)
     server = admissions.an_admission().servers[0]
-    seed = SeedRecord(item="/agents.yaml", kind="written")
-    stand_in = StandInRecord(
-        replaces="api.example.com",
-        reason="no network",
-        file="evals/docker/Dockerfile.x",
-        capture="evals/stand_ins/api.example.com.json",
-        outputs=[],
-    )
-    recorded = server.model_copy(update={"seeds": [seed], "stand_ins": [stand_in]})
 
     assert nuisance_fixture_fingerprint(server, sources) == nuisance_fixture_fingerprint(
-        recorded, sources
+        given.with_provenance_records(server), sources
     )
 
 
@@ -113,24 +104,21 @@ def test_the_fingerprint_moves_when_the_dockerfile_instructions_change(tmp_path:
 
 def test_the_fingerprint_moves_when_a_backend_fixture_is_set(tmp_path: Path):
     given.written_dockerfile(tmp_path)
-    sources = NuisanceFixtureSources(tmp_path)
+    sources = NuisanceFixtureSources(tmp_path, admissions.a_backend_registry())
     server = admissions.an_admission().servers[0]
-    backend = BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
 
     assert nuisance_fixture_fingerprint(server, sources) != nuisance_fixture_fingerprint(
-        mutations.with_a_backend(server, backend), sources
+        mutations.with_a_backend(server, FAKE_BACKEND), sources
     )
 
 
 def test_the_fingerprint_moves_when_a_backend_image_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
-    sources = NuisanceFixtureSources(tmp_path)
+    sources = NuisanceFixtureSources(tmp_path, admissions.a_backend_registry())
     server = admissions.an_admission().servers[0]
-    one = mutations.with_a_backend(
-        server, BackendFixture(provisioner="doris", images=["fake/backend:1.0"], network="net")
-    )
+    one = mutations.with_a_backend(server, FAKE_BACKEND)
     two = mutations.with_a_backend(
-        server, BackendFixture(provisioner="doris", images=["fake/backend:2.0"], network="net")
+        server, FAKE_BACKEND.model_copy(update={"images": ["fake/backend:2.0"]})
     )
 
     assert nuisance_fixture_fingerprint(one, sources) != nuisance_fixture_fingerprint(two, sources)
@@ -183,22 +171,7 @@ def test_the_fingerprint_is_unchanged_by_an_exploit_or_a_settlement_change(tmp_p
     server = admissions.an_admission().servers[0]
     before = nuisance_fixture_fingerprint(server, sources)
 
-    moved_exploit = mutations.with_the_first_flaw(
-        server,
-        lambda flaw: flaw.model_copy(
-            update={
-                "fix_check": flaw.fix_check.model_copy(update={"exploit_calls": ["other_tool"]})
-            }
-        ),
-    )
-    settled = AdmissionSettlement(
-        server_package=server.server_package,
-        flaw=None,
-        field="runs_under_docker",
-        value="true",
-        reason="a different reason",
-    )
-    changed = moved_exploit.model_copy(update={"settlements": [settled]})
+    changed = given.with_a_moved_exploit_and_a_settlement(server)
 
     assert nuisance_fixture_fingerprint(changed, sources) == before
 
@@ -236,13 +209,21 @@ def test_the_fingerprint_is_unchanged_by_served_files_for_a_server_with_no_backe
 def test_the_fingerprint_moves_when_the_stand_in_image_of_a_public_name_changes(tmp_path: Path):
     given.written_dockerfile(tmp_path)
     given.written_public_name_dockerfiles(tmp_path)
-    sources = NuisanceFixtureSources(tmp_path)
+    sources = NuisanceFixtureSources(tmp_path, stand_ins_directory=a_stand_ins_directory(tmp_path))
     server = given.serving_a_public_name(admissions.an_admission().servers[0])
     before = nuisance_fixture_fingerprint(server, sources)
 
     given.written_public_name_dockerfiles(tmp_path, stand_in="FROM python:3.13\nRUN true\n")
 
     assert nuisance_fixture_fingerprint(server, sources) != before
+
+
+def test_the_fingerprinted_files_name_the_stand_ins_of_the_sources_directory(tmp_path: Path):
+    stand_ins = a_stand_ins_directory(tmp_path)
+    sources = NuisanceFixtureSources(tmp_path, stand_ins_directory=stand_ins)
+    server = given.serving_a_public_name(admissions.an_admission().servers[0])
+
+    assert stand_ins / f"{HOST}.json" in fingerprinted_files(server, sources)
 
 
 def test_the_fingerprint_is_unchanged_by_the_stand_in_image_for_a_server_with_no_public_name(

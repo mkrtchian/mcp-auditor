@@ -226,10 +226,12 @@ def _stand_in_parts(host: str, stand_ins_directory: Path) -> list[str]:
     return [host, address, *(hashlib.sha256(text.encode()).hexdigest() for text in served)]
 
 
-def host_stand_in_files(host: PlantingHost) -> list[Path]:
+def host_stand_in_files(
+    host: PlantingHost, stand_ins_directory: Path = STAND_INS_DIRECTORY
+) -> list[Path]:
     """The stand-in files `planting_host_parts` hashes for the host."""
     names = host.public_names.stand_ins
-    return [path for name in names for path in _served_files(name, STAND_INS_DIRECTORY)]
+    return [path for name in names for path in _served_files(name, stand_ins_directory)]
 
 
 def _served_files(host: str, stand_ins_directory: Path) -> tuple[Path, ...]:

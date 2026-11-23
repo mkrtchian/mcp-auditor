@@ -24,6 +24,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | alarm, false alarm (honeypot grid tag, judge plans: a FAIL on a honeypot PASS cell) | `false_positive`. "Alarm" now names a nuisance alarm. | moved meaning | 2026-11-11 |
 | `AuditRunOptions.budget`, `AuditRunOptions.chains` | `test_budget`, `chain_budget` | rename | 2026-11-22 |
 | `AuditStep` | model call kind | rename | 2026-11-11 |
+| `backend_content` | `_contents_of` | rename | 2026-11-23 |
 | `_BENCHMARKED` (the flaw IDs of the acceptance targets) | `_ACCEPTANCE_FLAW_IDS` | rename | 2026-11-23 |
 | calibrate, calibration (`--calibrate`, `run_holdout calibrate`, the no-LLM check) | calibration check (`--calibration-check`, `run_detection_holdout calibration-check`). "Calibration" now names writing or repairing a fixture. | moved meaning | 2026-11-11 |
 | calibrate (`run_nuisance calibrate`) | fix check (`run_nuisance fix-check`). "Calibration" now names writing or repairing a detection fixture. | moved meaning | 2026-11-11 |
