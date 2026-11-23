@@ -3,8 +3,8 @@ from collections.abc import Callable
 import pytest
 
 from evals.cve.closed_network import ClosedNetworkUnsupported
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
-from evals.cve.images import dockerfile_fingerprint
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import dockerfile_fingerprint, image_tag
 from evals.cve.planting import SENTINEL_SERVICE
 from evals.cve.planting_base import STAND_IN_SERVICE
 from evals.detection_preflight import (

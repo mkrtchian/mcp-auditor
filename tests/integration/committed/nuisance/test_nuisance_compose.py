@@ -4,8 +4,8 @@ import pytest
 import yaml
 
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
-from evals.cve.images import COMPOSE_FILE
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import COMPOSE_FILE, image_tag
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS

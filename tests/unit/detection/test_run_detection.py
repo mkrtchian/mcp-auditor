@@ -10,7 +10,8 @@ from evals.cve.detection.audit import RunOverrides
 from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.measurement import MEASUREMENT_NEEDS_NO_BASELINE, STEPS_WITHOUT_CHAINS
 from evals.cve.detection.session import run_gated
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import image_tag
 from evals.cve.run_images import target_services
 from evals.detection_preflight import preflight_ok
 from tests.unit.detection.support import run_detection_cli as cli

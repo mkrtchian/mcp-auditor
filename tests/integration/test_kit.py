@@ -11,8 +11,7 @@ import subprocess
 
 import pytest
 
-from evals.cve.detection.targets import image_tag
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
+from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images, image_tag
 from evals.cve.kit.client import KitMCPClient, docker_client_env
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env

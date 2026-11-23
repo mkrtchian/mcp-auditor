@@ -1,7 +1,5 @@
 import hashlib
 import json
-import subprocess
-from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -32,7 +30,7 @@ from evals.cve import (
     units,
 )
 from evals.cve.detection import holdout_environments
-from evals.cve.detection.targets import LaunchMode, Target, image_tag
+from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.grammar import DETECTION_RUNGS, FlawClass, TargetStatus
 from evals.cve.images import dockerfile_instructions
@@ -247,34 +245,6 @@ def _coordinate_parts(coordinates: Coordinates) -> dict[str, object]:
 
 def grammar_fingerprint() -> str:
     return fingerprint_sources([path.read_text() for path in GRAMMAR_PATHS])
-
-
-def image_ids(names: Sequence[str], tag: Callable[[str], str] = image_tag) -> dict[str, str]:
-    return {
-        name: subprocess.run(
-            ["docker", "image", "inspect", "--format", "{{.Id}}", tag(name)],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        for name in names
-    }
-
-
-def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
-    # check=False, keeping the tags that resolve: a provenance lookup never raises. A target
-    # dropped before launch never reaches assembly, so its backend image is never looked up.
-    ids: dict[str, str] = {}
-    for tag in tags:
-        inspected = subprocess.run(
-            ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if inspected.returncode == 0:
-            ids[tag] = inspected.stdout.strip()
-    return ids
 
 
 def load_baselines(directory: Path) -> dict[str, DetectionBaseline]:

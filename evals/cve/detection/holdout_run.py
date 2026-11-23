@@ -17,12 +17,7 @@ from typing import Any, Protocol
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, attempt_once, build_auditor
-from evals.cve.detection.baseline import (
-    backend_image_ids,
-    fixture_fingerprint,
-    grammar_fingerprint,
-    image_ids,
-)
+from evals.cve.detection.baseline import fixture_fingerprint, grammar_fingerprint
 from evals.cve.detection.calibration_check import CheckOptions, check_target
 from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
@@ -37,9 +32,10 @@ from evals.cve.detection.holdout_results import (
 )
 from evals.cve.detection.layout_check import LayoutCheck, observe_layout
 from evals.cve.detection.session_model import GradedAudit
-from evals.cve.detection.targets import Target, image_tag
+from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.images import backend_image_ids, image_ids, image_tag
 from evals.cve.places import Places, kept_records
 from evals.cve.run_images import (
     rebuild_images,

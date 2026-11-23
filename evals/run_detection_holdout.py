@@ -29,9 +29,9 @@ from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_report import build_report
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import HOLDOUT_RUNS, HoldoutDeps, holdout_overrides
-from evals.cve.detection.targets import Target, image_tag
+from evals.cve.detection.targets import Target
 from evals.cve.holdout_conditions import HoldoutConditions
-from evals.cve.images import COMPOSE_FILE, ImageStore, stale_services
+from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result

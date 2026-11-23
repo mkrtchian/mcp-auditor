@@ -15,9 +15,9 @@ from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
-from evals.cve.detection.targets import image_tag as backend_image_tag
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.images import ComposeImageStore, ensure_images
+from evals.cve.images import image_tag as backend_image_tag
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
 from evals.cve.nuisance.admission.admission import (

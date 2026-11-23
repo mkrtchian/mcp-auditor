@@ -10,9 +10,9 @@ from evals.cve.detection.targets import (
     FallbackScopeKind,
     LaunchMode,
     TargetVersion,
-    image_tag,
 )
 from evals.cve.environments import Launch, LaunchShape
+from evals.cve.images import image_tag
 from evals.cve.layout import PROJECT
 from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting import PlantingSpec

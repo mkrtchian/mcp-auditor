@@ -3,9 +3,10 @@ from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Mapp
 from contextlib import asynccontextmanager, contextmanager
 from typing import IO
 
-from evals.cve.detection.targets import Target, TargetVersion, image_tag
+from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.grammar import FlawClass
+from evals.cve.images import image_tag
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser
 from mcp_auditor.domain.models import ToolResponse

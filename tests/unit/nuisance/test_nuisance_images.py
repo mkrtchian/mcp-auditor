@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
-from evals.cve.detection import targets as detection_targets
+from evals.cve import images as cve_images
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
@@ -10,7 +10,7 @@ from evals.cve.nuisance.admission.admission import NuisanceAdmission
 
 def test_the_three_image_namespaces_are_pairwise_distinct():
     tags = {
-        detection_targets.image_tag("filesystem"),
+        cve_images.image_tag("filesystem"),
         kit_launch.image_tag("filesystem"),
         nuisance_images.image_tag("filesystem"),
     }

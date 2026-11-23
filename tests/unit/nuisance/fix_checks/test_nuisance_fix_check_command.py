@@ -8,7 +8,7 @@ import pytest
 
 import tests.unit.nuisance.fix_checks.support.test_nuisance_fix_check_command_given as given
 from evals import run_nuisance
-from evals.cve.detection import targets as detection_targets
+from evals.cve import images as cve_images
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -120,9 +120,7 @@ def test_the_fix_check_removes_the_kit_and_built_backend_containers_left_running
 
     assert fake.containers.removed == list(running)
     kit_tags = [kit_launch.image_tag(service) for service in ("vuln", "patched", "server-patched")]
-    ckan_tags = [
-        detection_targets.image_tag(service) for service in BACKENDS["ckan"].built_services
-    ]
+    ckan_tags = [cve_images.image_tag(service) for service in BACKENDS["ckan"].built_services]
     assert fake.containers.listed_tags == [[*kit_tags, *ckan_tags]]
 
 
@@ -136,7 +134,7 @@ def test_the_fix_check_removes_the_containers_left_running_of_the_backend_servic
 
     run_nuisance.main(command, deps)
 
-    assert detection_targets.image_tag("its-responder") in fake.containers.listed_tags[0]
+    assert cve_images.image_tag("its-responder") in fake.containers.listed_tags[0]
 
 
 def test_a_fixture_naming_no_backend_services_refreshes_the_run_backends_of_its_servers(

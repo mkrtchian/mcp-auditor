@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from evals.cve.detection.targets import image_tag
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
@@ -20,6 +19,38 @@ _STDERR_TAIL_LINES = 20
 # "context deadline exceeded", while each builds fine in a small group.
 COMPOSE_BUILD_BATCH_SIZE = 8
 _PINNED = re.compile(r"@sha256:[0-9a-f]{64}$")
+
+
+def image_tag(name: str) -> str:
+    return f"mcp-auditor-cve-{name}:local"
+
+
+def image_ids(names: Sequence[str], tag: Callable[[str], str] = image_tag) -> dict[str, str]:
+    return {
+        name: subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", tag(name)],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        for name in names
+    }
+
+
+def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
+    # check=False, keeping the tags that resolve: a provenance lookup never raises. A target
+    # dropped before launch never reaches assembly, so its backend image is never looked up.
+    ids: dict[str, str] = {}
+    for tag in tags:
+        inspected = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if inspected.returncode == 0:
+            ids[tag] = inspected.stdout.strip()
+    return ids
 
 
 class ImageBuildFailed(Exception):

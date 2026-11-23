@@ -51,8 +51,8 @@ from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.backends.mcp_ssh_sshd import SSHD_BRIDGE, SSHD_IMAGE, SSHD_SERVICE
 from evals.cve.backends.n8n import N8N_BRIDGE, N8N_IMAGE, N8N_SERVICE
 from evals.cve.backends.node_sandbox_engine import ENGINE_IMAGE, ENGINE_NETWORK, ENGINE_SERVICE
-from evals.cve.detection.targets import image_tag
 from evals.cve.docker_paths import image_dockerfile
+from evals.cve.images import image_tag
 
 if TYPE_CHECKING:
     from evals.cve.nuisance.admission.admission import AdmittedServer

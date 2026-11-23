@@ -21,6 +21,7 @@ from evals.cve.environments import (
     ssrf_env,
 )
 from evals.cve.grammar import FlawClass
+from evals.cve.images import image_tag
 from evals.cve.places import Place, Places
 from evals.cve.planting import (
     RANDOM_NONCES,
@@ -144,10 +145,6 @@ class Target:
         spec = self.planting_spec(to_plant, nonces)
         async with entered_in_thread(self.environment(spec, version, shape)) as planted_launch:
             yield planted_launch
-
-
-def image_tag(name: str) -> str:
-    return f"mcp-auditor-cve-{name}:local"
 
 
 @dataclass(frozen=True)

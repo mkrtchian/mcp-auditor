@@ -1,7 +1,7 @@
 import pytest
 
+from evals.cve import images as cve_images
 from evals.cve.backends.responder import Responder
-from evals.cve.detection import targets as detection_targets
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
 from tests.unit.support.registered_responders import every_responder
@@ -10,7 +10,7 @@ from tests.unit.support.registered_responders import every_responder
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_a_backend_built_locally_names_the_compose_service_of_its_image(key: str):
     entry = BACKENDS[key]
-    tags = [detection_targets.image_tag(service) for service in entry.built_services]
+    tags = [cve_images.image_tag(service) for service in entry.built_services]
 
     for image in entry.images:
         assert image in tags if _is_built(image) else "@sha256:" in image
@@ -33,7 +33,7 @@ _BACKEND_ON = {entry.network: entry for entry in BACKENDS.values()}
 def test_every_run_responder_image_is_rebuilt_with_its_backend(responder: Responder):
     built = _BACKEND_ON[responder.bridge].built_services
 
-    assert responder.image in [detection_targets.image_tag(service) for service in built]
+    assert responder.image in [cve_images.image_tag(service) for service in built]
 
 
 @pytest.mark.parametrize(
@@ -48,4 +48,4 @@ def test_every_fix_check_responder_image_is_rebuilt_by_a_fix_check_naming_it(
         service for fixture in FIX_CHECK_FIXTURES for service in fixture.backend_services or ()
     )
 
-    assert responder.image in [detection_targets.image_tag(service) for service in named]
+    assert responder.image in [cve_images.image_tag(service) for service in named]

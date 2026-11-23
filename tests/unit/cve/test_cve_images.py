@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.support.test_cve_images_given as given
-from evals.cve.detection.targets import image_tag
 from evals.cve.images import (
     COMPOSE_BUILD_BATCH_SIZE,
     ComposeImageStore,
@@ -11,6 +10,7 @@ from evals.cve.images import (
     compose_build,
     dockerfile_fingerprint,
     ensure_images,
+    image_tag,
     stale_services,
     unpinned_bases,
 )

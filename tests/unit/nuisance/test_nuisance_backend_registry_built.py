@@ -1,7 +1,7 @@
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
+from evals.cve import images as cve_images
 from evals.cve.backends.atlassian import ATLASSIAN_RESPONDER_IMAGE
-from evals.cve.detection import targets as detection_targets
 from evals.cve.nuisance.backend_registry import (
     BACKENDS,
     built_backend_services,
@@ -41,4 +41,4 @@ def test_the_built_backend_tags_are_the_image_tags_of_their_services():
 
 
 def _ckan_stack_tags() -> list[str]:
-    return [detection_targets.image_tag(service) for service in BACKENDS["ckan"].built_services]
+    return [cve_images.image_tag(service) for service in BACKENDS["ckan"].built_services]

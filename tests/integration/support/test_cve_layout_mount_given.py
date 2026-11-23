@@ -4,8 +4,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.cve.detection.targets import image_tag
 from evals.cve.environments import git_init_traversal_env
+from evals.cve.images import image_tag
 from evals.cve.layout import build_layout, owned_layout
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from evals.cve.planting_base import (

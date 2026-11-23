@@ -10,8 +10,8 @@ from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_run import run_holdout_targets
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, image_tag
-from evals.cve.images import dockerfile_fingerprint
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.images import dockerfile_fingerprint, image_tag
 from evals.cve.kit import launch as kit_launch
 from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import RunDocker, target_services

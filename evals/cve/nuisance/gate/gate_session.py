@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.audit import RunOverrides, build_auditor
-from evals.cve.detection.baseline import image_ids
+from evals.cve.images import image_ids
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.audit import (

@@ -17,7 +17,6 @@ from evals.cve.audit_progress import AuditProgress
 from evals.cve.detection.baseline import (
     DETECTION_BASELINE_DIRECTORY,
     DetectionRunConditions,
-    image_ids,
     run_conditions,
 )
 from evals.cve.detection.calibration_check import check_target
@@ -51,9 +50,9 @@ from evals.cve.detection.targets import (
     OUT_OF_SCOPE_FLAWS,
     OutOfScopeFlaw,
     Target,
-    image_tag,
 )
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
+from evals.cve.images import image_ids, image_tag
 from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
