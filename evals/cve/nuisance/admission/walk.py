@@ -89,7 +89,7 @@ def census_flaws_of(server_package: str, walk_inputs: WalkInputs) -> list[str]:
 
 
 def nuisance_population(walk_inputs: WalkInputs) -> list[NuisanceServer]:
-    acceptance = acceptance_target_servers(walk_inputs)
+    target_servers = acceptance_target_servers(walk_inputs)
     excluded = {normalized_package(package) for package in EXCLUDED_SERVERS}
     population: list[NuisanceServer] = []
     for server, reach in _first_reaches(walk_inputs).items():
@@ -104,14 +104,14 @@ def nuisance_population(walk_inputs: WalkInputs) -> list[NuisanceServer]:
                 in_addition=reach.in_addition,
                 flaws=tuple(census_flaws_of(server, walk_inputs)),
                 candidate_counted_flaws=tuple(candidates),
-                mark=_mark(server, acceptance, excluded),
+                mark=_mark(server, target_servers, excluded),
             )
         )
     return population
 
 
 def acceptance_target_servers(walk_inputs: WalkInputs) -> set[str]:
-    """Every benchmark flaw's server, the dropped targets' included."""
+    """The server of every current or dropped acceptance target."""
     classified = _classified(walk_inputs.census)
     return {server_of(flaw, walk_inputs) for flaw in ACCEPTANCE_TARGET_FLAWS if flaw in classified}
 
@@ -133,18 +133,18 @@ def _first_reaches(walk_inputs: WalkInputs) -> dict[str, _Reach]:
 def _walk(walk_inputs: WalkInputs) -> list[_Reach]:
     order = [entry.identifier for entry in draw_order(walk_inputs.census)]
     positions = {identifier: position for position, identifier in enumerate(order, start=1)}
-    holdout = reached_identifiers(walk_inputs.census)
-    for identifier in holdout:
+    detection_walk_flaws = reached_identifiers(walk_inputs.census)
+    for identifier in detection_walk_flaws:
         if identifier not in positions:
             raise ValueError(f"the detection walk reaches {identifier}, outside the draw order")
-    reached = set(holdout)
+    reached = set(detection_walk_flaws)
     queue = [
         identifier
         for identifier in order
         if identifier not in reached and _meets_draw_criteria(identifier, walk_inputs)
     ]
     return [
-        *(_Reach(identifier, positions[identifier], False) for identifier in holdout),
+        *(_Reach(identifier, positions[identifier], False) for identifier in detection_walk_flaws),
         *(_Reach(identifier, positions[identifier], True) for identifier in queue),
     ]
 
@@ -153,8 +153,8 @@ def _meets_draw_criteria(flaw: str, walk_inputs: WalkInputs) -> bool:
     return all(_met(flaw, walk_inputs, criterion) for criterion in DRAW_ORDER_CRITERIA)
 
 
-def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ExitReason | None:
-    if server in acceptance:
+def _mark(server: str, target_servers: set[str], excluded: set[str]) -> ExitReason | None:
+    if server in target_servers:
         return ExitReason.ACCEPTANCE_TARGET_SERVER
     if server in excluded:
         return ExitReason.EXCLUDED_SERVER

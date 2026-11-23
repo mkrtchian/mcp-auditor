@@ -18,7 +18,7 @@ from evals.cve.detection.draw_record import LaunchOption
 from evals.cve.fixture_provenance import SoftwareRelease, StandInRecord
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission_records import RealSoftwareRecord, SeedRecord
-from evals.cve.nuisance.exits import RecordedExit
+from evals.cve.nuisance.exits import ExitReason, RecordedExit
 from evals.cve.planting_base import PlantingHost
 from evals.repository import REPO_ROOT
 
@@ -115,6 +115,14 @@ class AdmittedServer(BaseModel):
     stand_ins: list[StandInRecord] | None = None
     seeds: list[SeedRecord] | None = None
     software_releases: list[SoftwareRelease] | None = None
+
+    @property
+    def standing_exit(self) -> ExitReason | None:
+        if not self.runs_over_stdio:
+            return ExitReason.NOT_OVER_STDIO
+        if not self.runs_under_docker:
+            return ExitReason.NOT_UNDER_DOCKER
+        return None
 
 
 class NuisanceAdmission(BaseModel):

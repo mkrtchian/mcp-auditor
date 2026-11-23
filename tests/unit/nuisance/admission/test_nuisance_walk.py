@@ -113,18 +113,27 @@ def test_candidate_counted_flaws_leave_the_class_to_the_admission():
     ]
 
 
-def test_settlements_override_the_classifiers_per_criterion():
+def test_a_pinnable_settlement_brings_a_flaw_in():
     census = walks.a_census_walking([("u", "drawn", "npm:srv")], u=walks.NOT_PINNABLE)
-    assert candidate_counted_flaws("npm:srv", walks.walk_inputs_of(census)) == []
     brought_in = walks.with_a_settlement(census, "u", Criterion.PINNABLE, True)
-    assert candidate_counted_flaws("npm:srv", walks.walk_inputs_of(brought_in)) == ["u"]
 
+    before = candidate_counted_flaws("npm:srv", walks.walk_inputs_of(census))
+    after = candidate_counted_flaws("npm:srv", walks.walk_inputs_of(brought_in))
+
+    assert (before, after) == ([], ["u"])
+
+
+def test_a_pinnable_settlement_takes_a_flaw_out():
     census = walks.a_census_walking([("p", "drawn", "npm:srv")])
     taken_out = walks.with_a_settlement(census, "p", Criterion.PINNABLE, False)
+
     assert candidate_counted_flaws("npm:srv", walks.walk_inputs_of(taken_out)) == []
 
+
+def test_a_false_stdio_tools_call_settlement_leaves_a_flaw_reached_through_tools():
     census = walks.a_census_walking([("t", "drawn", "npm:srv")])
     left_in = walks.with_a_settlement(census, "t", Criterion.STDIO_TOOLS_CALL, False)
+
     assert candidate_counted_flaws("npm:srv", walks.walk_inputs_of(left_in)) == ["t"]
 
 
@@ -155,7 +164,7 @@ def test_reached_servers_keep_apart_a_server_with_no_flaw_that_may_count():
     assert reached.without_candidates == ["npm:bad"]
 
 
-def test_a_benchmark_flaw_marks_its_server_acceptance():
+def test_a_current_target_flaw_marks_its_server():
     census = walks.a_census_walking(
         [("a1", "drawn", "npm:accsrv")],
         **{walks.A_CURRENT_TARGET_FLAW: {"server_package": "npm:accsrv"}},

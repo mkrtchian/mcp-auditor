@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.results import ServerExit
 
 
@@ -18,11 +17,11 @@ def gate_servers(admission: NuisanceAdmission | None, current: set[str]) -> Gate
     admitted: list[AdmittedServer] = [] if admission is None else admission.servers
     in_gate = [server for server in admitted if server.server_package in current]
     return GateServers(
-        audited=[server for server in in_gate if standing_exit(server) is None],
+        audited=[server for server in in_gate if server.standing_exit is None],
         outside_gate=[
             ServerExit(server.server_package, reason)
             for server in in_gate
-            if (reason := standing_exit(server)) is not None
+            if (reason := server.standing_exit) is not None
         ],
         not_admitted=sorted(current - {server.server_package for server in admitted}),
     )

@@ -16,10 +16,10 @@ from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason, RecordedExit
 
 def walk_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list[str]:
     population = nuisance_walk.nuisance_population(walk_inputs)
-    acceptance = nuisance_walk.acceptance_target_servers(walk_inputs)
+    acceptance_target_servers = nuisance_walk.acceptance_target_servers(walk_inputs)
     size = walk_inputs.record.addition.size
     return [
-        *_reach_problems(admission, population, acceptance),
+        *_reach_problems(admission, population, acceptance_target_servers),
         *(
             f"{server.server_package}: enters through the addition past its {size} servers"
             for server in addition_entries(admission, population)[size:]
@@ -30,21 +30,21 @@ def walk_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list
 def _reach_problems(
     admission: NuisanceAdmission,
     population: Sequence[nuisance_walk.NuisanceServer],
-    acceptance: set[str],
+    acceptance_target_servers: set[str],
 ) -> list[str]:
     walked = {server.server_package: server for server in population}
     problems: list[str] = []
     for server in admission.servers:
         package = server.server_package
-        if package in acceptance:
+        if package in acceptance_target_servers:
             continue
-        reach = walked.get(package)
-        if reach is None:
+        walked_server = walked.get(package)
+        if walked_server is None:
             problems.append(f"{package}: not reached by the walk")
-        elif reach.reaching_flaw != server.reaching_flaw:
+        elif walked_server.reaching_flaw != server.reaching_flaw:
             problems.append(
                 f"{package}: reaching flaw {server.reaching_flaw} is not the walk's "
-                f"{reach.reaching_flaw}"
+                f"{walked_server.reaching_flaw}"
             )
     return problems
 
@@ -58,20 +58,12 @@ def addition_entries(
     entries = [
         server
         for server in admission.servers
-        if (reach := walked.get(server.server_package)) is not None
-        and reach.in_addition
-        and reach.mark is None
-        and standing_exit(server) is None
+        if (walked_server := walked.get(server.server_package)) is not None
+        and walked_server.in_addition
+        and walked_server.mark is None
+        and server.standing_exit is None
     ]
     return sorted(entries, key=lambda server: walked[server.server_package].reaching_position)
-
-
-def standing_exit(server: AdmittedServer) -> ExitReason | None:
-    if not server.runs_over_stdio:
-        return ExitReason.NOT_OVER_STDIO
-    if not server.runs_under_docker:
-        return ExitReason.NOT_UNDER_DOCKER
-    return None
 
 
 def exit_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list[str]:

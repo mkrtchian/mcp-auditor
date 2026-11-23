@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.admission.walk import ReachedServers
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import ServerExit
@@ -27,7 +26,7 @@ class RunPopulation:
 
 
 def run_population(
-    reached: ReachedServers, admission: NuisanceAdmission, acceptance: set[str]
+    reached: ReachedServers, admission: NuisanceAdmission, acceptance_target_servers: set[str]
 ) -> RunPopulation:
     """The exits the walk derives (its marks, and no counted flaw for a server it reaches with no
     flaw that may count), those of the admitted servers, then those the admission records."""
@@ -41,7 +40,9 @@ def run_population(
         if package in derived:
             continue
         reason = (
-            ExitReason.ACCEPTANCE_TARGET_SERVER if package in acceptance else standing_exit(server)
+            ExitReason.ACCEPTANCE_TARGET_SERVER
+            if package in acceptance_target_servers
+            else server.standing_exit
         )
         if reason is None:
             audited.append(server)
