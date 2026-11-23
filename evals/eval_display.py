@@ -83,8 +83,11 @@ def print_declarations(held: list[str], ignored: frozenset[str]) -> None:
 
 
 def print_throttles(requests: int, concurrency: int) -> None:
-    if requests > 0:
-        console.print(
-            f"[yellow]Throttled by the model provider: {requests} requests"
-            f" at concurrency {concurrency}[/yellow]"
-        )
+    for line in throttled_lines(requests, concurrency):
+        console.print(Text(line, style="yellow"))
+
+
+def throttled_lines(requests: int, concurrency: int) -> list[str]:
+    if requests == 0:
+        return []
+    return [f"Throttled by the model provider: {requests} requests at concurrency {concurrency}"]

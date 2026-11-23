@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from evals.cve.detection.baseline import DetectionRunConditions
 from evals.cve.detection.costs import TargetCost
 from evals.cve.detection.gate import DetectionGateResult, TargetComparison, TargetOutcome
@@ -12,6 +14,22 @@ NONCE = "s3nt1nel_ab12cd34ef56"
 FINGERPRINT = "0123456789abcdef" * 4
 CONCURRENCY = 4
 COMMIT = "c0ffee"
+
+
+@dataclass(frozen=True)
+class FakeTarget:
+    flaw_id: str = "CVE-2025-0001"
+    severity: str = "9.1 CRITICAL"
+    classes: frozenset[FlawClass] = frozenset({FlawClass.READ_OUTSIDE_SCOPE})
+    awaited_capability: str | None = "declared-scope awareness"
+    note: str = "test note"
+
+
+@dataclass
+class FakeOutOfScopeFlaw:
+    flaw_id: str
+    severity: str
+    reason: str
 
 
 def a_detected_grade() -> RunGrade:

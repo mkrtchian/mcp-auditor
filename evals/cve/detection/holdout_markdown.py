@@ -13,6 +13,7 @@ from evals.cve.holdout_report_lines import (
     run_cutoff_line,
     span,
 )
+from evals.eval_display import throttled_lines
 
 
 def render_markdown(report: HoldoutReport) -> str:
@@ -31,7 +32,7 @@ def render_markdown(report: HoldoutReport) -> str:
             *not_run_section(report.not_run, len(report.targets), report.second_pass),
             *_health_section(report.targets),
             *_incomplete_runs_lines(report),
-            *_throttled_lines(report),
+            *throttled_lines(report.throttled_requests, report.concurrency),
             f"Total cost: ${report.total_cost:.2f}",
         ]
     )
@@ -83,12 +84,3 @@ def _incomplete_runs_lines(report: HoldoutReport) -> list[str]:
     return incomplete_runs_lines(
         report.incomplete_run_count, touched, report.incomplete_runs_by_cause
     )
-
-
-def _throttled_lines(report: HoldoutReport) -> list[str]:
-    if report.throttled_requests == 0:
-        return []
-    return [
-        f"Throttled by the model provider: {report.throttled_requests} requests"
-        f" at concurrency {report.concurrency}"
-    ]

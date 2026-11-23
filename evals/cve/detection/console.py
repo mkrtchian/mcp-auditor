@@ -26,8 +26,14 @@ from evals.cve.detection.markdown import (
     status_letters,
 )
 from evals.cve.detection.oracle import DetectionReport, TargetResult
-from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
-from evals.gate_outcome import GateOutcome
+from evals.eval_display import (
+    GateRow,
+    console,
+    gate_table,
+    print_outcome,
+    print_report_paths,
+    print_throttles,
+)
 
 
 def print_detection_summary(report: DetectionReport, report_path: Path) -> None:
@@ -41,11 +47,7 @@ def print_detection_summary(report: DetectionReport, report_path: Path) -> None:
     _print_lines(render_replay_credits(report.results))
     if report.gate is None:
         _print_costs(report)
-    if report.throttled_requests > 0:
-        console.print(
-            f"[yellow]Throttled by the model provider: {report.throttled_requests} requests"
-            f" at concurrency {report.concurrency}[/yellow]"
-        )
+    print_throttles(report.throttled_requests, report.concurrency)
     if report.gate is not None:
         console.print(gate_table(_gate_rows(report.gate), "Target"))
         _print_lines([GATE_LEGEND])
@@ -59,7 +61,7 @@ def _print_outcome(gate: DetectionGateResult | None) -> None:
             "[yellow]No-baseline run: nothing compared to evals/baselines/detection/.[/yellow]"
         )
     else:
-        print_outcome(GateOutcome(gate.outcome.value), gate.reasons)
+        print_outcome(gate.outcome, gate.reasons)
 
 
 def _print_lines(lines: list[str]) -> None:

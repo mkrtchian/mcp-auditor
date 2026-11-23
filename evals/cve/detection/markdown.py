@@ -9,6 +9,7 @@ from evals.cve.detection.gate import DetectionGateResult, TargetComparison
 from evals.cve.detection.measurement import render_measurement
 from evals.cve.detection.oracle import DetectionReport, TargetResult, UngradedStatus
 from evals.cve.grammar import TargetStatus
+from evals.eval_display import throttled_lines
 
 
 def render_markdown(report: DetectionReport) -> str:
@@ -55,13 +56,8 @@ def render_tally(results: Sequence[TargetResult]) -> str:
 
 
 def _render_throttled(report: DetectionReport) -> list[str]:
-    if report.throttled_requests == 0:
-        return []
-    return [
-        "",
-        f"Throttled by the model provider: {report.throttled_requests} requests "
-        f"at concurrency {report.concurrency}",
-    ]
+    lines = throttled_lines(report.throttled_requests, report.concurrency)
+    return ["", *lines] if lines else []
 
 
 def render_measurement_lines(report: DetectionReport) -> list[str]:
