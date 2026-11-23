@@ -154,14 +154,9 @@ def _struck(
 
 
 async def _run_patched(run: RunToCheck, connect: Connect, timeout: int) -> _Attempt:
-    """The patched outputs of one fresh launch, or the cause it could not be reached: a lost
-    connection at a call the vulnerable run still answered, a version that stopped answering, or
-    a failed launch, an exception entering the launch or its client, a relaunch that failed, or
-    leaving the launch before every call was answered. A patched loss at a call the vulnerable run
-    had already lost since its last relaunch ends the attempt there, truncated, with the outputs
-    gathered so far: it is provisional, since only another launch can tell a transient death from
-    a deterministic one. Raises `UndecidableLaunch` on a launch whose container name cannot be
-    read, a configuration error."""
+    """One fresh patched launch: its outputs, or why it could not be reached (see the module
+    docstring). Raises `UndecidableLaunch` on a launch whose container name cannot be read, a
+    configuration error."""
     attempt: _Attempt = ReplayAttemptFailure.LAUNCH_FAILED
     try:
         async with run.target.launched(run.records, version=TargetVersion.PATCHED) as planted:
@@ -172,13 +167,11 @@ async def _run_patched(run: RunToCheck, connect: Connect, timeout: int) -> _Atte
     except UndecidableLaunch:
         raise
     except Exception:
-        # The records arrive pre-resolved and pre-planted by `attempt_once` on the vulnerable
-        # version, so a `planting_spec` config error cannot reach here: only launch and connection
-        # failures of this fresh patched launch are. Narrowing this to a hand-picked exception set
-        # would crash the whole benchmark on a transient infra blip, worse than the unchecked it
-        # returns. A complete attempt survives a raising teardown, as the vulnerable run does in
-        # `attempt_once`: a server that logs its shutdown to stdout makes the client raise there.
-        # A connection already lost keeps its cause, since a dead server's teardown raises too.
+        # The records arrive pre-planted by the vulnerable run, so only launch and connection
+        # failures of this fresh patched launch reach here. A hand-picked exception set would
+        # crash the whole benchmark on a transient infra blip, worse than the unchecked it
+        # returns. A connection already lost keeps its cause, since a dead server's teardown
+        # raises too.
         if isinstance(attempt, ReplayedRun) and not attempt.complete:
             return ReplayAttemptFailure.LAUNCH_FAILED
     return attempt

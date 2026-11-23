@@ -1,29 +1,24 @@
-"""The attempt outcomes a detection holdout run drops a run on (a run skipped, a throttled attempt,
-a provider error), and what each prints under the report detail of either layer."""
+"""The attempts `attempt_once` throws away (a run skipped at launch or on a server taken as down, a
+provider error, a throttled attempt, a launch whose container name cannot be read), and what each
+prints under the report detail of either layer."""
 
 import pytest
 from langchain_core.exceptions import ModelAPIError, ModelAuthenticationError
 
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
-from evals.cve.audit_attempts import (
-    ProviderErrorAttempt,
-    ThrottledAttempt,
-    graded_despite_missed_model_calls,
-)
+from evals.cve.audit_attempts import ProviderErrorAttempt, ThrottledAttempt
 from evals.cve.detection.audit import LaunchError, attempt_once
 from evals.cve.detection.holdout_audit import HOLDOUT_INFRA_ATTEMPTS, DroppedRun, holdout_audit
 from evals.cve.detection.holdout_results import NotRunCause
-from evals.cve.detection.session_model import GradedAudit
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import UndecidableLaunch
 from evals.cve.provider_errors import ProviderFatal
 from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause
-from tests.unit.detection.support import test_detection_audit_holdout_given as given
+from tests.unit.detection.support import test_detection_audit_failures_given as given
 from tests.unit.detection.support.detection_audits import (
     TARGET,
-    ScriptedAttempts,
     a_report_missing,
     a_target_launching,
     an_auditor_reporting,
@@ -155,30 +150,6 @@ async def test_a_transient_provider_error_throws_the_attempt_away_naming_it_with
     assert f"{TARGET.flaw_id} run skipped" in printed
     assert "ModelAPIError" in printed
     assert "secret-nonce" not in printed
-
-
-async def test_a_provider_error_attempt_is_not_audited_again(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-):
-    a_captured_console(capsys, monkeypatch)
-    attempt = ScriptedAttempts[GradedAudit]([ProviderErrorAttempt("ModelAPIError")])
-
-    grade = await graded_despite_missed_model_calls(TARGET, attempt)
-
-    assert grade is None
-    assert attempt.calls == 1
-
-
-async def test_a_throttled_attempt_is_not_audited_again(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-):
-    a_captured_console(capsys, monkeypatch)
-    attempt = ScriptedAttempts[GradedAudit]([ThrottledAttempt()])
-
-    grade = await graded_despite_missed_model_calls(TARGET, attempt)
-
-    assert grade is None
-    assert attempt.calls == 1
 
 
 async def test_an_attempt_holding_a_throttled_model_call_is_thrown_away_before_any_grading(

@@ -8,7 +8,6 @@ ones and an old nonce never fools the strike.
 
 import dataclasses
 import os
-import pathlib
 import sys
 from collections.abc import AsyncGenerator, Callable, Generator
 from contextlib import asynccontextmanager, contextmanager
@@ -33,8 +32,7 @@ from tests.integration.support.detection_fake_targets import (
     a_file_place,
     reading,
 )
-
-READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_replay_read_server.py"
+from tests.integration.support.support_servers import READ_SERVER_PATH
 
 FLAW_ID = "fict-flaw"
 OTHER_ID = "fict-other"
@@ -43,6 +41,7 @@ PREP_PATH = "/outside/prep"
 OTHER_PATH = "/outside/other"
 OLD_FLAW = "MCPAUDIT-" + "a" * 32
 OLD_OTHER = "MCPAUDIT-" + "b" * 32
+_OLD_NONCES = {FLAW_ID: OLD_FLAW, OTHER_ID: OLD_OTHER}
 
 Serve = Callable[[PlantingSpec], list[str]]
 
@@ -52,27 +51,17 @@ Serve = Callable[[PlantingSpec], list[str]]
 
 def a_declared_run() -> RunToCheck:
     # The location is reached by a declared path, so the patched version serves it too: struck.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}), (FLAW_ID,))
+    return _single_run(_serving({FLAW_PATH: FLAW_ID}))
 
 
 def a_flaw_run() -> RunToCheck:
     # Only the flaw reaches the location, so the patched version serves nothing: kept.
-    return _single_run(_serving({}), (FLAW_ID,))
+    return _single_run(_serving({}))
 
 
 def a_chain_run() -> RunToCheck:
     # A two-step chain whose second step reaches the location only via the flaw: kept.
-    report = grammar.a_report(
-        chains=[
-            grammar.a_chain(
-                [
-                    grammar.a_step(arguments={"path": PREP_PATH}, response="ok"),
-                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
-                ]
-            )
-        ]
-    )
-    return _run(_serving({}), (FLAW_ID,), report, _calls(PREP_PATH, FLAW_PATH), {FLAW_ID: OLD_FLAW})
+    return _run(_serving({}), _prep_then_flaw_chain_report(), _calls(PREP_PATH, FLAW_PATH))
 
 
 def an_echoed_old_nonce_run() -> RunToCheck:
@@ -88,7 +77,7 @@ def an_echoed_old_nonce_run() -> RunToCheck:
             )
         ]
     )
-    return _run(_echoing(), (FLAW_ID,), report, _calls(FLAW_PATH, OLD_FLAW), {FLAW_ID: OLD_FLAW})
+    return _run(_echoing(), report, _calls(FLAW_PATH, OLD_FLAW))
 
 
 def a_fresh_other_location_run() -> RunToCheck:
@@ -96,44 +85,29 @@ def a_fresh_other_location_run() -> RunToCheck:
     # the run never proved, so nothing is struck: kept.
     return _run(
         _serving({FLAW_PATH: OTHER_ID}),
-        (FLAW_ID, OTHER_ID),
         _flaw_report(),
         _calls(FLAW_PATH),
-        {FLAW_ID: OLD_FLAW, OTHER_ID: OLD_OTHER},
+        kept=(FLAW_ID, OTHER_ID),
     )
 
 
 def a_declared_run_on_a_server_noisy_at_shutdown() -> RunToCheck:
     # Every call is answered, then the patched server writes to stdout as it exits, which the
     # MCP client raises on when the launch is left: the complete attempt still decides.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}, noisy_shutdown=True), (FLAW_ID,))
+    return _single_run(_serving({FLAW_PATH: FLAW_ID}, noisy_shutdown=True))
 
 
 def a_patched_launch_failure_run() -> RunToCheck:
-    return _single_run(_dead(), (FLAW_ID,))
+    return _single_run(_dead())
 
 
 def a_server_dying_while_answering_run() -> RunToCheck:
-    return _single_run(_serving({}, exit_on_call=1), (FLAW_ID,))
+    return _single_run(_serving({}, exit_on_call=1))
 
 
 def a_server_dying_after_a_call_run() -> RunToCheck:
-    report = grammar.a_report(
-        chains=[
-            grammar.a_chain(
-                [
-                    grammar.a_step(arguments={"path": PREP_PATH}, response="ok"),
-                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
-                ]
-            )
-        ]
-    )
     return _run(
-        _serving({}, exit_on_call=2),
-        (FLAW_ID,),
-        report,
-        _calls(PREP_PATH, FLAW_PATH),
-        {FLAW_ID: OLD_FLAW},
+        _serving({}, exit_on_call=2), _prep_then_flaw_chain_report(), _calls(PREP_PATH, FLAW_PATH)
     )
 
 
@@ -150,10 +124,8 @@ def a_detection_kept_when_the_patched_dies_where_the_vulnerable_did_run() -> Run
     )
     return _run(
         _serving({}, exit_on_call=2),
-        (FLAW_ID,),
         report,
         _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
-        {FLAW_ID: OLD_FLAW},
     )
 
 
@@ -193,7 +165,7 @@ def a_timeout_at_a_relaunch_point_run() -> RunToCheck:
 def a_patched_server_stopping_answering_run() -> RunToCheck:
     # The vulnerable run answered its one call. The patched server blocks its loop on it, so the
     # call times out and the ping after it gets no answer.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=1), (FLAW_ID,))
+    return _single_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=1))
 
 
 def connect_pinging_within(seconds: float) -> Connect:
@@ -232,7 +204,7 @@ def _relaunched_at_call_2_run(serve: Serve, second: ToolResponse) -> RunToCheck:
     calls = _calls(PREP_PATH)
     calls.append(("read", {"path": PREP_PATH}, second))
     calls.extend(_calls(FLAW_PATH))
-    run = _run(serve, (FLAW_ID,), report, calls, {FLAW_ID: OLD_FLAW})
+    run = _run(serve, report, calls)
     return dataclasses.replace(run, relaunched_after=[2])
 
 
@@ -247,27 +219,21 @@ def _straddling_run(serve: Serve) -> RunToCheck:
             )
         ]
     )
-    return _run(
-        serve,
-        (FLAW_ID,),
-        report,
-        _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
-        {FLAW_ID: OLD_FLAW},
-    )
+    return _run(serve, report, _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH))
 
 
-def _single_run(serve: Serve | None, kept: tuple[str, ...]) -> RunToCheck:
-    return _run(serve, kept, _flaw_report(), _calls(FLAW_PATH), {FLAW_ID: OLD_FLAW})
+def _single_run(serve: Serve | None) -> RunToCheck:
+    return _run(serve, _flaw_report(), _calls(FLAW_PATH))
 
 
 def _run(
     serve: Serve | None,
-    kept: tuple[str, ...],
     report: AuditReport,
     calls: list[RecordedCall],
-    nonces: dict[str, str],
+    kept: tuple[str, ...] = (FLAW_ID,),
 ) -> RunToCheck:
     places = a_places_mapping()
+    nonces = {place: _OLD_NONCES[place] for place in kept}
     return RunToCheck(
         target=_a_target(serve, kept),
         run_target=PlantedTarget(frozenset({FlawClass.READ_OUTSIDE_SCOPE}), OUTSIDE_AIM, nonces),
@@ -287,6 +253,19 @@ def a_places_mapping() -> Places:
 def _flaw_report() -> AuditReport:
     return grammar.a_report(
         cases=[grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH})]
+    )
+
+
+def _prep_then_flaw_chain_report() -> AuditReport:
+    return grammar.a_report(
+        chains=[
+            grammar.a_chain(
+                [
+                    grammar.a_step(arguments={"path": PREP_PATH}, response="ok"),
+                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
+                ]
+            )
+        ]
     )
 
 
