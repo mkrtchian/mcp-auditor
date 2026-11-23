@@ -63,7 +63,7 @@ def _walk_problems(draw: DrawRecord, order: frozenset[str]) -> list[str]:
     outcomes = _walk_outcomes(draw)
     listed = Counter((step.identifier, step.rule_version) for step in draw.walk)
     problems = [
-        f"walk lists flaw {identifier} {count} times under rule version {version}"
+        f"walk lists flaw {identifier} {count} times {_under(version)}"
         for (identifier, version), count in listed.items()
         if count > 1
     ]
@@ -107,8 +107,7 @@ def _calibration_problems(draw: DrawRecord) -> list[str]:
         calibrations = {give_up.calibration for give_up in give_ups}
         if 2 in calibrations and 1 not in calibrations:
             problems.append(
-                f"flaw {flaw} has a second-calibration give-up with no first"
-                f" under rule version {version}"
+                f"flaw {flaw} has a second-calibration give-up with no first {_under(version)}"
             )
         step = governing.get(flaw)
         if (step.rule_version if step else None) == version:
@@ -119,7 +118,7 @@ def _calibration_problems(draw: DrawRecord) -> list[str]:
 def _unwalked_give_up_problems(draw: DrawRecord) -> list[str]:
     stepped = {(step.identifier, step.rule_version) for step in draw.walk}
     return [
-        f"flaw {flaw} gave up under rule version {version}, which has no walk step of it"
+        f"flaw {flaw} gave up {_under(version)}, which has no walk step of it"
         for flaw, version in _give_ups_by_flaw_and_version(draw)
         if (flaw, version) not in stepped
     ]
@@ -134,13 +133,19 @@ def _governing_give_up_problems(
         problems.append(f"flaw {flaw} gave up once but has no calibration card")
     if len(give_ups) == 2:
         if flaw in card_flaws:
-            problems.append(f"flaw {flaw} has two give-ups and a card under rule version {version}")
+            problems.append(f"flaw {flaw} has two give-ups and a card {_under(version)}")
         if step is None or step.outcome != "given_up":
             problems.append(
-                f"flaw {flaw} gave up twice under rule version {version} but its governing"
+                f"flaw {flaw} gave up twice {_under(version)} but its governing"
                 ' walk step is not "given_up"'
             )
     return problems
+
+
+def _under(version: int | None) -> str:
+    if version is None:
+        return "before the first re-walk"
+    return f"under detection suite rule v{version}"
 
 
 def _place_problems(draw: DrawRecord, place_ids: frozenset[str]) -> list[str]:

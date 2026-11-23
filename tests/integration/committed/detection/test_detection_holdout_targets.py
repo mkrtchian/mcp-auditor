@@ -62,7 +62,8 @@ def test_no_acceptance_or_holdout_image_names_a_path_under_work():
         assert given.the_instructions_naming_work_in(service) == [], service
 
 
-# Rule v11 starts a target in the checkout, or in the empty `/work` when it cannot write there.
+# Detection suite rule v11 starts a target in the checkout, or in the empty `/work` when it
+# cannot write there.
 def test_every_holdout_target_starts_in_the_checkout_or_work():
     for target in HOLDOUT_TARGETS:
         assert target.planting_host.working_directory in {PROJECT, WORK}, target.flaw_id

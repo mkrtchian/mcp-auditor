@@ -67,7 +67,7 @@ def test_a_flaw_drawn_on_its_re_walk_after_two_earlier_give_ups_loads(tmp_path: 
 def test_two_steps_of_one_flaw_under_one_version_fail(tmp_path: Path):
     draw = given.a_draw_re_walking(A_TWICE_GIVEN_UP_FLAW, under=None)
 
-    refusal = f"walk lists flaw {A_TWICE_GIVEN_UP_FLAW} 2 times under rule version None"
+    refusal = f"walk lists flaw {A_TWICE_GIVEN_UP_FLAW} 2 times before the first re-walk"
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(censuses.written(tmp_path, census_draws.a_census_with_draw(draw)))
 
@@ -84,7 +84,9 @@ def test_two_give_ups_and_a_card_under_one_version_fail(tmp_path: Path):
     draw = given.a_draw_re_walking(A_TWICE_GIVEN_UP_FLAW, under=11)
     draw = given.with_give_ups_under(draw, A_TWICE_GIVEN_UP_FLAW, version=11)
 
-    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups and a card under rule version 11"
+    refusal = (
+        f"flaw {A_TWICE_GIVEN_UP_FLAW} has two give-ups and a card under detection suite rule v11"
+    )
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(censuses.written(tmp_path, census_draws.a_census_with_draw(draw)))
 
@@ -92,7 +94,10 @@ def test_two_give_ups_and_a_card_under_one_version_fail(tmp_path: Path):
 def test_give_ups_under_a_version_with_no_walk_step_of_their_flaw_fail(tmp_path: Path):
     draw = given.with_give_ups_under(census_draws.a_draw(), A_TWICE_GIVEN_UP_FLAW, version=10)
 
-    refusal = f"flaw {A_TWICE_GIVEN_UP_FLAW} gave up under rule version 10, which has no walk step"
+    refusal = (
+        f"flaw {A_TWICE_GIVEN_UP_FLAW} gave up under detection suite rule v10,"
+        " which has no walk step"
+    )
     with pytest.raises(ValueError, match=re.escape(refusal)):
         load_census(censuses.written(tmp_path, census_draws.a_census_with_draw(draw)))
 
