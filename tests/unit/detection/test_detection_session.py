@@ -27,7 +27,7 @@ from tests.unit.detection.support.detection_sessions import (
 )
 
 
-async def test_a_gated_target_missed_once_is_replayed_until_the_miss_is_decided(tmp_path: Path):
+async def test_a_gated_target_missed_once_is_retested_until_the_miss_is_decided(tmp_path: Path):
     a_gated_file(tmp_path)
     miss = a_miss()
     audit = ScriptedAudit({KUBERNETES.flaw_id: [miss, given.a_detected_grade(), miss, *[miss] * 5]})
@@ -39,7 +39,7 @@ async def test_a_gated_target_missed_once_is_replayed_until_the_miss_is_decided(
     assert result.exit_code == 1
 
 
-async def test_a_miss_cleared_twice_stops_the_replays_and_keeps_the_gate_green(tmp_path: Path):
+async def test_a_miss_cleared_twice_stops_the_retests_and_keeps_the_gate_green(tmp_path: Path):
     a_gated_file(tmp_path)
     audit = ScriptedAudit({KUBERNETES.flaw_id: [a_miss()]})
 
@@ -50,7 +50,7 @@ async def test_a_miss_cleared_twice_stops_the_replays_and_keeps_the_gate_green(t
     assert result.exit_code == 0
 
 
-async def test_no_replay_runs_when_the_conditions_differ_from_the_files(tmp_path: Path):
+async def test_no_retest_runs_when_the_conditions_differ_from_the_files(tmp_path: Path):
     a_gated_file(tmp_path, budget=20)
     audit = ScriptedAudit({KUBERNETES.flaw_id: [a_miss()]})
 
@@ -62,7 +62,7 @@ async def test_no_replay_runs_when_the_conditions_differ_from_the_files(tmp_path
     assert result.exit_code == 3
 
 
-async def test_a_replay_that_does_not_complete_makes_the_run_not_comparable(tmp_path: Path):
+async def test_a_retest_that_does_not_complete_makes_the_run_not_comparable(tmp_path: Path):
     a_gated_file(tmp_path)
     miss = a_miss()
     audit = ScriptedAudit({KUBERNETES.flaw_id: [miss, miss, miss, None]})
@@ -159,7 +159,7 @@ async def test_a_run_with_no_unchecked_credits_stays_comparable(tmp_path: Path):
     then.the_one_target_ends(result, TargetOutcome.NO_BASELINE)
 
 
-async def test_a_settlement_meeting_an_unchecked_replay_ends_unchecked(tmp_path: Path):
+async def test_a_retest_resting_on_unchecked_credits_ends_unchecked(tmp_path: Path):
     a_gated_file(tmp_path)
     miss = a_miss()
     audit = ScriptedAudit({KUBERNETES.flaw_id: [miss, miss, miss, an_unchecked_detected_grade()]})
@@ -250,7 +250,7 @@ async def test_the_runs_of_two_targets_overlap(tmp_path: Path):
     assert [len(grades) for grades in result.grades.values()] == [3, 3]
 
 
-async def test_two_gated_targets_missed_once_settle_their_replays_in_target_order(tmp_path: Path):
+async def test_two_gated_targets_missed_once_end_their_retests_in_target_order(tmp_path: Path):
     targets = [KUBERNETES, SYMLINK]
     for target in targets:
         a_gated_file(tmp_path, target)
@@ -284,7 +284,7 @@ async def test_the_completed_main_runs_are_kept_with_their_run_index(tmp_path: P
     ]
 
 
-async def test_an_audit_made_by_a_replay_is_not_kept(tmp_path: Path):
+async def test_an_audit_made_by_a_retest_is_not_kept(tmp_path: Path):
     a_gated_file(tmp_path)
     audit = ScriptedAudit({KUBERNETES.flaw_id: [a_miss()]})
 

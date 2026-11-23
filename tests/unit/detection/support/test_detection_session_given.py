@@ -47,9 +47,9 @@ class RecordingAnnounce:
         self.announced.append((audits, len(self.audit.calls)))
 
 
-def a_file_holding_one_run_of_three(directory: Path, target: Target = KUBERNETES) -> None:
-    baseline = an_unconfirmed_baseline([TargetStatus.DETECTED], target.flaw_id)
-    a_baseline_file(directory, baseline, target, conditions())
+def a_file_holding_one_run_of_three(directory: Path) -> None:
+    baseline = an_unconfirmed_baseline([TargetStatus.DETECTED], KUBERNETES.flaw_id)
+    a_baseline_file(directory, baseline, KUBERNETES, conditions())
 
 
 def an_orphaned_file(directory: Path) -> str:

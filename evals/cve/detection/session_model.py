@@ -54,8 +54,8 @@ class DetectionOptions:
 @dataclass(frozen=True)
 class DetectionHarness:
     audit: AuditTarget
-    check: CheckTarget  # the pre-run check, gathered over every target before any audit
-    layout: ObserveLayout  # the layout and route checks of that same pre-run check
+    check: CheckTarget
+    layout: ObserveLayout
     announce_audits: Callable[[int], None]  # the main audits about to run, once checked
     baselines: Path
     read_tree: Callable[[], TreeState]

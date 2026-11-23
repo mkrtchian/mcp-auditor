@@ -80,7 +80,7 @@ async def _checked(session: GatedSession) -> dict[str, list[str]]:
     """The pre-run check gathered over every target, before any audit: the calibration check, then
     the layout and route checks the holdout pre-run check runs. A configuration error it raises
     propagates out of the gather, so the run crashes (exit 4) before any audit instead of reading a
-    target not_run. Under --record-baseline a failing target refuses the recording."""
+    target not_run."""
     targets = session.options.targets
     reasons = await asyncio.gather(*(_pre_run_reasons(session, target) for target in targets))
     not_run = {
@@ -153,7 +153,7 @@ async def _gate(
     if not mismatches:
         audited = list(
             await asyncio.gather(
-                *(_with_retests(c, tr.target, session) for c, tr in zip(audited, runs, strict=True))
+                *(_retested(c, tr.target, session) for c, tr in zip(audited, runs, strict=True))
             )
         )
     by_id = {tr.target.flaw_id: comparison for tr, comparison in zip(runs, audited, strict=True)}
@@ -178,15 +178,6 @@ def _not_run_comparison(
     )
 
 
-async def _with_retests(
-    comparison: TargetComparison, target: Target, session: GatedSession
-) -> TargetComparison:
-    baseline = session.baselines().get(target.flaw_id)
-    if baseline is None:
-        return comparison
-    return await _retested(comparison, target, baseline, session.harness)
-
-
 def _candidate(target_runs: TargetRuns, places: Places) -> TargetCandidate:
     return TargetCandidate(
         flaw_id=target_runs.target.flaw_id,
@@ -198,18 +189,18 @@ def _candidate(target_runs: TargetRuns, places: Places) -> TargetCandidate:
 
 
 async def _retested(
-    comparison: TargetComparison,
-    target: Target,
-    baseline: DetectionBaseline,
-    harness: DetectionHarness,
+    comparison: TargetComparison, target: Target, session: GatedSession
 ) -> TargetComparison:
     """One audit at a time, until the retest rule decides or a retest does not complete. A retest
     whose status depends on unchecked credits ends the retests as UNCHECKED_DECIDES, not as a
     reproduced or cleared miss (ADR 030)."""
+    baseline = session.baselines().get(target.flaw_id)
+    if baseline is None:
+        return comparison
     retests: list[bool | None] = []
     retested = comparison
     while retested.outcome == TargetOutcome.PENDING_RETEST:
-        audit = await harness.audit(target)
+        audit = await session.harness.audit(target)
         if audit is not None and depends_on_unchecked(audit.grade):
             return comparison.model_copy(
                 update={

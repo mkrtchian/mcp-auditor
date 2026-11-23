@@ -85,13 +85,13 @@ class ScriptedCheck:
     """The pre-run check: each target's out-of-calibration reasons, empty (in calibration) by
     default. Raises `error` to stand for a configuration error."""
 
-    conditions: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
+    reasons: dict[str, list[str]] = field(default_factory=dict[str, list[str]])
     error: Exception | None = None
 
     async def __call__(self, target: Target) -> list[str]:
         if self.error is not None:
             raise self.error
-        return self.conditions.get(target.flaw_id, [])
+        return self.reasons.get(target.flaw_id, [])
 
 
 BROKEN_LAYOUT = replace(SOUND_LAYOUT, breaks=True)
@@ -130,13 +130,12 @@ def a_harness(
 
 def options(
     targets: list[Target] | None = None,
-    run_conditions: DetectionRunConditions | None = None,
     no_baseline: bool = False,
     record_baseline: bool = False,
 ) -> DetectionOptions:
     return DetectionOptions(
         targets=targets or [KUBERNETES],
-        conditions=run_conditions or conditions(),
+        conditions=conditions(),
         no_baseline=no_baseline,
         record_baseline=record_baseline,
     )
