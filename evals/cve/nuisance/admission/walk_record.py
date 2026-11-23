@@ -61,9 +61,8 @@ class WalkInputs:
     @cached_property
     def settlements_by_flaw(self) -> dict[tuple[str, Criterion], Settlement]:
         """The draw's settlement first, then the record's."""
-        drawn = self.census.draw.settlements if self.census.draw is not None else []
         indexed: dict[tuple[str, Criterion], Settlement] = {}
-        for settlement in [*drawn, *self.record.settlements]:
+        for settlement in [*followed_draw(self.census).settlements, *self.record.settlements]:
             indexed.setdefault((settlement.flaw, settlement.criterion), settlement)
         return indexed
 
@@ -148,7 +147,7 @@ def _duplicate_problems(record: NuisanceWalkRecord) -> list[str]:
 
 
 def _contradiction_problems(census: Census, record: NuisanceWalkRecord) -> list[str]:
-    drawn = {(s.flaw, s.criterion): s.ruling for s in _draw(census).settlements}
+    drawn = {(s.flaw, s.criterion): s.ruling for s in followed_draw(census).settlements}
     return [
         f"{settlement.flaw}: settled {settlement.ruling} on {settlement.criterion}, "
         f"the draw settles it {not settlement.ruling}"
@@ -189,10 +188,10 @@ def _completeness_problems(walk_inputs: WalkInputs) -> list[str]:
 
 
 def reached_identifiers(census: Census) -> list[str]:
-    return list(dict.fromkeys(step.identifier for step in _draw(census).walk))
+    return list(dict.fromkeys(step.identifier for step in followed_draw(census).walk))
 
 
-def _draw(census: Census) -> DrawRecord:
+def followed_draw(census: Census) -> DrawRecord:
     if census.draw is None:
         raise ValueError("the census has no draw walk to follow")
     return census.draw

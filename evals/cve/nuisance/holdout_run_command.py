@@ -18,7 +18,6 @@ from evals import eval_display as display
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
 from evals.cve.audit_progress import AuditProgress
-from evals.cve.census.census import CENSUS_PATH
 from evals.cve.census.draw_order import draw_order
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.baseline import fixture_fingerprint
@@ -34,7 +33,7 @@ from evals.cve.holdout_conditions import (
 from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance import images as nuisance_images
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.holdout_calibration_copies import (
     copy_targets,
     stale_holdout_calibration_copies,
@@ -44,7 +43,7 @@ from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit, audit_once, nuisance_audit
 from evals.cve.nuisance.commands import (
     NUISANCE_CONCURRENCY,
-    WALK_RECORD_PATH,
+    add_committed_input_arguments,
     committed_run_population,
 )
 from evals.cve.nuisance.holdout_run import (
@@ -124,9 +123,7 @@ def add_run_arguments(parser: argparse.ArgumentParser, deps: RunCommandDeps) -> 
         help=f"default {NUISANCE_RUNS}, lowerable to 1",
     )
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
-    parser.add_argument("--census", type=Path, default=CENSUS_PATH)
-    parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    add_committed_input_arguments(parser)
 
 
 def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:

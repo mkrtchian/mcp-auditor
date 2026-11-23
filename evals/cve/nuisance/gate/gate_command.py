@@ -16,16 +16,15 @@ from rich.text import Text
 
 from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
-from evals.cve.census.census import CENSUS_PATH
 from evals.cve.file_baselines import next_recording_step
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
-    WALK_RECORD_PATH,
+    add_committed_input_arguments,
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
@@ -72,9 +71,7 @@ def add_gate_arguments(gate_parser: argparse.ArgumentParser, deps: GateCommandDe
         "--server", action="append", default=[], help="restrict the gate set, repeatable"
     )
     gate_parser.add_argument("--report", type=Path, default=Path(DEFAULT_GATE_REPORT_PATH))
-    gate_parser.add_argument("--census", type=Path, default=CENSUS_PATH)
-    gate_parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    gate_parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    add_committed_input_arguments(gate_parser)
 
 
 def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:

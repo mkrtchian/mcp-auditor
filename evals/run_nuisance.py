@@ -1,18 +1,4 @@
-"""Nuisance-specific commands, kept out of run_census, run_detection and run_detection_holdout.
-
-`walk` prints the servers the nuisance walk reached, the detection walk's then the addition's, each
-with the draw position of its reaching flaw and the flaws that may count, for the maintainer to
-admit, and how many of the addition's servers the admission counts in the nuisance holdout layer (no
-LLM, no network). `nuisance-dossier` writes the isolated admission dossier for one server (no LLM;
-the fix-check driver it ships needs Docker), copying a backend's kit builder and lifecycle under
-`--backend <key>`, or under `--re-admission` the re-admission dossier of an admitted server, with
-its record, its run, fix-check and backend sources and the benign probe. `fix-check` rebuilds each
-fix-check fixture's images and reproduces its flaw against the admission (Docker, no LLM). `run`
-audits the admitted servers on their patched images and reports the holdout nuisance rate, so it
-needs Docker and an LLM key. `gate` audits each admitted nuisance acceptance server and compares it
-to its baseline under `evals/baselines/nuisance/`, needing Docker and an LLM key. `vet` rebuilds the
-run's images and makes each audited server's benign calls on the run's launch path (Docker, no LLM).
-"""
+"""Nuisance-specific commands, kept out of run_census, run_detection and run_detection_holdout."""
 
 import argparse
 import sys
@@ -21,9 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from evals import eval_display as display
-from evals.cve.census.census import CENSUS_PATH
 from evals.cve.detection.draw_record import governing_steps
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH
 from evals.cve.nuisance.admission.admission_walk import addition_entries
 from evals.cve.nuisance.admission.dossier import write_dossier
 from evals.cve.nuisance.admission.re_admission_dossier import (
@@ -31,10 +15,11 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
     write_re_admission_dossier,
 )
 from evals.cve.nuisance.admission.walk import NuisanceServer, nuisance_population
+from evals.cve.nuisance.admission.walk_record import followed_draw
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     REFUSED_EXIT,
-    WALK_RECORD_PATH,
+    add_committed_input_arguments,
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
@@ -80,15 +65,12 @@ def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
     commands = parser.add_subparsers(required=True)
     walk = commands.add_parser("walk", help="print the servers the nuisance walk reached to admit")
     walk.set_defaults(command=_walk)
-    walk.add_argument("--census", type=Path, default=CENSUS_PATH)
-    walk.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    walk.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    add_committed_input_arguments(walk)
     dossier = commands.add_parser(
         "nuisance-dossier", help="write the isolated admission dossier for one server"
     )
     dossier.set_defaults(command=_nuisance_dossier)
-    dossier.add_argument("--census", type=Path, default=CENSUS_PATH)
-    dossier.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
+    add_committed_input_arguments(dossier)
     dossier.add_argument("--server", required=True)
     dossier.add_argument("--out", type=Path, required=True)
     dossier.add_argument(
@@ -97,7 +79,6 @@ def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
     dossier.add_argument(
         "--re-admission", action="store_true", help="write the re-admission dossier instead"
     )
-    dossier.add_argument("--admission", type=Path, default=ADMISSION_PATH)
     add_run_arguments(
         commands.add_parser(
             "run", help="audit the admitted servers and report the holdout nuisance rate"
@@ -132,8 +113,7 @@ def _walk(args: argparse.Namespace) -> int:
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         population = nuisance_population(walk_inputs)
         admission = committed_admission(args.admission, walk_inputs)
-    draw = walk_inputs.census.draw
-    governing = governing_steps(draw) if draw else {}
+    governing = governing_steps(followed_draw(walk_inputs.census))
     outcomes = {identifier: step.outcome for identifier, step in governing.items()}
     print(f"{len(population)} servers reached by the walk:")
     for server in population:

@@ -9,29 +9,22 @@ import functools
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
-from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.images import ComposeImageStore, ensure_images
 from evals.cve.images import image_tag as backend_image_tag
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult, check_fix
 from evals.cve.kit.launch import build_images, image_tag
-from evals.cve.nuisance.admission.admission import (
-    ADMISSION_PATH,
-    AdmittedServer,
-    FixCheckRecord,
-    NuisanceAdmission,
-)
+from evals.cve.nuisance.admission.admission import AdmittedServer, FixCheckRecord, NuisanceAdmission
 from evals.cve.nuisance.backend_registry import built_backend_services, built_backend_tags
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
-    WALK_RECORD_PATH,
+    add_committed_input_arguments,
     committed_admission,
     committed_walk_inputs,
     malformed_input_refused,
@@ -80,9 +73,7 @@ def add_fix_check_arguments(parser: argparse.ArgumentParser, deps: FixCheckComma
     parser.set_defaults(command=functools.partial(fix_check, deps=deps))
     parser.add_argument("--flaw", help="fix-check only this flaw, default: every admitted flaw")
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
-    parser.add_argument("--census", type=Path, default=CENSUS_PATH)
-    parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    add_committed_input_arguments(parser)
 
 
 def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:

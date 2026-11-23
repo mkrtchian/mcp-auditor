@@ -1,12 +1,13 @@
 """What the nuisance subcommands share: the walk record path, the admission they read, the
 population a run audits, their default concurrency and their exit codes."""
 
+import argparse
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from evals.cve.census.census import load_census
-from evals.cve.nuisance.admission.admission import NuisanceAdmission
+from evals.cve.census.census import CENSUS_PATH, load_census
+from evals.cve.nuisance.admission.admission import ADMISSION_PATH, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_load import load_admission
 from evals.cve.nuisance.admission.walk import acceptance_target_servers, reached_servers
 from evals.cve.nuisance.admission.walk_record import WalkInputs, load_walk_record
@@ -19,6 +20,12 @@ NUISANCE_CONCURRENCY = 6
 UNKNOWN_SERVER_EXIT = 2
 REFUSED_EXIT = 3
 CRASHED_EXIT = 4
+
+
+def add_committed_input_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--census", type=Path, default=CENSUS_PATH)
+    parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
+    parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
 
 
 def committed_run_population(

@@ -9,22 +9,20 @@ import sys
 import traceback
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
-from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
-from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
-    WALK_RECORD_PATH,
+    add_committed_input_arguments,
     committed_run_population,
 )
 from evals.cve.nuisance.containers import rebuilt_run_images
@@ -86,9 +84,7 @@ def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> 
         default=None,
         help="default: the run conditions' timeout",
     )
-    parser.add_argument("--census", type=Path, default=CENSUS_PATH)
-    parser.add_argument("--walk-record", type=Path, default=WALK_RECORD_PATH)
-    parser.add_argument("--admission", type=Path, default=ADMISSION_PATH)
+    add_committed_input_arguments(parser)
 
 
 def vet(args: argparse.Namespace, deps: VetCommandDeps) -> int:
