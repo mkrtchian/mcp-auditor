@@ -1,68 +1,38 @@
-"""The rendered documents of an admission dossier: the run's confinement, rendered from the
-run's own launch builders and never retyped (for one admitted server, or as the shape every
-server's launch takes before its record exists), and the README section on the re-admission
-tools."""
+"""The rendered documents of a re-admission: the run's confinement for one admitted server,
+rendered from the run's own launch builders and never retyped, and the README section on the
+re-admission tools."""
 
 import shlex
 from collections.abc import Mapping, Sequence
 
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.admission.admission_docs import IMAGE_PLACEHOLDER, confinement_options
 from evals.cve.nuisance.backend_registry import BACKENDS, RegisteredBackend
 from evals.cve.nuisance.confinement import single_container_run_args
-from evals.cve.planting_base import (
-    PlantingHost,
-    SymbolicUser,
-    confinement_args,
-    memory_bound_args,
-)
+from evals.cve.planting_base import memory_bound_args
 
-_IMAGE = "<image>"
 _NAME = "<name>"
 
 
 def confinement_text(
     server: AdmittedServer, backends: Mapping[str, RegisteredBackend] = BACKENDS
 ) -> str:
-    options = "\n".join(f"- `{option}`" for option in _paired(confinement_args()))
     backend = backends[server.backend.provisioner] if server.backend is not None else None
     return _CONFINEMENT.format(
         launch=_launch_text(server, backend),
-        options=options,
+        options=confinement_options(),
         backend=_backend_paragraph(backend),
     )
 
 
-def admission_confinement_text() -> str:
-    options = "\n".join(f"- `{option}`" for option in _paired(confinement_args()))
-    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "<working directory>", has_network=False)
-    command = f"docker {shlex.join(single_container_run_args(_IMAGE, host, ['<launch>']))}"
-    return _ADMISSION_CONFINEMENT.format(command=command, options=options)
-
-
-def _paired(args: list[str]) -> list[str]:
-    options: list[str] = []
-    for arg in args:
-        if (
-            options
-            and options[-1].startswith("-")
-            and " " not in options[-1]
-            and not arg.startswith("-")
-        ):
-            options[-1] += f" {arg}"
-        else:
-            options.append(arg)
-    return options
-
-
 def _launch_text(server: AdmittedServer, backend: RegisteredBackend | None) -> str:
     if backend is None:
-        return _ARGV.format(
-            command=_docker(single_container_run_args(_IMAGE, server.host, server.launch))
-        )
+        args = single_container_run_args(IMAGE_PLACEHOLDER, server.host, server.launch)
+        return _ARGV.format(command=_docker(args))
     match backend.lifecycle:
         case BackendLifecycle() as lifecycle:
-            args = lifecycle.server_args(_NAME, _IMAGE, server.host, server.launch)
+            args = lifecycle.server_args(_NAME, IMAGE_PLACEHOLDER, server.host, server.launch)
             return _ARGV.format(command=_docker(args))
         case PerLaunchBackend() as lifecycle:
             return _PER_LAUNCH_ARGV.format(key=lifecycle.key)
@@ -120,28 +90,6 @@ _PER_LAUNCH_ARGV = """\
 The run launches the server with the argv its `{key}` backend yields once it has stood the
 backend for that launch (`LIFECYCLE.launch` in `evals/cve/backends/{key}.py`). The argv carries
 values only that stand-up knows, so it is not rendered here: read it in that module.
-"""
-
-_ADMISSION_CONFINEMENT = """\
-# The run's confinement
-
-A server with no backend is launched with this argv, shown for the `unprivileged` user of
-`PlantingHost`, the only user. `<working directory>` is the host's `working_directory`,
-`<image>` the image tag and `<launch>` the record's `launch`:
-
-```
-{command}
-```
-
-The confinement options, every server alike:
-
-{options}
-
-A server with a backend joins its backend's closed network instead of running with no network,
-and its backend's containers run under the same memory bound. A server with no backend whose host
-declares public names joins a namespace holder that serves each one under its real name from its
-capture in `evals/stand_ins/`, with the trust setting. The benign probe launches a record exactly
-as the run does, a proposed capture included once it is in `evals/stand_ins/`.
 """
 
 _NO_BACKEND = """\
