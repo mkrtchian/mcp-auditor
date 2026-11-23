@@ -1,4 +1,4 @@
-"""The run conditions of a holdout run: the dataclasses and the loader for
+"""The run conditions of a holdout run: the test budget, the dataclasses and the loader for
 `evals/holdout_conditions.json`. Loading never checks readiness, so inspecting the
 file stays cheap; the run calls `require_ready` with its own models."""
 
@@ -13,6 +13,10 @@ from evals.eval_session import Refused
 from evals.pricing import AuditPrices, Prices
 
 CONDITIONS_PATH = Path(__file__).parents[1] / "holdout_conditions.json"
+# detection-suite-rule.md, Run conditions and statistic, a constant, not a flag. The nuisance
+# holdout run and the nuisance gate take it too, since the holdout nuisance rate is read beside
+# the holdout detection rate.
+HOLDOUT_TEST_BUDGET = 10
 
 _CHAIN_NOT_SET = (
     "chain settings and tool call timeout not set, set them in evals/holdout_conditions.json"

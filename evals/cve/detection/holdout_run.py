@@ -27,7 +27,7 @@ from evals.cve.detection.holdout_results import (
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
-from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET, HoldoutConditions
 from evals.cve.images import image_tag
 from evals.cve.places import Places, kept_records
 from evals.cve.run_files import RunInterrupted
@@ -45,8 +45,6 @@ from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged
-# detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
-HOLDOUT_TEST_BUDGET = 10
 HOLDOUT_CONCURRENCY = 6
 DETECTION_HOLDOUT_RUN_REFUSED = "detection holdout run refused"
 

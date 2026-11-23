@@ -20,10 +20,9 @@ from evals.concurrency import bounded
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET, HoldoutConditions
 from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance import images as nuisance_images
@@ -71,10 +70,6 @@ from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_HOLDOUT_RUN_REFUSED = "nuisance holdout run refused"
-# The test budget is the detection holdout run's HOLDOUT_TEST_BUDGET: the rule reads the holdout
-# nuisance rate beside the holdout detection rate, whose test budget is a constant, not a flag
-# (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)), so no
-# test budget of its own here.
 
 
 @dataclass(frozen=True)

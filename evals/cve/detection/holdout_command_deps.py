@@ -19,19 +19,18 @@ from evals.cve.detection.calibration_check_exit import (
     default_calibration_check_deps,
 )
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
-from evals.cve.detection.holdout_run import (
-    HOLDOUT_TEST_BUDGET,
-    HoldoutDeps,
-    RunHoldoutTargets,
-    run_holdout_targets,
-)
+from evals.cve.detection.holdout_run import HoldoutDeps, RunHoldoutTargets, run_holdout_targets
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.layout_observation import observe_layout
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
+from evals.cve.holdout_conditions import (
+    HOLDOUT_TEST_BUDGET,
+    HoldoutConditions,
+    committed_conditions,
+)
 from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.places import Places

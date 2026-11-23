@@ -5,7 +5,7 @@ import pytest
 
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
-from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
+from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.gate.gate_baseline import (
     baseline_file_name,

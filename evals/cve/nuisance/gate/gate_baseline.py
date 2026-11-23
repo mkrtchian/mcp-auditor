@@ -16,9 +16,8 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef, run_count_problems, write_json_atomically
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.file_baselines import BaselineStore, condition_mismatches_by_file, whole_reset
-from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET, HoldoutConditions
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.gate import RetestRule
 from evals.model_conditions import ModelConditions
