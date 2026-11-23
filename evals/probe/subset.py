@@ -39,7 +39,14 @@ def defect_counts(
 
 def defect_table(counts: list[DefectCounts]) -> Table:
     table = Table(title="Probe subset run (debugging only)")
-    columns = ("Candidate", "Calls", "Parse failures", "With truncation", "Refusals", "Errors")
+    columns = (
+        "Candidate",
+        "Calls",
+        "Parse failures",
+        "With truncation",
+        "Incomplete batches",
+        "Errors",
+    )
     for column in columns:
         table.add_column(column)
     for row in counts:
@@ -48,7 +55,7 @@ def defect_table(counts: list[DefectCounts]) -> Table:
             str(row.calls),
             str(row.parse_failures),
             str(row.parse_failures_with_truncation),
-            str(row.refusals),
+            str(row.incomplete_batches),
             str(row.errors),
         )
     return table

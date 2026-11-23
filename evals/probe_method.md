@@ -4,7 +4,7 @@ The probe (`uv run python -m evals.run_probe [--report PATH]`) sends a frozen co
 
 ## What the probe measures, and what it does not
 
-It measures, per candidate, over the whole corpus: parse failures per schema, refusals, errors, the median latency per call in each role (generation calls and judge calls), the weighted corpus cost, and the reasoning tokens.
+It measures, per candidate, over the whole corpus: parse failures per schema, incomplete batches, errors, the median latency per call in each role (generation calls and judge calls), the weighted corpus cost, and the reasoning tokens.
 
 It does not measure detection quality. No verdict is compared with a label, and the corpus holds no label. Detection quality is measured by the judge eval and the honeypot suite, whose results also feed the judgment.
 
@@ -16,16 +16,16 @@ It does not measure detection quality. No verdict is compared with a label, and 
 - **Judge sample.** 60 judge calls drawn uniformly with a fixed seed from the judge calls of the capture run, kept in capture order, never selected by verdict. The seed and the number of judge calls captured are recorded in the corpus. Every non-judge call is kept.
 - **Tool definitions of the detection fixtures.** One generation prompt (budget 10, all categories) per distinct tool listed by the servers of the detection fixtures, deduplicated on the whole tool definition. Reading a tool definition is not reading a trace (ADR 015). These calls widen the generator inputs beyond the honeypots.
 
-## The refusal rule
+## The incomplete batch rule
 
-A `TestCaseBatch` call is a refusal when its output does not parse within the adapter's attempts, when the batch holds fewer cases than the corpus budget, or when it covers fewer distinct categories than `min(budget, 5)`. The rule is mechanical and reads no payload. A watered-down payload that keeps its category is **not** detected.
+A `TestCaseBatch` call is an incomplete batch when its output does not parse within the adapter's attempts, when the batch holds fewer cases than the corpus budget, or when it covers fewer distinct categories than `min(budget, 5)`. The rule is mechanical and reads no payload. A watered-down payload that keeps its category is **not** detected.
 
 ## What the probe reports
 
 The defects, listed per model under the table and in the report, the reference's included:
 
-- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`). A call the provider refuses on policy grounds is a parse failure too, with the provider's message in the observation's `error`, whether the refusal comes as the model's answer or as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`, Anthropic's `stop_reason: "refusal"` with its category). Through OpenRouter, an OpenRouter provider's block comes in one of two shapes: a 403 whose error metadata reads `error_type` `content_policy_violation` or `refusal`, its message followed by `(provider <OpenRouter provider>, code <its code>)`, or a `finish_reason: "content_filter"`, whose message is the model's `refusal` text when it gives one and `finish_reason content_filter` otherwise (an Alibaba `content_filter` finish reads the same). On a `TestCaseBatch` call it therefore counts as a refusal.
-- **Refusals**, by the rule above.
+- **Parse failures** after the adapter's 3 attempts, per schema (`TestCaseBatch`, `Judgment`, `AttackContext`, `ChainPlanBatch`, `StepObservation`, `AuditPayload`). A call the provider refuses on policy grounds is a parse failure too, with the provider's message in the observation's `error`, whether the refusal comes as the model's answer or as a 400 before the model (OpenAI's `invalid_prompt`, Alibaba's `DataInspectionFailed`, Anthropic's `stop_reason: "refusal"` with its category). Through OpenRouter, an OpenRouter provider's block comes in one of two shapes: a 403 whose error metadata reads `error_type` `content_policy_violation` or `refusal`, its message followed by `(provider <OpenRouter provider>, code <its code>)`, or a `finish_reason: "content_filter"`, whose message is the model's `refusal` text when it gives one and `finish_reason content_filter` otherwise (an Alibaba `content_filter` finish reads the same). On a `TestCaseBatch` call it therefore counts as an incomplete batch.
+- **Incomplete batches**, by the rule above.
 - **Errors**: any exception other than a parse failure or a policy refusal, such as an API error, or an OpenAI, Anthropic, Fireworks, Alibaba or OpenRouter call that exceeds its 120-second timeout on every retry. A model that did not answer every call was not measured on the whole corpus. **On an error, rerun the probe** rather than read it as a fact about the model.
 - **Reasoning tokens at odds with the setting**: see below.
 
@@ -118,7 +118,7 @@ A *parse failure with truncation* is a parse failure where at least one attempt 
 
 ## Limits
 
-- **Watered-down payloads** are not detected (see the refusal rule).
+- **Watered-down payloads** are not detected (see the incomplete batch rule).
 - **Retries on HTTP 429** happen inside the provider clients (`max_retries=3`) and count in the latency. The probe builds its models with a zero-wait patience and opens no per-audit breaker: the auditor's own wait on a throttled provider would bring the provider's queue into the latency measured, and a breaker would turn one throttled call into an error on every later call of the candidate. A 429 that outlasts the clients' retries is an error on its own call, which keeps its throttled-request count, and the rule for it is to rerun the probe.
 - **Same-session load** (network, provider load) affects all candidates alike only as far as the rotation spreads it.
 - **Median, not p95.** A p95 over about 60 judge calls rests on its third-largest value, so the median is the statistic.

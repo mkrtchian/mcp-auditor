@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The error for an unknown `MCP_AUDITOR_PROVIDER` lists the accepted providers.
 - The Markdown report's summary counts attack chains on their own line, `**Attack chains**`, instead of adding them to the test cases.
 - A honeypot or judge baseline file must carry `retest_rule` and `retests`: the keys they replaced in 0.5.0 are no longer read. Both committed baselines carry them.
+- The model probe's report and console count incomplete batches (statistics key `incomplete_batches`, column "Incomplete batches") where they counted refusals: a `TestCaseBatch` answer that does not parse or falls short of the corpus budget is not a provider refusal.
 
 ### Fixed
 

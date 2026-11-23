@@ -290,7 +290,7 @@ def _print_table(result: ProbeResult) -> None:
     table = Table(title="Probe")
     for column in ("Candidate", "Main median", "Judge median", "Weighted cost", "Cost ratio"):
         table.add_column(column)
-    for column in ("Parse failures", "Refusals", "Errors", "Reasoning tokens", "Defects"):
+    for column in ("Parse failures", "Incomplete batches", "Errors", "Reasoning tokens", "Defects"):
         table.add_column(column)
     for stats in _measured_stats(result):
         table.add_row(*_stats_cells(stats, result.reference))
@@ -306,7 +306,7 @@ def _stats_cells(stats: CandidateStats, reference: CandidateStats) -> list[str]:
         f"${stats.weighted_cost:.4f}",
         _ratio(stats.weighted_cost, reference.weighted_cost),
         str(sum(stats.parse_failures.values())),
-        str(stats.refusals),
+        str(stats.incomplete_batches),
         str(stats.errors),
         str(stats.reasoning_tokens),
         str(len(list_defects(stats))),

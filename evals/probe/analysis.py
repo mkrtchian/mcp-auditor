@@ -41,7 +41,7 @@ class CandidateStats(BaseModel):
     candidate: str
     median_seconds: dict[Role, float]
     parse_failures: dict[str, int]  # per schema, nonzero only
-    refusals: int
+    incomplete_batches: int
     errors: int
     weighted_cost: float  # dollars, judge calls weighted by captured over sampled
     reasoning_tokens: int
@@ -57,7 +57,7 @@ def summarize(
         parse_failures=dict(
             Counter(o.schema_name for o in observations if o.outcome == CallOutcome.PARSE_FAILURE)
         ),
-        refusals=sum(_is_refusal(o) for o in observations),
+        incomplete_batches=sum(_is_incomplete_batch(o) for o in observations),
         errors=sum(o.outcome == CallOutcome.ERROR for o in observations),
         weighted_cost=sum(
             call_cost(o.usage, candidate.prices) * (judge_weight if o.role == "judge" else 1.0)
@@ -77,7 +77,7 @@ class DefectCounts(BaseModel):
     calls: int
     parse_failures: int
     parse_failures_with_truncation: int  # at least one attempt cut by the output cap
-    refusals: int  # same rule as `summarize`
+    incomplete_batches: int  # same rule as `summarize`
     errors: int
 
 
@@ -88,7 +88,7 @@ def count_defects(candidate: str, observations: list[ProbeObservation]) -> Defec
         calls=len(observations),
         parse_failures=len(parse_failures),
         parse_failures_with_truncation=sum(o.truncated_attempts > 0 for o in parse_failures),
-        refusals=sum(_is_refusal(o) for o in observations),
+        incomplete_batches=sum(_is_incomplete_batch(o) for o in observations),
         errors=sum(o.outcome == CallOutcome.ERROR for o in observations),
     )
 
@@ -100,7 +100,7 @@ def _median_seconds_per_role(observations: list[ProbeObservation]) -> dict[Role,
     return {role: median(values) for role, values in seconds.items()}
 
 
-def _is_refusal(observation: ProbeObservation) -> bool:
+def _is_incomplete_batch(observation: ProbeObservation) -> bool:
     if observation.schema_name != _GENERATION_SCHEMA:
         return False
     return observation.outcome == CallOutcome.PARSE_FAILURE or observation.coverage_gap is not None
@@ -114,8 +114,8 @@ def _count_defects(stats: CandidateStats) -> list[str]:
     defects = [
         f"{count} parse failure(s) on {schema}" for schema, count in stats.parse_failures.items()
     ]
-    if stats.refusals:
-        defects.append(f"{stats.refusals} refusal(s) on {_GENERATION_SCHEMA} calls")
+    if stats.incomplete_batches:
+        defects.append(f"{stats.incomplete_batches} incomplete {_GENERATION_SCHEMA} answer(s)")
     if stats.errors:
         defects.append(f"{stats.errors} error(s): not measured on the whole corpus, rerun")
     return defects

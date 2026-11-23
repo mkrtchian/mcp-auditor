@@ -120,6 +120,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | readmission | re-admission | rename | 2026-11-11 |
 | `--readmission` | `--re-admission` | rename | 2026-11-11 |
 | `RecordingClient`, `KitRecorder`, `RecordingLLM` | `ExchangeLog`, `KitExchangeLog`, `CapturingLLM` ("recording" names only a baseline recording) | rename | 2026-11-11 |
+| refusal, `refusals` (the model probe's count of `TestCaseBatch` answers that are unparsed or short, `evals/probe_method.md`) | incomplete batch, `incomplete_batches` | rename | 2026-11-23 |
 | refused credit | struck credit | rename | 2026-11-11 |
 | `relayed_variables` | redacted variables (`redacted_variables`) | rename | 2026-11-11 |
 | replay (re-auditing a gated cell, case, target or server that flipped, missed or raised an alarm: ADR 016, ADR 024, nuisance rule v1 to v4) | retest. "Replay" now names only the resend of ADR 030. | moved meaning | 2026-11-11 |

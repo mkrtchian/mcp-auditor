@@ -70,7 +70,7 @@ class TestSummarize:
 
         assert stats.parse_failures == {"StepObservation": 2, "TestCaseBatch": 1}
 
-    def test_counts_coverage_gaps_and_unparsed_batches_as_refusals(self):
+    def test_counts_coverage_gaps_and_unparsed_batches_as_incomplete_batches(self):
         observations = [
             probe_observations.an_observation(coverage_gap=given.a_coverage_gap()),
             probe_observations.an_observation(outcome=CallOutcome.PARSE_FAILURE),
@@ -82,7 +82,7 @@ class TestSummarize:
 
         stats = summarize(given.a_candidate(), observations, judge_weight=1.0)
 
-        assert stats.refusals == 2
+        assert stats.incomplete_batches == 2
 
     def test_counts_errors_and_sums_reasoning_tokens(self):
         observations = [
@@ -129,7 +129,7 @@ class TestCountDefects:
             "calls": 5,
             "parse_failures": 2,
             "parse_failures_with_truncation": 1,
-            "refusals": 2,
+            "incomplete_batches": 2,
             "errors": 1,
         }
 
@@ -152,10 +152,10 @@ class TestListDefects:
 
         then.lists_defects(defects, "1", "StepObservation")
 
-    def test_lists_a_refusal_with_its_count(self):
-        defects = list_defects(given.candidate_stats(refusals=1))
+    def test_lists_incomplete_batches_with_their_count(self):
+        defects = list_defects(given.candidate_stats(incomplete_batches=1))
 
-        then.lists_defects(defects, "1", "refusal")
+        then.lists_defects(defects, "1", "incomplete")
 
     def test_lists_an_error_with_its_count_and_asks_for_a_rerun(self):
         defects = list_defects(given.candidate_stats(errors=1))

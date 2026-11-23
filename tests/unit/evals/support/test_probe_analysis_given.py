@@ -47,7 +47,7 @@ def candidate_stats(**changes: Any) -> CandidateStats:
         candidate="candidate",
         median_seconds={"main": 1.0, "judge": 1.0},
         parse_failures={},
-        refusals=0,
+        incomplete_batches=0,
         errors=0,
         weighted_cost=1.0,
         reasoning_tokens=0,
