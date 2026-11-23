@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from evals.gate import CellComparison, CellOutcome, CellState, Observation, classify
-from evals.ground_truth import Cell, GroundTruth, cell_key, parse_cell_key
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.honeypots import HoneypotConfig
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -42,7 +42,7 @@ class GridSection:
 
 @dataclass(frozen=True)
 class RunAgainstBaseline:
-    comparisons: dict[str, CellComparison]  # GateResult.cells, keyed by cell_key
+    comparisons: dict[Cell, CellComparison]
     runs: list[dict[Cell, Observation]]
 
 
@@ -80,21 +80,21 @@ def outcome_rows(
     run: RunAgainstBaseline,
 ) -> list[OutcomeRow]:
     partial = {
-        key
-        for key, comparison in run.comparisons.items()
+        cell
+        for cell, comparison in run.comparisons.items()
         if comparison.outcome == CellOutcome.UNCHANGED
-    } & {cell_key(cell) for cell in partial_improvements(baseline_runs, run.runs, ground_truth)}
+    } & partial_improvements(baseline_runs, run.runs, ground_truth)
     return [
         OutcomeRow(
-            outcome=PARTIAL if key in partial else comparison.outcome,
-            cell=key,
-            planted=ground_truth.get(parse_cell_key(key)) == EvalVerdict.FAIL,
-            baseline=_letters(parse_cell_key(key), baseline_runs),
-            run=_letters(parse_cell_key(key), run.runs),
+            outcome=PARTIAL if cell in partial else comparison.outcome,
+            cell=cell_key(cell),
+            planted=ground_truth.get(cell) == EvalVerdict.FAIL,
+            baseline=_letters(cell, baseline_runs),
+            run=_letters(cell, run.runs),
             retests=retest_fraction(comparison.retests),
         )
-        for key, comparison in sorted(run.comparisons.items())
-        if comparison.outcome != CellOutcome.UNCHANGED or key in partial
+        for cell, comparison in sorted(run.comparisons.items(), key=lambda item: cell_key(item[0]))
+        if comparison.outcome != CellOutcome.UNCHANGED or cell in partial
     ]
 
 
@@ -141,7 +141,12 @@ def _rows(
         GridRow(
             tool,
             {
-                category: _box((tool, category), ground_truth, states, run)
+                category: _box(
+                    (tool, category),
+                    ground_truth,
+                    states,
+                    run.comparisons.get((tool, category)) if run else None,
+                )
                 if (tool, category) in ground_truth
                 else None
                 for category in AuditCategory
@@ -155,11 +160,10 @@ def _box(
     cell: Cell,
     ground_truth: GroundTruth,
     states: dict[Cell, CellState],
-    run: RunAgainstBaseline | None,
+    comparison: CellComparison | None,
 ) -> GridBox:
     planted = ground_truth[cell] == EvalVerdict.FAIL
     tag = _baseline_tag(states.get(cell), planted)
-    comparison = run.comparisons.get(cell_key(cell)) if run else None
     if comparison is not None:
         tag = _OUTCOME_TAGS.get(comparison.outcome, tag)
     return GridBox(tag, planted)

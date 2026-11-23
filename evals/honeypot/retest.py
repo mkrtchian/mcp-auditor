@@ -21,8 +21,8 @@ class Retester:
     async def retest_flips(
         self, cells: dict[Cell, CellComparison], rule: RetestRule
     ) -> tuple[dict[Cell, CellComparison], list[str]]:
-        """Settles every flip by retesting its server alone, the servers side by side. The
-        second item lists failures."""
+        """Retests every flip on its server alone, the servers side by side. The second item
+        lists failures."""
         flipped_by_server = self._flipped_by_server(cells)
         results = await asyncio.gather(
             *(
@@ -30,15 +30,15 @@ class Retester:
                 for honeypot, flipped in flipped_by_server
             )
         )
-        settled = dict(cells)
+        retested = dict(cells)
         failures: list[str] = []
         for (_, flipped), result in zip(flipped_by_server, results, strict=True):
             if isinstance(result, str):
                 failures.append(result)
                 continue
             for cell in flipped:
-                settled[cell] = apply_retests(cells[cell], result[cell], rule)
-        return settled, failures
+                retested[cell] = apply_retests(cells[cell], result[cell], rule)
+        return retested, failures
 
     def _flipped_by_server(
         self, cells: dict[Cell, CellComparison]
@@ -72,12 +72,12 @@ class Retester:
         every other server's cells as uncovered.
         """
         retests: dict[Cell, list[bool]] = {cell: [] for cell in flipped}
-        for attempt in range(1, rule.retests + 1):
+        for retest_number in range(1, rule.retests + 1):
             pending = [cell for cell in flipped if rule.decide_retests(retests[cell]) is None]
             if not pending:
                 break
             self.announce(
-                f"  Retesting {honeypot.name} ({attempt}/{rule.retests}), "
+                f"  Retesting {honeypot.name} ({retest_number}/{rule.retests}), "
                 f"{len(pending)} flipped cell(s)..."
             )
             observed = observe(await self.audit(honeypot), honeypot.ground_truth)

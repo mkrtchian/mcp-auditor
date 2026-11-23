@@ -219,9 +219,9 @@ def test_a_retest_rule_that_could_never_decide_is_rejected(retests: int, require
 def test_applying_retests_turns_a_reproduced_flip_into_a_regression():
     flip = CellComparison(outcome=CellOutcome.FLIP, cause=FlipCause.WRONG_VERDICT)
 
-    settled = apply_retests(flip, [True] * 4, RetestRule())
+    retested = apply_retests(flip, [True] * 4, RetestRule())
 
-    assert settled == CellComparison(
+    assert retested == CellComparison(
         outcome=CellOutcome.REGRESSION, cause=FlipCause.WRONG_VERDICT, retests=[True] * 4
     )
 
@@ -229,9 +229,9 @@ def test_applying_retests_turns_a_reproduced_flip_into_a_regression():
 def test_applying_retests_turns_a_cleared_flip_into_not_reproduced():
     flip = CellComparison(outcome=CellOutcome.FLIP, cause=FlipCause.UNCOVERED)
 
-    settled = apply_retests(flip, [False, False], RetestRule())
+    retested = apply_retests(flip, [False, False], RetestRule())
 
-    assert settled == CellComparison(
+    assert retested == CellComparison(
         outcome=CellOutcome.FLIP_NOT_REPRODUCED,
         cause=FlipCause.UNCOVERED,
         retests=[False, False],

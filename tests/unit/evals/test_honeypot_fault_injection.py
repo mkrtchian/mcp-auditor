@@ -48,7 +48,7 @@ def test_a_judge_failing_everything_is_caught_by_the_precision_floor_and_the_reg
     run = _through_the_gate(given.a_judge_failing_everything(), given.REPRODUCING)
 
     then.flipped(run.cells, given.EXPECTED_PASSES, FlipCause.WRONG_VERDICT)
-    then.settled_as(run.paired, given.EXPECTED_PASSES, CellOutcome.REGRESSION)
+    then.cells_end_as(run.paired, given.EXPECTED_PASSES, CellOutcome.REGRESSION)
     assert run.paired.reasons[0] == "precision 0.22 under its floor 0.50"
     then.red_on(run.floors_only, "precision 0.22 under its floor 0.50")
     then.refused_on(run.recording, "precision under its floor", NO_STABLE_PASS)
@@ -61,7 +61,7 @@ def test_a_judge_failing_at_random_seed_0_is_caught_by_precision_but_its_flips_d
         cell for cell in given.STABLE_CORRECT_CELLS if cell not in given.SPARED_BY_THE_RANDOM_JUDGE
     ]
     then.flipped(run.cells, flips, FlipCause.WRONG_VERDICT)
-    then.settled_as(run.paired, flips, CellOutcome.FLIP_NOT_REPRODUCED)
+    then.cells_end_as(run.paired, flips, CellOutcome.FLIP_NOT_REPRODUCED)
     then.red_on(run.paired, "precision 0.22 under its floor 0.50")
     then.red_on(run.floors_only, "precision 0.22 under its floor 0.50")
     then.refused_on(run.recording, "precision under its floor")
@@ -73,7 +73,7 @@ def test_no_verdict_flips_every_stable_and_correct_cell_as_uncovered():
     then.flipped(run.cells, given.STABLE_CORRECT_CELLS, FlipCause.UNCOVERED)
     floors = (NO_DETECTION, "distribution_coverage 0.00 under its floor 0.50")
     assert run.paired.reasons[:2] == list(floors)
-    then.settled_as(run.paired, given.STABLE_CORRECT_CELLS, CellOutcome.REGRESSION)
+    then.cells_end_as(run.paired, given.STABLE_CORRECT_CELLS, CellOutcome.REGRESSION)
     then.red_on(run.floors_only, *floors)
     then.refused_on(
         run.recording,
@@ -93,7 +93,7 @@ def test_half_the_detections_lost_is_missed_by_the_paired_comparison_and_the_flo
     run = _through_the_gate(given.half_the_detections_lost(seed=1), retests)
 
     then.flipped(run.cells, given.LOST_BY_THE_HALF_LOSS_DRAW, FlipCause.WRONG_VERDICT)
-    then.settled_as(run.paired, given.LOST_BY_THE_HALF_LOSS_DRAW, CellOutcome.FLIP_NOT_REPRODUCED)
+    then.cells_end_as(run.paired, given.LOST_BY_THE_HALF_LOSS_DRAW, CellOutcome.FLIP_NOT_REPRODUCED)
     then.green(run.paired)
     then.green(run.floors_only)
     then.accepted(run.recording)
@@ -107,7 +107,7 @@ def test_a_dropped_category_flips_its_stable_and_correct_cells_and_clears_the_co
 
     dropped = [cell for cell in given.STABLE_CORRECT_CELLS if cell[1] == category]
     then.flipped(run.cells, dropped, FlipCause.UNCOVERED)
-    then.settled_as(run.paired, dropped, CellOutcome.REGRESSION)
+    then.cells_end_as(run.paired, dropped, CellOutcome.REGRESSION)
     assert "distribution_coverage" not in run.floors_only.floor_breaches
     then.accepted(run.recording)
 
@@ -132,12 +132,12 @@ class _GateRun:
 
 
 def _through_the_gate(candidate: given.FaultedCandidate, retests: list[bool]) -> _GateRun:
-    """Every flip settles on the same scripted retests: the fault stays active in them."""
+    """Every flip is retested on the same scripted retests: the fault stays active in them."""
     baseline = the_fault_injection_baseline()
     metrics = given.metrics_of(candidate)
     detections = count_detections(candidate.runs, MERGED_GROUND_TRUTH)
     cells = compare(baseline.observation_runs(), candidate.runs, MERGED_GROUND_TRUTH)
-    settled = {
+    retested = {
         cell: apply_retests(comparison, retests, baseline.retest_rule)
         if comparison.outcome == CellOutcome.FLIP
         else comparison
@@ -149,7 +149,7 @@ def _through_the_gate(candidate: given.FaultedCandidate, retests: list[bool]) ->
             metrics=metrics,
             detections=detections,
             baseline_status=baseline.status,
-            cells=settled,
+            cells=retested,
         )
     )
     floors_only = decide_gate(

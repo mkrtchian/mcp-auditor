@@ -2,7 +2,7 @@ from pathlib import Path
 
 from evals.cell_grid import RunAgainstBaseline
 from evals.gate import CellComparison, CellOutcome, Observation
-from evals.ground_truth import Cell, GroundTruth, cell_key
+from evals.ground_truth import Cell, GroundTruth
 from evals.honeypots import HoneypotConfig
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -24,6 +24,8 @@ DATABASE_GROUND_TRUTH: GroundTruth = {
 }
 MERGED_GROUND_TRUTH: GroundTruth = {**FILES_GROUND_TRUTH, **DATABASE_GROUND_TRUTH}
 
+RUNS = 3
+
 Runs = list[dict[Cell, Observation]]
 
 
@@ -36,18 +38,16 @@ def honeypots() -> list[HoneypotConfig]:
 
 def a_run(comparisons: dict[Cell, CellComparison], runs: Runs | None = None) -> RunAgainstBaseline:
     return RunAgainstBaseline(
-        comparisons={cell_key(cell): comparison for cell, comparison in comparisons.items()},
-        runs=runs if runs is not None else baseline_runs(),
+        comparisons=comparisons,
+        runs=runs if runs is not None else correct_runs(),
     )
 
 
-def baseline_runs(
-    overrides: dict[Cell, list[Observation | None]] | None = None, runs: int = 3
-) -> Runs:
+def correct_runs(overrides: dict[Cell, list[Observation | None]] | None = None) -> Runs:
     """Every cell observed correctly in every run, except the overridden ones, where None
     means that run lacks the cell."""
     sequences: dict[Cell, list[Observation | None]] = {
-        cell: [Observation.of(expected)] * runs for cell, expected in MERGED_GROUND_TRUTH.items()
+        cell: [Observation.of(expected)] * RUNS for cell, expected in MERGED_GROUND_TRUTH.items()
     }
     sequences.update(overrides or {})
     return [
@@ -56,7 +56,7 @@ def baseline_runs(
             for cell, seen in sequences.items()
             if (observation := seen[index]) is not None
         }
-        for index in range(runs)
+        for index in range(RUNS)
     ]
 
 

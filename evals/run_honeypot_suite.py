@@ -25,6 +25,7 @@ from evals.eval_session import (
 )
 from evals.export import export_judged_cases
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT, GateMode, GateOutcome
+from evals.ground_truth import parse_cell_key
 from evals.honeypot.decision import RunsOutcome, decide_runs
 from evals.honeypot.report import HoneypotReport
 from evals.honeypot.retest import RetestAudit, Retester
@@ -112,7 +113,10 @@ def _gate_grid(baseline: Baseline | None, result: HoneypotRunResult) -> GateGrid
     if baseline is None:
         return None
     gate = result.report.gate
-    run = RunAgainstBaseline(comparisons=gate.cells, runs=result.outcome.observations())
+    run = RunAgainstBaseline(
+        comparisons={parse_cell_key(key): comparison for key, comparison in gate.cells.items()},
+        runs=result.outcome.observations(),
+    )
     baseline_runs = baseline.observation_runs()
     paired = gate.mode == GateMode.PAIRED
     return GateGrid(

@@ -21,9 +21,9 @@ def flipped(cells: dict[Cell, CellComparison], expected: list[Cell], cause: Flip
     assert {cells[cell].cause for cell in flips} <= {cause}
 
 
-def settled_as(result: GateResult, expected: list[Cell], outcome: CellOutcome) -> None:
-    settled = {key for key, comparison in result.cells.items() if comparison.outcome == outcome}
-    assert settled == {cell_key(cell) for cell in expected}
+def cells_end_as(result: GateResult, expected: list[Cell], outcome: CellOutcome) -> None:
+    retested = {key for key, comparison in result.cells.items() if comparison.outcome == outcome}
+    assert retested == {cell_key(cell) for cell in expected}
 
 
 def refused_on(decision: Baseline | RecordingRefused, *reasons: str) -> None:

@@ -58,7 +58,7 @@ class RetestRule(BaseModel):
 
     @model_validator(mode="after")
     def _decides_once_spent(self) -> Self:
-        # Outside these bounds `decide` settles every flip before the first retest.
+        # Outside these bounds `decide` decides every flip before the first retest.
         if not 1 <= self.required <= self.retests:
             raise ValueError(
                 f"retest rule needs 1 <= required <= retests, got {self.required} of {self.retests}"

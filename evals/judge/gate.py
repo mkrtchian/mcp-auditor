@@ -62,7 +62,7 @@ class JudgeGateInput:
 
 def decide_judge_gate(gate_input: JudgeGateInput) -> JudgeGateResult:
     breaches = judge_floor_breaches(gate_input.runs, gate_input.ground_truth)
-    cases = _settled_cases(gate_input)
+    cases = _cases_after_retests(gate_input)
     if gate_input.mismatches:
         outcome, reasons = GateOutcome.NOT_COMPARABLE, list(gate_input.mismatches)
     else:
@@ -83,7 +83,7 @@ def decide_judge_gate(gate_input: JudgeGateInput) -> JudgeGateResult:
     )
 
 
-def _settled_cases(gate_input: JudgeGateInput) -> dict[str, CellComparison]:
+def _cases_after_retests(gate_input: JudgeGateInput) -> dict[str, CellComparison]:
     baseline = gate_input.baseline
     if baseline is None:
         return {}
