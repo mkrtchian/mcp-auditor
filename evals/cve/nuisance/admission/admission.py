@@ -6,7 +6,8 @@ disagreements, on the model of the draw record of `evals/cve/detection/draw_reco
 records each server the nuisance walk lists and the admission leaves out, with its reason.
 `admission_load.py` holds the load validation. A field defaulting to `None` is one nuisance suite
 rule v3 or v4 added and not yet recorded, which `unrecorded.py` refuses at run, except `backend`,
-which is `None` on a server with no backend.
+`None` on a server with no backend, and `holdout_fingerprint`, `None` on a flaw that runs its own
+fix check.
 """
 
 from typing import Any, Literal
