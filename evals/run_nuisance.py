@@ -40,7 +40,8 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
 )
 from evals.cve.nuisance.fix_check_command import FixCheckCommandDeps, add_fix_check_arguments
-from evals.cve.nuisance.gate.gate_command import GateCommandDeps, add_gate_arguments
+from evals.cve.nuisance.gate.gate_command import add_gate_arguments
+from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps, add_run_arguments
 from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
 from evals.cve.provider_errors import ProviderFatal, describe_provider_error

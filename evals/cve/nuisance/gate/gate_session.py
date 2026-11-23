@@ -6,18 +6,10 @@ reads not_run and leaves the gate not comparable. The value objects live in `gat
 the recording in `gate_session_recording`."""
 
 import asyncio
-import functools
 from collections.abc import Sequence
-from datetime import UTC, datetime
 
-from evals.concurrency import bounded
-from evals.cve.closed_network import check_closed_network_support
 from evals.cve.file_baselines import load_checked
-from evals.cve.images import backend_image_ids, image_ids
-from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
-from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission.admission_walk import standing_exit
-from evals.cve.nuisance.audit import audit_once, nuisance_audit
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.containers import (
     remove_backend_containers,
     run_images,
@@ -33,11 +25,9 @@ from evals.cve.nuisance.gate.gate import (
     compare_server,
     decide,
 )
-from evals.cve.nuisance.gate.gate_audit import GateRun, gate_run
+from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_baseline import (
-    NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_BASELINE_STORE,
-    NuisanceGateConditions,
     NuisanceServerBaseline,
     condition_mismatches,
 )
@@ -50,65 +40,12 @@ from evals.cve.nuisance.gate.gate_session_model import (
     ServerRuns,
 )
 from evals.cve.nuisance.gate.gate_session_recording import record, recording_tree
-from evals.cve.nuisance.images import image_tag
-from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
-from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
-from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
-from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
+from evals.cve.nuisance.vetting import drop_failing_servers
+from evals.cve.run_images import refuse_without_closed_networks
+from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
 from evals.gate_outcome import NOT_COMPARABLE_EXIT
 from evals.recording import RecordingRefused
-from evals.session_usage import SessionThrottles
-
-
-def gate_servers(admission: NuisanceAdmission, current: set[str]) -> list[AdmittedServer]:
-    """A nuisance acceptance server that cannot launch would keep the gate not comparable for a
-    standing reason, so it stays out of the gate set."""
-    return [
-        server
-        for server in admission.servers
-        if server.server_package in current and standing_exit(server) is None
-    ]
-
-
-def outside_gate(admission: NuisanceAdmission, current: set[str]) -> list[ServerExit]:
-    return [
-        ServerExit(server.server_package, reason)
-        for server in admission.servers
-        if server.server_package in current and (reason := standing_exit(server)) is not None
-    ]
-
-
-def not_admitted(admission: NuisanceAdmission, current: set[str]) -> list[str]:
-    return sorted(current - {server.server_package for server in admission.servers})
-
-
-def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> NuisanceGateHarness:
-    overrides = RunOverrides(
-        conditions.chain_budget, conditions.max_chain_steps, conditions.tool_call_timeout
-    )
-    throttles = SessionThrottles()
-    auditor = SessionAuditor(build_auditor(conditions.budget), overrides, throttles)
-
-    async def audit(server: AdmittedServer) -> GateRun | None:
-        return await gate_run(
-            server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor))
-        )
-
-    return NuisanceGateHarness(
-        audit=bounded(audit, concurrency),
-        benign_call=bounded(LaunchedBenignCall(conditions.tool_call_timeout), concurrency),
-        announce_audits=lambda _: None,
-        throttled_requests=lambda: throttles.requests,
-        rebuild=rebuild_images,
-        image_ids=functools.partial(image_ids, tag=image_tag),
-        backend_image_ids=backend_image_ids,
-        read_tree=read_tree,
-        clock=lambda: datetime.now(UTC).isoformat(),
-        baselines=NUISANCE_GATE_BASELINE_DIRECTORY,
-        check_networks=check_closed_network_support,
-        sweep=DOCKER_SWEEP,
-    )
 
 
 async def run_gate(

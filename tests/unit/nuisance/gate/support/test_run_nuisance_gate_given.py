@@ -11,7 +11,7 @@ from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
-from evals.cve.nuisance.gate.gate_command import GateCommandDeps
+from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps
 from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
