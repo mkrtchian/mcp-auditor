@@ -23,16 +23,19 @@ from evals.declared_flips import (
     declaration_problems,
 )
 from evals.eval_session import (
+    RECORD_WITHOUT_BASELINE,
     RECORDING_REFUSED,
     REFUSED_BEFORE_ANY_LLM_CALL,
     Refused,
     TreeState,
     WorkingTree,
     declarations_of_head,
+    recording_tree_refusals,
 )
 from evals.gate_outcome import GateMode
 from evals.ground_truth import GroundTruth, cell_key
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
+from evals.model_conditions import ModelConditions
 from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
 from evals.repository import REPO_ROOT
 from mcp_auditor.config import Settings
@@ -74,13 +77,7 @@ def open_session(
 ) -> HoneypotSession:
     """Raises Refused on anything that makes the run not comparable or its recording refused."""
     if options.record_baseline and options.no_baseline:
-        raise Refused(
-            RECORDING_REFUSED,
-            [
-                "--record-baseline cannot run --no-baseline: a baseline records the conditions "
-                "it gates"
-            ],
-        )
+        raise Refused(RECORDING_REFUSED, [RECORD_WITHOUT_BASELINE])
     baseline = None if options.no_baseline else _load_committed_baseline(baseline_path)
     entries, dirty = declarations_of_head(Instrument.HONEYPOT, working_tree)
     session = HoneypotSession(
@@ -120,15 +117,10 @@ def _load_committed_baseline(path: Path) -> Baseline | None:
 
 
 def candidate_conditions(options: HoneypotOptions) -> BaselineConditions:
-    settings = options.settings
     return BaselineConditions(
         runs=options.runs,
         budget=options.budget,
-        provider=settings.provider,
-        model=settings.resolve_model(),
-        judge_model=settings.resolve_judge_model(),
-        reasoning=settings.resolve_reasoning(settings.resolve_model()),
-        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
+        **ModelConditions.of(options.settings).model_dump(),
         ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
         fixtures={
             honeypot.name: FixtureConditions(
@@ -163,12 +155,7 @@ def pre_run_refusals(session: HoneypotSession, ground_truth: GroundTruth) -> lis
 
 
 def _recording_refusals(session: HoneypotSession, tree: TreeState) -> list[str]:
-    reasons = [
-        f"a baseline records the conditions CI runs at, {mismatch}"
-        for mismatch in ci_condition_mismatches(session.conditions)
-    ]
-    if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
+    reasons = recording_tree_refusals(ci_condition_mismatches(session.conditions), tree)
     if session.baseline:
         reasons += unconfirmed_commit_refusal(session.baseline, tree.commit)
     return reasons
@@ -176,15 +163,10 @@ def _recording_refusals(session: HoneypotSession, tree: TreeState) -> list[str]:
 
 def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
     """CI passes no --runs, --budget nor MCP_AUDITOR_* override, so it runs at the defaults."""
-    defaults = Settings.model_construct()
     expected = {
         "runs": DEFAULT_RUNS,
         "budget": DEFAULT_BUDGET,
-        "provider": defaults.provider,
-        "model": defaults.resolve_model(),
-        "judge_model": defaults.resolve_judge_model(),
-        "reasoning": defaults.resolve_reasoning(defaults.resolve_model()),
-        "judge_reasoning": defaults.resolve_reasoning(defaults.resolve_judge_model()),
+        **ModelConditions.of(Settings.model_construct()).model_dump(),
     }
     actual = conditions.model_dump()
     return [

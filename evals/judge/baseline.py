@@ -15,7 +15,9 @@ from evals.baseline import (
 )
 from evals.gate import Observation, ProtectedCells, RetestRule
 from evals.judge.fixture import JudgeFixture, inputs_fingerprint
+from evals.model_conditions import ModelConditions
 from evals.repository import REPO_ROOT
+from mcp_auditor.config import Settings
 
 JUDGE_BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "judge.json"
 
@@ -26,6 +28,17 @@ class JudgeConditions(BaseModel):
     judge_model: str
     judge_reasoning: str | None
     inputs_fingerprint: str
+
+
+def judge_conditions(settings: Settings, runs: int, fingerprint: str) -> JudgeConditions:
+    models = ModelConditions.of(settings)
+    return JudgeConditions(
+        runs=runs,
+        provider=models.provider,
+        judge_model=models.judge_model,
+        judge_reasoning=models.judge_reasoning,
+        inputs_fingerprint=fingerprint,
+    )
 
 
 class JudgeBaseline(BaseModel):

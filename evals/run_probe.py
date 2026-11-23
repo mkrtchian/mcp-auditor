@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
+from evals.model_conditions import ModelConditions
 from evals.probe.analysis import (
     CallOutcome,
     CandidateStats,
@@ -243,19 +244,19 @@ def _measured_stats(result: ProbeResult) -> list[CandidateStats]:
 
 def _candidate_entry(candidate: Candidate) -> dict[str, Any]:
     settings = candidate.settings
-    model, judge_model = settings.resolve_model(), settings.resolve_judge_model()
+    conditions = ModelConditions.of(settings)
     return {
         "name": candidate.name,
-        "provider": settings.provider,
+        "provider": conditions.provider,
         "openrouter_providers": (
             list(settings.resolve_openrouter_providers())
             if settings.provider == "openrouter"
             else []
         ),
-        "model": model,
-        "judge_model": judge_model,
-        "reasoning": settings.resolve_reasoning(model),
-        "judge_reasoning": settings.resolve_reasoning(judge_model),
+        "model": conditions.model,
+        "judge_model": conditions.judge_model,
+        "reasoning": conditions.reasoning,
+        "judge_reasoning": conditions.judge_reasoning,
         "temperature": "provider default",
         "prices": asdict(candidate.prices),
         "reasoning_expected": candidate.reasoning_expected,

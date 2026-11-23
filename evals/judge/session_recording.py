@@ -3,7 +3,7 @@ the write once the gate has decided."""
 
 from pydantic import ValidationError
 
-from evals.eval_session import TreeState, tree_drift
+from evals.eval_session import TreeState, baseline_changed, recording_tree_refusals, tree_drift
 from evals.judge.baseline import JudgeBaseline, load_judge_baseline, write_judge_baseline
 from evals.judge.gate import CaseRuns, JudgeGateResult, judge_ci_condition_mismatches
 from evals.judge.recording import JudgeRecording, decide_judge_recording, judge_condition_refusals
@@ -12,12 +12,7 @@ from evals.recording import RecordingRefused, unconfirmed_commit_refusal
 
 
 def recording_refusals(session: JudgeSession, tree: TreeState) -> list[str]:
-    reasons = [
-        f"a baseline records the conditions CI runs at, {mismatch}"
-        for mismatch in judge_ci_condition_mismatches(session.conditions)
-    ]
-    if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
+    reasons = recording_tree_refusals(judge_ci_condition_mismatches(session.conditions), tree)
     if session.baseline is not None:
         reasons += unconfirmed_commit_refusal(session.baseline, tree.commit)
         reasons += judge_condition_refusals(session.baseline, session.conditions)
@@ -54,6 +49,4 @@ def _recording_drift(session: JudgeSession, tree: TreeState) -> list[str]:
         reloaded = load_judge_baseline(harness.baseline_path)
     except ValidationError as error:
         return [*drift, f"{harness.baseline_path} is not a valid baseline: {error}"]
-    if reloaded != session.baseline:
-        drift.append("the baseline file changed during the runs: record again")
-    return drift
+    return drift + baseline_changed(session.baseline, reloaded)

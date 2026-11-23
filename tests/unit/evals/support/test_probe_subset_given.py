@@ -1,6 +1,7 @@
+from evals.model_conditions import ModelConditions
 from evals.probe.analysis import CallOutcome, ProbeObservation
 from evals.probe.candidates import Candidate
-from evals.probe.corpus import ProbeCall, ProbeCorpus, ReferenceConditions
+from evals.probe.corpus import ProbeCall, ProbeCorpus
 from tests.unit.evals.support.probe_observations import an_observation
 
 
@@ -8,7 +9,7 @@ def a_corpus_of(schema_names: list[str]) -> ProbeCorpus:
     return ProbeCorpus(
         captured_at="2026-09-24T10:00:00+00:00",
         commit="8457fcc",
-        reference=ReferenceConditions(
+        reference=ModelConditions(
             provider="google",
             model="gemini-3.1-flash-lite",
             judge_model="gemini-3.1-flash-lite",

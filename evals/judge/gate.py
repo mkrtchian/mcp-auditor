@@ -24,7 +24,7 @@ from evals.gate_metrics import (
     recall_floor_breached,
 )
 from evals.gate_outcome import GateMode, GateOutcome
-from evals.judge.baseline import JudgeBaseline, JudgeConditions
+from evals.judge.baseline import JudgeBaseline, JudgeConditions, judge_conditions
 from evals.metrics import label_scores
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
@@ -108,14 +108,9 @@ def compare_cases(
 
 def judge_ci_condition_mismatches(conditions: JudgeConditions) -> list[str]:
     """CI passes no --runs nor MCP_AUDITOR_* override, so it runs at the defaults."""
-    defaults = Settings.model_construct()
-    judge_model = defaults.resolve_judge_model()
-    expected = {
-        "runs": DEFAULT_JUDGE_RUNS,
-        "provider": defaults.provider,
-        "judge_model": judge_model,
-        "judge_reasoning": defaults.resolve_reasoning(judge_model),
-    }
+    expected = judge_conditions(
+        Settings.model_construct(), DEFAULT_JUDGE_RUNS, conditions.inputs_fingerprint
+    ).model_dump()
     actual = conditions.model_dump()
     return [
         f"{name}: CI runs {value}, this run {actual[name]}"

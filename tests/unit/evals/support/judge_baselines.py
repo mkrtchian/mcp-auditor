@@ -1,6 +1,6 @@
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.gate import Observation, ProtectedCells, RetestRule, protected_cells
-from evals.judge.baseline import JudgeBaseline, JudgeConditions
+from evals.judge.baseline import JudgeBaseline, JudgeConditions, judge_conditions
 from evals.judge.fixture import CaseLabel, JudgeFixture, ground_truth_of, inputs_fingerprint
 from mcp_auditor.config import Settings
 from mcp_auditor.domain.models import EvalVerdict
@@ -63,14 +63,8 @@ def correct_runs(count: int = 3) -> ObservationRuns:
 
 
 def conditions(runs: int = 3, fixture: JudgeFixture | None = None) -> JudgeConditions:
-    defaults = Settings.model_construct()
-    judge_model = defaults.resolve_judge_model()
-    return JudgeConditions(
-        runs=runs,
-        provider=defaults.provider,
-        judge_model=judge_model,
-        judge_reasoning=defaults.resolve_reasoning(judge_model),
-        inputs_fingerprint=inputs_fingerprint(fixture or a_judge_fixture()),
+    return judge_conditions(
+        Settings.model_construct(), runs, inputs_fingerprint(fixture or a_judge_fixture())
     )
 
 

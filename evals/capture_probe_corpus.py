@@ -21,12 +21,12 @@ from evals.cve.environments import Launch
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.detection_preflight import VULNERABLE_SERVICES
 from evals.honeypots import HONEYPOTS, AuditModels, audit_honeypot, models_for
+from evals.model_conditions import ModelConditions
 from evals.probe.candidates import REFERENCE
 from evals.probe.corpus import (
     CapturingLLM,
     ProbeCall,
     ProbeCorpus,
-    ReferenceConditions,
     sample_judge_calls,
     write_corpus,
 )
@@ -67,27 +67,15 @@ def main() -> None:
 
 def _reference_mismatches(settings: Settings) -> list[str]:
     try:
-        actual = _conditions_of(settings)
+        actual = ModelConditions.of(settings)
     except ValueError as error:
         return [str(error)]
-    reference = _conditions_of(REFERENCE.settings)
+    reference = ModelConditions.of(REFERENCE.settings)
     return [
         f"{field}: {getattr(actual, field)!r}, the reference is {getattr(reference, field)!r}"
-        for field in ReferenceConditions.model_fields
+        for field in ModelConditions.model_fields
         if getattr(actual, field) != getattr(reference, field)
     ]
-
-
-def _conditions_of(settings: Settings) -> ReferenceConditions:
-    model = settings.resolve_model()
-    judge_model = settings.resolve_judge_model()
-    return ReferenceConditions(
-        provider=settings.provider,
-        model=model,
-        judge_model=judge_model,
-        reasoning=settings.resolve_reasoning(model),
-        judge_reasoning=settings.resolve_reasoning(judge_model),
-    )
 
 
 def _refuse(reason: str, details: list[str]) -> None:
@@ -112,7 +100,7 @@ async def _capture(settings: Settings) -> ProbeCorpus:
     return ProbeCorpus(
         captured_at=datetime.now(UTC).isoformat(timespec="seconds"),
         commit=_head_commit(),
-        reference=_conditions_of(settings),
+        reference=ModelConditions.of(settings),
         budget=CAPTURE_BUDGET,
         judge_sample_seed=JUDGE_SAMPLE_SEED,
         judge_calls_captured=sum(call.role == "judge" for call in honeypot_calls),

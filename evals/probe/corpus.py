@@ -11,6 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from evals.model_conditions import ModelConditions
 from mcp_auditor.domain.models import (
     AttackContext,
     AuditPayload,
@@ -33,18 +34,10 @@ class ProbeCall(BaseModel):
     prompt: str
 
 
-class ReferenceConditions(BaseModel):
-    provider: str
-    model: str
-    judge_model: str
-    reasoning: str | None
-    judge_reasoning: str | None
-
-
 class ProbeCorpus(BaseModel):
     captured_at: str
     commit: str
-    reference: ReferenceConditions
+    reference: ModelConditions
     budget: int
     judge_sample_seed: int
     judge_calls_captured: int

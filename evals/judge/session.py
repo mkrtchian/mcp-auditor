@@ -10,14 +10,19 @@ from pydantic import ValidationError
 from evals.baseline import BaselineStatus
 from evals.concurrency import bounded
 from evals.declared_flips import active_declarations, declaration_problems
-from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
+from evals.eval_session import (
+    RECORD_WITHOUT_BASELINE,
+    RECORDING_REFUSED,
+    REFUSED_BEFORE_ANY_LLM_CALL,
+    Refused,
+)
 from evals.gate import Observation
 from evals.gate_outcome import NOT_COMPARABLE_EXIT, GateMode
 from evals.judge.baseline import (
     JudgeBaseline,
-    JudgeConditions,
     judge_baseline_integrity,
     judge_condition_mismatches,
+    judge_conditions,
     load_judge_baseline,
 )
 from evals.judge.fixture import JudgeFixture, ground_truth_of, inputs_fingerprint
@@ -31,7 +36,6 @@ from evals.judge.recording import judge_rescore_refusals
 from evals.judge.retest import JudgeCall, RetestContext, reproductions, retest_flips
 from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSession, JudgeSessionResult
 from evals.judge.session_recording import record, recording_refusals
-from mcp_auditor.config import Settings
 
 
 async def run_judge_gate(
@@ -58,10 +62,7 @@ async def run_judge_gate(
 
 def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -> JudgeSession:
     if options.record_baseline and options.no_baseline:
-        reason = (
-            "--record-baseline cannot run --no-baseline: a baseline records the conditions it gates"
-        )
-        raise Refused(RECORDING_REFUSED, [reason])
+        raise Refused(RECORDING_REFUSED, [RECORD_WITHOUT_BASELINE])
     ground_truth = ground_truth_of(fixture)
     baseline = None if options.no_baseline else _load_checked(harness.baseline_path, fixture)
     entries, dirty = harness.declarations()
@@ -70,7 +71,7 @@ def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -
         judge=bounded(harness.judge, options.concurrency),
         fixture=fixture,
         ground_truth=ground_truth,
-        conditions=_conditions(options.settings, options.runs, fixture),
+        conditions=judge_conditions(options.settings, options.runs, inputs_fingerprint(fixture)),
         baseline=baseline,
         tree=harness.read_tree() if options.record_baseline else None,
         declarations=active_declarations(entries, dirty),
@@ -79,17 +80,6 @@ def _open(options: JudgeOptions, fixture: JudgeFixture, harness: JudgeHarness) -
     if reasons:
         raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
     return session
-
-
-def _conditions(settings: Settings, runs: int, fixture: JudgeFixture) -> JudgeConditions:
-    judge_model = settings.resolve_judge_model()
-    return JudgeConditions(
-        runs=runs,
-        provider=settings.provider,
-        judge_model=judge_model,
-        judge_reasoning=settings.resolve_reasoning(judge_model),
-        inputs_fingerprint=inputs_fingerprint(fixture),
-    )
 
 
 def _load_checked(path: Path, fixture: JudgeFixture) -> JudgeBaseline | None:

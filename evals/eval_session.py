@@ -5,7 +5,6 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from evals.baseline import Baseline
 from evals.declared_flips import (
     DECLARED_FLIPS_PATH,
     DeclaredFlip,
@@ -17,6 +16,10 @@ from evals.repository import REPO_ROOT
 
 RECORDING_REFUSED = "Recording refused."
 REFUSED_BEFORE_ANY_LLM_CALL = "Refused before any LLM call."
+RECORD_WITHOUT_BASELINE = (
+    "--record-baseline cannot run --no-baseline: a baseline records the conditions it gates"
+)
+DIRTY_TREE_REFUSAL = "the git tree has tracked modifications: record from a clean tree"
 
 
 class Refused(Exception):
@@ -72,6 +75,15 @@ def _parent_commit() -> str | None:
     return completed.stdout.strip()
 
 
+def recording_tree_refusals(ci_mismatches: list[str], tree: TreeState) -> list[str]:
+    reasons = [
+        f"a baseline records the conditions CI runs at, {mismatch}" for mismatch in ci_mismatches
+    ]
+    if tree.dirty:
+        reasons.append(DIRTY_TREE_REFUSAL)
+    return reasons
+
+
 def tree_drift(before: TreeState, after: TreeState) -> list[str]:
     """What changed in the checkout while the runs of a recording went on."""
     reasons: list[str] = []
@@ -84,7 +96,7 @@ def tree_drift(before: TreeState, after: TreeState) -> list[str]:
     return reasons
 
 
-def baseline_changed(loaded: Baseline | None, current: Baseline | None) -> list[str]:
+def baseline_changed[B](loaded: B | None, current: B | None) -> list[str]:
     if loaded == current:
         return []
     return ["the baseline file changed during the runs: record again"]

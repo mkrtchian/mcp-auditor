@@ -2,6 +2,7 @@ from evals.baseline import Baseline, BaselineConditions, BaselineStatus
 from evals.declared_flips import ActiveDeclarations
 from evals.eval_session import TreeState
 from evals.honeypot.session import DEFAULT_BUDGET, DEFAULT_RUNS, HoneypotSession, select_mode
+from evals.model_conditions import ModelConditions
 from mcp_auditor.config import Settings
 from tests.unit.evals.support import honeypot_baselines
 
@@ -14,16 +15,11 @@ def a_baseline_at_ci_conditions(status: BaselineStatus = BaselineStatus.UNCONFIR
 
 
 def ci_conditions(budget: int = DEFAULT_BUDGET) -> BaselineConditions:
-    defaults = Settings.model_construct()
     return honeypot_baselines.conditions().model_copy(
         update={
             "runs": DEFAULT_RUNS,
             "budget": budget,
-            "provider": defaults.provider,
-            "model": defaults.resolve_model(),
-            "judge_model": defaults.resolve_judge_model(),
-            "reasoning": defaults.resolve_reasoning(defaults.resolve_model()),
-            "judge_reasoning": defaults.resolve_reasoning(defaults.resolve_judge_model()),
+            **ModelConditions.of(Settings.model_construct()).model_dump(),
         }
     )
 
