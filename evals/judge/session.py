@@ -12,7 +12,7 @@ from evals.concurrency import bounded
 from evals.declared_flips import active_declarations, declaration_problems
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
 from evals.gate import Observation
-from evals.gate_outcome import GateMode, GateOutcome
+from evals.gate_outcome import NOT_COMPARABLE_EXIT, GateMode
 from evals.judge.baseline import (
     JudgeBaseline,
     JudgeConditions,
@@ -32,14 +32,6 @@ from evals.judge.retest import JudgeCall, RetestContext, reproductions, retest_f
 from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSession, JudgeSessionResult
 from evals.judge.session_recording import record, recording_refusals
 from mcp_auditor.config import Settings
-
-NOT_COMPARABLE_EXIT = 3
-
-_EXIT_CODES = {
-    GateOutcome.GREEN: 0,
-    GateOutcome.RED: 1,
-    GateOutcome.NOT_COMPARABLE: NOT_COMPARABLE_EXIT,
-}
 
 
 async def run_judge_gate(
@@ -200,4 +192,4 @@ def _exit_code(session: JudgeSession, gate: JudgeGateResult, refused: list[str])
         return NOT_COMPARABLE_EXIT
     if session.tree is not None:
         return 0
-    return _EXIT_CODES[gate.outcome]
+    return gate.outcome.exit_code

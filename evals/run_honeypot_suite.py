@@ -24,7 +24,7 @@ from evals.eval_session import (
     tree_drift,
 )
 from evals.export import export_judged_cases
-from evals.gate_outcome import GateMode, GateOutcome
+from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT, GateMode, GateOutcome
 from evals.honeypot.decision import RunsOutcome, decide_runs
 from evals.honeypot.report import HoneypotReport
 from evals.honeypot.retest import RetestAudit, Retester
@@ -53,14 +53,6 @@ from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import AuditReport
 
 DEFAULT_REPORT_PATH = "output/honeypot_report.json"
-NOT_COMPARABLE_EXIT = 3
-CRASHED_EXIT = 4
-
-EXIT_CODES = {
-    GateOutcome.GREEN: 0,
-    GateOutcome.RED: 1,
-    GateOutcome.NOT_COMPARABLE: NOT_COMPARABLE_EXIT,
-}
 
 
 @dataclass(frozen=True)
@@ -101,7 +93,7 @@ def _evaluate(args: argparse.Namespace) -> int:
 
     if session.tree is not None:
         return _record(session, session.tree, result)
-    return EXIT_CODES[result.report.gate.outcome]
+    return result.report.gate.outcome.exit_code
 
 
 def _options(args: argparse.Namespace) -> HoneypotOptions:

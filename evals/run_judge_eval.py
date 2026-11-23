@@ -17,6 +17,7 @@ from evals.cli_arguments import positive_int
 from evals.declared_flips import Instrument
 from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
 from evals.gate import Observation
+from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
 from evals.judge import display
 from evals.judge.baseline import JUDGE_BASELINE_PATH
 from evals.judge.fixture import JudgeCase, JudgeFixture, ground_truth_of, load_fixture
@@ -28,7 +29,7 @@ from evals.judge.metrics import (
     compute_per_category_metrics,
 )
 from evals.judge.outcomes import case_outcomes
-from evals.judge.session import NOT_COMPARABLE_EXIT, run_judge_gate
+from evals.judge.session import run_judge_gate
 from evals.judge.session_model import JudgeHarness, JudgeOptions, JudgeSessionResult
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.llm import create_judge_llm
@@ -53,7 +54,6 @@ from mcp_auditor.graph.prompts import build_judge_prompt
 FIXTURES_PATH = Path(__file__).resolve().parent / "fixtures" / "judge_cases.json"
 DEFAULT_REPORT_PATH = "output/judge_eval_report.json"
 DEFAULT_CONCURRENCY = 30
-CRASHED_EXIT = 4
 
 
 def main(argv: Sequence[str] | None = None) -> None:

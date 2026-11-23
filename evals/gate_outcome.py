@@ -18,6 +18,9 @@ from evals.gate_metrics import (
 from evals.ground_truth import Cell, cell_key
 from evals.metrics import HoneypotMetrics
 
+NOT_COMPARABLE_EXIT = 3  # also the exit code of a refusal
+CRASHED_EXIT = 4
+
 
 class GateMode(StrEnum):
     LEGACY_THRESHOLDS = "legacy_thresholds"
@@ -29,6 +32,16 @@ class GateOutcome(StrEnum):
     GREEN = "green"
     RED = "red"
     NOT_COMPARABLE = "not_comparable"
+
+    @property
+    def exit_code(self) -> int:
+        match self:
+            case GateOutcome.GREEN:
+                return 0
+            case GateOutcome.RED:
+                return 1
+            case GateOutcome.NOT_COMPARABLE:
+                return NOT_COMPARABLE_EXIT
 
 
 class GateResult(BaseModel):
