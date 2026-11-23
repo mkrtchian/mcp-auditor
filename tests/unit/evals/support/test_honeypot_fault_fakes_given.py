@@ -1,7 +1,5 @@
-from evals.baseline import Baseline, load_baseline
 from evals.gate import Observation
-from evals.ground_truth import Cell, cell_key
-from evals.honeypot.fault_harness import FIXTURE_PATH
+from evals.ground_truth import Cell
 from mcp_auditor.domain.models import (
     AttackChain,
     AuditCategory,
@@ -15,35 +13,39 @@ from mcp_auditor.domain.models import (
 from mcp_auditor.domain.ports import LLMPort
 from mcp_auditor.graph.chain_prompts import build_chain_judge_prompt
 from mcp_auditor.graph.prompts import build_attack_generation_prompt, build_judge_prompt
+from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS, FixtureJudge
+from tests.unit.evals.support.honeypot_baselines import ObservationRuns, a_baseline
 
-# Observed FAIL, PASS, PASS in the fixture's three runs.
 A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Cell = ("search_products", AuditCategory.INJECTION)
-# Observed PASS, FAIL, PASS: a chain-only cell.
-A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Cell = (
-    "project_manager",
-    AuditCategory.INFO_LEAKAGE,
-)
+A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Cell = CHAIN_ONLY_FLAWS[0]
 A_CELL_OUTSIDE_THE_GROUND_TRUTH: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)
 
+THREE_RUNS: ObservationRuns = [
+    {
+        A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Observation.FAIL,
+        A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Observation.PASS,
+    },
+    {
+        A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Observation.PASS,
+        A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Observation.FAIL,
+    },
+    {
+        A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY: Observation.PASS,
+        A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY: Observation.PASS,
+    },
+]
 
-def the_fixture_with_uncovered(cell: Cell) -> Baseline:
-    fixture = the_fixture()
-    runs = [{**run, cell_key(cell): Observation.UNCOVERED} for run in fixture.runs]
-    return fixture.model_copy(update={"runs": runs})
+
+def a_fixture_judge(runs: ObservationRuns = THREE_RUNS) -> FixtureJudge:
+    return FixtureJudge(a_baseline(runs=runs))
 
 
-def the_fixture() -> Baseline:
-    fixture = load_baseline(FIXTURE_PATH)
-    assert fixture is not None
-    return fixture
+def the_runs_with_uncovered(cell: Cell) -> ObservationRuns:
+    return [{**run, cell: Observation.UNCOVERED} for run in THREE_RUNS]
 
 
-def the_fixture_without(cell: Cell) -> Baseline:
-    fixture = the_fixture()
-    runs = [
-        {key: seen for key, seen in run.items() if key != cell_key(cell)} for run in fixture.runs
-    ]
-    return fixture.model_copy(update={"runs": runs})
+def the_runs_without(cell: Cell) -> ObservationRuns:
+    return [{other: seen for other, seen in run.items() if other != cell} for run in THREE_RUNS]
 
 
 def an_attack_prompt(categories: list[AuditCategory]) -> str:

@@ -27,8 +27,8 @@ _CHAIN_CATEGORY = re.compile(r"Target category: (?P<category>\w+)")
 
 
 class FixtureJudge:
-    """Answers each cell as the fixture observed it, the n-th judgment of a cell reading the
-    n-th run (wrapping), with single-step and chain judgments counted apart.
+    """Answers each cell as the fault-injection fixture observed it, the n-th judgment of a cell
+    reading the n-th run (wrapping), with single-step and chain judgments counted apart.
     """
 
     def __init__(self, fixture: Baseline) -> None:

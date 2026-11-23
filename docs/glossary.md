@@ -237,7 +237,7 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **eval**: the judge eval, or an instrument by its name. The words "the evals" alone mean the instruments.
 - **exit**: an exit (a reason a server is outside the holdout nuisance rate), or an exit code of a command.
 - **fixed**: a fixed version (no exploit surfaces), or a flaw fixed on a release.
-- **fixture**: honeypot fixture (the honeypot servers and their pinned SDK versions), detection fixture, nuisance fixture, backend fixture, judge fixture (the drawn set of judge cases). A pytest fixture is a test helper.
+- **fixture**: honeypot fixture (the honeypot servers and their pinned SDK versions), detection fixture, nuisance fixture, backend fixture, judge fixture (the drawn set of judge cases), fault-injection fixture (the committed honeypot observations the fault injection test's judge answers from and its gate compares to, `evals/fixtures/fault_injection_baseline.json`). A pytest fixture is a test helper.
 - **flaw**: census flaw, planted flaw, sibling flaw, counted flaw.
 - **gap**: coverage gap, known gap, or a gap a card check reports (a defect the card checker finds in a card).
 - **host**: the machine that runs the suite, a public host name, or a planting host.

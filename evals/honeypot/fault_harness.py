@@ -1,9 +1,9 @@
 """Plant one fault in the audit of the three honeypots and see what the gate does with it.
 
-The faulted runs are judged by the production gate against the committed fixture, in the
-paired and the floors-only modes, and a first recording of them is decided. The fault stays
-active in the retests. What each fault models, what the gate is expected to do with it and
-what this proves are in `evals/fault_injection_method.md`.
+The faulted runs are judged by the production gate against the committed fault-injection
+fixture, in the paired and the floors-only modes, and a first recording of them is decided.
+The fault stays active in the retests. What each fault models, what the gate is expected to
+do with it and what this proves are in `evals/fault_injection_method.md`.
 """
 
 import itertools
@@ -51,8 +51,8 @@ class FaultResult(BaseModel):
 
 
 def fixture_refusals(fixture: Baseline) -> list[str]:
-    """A fixture made stale by a honeypot, label or model change is rebuilt, never compared
-    against in silence."""
+    """A fault-injection fixture made stale by a honeypot, label or model change is rebuilt,
+    never compared against in silence."""
     return baseline_integrity(fixture, MERGED_GROUND_TRUTH)
 
 

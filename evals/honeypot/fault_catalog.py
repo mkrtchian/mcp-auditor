@@ -1,6 +1,6 @@
 """The faults the harness injects, each on the role it targets, with what the gate is expected
-to answer on the floors of ADR 022 against the fixture. The expectations are the assertions of
-the integration test `tests/integration/test_gate_fault_injection.py`.
+to answer on the floors of ADR 022 against the fault-injection fixture. The expectations are
+the assertions of the integration test `tests/integration/test_gate_fault_injection.py`.
 `evals/fault_injection_method.md` gives the reasoning.
 """
 

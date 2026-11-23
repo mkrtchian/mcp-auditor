@@ -8,10 +8,12 @@ counts the categories among a tool's judged cases, chains excluded).
 import random
 from dataclasses import dataclass
 
-from evals.gate import Observation
+from evals.baseline import verdict_maps_of
+from evals.gate import Observation, observe
 from evals.ground_truth import Cell, cell_key
+from evals.honeypot.fault_injection import lose_detections
 from evals.honeypots import MERGED_GROUND_TRUTH
-from evals.metrics import HoneypotMetrics, VerdictMap, compute_consistency, label_scores
+from evals.metrics import HoneypotMetrics, compute_consistency, label_scores
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 from tests.fakes.fixture_judge import CHAIN_ONLY_FLAWS
 from tests.unit.evals.support.fault_injection_baseline import the_fault_injection_baseline
@@ -79,13 +81,8 @@ def a_judge_failing_at_random(seed: int) -> FaultedCandidate:
 
 def half_the_detections_lost(seed: int) -> FaultedCandidate:
     runs = [
-        {
-            cell: Observation.PASS
-            if seen == Observation.FAIL and _coin(seed, index, cell)
-            else seen
-            for cell, seen in run.items()
-        }
-        for index, run in enumerate(_recorded_runs())
+        observe(lose_detections(verdicts, seed, index), MERGED_GROUND_TRUTH)
+        for index, verdicts in enumerate(verdict_maps_of(_recorded_runs()))
     ]
     return FaultedCandidate(runs=runs, distribution_coverage=1.0)
 
@@ -109,10 +106,7 @@ def chain_steps_refused() -> FaultedCandidate:
 
 
 def metrics_of(candidate: FaultedCandidate) -> HoneypotMetrics:
-    """Recall and precision from the observations, as `rescore` computes them."""
-    verdict_maps: list[VerdictMap] = [
-        {cell: seen.verdict for cell, seen in run.items()} for run in candidate.runs
-    ]
+    verdict_maps = verdict_maps_of(candidate.runs)
     consistency, _ = compute_consistency(verdict_maps, MERGED_GROUND_TRUTH)
     return HoneypotMetrics(
         **label_scores(verdict_maps, MERGED_GROUND_TRUTH),

@@ -1,6 +1,6 @@
 # Fault injection on the honeypot gate: method note
 
-The integration test `tests/integration/test_gate_fault_injection.py` checks that the honeypot gate catches a collapse of the system it gates, the proof ADR 016 names. For each scenario it audits the three real honeypot servers `DEFAULT_RUNS` times through the production graph, with one fault planted in the models, and hands the runs to the production gate (`decide_runs`), once in the `paired` mode and once in the `floors_only` mode, against the committed fixture `evals/fixtures/fault_injection_baseline.json`. It then decides a first recording of the faulted runs, with no baseline before it, on the `floors_only` result. The harness is `evals/honeypot/fault_harness.py`, the faults and their expectations `evals/honeypot/fault_catalog.py`.
+The integration test `tests/integration/test_gate_fault_injection.py` checks that the honeypot gate catches a collapse of the system it gates, the proof ADR 016 names. For each scenario it audits the three real honeypot servers `DEFAULT_RUNS` times through the production graph, with one fault planted in the models, and hands the runs to the production gate (`decide_runs`), once in the `paired` mode and once in the `floors_only` mode, against the committed fault-injection fixture `evals/fixtures/fault_injection_baseline.json`. It then decides a first recording of the faulted runs, with no baseline before it, on the `floors_only` result. The harness is `evals/honeypot/fault_harness.py`, the faults and their expectations `evals/honeypot/fault_catalog.py`.
 
 It needs no API key and runs in CI with the other integration tests. ADR 003 defines the integration level as real MCP servers and no LLM. This test is the first at that level to exercise the eval gate rather than an adapter.
 
@@ -10,7 +10,7 @@ It proves wiring: a fault planted in the models reaches the gate through a real 
 
 It does not prove what a real model detects: the honeypot suite and the CVE benchmark measure that. Nor does it prove the gate's response at another operating point than the fixture's, recorded on 2026-09-27. When a first confirmed baseline exists, the fixture can move to it. Nor does it exercise the audit of a freshly started server: each scenario audits servers already started, one per honeypot shared by its runs and retests, while the other integration tests and the evals start their own, and the reuse changes no verdict because the verdicts come from the fixture through the fake judge, not from the servers' responses.
 
-## The fixture
+## The fault-injection fixture
 
 The runs of the recording refused on 2026-09-27 at `519168f`, 3 runs on `gpt-6-luna` at `none`, budget 10, stored as observations only (no payload, response or judgment). Recall 0.46, precision 1.00. Of the 8 planted FAIL cells, 3 are stable and correct (`get_user × error_handling`, `execute_query × info_leakage`, `delete_record × input_validation`), 3 are never detected (`get_user × info_leakage`, `search_users × info_leakage`, `user_directory × info_leakage`) and 2 are unstable (`execute_query × injection` and `project_manager × info_leakage`, each detected in 1 run of 3). The 28 PASS cells are all stable and correct. So 31 cells are gated in the paired mode, and the fixture holds 11 detections over its 3 runs.
 

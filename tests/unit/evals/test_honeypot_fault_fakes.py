@@ -15,7 +15,6 @@ from mcp_auditor.domain.models import (
     TestCaseBatch,
 )
 from mcp_auditor.domain.ports import ProviderRefusal
-from tests.fakes.fixture_judge import FixtureJudge
 from tests.fakes.scripted_audit_model import ScriptedAuditModel
 
 PASS = EvalVerdict.PASS
@@ -82,7 +81,7 @@ async def test_the_scripted_model_refuses_an_unknown_schema():
 async def test_the_fixture_judge_follows_the_runs_of_a_single_step_cell_and_wraps():
     prompt = given.a_single_step_judge_prompt(given.A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY)
 
-    verdicts = await given.verdicts_of(FixtureJudge(given.the_fixture()), prompt, calls=4)
+    verdicts = await given.verdicts_of(given.a_fixture_judge(), prompt, calls=4)
 
     assert verdicts == [FAIL, PASS, PASS, FAIL]
 
@@ -90,13 +89,13 @@ async def test_the_fixture_judge_follows_the_runs_of_a_single_step_cell_and_wrap
 async def test_the_fixture_judge_follows_the_runs_of_a_chain_only_cell_on_chain_prompts():
     prompt = given.a_chain_judge_prompt(given.A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY)
 
-    verdicts = await given.verdicts_of(FixtureJudge(given.the_fixture()), prompt, calls=4)
+    verdicts = await given.verdicts_of(given.a_fixture_judge(), prompt, calls=4)
 
     assert verdicts == [PASS, FAIL, PASS, PASS]
 
 
 async def test_the_fixture_judge_passes_a_chain_only_cell_on_single_step_prompts():
-    judge = FixtureJudge(given.the_fixture())
+    judge = given.a_fixture_judge()
     cell = given.A_CHAIN_ONLY_CELL_FAILED_IN_THE_SECOND_RUN_ONLY
 
     single_step = await given.verdicts_of(judge, given.a_single_step_judge_prompt(cell), calls=3)
@@ -107,7 +106,7 @@ async def test_the_fixture_judge_passes_a_chain_only_cell_on_single_step_prompts
 
 
 async def test_the_fixture_judge_counts_single_step_and_chain_judgments_apart():
-    judge = FixtureJudge(given.the_fixture())
+    judge = given.a_fixture_judge()
     cell = given.A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY
 
     single_step = await given.verdicts_of(judge, given.a_single_step_judge_prompt(cell), calls=1)
@@ -120,14 +119,14 @@ async def test_the_fixture_judge_counts_single_step_and_chain_judgments_apart():
 async def test_the_fixture_judge_passes_a_cell_outside_the_ground_truth():
     prompt = given.a_single_step_judge_prompt(given.A_CELL_OUTSIDE_THE_GROUND_TRUTH)
 
-    verdicts = await given.verdicts_of(FixtureJudge(given.the_fixture()), prompt, calls=3)
+    verdicts = await given.verdicts_of(given.a_fixture_judge(), prompt, calls=3)
 
     assert verdicts == [PASS, PASS, PASS]
 
 
 async def test_the_fixture_judge_refuses_an_uncovered_observation():
     cell = given.A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY
-    judge = FixtureJudge(given.the_fixture_with_uncovered(cell))
+    judge = given.a_fixture_judge(given.the_runs_with_uncovered(cell))
 
     with pytest.raises(ProviderRefusal):
         await judge.generate_structured(given.a_single_step_judge_prompt(cell), Judgment)
@@ -135,14 +134,14 @@ async def test_the_fixture_judge_refuses_an_uncovered_observation():
 
 async def test_the_fixture_judge_refuses_a_cell_the_fixture_did_not_record():
     cell = given.A_CELL_FAILED_IN_THE_FIRST_RUN_ONLY
-    judge = FixtureJudge(given.the_fixture_without(cell))
+    judge = given.a_fixture_judge(given.the_runs_without(cell))
 
     with pytest.raises(ProviderRefusal):
         await judge.generate_structured(given.a_single_step_judge_prompt(cell), Judgment)
 
 
 async def test_the_fixture_judge_refuses_a_prompt_it_cannot_read():
-    judge = FixtureJudge(given.the_fixture())
+    judge = given.a_fixture_judge()
 
     with pytest.raises(ValueError, match="a reworded prompt"):
         await judge.generate_structured("a reworded prompt", Judgment)
