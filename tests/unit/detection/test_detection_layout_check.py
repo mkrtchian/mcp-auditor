@@ -10,57 +10,38 @@ from evals.cve.detection.layout_check import (
     unrouted_kept_places,
 )
 from evals.cve.detection.route_check import RouteObservations
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, LaunchMode
-from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
+from evals.cve.detection.targets import LaunchMode
+from evals.cve.places import LayoutAnchor, PlaceKind
+from tests.unit.detection.support.fictional_places import a_catalogue_place, a_layout_place
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
-_A_TARGET = ACCEPTANCE_TARGETS[0]
+_A_TARGET = an_acceptance_target(
+    FILESYSTEM, launch_mode=LaunchMode.NORMAL, settled_leaks=frozenset()
+)
 
 # A server scoped on /srv/app that discloses no path: the scope and its workspace parent are
 # revealed, but nothing names the bare /srv/app.git.
 _SCOPED_NO_DISCLOSURE = RouteObservations(
-    launch_command=(),
-    scope="/srv/app",
-    tool_names=(),
-    responses=(),
-    call_errored=(),
-    tools_list_succeeded=True,
+    scope="/srv/app", responses=(), call_errored=(), tools_list_succeeded=True
 )
 
 
 def test_unrouted_kept_places_lists_only_the_layout_place_without_a_route():
-    catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
+    catalogue = a_catalogue_place()
+    dotenv = a_layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = a_layout_place(
+        "bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL
+    )
 
     unrouted = unrouted_kept_places((catalogue, dotenv, bare_url), _SCOPED_NO_DISCLOSURE)
 
     assert unrouted == [bare_url]
 
 
-def _layout_place(place_id: str, anchor: LayoutAnchor, kind: PlaceKind) -> Place:
-    return Place(
-        id=place_id,
-        family="deployment layout",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=kind,
-        coordinates=Coordinates(kind, anchor=anchor, relpath="config"),
-    )
-
-
-def _catalogue_place() -> Place:
-    return Place(
-        id="etc-shadow",
-        family="fictional",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path="/etc/shadow"),
-    )
-
-
 def test_unrouted_kept_places_is_empty_when_every_kept_place_has_a_route():
-    catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    catalogue = a_catalogue_place()
+    dotenv = a_layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
 
     assert unrouted_kept_places((catalogue, dotenv), _SCOPED_NO_DISCLOSURE) == []
 
@@ -76,12 +57,7 @@ def test_a_fallback_mode_target_gives_up_when_its_fallback_launch_fails_to_start
 
 def _observed(*, started: bool) -> RouteObservations:
     return RouteObservations(
-        launch_command=(),
-        scope=None,
-        tool_names=(),
-        responses=(),
-        call_errored=(),
-        tools_list_succeeded=started,
+        scope=None, responses=(), call_errored=(), tools_list_succeeded=started
     )
 
 
@@ -92,13 +68,14 @@ def test_a_fallback_mode_target_does_not_give_up_when_its_fallback_launch_starts
 
 
 def test_a_normal_mode_target_does_not_give_up_even_when_its_launch_fails():
-    assert _A_TARGET.launch_mode is LaunchMode.NORMAL
     assert layout_check_gave_up(_A_TARGET, _observed(started=False)) is None
 
 
 def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
+    dotenv = a_layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = a_layout_place(
+        "bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL
+    )
     healthy = _observed(started=True)
     vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces={})
     patched = VersionObservation(reference=healthy, planted=_observed(started=False), nonces={})
@@ -111,9 +88,11 @@ def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
 
 
 def test_layout_routes_lists_each_layout_place_once_with_its_kept_flag_and_route():
-    catalogue = _catalogue_place()
-    dotenv = _layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
-    bare_url = _layout_place("bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
+    catalogue = a_catalogue_place()
+    dotenv = a_layout_place("workspace-dotenv", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV)
+    bare_url = a_layout_place(
+        "bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL
+    )
     places = {place.id: place for place in (catalogue, dotenv, bare_url)}
 
     routes = layout_routes(places, ("workspace-dotenv", "etc-shadow"), _SCOPED_NO_DISCLOSURE)

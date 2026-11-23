@@ -1,6 +1,7 @@
 from evals.cve.detection.route_check import RouteObservations, has_route, minimal_calls
-from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind
+from evals.cve.places import LayoutAnchor, PlaceKind
 from mcp_auditor.domain.models import ToolDefinition
+from tests.unit.detection.support.fictional_places import a_layout_place
 
 
 def test_the_route_procedure_calls_every_filtered_tool_once_in_tools_list_order():
@@ -70,28 +71,16 @@ def test_a_null_filter_exposes_every_tool():
 
 
 def test_the_derivation_does_not_invent_the_bare_for_a_git_target_that_names_no_bare_path():
-    bare = _layout_place(LayoutAnchor.PROJECT_BARE, "config", PlaceKind.GIT_REMOTE_URL)
+    bare = a_layout_place("layout", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL)
 
     assert has_route(bare, _git_scope_naming_no_bare()) is False
-
-
-def _layout_place(anchor: LayoutAnchor, relpath: str, kind: PlaceKind) -> Place:
-    return Place(
-        id="layout",
-        family="deployment layout",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=kind,
-        coordinates=Coordinates(kind, anchor=anchor, relpath=relpath),
-    )
 
 
 def _git_scope_naming_no_bare() -> RouteObservations:
     # A git target scoped on /srv/app whose tools name no bare path: no listing tool, nothing
     # emits the origin, so the server shows nothing that names /srv/app.git.
     return RouteObservations(
-        launch_command=("run", "--rm", "image", "--repository", "/srv/app"),
         scope="/srv/app",
-        tool_names=("git_init", "git_add", "git_diff_staged"),
         responses=("", "", ""),
         call_errored=(False, False, False),
         tools_list_succeeded=True,
@@ -99,6 +88,6 @@ def _git_scope_naming_no_bare() -> RouteObservations:
 
 
 def test_the_dotenv_parent_is_admitted_by_the_dotenv_kind_not_by_a_generic_parent_rule():
-    dotenv = _layout_place(LayoutAnchor.WORKSPACE, ".env", PlaceKind.DOTENV)
+    dotenv = a_layout_place("layout", LayoutAnchor.WORKSPACE, PlaceKind.DOTENV, relpath=".env")
 
     assert has_route(dotenv, _git_scope_naming_no_bare()) is True

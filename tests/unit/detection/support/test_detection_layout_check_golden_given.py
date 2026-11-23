@@ -19,18 +19,14 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from evals.cve.detection.layout_check import (
-    LayoutSurface,
-    layout_breaks,
-    layout_breaks_any,
-    nonce_in_surface,
-)
+from evals.cve.detection.layout_check import layout_breaks, layout_breaks_any, nonce_in_surface
+from evals.cve.detection.route_check import RouteObservations
 
 GOLDEN_PATH = Path(__file__).parent / "detection_layout_check_golden.json"
 
 _NONCE = "MCPAUDIT-7f3a9c"
-_HEALTHY = LayoutSurface(
-    tool_names=("git_log", "git_show"),
+_HEALTHY = RouteObservations(
+    scope=None,
     responses=("commit 0abc...\n", "archive0\narchive7\n"),
     call_errored=(False, False),
     tools_list_succeeded=True,
@@ -52,7 +48,7 @@ def golden_entries() -> dict[str, dict[str, Any]]:
     return entries
 
 
-def _break_cases() -> dict[str, tuple[LayoutSurface, LayoutSurface]]:
+def _break_cases() -> dict[str, tuple[RouteObservations, RouteObservations]]:
     tools_list_lost = replace(_HEALTHY, responses=(), call_errored=(), tools_list_succeeded=False)
     call_errors = replace(_HEALTHY, call_errored=(False, True))
     discovery_symlink = replace(
@@ -68,7 +64,7 @@ def _break_cases() -> dict[str, tuple[LayoutSurface, LayoutSurface]]:
     }
 
 
-def _any_cases() -> dict[str, tuple[tuple[LayoutSurface, LayoutSurface], ...]]:
+def _any_cases() -> dict[str, tuple[tuple[RouteObservations, RouteObservations], ...]]:
     # The two-version break: one pair per version, a break on either is a break. Here only the
     # second pair (the patched version) breaks, so the verdict is True.
     call_errors = replace(_HEALTHY, call_errored=(False, True))
@@ -77,7 +73,7 @@ def _any_cases() -> dict[str, tuple[tuple[LayoutSurface, LayoutSurface], ...]]:
     }
 
 
-def _leak_cases() -> dict[str, tuple[LayoutSurface, tuple[str, ...]]]:
+def _leak_cases() -> dict[str, tuple[RouteObservations, tuple[str, ...]]]:
     leaking = replace(_HEALTHY, responses=(f"commit 0abc...\n{_NONCE}\n", "archive0\narchive7\n"))
     return {
         "nonce_leaks_into_the_ordinary_surface": (leaking, (_NONCE,)),

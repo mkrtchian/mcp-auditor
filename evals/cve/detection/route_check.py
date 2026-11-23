@@ -42,9 +42,7 @@ _MINIMAL_STRING = ""  # the minimal filler for a required non-path string (comma
 
 @dataclass(frozen=True)
 class RouteObservations:
-    launch_command: tuple[str, ...]  # the full launch argv, recorded for the fixture fingerprint
     scope: str | None  # the scope the layout dictates, read from Launch.scope, not scanned here
-    tool_names: tuple[str, ...]  # tools/list, in order
     responses: tuple[str, ...]  # the body of each tool called at minimal arguments (error or not)
     call_errored: tuple[bool, ...]  # per call, whether it returned an error
     tools_list_succeeded: bool  # whether tools/list itself returned
@@ -97,9 +95,7 @@ async def route_observations(
         responses.append(response.content)
         errored.append(response.is_error)
     return RouteObservations(
-        launch_command=tuple(launch.args),
         scope=launch.scope,
-        tool_names=tuple(tool.name for tool in tools),
         responses=tuple(responses),
         call_errored=tuple(errored),
         tools_list_succeeded=True,

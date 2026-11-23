@@ -12,7 +12,7 @@ from evals.cve.detection.calibration_check import (
     not_live_reasons,
     passes_calibration_check,
 )
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, TargetVersion
+from evals.cve.detection.targets import TargetVersion
 from evals.cve.grammar import FlawClass
 from evals.cve.units import unit_of_exchanges
 
@@ -36,7 +36,7 @@ NO_PLACE_TARGET = dataclasses.replace(COMMAND_TARGET, nonces={})
 
 
 async def test_an_unknown_kept_id_raises_out_of_the_calibration_check_before_any_launch():
-    target = dataclasses.replace(ACCEPTANCE_TARGETS[0], kept_places=("no-such-place",))
+    target = dataclasses.replace(given.a_target(), kept_places=("no-such-place",))
 
     with pytest.raises(ValueError, match="no-such-place"):
         await passes_calibration_check(target, {})

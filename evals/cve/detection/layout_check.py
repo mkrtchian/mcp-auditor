@@ -55,14 +55,6 @@ _GAVE_UP_REASON = "the container cannot run the server"
 
 
 @dataclass(frozen=True)
-class LayoutSurface:
-    tool_names: tuple[str, ...]
-    responses: tuple[str, ...]
-    call_errored: tuple[bool, ...]  # per call, whether it returned an error
-    tools_list_succeeded: bool  # whether tools/list itself returned (a failed launch sets it False)
-
-
-@dataclass(frozen=True)
 class LayoutRoute:
     place_id: str
     kept: bool
@@ -111,20 +103,22 @@ def layout_check(
     gave_up = layout_check_gave_up(target, vuln.planted) or layout_check_gave_up(
         target, patched.planted
     )
-    breaks = layout_breaks_any([_surface_pair(vuln), _surface_pair(patched)])
-    leaking = leaking_places(_surface(vuln.planted), vuln.nonces)
+    breaks = layout_breaks_any(
+        [(vuln.reference, vuln.planted), (patched.reference, patched.planted)]
+    )
+    leaking = leaking_places(vuln.planted, vuln.nonces)
     unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
     return LayoutCheck(gave_up, breaks, leaking, unrouted)
 
 
-def layout_breaks_any(pairs: Sequence[tuple[LayoutSurface, LayoutSurface]]) -> bool:
+def layout_breaks_any(pairs: Sequence[tuple[RouteObservations, RouteObservations]]) -> bool:
     """Whether the layout breaks any of the version pairs. The rule launches each version once with
     and once without the layout, and a break on either version is a break (detection-suite-rule.md,
     Deployment layout (A server the layout breaks))."""
     return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
 
 
-def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
+def layout_breaks(reference: RouteObservations, with_layout: RouteObservations) -> bool:
     """Whether the layout breaks the version by the rule's criterion (detection-suite-rule.md,
     Deployment layout (A server the layout breaks)). The two surfaces run the same route procedure,
     so a call's error state aligns by position."""
@@ -136,11 +130,11 @@ def layout_breaks(reference: LayoutSurface, with_layout: LayoutSurface) -> bool:
     )
 
 
-def leaking_places(planted: LayoutSurface, nonces: Mapping[str, str]) -> list[str]:
+def leaking_places(planted: RouteObservations, nonces: Mapping[str, str]) -> list[str]:
     return [place_id for place_id, nonce in nonces.items() if nonce_in_surface(planted, (nonce,))]
 
 
-def nonce_in_surface(planted: LayoutSurface, nonces: Sequence[str]) -> bool:
+def nonce_in_surface(planted: RouteObservations, nonces: Sequence[str]) -> bool:
     return any(nonce in body for body in planted.responses for nonce in nonces)
 
 
@@ -324,14 +318,7 @@ class _Observer:
 
 
 def _failed_observation() -> RouteObservations:
-    return RouteObservations(
-        launch_command=(),
-        scope=None,
-        tool_names=(),
-        responses=(),
-        call_errored=(),
-        tools_list_succeeded=False,
-    )
+    return RouteObservations(scope=None, responses=(), call_errored=(), tools_list_succeeded=False)
 
 
 def _report_launch_error(
@@ -342,16 +329,3 @@ def _report_launch_error(
     server_stderr.seek(0)
     for line in report_detail.server_lines(server_stderr.read().splitlines()[-10:]):
         console.print(f"  {line}", markup=False, highlight=False)
-
-
-def _surface(observations: RouteObservations) -> LayoutSurface:
-    return LayoutSurface(
-        observations.tool_names,
-        observations.responses,
-        observations.call_errored,
-        observations.tools_list_succeeded,
-    )
-
-
-def _surface_pair(observation: VersionObservation) -> tuple[LayoutSurface, LayoutSurface]:
-    return _surface(observation.reference), _surface(observation.planted)

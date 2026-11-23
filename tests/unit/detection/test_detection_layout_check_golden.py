@@ -1,7 +1,8 @@
 import json
 
 import tests.unit.detection.support.test_detection_layout_check_golden_given as given
-from evals.cve.detection.layout_check import LayoutSurface, layout_breaks_any
+from evals.cve.detection.layout_check import layout_breaks_any
+from evals.cve.detection.route_check import RouteObservations
 
 
 def test_the_layout_breaks_when_tools_list_is_lost_with_the_layout():
@@ -31,8 +32,8 @@ def test_the_two_version_break_fires_when_only_the_patched_pair_breaks():
 
 
 def test_the_two_version_break_is_silent_when_no_version_pair_breaks():
-    healthy = LayoutSurface(
-        tool_names=(), responses=(), call_errored=(False,), tools_list_succeeded=True
+    healthy = RouteObservations(
+        scope=None, responses=(), call_errored=(False,), tools_list_succeeded=True
     )
 
     assert layout_breaks_any([(healthy, healthy), (healthy, healthy)]) is False
