@@ -23,11 +23,11 @@ from tests.unit.support.acceptance_targets import GIT, an_acceptance_target
 
 
 @pytest.mark.usefixtures("docker_on_the_host")
-async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_still_runs(
+async def test_a_server_exiting_at_startup_fails_its_calibration_check_and_the_next_target_runs(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     targets = [
-        given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered"),
+        given.a_target_whose_server_exits_at_startup("CVE-EXITS", "no tools registered"),
         given.a_live_target("CVE-LIVE"),
     ]
 
@@ -35,7 +35,7 @@ async def test_a_server_dead_at_startup_fails_calibration_and_the_next_target_st
 
     output = capsys.readouterr().out
     assert not all_live
-    assert "CVE-DEAD calibration check error" in output
+    assert "CVE-EXITS calibration check error" in output
     assert "no tools registered" in output
     assert "ok  CVE-LIVE" in output
 
@@ -198,14 +198,14 @@ async def test_the_types_only_check_prints_the_out_of_calibration_reasons_and_no
     capsys: pytest.CaptureFixture[str],
 ):
     places = given.a_places_mapping()
-    exits = given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered")
+    exits = given.a_target_whose_server_exits_at_startup("CVE-EXITS", "no tools registered")
     misses = given.a_target_whose_exploit_misses("CVE-MISS")
 
     await check_target(exits, places, options=CheckOptions(report_detail=TYPES_ONLY))
     await check_target(misses, places, options=CheckOptions(report_detail=TYPES_ONLY))
 
     output = capsys.readouterr().out
-    assert "CVE-DEAD calibration check error" in output
+    assert "CVE-EXITS calibration check error" in output
     assert "CVE-MISS out of calibration: exploit surfaces no nonce for fict-flag" in output
     assert "no tools registered" not in output
     assert "Connection closed" not in output
@@ -248,12 +248,12 @@ async def test_a_launched_server_whose_tools_list_fails_is_observed_once(tmp_pat
 async def test_the_types_only_layout_check_prints_no_stderr_line(
     capsys: pytest.CaptureFixture[str],
 ):
-    target = given.a_target_whose_server_exits_at_startup("CVE-DEAD", "no tools registered")
+    target = given.a_target_whose_server_exits_at_startup("CVE-EXITS", "no tools registered")
 
     await observe_versions(target, given.a_places_mapping(), report_detail=TYPES_ONLY)
 
     output = capsys.readouterr().out
-    assert "CVE-DEAD layout check launch error" in output
+    assert "CVE-EXITS layout check launch error" in output
     assert "no tools registered" not in output
     assert "unhandled errors" not in output
 

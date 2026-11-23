@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import json
 import sys
 import traceback
 from collections.abc import Sequence
@@ -56,6 +55,7 @@ from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.images import image_ids, image_tag
 from evals.cve.launch_audit import NO_OVERRIDES
 from evals.cve.places import DETECTION_PLACES, Places, load_places
+from evals.cve.run_files import write_report
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
 from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
@@ -125,10 +125,6 @@ async def _run(args: argparse.Namespace, flaws: _FlawSelection, deps: DetectionC
             )
             return 0
         if args.calibration_check:
-            # ADR 031 layout and route checks, confirmed before a draw: Docker-dependent,
-            # deterministic, run only under the maintainer paths (--calibration-check and
-            # --record-baseline), never on a gated comparison and not beside the synchronous
-            # preflight (no container exists there).
             checks = deps.calibration_check(args.concurrency, args.ci)
             return await run_calibration_check(flaws.graded, places, checks)
         return await _run_graded(args, flaws, _CommandRun(places, deps))
@@ -231,7 +227,7 @@ async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _Com
         prices_as_of=None if pricing is None else pricing.as_of,
     )
     report_path = Path(args.report)
-    _write_reports(report, report_path)
+    write_report(report_path, report, render_markdown(report))
     export_detection_judged_cases(session.audits, report_path)
     print_detection_summary(report, report_path)
     print_recording(session, _recorded_flags(args))
@@ -294,12 +290,6 @@ def _recorded_flags(args: argparse.Namespace) -> list[str]:
     if args.budget != DETECTION_TEST_BUDGET:
         flags.append(f"--budget {args.budget}")
     return flags
-
-
-def _write_reports(report: DetectionReport, report_path: Path) -> None:
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
-    report_path.with_suffix(".md").write_text(render_markdown(report))
 
 
 def _filter_by_flaw[T: (Target, OutOfScopeFlaw)](items: list[T], ids: list[str] | None) -> list[T]:

@@ -163,15 +163,15 @@ def test_the_cost_title_carries_the_price_date(
     assert "$0.7500" in output.getvalue()
 
 
-def test_a_not_run_condition_holding_markup_prints_literally(
+def test_a_not_run_reason_holding_markup_prints_literally(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ):
     output = a_captured_console(capsys, monkeypatch)
-    report = given.a_report_with_a_not_run_target(["[bold]dead[/bold]"], gated=False)
+    report = given.a_report_with_a_not_run_target(["[bold]keeps no place[/bold]"], gated=False)
 
     print_detection_summary(report, REPORT_PATH)
 
-    assert "[bold]dead[/bold]" in output.getvalue()
+    assert "[bold]keeps no place[/bold]" in output.getvalue()
 
 
 def test_a_gate_detail_holding_markup_prints_literally(
@@ -179,6 +179,8 @@ def test_a_gate_detail_holding_markup_prints_literally(
 ):
     output = a_captured_console(capsys, monkeypatch)
 
-    print_detection_summary(given.a_report_gated_on_a_detail("[bold]dead[/bold]"), REPORT_PATH)
+    print_detection_summary(
+        given.a_report_gated_on_a_detail("[bold]keeps no place[/bold]"), REPORT_PATH
+    )
 
-    assert "[bold]dead[/bold]" in output.getvalue()
+    assert "[bold]keeps no place[/bold]" in output.getvalue()

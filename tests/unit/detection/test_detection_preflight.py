@@ -7,12 +7,8 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.images import dockerfile_fingerprint, image_tag
 from evals.cve.planting import SENTINEL_SERVICE
 from evals.cve.planting_base import STAND_IN_SERVICE
-from evals.detection_preflight import (
-    PreflightDocker,
-    expected_services,
-    preflight_ok,
-    vulnerable_services,
-)
+from evals.cve.run_images import target_services
+from evals.detection_preflight import PreflightDocker, expected_services, preflight_ok
 from tests.fakes.image_store import FakeImageStore
 
 FETCH_ID = "CVE-2025-65513"
@@ -114,7 +110,7 @@ def test_expected_services_keeps_the_sentinel_with_the_fetch_target_filtered_out
     without_fetch = [target for target in ACCEPTANCE_TARGETS if target.flaw_id != FETCH_ID]
 
     assert SENTINEL_SERVICE in expected_services(without_fetch)
-    assert SENTINEL_SERVICE not in vulnerable_services(without_fetch)
+    assert SENTINEL_SERVICE not in target_services(without_fetch)
 
 
 def test_expected_services_carry_the_stand_in_only_while_a_target_declares_one():

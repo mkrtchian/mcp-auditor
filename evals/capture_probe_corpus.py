@@ -19,7 +19,6 @@ from rich.console import Console
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.environments import Launch
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.detection_preflight import VULNERABLE_SERVICES
 from evals.honeypots import HONEYPOTS, AuditModels, audit_honeypot, models_for
 from evals.model_conditions import ModelConditions
 from evals.probe.candidates import REFERENCE
@@ -85,9 +84,14 @@ def _refuse(reason: str, details: list[str]) -> None:
     sys.exit(1)
 
 
+_VULNERABLE_SERVICES = tuple(
+    dict.fromkeys(name for target in ACCEPTANCE_TARGETS for name in target.images)
+)
+
+
 def _target_image_problems() -> list[str]:
     try:
-        ensure_images(VULNERABLE_SERVICES, ComposeImageStore())
+        ensure_images(_VULNERABLE_SERVICES, ComposeImageStore())
     except ImageBuildFailed as error:
         return [f"building {', '.join(error.services)} failed:\n{error.stderr_tail}"]
     return []

@@ -54,7 +54,7 @@ def deps_reaching_nothing(sweep: FakeContainerSweep | None = None) -> DetectionC
 
 
 def _no_calibration_check(concurrency: int, ci: bool) -> CalibrationCheckDeps:
-    raise AssertionError("this run checks no calibration")
+    raise AssertionError("this run runs no calibration check")
 
 
 async def _no_survey(target: Target, places: object) -> TargetSurvey:

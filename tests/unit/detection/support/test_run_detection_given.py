@@ -18,14 +18,14 @@ from tests.unit.detection.support.run_detection_cli import (
 )
 
 
-def a_calibration(
+def a_calibration_check(
     *,
     sweep: FakeContainerSweep | None = None,
     raises: bool = False,
     checked: list[str] | None = None,
 ) -> DetectionCommandDeps:
-    """Past the preflight, every fixture admitted and live, or a configuration error. The flaw
-    IDs it checks are appended to checked."""
+    """Past the preflight, every target live and fixed, or a configuration error. The flaw IDs
+    it checks are appended to checked."""
     return replace(
         deps_reaching_nothing(sweep),
         calibration_check=lambda concurrency, ci: deps_with(raises=raises, checked=checked),

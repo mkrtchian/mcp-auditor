@@ -189,10 +189,10 @@ def test_a_launch_error_under_full_detail_prints_its_root_cause_after_its_label(
 ):
     output = a_captured_console(capsys, monkeypatch)
 
-    report_launch_error("CVE-DEAD check error", LAUNCH_FAILURE, io.StringIO("boom\n"), FULL_DETAIL)
+    report_launch_error("CVE-EXITS check error", LAUNCH_FAILURE, io.StringIO("boom\n"), FULL_DETAIL)
 
     assert output.getvalue().splitlines() == [
-        "CVE-DEAD check error: ConnectionError: Connection closed",
+        "CVE-EXITS check error: ConnectionError: Connection closed",
         "  boom",
     ]
 
@@ -202,6 +202,6 @@ def test_a_launch_error_under_types_only_prints_no_server_text(
 ):
     output = a_captured_console(capsys, monkeypatch)
 
-    report_launch_error("CVE-DEAD check error", LAUNCH_FAILURE, io.StringIO("boom\n"), TYPES_ONLY)
+    report_launch_error("CVE-EXITS check error", LAUNCH_FAILURE, io.StringIO("boom\n"), TYPES_ONLY)
 
-    assert output.getvalue().splitlines() == ["CVE-DEAD check error: ConnectionError"]
+    assert output.getvalue().splitlines() == ["CVE-EXITS check error: ConnectionError"]

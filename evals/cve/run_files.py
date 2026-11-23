@@ -1,6 +1,7 @@
 """The files a holdout run writes: its report, the report's markdown and the run result beside
-them, the report write shared with the nuisance gate. The result is written before the report is
-built, so an error building it loses no paid run, and a run never overwrites any of the three."""
+them, the report write shared with the nuisance gate and the detection gate's command. The result
+is written before the report is built, so an error building it loses no paid run, and a run never
+overwrites any of the three."""
 
 import dataclasses
 import json

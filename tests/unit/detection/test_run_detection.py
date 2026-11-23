@@ -175,7 +175,7 @@ def test_a_measurement_run_forces_its_settings_on_the_audit_and_records_them(
     assert (measurement["chains"], measurement["every_tool"]) == (3, True)
 
 
-def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
+def test_a_calibration_check_that_cannot_reach_docker_exits_as_a_crash(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     monkeypatch.setenv("PATH", str(tmp_path))  # no docker binary to find
@@ -184,8 +184,8 @@ def test_a_calibration_that_cannot_reach_docker_exits_as_a_crash(
     assert cli.exit_code_of(deps, "--calibration-check") == 4
 
 
-def test_a_calibration_that_raises_exits_as_a_crash():
-    assert cli.exit_code_of(given.a_calibration(raises=True), "--calibration-check") == 4
+def test_a_calibration_check_that_raises_exits_as_a_crash():
+    assert cli.exit_code_of(given.a_calibration_check(raises=True), "--calibration-check") == 4
 
 
 def test_a_survey_that_raises_exits_as_a_crash():
@@ -201,13 +201,13 @@ def test_the_survey_surveys_every_target_and_exits_zero():
     assert sorted(surveyed) == sorted(target.flaw_id for target in ACCEPTANCE_TARGETS)
 
 
-@pytest.mark.parametrize("mode", [given.a_calibration, given.a_survey])
+@pytest.mark.parametrize("mode", [given.a_calibration_check, given.a_survey])
 @pytest.mark.parametrize("raises", [False, True])
 def test_a_maintainer_mode_removes_the_containers_left_running_even_when_it_raises(
     mode: Callable[..., DetectionCommandDeps], raises: bool
 ):
     containers = cli.a_sweep_finding("leftover_filesystem")
-    flag = "--calibration-check" if mode is given.a_calibration else "--survey"
+    flag = "--calibration-check" if mode is given.a_calibration_check else "--survey"
 
     cli.exit_code_of(mode(sweep=containers, raises=raises), flag, "--flaw", cli.RECORDED_FLAW)
 
@@ -281,7 +281,9 @@ def test_the_calibration_check_runs_on_every_target_or_on_the_flaws_named(
 ):
     checked: list[str] = []
 
-    code = cli.exit_code_of(given.a_calibration(checked=checked), "--calibration-check", *flags)
+    code = cli.exit_code_of(
+        given.a_calibration_check(checked=checked), "--calibration-check", *flags
+    )
 
     assert code == 0
     assert checked == expected
