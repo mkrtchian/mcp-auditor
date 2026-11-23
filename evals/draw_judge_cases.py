@@ -151,15 +151,33 @@ def _lines(path: Path) -> list[dict[str, Any]]:
 def _strata_of(
     honeypot_lines: list[dict[str, Any]], detection_lines: list[dict[str, Any]]
 ) -> Strata:
-    cells = candidates_from_honeypot(honeypot_lines, MERGED_GROUND_TRUTH)
-    # Every benchmarked target is a stratum, so one with no judged case shows as a shortfall.
-    none_judged: dict[str, list[JudgeCase]] = {target.flaw_id: [] for target in ACCEPTANCE_TARGETS}
-    targets = none_judged | candidates_from_detection(detection_lines)
+    fail_cells, pass_cells = honeypot_strata(honeypot_lines, MERGED_GROUND_TRUTH)
+    flaw_ids = [target.flaw_id for target in ACCEPTANCE_TARGETS]
     return Strata(
-        fail_cells=_cells_labeled(cells, EvalVerdict.FAIL),
-        pass_cells=_cells_labeled(cells, EvalVerdict.PASS),
-        targets=targets,
+        fail_cells=fail_cells,
+        pass_cells=pass_cells,
+        targets=target_strata(detection_lines, flaw_ids),
     )
+
+
+def honeypot_strata(
+    lines: Iterable[dict[str, Any]], ground_truth: GroundTruth
+) -> tuple[dict[str, list[JudgeCase]], dict[str, list[JudgeCase]]]:
+    """The FAIL cells, then the PASS cells, of the ground truth, each with its candidates."""
+    cells = candidates_from_honeypot(lines, ground_truth)
+    return (
+        _cells_labeled(cells, ground_truth, EvalVerdict.FAIL),
+        _cells_labeled(cells, ground_truth, EvalVerdict.PASS),
+    )
+
+
+def target_strata(
+    lines: Iterable[dict[str, Any]], flaw_ids: Iterable[str]
+) -> dict[str, list[JudgeCase]]:
+    """Every target is a stratum: one with no judged case is a stratum with a shortfall, not a
+    missing stratum."""
+    none_judged: dict[str, list[JudgeCase]] = {flaw_id: [] for flaw_id in flaw_ids}
+    return none_judged | candidates_from_detection(lines)
 
 
 def candidates_from_honeypot(
@@ -186,19 +204,15 @@ def _candidate(line: dict[str, Any], source: CaseSource, origin: str) -> JudgeCa
 def candidates_from_detection(lines: Iterable[dict[str, Any]]) -> dict[str, list[JudgeCase]]:
     candidates: dict[str, dict[str, JudgeCase]] = {}
     for line in lines:
-        case = _candidate(line, CaseSource.CVE, f"cve {line['flaw_id']}")
+        case = _candidate(line, CaseSource.DETECTION_SUITE, f"cve {line['flaw_id']}")
         candidates.setdefault(line["flaw_id"], {})[case.id] = case
     return {flaw_id: list(cases.values()) for flaw_id, cases in candidates.items()}
 
 
 def _cells_labeled(
-    cells: dict[Cell, list[JudgeCase]], verdict: EvalVerdict
+    cells: dict[Cell, list[JudgeCase]], ground_truth: GroundTruth, verdict: EvalVerdict
 ) -> dict[str, list[JudgeCase]]:
-    return {
-        cell_key(cell): cases
-        for cell, cases in cells.items()
-        if MERGED_GROUND_TRUTH[cell] == verdict
-    }
+    return {cell_key(cell): cases for cell, cases in cells.items() if ground_truth[cell] == verdict}
 
 
 def _complemented(fixture: JudgeFixture, strata: Strata, sources: list[SourceRun]) -> JudgeFixture:

@@ -14,11 +14,7 @@ from mcp_auditor.domain.models import AuditCategory
 A_DRAW = DrawRecord(seed=1, quotas={}, sources=[], shortfalls=[])
 
 
-def a_case(
-    label: CaseLabel | None = CaseLabel.PASS,
-    clause: str | None = None,
-    **input_overrides: Any,
-) -> JudgeCase:
+def a_case(label: CaseLabel | None = CaseLabel.PASS, **input_overrides: Any) -> JudgeCase:
     inputs = some_inputs(**input_overrides)
     return JudgeCase(
         id=case_id(inputs),
@@ -26,7 +22,7 @@ def a_case(
         origin="cell get_user/input_validation",
         inputs=inputs,
         label=label,
-        clause=clause,
+        clause=None,
     )
 
 

@@ -18,7 +18,7 @@ class CaseLabel(StrEnum):
 
 class CaseSource(StrEnum):
     HONEYPOT = "honeypot"
-    CVE = "cve"
+    DETECTION_SUITE = "cve"
 
 
 SINGLE_STEP = "single_step"

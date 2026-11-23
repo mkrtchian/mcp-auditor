@@ -14,11 +14,14 @@ from evals.draw_judge_cases import (
     complement_refusals,
     draw,
     draw_fixture,
+    honeypot_strata,
     parse_args,
+    target_strata,
 )
 from evals.judge.draw_checks import leaked_secrets, source_refusals, source_run
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeInputs
 from mcp_auditor.domain.models import AuditCategory
+from tests.unit.evals.support.judge_cases import a_case
 
 INFO_LEAKAGE = given.INFO_LEAKAGE
 INJECTION = given.INJECTION
@@ -69,8 +72,41 @@ def test_a_detection_candidate_is_filed_under_its_flaw():
     candidates = candidates_from_detection(lines)
 
     [case] = candidates["CVE-2025-0001"]
-    assert (case.source, case.origin) == (CaseSource.CVE, "cve CVE-2025-0001")
+    assert (case.source, case.origin) == (CaseSource.DETECTION_SUITE, "cve CVE-2025-0001")
     assert sorted(candidates) == ["CVE-2025-0001", "CVE-2025-0002"]
+
+
+def test_the_ground_truth_splits_the_honeypot_cells_into_fail_and_pass_strata():
+    lines = [given.a_honeypot_line("get_user", INFO_LEAKAGE)]
+
+    fail_cells, pass_cells = honeypot_strata(lines, given.GROUND_TRUTH)
+
+    assert {key: len(cases) for key, cases in fail_cells.items()} == {"get_user/info_leakage": 1}
+    assert {key: len(cases) for key, cases in pass_cells.items()} == {
+        "get_user/injection": 0,
+        "list_items/injection": 0,
+    }
+
+
+def test_a_target_with_no_judged_case_is_an_empty_stratum():
+    lines = [given.a_detection_line("CVE-2025-0001")]
+
+    targets = target_strata(lines, ["CVE-2025-0001", "CVE-2025-0002"])
+
+    assert {flaw_id: len(cases) for flaw_id, cases in targets.items()} == {
+        "CVE-2025-0001": 1,
+        "CVE-2025-0002": 0,
+    }
+
+
+def test_a_target_with_no_judged_case_is_drawn_as_a_shortfall():
+    strata = given.Strata(
+        fail_cells={}, pass_cells={}, targets=target_strata([], ["CVE-2025-0002"])
+    )
+
+    fixture = draw_fixture(strata, sources=[])
+
+    assert fixture.draw.shortfalls == [f"CVE-2025-0002: 0 candidates for a quota of {TARGET_QUOTA}"]
 
 
 def test_a_stratum_smaller_than_its_quota_yields_all_its_cases_and_a_shortfall():
@@ -106,13 +142,9 @@ def test_the_same_seed_and_sources_give_the_same_draw():
 
 def test_no_verdict_nor_run_index_reaches_a_drawn_case():
     lines = [given.a_honeypot_line("get_user", INFO_LEAKAGE)]
-    candidates = candidates_from_honeypot(lines, given.GROUND_TRUTH)
-    detection = candidates_from_detection([given.a_detection_line("CVE-2025-0001")])
-    strata = given.Strata(
-        fail_cells={"get_user/info_leakage": candidates[("get_user", INFO_LEAKAGE)]},
-        pass_cells={},
-        targets=detection,
-    )
+    fail_cells, pass_cells = honeypot_strata(lines, given.GROUND_TRUTH)
+    targets = target_strata([given.a_detection_line("CVE-2025-0001")], [])
+    strata = given.Strata(fail_cells=fail_cells, pass_cells=pass_cells, targets=targets)
 
     dumped = draw_fixture(strata, sources=[]).model_dump_json()
 
@@ -177,17 +209,10 @@ def test_the_complement_is_refused_on_exports_the_draw_did_not_record():
 
 
 def test_the_leak_check_names_the_case_and_the_kind_of_match_never_the_text():
-    home = given.some_cases(1, "home")[0]
-    home = home.model_copy(
-        update={"inputs": home.inputs.model_copy(update={"response": f"{HOME}/.ssh"})}
-    )
-    user = given.some_cases(1, "user")[0]
-    user = user.model_copy(
-        update={"inputs": user.inputs.model_copy(update={"error": f"/srv/{USER}/db"})}
-    )
+    home = a_case(response=f"{HOME}/.ssh")
+    user = a_case(error=f"/srv/{USER}/db")
     key = "sk-" + "a" * 24
-    keyed = given.some_cases(1, "keyed")[0]
-    keyed = keyed.model_copy(update={"inputs": keyed.inputs.model_copy(update={"response": key})})
+    keyed = a_case(response=key)
 
     leaks = leaked_secrets([home, user, keyed], HOME, USER)
 
@@ -205,24 +230,19 @@ def test_the_leak_check_names_the_case_and_the_kind_of_match_never_the_text():
     ],
 )
 def test_the_leak_check_knows_each_key_pattern(text: str, kind: str):
-    case = given.some_cases(1)[0]
-    case = case.model_copy(update={"inputs": case.inputs.model_copy(update={"response": text})})
+    case = a_case(response=text)
 
     assert f"case {case.id}: {kind}" in leaked_secrets([case], HOME, USER)
 
 
 def test_the_user_name_is_a_leak_whatever_its_case():
-    case = given.some_cases(1)[0]
-    case = case.model_copy(
-        update={"inputs": case.inputs.model_copy(update={"response": "owner: Alice"})}
-    )
+    case = a_case(response="owner: Alice")
 
     assert leaked_secrets([case], HOME, USER) == [f"case {case.id}: user name"]
 
 
 def test_a_user_name_inside_a_longer_word_is_not_a_leak():
-    case = given.some_cases(1)[0]
-    case = case.model_copy(update={"inputs": case.inputs.model_copy(update={"response": "malice"})})
+    case = a_case(response="malice")
 
     assert leaked_secrets([case], HOME, USER) == []
 

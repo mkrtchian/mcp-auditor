@@ -1,36 +1,20 @@
 import ast
-import re
 from pathlib import Path
 
 from evals.cve.census.census import CENSUS_PATH, load_census
-from evals.cve.census.exclusions import EXCLUDED_SERVERS
+from evals.honeypots import HONEYPOTS
 from evals.judge.fixture import CaseLabel, CaseSource, JudgeCase, JudgeInputs, load_fixture
 from evals.repository import REPO_ROOT
+from evals.run_judge_eval import FIXTURES_PATH
 from mcp_auditor.domain.models import AuditCategory
-
-_TESTS_DIR = REPO_ROOT / "tests"
-
-HONEYPOT_SERVERS = (
-    _TESTS_DIR / "honeypot_server.py",
-    _TESTS_DIR / "subtle_server.py",
-    _TESTS_DIR / "chain_honeypot_server.py",
-)
-
-_JUDGE_CASES = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
-
-# The auditor's own tool name heads every payload marker it plants (`mcp-auditor-probe`, the
-# `mcp-auditor-no-such-…` probe paths). A server never emits that name except by echoing our
-# payload back, so a run matching it is dropped: the corpus holds the server's text, not ours.
-_AUDITOR_MARKER = re.compile(r"mcp-auditor[\w-]*")
-
-_MARKER_CHARACTERS = set("_@./-")
+from tests.unit.evals.support import contamination
 
 
 def discriminating_literals() -> set[str]:
     candidates = {
-        text.strip() for server in HONEYPOT_SERVERS for text in _literals_and_names_of(server)
+        text.strip() for honeypot in HONEYPOTS for text in _literals_and_names_of(honeypot.server)
     }
-    return {text for text in candidates if _is_discriminating(text)}
+    return {text for text in candidates if contamination.is_discriminating(text)}
 
 
 def layout_literals() -> set[str]:
@@ -49,12 +33,12 @@ def shipped_constants() -> list[tuple[Path, str]]:
 
 
 def excluded_server_corpus() -> set[str]:
-    return server_corpus_of(detection_cases(), servers_by_flaw())
+    return contamination.server_corpus_of(detection_cases(), servers_by_flaw())
 
 
 def detection_cases() -> list[JudgeCase]:
-    fixture = load_fixture(_JUDGE_CASES)
-    return [case for case in fixture.cases if case.source == CaseSource.CVE]
+    fixture = load_fixture(FIXTURES_PATH)
+    return [case for case in fixture.cases if case.source == CaseSource.DETECTION_SUITE]
 
 
 def servers_by_flaw() -> dict[str, str]:
@@ -64,18 +48,6 @@ def servers_by_flaw() -> dict[str, str]:
         for own in census.classifications.values()
         for classification in own
     }
-
-
-def server_corpus_of(cases: list[JudgeCase], servers: dict[str, str]) -> set[str]:
-    corpus: set[str] = set()
-    for case in cases:
-        flaw_id = _flaw_id_of(case)
-        if flaw_id not in servers:
-            raise LookupError(f"the census does not classify {flaw_id} of case {case.id}")
-        if servers[flaw_id] not in EXCLUDED_SERVERS:
-            continue
-        corpus |= _server_texts_of(case)
-    return corpus
 
 
 def a_detection_case(
@@ -88,7 +60,7 @@ def a_detection_case(
 ) -> JudgeCase:
     return JudgeCase(
         id="crafted",
-        source=CaseSource.CVE,
+        source=CaseSource.DETECTION_SUITE,
         origin=f"cve {flaw_id}",
         inputs=JudgeInputs(
             tool_name="tool",
@@ -104,28 +76,6 @@ def a_detection_case(
     )
 
 
-def _flaw_id_of(case: JudgeCase) -> str:
-    return case.origin.split()[1]
-
-
-def _server_texts_of(case: JudgeCase) -> set[str]:
-    inputs = case.inputs
-    payload = [value for value in inputs.arguments.values() if isinstance(value, str)]
-    pieces = (inputs.tool_description, inputs.response, inputs.error)
-    texts = {
-        _without_payload(piece, payload)
-        for piece in pieces
-        if isinstance(piece, str) and piece != "None"
-    }
-    return {text for text in texts if _is_discriminating(text)}
-
-
-def _without_payload(text: str, payload: list[str]) -> str:
-    for value in payload:
-        text = text.replace(value, "")
-    return _AUDITOR_MARKER.sub("", text).strip()
-
-
 def _literals_and_names_of(path: Path) -> list[str]:
     tree = _parse(path)
     function_names = [
@@ -134,16 +84,6 @@ def _literals_and_names_of(path: Path) -> list[str]:
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
     ]
     return _string_constants_of(tree) + function_names
-
-
-def _is_discriminating(text: str) -> bool:
-    if len(text) < 3:
-        return False
-    return (
-        len(text.split()) >= 2
-        or any(character.isupper() or character.isdigit() for character in text)
-        or any(character in _MARKER_CHARACTERS for character in text)
-    )
 
 
 def _string_constants_of(tree: ast.AST) -> list[str]:

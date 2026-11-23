@@ -4,6 +4,8 @@ import pytest
 
 import tests.unit.evals.support.test_fixture_contamination_given as given
 import tests.unit.evals.support.test_fixture_contamination_then as then
+from tests.unit.evals.support import contamination
+from tests.unit.evals.support.contamination import Leak
 
 SERVER_CORPUS = {"Adds file contents to the staging area"}
 
@@ -44,13 +46,20 @@ class TestShippedConstantsNameNoExcludedServerText:
     def test_a_five_word_run_of_server_text_in_a_constant_leaks(self):
         constant = [(Path("src/leak.py"), "qqq contents to the staging area qqq")]
 
-        with pytest.raises(AssertionError):
-            then.no_constant_contains_any_server_text(constant, SERVER_CORPUS)
+        leaks = contamination.server_text_leaks(constant, SERVER_CORPUS)
+
+        assert leaks == [
+            Leak(
+                Path("src/leak.py"),
+                "Adds file contents to the staging area",
+                "contents to the staging area",
+            )
+        ]
 
     def test_a_four_word_run_of_server_text_does_not_leak(self):
         constant = [(Path("src/benign.py"), "qqq to the staging area qqq")]
 
-        then.no_constant_contains_any_server_text(constant, SERVER_CORPUS)
+        assert contamination.server_text_leaks(constant, SERVER_CORPUS) == []
 
     def test_an_echoed_auditor_marker_is_dropped_from_the_corpus(self):
         payload = "/work/sandbox/;echo mcp-auditor-probe"
@@ -60,7 +69,7 @@ class TestShippedConstantsNameNoExcludedServerText:
             arguments={"path": payload},
         )
 
-        corpus = given.server_corpus_of([case], given.servers_by_flaw())
+        corpus = contamination.server_corpus_of([case], given.servers_by_flaw())
 
         assert all("mcp-auditor-probe" not in text and payload not in text for text in corpus)
 
@@ -68,7 +77,7 @@ class TestShippedConstantsNameNoExcludedServerText:
         case = given.a_detection_case("CVE-0000-0000", tool_description="x")
 
         with pytest.raises(LookupError):
-            given.server_corpus_of([case], given.servers_by_flaw())
+            contamination.server_corpus_of([case], given.servers_by_flaw())
 
     def test_a_non_excluded_server_case_is_absent_from_the_corpus(self):
         case = given.a_detection_case(
@@ -76,4 +85,4 @@ class TestShippedConstantsNameNoExcludedServerText:
         )
         servers = {"CVE-0000-0001": "npm:some-unrelated-server"}
 
-        assert given.server_corpus_of([case], servers) == set()
+        assert contamination.server_corpus_of([case], servers) == set()
