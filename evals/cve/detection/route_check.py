@@ -7,11 +7,8 @@ the scope. Never by a planted file and never by a path the route procedure itsel
 arguments (rule v5: the scope and a documented default count as route, a path the procedure sent
 does not, since the grammar does not credit a proof copied from the arguments, ADR 029).
 
-`minimal_calls` fixes the route procedure (detection-suite-rule.md, Deployment layout (A place is
-kept for a target)): every tool the target exposes, in the order `tools/list` returns, called once
-with the minimal arguments its schema requires, the filling policy the same for every target.
-`route_observations` is the Docker collector that runs it, exercised by the maintainer like the
-calibration check.
+`minimal_calls` fixes the route procedure and `route_observations` is the Docker collector that
+runs it.
 
 A catalogue place carries no anchor and is on the route by construction (ADR 029 chose it as a
 place an attacker probes), so `has_route` finds a route to it unconditionally. A layout place has

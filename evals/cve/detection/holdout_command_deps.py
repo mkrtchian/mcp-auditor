@@ -26,7 +26,8 @@ from evals.cve.detection.holdout_run import (
     run_holdout_targets,
 )
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.detection.layout_check import LayoutCheck, observe_layout
+from evals.cve.detection.layout_check import LayoutCheck
+from evals.cve.detection.layout_observation import observe_layout
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY

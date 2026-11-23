@@ -11,7 +11,8 @@ from evals.cve.detection.calibration_check import (
     check_target,
     passes_calibration_check,
 )
-from evals.cve.detection.layout_check import check_layouts_and_routes, observe_versions
+from evals.cve.detection.layout_observation import observe_versions
+from evals.cve.detection.layout_report import check_layouts_and_routes
 from evals.cve.detection.survey import TargetSurvey, survey_all, survey_one
 from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.failure_text import TYPES_ONLY

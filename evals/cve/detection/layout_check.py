@@ -3,11 +3,10 @@
 The rule gates a fallback launch on a break: launch each version once with a minimal valid empty
 node at each layout path, by node type (the reference arm), and once with the layout, and call it a
 break when the launch or tools/list succeeded without the layout and failed with it, or when a call
-that returned no error without the layout returns one with it (detection-suite-rule.md, Deployment
-layout (A server the layout breaks)). `layout_breaks` is the pure detector over the two collected
-surfaces for one version, `layout_breaks_any` over both versions (a break on either is a break). A
-changed response body (a discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a
-break: only a lost tools/list or a newly-erroring call counts.
+that returned no error without the layout returns one with it. `layout_breaks` is the pure detector
+over the two collected surfaces for one version, `layout_breaks_any` over both versions (a break on
+either is a break). A changed response body (a discovery symlink in a listing, a shifted
+deterministic HEAD SHA) is not a break: only a lost tools/list or a newly-erroring call counts.
 
 The anti-leak guard (`nonce_in_surface`) is a separate pure check of the planted surface,
 implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
@@ -15,42 +14,18 @@ implementing a distinct clause of the rule: a place the server itself reads at l
 appear in the server's ordinary surface. Both are pinned by a golden master. The benign call is not
 run here.
 
-`check_layouts_and_routes` is the Docker orchestration of the calibration check
-(--calibration-check), run before its exploits so the break is reported first. Per target it
-launches, on both the vulnerable and the patched version, the reference arm (a minimal valid empty
-node at each layout path) then the launch its launch-mode field selects (normal, or the fallback);
-it reports the break (on either version) and, on the vulnerable version, the leak (the layout
-check), each kept place's route (the route check) and each unkept layout place's route, labelled not
-kept, which a card records and no decision reads. It gives up (`layout_check_gave_up`) only when a
-target already in the fallback launch-mode cannot start even that launch. It gates nothing on the
-model.
-
 `layout_failure` is the one reading of the result that fails a target, shared by the calibration
-check and by the pre-run checks of a graded run and of a detection holdout run, which observe it
-through `observe_layout`: a give-up, a break under the normal launch (the maintainer sets the
-fallback launch-mode), a nonce in what the route procedure observes on a place whose leak was not
-settled at calibration, or a kept layout place without a route. These are the layout items of the
-check that proves a repair (detection-suite-log.md, version 13).
+check and by the pre-run checks of a graded run and of a detection holdout run. Its items are the
+layout items of the check that proves a repair (detection-suite-log.md, version 13).
 """
 
-import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from rich.markup import escape
+from evals.cve.detection.route_check import RouteObservations, has_route
+from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.places import Place, Places
 
-from evals.cve.detection.calibration_check import report_launch_error
-from evals.cve.detection.route_check import RouteObservations, has_route, route_observations
-from evals.cve.detection.targets import LaunchMode, Target, TargetVersion
-from evals.cve.environments import LaunchShape, connect
-from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.launch_retry import NotLaunched, first_launch
-from evals.cve.places import Place, Places, kept_records
-from evals.eval_display import console
-
-# When a target already in the fallback launch-mode cannot start even the fallback launch, the
-# layout check gives up: the container cannot run the server (detection-suite-rule.md, Deployment
-# layout (A server the layout breaks)).
 _GAVE_UP_REASON = "the container cannot run the server"
 
 
@@ -70,24 +45,10 @@ class VersionObservation:
 
 @dataclass(frozen=True)
 class LayoutCheck:
-    """The result `check_layouts_and_routes` computes inline, exposed so the pre-run checks of a
-    graded run and of a detection holdout run read it directly: the give-up reason (or None),
-    whether the layout breaks either version, the kept places whose nonce surfaces in the vulnerable
-    version's ordinary surface, and the kept layout places left without a route
-    (detection-suite-rule.md, Deployment layout (A place is kept for a target, A server the layout
-    breaks))."""
-
     gave_up: str | None
     breaks: bool
     leaking: list[str]
     unrouted: list[str]
-
-
-async def observe_layout(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
-) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
-    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
 
 
 def layout_check(
@@ -96,10 +57,6 @@ def layout_check(
     vuln: VersionObservation,
     patched: VersionObservation,
 ) -> LayoutCheck:
-    """The layout check's result over the two versions' observations: the give-up reason, the break
-    on either version, the nonce leak on the vulnerable version, and the kept layout places with no
-    route (detection-suite-rule.md, Deployment layout (A place is kept for a target, A server the
-    layout breaks))."""
     gave_up = layout_check_gave_up(target, vuln.planted) or layout_check_gave_up(
         target, patched.planted
     )
@@ -112,9 +69,6 @@ def layout_check(
 
 
 def layout_breaks_any(pairs: Sequence[tuple[RouteObservations, RouteObservations]]) -> bool:
-    """Whether the layout breaks any of the version pairs. The rule launches each version once with
-    and once without the layout, and a break on either version is a break (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks))."""
     return any(layout_breaks(reference, with_layout) for reference, with_layout in pairs)
 
 
@@ -158,42 +112,6 @@ def unrouted_kept_places(records: Sequence[Place], observations: RouteObservatio
     return [place for place in records if not has_route(place, observations)]
 
 
-async def observe_versions(
-    target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
-) -> tuple[VersionObservation, VersionObservation]:
-    """Launch and observe both versions of a target (the reference arm then the planted one on
-    each), the no-LLM observation the layout check reads. `report_detail` sets how much server
-    text the log shows."""
-    observer = _Observer(target, places, report_detail)
-    vuln = await observer.version(TargetVersion.VULNERABLE)
-    patched = await observer.version(TargetVersion.PATCHED)
-    return vuln, patched
-
-
-async def check_layouts_and_routes(
-    targets: list[Target], places: Places, ci: bool = False
-) -> list[str]:
-    """Report each target's layout break, nonce leak and per-layout-place route, and return one
-    failure per target `layout_failure` fails, which the caller fails the maintainer run on (never
-    a gated run)."""
-    console.print(
-        "\n[bold]Layout and route checks[/bold] (no LLM): layout break then discovery route\n"
-    )
-    failures: list[str] = []
-    for target in targets:
-        if ci and target.ci_skip_reason is not None:
-            console.print(f"[yellow]skip[/yellow]  {target.flaw_id}: {target.ci_skip_reason}")
-            continue
-        failure = layout_failure(target, await _check_and_report(target, places))
-        if failure is not None:
-            failures.append(f"{target.flaw_id}: {failure}")
-    if failures:
-        console.print("\n[red]Layout and route checks failed[/red]:")
-        for failure in failures:
-            console.print(f"  {escape(failure)}")
-    return failures
-
-
 def layout_failure(target: Target, check: LayoutCheck) -> str | None:
     """Why the layout check fails a target, or None. A break fails a NORMAL target, calibrated under
     a launch it lost, and keeps a FALLBACK one (detection-suite-rule.md, Deployment layout (A server
@@ -211,21 +129,6 @@ def layout_failure(target: Target, check: LayoutCheck) -> str | None:
     return None
 
 
-async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places)
-    records = kept_records(target.kept_places, places)
-    check = layout_check(target, records, vuln, patched)
-    if check.gave_up is not None:
-        _report_give_up(target.flaw_id, check.gave_up)
-        return check
-    _report_break(target.flaw_id, check.breaks)
-    _report_leaks(target, check.leaking)
-    for place in records:
-        _report_route(target.flaw_id, place, has_route(place, vuln.planted))
-    _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, vuln.planted))
-    return check
-
-
 def layout_routes(
     places: Places, kept: Sequence[str], planted: RouteObservations
 ) -> list[LayoutRoute]:
@@ -237,86 +140,3 @@ def layout_routes(
         for place in places.values()
         if place.coordinates.anchor is not None
     ]
-
-
-def _report_give_up(flaw_id: str, reason: str) -> None:
-    console.print(f"[red]gave up[/red]  {flaw_id}: {reason}")
-
-
-def _report_break(flaw_id: str, breaks: bool) -> None:
-    status = "[red]layout break[/red]" if breaks else "[green]no break[/green]"
-    console.print(f"{status}  {flaw_id}")
-    if breaks:
-        console.print("  the layout breaks the server (set the fallback launch-mode)")
-
-
-def _report_leaks(target: Target, leaking: Sequence[str]) -> None:
-    for place_id in leaking:
-        settled = place_id in target.settled_leaks
-        status = "[yellow]settled nonce leak[/yellow]" if settled else "[red]nonce leak[/red]"
-        console.print(f"{status}  {target.flaw_id}: {place_id} surfaces in the ordinary surface")
-
-
-def _report_route(flaw_id: str, place: Place, routed: bool) -> None:
-    status = "[green]route[/green]" if routed else "[red]no route[/red]"
-    console.print(f"  {status}  {flaw_id} -> {place.id}")
-
-
-def _report_unkept_routes(flaw_id: str, routes: Sequence[LayoutRoute]) -> None:
-    for route in routes:
-        if not route.kept:
-            status = "route" if route.routed else "no route"
-            console.print(f"  [dim]{status}[/dim]  {flaw_id} -> {route.place_id} (not kept)")
-
-
-@dataclass(frozen=True)
-class _Arm:
-    kept: tuple[str, ...]
-    shape: LaunchShape | None
-    version: TargetVersion
-
-
-@dataclass(frozen=True)
-class _Observer:
-    target: Target
-    places: Places
-    report_detail: ReportDetail
-
-    async def version(self, version: TargetVersion) -> VersionObservation:
-        empty = _Arm((), LaunchShape.EMPTY_LAYOUT, version)
-        reference, _ = await self._observe(empty)
-        planted, nonces = await self._observe(_Arm(self.target.kept_places, None, version))
-        return VersionObservation(reference, planted, nonces)
-
-    async def _observe(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
-        observed = await first_launch(lambda: self._launch(arm))
-        return observed if observed is not None else (_failed_observation(), {})
-
-    async def _launch(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
-        # A server that fails to start, or a connection that drops, is a break observation
-        # (tools/list did not succeed), not a benchmark crash: the break detector's criterion
-        # names a failed launch, so catch it here rather than let it reach the exit-4 crash
-        # handler. Only a launch or handshake that fails raises NotLaunched, for a retry: a
-        # failure on a launched server is observed at once. The planted arm reads shape=None, so
-        # the launch-mode field picks the launch (normal, or the fallback).
-        records = kept_records(arm.kept, self.places)
-        with tempfile.TemporaryFile("w+") as server_stderr:
-            launched = False
-            try:
-                async with (
-                    self.target.launched(records, shape=arm.shape, version=arm.version) as planted,
-                    connect(planted.launch, server_stderr) as client,
-                ):
-                    launched = True
-                    observations = await route_observations(self.target, client, planted.launch)
-                return observations, dict(planted.nonces)
-            except Exception as exc:
-                label = f"{self.target.flaw_id} layout check launch error"
-                report_launch_error(label, exc, server_stderr, self.report_detail)
-                if not launched:
-                    raise NotLaunched from exc
-                return _failed_observation(), {}
-
-
-def _failed_observation() -> RouteObservations:
-    return RouteObservations(scope=None, responses=(), call_errored=(), tools_list_succeeded=False)

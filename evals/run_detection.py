@@ -25,7 +25,7 @@ from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.console import print_detection_summary
 from evals.cve.detection.costs import CostPricing
 from evals.cve.detection.judged_cases_export import export_detection_judged_cases
-from evals.cve.detection.layout_check import observe_layout
+from evals.cve.detection.layout_observation import observe_layout
 from evals.cve.detection.markdown import render_markdown
 from evals.cve.detection.measurement import (
     MeasurementSettings,
