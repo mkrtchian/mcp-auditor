@@ -7,18 +7,10 @@ from evals.judge.gate import (
     decide_judge_gate,
     judge_ci_condition_mismatches,
     judge_floor_breaches,
-    observe_case,
 )
-from mcp_auditor.domain.models import EvalVerdict
 
 FAIL_ID, PASS_ID = judge_baselines.FAIL_ID, judge_baselines.PASS_ID
-FAIL, PASS, UNCOVERED = Observation.FAIL, Observation.PASS, Observation.UNCOVERED
-
-
-def test_a_verdict_is_observed_as_itself_and_a_raised_call_as_uncovered():
-    assert observe_case(EvalVerdict.FAIL) == FAIL
-    assert observe_case(EvalVerdict.PASS) == PASS
-    assert observe_case(None) == UNCOVERED
+FAIL, PASS = Observation.FAIL, Observation.PASS
 
 
 def test_conditions_at_the_ci_defaults_do_not_mismatch():

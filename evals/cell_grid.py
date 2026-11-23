@@ -109,7 +109,7 @@ def partial_improvements[K](
         key
         for key, state in states.items()
         if state == CellState.STABLE_INCORRECT
-        and _right_in_some_not_all(key, candidate_runs, Observation(ground_truth[key].value))
+        and _right_in_some_not_all(key, candidate_runs, Observation.of(ground_truth[key]))
     }
 
 

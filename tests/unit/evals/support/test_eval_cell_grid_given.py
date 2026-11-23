@@ -47,7 +47,7 @@ def baseline_runs(
     """Every cell observed correctly in every run, except the overridden ones, where None
     means that run lacks the cell."""
     sequences: dict[Cell, list[Observation | None]] = {
-        cell: [Observation(expected.value)] * runs for cell, expected in MERGED_GROUND_TRUTH.items()
+        cell: [Observation.of(expected)] * runs for cell, expected in MERGED_GROUND_TRUTH.items()
     }
     sequences.update(overrides or {})
     return [

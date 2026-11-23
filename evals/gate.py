@@ -13,6 +13,14 @@ class Observation(StrEnum):
     FAIL = "fail"
     UNCOVERED = "uncovered"
 
+    @classmethod
+    def of(cls, verdict: EvalVerdict | None) -> "Observation":
+        return cls.UNCOVERED if verdict is None else cls(verdict.value)
+
+    @property
+    def verdict(self) -> EvalVerdict | None:
+        return None if self is Observation.UNCOVERED else EvalVerdict(self.value)
+
 
 class CellState(StrEnum):
     STABLE_CORRECT = "stable_correct"
@@ -71,11 +79,7 @@ class RetestRule(BaseModel):
 
 
 def observe(verdicts: VerdictMap, ground_truth: GroundTruth) -> dict[Cell, Observation]:
-    return {cell: _observation_of(verdicts.get(cell)) for cell in ground_truth}
-
-
-def _observation_of(verdict: EvalVerdict | None) -> Observation:
-    return Observation.UNCOVERED if verdict is None else Observation(verdict.value)
+    return {cell: Observation.of(verdicts.get(cell)) for cell in ground_truth}
 
 
 class ProtectedCells(BaseModel):
@@ -123,7 +127,7 @@ def classify[K](
 def _state_of(observations: list[Observation], expected: EvalVerdict) -> CellState:
     if len(set(observations)) > 1:
         return CellState.UNSTABLE
-    if observations[0] == Observation(expected.value):
+    if observations[0] == Observation.of(expected):
         return CellState.STABLE_CORRECT
     return CellState.STABLE_INCORRECT
 

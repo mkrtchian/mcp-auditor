@@ -106,10 +106,6 @@ def compare_cases(
     return apply_declarations(compare(baseline.runs, runs, ground_truth), declared)
 
 
-def observe_case(verdict: EvalVerdict | None) -> Observation:
-    return Observation.UNCOVERED if verdict is None else Observation(verdict.value)
-
-
 def judge_ci_condition_mismatches(conditions: JudgeConditions) -> list[str]:
     """CI passes no --runs nor MCP_AUDITOR_* override, so it runs at the defaults."""
     defaults = Settings.model_construct()

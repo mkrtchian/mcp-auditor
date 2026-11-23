@@ -231,9 +231,9 @@ def _scored_cases(
 ) -> list[tuple[str, CaseResult]]:
     """The labeled cases the judge gave a verdict on, uncovered ones left out."""
     return [
-        (case, (EvalVerdict(run[case].value), expected))
+        (case, (verdict, expected))
         for case, expected in ground_truth_of(fixture).items()
-        if run[case] != Observation.UNCOVERED
+        if (verdict := run[case].verdict) is not None
     ]
 
 

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from evals.gate import CellOutcome, Observation, RetestRule
 from evals.judge.baseline import JudgeBaseline
 from evals.judge.fixture import JudgeCase
-from evals.judge.gate import CaseRuns, compare_cases, observe_case
+from evals.judge.gate import CaseRuns, compare_cases
 from mcp_auditor.domain.models import EvalVerdict
 
 type JudgeCall = Callable[[JudgeCase], Awaitable[EvalVerdict | None]]
@@ -50,10 +50,10 @@ async def retest(context: RetestContext, case: JudgeCase, rule: RetestRule) -> l
     expected = context.ground_truth[case.id]
     observations: list[Observation] = []
     while rule.decide_retests(reproductions(observations, expected)) is None:
-        observations.append(observe_case(await context.judge(case)))
+        observations.append(Observation.of(await context.judge(case)))
     return observations
 
 
 def reproductions(observations: list[Observation], expected: EvalVerdict) -> list[bool]:
     """What the retest rule and the gate read: whether each retest reproduced the flip."""
-    return [observed != Observation(expected.value) for observed in observations]
+    return [observed != Observation.of(expected) for observed in observations]

@@ -12,7 +12,6 @@ from pydantic import AliasChoices, BaseModel, Field
 from evals.gate import Observation, ProtectedCells, RetestRule, protected_cells
 from evals.ground_truth import Cell, GroundTruth, cell_key, parse_cell_key
 from evals.metrics import HoneypotMetrics, KeyedVerdicts, label_scores
-from mcp_auditor.domain.models import EvalVerdict
 
 
 class BaselineStatus(StrEnum):
@@ -142,13 +141,7 @@ def rescore(baseline: Baseline, ground_truth: GroundTruth) -> RescoredBaseline:
 
 
 def verdict_maps_of[K](runs: list[dict[K, Observation]]) -> list[KeyedVerdicts[K]]:
-    return [
-        {
-            cell: None if seen == Observation.UNCOVERED else EvalVerdict(seen.value)
-            for cell, seen in run.items()
-        }
-        for run in runs
-    ]
+    return [{cell: seen.verdict for cell, seen in run.items()} for run in runs]
 
 
 def baseline_integrity(baseline: Baseline, ground_truth: GroundTruth) -> list[str]:

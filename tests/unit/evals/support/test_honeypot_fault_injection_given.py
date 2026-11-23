@@ -111,11 +111,7 @@ def chain_steps_refused() -> FaultedCandidate:
 def metrics_of(candidate: FaultedCandidate) -> HoneypotMetrics:
     """Recall and precision from the observations, as `rescore` computes them."""
     verdict_maps: list[VerdictMap] = [
-        {
-            cell: None if seen == Observation.UNCOVERED else EvalVerdict(seen.value)
-            for cell, seen in run.items()
-        }
-        for run in candidate.runs
+        {cell: seen.verdict for cell, seen in run.items()} for run in candidate.runs
     ]
     consistency, _ = compute_consistency(verdict_maps, MERGED_GROUND_TRUTH)
     return HoneypotMetrics(

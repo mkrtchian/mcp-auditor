@@ -26,7 +26,6 @@ from evals.judge.gate import (
     JudgeGateInput,
     JudgeGateResult,
     decide_judge_gate,
-    observe_case,
 )
 from evals.judge.recording import judge_rescore_refusals
 from evals.judge.retest import JudgeCall, RetestContext, reproductions, retest_flips
@@ -131,7 +130,7 @@ async def _judge_runs(fixture: JudgeFixture, runs: int, judge: JudgeCall) -> Cas
     async def one_run() -> dict[str, Observation]:
         verdicts = await asyncio.gather(*(judge(case) for case in fixture.cases))
         return {
-            case.id: observe_case(verdict)
+            case.id: Observation.of(verdict)
             for case, verdict in zip(fixture.cases, verdicts, strict=True)
         }
 

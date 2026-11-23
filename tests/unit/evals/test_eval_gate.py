@@ -35,6 +35,18 @@ def test_cell_key_round_trips():
     assert parse_cell_key(key) == VULNERABLE_CELL
 
 
+def test_a_verdict_is_observed_as_itself_and_no_verdict_as_uncovered():
+    assert Observation.of(EvalVerdict.FAIL) == FAIL
+    assert Observation.of(EvalVerdict.PASS) == PASS
+    assert Observation.of(None) == UNCOVERED
+
+
+def test_an_observation_reads_back_as_its_verdict_and_uncovered_as_none():
+    assert FAIL.verdict == EvalVerdict.FAIL
+    assert PASS.verdict == EvalVerdict.PASS
+    assert UNCOVERED.verdict is None
+
+
 def test_observe_reads_each_ground_truth_cell_from_the_verdicts():
     verdicts: VerdictMap = {VULNERABLE_CELL: EvalVerdict.FAIL, SAFE_CELL: EvalVerdict.PASS}
 

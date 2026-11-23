@@ -24,7 +24,6 @@ _NO_USAGE = ProviderUsage()
 _SINGLE_STEP_CELL = re.compile(r'the tool "(?P<tool>[^"]+)" shows a \*\*(?P<category>\w+)\*\*')
 _CHAIN_TOOL = re.compile(r'against "(?P<tool>[^"]+)"')
 _CHAIN_CATEGORY = re.compile(r"Target category: (?P<category>\w+)")
-_VERDICTS = {Observation.PASS: EvalVerdict.PASS, Observation.FAIL: EvalVerdict.FAIL}
 
 
 class FixtureJudge:
@@ -62,11 +61,11 @@ class FixtureJudge:
         if cell not in MERGED_GROUND_TRUTH:
             return EvalVerdict.PASS
         run = self._runs[judgments[cell] % len(self._runs)]
-        observation = run.get(cell, Observation.UNCOVERED)
+        verdict = run.get(cell, Observation.UNCOVERED).verdict
         judgments[cell] += 1
-        if observation == Observation.UNCOVERED:
+        if verdict is None:
             raise ProviderRefusal(f"the fixture leaves {cell} uncovered", _NO_USAGE)
-        return _VERDICTS[observation]
+        return verdict
 
 
 def _single_step_cell(prompt: str) -> Cell | None:

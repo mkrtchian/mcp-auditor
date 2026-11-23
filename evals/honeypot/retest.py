@@ -82,6 +82,6 @@ class Retester:
             )
             observed = observe(await self.audit(honeypot), honeypot.ground_truth)
             for cell in pending:
-                expected = Observation(honeypot.ground_truth[cell].value)
+                expected = Observation.of(honeypot.ground_truth[cell])
                 retests[cell].append(observed[cell] != expected)
         return retests
