@@ -129,11 +129,11 @@ async def _json_to_csv(places: Places, client: KitClient) -> None:
     )
 
 
-# The flyto SSRF variants whose sentinel the standard planting cannot bind. Each stands a sentinel
-# in a network holder the server joins, so the server reaches it on loopback (cve_planting's
-# sentinel sits on a bridge, not the server's loopback). They live here, beside the fixture that
-# uses them and never in the shared kit the admission dossier copies, because they are worked
-# exploits named by their CVE.
+# The flyto SSRF variants the standard planting cannot stand: it binds a sentinel to one IPv4
+# address of a holder or gives it a bridge alias, while one variant needs the IPv6 loopback and
+# the other a redirector beside the sentinel. Each stands its own holder, which the server joins.
+# They live here, beside the fixture that uses them and never in the shared kit the admission
+# dossier copies, because they are worked exploits named by their CVE.
 _HOLDER_SLEEP = "2147483647"
 
 

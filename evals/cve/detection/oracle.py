@@ -39,7 +39,7 @@ class TargetInfo(Protocol):
 
 
 class OutOfScopeInfo(Protocol):
-    """A flaw tracked but never run (only catchable with instrumentation)."""
+    """A census flaw the detection acceptance layer reports with its reason and never runs."""
 
     @property
     def flaw_id(self) -> str: ...
