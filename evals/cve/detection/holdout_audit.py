@@ -1,7 +1,7 @@
 """The holdout missed model call and error policy, opposite to acceptance: a run with a missed
 model call stands as a non-detection and is never retried, only an infra failure is retried."""
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Collection
 from dataclasses import dataclass
 
 from evals.cve.audit_attempts import (
@@ -24,7 +24,8 @@ HOLDOUT_INFRA_ATTEMPTS = 3  # one try, two retries
 @dataclass(frozen=True)
 class IncompleteRun:
     """A run with a missed model call and no detection, counted as not detected and never
-    retried. The report is kept only for its usage and tools count."""
+    retried. Its report gives the usage billed, the tools count and the causes of its missed
+    model calls."""
 
     report: AuditReport
     health: ServerHealth = NO_INCIDENTS
@@ -36,6 +37,11 @@ class DroppedRun:
     run."""
 
     cause: NotRunCause
+
+    @classmethod
+    def from_causes(cls, causes: Collection[NotRunCause]) -> "DroppedRun":
+        """Throttled, else provider error, else launch failure."""
+        return cls(next(cause for cause in _DROP_PRECEDENCE if cause in causes))
 
 
 async def holdout_audit(
@@ -63,7 +69,7 @@ async def holdout_audit(
             f"[yellow]{target.flaw_id}: {_failure(outcome)},"
             f" attempt {number}/{HOLDOUT_INFRA_ATTEMPTS}[/yellow]"
         )
-    return DroppedRun(next(cause for cause in _DROP_PRECEDENCE if cause in causes))
+    return DroppedRun.from_causes(causes)
 
 
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)

@@ -5,59 +5,48 @@ A sibling of the gated session of the acceptance layer (`evals.cve.detection.ses
 no baseline, no judged-case export, the opposite missed model call policy (`holdout_audit`). The
 targets are passed in, never read from `HOLDOUT_TARGETS` here, so the tests hand it crafted ones.
 The heavy I/O is grouped in `HoldoutDeps`, faked by the unit tests and built from the live
-settings by `default_deps`.
+settings by `holdout_command_deps.default_deps`.
 """
 
 import dataclasses
 from collections.abc import Awaitable, Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any, Protocol
 
-from evals.concurrency import bounded
-from evals.cve.closed_network import check_closed_network_support
-from evals.cve.detection.audit import attempt_once
 from evals.cve.detection.baseline import fixture_fingerprint, grammar_fingerprint
-from evals.cve.detection.calibration_check import CheckOptions, check_target
 from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
-from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun, holdout_audit
+from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import (
     DROPPED_RUN_REASONS,
     DetectionHoldoutRunResult,
     HoldoutTargetResult,
-    NotRunCause,
     NotRunTarget,
 )
-from evals.cve.detection.layout_check import LayoutCheck, observe_layout
+from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
-from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
-from evals.cve.images import backend_image_ids, image_ids, image_tag
-from evals.cve.launch_audit import RunOverrides, build_auditor
+from evals.cve.images import image_tag
 from evals.cve.places import Places, kept_records
 from evals.cve.run_files import RunInterrupted
 from evals.cve.run_images import (
-    DOCKER_SWEEP,
     ContainerSweep,
-    rebuild_images,
     refuse_running_containers,
     refuse_without_closed_networks,
     sweep_containers,
     target_services,
 )
 from evals.cve.run_interruption import first_failure, sibling_runs
-from evals.eval_session import Refused, TreeState, read_tree
+from evals.eval_session import Refused, TreeState
 from evals.model_conditions import ModelConditions
-from evals.session_usage import SessionThrottles
 from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
 
 HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lowerable to 1 and logged
 HOLDOUT_BUDGET = 10  # detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
 HOLDOUT_CONCURRENCY = 6
-_DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
 
 type Audit = Callable[[Target], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
@@ -79,73 +68,48 @@ class HoldoutDeps:
     check_networks: Callable[[], None]
 
 
-class RunHoldoutTargets(Protocol):
-    def __call__(
-        self,
-        targets: Sequence[Target],
-        disclosure_dates: Mapping[str, date],
-        conditions: HoldoutConditions,
-        settings: Settings,
-        places: Places,
-        census_commit: str,
-        /,
-        *,
-        runs: int = HOLDOUT_RUNS,
-        concurrency: int = HOLDOUT_CONCURRENCY,
-        deps: HoldoutDeps | None = None,
-    ) -> Coroutine[Any, Any, DetectionHoldoutRunResult]: ...
-
-
-class HoldoutDepsFactory(Protocol):
-    def __call__(
-        self, places: Places, overrides: RunOverrides, concurrency: int, /
-    ) -> HoldoutDeps: ...
-
-
 @dataclass(frozen=True)
-class _RunContext:
+class HoldoutRunInputs:
+    targets: Sequence[Target]
+    disclosure_dates: Mapping[str, date]
+    census_commit: str
     conditions: HoldoutConditions
     settings: Settings
     places: Places
-    disclosure_dates: Mapping[str, date]
-    model_ids: list[str]
     runs: int
     concurrency: int
-    census_commit: str
+
+    @property
+    def model_ids(self) -> list[str]:
+        return list(
+            dict.fromkeys([self.settings.resolve_model(), self.settings.resolve_judge_model()])
+        )
+
+
+class RunHoldoutTargets(Protocol):
+    def __call__(
+        self, inputs: HoldoutRunInputs, /, *, deps: HoldoutDeps
+    ) -> Coroutine[Any, Any, DetectionHoldoutRunResult]: ...
 
 
 async def run_holdout_targets(
-    targets: Sequence[Target],
-    disclosure_dates: Mapping[str, date],
-    conditions: HoldoutConditions,
-    settings: Settings,
-    places: Places,
-    census_commit: str,
-    *,
-    runs: int = HOLDOUT_RUNS,
-    concurrency: int = HOLDOUT_CONCURRENCY,
-    deps: HoldoutDeps | None = None,
+    inputs: HoldoutRunInputs, *, deps: HoldoutDeps
 ) -> DetectionHoldoutRunResult:
     _refuse_tracing()
-    _refuse_tools_filter(targets)
-    _refuse_missing_census(targets, disclosure_dates)
-    _refuse_unknown_places(targets, places)
-    model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
-    ctx = _RunContext(
-        conditions, settings, places, disclosure_dates, model_ids, runs, concurrency, census_commit
-    )
-    conditions.require_ready(model_ids)
-    deps = deps or default_deps(places, RunOverrides.of_holdout(conditions), concurrency)
+    _refuse_tools_filter(inputs.targets)
+    _refuse_missing_census(inputs.targets, inputs.disclosure_dates)
+    _refuse_unknown_places(inputs.targets, inputs.places)
+    inputs.conditions.require_ready(inputs.model_ids)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
     refuse_without_closed_networks(deps.check_networks)
-    services = target_services(list(targets))
+    services = target_services(list(inputs.targets))
     tags = [image_tag(service) for service in services]
     _refuse_running_containers(deps, tags)
     deps.rebuild(services)
     _refuse_running_containers(deps, tags)
     try:
-        return await _run_surviving(targets, deps, ctx, tree)
+        return await _run_surviving(inputs, deps, tree)
     finally:
         sweep_containers(tags, deps.sweep.running_containers, deps.sweep.remove_containers)
 
@@ -155,13 +119,13 @@ def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
 
 
 async def _run_surviving(
-    targets: Sequence[Target], deps: HoldoutDeps, ctx: _RunContext, tree: TreeState
+    inputs: HoldoutRunInputs, deps: HoldoutDeps, tree: TreeState
 ) -> DetectionHoldoutRunResult:
-    pre_run = await check_before_run(targets, deps.check, deps.layout)
-    assembled, dropped, failure = await _run_all(pre_run.surviving, deps, ctx)
+    pre_run = await check_before_run(inputs.targets, deps.check, deps.layout)
+    assembled, dropped, failure = await _run_all(pre_run.surviving, deps, inputs)
     all_not_run = [*pre_run.not_run, *dropped]
     if failure is not None:
-        partial = _assemble_run(ctx, deps, assembled, all_not_run, tree)
+        partial = _assemble_run(inputs, deps, assembled, all_not_run, tree)
         raise RunInterrupted(
             dataclasses.replace(partial, partial=True, second_pass=pre_run.second_pass), failure
         )
@@ -170,7 +134,7 @@ async def _run_surviving(
             "detection holdout run refused",
             ["no target survived the pre-run check", *(entry.reason for entry in all_not_run)],
         )
-    result = _assemble_run(ctx, deps, assembled, all_not_run, tree)
+    result = _assemble_run(inputs, deps, assembled, all_not_run, tree)
     return dataclasses.replace(result, second_pass=pre_run.second_pass)
 
 
@@ -219,47 +183,16 @@ def _refuse_dirty_tree(tree: TreeState) -> None:
         )
 
 
-def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:
-    auditor = dataclasses.replace(build_auditor(HOLDOUT_BUDGET), report_detail=TYPES_ONLY)
-    throttles = SessionThrottles()
-
-    async def audit(target: Target) -> GradedAudit | IncompleteRun | DroppedRun:
-        return await holdout_audit(
-            target, lambda: attempt_once(target, auditor, throttles, places, overrides)
-        )
-
-    async def check(target: Target) -> list[str]:
-        return await check_target(target, places, options=CheckOptions(report_detail=TYPES_ONLY))
-
-    async def layout(target: Target) -> LayoutCheck:
-        return await observe_layout(target, places, report_detail=TYPES_ONLY)
-
-    return HoldoutDeps(
-        bounded(audit, concurrency),
-        bounded(check, concurrency),
-        bounded(layout, concurrency),
-        rebuild_images,
-        image_ids,
-        backend_image_ids,
-        read_tree,
-        lambda: datetime.now(UTC).isoformat(),
-        lambda audits: None,
-        lambda: throttles.requests,
-        DOCKER_SWEEP,
-        check_closed_network_support,
-    )
-
-
 async def _run_all(
-    surviving: Sequence[Target], deps: HoldoutDeps, ctx: _RunContext
+    surviving: Sequence[Target], deps: HoldoutDeps, inputs: HoldoutRunInputs
 ) -> tuple[list[tuple[Target, HoldoutTargetResult]], list[NotRunTarget], BaseException | None]:
     """The finished targets, assembled or dropped, and the exception that stopped the run, if
     any: a first exception out of a target's runs cancels every target still in flight."""
-    deps.announce_audits(len(surviving) * ctx.runs)
+    deps.announce_audits(len(surviving) * inputs.runs)
     finished, failure = await first_failure(
-        surviving, lambda target: _run_target(target, deps.audit, ctx.runs)
+        surviving, lambda target: _run_target(target, deps.audit, inputs.runs)
     )
-    prices = holdout_prices(ctx.conditions, ctx.settings)
+    prices = holdout_prices(inputs.conditions, inputs.settings)
     assembled: list[tuple[Target, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
     for target, outcomes in finished:
@@ -267,7 +200,8 @@ async def _run_all(
             reason = DROPPED_RUN_REASONS[outcomes.cause]
             dropped.append(NotRunTarget(target.flaw_id, reason, outcomes.cause))
         else:
-            result = assemble_target(target, outcomes, ctx.disclosure_dates[target.flaw_id], prices)
+            disclosure_date = inputs.disclosure_dates[target.flaw_id]
+            result = assemble_target(target, outcomes, disclosure_date, prices)
             assembled.append((target, result))
     return assembled, dropped, failure
 
@@ -277,14 +211,13 @@ async def _run_target(
 ) -> list[GradedAudit | IncompleteRun] | DroppedRun:
     outcomes = await sibling_runs(runs, lambda: audit(target))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
-    for cause in _DROP_PRECEDENCE:
-        if cause in causes:
-            return DroppedRun(cause)
+    if causes:
+        return DroppedRun.from_causes(causes)
     return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
 
 
 def _assemble_run(
-    ctx: _RunContext,
+    inputs: HoldoutRunInputs,
     deps: HoldoutDeps,
     assembled: Sequence[tuple[Target, HoldoutTargetResult]],
     not_run: list[NotRunTarget],
@@ -293,17 +226,17 @@ def _assemble_run(
     targets = [target for target, _ in assembled]
     results = [result for _, result in assembled]
     return DetectionHoldoutRunResult(
-        runs=ctx.runs,
+        runs=inputs.runs,
         budget=HOLDOUT_BUDGET,
-        **ModelConditions.of(ctx.settings).model_dump(),
-        cutoffs={model_id: ctx.conditions.cutoffs[model_id] for model_id in ctx.model_ids},
-        chain_budget=ctx.conditions.chain_budget,
-        max_chain_steps=ctx.conditions.max_chain_steps,
-        tool_call_timeout=ctx.conditions.tool_call_timeout,
+        **ModelConditions.of(inputs.settings).model_dump(),
+        cutoffs={model_id: inputs.conditions.cutoffs[model_id] for model_id in inputs.model_ids},
+        chain_budget=inputs.conditions.chain_budget,
+        max_chain_steps=inputs.conditions.max_chain_steps,
+        tool_call_timeout=inputs.conditions.tool_call_timeout,
         grammar_fingerprint=grammar_fingerprint(),
-        fixture_fingerprints={t.flaw_id: fixture_fingerprint(t, ctx.places) for t in targets},
+        fixture_fingerprints={t.flaw_id: fixture_fingerprint(t, inputs.places) for t in targets},
         commit=tree.commit,
-        census_commit=ctx.census_commit,
+        census_commit=inputs.census_commit,
         image_ids={
             **deps.image_ids(target_services(targets)),
             **deps.backend_image_ids(_backend_images(targets)),
@@ -313,8 +246,8 @@ def _assemble_run(
         not_run=not_run,
         incomplete_run_count=sum(result.incomplete_runs for result in results),
         total_cost=sum(result.run_cost for result in results),
-        prices_as_of=ctx.conditions.prices_as_of,
-        concurrency=ctx.concurrency,
+        prices_as_of=inputs.conditions.prices_as_of,
+        concurrency=inputs.concurrency,
         throttled_requests=deps.throttled_requests(),
     )
 

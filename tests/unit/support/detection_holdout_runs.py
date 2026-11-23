@@ -8,7 +8,7 @@ from typing import Any
 import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.detection.holdout_run import HoldoutDeps, run_holdout_targets
+from evals.cve.detection.holdout_run import HoldoutDeps, HoldoutRunInputs, run_holdout_targets
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
@@ -159,17 +159,17 @@ async def run(
     """`dates=None` discloses every target on 2026-01-01."""
     if dates is None:
         dates = {target.flaw_id: date(2026, 1, 1) for target in targets}
-    return await run_holdout_targets(
-        targets,
-        dates,
-        ready_conditions(),
-        SETTINGS,
-        load_places(DETECTION_PLACES),
+    inputs = HoldoutRunInputs(
+        targets=targets,
+        disclosure_dates=dates,
         census_commit="cafe",
+        conditions=ready_conditions(),
+        settings=SETTINGS,
+        places=load_places(DETECTION_PLACES),
         runs=runs,
         concurrency=concurrency,
-        deps=deps,
     )
+    return await run_holdout_targets(inputs, deps=deps)
 
 
 def ready_conditions() -> HoldoutConditions:

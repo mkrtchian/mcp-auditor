@@ -28,7 +28,12 @@ from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_report import build_report
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.detection.holdout_run import HOLDOUT_RUNS, HoldoutDeps
+from evals.cve.detection.holdout_run import (
+    HOLDOUT_CONCURRENCY,
+    HOLDOUT_RUNS,
+    HoldoutDeps,
+    HoldoutRunInputs,
+)
 from evals.cve.detection.targets import Target
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
@@ -88,8 +93,13 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.set_defaults(command=_run)
     run.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
-    run.add_argument("--runs", type=positive_int, default=None, help="default 3, lowerable to 1")
-    run.add_argument("--concurrency", type=positive_int, default=6)
+    run.add_argument(
+        "--runs",
+        type=positive_int,
+        default=HOLDOUT_RUNS,
+        help=f"default {HOLDOUT_RUNS}, lowerable to 1",
+    )
+    run.add_argument("--concurrency", type=positive_int, default=HOLDOUT_CONCURRENCY)
     run.add_argument("--census", type=Path, default=CENSUS_PATH)
     _add_calibration_check(commands)
     return parser
@@ -174,19 +184,19 @@ def _audit_drawn_targets(
     holdout_deps = deps.holdout_deps(
         places, RunOverrides.of_holdout(ready.conditions), args.concurrency
     )
+    inputs = HoldoutRunInputs(
+        targets=deps.drawn,
+        disclosure_dates=disclosure_dates,
+        census_commit=deps.last_commit(args.census),
+        conditions=ready.conditions,
+        settings=ready.settings,
+        places=places,
+        runs=args.runs,
+        concurrency=args.concurrency,
+    )
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
-            deps.run_targets(
-                deps.drawn,
-                disclosure_dates,
-                ready.conditions,
-                ready.settings,
-                places,
-                deps.last_commit(args.census),
-                runs=args.runs if args.runs is not None else HOLDOUT_RUNS,
-                concurrency=args.concurrency,
-                deps=_tracked(holdout_deps, AuditProgress(bar)),
-            )
+            deps.run_targets(inputs, deps=_tracked(holdout_deps, AuditProgress(bar)))
         )
 
 
