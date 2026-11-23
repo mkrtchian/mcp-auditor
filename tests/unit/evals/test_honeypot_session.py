@@ -68,7 +68,7 @@ def test_a_run_without_baseline_nor_recording_is_not_refused():
 def test_a_baseline_at_other_conditions_names_the_mismatch():
     session = honeypot_sessions.a_session(
         baseline=honeypot_sessions.a_baseline_at_ci_conditions(),
-        conditions=honeypot_sessions.ci_conditions(budget=7),
+        conditions=honeypot_sessions.ci_conditions(test_budget=7),
     )
 
     reasons = pre_run_refusals(session, given.LABELS)
@@ -134,7 +134,7 @@ def test_recording_on_a_dirty_tree_is_refused():
 
 def test_recording_at_other_ci_conditions_is_refused():
     session = honeypot_sessions.a_session(
-        tree=working_trees.a_clean_tree(), conditions=honeypot_sessions.ci_conditions(budget=7)
+        tree=working_trees.a_clean_tree(), conditions=honeypot_sessions.ci_conditions(test_budget=7)
     )
 
     reasons = pre_run_refusals(session, given.LABELS)
@@ -157,7 +157,7 @@ def test_recording_over_an_unconfirmed_baseline_at_another_commit_is_refused():
 
 
 def test_a_budget_other_than_the_ci_one_is_named():
-    mismatches = ci_condition_mismatches(honeypot_sessions.ci_conditions(budget=7))
+    mismatches = ci_condition_mismatches(honeypot_sessions.ci_conditions(test_budget=7))
 
     assert mismatches == ["budget: CI runs 10, this run 7"]
 

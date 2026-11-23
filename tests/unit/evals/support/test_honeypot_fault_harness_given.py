@@ -180,7 +180,8 @@ async def verdicts_of(judge: LLMPort, calls: int) -> list[EvalVerdict]:
     ]
 
 
-FAULT_INJECTION_BUDGET = 5  # One case per category, as in the fault injection integration test.
+# One case per category, as in the fault injection integration test.
+FAULT_INJECTION_TEST_BUDGET = 5
 MANY_TOOLS = [
     ToolDefinition(name=f"tool_{index}", input_schema={"type": "object"}) for index in range(20)
 ]
@@ -216,4 +217,4 @@ def a_faulted_audit_losing_detections(clients: dict[str, GatedClient]) -> Faulte
         for honeypot in HONEYPOTS
         if honeypot.name in clients
     }
-    return FaultedAudit(fault, models, FAULT_INJECTION_BUDGET, servers)
+    return FaultedAudit(fault, models, FAULT_INJECTION_TEST_BUDGET, servers)

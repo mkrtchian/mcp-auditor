@@ -39,7 +39,7 @@ from mcp_auditor.domain.models import AuditCategory, TestCaseBatch, ToolDefiniti
 from mcp_auditor.domain.ports import MCPClientPort
 from mcp_auditor.graph.prompts import build_attack_generation_prompt
 
-CAPTURE_BUDGET = 10
+CAPTURE_TEST_BUDGET = 10
 JUDGE_SAMPLE_SIZE = 60
 JUDGE_SAMPLE_SEED = 20260924
 CORPUS_PATH = REPO_ROOT / "evals" / "fixtures" / "probe_corpus.json"
@@ -101,7 +101,7 @@ async def _capture(settings: Settings) -> ProbeCorpus:
         captured_at=datetime.now(UTC).isoformat(timespec="seconds"),
         commit=_head_commit(),
         reference=ModelConditions.of(settings),
-        budget=CAPTURE_BUDGET,
+        budget=CAPTURE_TEST_BUDGET,
         judge_sample_seed=JUDGE_SAMPLE_SEED,
         judge_calls_captured=sum(call.role == "judge" for call in honeypot_calls),
         calls=[
@@ -120,7 +120,7 @@ async def _capture_honeypot_calls(settings: Settings) -> list[ProbeCall]:
     )
     for honeypot in HONEYPOTS:
         console.print(f"Auditing [bold]{honeypot.name}[/bold]...")
-        await audit_honeypot(capturing, honeypot, CAPTURE_BUDGET)
+        await audit_honeypot(capturing, honeypot, CAPTURE_TEST_BUDGET)
     return sink
 
 
@@ -160,7 +160,7 @@ def _target_generation_calls(tools: list[ToolDefinition]) -> list[ProbeCall]:
             source="cve",
             prompt=build_attack_generation_prompt(
                 tool=tool,
-                budget=CAPTURE_BUDGET,
+                budget=CAPTURE_TEST_BUDGET,
                 categories=list(AuditCategory),
                 attack_context=None,
             ),

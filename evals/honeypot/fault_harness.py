@@ -60,11 +60,11 @@ def fixture_refusals(fixture: Baseline) -> list[str]:
 class Harness:
     fixture: Baseline
     base_models: AuditModels
-    budget: int
+    test_budget: int
 
     async def inject(self, fault: Fault) -> FaultResult:
         async with _connected_honeypots() as servers:
-            audit = FaultedAudit(fault, fault.models(self.base_models), self.budget, servers)
+            audit = FaultedAudit(fault, fault.models(self.base_models), self.test_budget, servers)
             outcome = await audit.runs()
             retester = Retester(audit.retest, HONEYPOTS, announce=_ignore, warn=_ignore)
             paired = await decide_runs(self._gate_basis(GateMode.PAIRED, fault), outcome, retester)
@@ -117,7 +117,7 @@ class FaultedAudit:
 
     fault: Fault
     models: AuditModels
-    budget: int
+    test_budget: int
     servers: Mapping[str, ConnectedHoneypot]
     audits: "itertools.count[int]" = field(default_factory=itertools.count)
 
@@ -136,7 +136,7 @@ class FaultedAudit:
         return self.fault.degrade(verdicts, index)
 
     async def _report(self, honeypot: HoneypotConfig) -> AuditReport:
-        return await audit_connected(self.models, self.servers[honeypot.name], self.budget)
+        return await audit_connected(self.models, self.servers[honeypot.name], self.test_budget)
 
 
 def _ignore(_message: str) -> None:

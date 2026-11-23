@@ -42,7 +42,7 @@ from mcp_auditor.config import Settings
 
 BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot.json"
 DEFAULT_RUNS = 3
-DEFAULT_BUDGET = 10
+DEFAULT_TEST_BUDGET = 10
 DEFAULT_CONCURRENCY = 9
 
 
@@ -50,7 +50,7 @@ DEFAULT_CONCURRENCY = 9
 class HoneypotOptions:
     settings: Settings
     runs: int
-    budget: int
+    test_budget: int
     report: str
     record_baseline: bool
     no_baseline: bool
@@ -138,7 +138,7 @@ def _load_committed_baseline(path: Path) -> Baseline | None:
 def candidate_conditions(options: HoneypotOptions) -> BaselineConditions:
     return BaselineConditions(
         runs=options.runs,
-        budget=options.budget,
+        budget=options.test_budget,
         **ModelConditions.of(options.settings).model_dump(),
         ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
         fixtures={
@@ -184,7 +184,7 @@ def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
     """CI passes no --runs, --budget nor MCP_AUDITOR_* override, so it runs at the defaults."""
     expected = {
         "runs": DEFAULT_RUNS,
-        "budget": DEFAULT_BUDGET,
+        "budget": DEFAULT_TEST_BUDGET,
         **ModelConditions.of(Settings.model_construct()).model_dump(),
     }
     actual = conditions.model_dump()

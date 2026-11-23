@@ -60,7 +60,7 @@ from evals.cve.run_files import (
     write_result,
 )
 from evals.eval_session import Refused, last_commit
-from evals.honeypot.runs import tracing_enabled
+from evals.tracing import tracing_enabled
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"

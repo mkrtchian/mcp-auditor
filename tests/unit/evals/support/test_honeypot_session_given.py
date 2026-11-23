@@ -3,9 +3,9 @@ from pathlib import Path
 from evals.eval_session import WorkingTree
 from evals.ground_truth import GroundTruth
 from evals.honeypot.session import (
-    DEFAULT_BUDGET,
     DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
+    DEFAULT_TEST_BUDGET,
     HoneypotOptions,
 )
 from mcp_auditor.config import Settings
@@ -31,7 +31,7 @@ def options(settings: Settings | None = None) -> HoneypotOptions:
     return HoneypotOptions(
         settings=settings or Settings.model_construct(),
         runs=DEFAULT_RUNS,
-        budget=DEFAULT_BUDGET,
+        test_budget=DEFAULT_TEST_BUDGET,
         report="",
         record_baseline=False,
         no_baseline=False,

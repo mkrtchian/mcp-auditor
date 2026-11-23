@@ -34,8 +34,8 @@ class HoneypotConfig:
     max_chain_steps: int = 3
 
     @property
-    def args(self) -> list[str]:
-        return ["run", "python", str(self.server)]
+    def launch(self) -> ServerLaunch:
+        return ServerLaunch.unconfined("uv", ["run", "python", str(self.server)])
 
 
 HONEYPOTS = [
@@ -96,33 +96,33 @@ def models_for(settings: Settings) -> AuditModels:
     return AuditModels(llm=create_llm(settings), judge_llm=create_judge_llm(settings))
 
 
-async def audit_honeypot(models: AuditModels, honeypot: HoneypotConfig, budget: int) -> AuditReport:
+async def audit_honeypot(
+    models: AuditModels, honeypot: HoneypotConfig, test_budget: int
+) -> AuditReport:
     async with connected(honeypot) as server:
-        return await audit_connected(models, server, budget)
+        return await audit_connected(models, server, test_budget)
 
 
 @asynccontextmanager
 async def connected(honeypot: HoneypotConfig) -> AsyncGenerator[ConnectedHoneypot]:
     devnull = open(os.devnull, "w")  # noqa: SIM115
     try:
-        async with StdioMCPClient.connect(
-            ServerLaunch.unconfined("uv", honeypot.args), errlog=devnull
-        ) as mcp_client:
+        async with StdioMCPClient.connect(honeypot.launch, errlog=devnull) as mcp_client:
             yield ConnectedHoneypot(honeypot, mcp_client)
     finally:
         devnull.close()
 
 
 async def audit_connected(
-    models: AuditModels, honeypot: ConnectedHoneypot, budget: int
+    models: AuditModels, honeypot: ConnectedHoneypot, test_budget: int
 ) -> AuditReport:
     config = honeypot.config
     graph = build_graph(models.llm, AuditedServer(honeypot.client), judge_llm=models.judge_llm)
     with one_audit():
         result = await graph.ainvoke(
             {
-                "server_command": f"uv {' '.join(config.args)}",
-                "test_budget": budget,
+                "server_command": config.launch.server_command,
+                "test_budget": test_budget,
                 "attack_context": AttackContext(),
                 "chain_budget": config.chain_budget,
                 "max_chain_steps": config.max_chain_steps,

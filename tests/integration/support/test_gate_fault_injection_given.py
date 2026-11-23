@@ -5,7 +5,8 @@ from evals.honeypots import AuditModels
 from tests.fakes.fixture_judge import FixtureJudge
 from tests.fakes.scripted_audit_model import ScriptedAuditModel
 
-BUDGET = 5  # One case per category: a full batch holds the budget, so no retry in the healthy run.
+# One case per category: a full batch holds the budget, so no retry in the healthy run.
+TEST_BUDGET = 5
 HEALTHY = Fault("healthy", Expectation(GREEN, GREEN, False, ()))
 
 
@@ -28,4 +29,4 @@ def a_harness(fixture: Baseline) -> Harness:
     """Each scenario gets its own harness: the fakes count judgments per cell, so a shared one
     would read the fixture's runs out of step."""
     models = AuditModels(llm=ScriptedAuditModel(), judge_llm=FixtureJudge(fixture))
-    return Harness(fixture, models, BUDGET)
+    return Harness(fixture, models, TEST_BUDGET)

@@ -31,9 +31,9 @@ from evals.honeypot.retest import RetestAudit, Retester
 from evals.honeypot.runs import AnnouncedAudit, run_all
 from evals.honeypot.session import (
     BASELINE_PATH,
-    DEFAULT_BUDGET,
     DEFAULT_CONCURRENCY,
     DEFAULT_RUNS,
+    DEFAULT_TEST_BUDGET,
     HoneypotOptions,
     HoneypotSession,
     open_session,
@@ -100,7 +100,7 @@ def _options(args: argparse.Namespace) -> HoneypotOptions:
     return HoneypotOptions(
         settings=load_settings(),
         runs=args.runs,
-        budget=args.budget,
+        test_budget=args.budget,
         report=args.report,
         record_baseline=args.record_baseline,
         no_baseline=args.no_baseline,
@@ -125,7 +125,7 @@ def _gate_grid(baseline: Baseline | None, result: HoneypotRunResult) -> GateGrid
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the honeypot suite")
     parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
-    parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET)
+    parser.add_argument("--budget", type=int, default=DEFAULT_TEST_BUDGET)
     parser.add_argument("--report", type=str, default=DEFAULT_REPORT_PATH)
     parser.add_argument(
         "--concurrency",

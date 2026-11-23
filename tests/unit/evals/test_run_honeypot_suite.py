@@ -1,9 +1,7 @@
-import pytest
-
 import tests.unit.evals.support.test_run_honeypot_suite_given as given
 from evals.gate import RetestRule
 from evals.honeypot.retest import Retester
-from evals.honeypot.runs import run_all, tracing_enabled
+from evals.honeypot.runs import run_all
 from evals.run_honeypot_suite import counted_audit, parse_args, retest_audit
 from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause
@@ -44,41 +42,6 @@ async def test_a_retest_holding_a_throttled_model_call_is_a_failed_retest():
     )
 
     assert failures == ["a retest of alpha failed"]
-
-
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        ("true", True),
-        ("True", True),
-        ("1", True),
-        ("yes", True),
-        ("on", True),
-        (" TRUE ", True),
-        ("false", False),
-        ("0", False),
-        ("no", False),
-        ("", False),
-    ],
-)
-def test_tracing_enabled_parses_the_flag(
-    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
-) -> None:
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-    monkeypatch.setenv("LANGSMITH_TRACING", value)
-    assert tracing_enabled() is expected
-
-
-def test_tracing_enabled_is_false_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
-    assert tracing_enabled() is False
-
-
-def test_tracing_enabled_reads_langchain_v2(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
-    assert tracing_enabled() is True
 
 
 def test_the_no_baseline_flag_is_read():

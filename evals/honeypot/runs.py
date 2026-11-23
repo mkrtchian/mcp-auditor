@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 import traceback
 from collections.abc import Awaitable, Callable
@@ -13,6 +12,7 @@ from evals import eval_display as display
 from evals.honeypot.decision import CompletedRun, RunsOutcome
 from evals.honeypots import HONEYPOTS, HoneypotConfig, audit_honeypots
 from evals.metrics import RunDetail, VerdictMap
+from evals.tracing import tracing_enabled
 from mcp_auditor.domain.models import AuditReport
 
 AnnouncedAudit = Callable[[HoneypotConfig, str | None], Awaitable[AuditReport]]
@@ -81,15 +81,6 @@ async def _traced(audit: Awaitable[AuditReport], trace_ids: list[UUID]) -> Audit
     if collector.traced_runs:
         trace_ids.append(collector.traced_runs[0].id)
     return report
-
-
-def tracing_enabled() -> bool:
-    return _tracing_flag("LANGSMITH_TRACING") or _tracing_flag("LANGCHAIN_TRACING_V2")
-
-
-def _tracing_flag(name: str) -> bool:
-    # A set-but-off flag ("false", "0") must read as off: bool() of a non-empty string is True.
-    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _post_langsmith_feedback(run_detail: RunDetail, trace_ids: list[UUID]) -> None:
