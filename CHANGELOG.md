@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The progress display shows again, during an audit, the planning of the attack chains, each chain step executed and each chain's verdict, which it had stopped printing.
 - A declared flip naming an unknown judge case is now reported as naming no judge case of the fixture, not no cell of the ground truth.
 - The detection and nuisance holdout runs refuse to start, and the honeypot suite posts its LangSmith feedback, under every variable LangSmith turns tracing on from: `LANGSMITH_TRACING_V2` and `LANGCHAIN_TRACING` were let through, so a holdout run could be traced.
+- `python -m evals.run_detection_holdout calibration-check` titles a misconfigured detection fixture of a holdout target "Crashed:", matching its exit 4, where it titled it "Refused:".
 
 ## [0.5.0] - 2026-11-22
 

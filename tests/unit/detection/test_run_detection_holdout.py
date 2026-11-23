@@ -26,11 +26,17 @@ def test_the_calibration_check_without_a_drawn_target_exits_zero_and_says_so(
     assert "no holdout target is drawn" in capsys.readouterr().out
 
 
-def test_the_calibration_check_crashes_to_four_on_a_fixture_config_error():
+def test_the_calibration_check_crashes_to_four_on_a_fixture_config_error(
+    capsys: pytest.CaptureFixture[str],
+):
     deps = given.a_drawn_command(FILESYSTEM, checks=deps_with(raises=True))
 
     assert run_detection_holdout.main(["calibration-check"], deps) == (
         run_detection_holdout.CRASHED_EXIT
+    )
+    assert (
+        "Crashed: a detection fixture of a holdout target is misconfigured."
+        in capsys.readouterr().out
     )
 
 

@@ -223,7 +223,7 @@ def _calibration_check(args: argparse.Namespace, deps: HoldoutCommandDeps) -> in
         # is a crash, not a target out of calibration (exit 1) nor the malformed census main
         # reports (exit 3).
         display.print_refusal(
-            "Refused: a detection fixture of a holdout target is misconfigured.", [str(error)]
+            "Crashed: a detection fixture of a holdout target is misconfigured.", [str(error)]
         )
         return CRASHED_EXIT
 
