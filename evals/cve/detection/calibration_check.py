@@ -97,7 +97,7 @@ async def check_target(
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
     reasons = not_live_reasons(
-        _graded(target, vulnerable), _units(vulnerable.exploits), _unit(vulnerable.benign)
+        _graded(target, vulnerable), _units(vulnerable.exploits), unit_of(vulnerable.benign)
     )
     patched = await first_launch(lambda: exercise.version(TargetVersion.PATCHED))
     if patched is None:
@@ -190,14 +190,21 @@ class _Exercise:
         return _Exercised(planted.nonces, exploits, benign)
 
     async def _calls(self, client: MCPClientPort) -> tuple[list[Exchange], list[list[Exchange]]]:
-        benign = ExchangeLog(client)
-        await self.target.benign(self.places, benign)
-        exploits: list[list[Exchange]] = []
-        for exploit in self.target.exploits:
-            log = ExchangeLog(client)
-            await exploit(self.places, log)
-            exploits.append(log.exchanges)
-        return benign.exchanges, exploits
+        benign = await logged_exchanges(self.target.benign, self.places, client)
+        exploits = [
+            await logged_exchanges(exploit, self.places, client) for exploit in self.target.exploits
+        ]
+        return benign, exploits
+
+
+async def logged_exchanges(
+    call: Callable[[Places, MCPClientPort], Awaitable[None]],
+    places: Places,
+    client: MCPClientPort,
+) -> list[Exchange]:
+    log = ExchangeLog(client)
+    await call(places, log)
+    return log.exchanges
 
 
 def _graded(target: Target, exercised: _Exercised) -> PlantedTarget:
@@ -205,14 +212,14 @@ def _graded(target: Target, exercised: _Exercised) -> PlantedTarget:
 
 
 def _units(exploits: list[list[Exchange]]) -> list[Unit]:
-    return [_unit(exchanges) for exchanges in exploits]
+    return [unit_of(exchanges) for exchanges in exploits]
 
 
 def _any_error(exchanges: list[Exchange]) -> bool:
     return any(response.is_error for _, _, response in exchanges)
 
 
-def _unit(exchanges: list[Exchange]) -> Unit:
+def unit_of(exchanges: list[Exchange]) -> Unit:
     return unit_of_exchanges([(args, response.content) for _, args, response in exchanges])
 
 

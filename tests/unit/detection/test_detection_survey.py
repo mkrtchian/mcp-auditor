@@ -135,8 +135,18 @@ def test_survey_lines_report_the_three_facts_the_not_plantable_and_the_not_surve
     result = TargetSurvey(
         "CVE-X",
         facts=[
-            PlaceFacts(leaky, exploit=True, benign=False, patched=True),
-            PlaceFacts(clean, exploit=False, benign=True, patched=False),
+            PlaceFacts(
+                leaky,
+                surfaced_by_exploit=True,
+                surfaced_by_benign_call=False,
+                surfaced_on_patched=True,
+            ),
+            PlaceFacts(
+                clean,
+                surfaced_by_exploit=False,
+                surfaced_by_benign_call=True,
+                surfaced_on_patched=False,
+            ),
         ],
         not_plantable=[planting.unplaceable_place("up")],
         not_surveyed=[planting.file_place("broken", path="/c")],

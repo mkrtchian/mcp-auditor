@@ -18,15 +18,14 @@ from dataclasses import dataclass
 
 from rich.console import Console
 
+from evals.cve.detection.calibration_check import logged_exchanges, unit_of
 from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.environments import connect
-from evals.cve.exchange_log import Exchange, ExchangeLog
+from evals.cve.exchange_log import Exchange
 from evals.cve.grammar import PlantedTarget
 from evals.cve.places import Place, PlaceKind, Places
 from evals.cve.planting import RANDOM_NONCES, NonceSource, PlantingHost, planting_spec
 from evals.cve.proofs import proofs_in
-from evals.cve.units import Unit, unit_of_exchanges
-from mcp_auditor.domain.ports import MCPClientPort
 
 console = Console()
 
@@ -51,9 +50,9 @@ async def survey_all(
 @dataclass(frozen=True)
 class PlaceFacts:
     place: Place
-    exploit: bool  # an exploit surfaced its nonce on the vulnerable version
-    benign: bool  # the benign call surfaced its nonce on the vulnerable version
-    patched: bool  # an exploit surfaced its nonce on the patched version
+    surfaced_by_exploit: bool
+    surfaced_by_benign_call: bool
+    surfaced_on_patched: bool
 
 
 @dataclass(frozen=True)
@@ -103,18 +102,19 @@ async def _survey_group(
     target: Target, group: tuple[Place, ...], places: Places
 ) -> list[PlaceFacts] | None:
     target.planting_spec(group)  # a refusal the grouping should have prevented crashes the survey
-    vulnerable = await _exercise(target, group, TargetVersion.VULNERABLE, places, benign=True)
+    planted_group = _PlantedGroup(target, group, places)
+    vulnerable = await planted_group.surfaced(TargetVersion.VULNERABLE, benign=True)
     if vulnerable is None:
         return None
-    patched = await _exercise(target, group, TargetVersion.PATCHED, places, benign=False)
+    patched = await planted_group.surfaced(TargetVersion.PATCHED, benign=False)
     if patched is None:
         return None
     return [
         PlaceFacts(
             place,
-            exploit=place.id in vulnerable.exploit_surfaced,
-            benign=place.id in vulnerable.benign_surfaced,
-            patched=place.id in patched.exploit_surfaced,
+            surfaced_by_exploit=place.id in vulnerable.exploit_surfaced,
+            surfaced_by_benign_call=place.id in vulnerable.benign_surfaced,
+            surfaced_on_patched=place.id in patched.exploit_surfaced,
         )
         for place in group
     ]
@@ -126,48 +126,41 @@ class _Surfaced:
     benign_surfaced: frozenset[str]
 
 
-async def _exercise(
-    target: Target,
-    group: tuple[Place, ...],
-    version: TargetVersion,
-    places: Places,
-    *,
-    benign: bool,
-) -> _Surfaced | None:
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        try:
-            async with (
-                target.launched(group, version=version) as planted,
-                connect(planted.launch, server_stderr) as client,
-            ):
-                benign_exchanges = await _call(target.benign, places, client) if benign else []
-                exploit_exchanges = [
-                    await _call(exploit, places, client) for exploit in target.exploits
-                ]
-        except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
-            return None
-    graded = PlantedTarget(target.classes, target.aim, planted.nonces)
-    return _Surfaced(_surfaced(exploit_exchanges, graded), _surfaced([benign_exchanges], graded))
+@dataclass(frozen=True)
+class _PlantedGroup:
+    target: Target
+    group: tuple[Place, ...]
+    places: Places
 
-
-async def _call(
-    action: Callable[[Places, MCPClientPort], Awaitable[None]],
-    places: Places,
-    client: MCPClientPort,
-) -> list[Exchange]:
-    recorder = ExchangeLog(client)
-    await action(places, recorder)
-    return recorder.exchanges
+    async def surfaced(self, version: TargetVersion, *, benign: bool) -> _Surfaced | None:
+        target = self.target
+        with tempfile.TemporaryFile("w+") as server_stderr:
+            try:
+                async with (
+                    target.launched(self.group, version=version) as planted,
+                    connect(planted.launch, server_stderr) as client,
+                ):
+                    benign_exchanges = (
+                        await logged_exchanges(target.benign, self.places, client) if benign else []
+                    )
+                    exploit_exchanges = [
+                        await logged_exchanges(exploit, self.places, client)
+                        for exploit in target.exploits
+                    ]
+            except Exception:  # a Docker or setup failure, retried per place, never a spec refusal
+                return None
+        graded = PlantedTarget(target.classes, target.aim, planted.nonces)
+        return _Surfaced(
+            _surfaced(exploit_exchanges, graded), _surfaced([benign_exchanges], graded)
+        )
 
 
 def _surfaced(exchange_lists: list[list[Exchange]], graded: PlantedTarget) -> frozenset[str]:
     return frozenset(
-        place_id for exchanges in exchange_lists for place_id in proofs_in(_unit(exchanges), graded)
+        place_id
+        for exchanges in exchange_lists
+        for place_id in proofs_in(unit_of(exchanges), graded)
     )
-
-
-def _unit(exchanges: list[Exchange]) -> Unit:
-    return unit_of_exchanges([(args, response.content) for _, args, response in exchanges])
 
 
 def _refused_alone(place: Place, host: PlantingHost, nonces: NonceSource) -> bool:
@@ -204,8 +197,8 @@ def _report(result: TargetSurvey) -> None:
 
 def survey_lines(result: TargetSurvey) -> list[str]:
     facts = [
-        f"  {_label(f.place)}: exploit {_yn(f.exploit)}, benign {_yn(f.benign)},"
-        f" patched {_yn(f.patched)}"
+        f"  {_label(f.place)}: exploit {_yn(f.surfaced_by_exploit)},"
+        f" benign {_yn(f.surfaced_by_benign_call)}, patched {_yn(f.surfaced_on_patched)}"
         for f in result.facts
     ]
     not_plantable = [f"  {_label(place)}: not plantable" for place in result.not_plantable]
