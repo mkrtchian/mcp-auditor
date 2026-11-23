@@ -15,7 +15,7 @@ from pathlib import Path
 from rich.progress import Progress
 
 from evals import eval_display as display
-from evals.concurrency import positive_int
+from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH, Census, load_census
 from evals.cve.detection import calibration_dossier

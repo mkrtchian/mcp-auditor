@@ -1,10 +1,9 @@
-import argparse
 import asyncio
 
 import pytest
 
 import tests.unit.evals.support.test_concurrency_given as given
-from evals.concurrency import bounded, entered_in_thread, positive_int
+from evals.concurrency import bounded, entered_in_thread
 
 
 async def test_no_more_calls_than_the_limit_are_in_flight():
@@ -62,17 +61,3 @@ async def test_a_blocking_enter_leaves_the_event_loop_free():
     ticking.cancel()
 
     assert ticks_during_enter > 0
-
-
-def test_a_count_below_one_is_refused_as_an_argument():
-    with pytest.raises(argparse.ArgumentTypeError):
-        positive_int("0")
-
-
-def test_a_non_integer_is_refused_as_an_argument():
-    with pytest.raises(argparse.ArgumentTypeError):
-        positive_int("many")
-
-
-def test_a_positive_count_is_accepted_as_an_argument():
-    assert positive_int("3") == 3

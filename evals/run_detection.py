@@ -11,7 +11,8 @@ from pathlib import Path
 from rich.progress import Progress
 
 from evals import eval_display as display
-from evals.concurrency import bounded, positive_int
+from evals.cli_arguments import positive_int
+from evals.concurrency import bounded
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.detection.baseline import (
     DETECTION_BASELINE_DIRECTORY,

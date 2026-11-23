@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from evals.concurrency import bounded, positive_int
+from evals.cli_arguments import positive_int
+from evals.concurrency import bounded
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT

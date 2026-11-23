@@ -11,7 +11,8 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.concurrency import bounded, positive_int
+from evals.cli_arguments import positive_int
+from evals.concurrency import bounded
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.targets import image_tag as backend_image_tag

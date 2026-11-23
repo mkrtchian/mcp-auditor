@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import AbstractContextManager, asynccontextmanager
@@ -29,23 +28,3 @@ async def entered_in_thread[T](manager: AbstractContextManager[T]) -> AsyncGener
             raise
     else:
         await asyncio.to_thread(manager.__exit__, None, None, None)
-
-
-def positive_int(text: str) -> int:
-    try:
-        count = int(text)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"expected a whole number, got {text!r}") from None
-    if count < 1:
-        raise argparse.ArgumentTypeError(f"expected at least 1, got {count}")
-    return count
-
-
-def non_negative_int(text: str) -> int:
-    try:
-        count = int(text)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"expected a whole number, got {text!r}") from None
-    if count < 0:
-        raise argparse.ArgumentTypeError(f"expected at least 0, got {count}")
-    return count

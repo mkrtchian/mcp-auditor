@@ -13,7 +13,7 @@ from typing import Any
 
 from rich.progress import Progress
 
-from evals.concurrency import positive_int
+from evals.cli_arguments import positive_int
 from evals.declared_flips import Instrument
 from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
 from evals.gate import Observation

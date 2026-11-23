@@ -12,7 +12,8 @@ from pydantic import ValidationError
 from evals import eval_display as display
 from evals.baseline import Baseline, load_baseline, write_baseline
 from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
-from evals.concurrency import bounded, positive_int
+from evals.cli_arguments import positive_int
+from evals.concurrency import bounded
 from evals.eval_session import (
     RECORDING_REFUSED,
     REPOSITORY_TREE,

@@ -22,6 +22,7 @@ from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.judge.draw_checks import SourceReport, leaked_secrets, source_refusals, source_run
 from evals.judge.fixture import (
+    SINGLE_STEP,
     CaseLabel,
     CaseSource,
     DrawRecord,
@@ -168,7 +169,7 @@ def candidates_from_honeypot(
     candidates: dict[Cell, dict[str, JudgeCase]] = {cell: {} for cell in ground_truth}
     for line in lines:
         cell = (line["tool_name"], AuditCategory(line["category"]))
-        if line["type"] != "single_step" or cell not in candidates:
+        if line["type"] != SINGLE_STEP or cell not in candidates:
             continue
         case = _candidate(line, CaseSource.HONEYPOT, f"cell {cell_key(cell)}")
         candidates[cell][case.id] = case

@@ -7,7 +7,7 @@ from evals.draw_judge_cases import (
     candidates_from_honeypot,
 )
 from evals.judge.draw_checks import SourceReport
-from evals.judge.fixture import CaseLabel, JudgeCase, JudgeFixture
+from evals.judge.fixture import CHAIN, SINGLE_STEP, CaseLabel, JudgeCase, JudgeFixture
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 INFO_LEAKAGE = AuditCategory.INFO_LEAKAGE
@@ -23,7 +23,7 @@ GROUND_TRUTH = {
 def a_chain_line(tool: str, category: AuditCategory) -> dict[str, Any]:
     return {
         "run_index": 0,
-        "type": "chain",
+        "type": CHAIN,
         "tool_name": tool,
         "tool_description": None,
         "category": category.value,
@@ -60,7 +60,7 @@ def lines_for(tool: str, category: AuditCategory, count: int) -> list[dict[str, 
 def a_honeypot_line(tool: str, category: AuditCategory, **overrides: Any) -> dict[str, Any]:
     return {
         "run_index": 0,
-        "type": "single_step",
+        "type": SINGLE_STEP,
         "tool_name": tool,
         "tool_description": f"The {tool} tool.",
         "category": category.value,

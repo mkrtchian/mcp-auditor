@@ -21,6 +21,10 @@ class CaseSource(StrEnum):
     CVE = "cve"
 
 
+SINGLE_STEP = "single_step"
+CHAIN = "chain"
+
+
 class JudgeInputs(BaseModel):
     """Exactly what `build_judge_prompt` reads of a tool and a test case."""
 

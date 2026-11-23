@@ -17,7 +17,7 @@ from rich.progress import Progress
 from rich.text import Text
 
 from evals.baseline import BaselineStatus
-from evals.concurrency import positive_int
+from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions

@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from evals.judge.fixture import SINGLE_STEP
+
 SINGLE_STEP_FIELDS = {
     "run_index",
     "type",
@@ -36,4 +38,4 @@ def every_record_is_a_single_step_with(records: list[dict[str, object]], fields:
     assert records
     for record in records:
         assert set(record) == fields
-        assert record["type"] == "single_step"
+        assert record["type"] == SINGLE_STEP
