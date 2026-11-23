@@ -24,6 +24,7 @@ from evals.cve.detection.calibration_check_exit import run_calibration_check
 from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.console import print_detection_summary
 from evals.cve.detection.costs import CostPricing
+from evals.cve.detection.judged_cases_export import export_detection_judged_cases
 from evals.cve.detection.layout_check import observe_layout
 from evals.cve.detection.markdown import render_markdown
 from evals.cve.detection.measurement import (
@@ -58,7 +59,6 @@ from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
 from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
-from evals.export import export_detection_judged_cases
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging

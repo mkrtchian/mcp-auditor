@@ -13,6 +13,7 @@ from evals.cve.detection.costs import (
     large_request_targets,
 )
 from evals.cve.detection.gate import DetectionGateResult
+from evals.cve.detection.judged_cases_export import detection_export_path
 from evals.cve.detection.markdown import (
     GATE_LEGEND,
     render_conditions,
@@ -26,7 +27,6 @@ from evals.cve.detection.markdown import (
 )
 from evals.cve.detection.oracle import DetectionReport, TargetResult
 from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
-from evals.export import detection_export_path
 from evals.gate_outcome import GateOutcome
 
 

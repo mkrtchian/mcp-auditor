@@ -3,11 +3,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.evals.support.test_export_given as given
-import tests.unit.evals.support.test_export_then as then
-from evals.cve.detection.session_model import DetectionAudit
+import tests.unit.support.judged_case_exports as then
 from evals.cve.nuisance.gate.gate_session_model import GateAudit
 from evals.export import (
-    export_detection_judged_cases,
     export_judged_cases,
     export_nuisance_gate_judged_cases,
 )
@@ -88,26 +86,6 @@ def test_chain_verdicts_are_exported_with_steps(tmp_path: Path) -> None:
     assert record["verdict"] == "fail"
     assert record["expected_verdict"] == "fail"
     assert record["correct"] is True
-
-
-def test_each_detection_line_carries_its_flaw_and_run_but_no_expected_verdict(
-    tmp_path: Path,
-) -> None:
-    report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
-    audits = [
-        DetectionAudit("CVE-2025-0001", 0, report),
-        DetectionAudit("CVE-2025-0002", 1, report),
-    ]
-
-    export_detection_judged_cases(audits, tmp_path / "detection_report.json")
-
-    records = then.exported_records(tmp_path / "detection_judged_cases.jsonl")
-    assert [(record["flaw_id"], record["run_index"]) for record in records] == [
-        ("CVE-2025-0001", 0),
-        ("CVE-2025-0002", 1),
-    ]
-    then.every_record_is_a_single_step_with(records, then.SINGLE_STEP_FIELDS | {"flaw_id"})
-    assert all(record["verdict"] == "fail" for record in records)
 
 
 def test_each_nuisance_gate_line_carries_its_server_and_run_with_the_chains(
