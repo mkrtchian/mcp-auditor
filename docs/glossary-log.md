@@ -16,7 +16,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | acceptance layer (ADR 015, ADR 024, plans: the detection acceptance layer alone) | detection acceptance layer. "Acceptance layer" now names a role of both suites. | moved meaning | 2026-11-11 |
 | acceptance layer, acceptance test (plans of 2026-07: the manual check of a plan step against the real images) | no successor: a manual verification step, not a layer of a suite | retired | 2026-11-11 |
 | acceptance server (nuisance rule, ADR 033: the server of a current or past acceptance target) | nuisance acceptance server for a current target, the server of a dropped acceptance target for a past one. "Acceptance server" is now always qualified by its suite. | moved meaning | 2026-11-11 |
-| `acceptance_servers()`, `ServerMark.ACCEPTANCE` (the servers of current and dropped acceptance targets) | `acceptance_target_servers()`, `ServerMark.ACCEPTANCE_TARGET_SERVER`, the current-target subset is `nuisance_acceptance_servers()` | rename | 2026-11-11 |
+| `acceptance_servers()`, `ServerMark.ACCEPTANCE` (the servers of current and dropped acceptance targets) | `acceptance_target_servers()`, `ExitReason.ACCEPTANCE_TARGET_SERVER`, the current-target subset is `nuisance_acceptance_servers()` | rename | 2026-11-11 |
 | acceptance twin, in-repo twin (kit docstrings, plans) | no successor: the module of the repository that a kit module copies | retired | 2026-11-11 |
 | admission (plans of 2026-10-14 and 2026-10-15, holdout log, `admission_calibration.py`: a target admitted through its calibration and its layout and route checks) | calibration check, layout check, route check. "Admission" now names the nuisance admission. | moved meaning | 2026-11-11 |
 | admission, admission bars, admission probe (ADR 019, plans of 2026-09-24 and 2026-09-25: a candidate model clearing the probe's bars) | no successor: ADR 021 chooses a model on a written judgment, and the model probe reports defects | retired | 2026-09-26 |
@@ -143,6 +143,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | sentinel (the planted value, ADR 014 to ADR 024, plans before 2026-10-11, and the witness in nuisance plans: "sentinel nonce") | nonce, or witness in a fix check. "Sentinel" now names only the sidecar container. | moved meaning | 2026-10-11 |
 | sentinel route | no successor: the responder route that serves a witness | retired | 2026-11-11 |
 | server under audit | audited server | rename | 2026-11-11 |
+| `ServerMark` (the nuisance walk's mark on a server) | `ExitReason` (`mark` holds the exit the nuisance walk derives) | rename | 2026-11-23 |
 | `settle` (in the gates) | `apply_retests` ("settle" names only a settlement) | rename | 2026-11-11 |
 | stub | stand-in, or the real software | rename | 2026-11-02 |
 | target (the audited server, its command) | audited server, server command. "Target" now names the unit of the detection suite. | moved meaning | 2026-11-11 |

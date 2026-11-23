@@ -3,7 +3,7 @@ admission. Pure, no Docker, no LLM."""
 
 import tests.unit.nuisance.support.test_nuisance_holdout_servers_given as given
 import tests.unit.support.nuisance_admissions as admissions
-from evals.cve.nuisance.admission.walk import ReachedServers, ServerMark
+from evals.cve.nuisance.admission.walk import ReachedServers
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.results import ServerExit
@@ -12,8 +12,8 @@ from tests.unit.support.admission_mutations import admitting, recording
 
 def test_each_standing_exit_keeps_its_server_among_the_exits():
     walked = [
-        given.walked("npm:excluded", ServerMark.EXCLUDED),
-        given.walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER),
+        given.walked("npm:excluded", ExitReason.EXCLUDED_SERVER),
+        given.walked("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER),
     ]
     admitted = admitting(
         given.admitted("npm:no-stdio", runs_over_stdio=False),
@@ -46,7 +46,9 @@ def test_an_admitted_server_marked_by_the_walk_is_among_the_exits_once():
     marked = given.admitted("npm:marked", runs_over_stdio=False)
 
     population = run_population(
-        given.a_listing(given.walked("npm:marked", ServerMark.EXCLUDED)), admitting(marked), set()
+        given.a_listing(given.walked("npm:marked", ExitReason.EXCLUDED_SERVER)),
+        admitting(marked),
+        set(),
     )
 
     assert population.audited == []
@@ -64,7 +66,7 @@ def test_an_admitted_nuisance_acceptance_server_the_walk_did_not_mark_is_never_a
 
 def test_a_nuisance_acceptance_server_also_marked_by_the_walk_is_among_the_exits_once():
     accepted = given.admitted("npm:accepted")
-    walked = [given.walked("npm:accepted", ServerMark.ACCEPTANCE_TARGET_SERVER)]
+    walked = [given.walked("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER)]
 
     population = run_population(ReachedServers(walked, ()), admitting(accepted), {"npm:accepted"})
 
@@ -99,7 +101,7 @@ def test_only_a_listed_server_neither_admitted_marked_nor_recorded_out_is_pendin
         given.walked("npm:admitted", None),
         given.walked("npm:pending", None),
         given.walked("npm:recorded", None),
-        given.walked("npm:marked", ServerMark.EXCLUDED),
+        given.walked("npm:marked", ExitReason.EXCLUDED_SERVER),
     )
     admitted = recording(
         admitting(given.admitted("npm:admitted")), admissions.a_recorded_exit("npm:recorded")

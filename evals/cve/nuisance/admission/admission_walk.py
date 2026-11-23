@@ -10,14 +10,8 @@ from collections.abc import Sequence
 
 from evals.cve.nuisance.admission import walk as nuisance_walk
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission.walk import ServerMark
 from evals.cve.nuisance.admission.walk_record import WalkInputs
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason, RecordedExit
-
-MARK_REASONS: dict[ServerMark, ExitReason] = {
-    ServerMark.EXCLUDED: ExitReason.EXCLUDED_SERVER,
-    ServerMark.ACCEPTANCE_TARGET_SERVER: ExitReason.ACCEPTANCE_TARGET_SERVER,
-}
 
 
 def walk_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list[str]:
@@ -108,8 +102,7 @@ def _unlisted_exits(
             problems.append(f"{package}: recorded exit for a server the walk does not reach")
         elif (mark := marks[package]) is not None:
             problems.append(
-                f"{package}: recorded exit for a server the walk marks "
-                f"({EXIT_REASON_TEXTS[MARK_REASONS[mark]]})"
+                f"{package}: recorded exit for a server the walk marks ({EXIT_REASON_TEXTS[mark]})"
             )
     return problems
 

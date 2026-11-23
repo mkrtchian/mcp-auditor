@@ -5,7 +5,6 @@ import tests.unit.support.nuisance_walks as walks
 from evals.cve.census.classification import Criterion
 from evals.cve.census.draw_order import draw_order
 from evals.cve.nuisance.admission.walk import (
-    ServerMark,
     acceptance_target_servers,
     candidate_counted_flaws,
     nuisance_acceptance_servers,
@@ -14,6 +13,7 @@ from evals.cve.nuisance.admission.walk import (
     server_of,
 )
 from evals.cve.nuisance.admission.walk_record import normalized_package, reached_identifiers
+from evals.cve.nuisance.exits import ExitReason
 
 
 def test_reached_identifiers_raises_without_a_draw():
@@ -163,7 +163,7 @@ def test_a_benchmark_flaw_marks_its_server_acceptance():
 
     [server] = nuisance_population(walks.walk_inputs_of(census))
 
-    assert server.mark == ServerMark.ACCEPTANCE_TARGET_SERVER
+    assert server.mark == ExitReason.ACCEPTANCE_TARGET_SERVER
 
 
 def test_an_excluded_server_is_marked_excluded():
@@ -174,7 +174,7 @@ def test_an_excluded_server_is_marked_excluded():
 
     [server] = nuisance_population(walks.walk_inputs_of(census))
 
-    assert server.mark == ServerMark.EXCLUDED
+    assert server.mark == ExitReason.EXCLUDED_SERVER
 
 
 def test_acceptance_wins_over_excluded():
@@ -188,7 +188,7 @@ def test_acceptance_wins_over_excluded():
 
     [server] = nuisance_population(walks.walk_inputs_of(census))
 
-    assert server.mark == ServerMark.ACCEPTANCE_TARGET_SERVER
+    assert server.mark == ExitReason.ACCEPTANCE_TARGET_SERVER
 
 
 def test_a_dropped_target_s_server_is_an_acceptance_target_server_only():

@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
-from evals.cve.nuisance.admission.admission_walk import MARK_REASONS, standing_exit
+from evals.cve.nuisance.admission.admission_walk import standing_exit
 from evals.cve.nuisance.admission.walk import ReachedServers
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import ServerExit
@@ -32,7 +32,7 @@ def run_population(
     """The exits the walk derives (its marks, and no counted flaw for a server it reaches with no
     flaw that may count), those of the admitted servers, then those the admission records."""
     marked = {s.server_package: s.mark for s in reached.listed if s.mark is not None}
-    outside = [ServerExit(package, MARK_REASONS[mark]) for package, mark in marked.items()]
+    outside = [ServerExit(package, mark) for package, mark in marked.items()]
     outside += [ServerExit(p, ExitReason.NO_COUNTED_FLAW) for p in reached.without_candidates]
     derived = {row.server_package for row in outside}
     audited: list[AdmittedServer] = []

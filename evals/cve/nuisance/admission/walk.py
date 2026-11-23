@@ -12,15 +12,9 @@ census, its draw settlements and the walk record, no LLM, no network.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import StrEnum
 
 from evals.cve.census.census import CLASSIFIERS, Census
-from evals.cve.census.classification import (
-    Classification,
-    Criterion,
-    Primitive,
-    criteria_met,
-)
+from evals.cve.census.classification import Criterion, Primitive, criteria_met
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
 from evals.cve.census.grouping import DRAW_ORDER_CRITERIA
@@ -31,11 +25,7 @@ from evals.cve.nuisance.admission.walk_record import (
     normalized_package,
     reached_identifiers,
 )
-
-
-class ServerMark(StrEnum):
-    EXCLUDED = "excluded"
-    ACCEPTANCE_TARGET_SERVER = "acceptance_target_server"
+from evals.cve.nuisance.exits import ExitReason
 
 
 @dataclass(frozen=True)
@@ -46,7 +36,7 @@ class NuisanceServer:
     in_addition: bool
     flaws: tuple[str, ...]
     candidate_counted_flaws: tuple[str, ...]
-    mark: ServerMark | None
+    mark: ExitReason | None
 
 
 def nuisance_acceptance_servers(walk_inputs: WalkInputs) -> set[str]:
@@ -160,43 +150,35 @@ def _walk(walk_inputs: WalkInputs) -> list[_Reach]:
 
 
 def _meets_draw_criteria(flaw: str, walk_inputs: WalkInputs) -> bool:
-    seen = walk_inputs.classifications_by_flaw.get(flaw, [])
-    return all(
-        _met(flaw, walk_inputs, criterion, any(criteria_met(c)[criterion] for c in seen))
-        for criterion in DRAW_ORDER_CRITERIA
-    )
+    return all(_met(flaw, walk_inputs, criterion) for criterion in DRAW_ORDER_CRITERIA)
 
 
-def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ServerMark | None:
+def _mark(server: str, acceptance: set[str], excluded: set[str]) -> ExitReason | None:
     if server in acceptance:
-        return ServerMark.ACCEPTANCE_TARGET_SERVER
+        return ExitReason.ACCEPTANCE_TARGET_SERVER
     if server in excluded:
-        return ServerMark.EXCLUDED
+        return ExitReason.EXCLUDED_SERVER
     return None
 
 
 def _may_count(flaw: str, walk_inputs: WalkInputs) -> bool:
-    seen = walk_inputs.classifications_by_flaw.get(flaw, [])
     return (
-        _met(
-            flaw,
-            walk_inputs,
-            Criterion.EFFECT_IN_TOOL_RESPONSE,
-            any(c.effect_in_tool_response for c in seen),
-        )
-        and _met(flaw, walk_inputs, Criterion.PINNABLE, any(c.pinnable for c in seen))
-        and _tools_reached(flaw, walk_inputs, seen)
+        _met(flaw, walk_inputs, Criterion.EFFECT_IN_TOOL_RESPONSE)
+        and _met(flaw, walk_inputs, Criterion.PINNABLE)
+        and _tools_reached(flaw, walk_inputs)
     )
 
 
-def _met(flaw: str, walk_inputs: WalkInputs, criterion: Criterion, from_classifiers: bool) -> bool:
+def _met(flaw: str, walk_inputs: WalkInputs, criterion: Criterion) -> bool:
     settlement = _settlement(flaw, walk_inputs, criterion)
     if settlement is not None:
         return settlement.ruling
-    return from_classifiers
+    seen = walk_inputs.classifications_by_flaw.get(flaw, [])
+    return any(criteria_met(c)[criterion] for c in seen)
 
 
-def _tools_reached(flaw: str, walk_inputs: WalkInputs, seen: list[Classification]) -> bool:
+def _tools_reached(flaw: str, walk_inputs: WalkInputs) -> bool:
+    seen = walk_inputs.classifications_by_flaw.get(flaw, [])
     if any(c.primitive == Primitive.TOOLS for c in seen):
         return True
     # A False STDIO_TOOLS_CALL settlement does not override: it may hold for the transport
