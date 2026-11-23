@@ -8,7 +8,7 @@ from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.flaky_launches import FlakyLaunches
 from tests.unit.support.nuisance_docker_hosts import DockerHost
 
-(SOLO_SERVER,) = SOLO_SERVERS
+SOLO_SERVER = min(SOLO_SERVERS)
 
 
 class ScriptedVet:

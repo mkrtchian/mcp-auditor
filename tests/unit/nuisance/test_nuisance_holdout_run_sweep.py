@@ -46,9 +46,7 @@ async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_runni
 async def test_the_containers_left_running_at_the_end_are_removed():
     server = holdout_runs.a_server()
     containers = FakeContainerSweep.left_at_the_end("stuck_one", "stuck_two")
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
 
     await holdout_runs.run([server], holdout_runs.deps_auditing(audit, containers=containers))
 
@@ -60,9 +58,7 @@ async def test_no_container_left_at_the_end_removes_and_prints_nothing(
 ):
     server = holdout_runs.a_server()
     containers = FakeContainerSweep()
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
 
     await holdout_runs.run([server], holdout_runs.deps_auditing(audit, containers=containers))
 
@@ -107,9 +103,7 @@ async def test_the_containers_are_looked_up_by_the_run_image_tags_only():
         ),
     )
     containers = FakeContainerSweep()
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
 
     await holdout_runs.run([server], holdout_runs.deps_auditing(audit, containers=containers))
 

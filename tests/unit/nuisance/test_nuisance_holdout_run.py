@@ -54,7 +54,7 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
 
 
 async def test_a_run_records_the_census_walk_record_and_admission_commits_apart():
-    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": holdout_runs.clean_audits()})
 
     result = await holdout_runs.run(
         [holdout_runs.a_server("npm:first")], holdout_runs.deps_auditing(audit)
@@ -68,7 +68,7 @@ async def test_a_run_records_the_census_walk_record_and_admission_commits_apart(
 
 
 async def test_a_run_carries_the_servers_whose_admission_is_pending():
-    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": holdout_runs.clean_audits()})
 
     result = await holdout_runs.run(
         [holdout_runs.a_server("npm:first")],
@@ -81,7 +81,7 @@ async def test_a_run_carries_the_servers_whose_admission_is_pending():
 
 async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
     failing, healthy = holdout_runs.a_server("npm:failing"), holdout_runs.a_server("npm:healthy")
-    audit = holdout_runs.scripted({"npm:healthy": [holdout_runs.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:healthy": holdout_runs.clean_audits()})
     announced: list[int] = []
     deps = dataclasses.replace(
         holdout_runs.deps_auditing(audit, benign_call={"npm:failing": "boom"}),
@@ -95,7 +95,7 @@ async def test_the_run_announces_the_audits_of_the_surviving_servers_only():
 
 async def test_the_run_announces_each_finished_run_of_a_server_with_its_status():
     flagged, dropped = holdout_runs.a_server("npm:flagged"), holdout_runs.a_server("npm:dropped")
-    (solo_package,) = SOLO_SERVERS
+    solo_package = min(SOLO_SERVERS)
     solo = holdout_runs.a_server(solo_package)
     flagged_runs = [holdout_runs.an_audit(True), holdout_runs.an_audit(False)]
     dropped_runs = [DroppedRun(NotRunCause.LAUNCH_FAILURE), holdout_runs.an_audit(False)]
@@ -138,9 +138,7 @@ async def test_a_run_with_no_surviving_server_announces_no_run():
 
 async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
     server = holdout_runs.a_server()
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
 
     result = await holdout_runs.run(
         [server], holdout_runs.deps_auditing(audit, throttled=7), concurrency=4
@@ -150,31 +148,12 @@ async def test_the_result_carries_the_concurrency_and_the_throttled_requests():
     assert result.throttled_requests == 7
 
 
-async def test_a_backend_server_records_its_backend_image_beside_its_service():
-    server = mutations.with_a_backend(
-        holdout_runs.a_server(),
-        BackendFixture(
-            provisioner="doris", images=["apache/doris:all-in-one-4.1.3"], network="net"
-        ),
-    )
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
-
-    result = await holdout_runs.run([server], holdout_runs.deps_auditing(audit))
-
-    assert result.image_ids == {
-        "filesystem-patched": "sha256:filesystem-patched",
-        "apache/doris:all-in-one-4.1.3": "sha256:apache/doris:all-in-one-4.1.3",
-    }
-
-
 async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend():
     two_images = BackendFixture(
         provisioner="doris", images=["front:1.0", "back:1.0"], network="net"
     )
     server = mutations.with_a_backend(holdout_runs.a_server(), two_images)
-    audit = holdout_runs.scripted({server.server_package: [holdout_runs.an_audit(False)] * 3})
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
 
     result = await holdout_runs.run([server], holdout_runs.deps_auditing(audit))
 
@@ -187,9 +166,7 @@ async def test_the_run_conditions_carry_one_id_per_image_of_a_two_image_backend(
 
 async def test_a_server_failing_its_benign_call_is_never_audited():
     failing, kept = holdout_runs.a_server("npm:failing"), holdout_runs.a_server("npm:kept")
-    audit = holdout_runs.scripted(
-        {"npm:failing": [], "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({"npm:failing": [], "npm:kept": holdout_runs.clean_audits()})
     deps = holdout_runs.deps_auditing(audit, benign_call={"npm:failing": "benign call errored"})
 
     result = await holdout_runs.run([failing, kept], deps)
@@ -208,10 +185,7 @@ async def test_a_server_failing_its_benign_call_is_never_audited():
 async def test_a_server_answering_only_its_second_pass_is_audited_with_its_first_reason():
     flaky, steady = holdout_runs.a_server("npm:flaky"), holdout_runs.a_server("npm:steady")
     audit = holdout_runs.scripted(
-        {
-            package: [holdout_runs.an_audit(False) for _ in range(3)]
-            for package in ("npm:flaky", "npm:steady")
-        }
+        {package: holdout_runs.clean_audits() for package in ("npm:flaky", "npm:steady")}
     )
     deps = holdout_runs.deps_auditing(audit, benign_call={"npm:flaky": ["boom", None]})
 
@@ -223,7 +197,7 @@ async def test_a_server_answering_only_its_second_pass_is_audited_with_its_first
 
 
 async def test_a_run_where_every_server_answers_its_first_pass_has_no_second_pass():
-    audit = holdout_runs.scripted({"npm:first": [holdout_runs.an_audit(False) for _ in range(3)]})
+    audit = holdout_runs.scripted({"npm:first": holdout_runs.clean_audits()})
 
     result = await holdout_runs.run(
         [holdout_runs.a_server("npm:first")], holdout_runs.deps_auditing(audit)
@@ -241,7 +215,7 @@ async def test_a_server_dropped_in_one_run_is_not_run():
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
                 holdout_runs.an_audit(False),
             ],
-            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
+            "npm:kept": holdout_runs.clean_audits(),
         }
     )
 
@@ -261,7 +235,7 @@ async def test_throttled_wins_over_a_launch_failure():
                 DroppedRun(NotRunCause.LAUNCH_FAILURE),
                 holdout_runs.an_audit(False),
             ],
-            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
+            "npm:kept": holdout_runs.clean_audits(),
         }
     )
 
@@ -280,7 +254,7 @@ async def test_a_provider_error_wins_over_a_launch_failure():
                 DroppedRun(NotRunCause.PROVIDER_ERROR),
                 holdout_runs.an_audit(False),
             ],
-            "npm:kept": [holdout_runs.an_audit(False) for _ in range(3)],
+            "npm:kept": holdout_runs.clean_audits(),
         }
     )
 

@@ -24,7 +24,11 @@ _MUTATIONS: list[tuple[Callable[[NuisanceAdmission], NuisanceAdmission], str]] =
     (mutations.with_a_counted_tool_missing_its_benign_call, "has no benign call"),
     (mutations.with_an_unknown_backend_provisioner, "is not registered"),
     (mutations.with_a_backend_fixture_differing_from_its_provisioner, "fake/backend:1.0"),
-    (mutations.with_a_networked_host_and_no_backend, "has_network without a backend"),
+    (
+        mutations.with_a_networked_host_and_no_backend,
+        f"{admissions.SERVER_PACKAGE}: has_network without a backend: "
+        "a server with no backend runs with no network",
+    ),
     (mutations.with_a_trust_setting_and_no_stand_in, "a trust setting with no stand-in"),
 ]
 
@@ -51,17 +55,6 @@ def test_a_registered_backend_fixture_has_no_problem():
     admission = mutations.with_a_registered_backend(admissions.an_admission())
 
     assert admissions.problems_of(admission) == []
-
-
-def test_a_networked_host_with_no_backend_is_refused():
-    admission = mutations.with_a_networked_host_and_no_backend(admissions.an_admission())
-
-    problems = admissions.problems_of(admission)
-
-    assert problems == [
-        f"{admissions.SERVER_PACKAGE}: has_network without a backend: "
-        "a server with no backend runs with no network"
-    ]
 
 
 def test_a_fixture_backend_need_with_no_backend_is_allowed():

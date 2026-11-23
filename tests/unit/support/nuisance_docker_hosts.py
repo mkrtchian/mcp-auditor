@@ -50,9 +50,7 @@ class DockerHost:
 
 
 def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:
-    audit = holdout_runs.scripted(
-        {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
-    )
+    audit = holdout_runs.scripted({server.server_package: holdout_runs.clean_audits()})
     return dataclasses.replace(
         holdout_runs.deps_auditing(audit),
         benign_call=host.benign_call,

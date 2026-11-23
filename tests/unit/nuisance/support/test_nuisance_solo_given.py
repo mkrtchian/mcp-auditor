@@ -15,7 +15,7 @@ from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.cve.nuisance.vet_command import VetDeps
 from tests.unit.support.nuisance_docker_hosts import DockerHost
 
-(_SOLO_PACKAGE,) = SOLO_SERVERS
+_SOLO_PACKAGE = min(SOLO_SERVERS)
 SOLO_SERVER = holdout_runs.a_server(_SOLO_PACKAGE)
 HEAVY_BACKEND_SERVERS = [
     holdout_runs.a_server("PyPI:doris-mcp-server"),

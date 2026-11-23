@@ -11,7 +11,7 @@ class InterruptingAudit:
     def __init__(self, finished: str, failing: str, error: Exception) -> None:
         self.cancelled: list[str] = []
         self._finished, self._failing, self._error = finished, failing, error
-        self._reports: list[holdout_runs.Outcome] = [holdout_runs.an_audit(False) for _ in range(3)]
+        self._reports: list[holdout_runs.Outcome] = holdout_runs.clean_audits()
         self._finished_done = asyncio.Event()
         self._failing_calls = 0
 
