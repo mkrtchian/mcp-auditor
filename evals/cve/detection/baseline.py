@@ -173,9 +173,23 @@ def fixture_fingerprint(
         parts.append(sorted(target.backend_images))
     if target.backend_sources:
         parts.append(fingerprint_sources([path.read_text() for path in target.backend_sources]))
-    if any(record.kind is PlaceKind.HTTP_ENDPOINT for record in records):
+    if _serves_an_http_endpoint(records):
         parts.append(dockerfile_instructions(image_dockerfile("sentinel", docker_directory)))
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+
+
+def fingerprinted_files(target: Target, places: Places) -> list[Path]:
+    """The files fixture_fingerprint reads for the target."""
+    names = [*target.images, target.patched_image]
+    if _serves_an_http_endpoint(kept_records(target.kept_places, places)):
+        names.append("sentinel")
+    dockerfiles = [image_dockerfile(name) for name in names]
+    served = host_stand_in_files(target.planting_host)
+    return [*ENVIRONMENT_PATHS, *dockerfiles, *served, *target.backend_sources]
+
+
+def _serves_an_http_endpoint(records: tuple[Place, ...]) -> bool:
+    return any(record.kind is PlaceKind.HTTP_ENDPOINT for record in records)
 
 
 def _class_part(classes: frozenset[FlawClass]) -> object:

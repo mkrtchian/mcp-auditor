@@ -3,19 +3,10 @@ from collections.abc import Iterable
 import pytest
 
 import tests.integration.committed.detection.support.test_detection_holdout_targets_given as given
-import tests.unit.support.fictional_planting as planting
 from evals.cve.backends.kubernetes import CONTROL_PLANE_SERVICE
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS, OUT_OF_SCOPE_FLAWS, Target
 from evals.cve.layout import PROJECT, WORK
-from evals.cve.places import (
-    DETECTION_PLACES,
-    REACHES,
-    PlaceKind,
-    kept_records,
-    load_places,
-)
-from evals.cve.planting import planting_spec
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.repository import REPO_ROOT
 from tests.unit.support.audited_launch_builders import AUDITED_LAUNCH_BUILDERS
@@ -134,44 +125,3 @@ def test_every_backend_image_is_pinned_by_digest():
     ]
 
     assert unpinned == []
-
-
-# The per-target structural guards below mirror test_cve_places.py over HOLDOUT_TARGETS: every
-# kept id is in detection_places.json within its target's reach, every reach token is in the closed
-# vocabulary, no kept place is unplaceable, and the kept list plants together.
-
-
-def test_every_holdout_target_reaches_only_the_closed_vocabulary():
-    for target in HOLDOUT_TARGETS:
-        assert target.reaches <= REACHES, (
-            f"{target.flaw_id}: reaches holds a token outside the closed vocabulary"
-        )
-
-
-def test_every_holdout_kept_place_is_offered_within_its_reach():
-    places = load_places(DETECTION_PLACES)
-    for target in HOLDOUT_TARGETS:
-        for place_id in target.kept_places:
-            assert place_id in places, f"{target.flaw_id}: keeps {place_id}, absent from the file"
-            assert places[place_id].reaches & target.reaches, (
-                f"{target.flaw_id}: keeps {place_id}, reachable by none of its reach"
-            )
-
-
-def test_no_holdout_target_keeps_an_unplaceable_place():
-    places = load_places(DETECTION_PLACES)
-    for target in HOLDOUT_TARGETS:
-        for record in kept_records(target.kept_places, places):
-            assert record.kind is not PlaceKind.UNPLACEABLE, (
-                f"{target.flaw_id}: keeps {record.id}, an unplaceable place"
-            )
-
-
-def test_every_holdout_kept_list_plants_together():
-    places = load_places(DETECTION_PLACES)
-    for target in HOLDOUT_TARGETS:
-        planting_spec(
-            kept_records(target.kept_places, places),
-            target.planting_host,
-            planting.FakeNonces(),
-        )

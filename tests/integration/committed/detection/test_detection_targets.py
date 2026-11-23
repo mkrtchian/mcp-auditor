@@ -6,7 +6,6 @@ import yaml
 from evals.cve.detection.targets import (
     ACCEPTANCE_TARGETS,
     OUT_OF_SCOPE_FLAWS,
-    FallbackScope,
     FallbackScopeKind,
     LaunchMode,
     Target,
@@ -22,8 +21,10 @@ from mcp_auditor.domain.models import ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.detection.support.fictional_places import a_fictional_places
+from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, an_acceptance_target
 
 COMPOSE_PATH = REPO_ROOT / "evals" / "docker" / "compose.yml"
+SSRF_TARGET = an_acceptance_target("CVE-2025-65513")
 
 ExploitCall = Callable[[Places, MCPClientPort], Awaitable[None]]
 
@@ -37,14 +38,6 @@ async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target:
     benign = await _recorded(target.benign)
 
     assert not is_aimed(benign, target.aim)
-
-
-def test_four_targets_remain_and_the_prefix_collision_merged_into_the_symlink_target():
-    ids = [target.flaw_id for target in ACCEPTANCE_TARGETS]
-
-    assert len(ids) == 4
-    assert "CVE-2025-53110" not in ids
-    assert "CVE-2025-68145" not in ids
 
 
 def test_the_repository_bypass_cve_is_out_of_scope_with_a_reason():
@@ -85,12 +78,8 @@ def test_every_server_and_patched_image_of_a_target_is_a_compose_service(target:
 @pytest.mark.parametrize(
     "target", ACCEPTANCE_TARGETS, ids=[target.flaw_id for target in ACCEPTANCE_TARGETS]
 )
-def test_every_surviving_target_carries_a_fallback_scope_and_the_normal_launch_mode(
-    target: Target,
-):
+def test_every_acceptance_target_runs_its_normal_launch(target: Target):
     assert target.launch_mode is LaunchMode.NORMAL
-    assert isinstance(target.fallback_scope, FallbackScope)
-    assert isinstance(target.fallback_scope.kind, FallbackScopeKind)
 
 
 def test_only_the_git_target_declares_a_read_write_layout():
@@ -106,6 +95,57 @@ def test_only_the_git_target_declares_a_read_write_layout():
 )
 def test_every_acceptance_target_runs_from_the_checkout(target: Target):
     assert target.planting_host.working_directory == PROJECT
+
+
+def test_the_filesystem_target_aims_at_both_scope_escapes():
+    filesystem = an_acceptance_target(FILESYSTEM)
+
+    assert filesystem.aim.search("/srv/app/archive0/report")  # the symlink out of scope
+    assert filesystem.aim.search("/srv/app.git/config")  # the prefix-collision sibling
+
+
+def test_the_git_target_falls_back_to_no_scope_because_its_scope_is_optional():
+    git = an_acceptance_target(GIT)
+
+    assert git.fallback_scope.kind is FallbackScopeKind.OPTIONAL
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://127.0.0.1/",
+        "http://127.1.2.3:8080/admin",
+        "http://127.1/",
+        "http://127.0.1:8080/admin",
+        "http://localhost/",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://10.0.0.5/",
+        "http://172.16.0.1/",
+        "http://172.31.255.255/",
+        "http://192.168.1.10/",
+        "http://0.0.0.0/",
+        "http://[::1]/",
+        "http://[fd12:3456::1]/",
+        "http://[::ffff:127.0.0.1]/",
+        "http://sentinel/",
+        "http://sentinel:80/flag",
+    ],
+)
+def test_the_ssrf_aim_reads_an_internal_host_as_aimed(url: str):
+    assert SSRF_TARGET.aim.search(url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://example.com/",
+        "https://example.com/?next=http://127.0.0.1/",
+        "http://172.32.0.1/",
+        "http://example.invalid/",
+    ],
+)
+def test_the_ssrf_aim_does_not_read_a_public_host_as_aimed(url: str):
+    assert not SSRF_TARGET.aim.search(url)
 
 
 async def _recorded(call: ExploitCall) -> Unit:
