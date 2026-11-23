@@ -2,7 +2,20 @@
 
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
-GroundTruth = dict[tuple[str, AuditCategory], EvalVerdict]
+Cell = tuple[str, AuditCategory]
+
+
+def cell_key(cell: Cell) -> str:
+    tool, category = cell
+    return f"{tool}/{category.value}"
+
+
+def parse_cell_key(key: str) -> Cell:
+    tool, category = key.rsplit("/", 1)
+    return tool, AuditCategory(category)
+
+
+GroundTruth = dict[Cell, EvalVerdict]
 
 HONEYPOT_GROUND_TRUTH: GroundTruth = {
     ("get_user", AuditCategory.ERROR_HANDLING): EvalVerdict.FAIL,

@@ -18,8 +18,7 @@ from typing import Any
 from evals import eval_display as display
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.eval_session import Refused
-from evals.gate import Cell, cell_key
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.judge.draw_checks import SourceReport, leaked_secrets, source_refusals, source_run
 from evals.judge.fixture import (

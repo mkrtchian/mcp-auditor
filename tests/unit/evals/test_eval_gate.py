@@ -15,7 +15,6 @@ from evals.gate import (
     ProtectedCells,
     RetestRule,
     apply_retests,
-    cell_key,
     classify,
     compare,
     count_detections,
@@ -23,10 +22,10 @@ from evals.gate import (
     metric_deltas,
     metric_resolutions,
     observe,
-    parse_cell_key,
     protected_cells,
     recall_floor_breached,
 )
+from evals.ground_truth import cell_key, parse_cell_key
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 

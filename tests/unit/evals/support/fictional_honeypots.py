@@ -1,7 +1,8 @@
 import asyncio
 from pathlib import Path
 
-from evals.gate import Cell, CellComparison, CellOutcome
+from evals.gate import CellComparison, CellOutcome
+from evals.ground_truth import Cell
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict

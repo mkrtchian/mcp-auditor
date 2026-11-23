@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from evals.cell_grid import RunAgainstBaseline
-from evals.gate import Cell, CellComparison, CellOutcome, Observation, cell_key
-from evals.ground_truth import GroundTruth
+from evals.gate import CellComparison, CellOutcome, Observation
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.honeypots import HoneypotConfig
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 

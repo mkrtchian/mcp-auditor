@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from evals.baseline import Baseline
-from evals.gate import Cell, cell_key
+from evals.ground_truth import Cell, cell_key
 from evals.honeypot.fault_catalog import FAULTS
 from evals.honeypot.fault_harness import FaultedAudit
 from evals.honeypot.fault_injection import FailingJudge

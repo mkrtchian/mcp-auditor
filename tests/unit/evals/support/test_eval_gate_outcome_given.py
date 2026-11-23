@@ -1,4 +1,5 @@
-from evals.gate import Cell, CellComparison, CellOutcome
+from evals.gate import CellComparison, CellOutcome
+from evals.ground_truth import Cell
 from mcp_auditor.domain.models import AuditCategory
 
 

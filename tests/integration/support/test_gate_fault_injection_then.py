@@ -1,8 +1,9 @@
 from collections.abc import Callable
 
 from evals.baseline import Baseline
-from evals.gate import CellOutcome, CellState, Observation, cell_key, classify
+from evals.gate import CellOutcome, CellState, Observation, classify
 from evals.gate_outcome import GateOutcome
+from evals.ground_truth import cell_key
 from evals.honeypot.fault_catalog import NO_STABLE_FAIL_CELL, Expectation
 from evals.honeypot.fault_harness import FaultResult
 from evals.honeypots import MERGED_GROUND_TRUTH

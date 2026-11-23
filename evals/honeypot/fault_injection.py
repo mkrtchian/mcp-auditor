@@ -9,7 +9,7 @@ from typing import cast
 
 from pydantic import BaseModel
 
-from evals.gate import cell_key
+from evals.ground_truth import cell_key
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import (
     AuditCategory,

@@ -4,8 +4,9 @@ import tests.unit.evals.support.honeypot_baselines as honeypot_baselines
 import tests.unit.evals.support.honeypot_gate_inputs as honeypot_gate_inputs
 import tests.unit.evals.support.test_eval_recording_given as given
 from evals.baseline import Baseline, BaselineStatus, RecordingRef
-from evals.gate import CellOutcome, Observation, ProtectedCells, RetestRule, cell_key, compare
+from evals.gate import CellOutcome, Observation, ProtectedCells, RetestRule, compare
 from evals.gate_outcome import GateMode, GateOutcome
+from evals.ground_truth import cell_key
 from evals.recording import (
     GatedSetChange,
     RecordingRefused,

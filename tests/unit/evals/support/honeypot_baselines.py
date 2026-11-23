@@ -5,8 +5,8 @@ from evals.baseline import (
     FixtureConditions,
     fingerprint_ground_truth,
 )
-from evals.gate import Cell, Observation, RetestRule, cell_key
-from evals.ground_truth import GroundTruth
+from evals.gate import Observation, RetestRule
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.metrics import HoneypotMetrics
 from tests.unit.evals.support.honeypot_gate_inputs import SAFE_CELL, VULNERABLE_CELL, a_ground_truth
 

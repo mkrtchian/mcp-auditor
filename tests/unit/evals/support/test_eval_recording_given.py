@@ -1,12 +1,6 @@
-from evals.gate import (
-    CellComparison,
-    CellOutcome,
-    Observation,
-    ProtectedCells,
-    cell_key,
-)
+from evals.gate import CellComparison, CellOutcome, Observation, ProtectedCells
 from evals.gate_outcome import GateMode, GateOutcome, GateResult
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import GroundTruth, cell_key
 from evals.metrics import HoneypotMetrics
 from evals.recording import Recording
 from tests.unit.evals.support.honeypot_baselines import (

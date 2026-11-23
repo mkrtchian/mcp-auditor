@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from evals.baseline import RescoredBaseline, rescore
 from evals.declared_flips import apply_declarations
 from evals.gate import (
-    Cell,
     DetectionCount,
     MetricDelta,
     Observation,
@@ -13,10 +12,10 @@ from evals.gate import (
     metric_deltas,
     metric_resolutions,
     observe,
-    parse_cell_key,
     protected_cells,
 )
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
+from evals.ground_truth import Cell, parse_cell_key
 from evals.honeypot.retest import Retester
 from evals.honeypot.session import HoneypotSession
 from evals.honeypots import MERGED_GROUND_TRUTH, TOOL_COUNT

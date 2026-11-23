@@ -5,7 +5,8 @@ from typing import cast
 from pydantic import BaseModel
 
 from evals.baseline import Baseline
-from evals.gate import Cell, Observation
+from evals.gate import Observation
+from evals.ground_truth import Cell
 from evals.honeypots import MERGED_GROUND_TRUTH
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict, Judgment, ProviderUsage, Severity
 from mcp_auditor.domain.ports import ProviderRefusal

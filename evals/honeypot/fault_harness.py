@@ -16,8 +16,9 @@ from pydantic import BaseModel
 
 from evals.baseline import Baseline, baseline_integrity
 from evals.declared_flips import ActiveDeclarations
-from evals.gate import Observation, cell_key
+from evals.gate import Observation
 from evals.gate_outcome import GateMode, GateResult
+from evals.ground_truth import cell_key
 from evals.honeypot.decision import RunsOutcome, decide_runs
 from evals.honeypot.fault_catalog import Fault
 from evals.honeypot.retest import Retester

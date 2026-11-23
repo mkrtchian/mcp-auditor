@@ -1,5 +1,5 @@
-from evals.gate import Cell, Observation
-from evals.ground_truth import GroundTruth
+from evals.gate import Observation
+from evals.ground_truth import Cell, GroundTruth
 from evals.metrics import VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 from tests.unit.evals.support.honeypot_gate_inputs import (

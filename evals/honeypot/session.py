@@ -30,9 +30,8 @@ from evals.eval_session import (
     WorkingTree,
     declarations_of_head,
 )
-from evals.gate import cell_key
 from evals.gate_outcome import GateMode
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import GroundTruth, cell_key
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
 from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
 from evals.repository import REPO_ROOT

@@ -5,11 +5,9 @@ from typing import Self
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import Cell, GroundTruth
 from evals.metrics import HoneypotMetrics, VerdictMap
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
-
-Cell = tuple[str, AuditCategory]
 
 
 class Observation(StrEnum):
@@ -85,16 +83,6 @@ LEGACY_THRESHOLDS: dict[str, float] = {
     "consistency": 0.70,
     "distribution_coverage": 0.80,
 }
-
-
-def cell_key(cell: Cell) -> str:
-    tool, category = cell
-    return f"{tool}/{category.value}"
-
-
-def parse_cell_key(key: str) -> Cell:
-    tool, category = key.rsplit("/", 1)
-    return tool, AuditCategory(category)
 
 
 def observe(verdicts: VerdictMap, ground_truth: GroundTruth) -> dict[Cell, Observation]:

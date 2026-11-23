@@ -14,7 +14,6 @@ import tests.unit.evals.support.test_honeypot_fault_injection_given as given
 import tests.unit.evals.support.test_honeypot_fault_injection_then as then
 from evals.baseline import Baseline
 from evals.gate import (
-    Cell,
     CellComparison,
     CellOutcome,
     FlipCause,
@@ -24,6 +23,7 @@ from evals.gate import (
     protected_cells,
 )
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
+from evals.ground_truth import Cell
 from evals.honeypots import MERGED_GROUND_TRUTH
 from evals.recording import Recording, RecordingRefused, decide_recording
 from mcp_auditor.domain.models import AuditCategory

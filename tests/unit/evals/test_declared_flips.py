@@ -13,7 +13,8 @@ from evals.declared_flips import (
     entries_of_commit,
     load_declared_flips,
 )
-from evals.gate import Cell, CellComparison, CellOutcome, FlipCause
+from evals.gate import CellComparison, CellOutcome, FlipCause
+from evals.ground_truth import Cell
 from mcp_auditor.domain.models import AuditCategory
 
 DECLARED_CELL: Cell = ("get_user", AuditCategory.INPUT_VALIDATION)

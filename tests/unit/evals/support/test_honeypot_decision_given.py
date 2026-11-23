@@ -1,5 +1,6 @@
 from evals.baseline import Baseline, BaselineStatus
-from evals.gate import Cell, Observation, cell_key, observe, protected_cells
+from evals.gate import Observation, observe, protected_cells
+from evals.ground_truth import Cell, cell_key
 from evals.honeypot.decision import RunsOutcome
 from evals.honeypot.retest import Retester
 from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH

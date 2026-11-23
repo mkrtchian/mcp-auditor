@@ -16,8 +16,8 @@ from evals.baseline import (
     rescore,
     write_baseline,
 )
-from evals.gate import Observation, RetestRule, cell_key
-from evals.ground_truth import GroundTruth
+from evals.gate import Observation, RetestRule
+from evals.ground_truth import GroundTruth, cell_key
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 VULNERABLE_CELL = honeypot_gate_inputs.VULNERABLE_CELL

@@ -1,5 +1,6 @@
 from evals.baseline import Baseline, load_baseline
-from evals.gate import Cell, Observation, cell_key
+from evals.gate import Observation
+from evals.ground_truth import Cell, cell_key
 from evals.honeypot.fault_harness import FIXTURE_PATH
 from mcp_auditor.domain.models import (
     AttackChain,

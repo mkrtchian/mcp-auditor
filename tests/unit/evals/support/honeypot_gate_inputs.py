@@ -1,5 +1,5 @@
-from evals.gate import Cell, DetectionCount
-from evals.ground_truth import GroundTruth
+from evals.gate import DetectionCount
+from evals.ground_truth import Cell, GroundTruth
 from evals.metrics import HoneypotMetrics
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 

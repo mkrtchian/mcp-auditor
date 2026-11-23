@@ -7,15 +7,14 @@ from evals.baseline import BaselineStatus
 from evals.gate import (
     FLOORS,
     LEGACY_THRESHOLDS,
-    Cell,
     CellComparison,
     CellOutcome,
     DetectionCount,
     MetricDelta,
     ProtectedCells,
-    cell_key,
     floor_breaches,
 )
+from evals.ground_truth import Cell, cell_key
 from evals.metrics import HoneypotMetrics
 
 

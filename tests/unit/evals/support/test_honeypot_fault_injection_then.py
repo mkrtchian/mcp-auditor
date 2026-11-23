@@ -1,6 +1,7 @@
 from evals.baseline import Baseline
-from evals.gate import Cell, CellComparison, CellOutcome, FlipCause, cell_key
+from evals.gate import CellComparison, CellOutcome, FlipCause
 from evals.gate_outcome import GateOutcome, GateResult
+from evals.ground_truth import Cell, cell_key
 from evals.recording import RecordingRefused
 
 

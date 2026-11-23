@@ -3,15 +3,8 @@ import traceback
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals.gate import (
-    Cell,
-    CellComparison,
-    CellOutcome,
-    Observation,
-    RetestRule,
-    apply_retests,
-    observe,
-)
+from evals.gate import CellComparison, CellOutcome, Observation, RetestRule, apply_retests, observe
+from evals.ground_truth import Cell
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
 

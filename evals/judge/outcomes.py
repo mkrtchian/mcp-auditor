@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from evals.cell_grid import PARTIAL, observation_letters, partial_improvements
 from evals.gate import CellOutcome, Observation
+from evals.ground_truth import cell_key
 from evals.judge.fixture import CaseLabel, JudgeCase, JudgeFixture, ground_truth_of
 from evals.judge.session_model import JudgeSessionResult
 
@@ -75,7 +76,7 @@ def _row(case: JudgeCase, outcome: str, result: JudgeSessionResult) -> JudgeOutc
         outcome=outcome,
         case=case.id,
         origin=case.origin,
-        tool_category=f"{case.inputs.tool_name}/{case.inputs.category.value}",
+        tool_category=cell_key((case.inputs.tool_name, case.inputs.category)),
         label=case.label,
         baseline=_letters(case.id, baseline_runs),
         run=_letters(case.id, result.runs),

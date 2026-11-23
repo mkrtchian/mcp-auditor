@@ -10,18 +10,16 @@ from evals.baseline import (
     verdict_maps_of,
 )
 from evals.gate import (
-    Cell,
     CellOutcome,
     CellState,
     Observation,
     ProtectedCells,
     RetestRule,
-    cell_key,
     classify,
     protected_cells,
 )
 from evals.gate_outcome import GateOutcome, GateResult
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from evals.metrics import HoneypotMetrics, compute_consistency, label_scores
 
 _RESET_PROCEDURE = (

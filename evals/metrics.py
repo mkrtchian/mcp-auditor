@@ -2,12 +2,12 @@ from collections import Counter
 
 from pydantic import BaseModel
 
-from evals.ground_truth import GroundTruth
+from evals.ground_truth import Cell, GroundTruth, cell_key
 from mcp_auditor.domain.models import AuditCategory, AuditReport, EvalVerdict
 from mcp_auditor.domain.rendering import MISSED_CALL_CAUSE_LABELS
 
 type KeyedVerdicts[K] = dict[K, EvalVerdict | None]
-VerdictMap = KeyedVerdicts[tuple[str, AuditCategory]]
+VerdictMap = KeyedVerdicts[Cell]
 
 
 class ToolVerdictDetail(BaseModel):
@@ -100,14 +100,13 @@ def compute_consistency(
 ) -> tuple[float, dict[str, ConsistencyDetail]]:
     details: dict[str, ConsistencyDetail] = {}
     for key in sorted(ground_truth, key=lambda k: (k[0], k[1].value)):
-        tool_name, category = key
         fail_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.FAIL)
         pass_count = sum(1 for run in all_runs if run.get(key) == EvalVerdict.PASS)
         total = fail_count + pass_count
         if total == 0:
             continue
         rate = max(fail_count, pass_count) / total
-        details[f"{tool_name}/{category.value}"] = ConsistencyDetail(
+        details[cell_key(key)] = ConsistencyDetail(
             agree=max(fail_count, pass_count), total=total, rate=rate
         )
 

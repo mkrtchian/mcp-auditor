@@ -1,5 +1,5 @@
 from evals.cell_grid import CellTag, GridBox, GridSection
-from evals.gate import Cell
+from evals.ground_truth import Cell
 
 
 def tag_of(sections: list[GridSection], cell: Cell) -> CellTag:
