@@ -15,7 +15,7 @@ from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison
 from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
 from evals.cve.nuisance.gate.gate_session_model import NuisanceGateSession
 from evals.cve.nuisance.results import ServerExit
-from evals.eval_display import throttled_lines
+from evals.eval_display import GateRow, throttled_lines
 
 
 class GateServerLine(BaseModel):
@@ -77,10 +77,7 @@ def render_markdown(report: NuisanceGateReport) -> str:
             *_servers_section(report),
             *_listed("## Not run", [f"{p}: {why}" for p, why in report.not_run.items()]),
             *_listed("## Not admitted", report.not_admitted),
-            *_listed(
-                "## Outside the gate",
-                [f"{e.server_package}: {EXIT_REASON_TEXTS[e.reason]}" for e in report.outside_gate],
-            ),
+            *_listed("## Outside the gate", [outside_gate_line(e) for e in report.outside_gate]),
             *_listed("## Orphaned baseline files", report.orphans),
             *_listed(
                 "## Recording",
@@ -100,17 +97,17 @@ def render_conditions(report: NuisanceGateReport) -> list[str]:
     ]
 
 
+def outside_gate_line(server: ServerExit) -> str:
+    return f"{server.server_package}: {EXIT_REASON_TEXTS[server.reason]}"
+
+
 def _servers_section(report: NuisanceGateReport) -> list[str]:
-    lines = {line.server_package: line for line in report.servers}
-    rows = [
-        _row(comparison, lines.get(comparison.server_package)) for comparison in report.gate.servers
-    ]
     return [
         "## Servers",
         "",
         "| Server | Outcome | Baseline | Runs | Retests | Detail |",
         "|---|---|---|---|---|---|",
-        *rows,
+        *[_markdown_row(row) for row in gate_rows(report)],
         "",
         GATE_LEGEND,
         "",
@@ -124,23 +121,32 @@ GATE_LEGEND = (
 )
 
 
-def _row(comparison: ServerComparison, line: GateServerLine | None) -> str:
-    cells = [
-        comparison.server_package,
-        comparison.outcome.value,
-        server_letters(comparison.baseline_runs) or "-",
-        server_letters(comparison.candidate_runs) or "-",
-        retest_fraction(comparison.retests),
-        server_detail(comparison, line).replace("|", "\\|"),
+def gate_rows(report: NuisanceGateReport) -> list[GateRow]:
+    lines = {line.server_package: line for line in report.servers}
+    return [
+        GateRow(
+            subject=comparison.server_package,
+            outcome=comparison.outcome.value,
+            baseline=_server_letters(comparison.baseline_runs) or "-",
+            run=_server_letters(comparison.candidate_runs) or "-",
+            retests=retest_fraction(comparison.retests),
+            detail=_server_detail(comparison, lines.get(comparison.server_package)),
+        )
+        for comparison in report.gate.servers
     ]
+
+
+def _markdown_row(row: GateRow) -> str:
+    detail = row.detail.replace("|", "\\|")
+    cells = [row.subject, row.outcome, row.baseline, row.run, row.retests, detail]
     return f"| {' | '.join(cells)} |"
 
 
-def server_letters(flagged: Sequence[bool]) -> str:
+def _server_letters(flagged: Sequence[bool]) -> str:
     return "".join("A" if alarm else "." for alarm in flagged)
 
 
-def server_detail(comparison: ServerComparison, line: GateServerLine | None) -> str:
+def _server_detail(comparison: ServerComparison, line: GateServerLine | None) -> str:
     runs = [] if line is None else _flagged_tools(line)
     parts = [*([comparison.detail] if comparison.detail else []), *runs]
     return "; ".join(parts) or "-"

@@ -85,7 +85,7 @@ def _recordings(
             fixture_fingerprint=nuisance_fixture_fingerprint(server_runs.server),
             commit=tree.commit,
             recorded_at=recorded_at,
-            runs=[run.flagged for run in server_runs.runs],
+            runs=[audit.flagged for audit in server_runs.audits],
             completed=server_runs.completed,
             image_ids={
                 **opened.harness.image_ids([server_runs.server.service]),

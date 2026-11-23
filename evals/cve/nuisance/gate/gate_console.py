@@ -5,18 +5,15 @@ from pathlib import Path
 
 from rich.text import Text
 
-from evals.cell_grid import retest_fraction
-from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_judged_cases_export import nuisance_gate_export_path
 from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
     NuisanceGateReport,
+    gate_rows,
+    outside_gate_line,
     render_conditions,
-    server_detail,
-    server_letters,
 )
 from evals.eval_display import (
-    GateRow,
     console,
     gate_table,
     print_outcome,
@@ -27,14 +24,11 @@ from evals.eval_display import (
 
 def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -> None:
     _print_lines(render_conditions(report))
-    console.print(gate_table(_gate_rows(report), "Server"))
+    console.print(gate_table(gate_rows(report), "Server"))
     _print_lines([GATE_LEGEND])
     _print_listed("Not run:", [f"{p}: {why}" for p, why in report.not_run.items()])
     _print_listed("Not admitted:", report.not_admitted)
-    _print_listed(
-        "Outside the gate:",
-        [f"{e.server_package}: {EXIT_REASON_TEXTS[e.reason]}" for e in report.outside_gate],
-    )
+    _print_listed("Outside the gate:", [outside_gate_line(e) for e in report.outside_gate])
     print_throttles(report.throttled_requests, report.concurrency)
     print_report_paths(report_path, nuisance_gate_export_path(report_path))
     print_outcome(report.gate.outcome, report.gate.reasons)
@@ -48,18 +42,3 @@ def _print_lines(lines: list[str]) -> None:
 def _print_listed(title: str, items: list[str]) -> None:
     if items:
         _print_lines([title, *(f"- {item}" for item in items)])
-
-
-def _gate_rows(report: NuisanceGateReport) -> list[GateRow]:
-    lines = {line.server_package: line for line in report.servers}
-    return [
-        GateRow(
-            subject=comparison.server_package,
-            outcome=comparison.outcome.value,
-            baseline=server_letters(comparison.baseline_runs) or "-",
-            run=server_letters(comparison.candidate_runs) or "-",
-            retests=retest_fraction(comparison.retests),
-            detail=server_detail(comparison, lines.get(comparison.server_package)),
-        )
-        for comparison in report.gate.servers
-    ]

@@ -81,7 +81,6 @@ class NuisanceGateSession:
 @dataclass(frozen=True)
 class ServerRuns:
     server: AdmittedServer
-    runs: list[GateRun]  # the completed ones
     completed: bool
     audits: list[GateAudit]
 

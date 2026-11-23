@@ -30,7 +30,6 @@ from evals.cve.nuisance.commands import (
     committed_walk_inputs,
     malformed_input_refused,
 )
-from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
     NUISANCE_GATE_RUNS,
@@ -41,7 +40,12 @@ from evals.cve.nuisance.gate.gate_baseline import (
 from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps, GateSessionRunner
 from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
 from evals.cve.nuisance.gate.gate_judged_cases_export import export_nuisance_gate_judged_cases
-from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, render_markdown, server_lines
+from evals.cve.nuisance.gate.gate_report import (
+    NuisanceGateReport,
+    outside_gate_line,
+    render_markdown,
+    server_lines,
+)
 from evals.cve.nuisance.gate.gate_servers import GateServers, gate_servers
 from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
@@ -112,7 +116,7 @@ def _print_empty_gate(outside: list[ServerExit]) -> None:
         return
     print("no admitted nuisance acceptance server can run in the gate")
     for server in outside:
-        print(f"- {server.server_package}: {EXIT_REASON_TEXTS[server.reason]}")
+        print(f"- {outside_gate_line(server)}")
 
 
 def _run_gate(args: argparse.Namespace, servers: GateServers, deps: GateCommandDeps) -> int:

@@ -127,9 +127,8 @@ def _server_runs(server: AdmittedServer, outcomes: Sequence[GateRun | None]) -> 
         for run_index, outcome in enumerate(outcomes)
         if outcome is not None
     ]
-    runs = [outcome for outcome in outcomes if outcome is not None]
     # A server with no run is never complete: an empty candidate would read as held.
-    return ServerRuns(server, runs, bool(runs) and len(runs) == len(outcomes), audits)
+    return ServerRuns(server, bool(audits) and len(audits) == len(outcomes), audits)
 
 
 async def _gate(
@@ -164,7 +163,7 @@ def _candidate(server_runs: ServerRuns) -> ServerCandidate:
     return ServerCandidate(
         server_package=server_runs.server.server_package,
         fixture_fingerprint=nuisance_fixture_fingerprint(server_runs.server),
-        runs=[run.flagged for run in server_runs.runs],
+        runs=[audit.flagged for audit in server_runs.audits],
         completed=server_runs.completed,
     )
 
