@@ -12,9 +12,9 @@ from evals.cve import images as cve_images
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.backend_registry import BACKENDS
-from evals.cve.nuisance.commands import CRASHED_EXIT, UNKNOWN_SERVER_EXIT
+from evals.cve.nuisance.commands import CRASHED_EXIT
 from evals.cve.nuisance.fix_check_command import (
-    FixCheckCommandDeps,
+    UNKNOWN_FLAW_EXIT,
     check_fixes,
     fix_check_mismatches,
 )
@@ -66,17 +66,6 @@ def test_a_fix_check_with_no_admitted_server_says_so(
     assert "no server is admitted" in capsys.readouterr().out
 
 
-def test_a_fix_check_with_no_fixture_says_no_server_is_admitted(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path
-):
-    no_fixture = run_nuisance.NuisanceCommandDeps(fix_check=FixCheckCommandDeps(fixtures=()))
-
-    code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()), no_fixture)
-
-    assert code == 0
-    assert "no server is admitted" in capsys.readouterr().out
-
-
 def test_a_fix_check_of_a_flaw_no_fixture_matches_exits_naming_it(
     capsys: pytest.CaptureFixture[str], tmp_path: Path
 ):
@@ -85,7 +74,7 @@ def test_a_fix_check_of_a_flaw_no_fixture_matches_exits_naming_it(
 
     code = run_nuisance.main(command, deps)
 
-    assert code == UNKNOWN_SERVER_EXIT
+    assert code == UNKNOWN_FLAW_EXIT
     assert "CVE-2099-9999 matches no fix-check fixture" in capsys.readouterr().err
 
 
@@ -175,7 +164,7 @@ def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its
 
 
 def test_a_matching_result_and_record_have_no_mismatch():
-    assert fix_check_mismatches(given.a_result_matching(RECORD), RECORD) == []
+    assert fix_check_mismatches(given.a_result_matching(RECORD), RECORD) == {}
 
 
 def test_a_differing_field_is_reported():
@@ -183,14 +172,13 @@ def test_a_differing_field_is_reported():
 
     mismatches = fix_check_mismatches(given.a_result_matching(RECORD), record)
 
-    assert len(mismatches) == 1
-    assert "patched_surfaces" in mismatches[0]
+    assert list(mismatches) == ["patched_surfaces"]
 
 
 def test_a_holdout_calibration_copy_excludes_the_source_field():
     record = RECORD.model_copy(update={"source": "detection_holdout_calibration"})
 
-    assert fix_check_mismatches(given.a_result_matching(record, source="fix_check"), record) == []
+    assert fix_check_mismatches(given.a_result_matching(record, source="fix_check"), record) == {}
 
 
 def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
@@ -198,14 +186,13 @@ def test_a_source_difference_on_a_fix_check_record_is_a_mismatch():
 
     mismatches = fix_check_mismatches(result, RECORD)
 
-    assert len(mismatches) == 1
-    assert "source" in mismatches[0]
+    assert list(mismatches) == ["source"]
 
 
 def test_a_record_judging_a_relaying_stand_in_matches_a_result_that_cannot_carry_it():
     record = RECORD.model_copy(update={"relies_on_relaying_stand_in": True})
 
-    assert fix_check_mismatches(given.a_result_matching(record), record) == []
+    assert fix_check_mismatches(given.a_result_matching(record), record) == {}
 
 
 def test_a_record_carrying_a_holdout_fingerprint_matches_a_result_that_cannot_carry_it():
@@ -213,14 +200,14 @@ def test_a_record_carrying_a_holdout_fingerprint_matches_a_result_that_cannot_ca
         update={"source": "detection_holdout_calibration", "holdout_fingerprint": "f" * 64}
     )
 
-    assert fix_check_mismatches(given.a_result_matching(record), record) == []
+    assert fix_check_mismatches(given.a_result_matching(record), record) == {}
 
 
-def test_a_differing_witness_nonce_is_not_a_mismatch():
-    # check_fix plants a fresh random nonce each run, so the result's witness never equals the one
-    # the admission recorded; only the reproducible fields are compared.
-    record = RECORD.model_copy(update={"witness": "MCPAUDIT-recordednonce"})
+def test_a_differing_witness_is_not_a_mismatch():
+    # check_fix plants a fresh random witness each run, so the result's witness never equals the
+    # one the admission recorded. Only the reproducible fields are compared.
+    record = RECORD.model_copy(update={"witness": "MCPAUDIT-recordedwitness"})
 
-    result = given.a_result_matching(record, witness="MCPAUDIT-freshnonce")
+    result = given.a_result_matching(record, witness="MCPAUDIT-freshwitness")
 
-    assert fix_check_mismatches(result, record) == []
+    assert fix_check_mismatches(result, record) == {}

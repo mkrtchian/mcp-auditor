@@ -69,6 +69,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `evals.run_holdout` | `evals.run_detection_holdout`, its `draw-order` moved to `evals.run_census` | rename | 2026-11-11 |
 | `ExecutionConfig` | audit run options | rename | 2026-11-11 |
 | exploratory (status of a baseline) | unconfirmed. "Exploratory" now names only the status of a number. | moved meaning | 2026-11-11 |
+| `_field_mismatches` (the nuisance fix-check comparison) | `fix_check_mismatches` | rename | 2026-11-23 |
 | figure (the set of servers counted) | nuisance holdout layer | rename | 2026-11-11 |
 | figure (the number) | holdout nuisance rate | rename | 2026-11-11 |
 | `figure`, `outside_figure` (nuisance report keys) | `holdout_nuisance_rate`, `exits` | rename | 2026-11-11 |

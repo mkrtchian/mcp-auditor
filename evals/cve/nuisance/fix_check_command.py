@@ -23,7 +23,6 @@ from evals.cve.nuisance.backend_registry import built_backend_services, built_ba
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
-    UNKNOWN_SERVER_EXIT,
     add_committed_input_arguments,
     committed_admission,
     committed_walk_inputs,
@@ -36,6 +35,8 @@ from evals.cve.run_images import (
     refuse_without_closed_networks,
     sweep_containers,
 )
+
+UNKNOWN_FLAW_EXIT = 2
 
 
 @dataclass(frozen=True)
@@ -80,13 +81,13 @@ def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
-    if admission is None or not admission.servers or not deps.fixtures:
+    if admission is None or not admission.servers:
         print("no server is admitted")
         return 0
     fixtures = _selected_fixtures(deps.fixtures, args.flaw)
     if not fixtures:
         print(f"unknown flaw: {args.flaw} matches no fix-check fixture", file=sys.stderr)
-        return UNKNOWN_SERVER_EXIT
+        return UNKNOWN_FLAW_EXIT
     docker = deps.fix_check_deps(args.concurrency)
     refuse_without_closed_networks(docker.check_networks)
     backend_services = _backend_services(fixtures, admission.servers)
@@ -178,23 +179,18 @@ def _fix_check_problems(result: FixCheckResult, record: FixCheckRecord | None) -
     problems = list(reported.values())
     if record is None:
         return [*problems, "no admission fix_check records this flaw"]
-    mismatches = _field_mismatches(result, record)
+    mismatches = fix_check_mismatches(result, record)
     return problems + [text for name, text in mismatches.items() if name not in reported]
 
 
-def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> list[str]:
+def fix_check_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
     """Where a re-run fix-check result departs from the admission's recorded fix_check, field by
-    field. The witness is a fresh random nonce each run (check_fix plants RANDOM_NONCES), so it
-    never equals the recorded nonce and is not compared. A holdout calibration copy (source
+    field. The witness is drawn fresh each run (check_fix plants RANDOM_NONCES), so it never equals
+    the recorded witness and is not compared. A holdout calibration copy (source
     detection_holdout_calibration) carries the provenance of a holdout target's calibration, not a
     fresh fix check, so its source field is not compared either. Whether the positive control rests
     on a relaying stand-in is a judgment the admission records, and the fingerprint a holdout
     calibration copy was taken at is the copy's provenance: the kit observes neither."""
-    return list(_field_mismatches(result, record).values())
-
-
-def _field_mismatches(result: FixCheckResult, record: FixCheckRecord) -> dict[str, str]:
-    # The admission records these two, the kit observes neither.
     skip = {"witness", "relies_on_relaying_stand_in", "holdout_fingerprint"}
     if record.is_holdout_calibration_copy:
         skip.add("source")
