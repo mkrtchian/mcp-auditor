@@ -21,14 +21,11 @@ from evals.tracing import tracing_enabled
 def test_tracing_enabled_parses_the_flag(
     monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
 ) -> None:
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
     monkeypatch.setenv("LANGSMITH_TRACING", value)
     assert tracing_enabled() is expected
 
 
-def test_tracing_enabled_is_false_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
-    monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
+def test_tracing_enabled_is_false_when_unset() -> None:
     assert tracing_enabled() is False
 
 
