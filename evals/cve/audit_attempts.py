@@ -1,9 +1,8 @@
-"""The outcomes of one audit attempt and the acceptance missed-step policy that retries them."""
+"""The outcomes of one audit attempt and the gates' policy on a missed model call."""
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals.cve.detection.targets import Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
@@ -11,15 +10,16 @@ from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
 # A missed model call (a policy refusal, an unreadable answer or a prompt longer than the model's
-# context window) leaves the run saying nothing of detection. The generated prompts differ from one
-# audit to the next, so a new attempt usually passes the provider's filter and gets a readable
-# answer.
+# context window) leaves a run with no detection or counted alarm saying nothing. The generated
+# prompts differ from one audit to the next, so a new attempt usually passes the provider's filter
+# and gets a readable answer.
 INCOMPLETE_ATTEMPTS = 3
 
 
 @dataclass(frozen=True)
 class IncompleteAttempt:
-    """An audit that did not detect and whose report holds a missed model call, with its causes."""
+    """An audit whose report holds a missed model call, with its causes, and neither a detection
+    nor a counted alarm, which would stand despite it."""
 
     report: AuditReport
     causes: frozenset[MissedCallCause]
@@ -39,12 +39,22 @@ class ProviderErrorAttempt:
     description: str
 
 
-# None is a run skipped at launch.
+# None is a run thrown away at once, such as one skipped at launch.
 type AttemptOutcome[T] = T | IncompleteAttempt | ThrottledAttempt | ProviderErrorAttempt | None
 
 
+@dataclass(frozen=True)
+class MissedCallWording:
+    """What a gate's console says of an attempt that missed a model call, and of its run."""
+
+    attempt_note: str
+    run_note: str
+
+
 async def graded_despite_missed_model_calls[T](
-    target: Target, attempt: Callable[[], Awaitable[AttemptOutcome[T]]]
+    label: str,
+    attempt: Callable[[], Awaitable[AttemptOutcome[T]]],
+    wording: MissedCallWording,
 ) -> T | None:
     """The first complete attempt grades the run. None when every attempt missed a model call, and
     at once on a throttled attempt or a provider error, as on a run skipped at launch."""
@@ -57,11 +67,11 @@ async def graded_despite_missed_model_calls[T](
             return outcome
         causes |= outcome.causes
         console.print(
-            f"[yellow]{target.flaw_id}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
-            f" {describe_missed_call_causes(outcome.causes)}, not graded[/yellow]"
+            f"[yellow]{label}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
+            f" {describe_missed_call_causes(outcome.causes)}, {wording.attempt_note}[/yellow]"
         )
     console.print(
-        f"[yellow]{target.flaw_id} run skipped:[/yellow] a model call missed at all"
+        f"[yellow]{label} {wording.run_note}:[/yellow] a model call missed at all"
         f" {INCOMPLETE_ATTEMPTS} attempts ({describe_missed_call_causes(causes)})"
     )
     return None

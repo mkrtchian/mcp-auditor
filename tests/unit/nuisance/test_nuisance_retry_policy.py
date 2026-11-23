@@ -179,6 +179,7 @@ async def test_a_gate_run_incomplete_without_an_alarm_is_attempted_again(
     assert run.report is clean.report
     assert audits.calls == 2
     assert f"attempt 1/{INCOMPLETE_ATTEMPTS}" in output.getvalue()
+    assert "no counted alarm, attempted again" in output.getvalue()
 
 
 async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
@@ -192,6 +193,7 @@ async def test_a_gate_run_incomplete_at_every_attempt_does_not_complete(
     assert run is None
     assert audits.calls == INCOMPLETE_ATTEMPTS
     assert f"all {INCOMPLETE_ATTEMPTS} attempts" in output.getvalue()
+    assert "run did not complete:" in output.getvalue()
 
 
 async def test_a_dropped_gate_run_does_not_complete_at_once():

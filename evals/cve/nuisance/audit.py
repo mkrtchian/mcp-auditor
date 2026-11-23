@@ -11,9 +11,11 @@ from rich.markup import escape
 
 from evals.concurrency import entered_in_thread
 from evals.cve.audit_attempts import (
-    INCOMPLETE_ATTEMPTS,
+    AttemptOutcome,
+    IncompleteAttempt,
+    MissedCallWording,
     ProviderErrorAttempt,
-    describe_missed_call_causes,
+    graded_despite_missed_model_calls,
 )
 from evals.cve.environments import Launch
 from evals.cve.launch_audit import (
@@ -165,6 +167,9 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderErrorAttempt) -> st
     return f"run failed to launch ({escape(outcome.reason)})"
 
 
+_GATE_WORDING = MissedCallWording("no counted alarm, attempted again", "run did not complete")
+
+
 @dataclass(frozen=True)
 class GateRun:
     flagged: bool
@@ -179,27 +184,18 @@ async def gate_run(
     holdout run's. A counted alarm stands whatever model call was missed, an incomplete audit
     without one is attempted again, and the run does not complete when every attempt stays
     incomplete."""
-    causes: frozenset[MissedCallCause] = frozenset()
-    for number in range(1, INCOMPLETE_ATTEMPTS + 1):
+
+    async def attempt() -> AttemptOutcome[GateRun]:
         outcome = await audit()
         if isinstance(outcome, DroppedRun):
             return None
         report = outcome.report
         flagged = bool(flagged_tools(report, counted_tools(server)))
-        if flagged or not is_incomplete(report):
-            return GateRun(flagged=flagged, report=report)
-        attempt_causes = incomplete_causes(report)
-        causes |= attempt_causes
-        console.print(
-            f"[yellow]{server.server_package}: attempt {number}/{INCOMPLETE_ATTEMPTS}:"
-            f" {describe_missed_call_causes(attempt_causes)}, no counted alarm,"
-            " attempted again[/yellow]"
-        )
-    console.print(
-        f"[yellow]{server.server_package} run did not complete:[/yellow] a model call missed at all"
-        f" {INCOMPLETE_ATTEMPTS} attempts ({describe_missed_call_causes(causes)})"
-    )
-    return None
+        if not flagged and is_incomplete(report):
+            return IncompleteAttempt(report, incomplete_causes(report))
+        return GateRun(flagged=flagged, report=report)
+
+    return await graded_despite_missed_model_calls(server.server_package, attempt, _GATE_WORDING)
 
 
 def incomplete_causes(report: AuditReport) -> frozenset[MissedCallCause]:

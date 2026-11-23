@@ -10,6 +10,7 @@ from rich.markup import escape
 from evals.cve.audit_attempts import (
     AttemptOutcome,
     IncompleteAttempt,
+    MissedCallWording,
     ProviderErrorAttempt,
     ThrottledAttempt,
     graded_despite_missed_model_calls,
@@ -47,6 +48,8 @@ from evals.metrics import blocked_reasons
 from evals.session_usage import SessionThrottles, throttled_model_calls
 from mcp_auditor.domain.models import AuditReport
 
+DETECTION_GATE_WORDING = MissedCallWording("not graded", "run skipped")
+
 
 class LaunchError(Exception):
     """A pinned server failed to launch or install (infra, not a detection miss)."""
@@ -63,7 +66,9 @@ def audit_target(
 
     async def audit(target: Target) -> GradedAudit | None:
         return await graded_despite_missed_model_calls(
-            target, lambda: attempt_once(target, session, places)
+            target.flaw_id,
+            lambda: attempt_once(target, session, places),
+            DETECTION_GATE_WORDING,
         )
 
     return audit

@@ -10,6 +10,7 @@ from evals.cve.audit_attempts import (
     graded_despite_missed_model_calls,
     graded_or_incomplete,
 )
+from evals.cve.detection.audit import DETECTION_GATE_WORDING
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from mcp_auditor.domain.model_calls import MissedCallCause
@@ -28,7 +29,9 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     graded = GradedAudit(a_detected_grade(), grammar.a_report(server_command="second attempt"))
     attempt = ScriptedAttempts([IncompleteAttempt(grammar.a_report(), _REFUSED), graded])
 
-    outcome = await graded_despite_missed_model_calls(TARGET, attempt)
+    outcome = await graded_despite_missed_model_calls(
+        TARGET.flaw_id, attempt, DETECTION_GATE_WORDING
+    )
 
     assert outcome is graded
     assert attempt.calls == 2
@@ -48,7 +51,7 @@ async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
     ]
     attempt = ScriptedAttempts[GradedAudit](outcomes)
 
-    grade = await graded_despite_missed_model_calls(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
     assert grade is None
     assert attempt.calls == INCOMPLETE_ATTEMPTS
@@ -70,7 +73,7 @@ async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
     attempt = ScriptedAttempts[GradedAudit]([too_long, graded])
 
-    await graded_despite_missed_model_calls(TARGET, attempt)
+    await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
     printed = " ".join(output.getvalue().split())
     assert (
@@ -92,7 +95,7 @@ async def test_an_attempt_thrown_away_is_not_audited_again(
     a_captured_console(capsys, monkeypatch)
     attempt = ScriptedAttempts[GradedAudit]([thrown_away])
 
-    grade = await graded_despite_missed_model_calls(TARGET, attempt)
+    grade = await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
     assert grade is None
     assert attempt.calls == 1
