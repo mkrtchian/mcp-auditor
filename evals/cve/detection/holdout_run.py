@@ -39,11 +39,11 @@ from evals.cve.images import backend_image_ids, image_ids, image_tag
 from evals.cve.launch_audit import RunOverrides, build_auditor
 from evals.cve.places import Places, kept_records
 from evals.cve.run_images import (
+    DOCKER_SWEEP,
+    ContainerSweep,
     rebuild_images,
     refuse_running_containers,
     refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
     sweep_containers,
     target_services,
 )
@@ -75,8 +75,7 @@ class HoldoutDeps:
     clock: Callable[[], str]  # ISO timestamp for recorded_at
     announce_audits: Callable[[int], None]
     throttled_requests: Callable[[], int]
-    running_containers: Callable[[Sequence[str]], list[str]]
-    remove_containers: Callable[[Sequence[str]], None]
+    sweep: ContainerSweep
     check_networks: Callable[[], None]
 
 
@@ -148,11 +147,11 @@ async def run_holdout_targets(
     try:
         return await _run_surviving(targets, deps, ctx, tree)
     finally:
-        sweep_containers(tags, deps.running_containers, deps.remove_containers)
+        sweep_containers(tags, deps.sweep.running_containers, deps.sweep.remove_containers)
 
 
 def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
-    refuse_running_containers(deps.running_containers(tags), "detection holdout run refused")
+    refuse_running_containers(deps.sweep.running_containers(tags), "detection holdout run refused")
 
 
 async def _run_surviving(
@@ -246,8 +245,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
         lambda: throttles.requests,
-        running_containers,
-        remove_containers,
+        DOCKER_SWEEP,
         check_closed_network_support,
     )
 

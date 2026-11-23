@@ -15,6 +15,7 @@ from evals.cve.detection.targets import Target
 from evals.cve.grammar import RunGrade, TargetStatus
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
 from evals.cve.places import DETECTION_PLACES, load_places
+from evals.cve.run_images import ContainerSweep
 from evals.eval_session import TreeState
 from evals.pricing import Prices
 from mcp_auditor.config import Settings
@@ -89,8 +90,7 @@ def deps_auditing(
         clock=lambda: RECORDED_AT,
         announce_audits=lambda audits: None,
         throttled_requests=lambda: throttled,
-        running_containers=docker.running,
-        remove_containers=docker.remove,
+        sweep=docker.sweep,
         check_networks=lambda: None,
     )
 
@@ -143,8 +143,7 @@ def deps_reaching_nothing() -> HoldoutDeps:
         clock,
         announce_audits,
         throttled_requests,
-        running_containers,
-        remove_containers,
+        ContainerSweep(running_containers, remove_containers),
         lambda: None,
     )
 

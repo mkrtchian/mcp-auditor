@@ -4,6 +4,7 @@ else 1. Container hygiene stays with each command, which already owns it."""
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Protocol
 
 from evals.concurrency import bounded
 from evals.cve.detection.calibration_check import check_calibrations, passes_calibration_check
@@ -16,6 +17,10 @@ from evals.cve.places import Places
 class CalibrationCheckDeps:
     check_layouts_and_routes: Callable[[list[Target], Places], Awaitable[list[str]]]
     check_exploits: Callable[[list[Target], Places], Awaitable[bool]]
+
+
+class CalibrationCheckFactory(Protocol):
+    def __call__(self, concurrency: int, ci: bool, /) -> CalibrationCheckDeps: ...
 
 
 async def run_calibration_check(

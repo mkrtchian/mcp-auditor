@@ -40,11 +40,11 @@ from typing import IO
 
 from rich.markup import escape
 
-from evals.cve.detection.calibration_check import NotLaunched, first_launch
 from evals.cve.detection.route_check import RouteObservations, has_route, route_observations
 from evals.cve.detection.targets import LaunchMode, Target, TargetVersion
 from evals.cve.environments import LaunchShape, connect
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.launch_retry import NotLaunched, first_launch
 from evals.cve.places import Place, Places, kept_records
 from evals.eval_display import console
 

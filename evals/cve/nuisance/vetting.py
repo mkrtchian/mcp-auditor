@@ -12,10 +12,10 @@ from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 
 from evals.concurrency import entered_in_thread
-from evals.cve.detection.calibration_check import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.environments import Launch, connect
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import Connect, named
+from evals.cve.launch_retry import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
 from evals.cve.nuisance.benign_call import benign_call_failure

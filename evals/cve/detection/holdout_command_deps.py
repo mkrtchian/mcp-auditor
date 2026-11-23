@@ -7,8 +7,10 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from evals.cve.detection.calibration_check_exit import default_calibration_check_deps
-from evals.cve.detection.command_deps import CalibrationCheckFactory
+from evals.cve.detection.calibration_check_exit import (
+    CalibrationCheckFactory,
+    default_calibration_check_deps,
+)
 from evals.cve.detection.holdout_run import (
     HoldoutDepsFactory,
     RunHoldoutTargets,

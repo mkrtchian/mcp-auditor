@@ -18,9 +18,7 @@ async def test_a_container_of_the_run_images_running_at_start_refuses_before_the
     deps = dataclasses.replace(
         detection_holdout_runs.deps_reaching_nothing(),
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
-        running_containers=FakeContainerSweep.running_before_the_rebuild(
-            "leftover_filesystem"
-        ).running,
+        sweep=FakeContainerSweep.running_before_the_rebuild("leftover_filesystem").sweep,
     )
 
     with pytest.raises(Refused) as refused:

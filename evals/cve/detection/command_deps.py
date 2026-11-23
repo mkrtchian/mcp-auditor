@@ -8,7 +8,7 @@ from typing import Protocol
 
 from evals.cve.detection.audit import audit_target
 from evals.cve.detection.calibration_check_exit import (
-    CalibrationCheckDeps,
+    CalibrationCheckFactory,
     default_calibration_check_deps,
 )
 from evals.cve.detection.session import DetectionSessionResult, run_gated
@@ -38,10 +38,6 @@ class RunSession(Protocol):
     def __call__(
         self, options: DetectionOptions, harness: DetectionHarness, /
     ) -> Awaitable[DetectionSessionResult]: ...
-
-
-class CalibrationCheckFactory(Protocol):
-    def __call__(self, concurrency: int, ci: bool, /) -> CalibrationCheckDeps: ...
 
 
 class SurveyOne(Protocol):

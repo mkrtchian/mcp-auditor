@@ -26,15 +26,12 @@ from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
 from evals.cve.launch_audit import Connect
+from evals.cve.launch_retry import NotLaunched, first_launch
 from evals.cve.places import Place, Places, kept_records
 from evals.cve.proofs import is_aimed, proofs_in
 from evals.cve.units import Unit, unit_of_exchanges
 from evals.eval_display import console
 from mcp_auditor.domain.ports import MCPClientPort
-
-# A launch or handshake that fails is retried up to this many launches of the version: one
-# observation of a version may take that many launches. A launch that ran is never retried.
-PRE_RUN_LAUNCH_ATTEMPTS = 3
 
 
 async def check_calibrations(
@@ -127,21 +124,6 @@ def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Uni
     if is_aimed(benign, target.aim):
         conditions.append("negative control: benign call reads as aimed")
     return conditions
-
-
-class NotLaunched(Exception):
-    """A launch or handshake that failed: the one failure the pre-run check retries."""
-
-
-async def first_launch[T](attempt: Callable[[], Awaitable[T]]) -> T | None:
-    """What the first launch that ran observed, in up to `PRE_RUN_LAUNCH_ATTEMPTS` launches, or
-    None when none of them launched."""
-    for _ in range(PRE_RUN_LAUNCH_ATTEMPTS):
-        try:
-            return await attempt()
-        except NotLaunched:
-            continue
-    return None
 
 
 def _launch_failed(version: TargetVersion) -> str:
