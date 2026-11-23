@@ -2,7 +2,12 @@ import pytest
 
 import tests.integration.support.test_detection_replay_given as given
 import tests.integration.support.test_detection_replay_then as then
-from evals.cve.detection.replay import REPLAY_ATTEMPTS, ReplayAttemptFailure, replay_with_causes
+from evals.cve.detection.replay import (
+    REPLAY_ATTEMPTS,
+    ReplayAttemptFailure,
+    arguments_agree,
+    replay_with_causes,
+)
 from evals.cve.grammar import TargetStatus, grade_run
 from evals.cve.report_units import units_of
 
@@ -156,3 +161,12 @@ async def test_a_patched_server_that_stops_answering_leaves_the_credit_unchecked
     then.the_credit_is_left_unchecked(
         outcome, (ReplayAttemptFailure.STOPPED_ANSWERING,) * REPLAY_ATTEMPTS
     )
+
+
+async def test_a_run_recorded_by_a_real_audit_agrees_with_its_report():
+    """A reordering across tools is not caught: the read server has one tool."""
+    audit = await given.a_recorded_audit()
+
+    assert len(audit.exchanges) == 2  # the blocked payload is never sent
+    assert arguments_agree(units_of(audit.report), audit.exchanges)
+    assert audit.relaunched_after == []

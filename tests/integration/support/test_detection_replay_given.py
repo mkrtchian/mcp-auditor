@@ -3,7 +3,8 @@
 A vulnerable run is simulated by a hand-built report whose outputs carry the run's old nonces,
 so no vulnerable launch is needed. Only the patched version is launched, through the read server,
 whose builder serves the launch's fresh nonces on the command line, so each attempt draws fresh
-ones and an old nonce never fools the strike.
+ones and an old nonce never fools the strike. `a_recorded_audit` is the exception: a real audit of
+the read server on a scripted model, whose recorded calls are checked against its report.
 """
 
 import dataclasses
@@ -18,14 +19,21 @@ from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.grammar import FlawClass, PlantedTarget
-from evals.cve.launch_audit import Connect
+from evals.cve.launch_audit import Auditor, AuditShape, Connect, LaunchAudit, audit_launch
 from evals.cve.places import Places, kept_records
 from evals.cve.planting import PlantingSpec
 from mcp_auditor.adapters.docker import docker_client_env
 from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from mcp_auditor.domain.models import AuditReport, ToolResponse
+from mcp_auditor.domain.models import (
+    AttackContext,
+    AuditCategory,
+    AuditReport,
+    TestCaseBatch,
+    ToolResponse,
+)
 from mcp_auditor.domain.ports import MCPClientPort
+from tests.fakes import FakeLLM
 from tests.integration.support.detection_fake_targets import (
     OUTSIDE_AIM,
     a_fake_target,
@@ -33,6 +41,7 @@ from tests.integration.support.detection_fake_targets import (
     reading,
 )
 from tests.integration.support.support_servers import READ_SERVER_PATH
+from tests.unit.auditor.support.graph_builders import a_judgment, a_payload
 
 FLAW_ID = "fict-flaw"
 OTHER_ID = "fict-other"
@@ -186,6 +195,23 @@ def connect_pinging_within(seconds: float) -> Connect:
             yield client
 
     return connect
+
+
+async def a_recorded_audit() -> LaunchAudit:
+    # The guard blocks the destructive payload, which is then neither sent nor judged.
+    batch = TestCaseBatch(
+        cases=[
+            a_payload(AuditCategory.INPUT_VALIDATION, {"path": PREP_PATH}),
+            a_payload(AuditCategory.INJECTION, {"path": "1; rm -rf /"}),
+            a_payload(AuditCategory.INFO_LEAKAGE, {"path": FLAW_PATH}),
+        ]
+    )
+    llm = FakeLLM([batch, a_judgment(), a_judgment(), AttackContext()])
+    launch = Launch("docker", ["run", sys.executable, str(READ_SERVER_PATH)])
+    shape = AuditShape(
+        tools_filter=None, chain_budget=0, max_chain_steps=None, tool_call_timeout=None
+    )
+    return await audit_launch(launch, Auditor(llm, llm, test_budget=3), shape)
 
 
 # --- builders and run assembly ---
