@@ -7,6 +7,7 @@ from rich.text import Text
 
 from evals.cell_grid import retest_fraction
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
+from evals.cve.nuisance.gate.gate_judged_cases_export import nuisance_gate_export_path
 from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
     NuisanceGateReport,
@@ -16,7 +17,6 @@ from evals.cve.nuisance.gate.gate_report import (
     server_letters,
 )
 from evals.eval_display import GateRow, console, gate_table, print_outcome, print_report_paths
-from evals.export import nuisance_gate_export_path
 
 
 def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -> None:

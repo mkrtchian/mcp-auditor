@@ -41,6 +41,7 @@ from evals.cve.nuisance.gate.gate_baseline import (
     gate_conditions,
 )
 from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
+from evals.cve.nuisance.gate.gate_judged_cases_export import export_nuisance_gate_judged_cases
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, render_markdown, server_lines
 from evals.cve.nuisance.gate.gate_session import (
     default_harness,
@@ -59,7 +60,6 @@ from evals.cve.nuisance.results import ServerExit
 from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
-from evals.export import export_nuisance_gate_judged_cases
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_GATE_REPORT_PATH = "output/nuisance_gate_report.json"

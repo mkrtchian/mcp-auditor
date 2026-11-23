@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.cve.nuisance.gate.gate_session_model import GateAudit
 from evals.ground_truth import GroundTruth
 from evals.judge.fixture import CHAIN, SINGLE_STEP, JudgeInputs
 from mcp_auditor.domain.models import AttackChain, AuditReport, JudgeResult, TestCase, ToolReport
@@ -17,25 +16,9 @@ def export_judged_cases(
         {"run_index": run_index, **line, **_label(result, ground_truth)}
         for run_index, report in runs
         for tool_report in report.tool_reports
-        for result, line in case_lines(tool_report) + _chain_lines(tool_report)
+        for result, line in case_lines(tool_report) + chain_lines(tool_report)
     ]
     write_jsonl(report_path.with_name("judged_cases.jsonl"), lines)
-
-
-def export_nuisance_gate_judged_cases(audits: list[GateAudit], report_path: Path) -> None:
-    """Chains included, unlike the detection export: a chain verdict can raise an alarm, and the
-    gate's alarms may be analyzed."""
-    lines = [
-        {"server_package": audit.server_package, "run_index": audit.run_index, **line}
-        for audit in audits
-        for tool_report in audit.report.tool_reports
-        for _, line in case_lines(tool_report) + _chain_lines(tool_report)
-    ]
-    write_jsonl(nuisance_gate_export_path(report_path), lines)
-
-
-def nuisance_gate_export_path(report_path: Path) -> Path:
-    return report_path.with_name("nuisance_gate_judged_cases.jsonl")
 
 
 def case_lines(tool_report: ToolReport) -> list[tuple[JudgeResult, dict[str, Any]]]:
@@ -67,7 +50,7 @@ def _judge_input(
     }
 
 
-def _chain_lines(tool_report: ToolReport) -> list[tuple[JudgeResult, dict[str, Any]]]:
+def chain_lines(tool_report: ToolReport) -> list[tuple[JudgeResult, dict[str, Any]]]:
     description = tool_report.tool.description
     return [
         (result, _chain_judge_input(chain, result, description))

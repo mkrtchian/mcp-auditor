@@ -4,11 +4,7 @@ import pytest
 
 import tests.unit.evals.support.test_export_given as given
 import tests.unit.support.judged_case_exports as then
-from evals.cve.nuisance.gate.gate_session_model import GateAudit
-from evals.export import (
-    export_judged_cases,
-    export_nuisance_gate_judged_cases,
-)
+from evals.export import export_judged_cases
 from evals.ground_truth import GroundTruth
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
@@ -86,25 +82,3 @@ def test_chain_verdicts_are_exported_with_steps(tmp_path: Path) -> None:
     assert record["verdict"] == "fail"
     assert record["expected_verdict"] == "fail"
     assert record["correct"] is True
-
-
-def test_each_nuisance_gate_line_carries_its_server_and_run_with_the_chains(
-    tmp_path: Path,
-) -> None:
-    report = given.a_report_with_a_judged_case_an_unjudged_case_and_a_chain()
-    audits = [
-        GateAudit("npm:first", 0, True, report),
-        GateAudit("npm:second", 2, True, report),
-    ]
-
-    export_nuisance_gate_judged_cases(audits, tmp_path / "nuisance_gate_report.json")
-
-    records = then.exported_records(tmp_path / "nuisance_gate_judged_cases.jsonl")
-    assert [(r["server_package"], r["run_index"], r["type"]) for r in records] == [
-        ("npm:first", 0, "single_step"),
-        ("npm:first", 0, "chain"),
-        ("npm:second", 2, "single_step"),
-        ("npm:second", 2, "chain"),
-    ]
-    assert set(records[0]) == then.SINGLE_STEP_FIELDS | {"server_package"}
-    assert set(records[1]) == then.CHAIN_FIELDS | {"server_package"}
