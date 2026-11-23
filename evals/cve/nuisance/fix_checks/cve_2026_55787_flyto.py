@@ -133,7 +133,7 @@ async def _json_to_csv(places: Places, client: KitClient) -> None:
 # address of a holder or gives it a bridge alias, while one variant needs the IPv6 loopback and
 # the other a redirector beside the sentinel. Each stands its own holder, which the server joins.
 # They live here, beside the fixture that uses them and never in the shared kit the admission
-# dossier copies, because they are worked exploits named by their CVE.
+# dossier copies, because each is specific to one flaw, named by its CVE ID.
 _HOLDER_SLEEP = "2147483647"
 
 
