@@ -5,12 +5,8 @@ import tests.unit.detection.support.test_detection_recording_given as given
 from evals.baseline import BaselineStatus, RecordingRef
 from evals.cve.detection.baseline import DetectionBaseline
 from evals.cve.detection.gate import TargetOutcome
-from evals.cve.detection.recording import (
-    TargetRecording,
-    decide_recording,
-    decide_recordings,
-    leaves_gated_set,
-)
+from evals.cve.detection.recording import TargetRecording, decide_recording
+from evals.cve.file_baselines import all_or_none, leaves_gated_set
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
@@ -174,7 +170,7 @@ def test_every_decided_target_is_written_when_none_is_refused():
     first = detection_baselines.an_unconfirmed_baseline(flaw_id="CVE-2025-53109")
     second = detection_baselines.an_unconfirmed_baseline(flaw_id="CVE-2025-53110")
 
-    decision = decide_recordings({first.flaw_id: first, second.flaw_id: second})
+    decision = all_or_none({first.flaw_id: first, second.flaw_id: second})
 
     assert decision == [first, second]
 
@@ -183,7 +179,7 @@ def test_one_refused_target_means_no_baseline_to_write():
     written = detection_baselines.an_unconfirmed_baseline(flaw_id="CVE-2025-53109")
     refused = RecordingRefused(reasons=["the gate saw a regression"])
 
-    decision = decide_recordings({written.flaw_id: written, "CVE-2025-53110": refused})
+    decision = all_or_none({written.flaw_id: written, "CVE-2025-53110": refused})
 
     assert decision == RecordingRefused(reasons=["CVE-2025-53110: the gate saw a regression"])
 

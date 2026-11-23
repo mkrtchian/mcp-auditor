@@ -13,15 +13,17 @@ from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
 from evals.cve.detection.baseline import DetectionBaseline, DetectionRunConditions
+from evals.cve.file_baselines import (
+    condition_mismatches_by_file,
+    unconfirmed_baseline_detail,
+    whole_reset,
+)
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade, TargetStatus
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
 
 _BASELINE_DIRECTORY = "evals/baselines/detection"
-WHOLE_RESET = (
-    f"Reset the whole baseline: delete {_BASELINE_DIRECTORY}/ in a commit of its own, "
-    "then record twice at one commit (ADR 020)."
-)
+WHOLE_RESET = whole_reset(_BASELINE_DIRECTORY)
 
 
 class TargetOutcome(StrEnum):
@@ -72,13 +74,8 @@ class DetectionGateResult(BaseModel):
 def condition_mismatches(
     baselines: Mapping[str, DetectionBaseline], candidate: DetectionRunConditions
 ) -> list[str]:
-    expected = candidate.model_dump()
-    return [
-        f"{_file_name(flaw_id)}: {field} is {recorded!r}, the run has {expected[field]!r}"
-        for flaw_id, baseline in sorted(baselines.items())
-        for field, recorded in baseline.conditions.model_dump().items()
-        if recorded != expected[field]
-    ]
+    by_file = {_file_name(flaw_id): b.conditions for flaw_id, b in sorted(baselines.items())}
+    return condition_mismatches_by_file(by_file, candidate)
 
 
 def compare_target(
@@ -127,10 +124,7 @@ def target_reset(flaw_id: str) -> str:
 
 def _why_not_gated(baseline: DetectionBaseline) -> str:
     if baseline.status == BaselineStatus.UNCONFIRMED:
-        return (
-            f"unconfirmed baseline recorded at {baseline.commit}: confirm it with a second "
-            "recording at that commit, or delete it in a commit of its own"
-        )
+        return unconfirmed_baseline_detail(baseline.commit)
     return "not detected in every baseline run"
 
 

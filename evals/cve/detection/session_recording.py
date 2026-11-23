@@ -2,13 +2,11 @@
 the write of one file per target once the gate has decided."""
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from evals.baseline import BaselineStatus
 from evals.cve.detection.baseline import (
-    baseline_integrity,
+    DETECTION_BASELINE_STORE,
     fixture_fingerprint,
-    load_baselines,
     write_baseline,
 )
 from evals.cve.detection.gate import (
@@ -17,14 +15,15 @@ from evals.cve.detection.gate import (
     condition_mismatches,
     depends_on_unchecked,
 )
-from evals.cve.detection.recording import (
-    TargetRecording,
-    decide_recording,
-    decide_recordings,
-    leaves_gated_set,
-)
-from evals.cve.detection.session_model import Baselines, GatedSession, TargetRuns
+from evals.cve.detection.recording import TargetRecording, decide_recording
+from evals.cve.detection.session_model import GatedSession, TargetRuns
 from evals.cve.detection.targets import Target
+from evals.cve.file_baselines import (
+    BASELINE_FILES_CHANGED,
+    all_or_none,
+    leaves_gated_set,
+    load_checked,
+)
 from evals.cve.places import PlaceKind, Places, kept_records
 from evals.cve.planting import SENTINEL_SERVICE
 from evals.eval_session import (
@@ -77,7 +76,7 @@ def record(
         flaw_id: decide_recording(baselines.get(flaw_id), recording, comparisons.get(flaw_id))
         for flaw_id, recording in recordings.items()
     }
-    decided = decide_recordings(decisions)
+    decided = all_or_none(decisions)
     if isinstance(decided, RecordingRefused):
         return decided
     for baseline in decided:
@@ -100,23 +99,13 @@ def _unchecked_refusals(runs: list[TargetRuns]) -> list[str]:
 def _recording_drift(session: GatedSession, tree: TreeState) -> list[str]:
     drift = tree_drift(tree, session.harness.read_tree())
     try:
-        changed = load_checked(session.harness.baselines, RECORDING_REFUSED) != session.files
+        files = load_checked(session.harness.baselines, RECORDING_REFUSED, DETECTION_BASELINE_STORE)
+        changed = files != session.files
     except Refused as invalid:
         return drift + invalid.reasons
     if changed:
-        drift.append("the baseline files changed during the runs: record again")
+        drift.append(BASELINE_FILES_CHANGED)
     return drift
-
-
-def load_checked(directory: Path, title: str) -> Baselines:
-    try:
-        baselines = load_baselines(directory)
-    except ValueError as error:
-        raise Refused(title, [f"{directory} holds an invalid baseline file: {error}"]) from error
-    problems = [problem for b in baselines.values() for problem in baseline_integrity(b)]
-    if problems:
-        raise Refused(title, problems)
-    return baselines
 
 
 def _recordings(

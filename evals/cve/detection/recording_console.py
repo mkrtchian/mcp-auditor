@@ -5,9 +5,9 @@ from collections.abc import Sequence
 
 from rich.markup import escape
 
-from evals.baseline import BaselineStatus
 from evals.cve.detection.baseline import DETECTION_BASELINE_DIRECTORY
 from evals.cve.detection.session import DetectionSessionResult
+from evals.cve.file_baselines import next_recording_step
 from evals.eval_display import console
 
 _BASELINES = "evals/baselines/detection/"
@@ -24,14 +24,5 @@ def print_recording(session: DetectionSessionResult, recorded_flags: Sequence[st
             console.print(f"  {written.flaw_id} leaves the gated set.")
     # A recording can confirm some files and start others, and each status has its next step.
     for status in dict.fromkeys(written.status for written in session.written):
-        console.print(_next_step(status, recorded_flags))
-
-
-def _next_step(status: BaselineStatus, recorded_flags: Sequence[str]) -> str:
-    if status == BaselineStatus.CONFIRMED:
-        return f"Commit {_BASELINES} by hand."
-    command = " ".join([_RECORD_COMMAND, *recorded_flags])
-    return (
-        f"Run {command} again now, at this commit and on these images, to confirm it. "
-        f"Commit {_BASELINES} by hand once confirmed."
-    )
+        command = " ".join([_RECORD_COMMAND, *recorded_flags])
+        console.print(next_recording_step(status, command, _BASELINES))

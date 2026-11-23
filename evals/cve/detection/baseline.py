@@ -32,6 +32,7 @@ from evals.cve import (
 from evals.cve.detection import holdout_environments
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.cve.file_baselines import BaselineStore
 from evals.cve.grammar import DETECTION_RUNGS, FlawClass, TargetStatus
 from evals.cve.images import dockerfile_instructions
 from evals.cve.places import Coordinates, Place, PlaceKind, Places, kept_records
@@ -265,3 +266,6 @@ def baseline_integrity(baseline: DetectionBaseline) -> list[str]:
     """What the file holds that its conditions do not claim, checked when the runner loads it."""
     problems = run_count_problems(len(baseline.runs), baseline.conditions.runs, baseline.confirms)
     return [f"{baseline.flaw_id}: {problem}" for problem in problems]
+
+
+DETECTION_BASELINE_STORE = BaselineStore(load_baselines, baseline_integrity)

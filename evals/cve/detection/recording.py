@@ -1,7 +1,5 @@
 """Whether a recording of one target is written, and as what (ADR 023, ADR 024)."""
 
-from collections.abc import Mapping
-
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
@@ -13,11 +11,11 @@ from evals.cve.detection.gate import (
     condition_mismatches,
     target_reset,
 )
+from evals.cve.file_baselines import RUN_NOT_COMPLETED, red_gate_reason, refused_confirmation
 from evals.cve.grammar import TargetStatus
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
-_FAILED_RUN = "a run did not complete: a baseline holds every run its conditions claim"
 _GREEN = {TargetOutcome.HELD, TargetOutcome.NOT_GATED, TargetOutcome.MISS_NOT_REPRODUCED}
 
 
@@ -38,32 +36,12 @@ def decide_recording(
     comparison: TargetComparison | None,
 ) -> DetectionBaseline | RecordingRefused:
     if not recording.completed:
-        return RecordingRefused(reasons=[_FAILED_RUN])
+        return RecordingRefused(reasons=[RUN_NOT_COMPLETED])
     if existing is None:
         return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
     if existing.status == BaselineStatus.UNCONFIRMED:
         return _confirmation(existing, recording)
     return _replacement(existing, recording, comparison)
-
-
-def leaves_gated_set(existing: DetectionBaseline | None, written: DetectionBaseline) -> bool:
-    """Not a refusal: the session names it (ADR 024)."""
-    return existing is not None and existing.gated() and not written.gated()
-
-
-def decide_recordings(
-    decisions: Mapping[str, DetectionBaseline | RecordingRefused],
-) -> list[DetectionBaseline] | RecordingRefused:
-    """All or none, so a run is never half recorded."""
-    reasons = [
-        f"{flaw_id}: {reason}"
-        for flaw_id, decision in decisions.items()
-        if isinstance(decision, RecordingRefused)
-        for reason in decision.reasons
-    ]
-    if reasons:
-        return RecordingRefused(reasons=reasons)
-    return [decision for decision in decisions.values() if isinstance(decision, DetectionBaseline)]
 
 
 def _confirmation(
@@ -74,12 +52,7 @@ def _confirmation(
     if existing.commit != recording.commit:
         differences.append(f"it was recorded at {existing.commit}, this run at {recording.commit}")
     if differences:
-        return RecordingRefused(
-            reasons=[
-                f"the unconfirmed baseline differs from this recording ({'; '.join(differences)}): "
-                "confirm it at its own commit, or delete it in a commit of its own (ADR 020)"
-            ]
-        )
+        return refused_confirmation(differences)
     confirmed = _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule)
     return confirmed.model_copy(
         update={"runs": existing.runs + recording.runs, "confirms": RecordingRef.of(existing)}
@@ -111,10 +84,7 @@ def _comparison_refusals(comparison: TargetComparison | None) -> list[str]:
     if comparison is not None and comparison.outcome in _GREEN:
         return []
     if comparison is not None and comparison.outcome == TargetOutcome.REGRESSION:
-        return [
-            "the gate found a regression on this target: a baseline is never recorded while "
-            "the gate is red (ADR 016)"
-        ]
+        return [red_gate_reason("target")]
     outcome = "no comparison" if comparison is None else comparison.outcome.value
     return [
         f"this target's comparison is {outcome}: a confirmed baseline is recorded over only "

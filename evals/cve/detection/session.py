@@ -8,7 +8,11 @@ import asyncio
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from evals.cve.detection.baseline import DetectionBaseline, fixture_fingerprint
+from evals.cve.detection.baseline import (
+    DETECTION_BASELINE_STORE,
+    DetectionBaseline,
+    fixture_fingerprint,
+)
 from evals.cve.detection.gate import (
     DetectionGateResult,
     TargetCandidate,
@@ -29,13 +33,9 @@ from evals.cve.detection.session_model import (
     GradedAudit,
     TargetRuns,
 )
-from evals.cve.detection.session_recording import (
-    WrittenBaseline,
-    load_checked,
-    record,
-    recording_tree,
-)
+from evals.cve.detection.session_recording import WrittenBaseline, record, recording_tree
 from evals.cve.detection.targets import Target
+from evals.cve.file_baselines import load_checked
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.places import Places
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused
@@ -108,7 +108,7 @@ def _refuse_recording_of_not_run(session: GatedSession, not_run: dict[str, list[
 
 
 def _open(options: DetectionOptions, harness: DetectionHarness) -> GatedSession:
-    files = load_checked(harness.baselines, REFUSED_BEFORE_ANY_LLM_CALL)
+    files = load_checked(harness.baselines, REFUSED_BEFORE_ANY_LLM_CALL, DETECTION_BASELINE_STORE)
     session = GatedSession(options, harness, files, tree=None)
     if not options.record_baseline:
         return session
