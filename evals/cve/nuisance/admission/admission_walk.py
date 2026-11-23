@@ -6,7 +6,7 @@ nuisance walk does not derive.
 """
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from evals.cve.nuisance.admission import walk as nuisance_walk
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
@@ -83,25 +83,27 @@ def _unlisted_exits(
     derives."""
     marks = {server.server_package: server.mark for server in reached.listed}
     derived = set(reached.without_candidates)
-    problems: list[str] = []
-    for recorded in exits:
-        package = recorded.server_package
-        if package in derived:
-            problems.append(
-                f"{package}: recorded exit for a server the nuisance walk reaches with no flaw "
-                "that may count, whose exit it derives "
-                f"({EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW]})"
-            )
-        elif package not in marks:
-            problems.append(
-                f"{package}: recorded exit for a server the nuisance walk does not reach"
-            )
-        elif (mark := marks[package]) is not None:
-            problems.append(
-                f"{package}: recorded exit for a server the nuisance walk marks "
-                f"({EXIT_REASON_TEXTS[mark]})"
-            )
-    return problems
+    problems = (_unlisted_exit(recorded.server_package, marks, derived) for recorded in exits)
+    return [problem for problem in problems if problem is not None]
+
+
+def _unlisted_exit(
+    package: str, marks: Mapping[str, ExitReason | None], derived: set[str]
+) -> str | None:
+    if package in derived:
+        return (
+            f"{package}: recorded exit for a server the nuisance walk reaches with no flaw "
+            "that may count, whose exit it derives "
+            f"({EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW]})"
+        )
+    if package not in marks:
+        return f"{package}: recorded exit for a server the nuisance walk does not reach"
+    mark = marks[package]
+    if mark is None:
+        return None
+    return (
+        f"{package}: recorded exit for a server the nuisance walk marks ({EXIT_REASON_TEXTS[mark]})"
+    )
 
 
 def _repeated_exits(exits: Sequence[RecordedExit]) -> list[str]:

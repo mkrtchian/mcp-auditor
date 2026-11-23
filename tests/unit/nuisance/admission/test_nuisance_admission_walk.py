@@ -11,15 +11,17 @@ from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from tests.unit.support.admission_mutations import admitting, recording, without_stdio
 
 
-def test_an_admitted_server_the_walk_does_not_reach_is_refused():
+def test_an_admitted_server_the_nuisance_walk_does_not_reach_is_refused():
     census = admissions.walk_inputs_with_the_second_flaw_under_another_package()
 
-    problems = admissions.problems_of(given.admitting_another_package_outside_the_walk(), census)
+    problems = admissions.problems_of(
+        given.admitting_another_package_outside_the_nuisance_walk(), census
+    )
 
     assert problems == [f"{admissions.OTHER_PACKAGE}: not reached by the nuisance walk"]
 
 
-def test_an_admitted_nuisance_acceptance_server_outside_the_walk_passes():
+def test_an_admitted_nuisance_acceptance_server_outside_the_nuisance_walk_passes():
     census = walks.walk_inputs_of(admissions.a_census_with_a_nuisance_acceptance_server())
 
     assert (
@@ -67,7 +69,7 @@ def test_a_recorded_exit_for_a_listed_server_left_out_passes():
     assert admissions.problems_of(admission) == []
 
 
-def test_a_recorded_exit_for_a_server_the_walk_does_not_reach_is_refused():
+def test_a_recorded_exit_for_a_server_the_nuisance_walk_does_not_reach_is_refused():
     admission = recording(admitting(), admissions.a_recorded_exit("npm:nowhere"))
 
     assert admissions.problems_of(admission) == [
@@ -75,7 +77,7 @@ def test_a_recorded_exit_for_a_server_the_walk_does_not_reach_is_refused():
     ]
 
 
-def test_a_recorded_exit_for_a_server_whose_exit_the_walk_derives_is_refused():
+def test_a_recorded_exit_for_a_server_whose_exit_the_nuisance_walk_derives_is_refused():
     walk_inputs = walks.a_walk_reaching_a_server_with_no_flaw_that_may_count()
     admission = recording(admitting(), admissions.a_recorded_exit("npm:bad"))
 
@@ -85,7 +87,7 @@ def test_a_recorded_exit_for_a_server_whose_exit_the_walk_derives_is_refused():
     assert EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW] in problem
 
 
-def test_a_recorded_exit_for_a_server_the_walk_marks_is_refused_naming_the_mark():
+def test_a_recorded_exit_for_a_server_the_nuisance_walk_marks_is_refused_naming_the_mark():
     census = walks.a_census_walking([("exc1", "drawn", walks.AN_EXCLUDED_SERVER)])
     census = walks.with_the_second_classifier_overriding(
         census, "exc1", {"server_package": "npm:another-label"}

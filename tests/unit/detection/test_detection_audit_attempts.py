@@ -37,7 +37,7 @@ async def test_a_refused_audit_is_audited_again_and_graded_by_the_first_attempt_
     assert attempt.calls == 2
 
 
-async def test_an_audit_missing_a_step_at_every_attempt_is_a_run_not_completed(
+async def test_an_audit_missing_a_model_call_at_every_attempt_is_a_run_not_completed(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):

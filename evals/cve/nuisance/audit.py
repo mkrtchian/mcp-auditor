@@ -1,5 +1,5 @@
 """One audit of one admitted server on its patched image, with the suite's retry policy: a
-refused or unreadable step, or one whose prompt was longer than the model's context window, is
+refused or unreadable model call, or one whose prompt was longer than the model's context window, is
 kept and counted downstream, a launch failure, a throttled attempt or a transient provider error
 is retried, and a fatal provider error stops the run."""
 
@@ -124,9 +124,9 @@ async def nuisance_audit(
     attempt: Callable[[], Awaitable[NuisanceAudit | LaunchFailed | ProviderErrorAttempt]],
 ) -> NuisanceAudit | DroppedRun:
     """One run of one server, at most `NUISANCE_INFRA_ATTEMPTS` calls. A report with no
-    throttled step stands, an alarm in it whatever step was refused. A throttled report, a
-    launch failure or a provider error is retried. The run drops as throttled when any attempt
-    was, else as a provider error when any attempt met one, else as a launch failure."""
+    throttled model call stands, an alarm in it whatever model call was refused. A throttled
+    report, a launch failure or a provider error is retried. The run drops as throttled when any
+    attempt was, else as a provider error when any attempt met one, else as a launch failure."""
     causes: set[NotRunCause] = set()
     for number in range(1, NUISANCE_INFRA_ATTEMPTS + 1):
         outcome = await attempt()

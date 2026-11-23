@@ -60,7 +60,7 @@ def _classified(census: Census) -> set[str]:
 @dataclass(frozen=True)
 class ReachedServers:
     listed: Sequence[NuisanceServer]  # nuisance_population: what `walk` prints
-    without_candidates: Sequence[str]  # reached, with no flaw that may count, in walk order
+    without_candidates: Sequence[str]  # reached, no flaw that may count, in nuisance walk order
 
 
 def reached_servers(walk_inputs: WalkInputs) -> ReachedServers:

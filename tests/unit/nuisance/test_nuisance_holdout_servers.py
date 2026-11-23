@@ -42,7 +42,7 @@ def test_an_unmarked_stdio_server_under_docker_is_audited():
     assert population.exits == []
 
 
-def test_an_admitted_server_marked_by_the_walk_is_among_the_exits_once():
+def test_an_admitted_server_marked_by_the_nuisance_walk_is_among_the_exits_once():
     marked = given.admitted("npm:marked", runs_over_stdio=False)
 
     population = run_population(
@@ -55,7 +55,7 @@ def test_an_admitted_server_marked_by_the_walk_is_among_the_exits_once():
     assert population.exits == [ServerExit("npm:marked", ExitReason.EXCLUDED_SERVER)]
 
 
-def test_an_admitted_nuisance_acceptance_server_the_walk_did_not_mark_is_never_audited():
+def test_an_admitted_nuisance_acceptance_server_the_nuisance_walk_did_not_mark_is_never_audited():
     accepted = given.admitted("npm:accepted")
 
     population = run_population(given.a_listing(), admitting(accepted), {"npm:accepted"})
@@ -64,7 +64,7 @@ def test_an_admitted_nuisance_acceptance_server_the_walk_did_not_mark_is_never_a
     assert population.exits == [ServerExit("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER)]
 
 
-def test_a_nuisance_acceptance_server_also_marked_by_the_walk_is_among_the_exits_once():
+def test_a_nuisance_acceptance_server_also_marked_by_the_nuisance_walk_is_among_the_exits_once():
     accepted = given.admitted("npm:accepted")
     walked = [given.walked("npm:accepted", ExitReason.ACCEPTANCE_TARGET_SERVER)]
 

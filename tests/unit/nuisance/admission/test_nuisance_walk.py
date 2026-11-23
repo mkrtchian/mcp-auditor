@@ -1,6 +1,7 @@
 import pytest
 
 import tests.unit.nuisance.admission.support.test_nuisance_walk_given as given
+import tests.unit.nuisance.admission.support.test_nuisance_walk_then as then
 import tests.unit.support.nuisance_walks as walks
 from evals.cve.census.classification import Criterion
 from evals.cve.census.draw_order import draw_order
@@ -24,7 +25,7 @@ def test_reached_identifiers_raises_without_a_draw():
         reached_identifiers(census)
 
 
-def test_reached_identifiers_follows_the_walk_order():
+def test_reached_identifiers_follows_the_detection_walk_order():
     census = walks.a_census_walking(
         [("a1", "drawn", "npm:srv1"), ("b1", "skipped", "npm:srv2"), ("a2", "given_up", "npm:srv1")]
     )
@@ -74,12 +75,7 @@ def test_pypi_names_collapse_by_pep503_other_prefixes_stay_verbatim():
 
     assert server_of("p1", walks.walk_inputs_of(census)) == "PyPI:praisonai"
     assert server_of("p2", walks.walk_inputs_of(census)) == "PyPI:praisonai"
-    assert [
-        server.server_package for server in nuisance_population(walks.walk_inputs_of(census))
-    ] == [
-        "PyPI:praisonai",
-        "npm:Foo",
-    ]
+    then.the_population_is(walks.walk_inputs_of(census), "PyPI:praisonai", "npm:Foo")
 
 
 def test_server_of_raises_when_the_flaw_has_no_classification():
@@ -143,9 +139,7 @@ def test_a_server_whose_only_flaw_both_classifiers_file_outside_the_grammar_stay
         outside=walks.OUTSIDE_THE_GRAMMAR,
     )
 
-    assert [
-        server.server_package for server in nuisance_population(walks.walk_inputs_of(census))
-    ] == ["npm:ok", "npm:outside"]
+    then.the_population_is(walks.walk_inputs_of(census), "npm:ok", "npm:outside")
 
 
 def test_a_server_whose_every_flaw_fails_leaves_the_population():
@@ -154,7 +148,7 @@ def test_a_server_whose_every_flaw_fails_leaves_the_population():
         walks.walk_inputs_of(census), "bad", Criterion.PINNABLE, False
     )
 
-    assert [server.server_package for server in nuisance_population(settled)] == ["npm:ok"]
+    then.the_population_is(settled, "npm:ok")
 
 
 def test_reached_servers_keep_apart_a_server_with_no_flaw_that_may_count():
@@ -215,7 +209,7 @@ def test_a_dropped_target_s_server_is_an_acceptance_target_server_only():
     }
 
 
-def test_the_walk_resumes_past_the_detection_walk_in_draw_order():
+def test_the_nuisance_walk_resumes_past_the_detection_walk_in_draw_order():
     census = walks.a_census_walking_the_first(2, of=["q1", "q2", "q3", "q4"])
     order = [entry.identifier for entry in draw_order(census)]
 
@@ -245,11 +239,8 @@ def test_a_queue_flaw_settled_against_a_draw_order_criterion_is_skipped():
         walks.walk_inputs_of(census), "q", Criterion.EFFECT_IN_TOOL_RESPONSE, True
     )
 
-    assert [server.server_package for server in nuisance_population(settled_false)] == ["npm:a"]
-    assert [server.server_package for server in nuisance_population(settled_true)] == [
-        "npm:a",
-        "npm:q",
-    ]
+    then.the_population_is(settled_false, "npm:a")
+    then.the_population_is(settled_true, "npm:a", "npm:q")
 
 
 def test_an_identity_merges_two_labels_into_one_server():
@@ -294,7 +285,7 @@ def test_a_grammar_class_settlement_false_does_not_take_a_server_out():
     )
 
     for settled in (walks.walk_inputs_of(in_the_census), in_the_record):
-        assert [server.server_package for server in nuisance_population(settled)] == ["npm:srv"]
+        then.the_population_is(settled, "npm:srv")
     assert candidate_counted_flaws("npm:srv", in_the_record) == ["g"]
 
 

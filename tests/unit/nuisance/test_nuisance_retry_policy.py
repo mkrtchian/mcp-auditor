@@ -69,7 +69,7 @@ async def test_an_incomplete_report_stands_without_a_retry(cause: MissedCallCaus
         (MissedCallCause.PROVIDER_THROTTLED, False),
     ],
 )
-def test_only_a_refused_unreadable_or_too_long_step_makes_a_report_incomplete(
+def test_only_a_refused_unreadable_or_too_long_model_call_makes_a_report_incomplete(
     missed: MissedCallCause | None, incomplete: bool
 ):
     report = holdout_runs.a_report(False, missed=missed)

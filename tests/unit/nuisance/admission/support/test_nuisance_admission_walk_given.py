@@ -6,7 +6,7 @@ from evals.cve.nuisance.admission.walk_record import WalkInputs
 from tests.unit.support.admission_mutations import admitting
 
 
-def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
+def admitting_another_package_outside_the_nuisance_walk() -> NuisanceAdmission:
     """OTHER_PACKAGE admitted through SECOND_FLAW, a census flaw of it that is not a draw-order
     candidate, so the nuisance walk never reaches it."""
     return admissions.admitting_the_server_of(
