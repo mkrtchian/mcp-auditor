@@ -17,9 +17,9 @@ def a_failing_rebuild(services: Sequence[str]) -> None:
 def a_vet_of_one_server_beside_the_acceptance_one(tmp_path: Path) -> list[str]:
     """The `vet` arguments of an admission of `nuisance_vets.SERVER` and of the nuisance acceptance
     server ACCEPTANCE."""
-    census = admissions.a_census_with_an_acceptance_server()
+    census = admissions.a_census_with_a_nuisance_acceptance_server()
     one = admissions.an_admission()
-    acceptance = admissions.admitting_the_acceptance_server()
+    acceptance = admissions.admitting_the_nuisance_acceptance_server()
     both = one.model_copy(update={"servers": [*one.servers, *acceptance.servers]})
     return [
         "vet",

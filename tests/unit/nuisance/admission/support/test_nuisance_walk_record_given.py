@@ -2,11 +2,7 @@ import tests.unit.support.nuisance_walks as walks
 from evals.cve.census.census import Census
 from evals.cve.census.classification import Criterion
 from evals.cve.detection.draw_record import Settlement
-from evals.cve.nuisance.admission.walk_record import (
-    IdentitySettlement,
-    NuisanceWalkRecord,
-    WalkInputs,
-)
+from evals.cve.nuisance.admission.walk_record import IdentitySettlement, NuisanceWalkRecord
 
 
 def a_census_settling(flaw: str, criterion: Criterion, ruling: bool) -> Census:
@@ -39,11 +35,8 @@ def a_census_naming_two_packages_for_the_queue() -> Census:
     )
 
 
-an_empty_record = walks.an_empty_record
-
-
 def a_record_settling(*settlements: tuple[str, Criterion, bool]) -> NuisanceWalkRecord:
-    return an_empty_record().model_copy(
+    return walks.an_empty_record().model_copy(
         update={
             "settlements": [
                 Settlement(flaw=flaw, criterion=criterion, ruling=ruling, reason="read")
@@ -54,7 +47,7 @@ def a_record_settling(*settlements: tuple[str, Criterion, bool]) -> NuisanceWalk
 
 
 def a_record_identifying(*flaws: str) -> NuisanceWalkRecord:
-    return an_empty_record().model_copy(
+    return walks.an_empty_record().model_copy(
         update={
             "identities": [
                 IdentitySettlement(flaw=flaw, server_package="npm:srv2", reason="read")
@@ -62,10 +55,3 @@ def a_record_identifying(*flaws: str) -> NuisanceWalkRecord:
             ]
         }
     )
-
-
-def paired(census: Census, record: NuisanceWalkRecord) -> WalkInputs:
-    return WalkInputs(census=census, record=record)
-
-
-written = walks.written_record

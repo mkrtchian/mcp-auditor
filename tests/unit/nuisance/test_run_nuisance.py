@@ -143,7 +143,7 @@ def test_run_refuses_tracing_before_reading_the_admission(
 
 
 def test_run_on_a_stale_admission_exits_three_naming_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     census = censuses.written(tmp_path, admissions.a_census())
     stale = mutations.with_a_stale_grammar_fingerprint(admissions.an_admission())

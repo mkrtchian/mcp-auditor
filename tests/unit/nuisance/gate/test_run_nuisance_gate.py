@@ -36,7 +36,9 @@ def test_gate_with_only_a_non_current_server_admitted_exits_zero_and_says_so(
     exit_code = run_nuisance.main(
         [
             "gate",
-            *given.gate_arguments(tmp_path, admissions.a_census_with_an_acceptance_server(), path),
+            *given.gate_arguments(
+                tmp_path, admissions.a_census_with_a_nuisance_acceptance_server(), path
+            ),
         ]
     )
 
@@ -48,13 +50,15 @@ def test_gate_with_no_admitted_server_able_to_launch_exits_zero_naming_why(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.without_any_llm_key(monkeypatch)
-    admitted = admissions.admitting_the_acceptance_server()
+    admitted = admissions.admitting_the_nuisance_acceptance_server()
     path = admissions.written(tmp_path, mutations.without_stdio(admitted, given.GATE_SERVER))
 
     exit_code = run_nuisance.main(
         [
             "gate",
-            *given.gate_arguments(tmp_path, admissions.a_census_with_an_acceptance_server(), path),
+            *given.gate_arguments(
+                tmp_path, admissions.a_census_with_a_nuisance_acceptance_server(), path
+            ),
         ]
     )
 
@@ -69,9 +73,9 @@ def test_gate_on_a_server_outside_the_gate_set_exits_two(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     given.without_any_llm_key(monkeypatch)
-    path = admissions.written(tmp_path, admissions.admitting_the_acceptance_server())
+    path = admissions.written(tmp_path, admissions.admitting_the_nuisance_acceptance_server())
     arguments = given.gate_arguments(
-        tmp_path, admissions.a_census_with_an_acceptance_server(), path
+        tmp_path, admissions.a_census_with_a_nuisance_acceptance_server(), path
     )
 
     exit_code = run_nuisance.main(["gate", *arguments, "--server", "npm:other"])
@@ -85,7 +89,7 @@ def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
 ):
     recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
     unrecorded = mutations.with_every_new_field_unrecorded(
-        admissions.admitting_the_acceptance_server()
+        admissions.admitting_the_nuisance_acceptance_server()
     )
     arguments = given.arguments_for_one_gate_server(tmp_path, unrecorded)
 

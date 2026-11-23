@@ -115,14 +115,14 @@ ACCEPTANCE_FLAW = walks.A_CURRENT_TARGET_FLAW
 ACCEPTANCE_PACKAGE = "npm:an-acceptance-target-server"
 
 
-def a_census_with_an_acceptance_server() -> Census:
+def a_census_with_a_nuisance_acceptance_server() -> Census:
     """A census that also classifies the acceptance target flaw ACCEPTANCE_FLAW, outside the draw
     order, under ACCEPTANCE_PACKAGE."""
     with_target = censuses.with_a_cve_of(censuses.a_census(), ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE)
     return census_draws.with_a_walk_skipping(with_target, FIRST_FLAW)
 
 
-def admitting_the_acceptance_server() -> NuisanceAdmission:
+def admitting_the_nuisance_acceptance_server() -> NuisanceAdmission:
     return admitting_the_server_of(ACCEPTANCE_FLAW, ACCEPTANCE_PACKAGE, "acceptance-nuisance")
 
 

@@ -20,9 +20,11 @@ def test_an_admitted_server_the_walk_does_not_reach_is_refused():
 
 
 def test_an_admitted_nuisance_acceptance_server_outside_the_walk_passes():
-    census = walks.walk_inputs_of(admissions.a_census_with_an_acceptance_server())
+    census = walks.walk_inputs_of(admissions.a_census_with_a_nuisance_acceptance_server())
 
-    assert admissions.problems_of(admissions.admitting_the_acceptance_server(), census) == []
+    assert (
+        admissions.problems_of(admissions.admitting_the_nuisance_acceptance_server(), census) == []
+    )
 
 
 def test_a_wrong_reaching_flaw_is_refused_naming_both_flaws():

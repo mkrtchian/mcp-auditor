@@ -42,8 +42,8 @@ def arguments_for_one_gate_server(
     admitted by `admitted`, by default fully recorded."""
     return _arguments_with_a_report(
         tmp_path,
-        admissions.a_census_with_an_acceptance_server(),
-        admitted or admissions.admitting_the_acceptance_server(),
+        admissions.a_census_with_a_nuisance_acceptance_server(),
+        admitted or admissions.admitting_the_nuisance_acceptance_server(),
     )
 
 
@@ -66,7 +66,7 @@ def arguments_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
         ),
         admissions.FIRST_FLAW,
     )
-    recorded = admissions.admitting_the_acceptance_server()
+    recorded = admissions.admitting_the_nuisance_acceptance_server()
     other = mutations.with_every_new_field_unrecorded(
         admissions.admitting_the_server_of(OTHER_GATE_FLAW, OTHER_GATE_SERVER, "other-nuisance")
     )
