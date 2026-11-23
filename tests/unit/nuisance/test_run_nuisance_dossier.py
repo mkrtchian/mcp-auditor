@@ -104,13 +104,12 @@ def test_a_re_admission_dossier_with_a_backend_exits_three(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     out = tmp_path / "dossier"
-    server = a_committed_server_with_fix_checks().server_package
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
             "--server",
-            server,
+            "npm:@acme/files",
             "--re-admission",
             "--backend",
             "doris",
@@ -144,13 +143,14 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
 ):
     out = tmp_path / "dossier"
     missing = tmp_path / "absent.json"
-    server = a_committed_server_with_fix_checks().server_package
+    census = censuses.written(tmp_path, admissions.a_census())
 
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
+            *walks.committed_census_arguments(tmp_path, census),
             "--server",
-            server,
+            "npm:@acme/files",
             "--re-admission",
             "--admission",
             str(missing),
@@ -161,3 +161,4 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
 
     assert exit_code == 3
     assert not out.exists()
+    assert "no admission at" in capsys.readouterr().out

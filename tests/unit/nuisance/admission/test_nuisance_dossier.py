@@ -20,6 +20,7 @@ from evals.cve.detection.targets import acceptance_services
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.admission_docs import admission_confinement_text
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
+from evals.cve.planting_base import SENTINEL_IMAGE, STAND_IN_IMAGE
 from evals.eval_session import Refused
 from evals.repository import REPO_ROOT
 from tests.unit.nuisance.admission.support.holdout_reference_checks import (
@@ -184,10 +185,14 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
     dossier = given.a_written_dossier(tmp_path)
     write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, tmp_path / "kit")
 
-    build = "docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker"
-    assert build in (dossier / "README.md").read_text()
+    dossier_readme = (dossier / "README.md").read_text()
     kit_readme = (tmp_path / "kit" / "README.md").read_text()
-    assert build in kit_readme
+    for build in (
+        f"docker build -t {SENTINEL_IMAGE} -f docker/Dockerfile.sentinel docker",
+        f"docker build -t {STAND_IN_IMAGE} -f docker/Dockerfile.stand-in docker",
+    ):
+        assert build in dossier_readme
+        assert build in kit_readme
     assert "`evals/stand_ins/`" in kit_readme
 
 

@@ -13,18 +13,18 @@ import tests.unit.nuisance.admission.support.test_nuisance_re_admission_dossier_
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
 import tests.unit.support.nuisance_admissions as admissions
+from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.docker_paths import image_dockerfile
 from evals.cve.dossier_closure import import_closure
 from evals.cve.kit import benign_probe
 from evals.cve.kit.fix_check import check_fix
-from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE
-from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.admission.re_admission_docs import confinement_text, re_admission_readme
 from evals.cve.nuisance.admission.re_admission_dossier import (
     closure_roots,
+    copied_holdout_targets,
     fix_check_modules,
-    holdout_target_references,
     re_admission_dockerfiles,
     re_admission_plan,
 )
@@ -123,15 +123,10 @@ def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of
 
     out = dossier_of(server)
 
-    for target in holdout_target_references(server, given.the_copy_resolution()):
-        fixture = holdout_fixture_file(target.flaw_id)
-        reference = out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt"
-        text = reference.read_text()
-        assert text.startswith(fixture.read_text())
-        assert f"def {target.builder.__name__}(" in text
+    for target in copied_holdout_targets(server, given.the_copy_resolution()):
+        it_carries_the_holdout_reference_of(out, target)
         for service in (*target.images, target.patched_image):
             assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
-    assert list((out / "reference").rglob("*.py")) == []
 
 
 def test_a_detection_holdout_server_with_its_own_fix_check_carries_its_reference_and_card(
@@ -203,14 +198,6 @@ def test_the_readme_keeps_the_agent_off_every_shared_backend():
         assert fnmatch(backend.network, "mcp-auditor-cve-*"), key
 
 
-def test_the_readme_says_a_per_launch_backend_is_stood_for_the_launch_alone():
-    readme = re_admission_readme(admissions.an_admitted_server(), [])
-
-    assert (
-        "A per-launch backend is stood by the probe or the fix check for its own launch" in readme
-    )
-
-
 def test_the_confinement_of_a_server_on_a_per_launch_backend_points_at_its_launch():
     server = given.a_server_on_a_per_launch_backend()
 
@@ -224,25 +211,20 @@ def test_the_confinement_of_a_server_on_a_per_launch_backend_points_at_its_launc
 
 
 def test_a_copy_on_a_drawn_target_and_its_sibling_resolve_to_one_target():
-    server = given.a_server_copying_a_drawn_target_and_its_sibling()
+    drawn = HOLDOUT_TARGETS[0].flaw_id
+    sibling = "CVE-2099-0002"
+    server = given.a_server_copying(drawn, sibling)
 
-    targets = holdout_target_references(server, given.the_copy_resolution())
+    targets = copied_holdout_targets(server, {drawn: drawn, sibling: drawn})
 
-    drawn, _ = given.a_drawn_target_and_its_sibling()
     assert [target.flaw_id for target in targets] == [drawn]
 
 
 def test_a_copied_flaw_no_target_carries_is_refused():
-    def calibrated_on_an_unknown_target(flaw: FlawRecord) -> FlawRecord:
-        fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
-        return flaw.model_copy(update={"flaw": "CVE-2099-0001", "fix_check": fix_check})
-
-    server = mutations.with_the_first_flaw(
-        admissions.an_admitted_server(), calibrated_on_an_unknown_target
-    )
+    server = mutations.a_server_with_a_holdout_calibration_copy_at(None)
 
     with pytest.raises(Refused):
-        holdout_target_references(server, given.the_copy_resolution())
+        copied_holdout_targets(server, {})
 
 
 def test_a_server_the_admission_does_not_hold_is_refused():

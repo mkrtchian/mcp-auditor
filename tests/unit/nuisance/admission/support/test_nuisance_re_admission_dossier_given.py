@@ -7,10 +7,10 @@ import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture, FlawRecord
+from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
 from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.admission.re_admission_dossier import (
-    holdout_target_references,
+    copied_holdout_targets,
     re_admission_plan,
     write_re_admission_dossier,
 )
@@ -63,7 +63,7 @@ def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
     return next(
         server
         for server in the_committed_admission().servers
-        if holdout_target_references(server, resolution)
+        if copied_holdout_targets(server, resolution)
     )
 
 
@@ -73,23 +73,14 @@ def the_copy_resolution() -> dict[str, str]:
     )
 
 
-def a_server_copying_a_drawn_target_and_its_sibling() -> AdmittedServer:
+def a_server_copying(*flaw_ids: str) -> AdmittedServer:
     base = admissions.an_admitted_server()
     first = base.flaws[0]
-    flaws = [_copying(first, flaw_id) for flaw_id in a_drawn_target_and_its_sibling()]
+    fix_check = first.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
+    flaws = [
+        first.model_copy(update={"flaw": flaw_id, "fix_check": fix_check}) for flaw_id in flaw_ids
+    ]
     return base.model_copy(update={"flaws": flaws})
-
-
-def a_drawn_target_and_its_sibling() -> tuple[str, str]:
-    sibling, drawn = next(
-        (sibling, drawn) for sibling, drawn in the_copy_resolution().items() if sibling != drawn
-    )
-    return drawn, sibling
-
-
-def _copying(flaw: FlawRecord, flaw_id: str) -> FlawRecord:
-    fix_check = flaw.fix_check.model_copy(update={"source": "detection_holdout_calibration"})
-    return flaw.model_copy(update={"flaw": flaw_id, "fix_check": fix_check})
 
 
 def a_written_dossier(tmp_path: Path, server_package: str) -> Path:

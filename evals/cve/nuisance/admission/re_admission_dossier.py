@@ -108,7 +108,7 @@ def _detection_holdout_targets(
     server: AdmittedServer, resolution: Mapping[str, str]
 ) -> list[Target]:
     return [
-        *holdout_target_references(server, resolution),
+        *copied_holdout_targets(server, resolution),
         *holdout_targets_among(f.flaw for f in server.flaws),
     ]
 
@@ -143,9 +143,7 @@ def closure_roots(server: AdmittedServer) -> list[str]:
     return roots
 
 
-def holdout_target_references(
-    server: AdmittedServer, resolution: Mapping[str, str]
-) -> list[Target]:
+def copied_holdout_targets(server: AdmittedServer, resolution: Mapping[str, str]) -> list[Target]:
     by_identifier = {target.flaw_id: target for target in HOLDOUT_TARGETS}
     copied = [flaw.flaw for flaw in server.flaws if flaw.fix_check.is_holdout_calibration_copy]
     unknown = [flaw for flaw in copied if flaw not in resolution]
