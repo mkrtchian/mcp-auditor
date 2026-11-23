@@ -7,6 +7,7 @@ from evals.cve.detection.session import DetectionSessionResult
 from evals.cve.detection.session_model import AuditTarget, DetectionHarness, DetectionOptions
 from evals.cve.detection.survey import TargetSurvey
 from evals.cve.detection.targets import Target
+from evals.cve.provider_errors import ProviderFatal
 from evals.session_usage import SessionThrottles
 from tests.fakes import FakeContainerSweep
 from tests.unit.detection.support.calibration_check_deps import deps_with
@@ -81,3 +82,10 @@ async def a_session_that_crashes_if_started(
 ) -> DetectionSessionResult:
     # main turns any exception into exit 4, so an exit 3 proves the session never started.
     raise AssertionError("the session must not start")
+
+
+async def a_session_raising_a_fatal_provider_error(
+    options: DetectionOptions, harness: DetectionHarness
+) -> DetectionSessionResult:
+    cause = PermissionError("the key sk-secret was revoked")
+    raise ProviderFatal(cause) from cause

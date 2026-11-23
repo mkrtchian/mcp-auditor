@@ -14,6 +14,7 @@ from evals.cve.images import image_tag
 from evals.cve.launch_audit import RunOverrides
 from evals.cve.run_images import target_services
 from evals.detection_preflight import preflight_ok
+from evals.gate_outcome import CRASHED_EXIT
 from tests.unit.detection.support import run_detection_cli as cli
 from tests.unit.detection.support import test_run_detection_given as given
 from tests.unit.support.acceptance_targets import an_acceptance_target
@@ -242,6 +243,22 @@ def test_a_graded_run_that_crashes_still_removes_the_containers_left_running(
 
     assert code == 4
     assert containers.removed == ["leftover_filesystem"]
+
+
+def test_a_fatal_provider_error_prints_the_crash_panel_without_its_message(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+):
+    deps = replace(
+        cli.a_session_under_priced_models(monkeypatch),
+        session=given.a_session_raising_a_fatal_provider_error,
+    )
+
+    code = cli.exit_code_of(deps, "--no-baseline", "--report", str(tmp_path / "r.json"))
+
+    printed = capsys.readouterr()
+    assert code == CRASHED_EXIT
+    assert "PermissionError" in printed.out
+    assert "sk-secret" not in printed.out + printed.err
 
 
 def _tags_of(flaw_id: str) -> list[str]:

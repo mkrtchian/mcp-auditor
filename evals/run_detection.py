@@ -55,6 +55,7 @@ from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.images import image_ids, image_tag
 from evals.cve.launch_audit import NO_OVERRIDES
 from evals.cve.places import DETECTION_PLACES, Places, load_places
+from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import write_report
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
@@ -94,6 +95,12 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
     except Refused as refused:
         display.print_refusal(refused.title, refused.reasons)
         return NOT_COMPARABLE_EXIT
+    except ProviderFatal as fatal:
+        display.print_refusal(
+            "Crashed: a fatal model provider error stopped the run.",
+            [describe_provider_error(fatal.cause)],
+        )
+        return CRASHED_EXIT
     except Exception:
         traceback.print_exc()
         return CRASHED_EXIT

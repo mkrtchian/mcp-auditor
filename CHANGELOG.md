@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Under full detail, a launch error of the detection suite's layout check prints its unwrapped root cause as `Type: cause`, as the calibration check does.
 - `python -m evals.run_nuisance gate` rebuilds the built backend images of its servers, and the sentinel and stand-in images when a backend-less server declares public names, as the nuisance holdout run and the vet do: it rebuilt the server images alone, so a gate could audit an old backend image under a fixture fingerprint naming its new Dockerfile.
 - A fatal model provider error during `python -m evals.run_nuisance gate` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
+- A fatal model provider error during `python -m evals.run_detection` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
 
 ## [0.5.0] - 2026-11-22
 
