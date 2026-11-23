@@ -167,12 +167,3 @@ class NuisanceHoldoutRunResult:
     partial: bool = False  # a run stopped by an exception, its finished entries only
     # The reached servers neither admitted nor recorded out, outside the rule's list of exits.
     pending_admission: Sequence[str] = ()
-
-
-class RunInterrupted(Exception):
-    """A run stopped by an exception out of one of its audits, with what had finished."""
-
-    def __init__(self, partial: NuisanceHoldoutRunResult, cause: BaseException) -> None:
-        super().__init__(f"the run stopped on {type(cause).__name__}")
-        self.partial = partial
-        self.cause = cause

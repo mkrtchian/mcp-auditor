@@ -8,8 +8,8 @@ import pytest
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import BackendFixture
-from evals.cve.nuisance.results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.run_files import RunInterrupted
 from evals.eval_session import Refused, TreeState
 from tests.fakes import FakeContainerSweep
 

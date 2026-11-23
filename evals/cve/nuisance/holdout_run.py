@@ -51,10 +51,10 @@ from evals.cve.nuisance.results import (
     NotRunServer,
     NuisanceHoldoutRunResult,
     NuisanceServerResult,
-    RunInterrupted,
 )
 from evals.cve.nuisance.solo import first_failure_then_alone, played_alone
 from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
+from evals.cve.run_files import RunInterrupted
 from evals.cve.run_images import (
     rebuild_images,
     refuse_without_closed_networks,

@@ -5,8 +5,9 @@ import pytest
 
 import tests.unit.nuisance.support.test_nuisance_holdout_run_interrupted_given as given
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
-from evals.cve.nuisance.results import RunInterrupted
+from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.run_files import RunInterrupted
 
 
 async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_result():
@@ -21,6 +22,7 @@ async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_res
 
     assert interrupted.value.cause is fatal
     partial = interrupted.value.partial
+    assert isinstance(partial, NuisanceHoldoutRunResult)
     assert partial.partial
     assert [server.server_package for server in partial.servers] == ["npm:done"]
 
@@ -47,7 +49,9 @@ async def test_any_other_exception_interrupts_the_run_the_same_way():
         await holdout_runs.run(servers, holdout_runs.deps_auditing(audit))
 
     assert interrupted.value.cause is bug
-    assert [server.server_package for server in interrupted.value.partial.servers] == ["npm:done"]
+    partial = interrupted.value.partial
+    assert isinstance(partial, NuisanceHoldoutRunResult)
+    assert [server.server_package for server in partial.servers] == ["npm:done"]
 
 
 async def test_the_partial_result_names_the_servers_run_after_their_second_pass():

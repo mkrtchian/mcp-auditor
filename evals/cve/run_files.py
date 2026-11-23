@@ -12,7 +12,6 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.nuisance import results as nuisance_results
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.eval_session import Refused
 
@@ -47,7 +46,7 @@ def partial_result_kept(report: Path) -> Generator[None]:
     """Writes the partial result of a run stopped by an exception, then raises that exception."""
     try:
         yield
-    except (RunInterrupted, nuisance_results.RunInterrupted) as interrupted:
+    except RunInterrupted as interrupted:
         write_result(report, interrupted.partial)
         raise interrupted.cause  # noqa: B904
 
