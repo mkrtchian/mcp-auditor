@@ -13,6 +13,7 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus
+from evals.cve.file_baselines import unconfirmed_baseline_detail
 from evals.cve.nuisance.gate.gate_baseline import WHOLE_RESET, NuisanceServerBaseline, server_reset
 from evals.gate import RetestRule
 from evals.gate_outcome import GateOutcome
@@ -86,10 +87,7 @@ def compare_server(
 
 def _why_not_gated(baseline: NuisanceServerBaseline) -> str:
     if baseline.status == BaselineStatus.UNCONFIRMED:
-        return (
-            f"unconfirmed baseline recorded at {baseline.commit}: confirm it with a second "
-            "recording at that commit, or delete it in a commit of its own"
-        )
+        return unconfirmed_baseline_detail(baseline.commit)
     return f"flagged in {sum(baseline.runs)} of {len(baseline.runs)} baseline runs"
 
 
@@ -161,7 +159,3 @@ def _result(
     outcome: GateOutcome, reasons: list[str], comparisons: Sequence[ServerComparison]
 ) -> NuisanceGateResult:
     return NuisanceGateResult(outcome=outcome, reasons=reasons, servers=list(comparisons))
-
-
-def exit_code(outcome: GateOutcome) -> int:
-    return {GateOutcome.GREEN: 0, GateOutcome.RED: 1, GateOutcome.NOT_COMPARABLE: 3}[outcome]

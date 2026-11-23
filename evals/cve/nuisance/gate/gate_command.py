@@ -16,10 +16,10 @@ from rich.markup import escape
 from rich.progress import Progress
 from rich.text import Text
 
-from evals.baseline import BaselineStatus
 from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
+from evals.cve.file_baselines import next_recording_step
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
@@ -204,20 +204,11 @@ def _print_baselines(session: NuisanceGateSession, recorded_flags: Sequence[str]
         if written.leaves_gated_set:
             console.print(Text(f"  {written.server_package} leaves the gated set."))
     # A recording can confirm some files and start others, and each status has its next step.
+    command = " ".join([_RECORD_COMMAND, *recorded_flags])
     for status in dict.fromkeys(written.status for written in session.written):
-        console.print(Text(_next_step(status, recorded_flags)))
+        console.print(Text(next_recording_step(status, command, _BASELINES)))
     for reason in session.recording_refused:
         console.print(Text(f"Recording refused: {reason}"))
-
-
-def _next_step(status: BaselineStatus, recorded_flags: Sequence[str]) -> str:
-    if status == BaselineStatus.CONFIRMED:
-        return f"Commit {_BASELINES} by hand."
-    command = " ".join([_RECORD_COMMAND, *recorded_flags])
-    return (
-        f"Run {command} again now, at this commit and on these images, to confirm it. "
-        f"Commit {_BASELINES} by hand once confirmed."
-    )
 
 
 def _recorded_flags(args: argparse.Namespace) -> list[str]:

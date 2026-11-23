@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
+from evals.cve.file_baselines import load_checked
 from evals.cve.images import image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
@@ -36,10 +37,10 @@ from evals.cve.nuisance.gate.gate import (
     apply_retests,
     compare_server,
     decide,
-    exit_code,
 )
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
+    NUISANCE_GATE_BASELINE_STORE,
     NuisanceGateConditions,
     NuisanceServerBaseline,
     condition_mismatches,
@@ -52,13 +53,14 @@ from evals.cve.nuisance.gate.gate_session_model import (
     OpenedGate,
     ServerRuns,
 )
-from evals.cve.nuisance.gate.gate_session_recording import load_checked, record, recording_tree
+from evals.cve.nuisance.gate.gate_session_recording import record, recording_tree
 from evals.cve.nuisance.images import backend_image_ids, image_tag
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
 from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
 from evals.cve.run_images import DOCKER_SWEEP, rebuild_images, refuse_without_closed_networks
 from evals.eval_session import RECORDING_REFUSED, REFUSED_BEFORE_ANY_LLM_CALL, Refused, read_tree
+from evals.gate_outcome import NOT_COMPARABLE_EXIT
 from evals.recording import RecordingRefused
 from evals.session_usage import SessionThrottles
 
@@ -144,12 +146,14 @@ async def _run_opened(opened: OpenedGate) -> NuisanceGateSession:
         recording_refused=refused,
         throttled_requests=opened.harness.throttled_requests(),
         # A green gate whose recording was refused never exits 0.
-        exit_code=3 if refused else exit_code(gate.outcome),
+        exit_code=NOT_COMPARABLE_EXIT if refused else gate.outcome.exit_code,
     )
 
 
 def _open(options: NuisanceGateOptions, harness: NuisanceGateHarness) -> OpenedGate:
-    files = load_checked(harness.baselines, REFUSED_BEFORE_ANY_LLM_CALL)
+    files = load_checked(
+        harness.baselines, REFUSED_BEFORE_ANY_LLM_CALL, NUISANCE_GATE_BASELINE_STORE
+    )
     opened = OpenedGate(options, harness, files, tree=None)
     if not options.record_baseline:
         return opened

@@ -1395,3 +1395,30 @@ Later commits of the pass also touch what the instrument hashes, writes or print
 **Fingerprint.** Both are unchanged, checked before and after each commit. The grammar fingerprint stays `58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1`, the value the four baselines record. The fixture fingerprint of each of the 41 targets (4 acceptance, 37 holdout) is unchanged: the map from flaw ID to fixture fingerprint, serialized as JSON with sorted keys, hashes with SHA-256 to `689da547ef98cf466f67be55cdb28b319790d9e21b8ea6df2df85624c6dc420b`.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the structure of the detection suite's gate, recording and baseline code and the text of its holdout fixtures. No prompt, guard or default of the system under test moves, no place, target, grammar or rule of the gate. (2) It was raised by a review of the detection suite against the coding standards, not by a measured value. (3) Each move keeps which values reach which fields, so the statuses, the gate outcomes and the baselines written are the same, and none of what resets a detection baseline (a fixture, the scoring code's grading, the model, runs or budget) changes. The holdout fixtures send the same calls, and the printed texts change no decision. The four baselines keep their runs and their confirmation. (4) It applies to every target of both layers, and to every gated run of the acceptance layer.
+
+### 2026-11-23, the scoring code of the nuisance suite is deduplicated
+
+Commit: the one that adds this entry, and the later commits of the same standards pass that it lists.
+
+**State.** No nuisance acceptance server is admitted and `evals/baselines/nuisance/` does not exist, so no baseline is reset. No label, admission record, fixture, grammar or rule of the gate changes, and nothing the counter counts moves.
+
+**What changes.** The gate, recording and baseline code of the nuisance suite loses the copies it kept of the helpers the eval instruments share and of `evals/cve/file_baselines.py`, which the detection gate already calls. In this commit, a nuisance baseline file is written through the shared atomic write, its run count is checked by the shared rule of ADR 023, each problem prefixed with the package as before, and the condition mismatches keep their order by package. A confirmation or a replacement names the recording it builds on through the shared reference. The recording decided for every file or for none, the gated set a recording leaves, the checked loading of the baseline files, the refusal texts, the next recording step and the exit code of a gate outcome are read from the shared helpers. Every message and exit code stays the same. The later commits cover:
+
+- The audit of one gate run, moved onto the attempt loop the detection suite uses and into the gate's package, with its two printed phrases kept.
+- The precedence of a dropped run's causes and the prices of a run's cost, each read from one place.
+- The report lines and the controls of the holdout nuisance rate, moved to what both holdout runs share.
+- The nuisance walk, which reads its criteria through `criteria_met`.
+- The fingerprint code, which takes its stand-ins directory as a parameter, with one of its helpers renamed and one helper of the backend registry it reads removed. Every value is unchanged.
+
+Later commits of the pass also change four printed texts:
+
+- A fatal model provider error during a nuisance gate prints the existing crash panel, with the error's type and status and no provider message on stderr, where it printed a traceback. The exit code stays 4.
+- The same error on the detection command prints the panel `run_detection_holdout` prints, with the same exit code.
+- The line of the `walk` command tags an excluded server `[excluded_server]`, where it read `[excluded]`.
+- The refusals of the admission's walk checks and the header of the `walk` command write "the nuisance walk", where they read "the walk".
+
+The change to the images a gate rebuilds decides which image a graded run audits. It is outside this entry and has its own.
+
+**Fingerprint.** All four are unchanged, checked before and after each section of the pass. The grammar fingerprint stays `58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1` and the counter fingerprint `b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161`. The map from flaw ID to fixture fingerprint of the 41 detection targets, serialized as JSON with sorted keys, hashes with SHA-256 to `689da547ef98cf466f67be55cdb28b319790d9e21b8ea6df2df85624c6dc420b`, and the same map from server package to fixture fingerprint of the 65 admitted nuisance servers to `0444a788e1477df424ea3b29ab0dc2a2c1bacf55746975126c0ae46e667cfc5d`.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, the structure of the nuisance suite's gate, recording, baseline, report, walk and fingerprint code. No prompt, guard or default of the system under test moves, no counted flaw or tool, no exit and no rule of the gate. (2) It was raised by a review of the nuisance suite against the coding standards, not by a measured value. (3) Each move keeps which values reach which fields, so the alarms, the gate outcomes, the holdout nuisance rate and the baselines a recording would write are the same, and none of what resets a nuisance baseline (a fixture, the scoring code's grading, the model, runs or budget) changes. The printed texts change no decision. (4) It applies to every admitted server, to every nuisance holdout run and to every run of the nuisance gate, and its one printed change outside the nuisance suite to the detection command's crash.

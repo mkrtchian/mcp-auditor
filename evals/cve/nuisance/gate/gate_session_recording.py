@@ -2,30 +2,23 @@
 write of one file per server once the gate has decided, the mirror of
 `evals.cve.detection.session_recording`."""
 
-from pathlib import Path
-
+from evals.cve.file_baselines import (
+    BASELINE_FILES_CHANGED,
+    all_or_none,
+    leaves_gated_set,
+    load_checked,
+)
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
 from evals.cve.nuisance.gate.gate_baseline import (
+    NUISANCE_GATE_BASELINE_STORE,
     WHOLE_RESET,
-    baseline_integrity,
     condition_mismatches,
-    load_baselines,
     write_baseline,
 )
-from evals.cve.nuisance.gate.gate_recording import (
-    ServerRecording,
-    decide_recording,
-    decide_recordings,
-    leaves_gated_set,
-)
-from evals.cve.nuisance.gate.gate_session_model import (
-    Baselines,
-    OpenedGate,
-    ServerRuns,
-    WrittenBaseline,
-)
-from evals.eval_session import RECORDING_REFUSED, Refused, TreeState, tree_drift
+from evals.cve.nuisance.gate.gate_recording import ServerRecording, decide_recording
+from evals.cve.nuisance.gate.gate_session_model import OpenedGate, ServerRuns, WrittenBaseline
+from evals.eval_session import DIRTY_TREE_REFUSAL, RECORDING_REFUSED, Refused, TreeState, tree_drift
 from evals.recording import RecordingRefused
 
 
@@ -35,7 +28,7 @@ def recording_tree(opened: OpenedGate) -> TreeState:
     reasons = condition_mismatches(opened.baselines(), opened.options.conditions)
     reasons += [WHOLE_RESET] if reasons else []
     if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
+        reasons.append(DIRTY_TREE_REFUSAL)
     if reasons:
         raise Refused(RECORDING_REFUSED, reasons)
     return tree
@@ -55,7 +48,7 @@ def record(
         package: decide_recording(baselines.get(package), recording, comparisons.get(package))
         for package, recording in _recordings(opened, opened.tree, runs).items()
     }
-    decided = decide_recordings(decisions)
+    decided = all_or_none(decisions)
     if isinstance(decided, RecordingRefused):
         return decided
     for baseline in decided:
@@ -71,23 +64,14 @@ def record(
 def _recording_drift(opened: OpenedGate, tree: TreeState) -> list[str]:
     drift = tree_drift(tree, opened.harness.read_tree())
     try:
-        changed = load_checked(opened.harness.baselines, RECORDING_REFUSED) != opened.files
+        files = load_checked(
+            opened.harness.baselines, RECORDING_REFUSED, NUISANCE_GATE_BASELINE_STORE
+        )
     except Refused as invalid:
         return drift + invalid.reasons
-    if changed:
-        drift.append("the baseline files changed during the runs: record again")
+    if files != opened.files:
+        drift.append(BASELINE_FILES_CHANGED)
     return drift
-
-
-def load_checked(directory: Path, title: str) -> Baselines:
-    try:
-        baselines = load_baselines(directory)
-    except ValueError as error:
-        raise Refused(title, [f"{directory} holds an invalid baseline file: {error}"]) from error
-    problems = [problem for b in baselines.values() for problem in baseline_integrity(b)]
-    if problems:
-        raise Refused(title, problems)
-    return baselines
 
 
 def _recordings(

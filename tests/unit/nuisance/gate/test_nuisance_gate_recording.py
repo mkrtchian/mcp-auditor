@@ -3,14 +3,10 @@ import pytest
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.nuisance.gate.support.test_nuisance_gate_recording_given as given
 from evals.baseline import BaselineStatus, RecordingRef
+from evals.cve.file_baselines import leaves_gated_set
 from evals.cve.nuisance.gate.gate import ServerOutcome
 from evals.cve.nuisance.gate.gate_baseline import NuisanceServerBaseline
-from evals.cve.nuisance.gate.gate_recording import (
-    ServerRecording,
-    decide_recording,
-    decide_recordings,
-    leaves_gated_set,
-)
+from evals.cve.nuisance.gate.gate_recording import ServerRecording, decide_recording
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
@@ -191,21 +187,3 @@ def test_a_recording_that_keeps_a_gated_server_gated_does_not_leave_the_gated_se
 
     assert isinstance(written, NuisanceServerBaseline)
     assert not leaves_gated_set(existing, written)
-
-
-def test_every_decided_server_is_written_when_none_is_refused():
-    first = nuisance_gate_baselines.an_unconfirmed_baseline(package="npm:first")
-    second = nuisance_gate_baselines.an_unconfirmed_baseline(package="npm:second")
-
-    decision = decide_recordings({"npm:first": first, "npm:second": second})
-
-    assert decision == [first, second]
-
-
-def test_one_refused_server_means_no_baseline_to_write():
-    written = nuisance_gate_baselines.an_unconfirmed_baseline(package="npm:first")
-    refused = RecordingRefused(reasons=["the gate saw a regression"])
-
-    decision = decide_recordings({"npm:first": written, "npm:second": refused})
-
-    assert decision == RecordingRefused(reasons=["npm:second: the gate saw a regression"])

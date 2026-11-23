@@ -1,11 +1,10 @@
 """Whether a recording of one nuisance acceptance server is written, and as what (ADR 023, ADR
 024), the mirror of `evals.cve.detection.recording` with an alarm in place of a miss."""
 
-from collections.abc import Mapping
-
 from pydantic import BaseModel
 
 from evals.baseline import BaselineStatus, RecordingRef
+from evals.cve.file_baselines import RUN_NOT_COMPLETED, red_gate_reason, refused_confirmation
 from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
 from evals.cve.nuisance.gate.gate_baseline import (
     WHOLE_RESET,
@@ -17,7 +16,6 @@ from evals.cve.nuisance.gate.gate_baseline import (
 from evals.gate import RetestRule
 from evals.recording import RecordingRefused
 
-_FAILED_RUN = "a run did not complete: a baseline holds every run its conditions claim"
 # INCONCLUSIVE has no CVE counterpart: a server already unstable stays recordable over.
 _GREEN = {
     ServerOutcome.HELD,
@@ -44,36 +42,12 @@ def decide_recording(
     comparison: ServerComparison | None,
 ) -> NuisanceServerBaseline | RecordingRefused:
     if not recording.completed:
-        return RecordingRefused(reasons=[_FAILED_RUN])
+        return RecordingRefused(reasons=[RUN_NOT_COMPLETED])
     if existing is None:
         return _baseline_from(recording, BaselineStatus.UNCONFIRMED, RetestRule())
     if existing.status == BaselineStatus.UNCONFIRMED:
         return _confirmation(existing, recording)
     return _replacement(existing, recording, comparison)
-
-
-def leaves_gated_set(
-    existing: NuisanceServerBaseline | None, written: NuisanceServerBaseline
-) -> bool:
-    """Not a refusal: the session names it (ADR 024)."""
-    return existing is not None and existing.gated() and not written.gated()
-
-
-def decide_recordings(
-    decisions: Mapping[str, NuisanceServerBaseline | RecordingRefused],
-) -> list[NuisanceServerBaseline] | RecordingRefused:
-    """All or none, so a run is never half recorded."""
-    reasons = [
-        f"{package}: {reason}"
-        for package, decision in decisions.items()
-        if isinstance(decision, RecordingRefused)
-        for reason in decision.reasons
-    ]
-    if reasons:
-        return RecordingRefused(reasons=reasons)
-    return [
-        decision for decision in decisions.values() if isinstance(decision, NuisanceServerBaseline)
-    ]
 
 
 def _confirmation(
@@ -84,15 +58,10 @@ def _confirmation(
     if existing.commit != recording.commit:
         differences.append(f"it was recorded at {existing.commit}, this run at {recording.commit}")
     if differences:
-        return RecordingRefused(
-            reasons=[
-                f"the unconfirmed baseline differs from this recording ({'; '.join(differences)}): "
-                "confirm it at its own commit, or delete it in a commit of its own (ADR 020)"
-            ]
-        )
+        return refused_confirmation(differences)
     confirmed = _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule)
     return confirmed.model_copy(
-        update={"runs": existing.runs + recording.runs, "confirms": _ref(existing)}
+        update={"runs": existing.runs + recording.runs, "confirms": RecordingRef.of(existing)}
     )
 
 
@@ -105,7 +74,7 @@ def _replacement(
     if reasons:
         return RecordingRefused(reasons=reasons)
     replacing = _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule)
-    return replacing.model_copy(update={"replaces": _ref(existing)})
+    return replacing.model_copy(update={"replaces": RecordingRef.of(existing)})
 
 
 def _reset_refusals(existing: NuisanceServerBaseline, recording: ServerRecording) -> list[str]:
@@ -123,10 +92,7 @@ def _comparison_refusals(comparison: ServerComparison | None) -> list[str]:
     if comparison is not None and comparison.outcome in _GREEN:
         return []
     if comparison is not None and comparison.outcome == ServerOutcome.REGRESSION:
-        return [
-            "the gate found a regression on this server: a baseline is never recorded while "
-            "the gate is red (ADR 016)"
-        ]
+        return [red_gate_reason("server")]
     outcome = "no comparison" if comparison is None else comparison.outcome.value
     return [
         f"this server's comparison is {outcome}: a confirmed baseline is recorded over only "
@@ -155,7 +121,3 @@ def _baseline_from(
         runs=recording.runs,
         image_ids=recording.image_ids,
     )
-
-
-def _ref(baseline: NuisanceServerBaseline) -> RecordingRef:
-    return RecordingRef(commit=baseline.commit, recorded_at=baseline.recorded_at)

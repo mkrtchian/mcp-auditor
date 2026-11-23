@@ -8,16 +8,16 @@ holdout nuisance rate measures. The counter and grammar fingerprints are conditi
 either is a whole reset (nuisance-suite-rule.md, Versioning).
 """
 
-import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.baseline import BaselineStatus, RecordingRef
+from evals.baseline import BaselineStatus, RecordingRef, run_count_problems, write_json_atomically
 from evals.cve.detection.baseline import grammar_fingerprint
 from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
+from evals.cve.file_baselines import BaselineStore, condition_mismatches_by_file, whole_reset
 from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.gate import RetestRule
@@ -26,10 +26,7 @@ from mcp_auditor.config import Settings
 NUISANCE_GATE_RUNS = 3
 NUISANCE_GATE_BASELINE_DIRECTORY = Path(__file__).parents[3] / "baselines" / "nuisance"
 _BASELINE_DIRECTORY = "evals/baselines/nuisance"
-WHOLE_RESET = (
-    f"Reset the whole baseline: delete {_BASELINE_DIRECTORY}/ in a commit of its own, "
-    "then record twice at one commit (ADR 020)."
-)
+WHOLE_RESET = whole_reset(_BASELINE_DIRECTORY)
 
 
 class NuisanceGateConditions(BaseModel):
@@ -112,37 +109,23 @@ def baseline_file_name(server_package: str) -> str:
 
 
 def write_baseline(directory: Path, baseline: NuisanceServerBaseline) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / baseline_file_name(baseline.server_package)
-    temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(baseline.model_dump_json(indent=2))
-    os.replace(temporary, path)
+    write_json_atomically(directory / baseline_file_name(baseline.server_package), baseline)
 
 
 def baseline_integrity(baseline: NuisanceServerBaseline) -> list[str]:
     """What the file holds that its conditions do not claim, checked when the gate loads it."""
-    package, held = baseline.server_package, len(baseline.runs)
-    if not held:
-        return [f"{package}: the baseline holds no run"]
-    if baseline.confirms is None:
-        claimed, claimants = baseline.conditions.runs, "its conditions"
-    else:  # a confirmation holds the runs of both recordings (ADR 023)
-        claimed, claimants = baseline.conditions.runs * 2, "its conditions and its confirmation"
-    if held == claimed:
-        return []
-    return [f"{package}: the baseline holds {held} runs, {claimants} claim {claimed}"]
+    problems = run_count_problems(len(baseline.runs), baseline.conditions.runs, baseline.confirms)
+    return [f"{baseline.server_package}: {problem}" for problem in problems]
 
 
 def condition_mismatches(
     baselines: Mapping[str, NuisanceServerBaseline], candidate: NuisanceGateConditions
 ) -> list[str]:
-    expected = candidate.model_dump()
-    return [
-        f"{baseline_file_name(package)}: {field} is {recorded!r}, the run has {expected[field]!r}"
+    by_file = {
+        baseline_file_name(package): baseline.conditions
         for package, baseline in sorted(baselines.items())
-        for field, recorded in baseline.conditions.model_dump().items()
-        if recorded != expected[field]
-    ]
+    }
+    return condition_mismatches_by_file(by_file, candidate)
 
 
 def server_reset(server_package: str) -> str:
@@ -151,3 +134,6 @@ def server_reset(server_package: str) -> str:
         f"{_BASELINE_DIRECTORY}/{baseline_file_name(server_package)} in the commit that changes "
         f"its fixture, then record it twice at one commit with --server {server_package}"
     )
+
+
+NUISANCE_GATE_BASELINE_STORE = BaselineStore(load_baselines, baseline_integrity)
