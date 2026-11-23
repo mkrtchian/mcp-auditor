@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A honeypot or judge baseline file must carry `retest_rule` and `retests`, and a detection or nuisance gate baseline file `retests` in its `retest_rule`: the keys they replaced in 0.5.0 are no longer read. Every committed baseline carries them.
 - The model probe's report and console count incomplete batches (statistics key `incomplete_batches`, column "Incomplete batches") where they counted refusals: a `TestCaseBatch` answer that does not parse or falls short of the corpus budget is not a provider refusal.
 - The conditions line of the detection suite's acceptance markdown report and console reads `test budget N` where it read `budget N`.
+- The header the detection suite's calibration check prints before its layout and route checks reads `layout check then route check` where it read `layout break then discovery route`.
 
 ### Fixed
 

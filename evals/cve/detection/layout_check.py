@@ -1,15 +1,16 @@
-"""The layout break detector and the anti-leak guard (ADR 031).
+"""The layout check (its break test `layout_breaks`, its leak test `nonce_in_surface`), ADR 031.
 
-The rule gates a fallback launch on a break: launch each version once with a minimal valid empty
-node at each layout path, by node type (the reference arm), and once with the layout, and call it a
-break when the launch or tools/list succeeded without the layout and failed with it, or when a call
-that returned no error without the layout returns one with it. `layout_breaks` is the pure detector
-over the two collected surfaces for one version, `layout_breaks_any` over both versions (a break on
-either is a break). A changed response body (a discovery symlink in a listing, a shifted
-deterministic HEAD SHA) is not a break: only a lost tools/list or a newly-erroring call counts.
+The fallback is the launch the rule switches to on a break. Each version is launched once with a
+minimal valid empty node at each layout path, by node type (the reference arm), and once with the
+layout, and it is a break when the launch or tools/list succeeded without the layout and failed
+with it, or when a call that returned no error without the layout returns one with it.
+`layout_breaks` is the pure break test over the two collected surfaces for one version,
+`layout_breaks_any` over both versions (a break on either is a break). A changed response body (a
+discovery symlink in a listing, a shifted deterministic HEAD SHA) is not a break: only a lost
+tools/list or a newly-erroring call counts.
 
-The anti-leak guard (`nonce_in_surface`) is a separate pure check of the planted surface,
-implementing a distinct clause of the rule: a place the server itself reads at launch is not kept
+The leak test (`nonce_in_surface`) is a separate pure test of the planted surface, implementing a
+distinct clause of the rule: a place the server itself reads at launch is not kept
 (detection-suite-rule.md, Deployment layout (A place is kept for a target)), so no planted nonce may
 appear in the server's ordinary surface. Both are pinned by a golden master. The benign call is not
 run here.
@@ -94,9 +95,9 @@ def nonce_in_surface(planted: RouteObservations, nonces: Sequence[str]) -> bool:
 
 def layout_check_gave_up(target: Target, planted: RouteObservations) -> str | None:
     """The reason the layout check gives up on a target, or None. A target already in the fallback
-    launch-mode whose fallback launch itself fails to start cannot be run at all: the break detector
-    has no fallback left to gate (detection-suite-rule.md, Deployment layout (A server the layout
-    breaks)). A normal-mode target does not give up here, its break is only reported so the
+    launch-mode whose fallback launch itself fails to start cannot be run at all: the layout check
+    has no fallback left to switch to (detection-suite-rule.md, Deployment layout (A server the
+    layout breaks)). A normal-mode target does not give up here, its break is only reported so the
     maintainer sets the fallback launch-mode."""
     if target.launch_mode is LaunchMode.FALLBACK and not planted.tools_list_succeeded:
         return _GAVE_UP_REASON

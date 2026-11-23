@@ -64,7 +64,7 @@ class _Observer:
 
     async def _launch(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
         # A server that fails to start, or a connection that drops, is a break observation
-        # (tools/list did not succeed), not a benchmark crash: the break detector's criterion
+        # (tools/list did not succeed), not a benchmark crash: the break test's criterion
         # names a failed launch, so catch it here rather than let it reach the exit-4 crash
         # handler. Only a launch or handshake that fails raises NotLaunched, for a retry: a
         # failure on a launched server is observed at once. The planted arm reads shape=None, so

@@ -4,7 +4,7 @@
 (--calibration-check), run before its exploits so the break is reported first. Per target it reports
 the break (on either version) and, on the vulnerable version, the leak (the layout check), each kept
 place's route (the route check) and each unkept layout place's route, labelled not kept, which a
-card records and no decision reads. It gates nothing on the model.
+card records and no decision reads. It reads no model.
 """
 
 from collections.abc import Sequence
@@ -32,7 +32,7 @@ async def check_layouts_and_routes(
     failure per target `layout_failure` fails, which the caller fails the maintainer run on (never
     a gated run)."""
     console.print(
-        "\n[bold]Layout and route checks[/bold] (no LLM): layout break then discovery route\n"
+        "\n[bold]Layout and route checks[/bold] (no LLM): layout check then route check\n"
     )
     failures: list[str] = []
     for target in targets:

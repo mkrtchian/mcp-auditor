@@ -1,4 +1,4 @@
-"""The golden master of the discovery-route check: what `has_route` returns on a fixed corpus
+"""The golden master of the route check: what `has_route` returns on a fixed corpus
 of (place, observations) cases, recorded in `detection_route_check_golden.json`.
 
 The corpus is fictional: a layout place against observations that reveal its anchor (the scope,

@@ -1,11 +1,12 @@
-"""The discovery-route check (ADR 031 condition 2).
+"""The route check (ADR 031 condition 2).
 
 Per target and per kept layout place, whether the anchor the place hangs off is revealed by the
 server's own outputs under the run conditions: the scope the layout dictates, a response or an
-error that names the place's path, or a location relation the place's plant kind documents from
+error that names the place's path, or a location relation the place's kind documents from
 the scope. Never by a planted file and never by a path the route procedure itself fills into the
-arguments (rule v5: the scope and a documented default count as route, a path the procedure sent
-does not, since the grammar does not credit a proof copied from the arguments, ADR 029).
+arguments (detection suite rule v5: the scope and a documented default count as route, a path the
+procedure sent does not, since the grammar does not credit a proof copied from the arguments,
+ADR 029).
 
 `minimal_calls` fixes the route procedure and `route_observations` is the Docker collector that
 runs it.
@@ -63,7 +64,7 @@ def _revealed_paths(place: Place, observations: RouteObservations) -> set[str]:
 
 
 def _documented_default(place: Place, scope: str | None) -> set[str]:
-    """A location the place's plant kind documents relative to the scope. Only the dotenv kind
+    """A location the place's kind documents relative to the scope. Only the dotenv kind
     carries one: find_dotenv searches increasingly higher folders, so the parent of the working
     directory is the documented default for a workspace .env (detection-suite-rule.md, Deployment
     layout (The places of the deployment layout)). No other kind documents a relation, so the bare's

@@ -42,10 +42,10 @@ class TargetVersion(StrEnum):
 
 class LaunchMode(StrEnum):
     """The launch a target runs under, read by `environment()` to pick the launch shape. NORMAL is
-    the frozen layout; FALLBACK is the launch the rule gates on a break (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks)). The break detector only reports; the maintainer
-    sets this field from calibration like kept_places, and every acceptance target keeps NORMAL (no
-    target breaks)."""
+    the frozen layout; FALLBACK is the launch the rule switches to on a break
+    (detection-suite-rule.md, Deployment layout (A server the layout breaks)). The layout check only
+    reports; the maintainer sets this field from calibration like kept_places, and every acceptance
+    target keeps NORMAL (no target breaks)."""
 
     NORMAL = "normal"
     FALLBACK = "fallback"
@@ -98,7 +98,7 @@ class Target:
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
     launch_mode: LaunchMode = LaunchMode.NORMAL  # maintainer-set from calibration, like kept_places
-    fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule gates on a break
+    fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule switches to on a break
     # Kept places whose nonce the ordinary surface shows, settled at calibration (the replay strikes
     # a credit through that surface): the layout check fails only on another place's leak.
     settled_leaks: frozenset[str] = frozenset()
@@ -113,9 +113,9 @@ class Target:
         return compute_planting_spec(to_plant, self.planting_host, nonces)
 
     def _launch_shape(self, shape: LaunchShape | None) -> LaunchShape:
-        # The break detector only reports; the launch-mode field (not the live check) picks the
-        # launch, so the graded run, the replay and the fingerprint follow one recorded launch. A
-        # caller that asks for a shape (the reference arm) overrides the field.
+        # The layout check only reports: the launch-mode field, not the check, picks the launch,
+        # so the graded run, the replay and the fingerprint follow one recorded launch. A caller
+        # that asks for a shape (the reference arm) overrides the field.
         if shape is not None:
             return shape
         return (

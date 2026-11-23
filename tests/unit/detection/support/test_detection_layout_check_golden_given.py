@@ -1,14 +1,14 @@
-"""The golden master of the layout check: what the break detector (`layout_breaks`,
-`layout_breaks_any`) and the anti-leak guard (`nonce_in_surface`) return on a fixed corpus of
+"""The golden master of the layout check: what its break test (`layout_breaks`,
+`layout_breaks_any`) and its leak test (`nonce_in_surface`) return on a fixed corpus of
 surfaces, recorded in `detection_layout_check_golden.json`.
 
-The corpus is fictional. For the break detector, two collected surfaces for one version (one
+The corpus is fictional. For the break test, two collected surfaces for one version (one
 launched with the valid-by-type reference arm, one with the layout): a healthy pair (no break), a
 pair where tools/list is lost with the layout, a pair where a call errors only with the layout, and
 the two false reds the old byte-for-byte check produced (a discovery symlink in a listing and a
-shifted deterministic HEAD SHA), which are not breaks. For the two-version detector, a sequence of
+shifted deterministic HEAD SHA), which are not breaks. For the two-version test, a sequence of
 version pairs where only the patched pair breaks (a break on either version is a break). For the
-anti-leak guard, a planted surface where a nonce leaks into the ordinary surface and one where none
+leak test, a planted surface where a nonce leaks into the ordinary surface and one where none
 does. Regenerate only in a commit that changes what the layout check grades, never on a refactor:
 
     uv run python -m tests.unit.detection.support.test_detection_layout_check_golden_given
