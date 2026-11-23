@@ -82,7 +82,7 @@ def _confirmation(
         )
     confirmed = _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule)
     return confirmed.model_copy(
-        update={"runs": existing.runs + recording.runs, "confirms": _ref(existing)}
+        update={"runs": existing.runs + recording.runs, "confirms": RecordingRef.of(existing)}
     )
 
 
@@ -93,7 +93,7 @@ def _replacement(
     if reasons:
         return RecordingRefused(reasons=reasons)
     replacing = _baseline_from(recording, BaselineStatus.CONFIRMED, existing.retest_rule)
-    return replacing.model_copy(update={"replaces": _ref(existing)})
+    return replacing.model_copy(update={"replaces": RecordingRef.of(existing)})
 
 
 def _reset_refusals(existing: DetectionBaseline, recording: TargetRecording) -> list[str]:
@@ -143,7 +143,3 @@ def _baseline_from(
         runs=recording.runs,
         image_ids=recording.image_ids,
     )
-
-
-def _ref(baseline: DetectionBaseline) -> RecordingRef:
-    return RecordingRef(commit=baseline.commit, recorded_at=baseline.recorded_at)

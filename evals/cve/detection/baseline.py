@@ -1,13 +1,18 @@
 import hashlib
 import json
-import os
 import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.baseline import BaselineStatus, RecordingRef, fingerprint_sources
+from evals.baseline import (
+    BaselineStatus,
+    RecordingRef,
+    fingerprint_sources,
+    run_count_problems,
+    write_json_atomically,
+)
 from evals.cve import (
     closed_network,
     endpoint_address,
@@ -286,22 +291,10 @@ def load_baselines(directory: Path) -> dict[str, DetectionBaseline]:
 
 
 def write_baseline(directory: Path, baseline: DetectionBaseline) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{baseline.flaw_id}.json"
-    temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(baseline.model_dump_json(indent=2))
-    os.replace(temporary, path)
+    write_json_atomically(directory / f"{baseline.flaw_id}.json", baseline)
 
 
 def baseline_integrity(baseline: DetectionBaseline) -> list[str]:
     """What the file holds that its conditions do not claim, checked when the runner loads it."""
-    held = len(baseline.runs)
-    if not held:
-        return [f"{baseline.flaw_id}: the baseline holds no run"]
-    if baseline.confirms is None:
-        claimed, claimants = baseline.conditions.runs, "its conditions"
-    else:  # a confirmation holds the runs of both recordings (ADR 023)
-        claimed, claimants = baseline.conditions.runs * 2, "its conditions and its confirmation"
-    if held == claimed:
-        return []
-    return [f"{baseline.flaw_id}: the baseline holds {held} runs, {claimants} claim {claimed}"]
+    problems = run_count_problems(len(baseline.runs), baseline.conditions.runs, baseline.confirms)
+    return [f"{baseline.flaw_id}: {problem}" for problem in problems]
