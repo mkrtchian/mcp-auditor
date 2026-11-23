@@ -73,10 +73,10 @@ NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
 _REFUSAL = "nuisance holdout run refused"
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
-# The budget is the detection holdout run's HOLDOUT_TEST_BUDGET: the rule reads the holdout nuisance
-# rate beside the holdout detection rate, whose budget is a constant, not a flag
+# The test budget is the detection holdout run's HOLDOUT_TEST_BUDGET: the rule reads the holdout
+# nuisance rate beside the holdout detection rate, whose test budget is a constant, not a flag
 # (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)), so no
-# budget of its own here.
+# test budget of its own here.
 
 
 @dataclass(frozen=True)

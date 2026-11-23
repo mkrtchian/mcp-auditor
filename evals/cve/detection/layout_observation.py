@@ -23,8 +23,8 @@ from evals.cve.places import Places, kept_records
 async def observe_layout(
     target: Target, places: Places, *, report_detail: ReportDetail = FULL_DETAIL
 ) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places, report_detail=report_detail)
-    return layout_check(target, kept_records(target.kept_places, places), vuln, patched)
+    vulnerable, patched = await observe_versions(target, places, report_detail=report_detail)
+    return layout_check(target, kept_records(target.kept_places, places), vulnerable, patched)
 
 
 async def observe_versions(
@@ -34,9 +34,9 @@ async def observe_versions(
     each), the no-LLM observation the layout check reads. `report_detail` sets how much server
     text the log shows."""
     observer = _Observer(target, places, report_detail)
-    vuln = await observer.version(TargetVersion.VULNERABLE)
+    vulnerable = await observer.version(TargetVersion.VULNERABLE)
     patched = await observer.version(TargetVersion.PATCHED)
-    return vuln, patched
+    return vulnerable, patched
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,7 @@ class _Observer:
 
     async def _launch(self, arm: _Arm) -> tuple[RouteObservations, Mapping[str, str]]:
         # A server that fails to start, or a connection that drops, is a break observation
-        # (tools/list did not succeed), not a benchmark crash: the break test's criterion
+        # (tools/list did not succeed), not a crash of the run: the break test's criterion
         # names a failed launch, so catch it here rather than let it reach the exit-4 crash
         # handler. Only a launch or handshake that fails raises NotLaunched, for a retry: a
         # failure on a launched server is observed at once. The planted arm reads shape=None, so

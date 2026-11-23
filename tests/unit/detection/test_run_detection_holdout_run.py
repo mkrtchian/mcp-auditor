@@ -1,5 +1,6 @@
-"""The holdout `run` command around its orchestrator: no drawn target, the refusals before the run,
-the result file written before the report, and a run stopped by an exception. No Docker, no LLM."""
+"""The detection holdout `run` command around its orchestrator: no drawn target, the refusals
+before the run, the result file written before the report, and a run stopped by an exception. No
+Docker, no LLM."""
 
 import dataclasses
 import json

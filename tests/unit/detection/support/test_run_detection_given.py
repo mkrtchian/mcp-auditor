@@ -68,10 +68,10 @@ def a_session_recording_options(
 
 def an_audit_target_recording(forced: list[object]) -> AuditTargetFactory:
     def audit_target(
-        budget: int, throttles: SessionThrottles, places: object, overrides: object = None
+        test_budget: int, throttles: SessionThrottles, places: object, overrides: object = None
     ) -> AuditTarget:
         forced.append(overrides)
-        return a_billing_audit_target(budget, throttles, places)
+        return a_billing_audit_target(test_budget, throttles, places)
 
     return audit_target
 

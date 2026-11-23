@@ -77,10 +77,10 @@ def test_layout_check_reports_the_break_and_the_unrouted_kept_places():
         "bare-remote-url", LayoutAnchor.PROJECT_BARE, PlaceKind.GIT_REMOTE_URL
     )
     healthy = _observed(started=True)
-    vuln = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces={})
+    vulnerable = VersionObservation(reference=healthy, planted=_SCOPED_NO_DISCLOSURE, nonces={})
     patched = VersionObservation(reference=healthy, planted=_observed(started=False), nonces={})
 
-    check = layout_check(_A_TARGET, (dotenv, bare_url), vuln, patched)
+    check = layout_check(_A_TARGET, (dotenv, bare_url), vulnerable, patched)
 
     assert check.breaks is True  # the patched planted arm lost tools/list
     assert check.unrouted == ["bare-remote-url"]
@@ -107,10 +107,10 @@ def test_layout_check_reports_a_nonce_of_the_vulnerable_planted_arm_in_its_ordin
     healthy = _observed(started=True)
     leaking = dataclasses.replace(healthy, responses=("token MCPAUDIT-00ff",))
     nonces = {"container-hostname": "MCPAUDIT-00ff", "workspace-dotenv": "MCPAUDIT-11ee"}
-    vuln = VersionObservation(reference=healthy, planted=leaking, nonces=nonces)
+    vulnerable = VersionObservation(reference=healthy, planted=leaking, nonces=nonces)
     patched = VersionObservation(reference=healthy, planted=healthy, nonces={})
 
-    assert layout_check(_A_TARGET, (), vuln, patched).leaking == ["container-hostname"]
+    assert layout_check(_A_TARGET, (), vulnerable, patched).leaking == ["container-hostname"]
 
 
 def test_a_sound_layout_check_is_no_failure():

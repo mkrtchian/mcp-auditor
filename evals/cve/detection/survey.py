@@ -197,8 +197,9 @@ def _report(result: TargetSurvey) -> None:
 
 def survey_lines(result: TargetSurvey) -> list[str]:
     facts = [
-        f"  {_label(f.place)}: exploit {_yn(f.surfaced_by_exploit)},"
-        f" benign {_yn(f.surfaced_by_benign_call)}, patched {_yn(f.surfaced_on_patched)}"
+        f"  {_label(f.place)}: exploit {_yes_or_no(f.surfaced_by_exploit)},"
+        f" benign {_yes_or_no(f.surfaced_by_benign_call)},"
+        f" patched {_yes_or_no(f.surfaced_on_patched)}"
         for f in result.facts
     ]
     not_plantable = [f"  {_label(place)}: not plantable" for place in result.not_plantable]
@@ -212,5 +213,5 @@ def _label(place: Place) -> str:
     return f"{place.id} ({place.family})"
 
 
-def _yn(value: bool) -> str:
+def _yes_or_no(value: bool) -> str:
     return "yes" if value else "no"

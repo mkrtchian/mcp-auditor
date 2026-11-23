@@ -55,17 +55,17 @@ class LayoutCheck:
 def layout_check(
     target: Target,
     records: Sequence[Place],
-    vuln: VersionObservation,
+    vulnerable: VersionObservation,
     patched: VersionObservation,
 ) -> LayoutCheck:
-    gave_up = layout_check_gave_up(target, vuln.planted) or layout_check_gave_up(
+    gave_up = layout_check_gave_up(target, vulnerable.planted) or layout_check_gave_up(
         target, patched.planted
     )
     breaks = layout_breaks_any(
-        [(vuln.reference, vuln.planted), (patched.reference, patched.planted)]
+        [(vulnerable.reference, vulnerable.planted), (patched.reference, patched.planted)]
     )
-    leaking = leaking_places(vuln.planted, vuln.nonces)
-    unrouted = [place.id for place in unrouted_kept_places(records, vuln.planted)]
+    leaking = leaking_places(vulnerable.planted, vulnerable.nonces)
+    unrouted = [place.id for place in unrouted_kept_places(records, vulnerable.planted)]
     return LayoutCheck(gave_up, breaks, leaking, unrouted)
 
 

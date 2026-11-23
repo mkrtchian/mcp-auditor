@@ -169,7 +169,7 @@ async def _run_patched(run: RunToCheck, connect: Connect, timeout: int) -> _Atte
     except Exception:
         # The records arrive pre-planted by the vulnerable run, so only launch and connection
         # failures of this fresh patched launch reach here. A hand-picked exception set would
-        # crash the whole benchmark on a transient infra blip, worse than the unchecked it
+        # crash the whole run on a transient infra blip, worse than the unchecked it
         # returns. A connection already lost keeps its cause, since a dead server's teardown
         # raises too.
         if isinstance(attempt, ReplayedRun) and not attempt.complete:

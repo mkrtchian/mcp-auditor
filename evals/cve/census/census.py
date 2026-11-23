@@ -129,18 +129,21 @@ def load_census(path: Path) -> Census:
     if not coverage:
         problems += _grouping_problems(census) + _derived_problems(census)
     if census.draw is not None:
-        references = DrawReferences(
-            census_flaws=frozenset(flaw.identifier for flaw in census.flaws),
-            draw_order_candidates=frozenset(
-                draw_order_flaws(census.classifications, draw_candidates(census.flaws))
-            ),
-            place_ids=frozenset(places.load_places(places.DETECTION_PLACES)),
-            agents=census.agents,
-        )
-        problems += draw_problems(census.draw, references)
+        problems += draw_problems(census.draw, _draw_references(census))
     if problems:
         raise ValueError(f"invalid census {path}: {'; '.join(problems)}")
     return census
+
+
+def _draw_references(census: Census) -> DrawReferences:
+    return DrawReferences(
+        census_flaws=frozenset(flaw.identifier for flaw in census.flaws),
+        draw_order_candidates=frozenset(
+            draw_order_flaws(census.classifications, draw_candidates(census.flaws))
+        ),
+        place_ids=frozenset(places.load_places(places.DETECTION_PLACES)),
+        agents=census.agents,
+    )
 
 
 def draw_candidates(flaws: Sequence[CensusFlaw]) -> set[str]:

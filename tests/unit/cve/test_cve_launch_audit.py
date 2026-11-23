@@ -28,7 +28,7 @@ async def test_the_graph_audits_the_launch_on_the_auditor_budget_and_returns_its
     )
 
     [graph_input] = graphs.graph_inputs
-    assert graph_input["test_budget"] == launch_audit_fakes.BUDGET
+    assert graph_input["test_budget"] == launch_audit_fakes.TEST_BUDGET
     assert audit.report is report
 
 

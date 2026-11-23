@@ -62,7 +62,7 @@ async def _no_survey(target: Target, places: object) -> TargetSurvey:
 
 
 def a_billing_audit_target(
-    budget: int, throttles: SessionThrottles, places: object, overrides: object = None
+    test_budget: int, throttles: SessionThrottles, places: object, overrides: object = None
 ) -> AuditTarget:
     usage = ProviderUsage(input_tokens=500, output_tokens=50)
     throttles.count(

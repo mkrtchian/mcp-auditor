@@ -22,7 +22,7 @@ from tests.fakes import FakeLLM, FakeMCPClient
 
 type _Invocation = Callable[[AuditedServer], Awaitable[AuditReport]]
 
-BUDGET = 10
+TEST_BUDGET = 10
 
 
 class FakeGraphs:
@@ -150,7 +150,7 @@ def an_auditor(
     return Auditor(
         FakeLLM([]),
         FakeLLM([]),
-        test_budget=BUDGET,
+        test_budget=TEST_BUDGET,
         report_detail=report_detail,
         connect=connect or FakeConnect(),
         build_graph=graphs or graph_reporting([grammar.a_report()]),

@@ -50,17 +50,19 @@ async def check_layouts_and_routes(
 
 
 async def _check_and_report(target: Target, places: Places) -> LayoutCheck:
-    vuln, patched = await observe_versions(target, places)
+    vulnerable, patched = await observe_versions(target, places)
     records = kept_records(target.kept_places, places)
-    check = layout_check(target, records, vuln, patched)
+    check = layout_check(target, records, vulnerable, patched)
     if check.gave_up is not None:
         _report_give_up(target.flaw_id, check.gave_up)
         return check
     _report_break(target.flaw_id, check.breaks)
     _report_leaks(target, check.leaking)
     for place in records:
-        _report_route(target.flaw_id, place, has_route(place, vuln.planted))
-    _report_unkept_routes(target.flaw_id, layout_routes(places, target.kept_places, vuln.planted))
+        _report_route(target.flaw_id, place, has_route(place, vulnerable.planted))
+    _report_unkept_routes(
+        target.flaw_id, layout_routes(places, target.kept_places, vulnerable.planted)
+    )
     return check
 
 
