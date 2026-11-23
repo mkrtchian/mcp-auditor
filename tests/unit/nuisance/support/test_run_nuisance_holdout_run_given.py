@@ -8,7 +8,7 @@ import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_walks as walks
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
-from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance
+from evals.cve.nuisance.holdout_run import NuisanceDeps, NuisanceHoldoutRunInputs
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.run_files import write_report
@@ -39,8 +39,10 @@ def an_admitted_run_keeping_its_provenance() -> NuisanceCommandDeps:
     """An admitted run whose result carries the provenance the CLI handed the orchestrator, each
     file's commit named after the file."""
 
-    async def orchestrator(*args: object, **__: object) -> NuisanceHoldoutRunResult:
-        provenance = next(arg for arg in args if isinstance(arg, RunProvenance))
+    async def orchestrator(
+        inputs: NuisanceHoldoutRunInputs, /, *, deps: NuisanceDeps
+    ) -> NuisanceHoldoutRunResult:
+        provenance = inputs.provenance
         return dataclasses.replace(
             a_run_result(),
             census_commit=provenance.census_commit,

@@ -8,7 +8,12 @@ from evals.cve.grammar import FlawClass
 from evals.cve.holdout_conditions import Cutoff, HoldoutConditions
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
-from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance, run_nuisance
+from evals.cve.nuisance.holdout_run import (
+    NuisanceDeps,
+    NuisanceHoldoutRunInputs,
+    RunProvenance,
+    run_nuisance,
+)
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult, ServerExit
 from evals.cve.run_images import ContainerSweep
@@ -193,16 +198,18 @@ async def run(
 ) -> NuisanceHoldoutRunResult:
     """`draw=None` puts the first flaw in the draw order, disclosed on 2026-01-01."""
     order = draw if draw is not None else draw_entries((FIRST_FLAW, date(2026, 1, 1)))
-    return await run_nuisance(
-        RunPopulation(servers, exits, pending),
-        order,
-        conditions(),
-        SETTINGS,
-        RunProvenance(census_commit="cafe", walk_record_commit="beef", admission_commit="f00d"),
+    inputs = NuisanceHoldoutRunInputs(
+        population=RunPopulation(servers, exits, pending),
+        draw_order=order,
+        conditions=conditions(),
+        settings=SETTINGS,
+        provenance=RunProvenance(
+            census_commit="cafe", walk_record_commit="beef", admission_commit="f00d"
+        ),
         runs=runs,
         concurrency=concurrency,
-        deps=deps,
     )
+    return await run_nuisance(inputs, deps=deps)
 
 
 def conditions() -> HoldoutConditions:

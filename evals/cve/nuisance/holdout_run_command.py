@@ -9,20 +9,31 @@ import dataclasses
 import functools
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from rich.progress import Progress
 
 from evals import eval_display as display
 from evals.cli_arguments import positive_int
+from evals.concurrency import bounded
 from evals.cve.audit_progress import AuditProgress
 from evals.cve.census.census import CENSUS_PATH
 from evals.cve.census.draw_order import draw_order
+from evals.cve.closed_network import check_closed_network_support
 from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
-from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
-from evals.cve.launch_audit import RunOverrides
+from evals.cve.environments import TOOL_CALL_TIMEOUT
+from evals.cve.failure_text import TYPES_ONLY
+from evals.cve.holdout_conditions import (
+    HOLDOUT_TEST_BUDGET,
+    HoldoutConditions,
+    committed_conditions,
+)
+from evals.cve.images import backend_image_ids, image_ids
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
+from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import ADMISSION_PATH, AdmittedServer
 from evals.cve.nuisance.admission.holdout_calibration_copies import (
     copy_targets,
@@ -30,6 +41,7 @@ from evals.cve.nuisance.admission.holdout_calibration_copies import (
 )
 from evals.cve.nuisance.admission.unrecorded import refuse_unrecorded
 from evals.cve.nuisance.admission.walk_record import WalkInputs
+from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit, audit_once, nuisance_audit
 from evals.cve.nuisance.commands import (
     NUISANCE_CONCURRENCY,
     WALK_RECORD_PATH,
@@ -39,16 +51,18 @@ from evals.cve.nuisance.holdout_run import (
     NUISANCE_HOLDOUT_RUN_REFUSED,
     NUISANCE_RUNS,
     NuisanceDeps,
+    NuisanceHoldoutRunInputs,
     RunOrchestrator,
     RunProvenance,
-    default_deps,
     refuse_tracing,
     run_nuisance,
 )
+from evals.cve.nuisance.holdout_run_status import print_run_status
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.markdown import render_markdown
 from evals.cve.nuisance.report import build_report
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
+from evals.cve.nuisance.vetting import LaunchedBenignCall
 from evals.cve.places import DETECTION_PLACES, load_places
 from evals.cve.run_files import (
     ReportWriter,
@@ -57,10 +71,37 @@ from evals.cve.run_files import (
     write_report,
     write_result,
 )
-from evals.eval_session import Refused, last_commit
+from evals.cve.run_images import DOCKER_SWEEP, rebuild_images
+from evals.eval_session import Refused, last_commit, read_tree
+from evals.session_usage import SessionThrottles
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
+
+
+def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
+    throttles = SessionThrottles()
+    run_auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
+    auditor = SessionAuditor(run_auditor, overrides, throttles)
+    timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
+
+    async def audit(server: AdmittedServer) -> NuisanceAudit | DroppedRun:
+        return await nuisance_audit(server, lambda: audit_once(server, auditor))
+
+    return NuisanceDeps(
+        bounded(audit, concurrency),
+        bounded(LaunchedBenignCall(timeout), concurrency),
+        rebuild_images,
+        functools.partial(image_ids, tag=nuisance_images.image_tag),
+        backend_image_ids,
+        read_tree,
+        lambda: datetime.now(UTC).isoformat(),
+        lambda audits: None,
+        print_run_status,
+        lambda: throttles.requests,
+        DOCKER_SWEEP,
+        check_closed_network_support,
+    )
 
 
 @dataclass(frozen=True)
@@ -77,7 +118,10 @@ def add_run_arguments(parser: argparse.ArgumentParser, deps: RunCommandDeps) -> 
     parser.set_defaults(command=functools.partial(run, deps=deps))
     parser.add_argument("--report", type=Path, default=Path(DEFAULT_REPORT_PATH))
     parser.add_argument(
-        "--runs", type=positive_int, default=None, help=f"default {NUISANCE_RUNS}, lowerable to 1"
+        "--runs",
+        type=positive_int,
+        default=NUISANCE_RUNS,
+        help=f"default {NUISANCE_RUNS}, lowerable to 1",
     )
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     parser.add_argument("--census", type=Path, default=CENSUS_PATH)
@@ -146,23 +190,21 @@ def _audit_admitted_servers(
     args: argparse.Namespace, ready: _ReadyRun, deps: RunCommandDeps
 ) -> NuisanceHoldoutRunResult:
     run_deps = deps.run_deps(RunOverrides.of_holdout(ready.conditions), args.concurrency)
+    inputs = NuisanceHoldoutRunInputs(
+        population=ready.population,
+        draw_order=draw_order(ready.walk_inputs.census),
+        conditions=ready.conditions,
+        settings=ready.settings,
+        provenance=RunProvenance(
+            deps.file_commit(args.census),
+            deps.file_commit(args.walk_record),
+            deps.file_commit(args.admission),
+        ),
+        runs=args.runs,
+        concurrency=args.concurrency,
+    )
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
-        return asyncio.run(
-            deps.orchestrate(
-                ready.population,
-                draw_order(ready.walk_inputs.census),
-                ready.conditions,
-                ready.settings,
-                RunProvenance(
-                    deps.file_commit(args.census),
-                    deps.file_commit(args.walk_record),
-                    deps.file_commit(args.admission),
-                ),
-                runs=args.runs if args.runs is not None else NUISANCE_RUNS,
-                concurrency=args.concurrency,
-                deps=_tracked(run_deps, AuditProgress(bar)),
-            )
-        )
+        return asyncio.run(deps.orchestrate(inputs, deps=_tracked(run_deps, AuditProgress(bar))))
 
 
 def _tracked(deps: NuisanceDeps, progress: AuditProgress) -> NuisanceDeps:
