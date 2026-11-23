@@ -14,18 +14,11 @@ from evals.baseline import Baseline, load_baseline, write_baseline
 from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
 from evals.concurrency import bounded, positive_int
 from evals.eval_session import (
-    BASELINE_PATH,
-    DEFAULT_BUDGET,
-    DEFAULT_CONCURRENCY,
-    DEFAULT_RUNS,
     RECORDING_REFUSED,
     REPOSITORY_TREE,
-    HoneypotOptions,
-    HoneypotSession,
     Refused,
     TreeState,
     baseline_changed,
-    open_session,
     read_tree,
     tree_drift,
 )
@@ -35,6 +28,15 @@ from evals.honeypot.decision import RunsOutcome, decide_runs
 from evals.honeypot.report import HoneypotReport
 from evals.honeypot.retest import RetestAudit, Retester
 from evals.honeypot.runs import AnnouncedAudit, run_all
+from evals.honeypot.session import (
+    BASELINE_PATH,
+    DEFAULT_BUDGET,
+    DEFAULT_CONCURRENCY,
+    DEFAULT_RUNS,
+    HoneypotOptions,
+    HoneypotSession,
+    open_session,
+)
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,
@@ -51,6 +53,7 @@ from evals.metrics import (
     raise_if_throttled,
 )
 from evals.recording import Recording, RecordingRefused, decide_recording, gated_set_changes
+from mcp_auditor.config import load_settings
 from mcp_auditor.domain.models import AuditReport
 
 DEFAULT_REPORT_PATH = "output/honeypot_report.json"
@@ -72,9 +75,9 @@ class HoneypotRunResult:
 
 def main(argv: Sequence[str] | None = None) -> None:
     quiet_throttle_waits()
-    options = parse_args(argv)
+    args = parse_args(argv)
     try:
-        code = _evaluate(options)
+        code = _evaluate(args)
     except Refused as refusal:
         display.print_refusal(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
@@ -84,8 +87,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     raise SystemExit(code)
 
 
-def _evaluate(options: HoneypotOptions) -> int:
-    session = open_session(options, REPOSITORY_TREE)
+def _evaluate(args: argparse.Namespace) -> int:
+    options = _options(args)
+    session = open_session(options, REPOSITORY_TREE, BASELINE_PATH)
     result = asyncio.run(run_honeypot_suite(session, options.concurrency))
 
     report_path = Path(options.report)
@@ -104,6 +108,18 @@ def _evaluate(options: HoneypotOptions) -> int:
     return EXIT_CODES[result.report.gate.outcome]
 
 
+def _options(args: argparse.Namespace) -> HoneypotOptions:
+    return HoneypotOptions(
+        settings=load_settings(),
+        runs=args.runs,
+        budget=args.budget,
+        report=args.report,
+        record_baseline=args.record_baseline,
+        no_baseline=args.no_baseline,
+        concurrency=args.concurrency,
+    )
+
+
 def _gate_grid(baseline: Baseline | None, result: HoneypotRunResult) -> GateGrid | None:
     if baseline is None:
         return None
@@ -118,7 +134,7 @@ def _gate_grid(baseline: Baseline | None, result: HoneypotRunResult) -> GateGrid
     )
 
 
-def parse_args(argv: Sequence[str] | None = None) -> HoneypotOptions:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the honeypot suite")
     parser.add_argument("--runs", type=int, default=DEFAULT_RUNS)
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET)
@@ -145,15 +161,7 @@ def parse_args(argv: Sequence[str] | None = None) -> HoneypotOptions:
             " distribution coverage: 0.50), at any conditions, with no baseline (never in CI)"
         ),
     )
-    args = parser.parse_args(argv)
-    return HoneypotOptions(
-        runs=args.runs,
-        budget=args.budget,
-        report=args.report,
-        record_baseline=args.record_baseline,
-        no_baseline=args.no_baseline,
-        concurrency=args.concurrency,
-    )
+    return parser.parse_args(argv)
 
 
 async def run_honeypot_suite(session: HoneypotSession, concurrency: int) -> HoneypotRunResult:

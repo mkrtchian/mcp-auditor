@@ -1,42 +1,20 @@
 import subprocess
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import ValidationError
 
-from evals.baseline import (
-    Baseline,
-    BaselineConditions,
-    BaselineStatus,
-    FixtureConditions,
-    baseline_integrity,
-    fingerprint_ground_truth,
-    fingerprint_source,
-    load_baseline,
-)
+from evals.baseline import Baseline
 from evals.declared_flips import (
     DECLARED_FLIPS_PATH,
-    ActiveDeclarations,
     DeclaredFlip,
     Instrument,
-    active_declarations,
-    declaration_problems,
     entries_of_commit,
     load_declared_flips,
 )
-from evals.gate import cell_key
-from evals.gate_outcome import GateMode
-from evals.ground_truth import GroundTruth
-from evals.honeypots import HONEYPOTS, MERGED_GROUND_TRUTH
-from evals.recording import condition_refusals, rescore_refusals, unconfirmed_commit_refusal
 from evals.repository import REPO_ROOT
-from mcp_auditor.config import Settings, load_settings
 
-BASELINE_PATH = REPO_ROOT / "evals" / "baselines" / "honeypot.json"
-DEFAULT_RUNS = 3
-DEFAULT_BUDGET = 10
-DEFAULT_CONCURRENCY = 9
 RECORDING_REFUSED = "Recording refused."
 REFUSED_BEFORE_ANY_LLM_CALL = "Refused before any LLM call."
 
@@ -49,73 +27,19 @@ class Refused(Exception):
 
 
 @dataclass(frozen=True)
-class HoneypotOptions:
-    runs: int
-    budget: int
-    report: str
-    record_baseline: bool
-    no_baseline: bool
-    concurrency: int
-
-
-@dataclass(frozen=True)
 class TreeState:
     commit: str
     dirty: bool
 
 
 @dataclass(frozen=True)
-class HoneypotSession:
-    """Fixed before any LLM call. `baseline` is None under --no-baseline, whatever the file holds.
-
-    The session records a baseline exactly when it holds a `tree`.
-    """
-
-    settings: Settings
-    conditions: BaselineConditions
-    baseline: Baseline | None
-    mode: GateMode
-    tree: TreeState | None
-    declarations: ActiveDeclarations = field(default_factory=ActiveDeclarations)
-
-
-@dataclass(frozen=True)
 class WorkingTree:
-    """What the eval session reads from the repository it runs in."""
+    """What an instrument's session reads from the repository it runs in."""
 
-    baseline_path: Path
     declared_flips_path: Path
     parent_commit: Callable[[], str | None]
     is_dirty: Callable[[], bool]
     read_tree: Callable[[], TreeState]
-
-
-def open_session(options: HoneypotOptions, working_tree: WorkingTree) -> HoneypotSession:
-    """Raises Refused on anything that makes the run not comparable or its recording refused."""
-    if options.record_baseline and options.no_baseline:
-        raise Refused(
-            RECORDING_REFUSED,
-            [
-                "--record-baseline cannot run --no-baseline: a baseline records the conditions "
-                "it gates"
-            ],
-        )
-    settings = load_settings()
-    baseline = None if options.no_baseline else _load_committed_baseline(working_tree.baseline_path)
-    entries, dirty = declarations_of_head(Instrument.HONEYPOT, working_tree)
-    session = HoneypotSession(
-        settings=settings,
-        conditions=_conditions_or_refused(settings, options),
-        baseline=baseline,
-        mode=select_mode(baseline, options.no_baseline),
-        tree=working_tree.read_tree() if options.record_baseline else None,
-        declarations=active_declarations(entries, dirty),
-    )
-    reasons = pre_run_refusals(session, MERGED_GROUND_TRUTH)
-    reasons += declaration_problems(entries, {cell_key(cell) for cell in MERGED_GROUND_TRUTH})
-    if reasons:
-        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, reasons)
-    return session
 
 
 def declarations_of_head(
@@ -146,101 +70,6 @@ def _parent_commit() -> str | None:
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return completed.stdout.strip()
-
-
-def _conditions_or_refused(settings: Settings, options: HoneypotOptions) -> BaselineConditions:
-    try:
-        return candidate_conditions(settings, options)
-    except ValueError as error:
-        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [str(error)]) from error
-
-
-def _load_committed_baseline(path: Path) -> Baseline | None:
-    try:
-        baseline = load_baseline(path)
-    except ValidationError as error:
-        reason = f"{path} is not a valid baseline: {error}"
-        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, [reason]) from error
-    if baseline is None:
-        return None
-    problems = baseline_integrity(baseline, MERGED_GROUND_TRUTH)
-    if problems:
-        raise Refused(REFUSED_BEFORE_ANY_LLM_CALL, problems)
-    return baseline
-
-
-def candidate_conditions(settings: Settings, options: HoneypotOptions) -> BaselineConditions:
-    return BaselineConditions(
-        runs=options.runs,
-        budget=options.budget,
-        provider=settings.provider,
-        model=settings.resolve_model(),
-        judge_model=settings.resolve_judge_model(),
-        reasoning=settings.resolve_reasoning(settings.resolve_model()),
-        judge_reasoning=settings.resolve_reasoning(settings.resolve_judge_model()),
-        ground_truth_fingerprint=fingerprint_ground_truth(MERGED_GROUND_TRUTH),
-        fixtures={
-            honeypot.name: FixtureConditions(
-                source_fingerprint=fingerprint_source(honeypot.server.read_text()),
-                chain_budget=honeypot.chain_budget,
-                max_chain_steps=honeypot.max_chain_steps,
-            )
-            for honeypot in HONEYPOTS
-        },
-    )
-
-
-def select_mode(baseline: Baseline | None, no_baseline: bool) -> GateMode:
-    if no_baseline:
-        return GateMode.FLOORS_ONLY
-    if baseline is None:
-        return GateMode.LEGACY_THRESHOLDS
-    if baseline.status == BaselineStatus.UNCONFIRMED:
-        return GateMode.FLOORS_ONLY
-    return GateMode.PAIRED
-
-
-def pre_run_refusals(session: HoneypotSession, ground_truth: GroundTruth) -> list[str]:
-    """What the file, the labels and the tree already decide, before three paid runs."""
-    reasons: list[str] = []
-    if session.baseline:
-        reasons += condition_refusals(session.baseline, session.conditions)
-        reasons += rescore_refusals(session.baseline, ground_truth)
-    if session.tree is not None:
-        reasons += _recording_refusals(session, session.tree)
-    return reasons
-
-
-def _recording_refusals(session: HoneypotSession, tree: TreeState) -> list[str]:
-    reasons = [
-        f"a baseline records the conditions CI runs at, {mismatch}"
-        for mismatch in ci_condition_mismatches(session.conditions)
-    ]
-    if tree.dirty:
-        reasons.append("the git tree has tracked modifications: record from a clean tree")
-    if session.baseline:
-        reasons += unconfirmed_commit_refusal(session.baseline, tree.commit)
-    return reasons
-
-
-def ci_condition_mismatches(conditions: BaselineConditions) -> list[str]:
-    """CI passes no --runs, --budget nor MCP_AUDITOR_* override, so it runs at the defaults."""
-    defaults = Settings.model_construct()
-    expected = {
-        "runs": DEFAULT_RUNS,
-        "budget": DEFAULT_BUDGET,
-        "provider": defaults.provider,
-        "model": defaults.resolve_model(),
-        "judge_model": defaults.resolve_judge_model(),
-        "reasoning": defaults.resolve_reasoning(defaults.resolve_model()),
-        "judge_reasoning": defaults.resolve_reasoning(defaults.resolve_judge_model()),
-    }
-    actual = conditions.model_dump()
-    return [
-        f"{field}: CI runs {value}, this run {actual[field]}"
-        for field, value in expected.items()
-        if actual[field] != value
-    ]
 
 
 def tree_drift(before: TreeState, after: TreeState) -> list[str]:
@@ -289,5 +118,8 @@ def _git(*args: str) -> str:
 
 
 REPOSITORY_TREE = WorkingTree(
-    BASELINE_PATH, DECLARED_FLIPS_PATH, _parent_commit, _tree_is_dirty, read_tree
+    declared_flips_path=DECLARED_FLIPS_PATH,
+    parent_commit=_parent_commit,
+    is_dirty=_tree_is_dirty,
+    read_tree=read_tree,
 )

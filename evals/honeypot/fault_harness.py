@@ -16,12 +16,12 @@ from pydantic import BaseModel
 
 from evals.baseline import Baseline, baseline_integrity
 from evals.declared_flips import ActiveDeclarations
-from evals.eval_session import DEFAULT_RUNS, HoneypotSession
 from evals.gate import Observation, cell_key
 from evals.gate_outcome import GateMode, GateResult
 from evals.honeypot.decision import RunsOutcome, decide_runs
 from evals.honeypot.fault_catalog import Fault
 from evals.honeypot.retest import Retester
+from evals.honeypot.session import DEFAULT_RUNS, HoneypotSession
 from evals.honeypots import (
     HONEYPOTS,
     MERGED_GROUND_TRUTH,

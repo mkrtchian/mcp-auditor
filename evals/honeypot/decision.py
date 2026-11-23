@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 
 from evals.baseline import RescoredBaseline, rescore
 from evals.declared_flips import apply_declarations
-from evals.eval_session import HoneypotSession
 from evals.gate import (
     Cell,
     DetectionCount,
@@ -19,6 +18,7 @@ from evals.gate import (
 )
 from evals.gate_outcome import GateInput, GateMode, GateResult, decide_gate
 from evals.honeypot.retest import Retester
+from evals.honeypot.session import HoneypotSession
 from evals.honeypots import MERGED_GROUND_TRUTH, TOOL_COUNT
 from evals.metrics import (
     ConsistencyDetail,

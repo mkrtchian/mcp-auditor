@@ -1,6 +1,7 @@
 from evals.baseline import Baseline, BaselineConditions, BaselineStatus
 from evals.declared_flips import ActiveDeclarations
-from evals.eval_session import DEFAULT_BUDGET, DEFAULT_RUNS, HoneypotSession, TreeState, select_mode
+from evals.eval_session import TreeState
+from evals.honeypot.session import DEFAULT_BUDGET, DEFAULT_RUNS, HoneypotSession, select_mode
 from mcp_auditor.config import Settings
 from tests.unit.evals.support import honeypot_baselines
 
