@@ -10,7 +10,7 @@ from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
 
 from mcp_auditor.adapters.server_launch import ServerLaunch
-from tests.integration.support.detection_fake_targets import removals
+from tests.integration.support.docker_on_the_host import removals
 from tests.integration.support.support_servers import STALLING_SERVER_PATH
 
 

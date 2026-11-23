@@ -7,7 +7,7 @@ import tests.integration.support.test_mcp_client_relaunch_given as given
 from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from mcp_auditor.domain.server_liveness import RelaunchCause
 from mcp_auditor.domain.server_watch import is_lost_connection, is_timeout
-from tests.integration.support.detection_fake_targets import removals
+from tests.integration.support.docker_on_the_host import removals
 from tests.integration.support.support_servers import a_stalling_server
 from tests.integration.support.unconfined_audit import a_scripted_audit_of
 

@@ -3,7 +3,7 @@ import pathlib
 
 import pytest
 
-from tests.integration.support.detection_fake_targets import (
+from tests.integration.support.docker_on_the_host import (
     a_docker_that_runs_its_command_on_the_host,
 )
 

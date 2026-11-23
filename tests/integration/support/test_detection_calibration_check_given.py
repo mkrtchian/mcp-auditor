@@ -5,11 +5,10 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target, TargetVersion
+from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.environments import Launch, LaunchShape
-from evals.cve.places import DETECTION_PLACES, Places, load_places
+from evals.cve.places import Places
 from evals.cve.planting import PlantingSpec
-from mcp_auditor.adapters.docker import DockerRuntime
 from tests.integration.support.detection_fake_targets import (
     Builder,
     a_fake_target,
@@ -22,7 +21,6 @@ KEPT_FLAG_ID = "fict-flag"
 KEPT = (KEPT_FLAG_ID,)
 OUTSIDE_ID = "fict-outside"
 INSIDE_ID = "fict-inside"
-GIT_FLAW_ID = "CVE-2025-68143"
 
 
 def a_places_mapping() -> Places:
@@ -204,17 +202,3 @@ def _serve_args(spec: PlantingSpec) -> list[str]:
         for place in spec.places
         if place.coordinates.path is not None
     ]
-
-
-def the_git_target() -> Target:
-    return next(target for target in ACCEPTANCE_TARGETS if target.flaw_id == GIT_FLAW_ID)
-
-
-def the_detection_places() -> Places:
-    return load_places(DETECTION_PLACES)
-
-
-def missing_docker() -> str | None:
-    if not DockerRuntime().available():
-        return "the git reference-arm check needs Docker"
-    return None
