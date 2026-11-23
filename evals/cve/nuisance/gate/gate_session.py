@@ -177,12 +177,12 @@ async def _retested(
         return comparison
     rule = opened.baselines()[server.server_package].retest_rule
     retests: list[bool | None] = []
-    settled = comparison
-    while settled.outcome == ServerOutcome.PENDING_RETEST:
+    retested = comparison
+    while retested.outcome == ServerOutcome.PENDING_RETEST:
         run = await opened.harness.audit(server)
         retests.append(None if run is None else run.flagged)
-        settled = apply_retests(comparison, retests, rule)
-    return settled
+        retested = apply_retests(comparison, retests, rule)
+    return retested
 
 
 def _not_run_comparison(

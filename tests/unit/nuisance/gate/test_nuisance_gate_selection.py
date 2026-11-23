@@ -1,6 +1,6 @@
 """Which admitted servers the nuisance gate audits, and which it names as left out."""
 
-import tests.unit.nuisance.gate.support.test_nuisance_gate_selection_given as given
+import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.gate.gate_servers import gate_servers
 from evals.cve.nuisance.results import ServerExit
@@ -11,7 +11,7 @@ CURRENT = {FILESYSTEM.server_package, KUBERNETES.server_package}
 
 
 def test_the_gate_servers_are_the_current_ones_that_run_over_stdio_in_admission_order():
-    other = given.a_server_outside_the_census("npm:not-current")
+    other = holdout_runs.a_server("npm:not-current")
     admitted = admitting(KUBERNETES, other, FILESYSTEM)
     no_stdio = without_stdio(admitting(KUBERNETES, FILESYSTEM), KUBERNETES.server_package)
 

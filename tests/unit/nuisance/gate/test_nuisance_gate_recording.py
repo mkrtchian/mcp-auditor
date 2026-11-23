@@ -116,7 +116,7 @@ def test_a_confirmed_file_is_not_recorded_over_a_regression():
 
 
 @pytest.mark.parametrize("outcome", [ServerOutcome.PENDING_RETEST, ServerOutcome.INCOMPLETE, None])
-def test_a_confirmed_file_is_not_recorded_over_an_unsettled_comparison(
+def test_a_confirmed_file_is_not_recorded_over_an_undecided_comparison(
     outcome: ServerOutcome | None,
 ):
     comparison = None if outcome is None else nuisance_gate_baselines.a_comparison(outcome)

@@ -23,9 +23,7 @@ def a_confirmed_baseline(runs: list[bool], package: str = SERVER_PACKAGE) -> Nui
 
 
 def an_unconfirmed_baseline(
-    runs: list[bool] | None = None,
-    package: str = SERVER_PACKAGE,
-    commit: str = RECORDED_COMMIT,
+    runs: list[bool] | None = None, package: str = SERVER_PACKAGE
 ) -> NuisanceServerBaseline:
     return NuisanceServerBaseline(
         server_package=package,
@@ -33,7 +31,7 @@ def an_unconfirmed_baseline(
         conditions=conditions(),
         fixture_fingerprint=FIXTURE,
         retest_rule=RetestRule(),
-        commit=commit,
+        commit=RECORDED_COMMIT,
         recorded_at="2026-10-22T10:00:00+00:00",
         runs=runs if runs is not None else [False] * 3,
         image_ids={"filesystem-patched": "sha256:0123"},

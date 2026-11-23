@@ -7,8 +7,10 @@ def a_candidate(
     *,
     completed: bool = True,
     fixture: str = nuisance_gate_baselines.FIXTURE,
-    package: str = nuisance_gate_baselines.SERVER_PACKAGE,
 ) -> ServerCandidate:
     return ServerCandidate(
-        server_package=package, fixture_fingerprint=fixture, runs=runs, completed=completed
+        server_package=nuisance_gate_baselines.SERVER_PACKAGE,
+        fixture_fingerprint=fixture,
+        runs=runs,
+        completed=completed,
     )

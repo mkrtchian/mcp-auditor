@@ -52,10 +52,10 @@ def run_population(
 
 
 def _pending(reached: ReachedServers, admission: NuisanceAdmission) -> list[str]:
-    settled = {server.server_package for server in admission.servers}
-    settled |= {row.server_package for row in admission.exits}
+    recorded = {server.server_package for server in admission.servers}
+    recorded |= {row.server_package for row in admission.exits}
     return [
         server.server_package
         for server in reached.listed
-        if server.mark is None and server.server_package not in settled
+        if server.mark is None and server.server_package not in recorded
     ]

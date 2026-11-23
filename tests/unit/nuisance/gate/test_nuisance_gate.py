@@ -78,51 +78,51 @@ def test_a_gated_server(runs: list[bool], outcome: ServerOutcome):
     assert comparison.outcome == outcome
 
 
-def test_settle_keeps_the_baseline_runs():
+def test_apply_retests_keeps_the_baseline_runs():
     pending = compare_server(
         nuisance_gate_baselines.a_gated_baseline(), given.a_candidate(ONE_ALARM)
     )
 
-    settled = apply_retests(pending, [True] * 4, RetestRule())
+    retested = apply_retests(pending, [True] * 4, RetestRule())
 
-    assert settled.outcome == ServerOutcome.REGRESSION
-    assert settled.baseline_runs == [False] * 6
+    assert retested.outcome == ServerOutcome.REGRESSION
+    assert retested.baseline_runs == [False] * 6
 
 
 def test_an_alarm_reproduced_four_times_is_a_regression():
     pending = nuisance_gate_baselines.a_comparison(ServerOutcome.PENDING_RETEST)
     retests: list[bool | None] = [False, True, True, True, True]
 
-    settled = apply_retests(pending, retests, RetestRule())
+    retested = apply_retests(pending, retests, RetestRule())
 
-    assert settled.outcome == ServerOutcome.REGRESSION
-    assert settled.retests == [False, True, True, True, True]
+    assert retested.outcome == ServerOutcome.REGRESSION
+    assert retested.retests == [False, True, True, True, True]
 
 
 def test_an_alarm_cleared_by_its_retests_is_not_reproduced():
     pending = nuisance_gate_baselines.a_comparison(ServerOutcome.PENDING_RETEST)
 
-    settled = apply_retests(pending, [False, False], RetestRule())
+    retested = apply_retests(pending, [False, False], RetestRule())
 
-    assert settled.outcome == ServerOutcome.ALARM_NOT_REPRODUCED
+    assert retested.outcome == ServerOutcome.ALARM_NOT_REPRODUCED
 
 
 def test_an_undecided_retest_keeps_the_alarm_pending():
     pending = nuisance_gate_baselines.a_comparison(ServerOutcome.PENDING_RETEST)
 
-    settled = apply_retests(pending, [True], RetestRule())
+    retested = apply_retests(pending, [True], RetestRule())
 
-    assert settled.outcome == ServerOutcome.PENDING_RETEST
-    assert settled.retests == [True]
+    assert retested.outcome == ServerOutcome.PENDING_RETEST
+    assert retested.retests == [True]
 
 
 def test_a_retest_that_did_not_complete_leaves_the_server_incomplete():
     pending = nuisance_gate_baselines.a_comparison(ServerOutcome.PENDING_RETEST)
 
-    settled = apply_retests(pending, [True, None], RetestRule())
+    retested = apply_retests(pending, [True, None], RetestRule())
 
-    assert settled.outcome == ServerOutcome.INCOMPLETE
-    assert settled.retests == [True]
+    assert retested.outcome == ServerOutcome.INCOMPLETE
+    assert retested.retests == [True]
 
 
 def test_a_condition_mismatch_is_not_comparable_with_the_whole_reset():
