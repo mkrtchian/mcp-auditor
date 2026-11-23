@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.backend_registry import (
-    backend_reset_containers,
+    backend_containers_removed_by_name,
     built_backend_services,
     built_backend_tags,
 )
@@ -45,7 +45,7 @@ class RunImages:
     backend_services: list[str]
     server_tags: list[str]
     backend_tags: list[str]
-    reset_containers: list[str]
+    containers_removed_by_name: list[str]
 
     @property
     def services(self) -> list[str]:
@@ -61,7 +61,7 @@ def run_images(servers: Sequence[AdmittedServer]) -> RunImages:
         ),
         server_tags=[nuisance_images.image_tag(service) for service in services],
         backend_tags=built_backend_tags(servers),
-        reset_containers=backend_reset_containers(servers),
+        containers_removed_by_name=backend_containers_removed_by_name(servers),
     )
 
 
@@ -83,10 +83,11 @@ def refuse_server_containers(host: ContainerHost, images: RunImages, refusal: st
 def remove_backend_containers(host: ContainerHost, images: RunImages) -> None:
     """Before the rebuild: after it, the tag names the new image and no longer matches a
     container started from the previous build. A removal after the rebuild (the vet's second pass)
-    finds the containers by tag, since they were started from the rebuilt image. A reset container
-    is removed whether it runs or not, the removal being unchecked."""
+    finds the containers by tag, since they were started from the rebuilt image. A container named
+    by its backend's registry entry is removed whether it runs or not, the removal being
+    unchecked."""
     running = host.running_containers(images.backend_tags) if images.backend_tags else []
-    removed = [*running, *images.reset_containers]
+    removed = [*running, *images.containers_removed_by_name]
     if removed:  # `docker rm -f` with no name fails
         host.remove_containers(removed)
 

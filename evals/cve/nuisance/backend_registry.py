@@ -70,7 +70,7 @@ class RegisteredBackend:
     # The persistent containers a nuisance command removes at its start, so the backend stands
     # again from its image and its seed: empty for a built backend, which is removed by its tag,
     # and for a per-launch backend, which leaves none.
-    reset_containers: tuple[str, ...] = ()
+    containers_removed_by_name: tuple[str, ...] = ()
 
 
 def _served(backend_module: str, *built_services: str) -> tuple[Path, ...]:
@@ -202,12 +202,12 @@ def built_backend_services(servers: Sequence[AdmittedServer]) -> list[str]:
     return list(dict.fromkeys(services))
 
 
-def backend_reset_containers(servers: Sequence[AdmittedServer]) -> list[str]:
+def backend_containers_removed_by_name(servers: Sequence[AdmittedServer]) -> list[str]:
     names = (
         name
         for server in servers
         if server.backend is not None
-        for name in BACKENDS[server.backend.provisioner].reset_containers
+        for name in BACKENDS[server.backend.provisioner].containers_removed_by_name
     )
     return list(dict.fromkeys(names))
 

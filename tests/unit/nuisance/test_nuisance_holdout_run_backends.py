@@ -67,7 +67,7 @@ async def test_the_backend_container_started_during_the_run_is_removed_at_its_en
     assert host.removed == ["ckan_started"]
 
 
-async def test_a_pulled_backend_is_reset_at_start_but_neither_rebuilt_nor_swept():
+async def test_a_pulled_backend_is_removed_at_start_but_neither_rebuilt_nor_swept():
     server = mutations.with_the_registered_backend(holdout_runs.a_server(), "doris")
     host = docker_hosts.DockerHost({docker_hosts.DORIS_TAG: [DORIS_CONTAINER]})
 

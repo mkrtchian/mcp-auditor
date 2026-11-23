@@ -39,5 +39,5 @@ def test_the_jenkins_run_image_bakes_the_api_token_the_controller_image_seeds(do
 
 
 @pytest.mark.parametrize("key", [key for key, entry in BACKENDS.items() if entry.built_services])
-def test_a_built_backend_resets_no_container_by_name(key: str):
-    assert BACKENDS[key].reset_containers == ()
+def test_a_built_backend_removes_no_container_by_name(key: str):
+    assert BACKENDS[key].containers_removed_by_name == ()

@@ -1,7 +1,7 @@
 """The images a nuisance holdout run rebuilds: a backend-less server with public names adds the
 holder's and the stand-in's images, which the run rebuilds but never sweeps by tag, since the launch
 removes its own containers and a calibration may share those images. The removal at the start
-also resets the Doris cluster, a pulled backend, by its container name."""
+also removes the Doris cluster, a pulled backend, by its container name."""
 
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_docker_hosts as docker_hosts
@@ -46,7 +46,7 @@ def test_the_stand_in_a_backend_also_builds_is_rebuilt_once():
     assert SENTINEL_SERVICE in images.backend_services
 
 
-def test_the_removal_at_start_resets_the_doris_cluster_by_its_name():
+def test_the_removal_at_start_removes_the_doris_cluster_by_its_name():
     doris = mutations.with_the_registered_backend(holdout_runs.a_server("PyPI:d"), "doris")
     docker = docker_hosts.DockerHost({docker_hosts.DORIS_TAG: [DORIS_CONTAINER]})
 
@@ -55,7 +55,7 @@ def test_the_removal_at_start_resets_the_doris_cluster_by_its_name():
     assert docker.removed == [DORIS_CONTAINER]
 
 
-def test_the_removal_at_start_resets_no_container_by_name_for_a_built_backend():
+def test_the_removal_at_start_removes_no_container_by_name_for_a_built_backend():
     ckan = mutations.on_the_ckan_backend(holdout_runs.a_server("npm:ckan"))
     docker = docker_hosts.DockerHost({docker_hosts.CKAN_TAG: ["stale_front"]})
 
