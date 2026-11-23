@@ -11,28 +11,20 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from evals.cve.holdout_hierarchical import DEFAULT_GRID, GammaPrior, Grid, hierarchical_interval
-from evals.cve.holdout_intervals import (
-    Interval,
-    clopper_pearson,
-    jeffreys,
-    newcombe,
-    wilson,
-)
+from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
+from evals.cve.holdout_intervals import Interval, newcombe, wilson
 from evals.cve.holdout_statistic import (
+    MIN_SIDE,
     Conclusion,
     Contrast,
     Reading,
     Side,
     conclude,
+    rate_controls,
     read_contrast,
     side_of,
 )
 from evals.cve.nuisance.results import NuisanceServerResult
-
-_GAMMA_1_1 = GammaPrior(shape=1.0, scale=1.0)
-_GAMMA_2_2 = GammaPrior(shape=2.0, scale=2.0)
-_MIN_SIDE = 5  # Newcombe and the conclusion need at least this many servers a side
 
 
 @dataclass(frozen=True)
@@ -78,7 +70,7 @@ def split_by_side(
 
 
 def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
-    if side_a.servers < _MIN_SIDE or side_b.servers < _MIN_SIDE:
+    if side_a.servers < MIN_SIDE or side_b.servers < MIN_SIDE:
         return None
     interval = newcombe(
         side_a.split_share_sum, side_a.servers, side_b.split_share_sum, side_b.servers
@@ -89,22 +81,19 @@ def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
 def nuisance_rate_controls(
     results: Sequence[NuisanceServerResult], runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> dict[str, Interval]:
-    count = _share_sum(results)
-    n = len(results)
-    flagged = [result.flagged_runs for result in results]
+    reading = Reading(_share_sum(results), tuple(r.flagged_runs for r in results))
     return {
-        "jeffreys": jeffreys(count, n),
-        "clopper_pearson": clopper_pearson(count, n),
-        "hierarchical_gamma_1_1": hierarchical_interval(flagged, runs, _GAMMA_1_1, grid),
-        "hierarchical_gamma_2_2": hierarchical_interval(flagged, runs, _GAMMA_2_2, grid),
-        "incomplete_as_flagged_wilson": wilson(_incomplete_as_flagged_sum(results, runs), n),
+        **rate_controls(reading, runs, grid),
+        "incomplete_as_flagged_wilson": wilson(
+            _incomplete_as_flagged_sum(results, runs), reading.members
+        ),
     }
 
 
 def check_conclusion(
     side_a: SideStatistic, side_b: SideStatistic, runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> Conclusion | None:
-    if side_a.servers < _MIN_SIDE or side_b.servers < _MIN_SIDE:
+    if side_a.servers < MIN_SIDE or side_b.servers < MIN_SIDE:
         return None
     cited, *others = [
         *read_contrast(observed(side_a), observed(side_b), runs, grid=grid),

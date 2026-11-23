@@ -2,7 +2,14 @@
 
 from collections.abc import Sequence
 
-from evals.cve.holdout_report_lines import ConclusionLine, IntervalModel, RunCutoffModel
+from evals.cve.holdout_report_lines import (
+    conclusion_text,
+    controls_section,
+    health_facts,
+    incomplete_runs_lines,
+    run_cutoff_line,
+    span,
+)
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
 from evals.cve.nuisance.report import NotRunLine, NuisanceReport, ServerLine
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS, NotRunCause
@@ -19,10 +26,10 @@ def render_markdown(report: NuisanceReport) -> str:
             f"walk record {report.walk_record_commit}, admission {report.admission_commit}",
             "",
             f"Holdout nuisance rate: at most {report.holdout_nuisance_rate:.3f}"
-            f" (95% Wilson {_span(report.cited_interval)})",
+            f" (95% Wilson {span(report.cited_interval)})",
             "",
             *_split_section(report),
-            *_controls_section(report),
+            *controls_section(report.controls),
             *_servers_section(report.servers),
             *_raw_fail_section(report.servers),
             *_exits_section(report),
@@ -36,36 +43,17 @@ def render_markdown(report: NuisanceReport) -> str:
 
 
 def _split_section(report: NuisanceReport) -> list[str]:
-    lines = [_run_cutoff_line(report.run_cutoff)]
+    lines = [run_cutoff_line(report.run_cutoff)]
     lines += [
-        f"- {line.side.value}: {line.number:.3f} ({_span(line.interval)}), {line.servers} server(s)"
+        f"- {line.side.value}: {line.number:.3f} ({span(line.interval)}), {line.servers} server(s)"
         for line in report.sides
     ]
     if report.contrast is None:
         lines.append("- contrast: not computed (a side has fewer than 5 servers)")
     else:
-        lines.append(f"- contrast: {_span(report.contrast)}")
-        lines.append(f"- conclusion: {_conclusion_text(report.conclusion)}")
+        lines.append(f"- contrast: {span(report.contrast)}")
+        lines.append(f"- conclusion: {conclusion_text(report.conclusion)}")
     return ["## Split by cutoff side", *lines, ""]
-
-
-def _run_cutoff_line(cutoff: RunCutoffModel) -> str:
-    line = f"- run cutoff: {cutoff.date} ({cutoff.type}), {cutoff.model}, {cutoff.source}"
-    return line if cutoff.note is None else f"{line}, note: {cutoff.note}"
-
-
-def _conclusion_text(conclusion: ConclusionLine | None) -> str:
-    if conclusion is None:
-        return "none"
-    if conclusion.inconclusive:
-        methods = ", ".join(method.method for method in conclusion.disagreeing)
-        return f"inconclusive (disagreeing: {methods})"
-    return f"{conclusion.placement} zero"
-
-
-def _controls_section(report: NuisanceReport) -> list[str]:
-    lines = [f"- {name}: {_span(interval)}" for name, interval in sorted(report.controls.items())]
-    return ["## Controls", *lines, ""]
 
 
 def _servers_section(servers: Sequence[ServerLine]) -> list[str]:
@@ -155,38 +143,15 @@ def _second_pass_lines(second_pass: dict[str, str]) -> list[str]:
 def _health_section(servers: Sequence[ServerLine]) -> list[str]:
     """Report-only: one line per server with a non-zero health count."""
     lines = [
-        f"- {line.server_package}: {facts}" for line in servers if (facts := _health_facts(line))
+        f"- {line.server_package}: {facts}"
+        for line in servers
+        if (facts := ", ".join(health_facts(line)))
     ]
     return ["## Server health", *lines, ""] if lines else []
 
 
-def _health_facts(line: ServerLine) -> str:
-    facts: list[str] = []
-    if line.non_protocol_lines:
-        facts.append(f"non-protocol lines {line.non_protocol_lines}")
-    if line.lost_connection_responses:
-        facts.append(f"connection lost on {line.lost_connection_responses} call(s)")
-    if line.relaunches:
-        facts.append(f"relaunched {line.relaunches} time(s)")
-    if line.unsent_calls:
-        facts.append(f"{line.unsent_calls} call(s) not sent")
-    if line.cut_responses:
-        facts.append(f"{line.cut_responses} response(s) shown cut")
-    return ", ".join(facts)
-
-
-_INCOMPLETE_RUNS = "Incomplete runs (a model call missed: refused, unreadable or too long)"
-
-
 def _incomplete_runs_lines(report: NuisanceReport) -> list[str]:
     touched = [line.server_package for line in report.servers if line.incomplete_runs > 0]
-    count = f"{_INCOMPLETE_RUNS}: {report.incomplete_run_count}"
-    by_cause = [
-        f"- {cause}: {runs} run(s)"
-        for cause, runs in sorted(report.incomplete_runs_by_cause.items())
-    ]
-    return [f"{count} ({', '.join(touched)})" if touched else count, *by_cause]
-
-
-def _span(interval: IntervalModel) -> str:
-    return f"{interval.low:.3f} to {interval.high:.3f}"
+    return incomplete_runs_lines(
+        report.incomplete_run_count, touched, report.incomplete_runs_by_cause
+    )

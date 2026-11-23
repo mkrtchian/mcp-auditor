@@ -12,8 +12,8 @@ from evals.cve.holdout_report_lines import (
     ConclusionLine,
     CutoffModel,
     IntervalModel,
-    MethodLine,
     RunCutoffModel,
+    two_sides,
 )
 from evals.cve.holdout_statistic import Side
 from evals.cve.nuisance.exits import ExitReason
@@ -110,7 +110,7 @@ class NuisanceReport(BaseModel):
     exits: list[ExitLine]
     pending_admission: list[str]  # reached, neither admitted nor out: no exit of the rule
     incomplete_run_count: int
-    incomplete_runs_by_cause: dict[str, int]  # a run missing steps of two causes counts twice
+    incomplete_runs_by_cause: dict[str, int]  # a run missing model calls of two causes counts twice
     total_cost: float
     prices_as_of: date
     commit: str
@@ -141,7 +141,7 @@ class NuisanceReport(BaseModel):
 def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -> NuisanceReport:
     cutoff = RunCutoffModel.latest(run.cutoffs)
     split = split_by_side(run.servers, cutoff.date)
-    pair = _two_sides(split)
+    pair = two_sides(split)
     return NuisanceReport(
         holdout_nuisance_rate=holdout_nuisance_rate(run.servers),
         cited_interval=IntervalModel.of(cited_interval(run.servers)),
@@ -194,12 +194,6 @@ def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) ->
     )
 
 
-def _two_sides(split: dict[Side, SideStatistic]) -> tuple[SideStatistic, SideStatistic] | None:
-    if Side.PRE_CUTOFF in split and Side.POST_CUTOFF in split:
-        return split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF]
-    return None
-
-
 def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> IntervalModel | None:
     if pair is None:
         return None
@@ -215,12 +209,7 @@ def _conclusion_line(
     conclusion = check_conclusion(*pair, runs, grid=grid)
     if conclusion is None:
         return None
-    return ConclusionLine(
-        placement=None if conclusion.placement is None else conclusion.placement.value,
-        inconclusive=conclusion.inconclusive,
-        cited=MethodLine.of(conclusion.cited),
-        disagreeing=[MethodLine.of(method) for method in conclusion.disagreeing],
-    )
+    return ConclusionLine.of(conclusion)
 
 
 def _side_line(side: SideStatistic) -> SideLine:

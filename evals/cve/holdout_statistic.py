@@ -30,7 +30,7 @@ from evals.cve.holdout_intervals import (
 
 _GAMMA_1_1 = GammaPrior(shape=1.0, scale=1.0)
 _GAMMA_2_2 = GammaPrior(shape=2.0, scale=2.0)
-_MIN_SIDE = 5  # Newcombe and the conclusion need at least this many targets a side
+MIN_SIDE = 5  # Newcombe and the conclusion need at least this many members a side
 
 
 class Side(StrEnum):
@@ -79,7 +79,8 @@ class MethodPlacement:
 
 @dataclass(frozen=True)
 class Reading:
-    """One way of counting a side: the sum of its shares, and the runs counted per member."""
+    """One way of counting members, a side or a whole run: the sum of their shares, and the runs
+    counted per member."""
 
     share_sum: float
     counted_runs: tuple[int, ...]
@@ -123,7 +124,7 @@ def side_of(disclosure_date: date, cutoff: date) -> Side:
 
 
 def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
-    if side_a.targets < _MIN_SIDE or side_b.targets < _MIN_SIDE:
+    if side_a.targets < MIN_SIDE or side_b.targets < MIN_SIDE:
         return None
     interval = newcombe(side_a.share_sum, side_a.targets, side_b.share_sum, side_b.targets)
     return Contrast(side_a.side, side_b.side, interval)
@@ -132,23 +133,27 @@ def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
 def detection_rate_controls(
     results: Sequence[HoldoutTargetResult], runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> dict[str, Interval]:
-    count = _share_sum(results)
-    n = len(results)
-    detected = [result.detected_runs for result in results]
-    unchecked = _unchecked_sum(results, runs)
+    reading = Reading(_share_sum(results), tuple(r.detected_runs for r in results))
+    return {
+        **rate_controls(reading, runs, grid),
+        "unchecked_as_misses_wilson": wilson(_unchecked_sum(results, runs), reading.members),
+    }
+
+
+def rate_controls(reading: Reading, runs: int, grid: Grid) -> dict[str, Interval]:
+    count, n, member_runs = reading.share_sum, reading.members, reading.counted_runs
     return {
         "jeffreys": jeffreys(count, n),
         "clopper_pearson": clopper_pearson(count, n),
-        "hierarchical_gamma_1_1": _hierarchical(detected, runs, _GAMMA_1_1, grid),
-        "hierarchical_gamma_2_2": _hierarchical(detected, runs, _GAMMA_2_2, grid),
-        "unchecked_as_misses_wilson": wilson(unchecked, n),
+        "hierarchical_gamma_1_1": hierarchical_interval(member_runs, runs, _GAMMA_1_1, grid),
+        "hierarchical_gamma_2_2": hierarchical_interval(member_runs, runs, _GAMMA_2_2, grid),
     }
 
 
 def check_conclusion(
     side_a: SideStatistic, side_b: SideStatistic, runs: int, *, grid: Grid = DEFAULT_GRID
 ) -> Conclusion | None:
-    if side_a.targets < _MIN_SIDE or side_b.targets < _MIN_SIDE:
+    if side_a.targets < MIN_SIDE or side_b.targets < MIN_SIDE:
         return None
     cited, *others = [
         *read_contrast(observed(side_a), observed(side_b), runs, grid=grid),
@@ -215,10 +220,6 @@ def placement_of(interval: Interval) -> Placement:
     if interval.high < 0:
         return Placement.BELOW
     return Placement.STRADDLES
-
-
-def _hierarchical(detected: list[int], runs: int, prior: GammaPrior, grid: Grid) -> Interval:
-    return hierarchical_interval(detected, runs, prior, grid)
 
 
 def _share_sum(results: Sequence[HoldoutTargetResult]) -> float:
