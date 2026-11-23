@@ -10,7 +10,6 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.cve.detection import holdout_results
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.nuisance import results as nuisance_results
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
@@ -31,12 +30,23 @@ def refuse_existing_report(report: Path, title: str) -> None:
         )
 
 
+class RunInterrupted(Exception):
+    """A run stopped by an exception out of one of its audits, with what had finished."""
+
+    def __init__(
+        self, partial: DetectionHoldoutRunResult | NuisanceHoldoutRunResult, cause: BaseException
+    ) -> None:
+        super().__init__(f"the run stopped on {type(cause).__name__}")
+        self.partial = partial
+        self.cause = cause
+
+
 @contextmanager
 def partial_result_kept(report: Path) -> Generator[None]:
     """Writes the partial result of a run stopped by an exception, then raises that exception."""
     try:
         yield
-    except (holdout_results.RunInterrupted, nuisance_results.RunInterrupted) as interrupted:
+    except (RunInterrupted, nuisance_results.RunInterrupted) as interrupted:
         write_result(report, interrupted.partial)
         raise interrupted.cause  # noqa: B904
 

@@ -19,6 +19,8 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
+from rich.markup import escape
+
 from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
@@ -171,4 +173,15 @@ def print_lost_connections(label: str, health: ServerHealth) -> None:
         console.print(
             f"[yellow]{label}: server connection lost on"
             f" {health.lost_connection_responses} call(s)[/yellow]"
+        )
+
+
+def print_report_incidents(label: str, report: AuditReport, detail: ReportDetail) -> None:
+    for missed in report.missed_model_calls:
+        console.print(f"[yellow]{label}: {escape(detail.missed_call_detail(missed))}[/yellow]")
+    throttled = report.provider_usage.throttled_requests
+    if throttled > 0:
+        console.print(
+            f"[yellow]{label}: throttled {throttled} time(s)"
+            " by the model provider (HTTP 429)[/yellow]"
         )

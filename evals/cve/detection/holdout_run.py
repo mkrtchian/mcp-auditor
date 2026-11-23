@@ -28,7 +28,6 @@ from evals.cve.detection.holdout_results import (
     HoldoutTargetResult,
     NotRunCause,
     NotRunTarget,
-    RunInterrupted,
 )
 from evals.cve.detection.layout_check import LayoutCheck, observe_layout
 from evals.cve.detection.session_model import GradedAudit
@@ -38,6 +37,7 @@ from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import backend_image_ids, image_ids, image_tag
 from evals.cve.launch_audit import RunOverrides, build_auditor
 from evals.cve.places import Places, kept_records
+from evals.cve.run_files import RunInterrupted
 from evals.cve.run_images import (
     DOCKER_SWEEP,
     ContainerSweep,

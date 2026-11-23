@@ -6,8 +6,8 @@ import dataclasses
 
 import pytest
 
-from evals.cve.detection.holdout_results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.run_files import RunInterrupted
 from evals.eval_session import Refused, TreeState
 from tests.fakes import FakeContainerSweep
 from tests.unit.support import detection_holdout_runs

@@ -30,6 +30,7 @@ from evals.cve.launch_audit import (
     audit_launch,
     build_auditor,
     print_lost_connections,
+    print_report_incidents,
 )
 from evals.cve.places import Places, kept_records
 from evals.cve.planting import PlantingFailed
@@ -172,16 +173,7 @@ def _describe_unchecked_replay(replayed: ReplayOutcome) -> str:
 def _print_incidents(target: Target, report: AuditReport, detail: ReportDetail) -> None:
     for reason in blocked_reasons(report):
         console.print(f"[yellow]{target.flaw_id}: payload blocked, {reason}[/yellow]")
-    for missed in report.missed_model_calls:
-        console.print(
-            f"[yellow]{target.flaw_id}: {escape(detail.missed_call_detail(missed))}[/yellow]"
-        )
-    throttled = report.provider_usage.throttled_requests
-    if throttled > 0:
-        console.print(
-            f"[yellow]{target.flaw_id}: throttled {throttled} time(s)"
-            " by the model provider (HTTP 429)[/yellow]"
-        )
+    print_report_incidents(target.flaw_id, report, detail)
 
 
 async def _audit(

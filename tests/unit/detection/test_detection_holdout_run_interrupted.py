@@ -4,8 +4,9 @@ cancelled and the finished ones are kept in a partial result. No Docker, no LLM.
 import pytest
 
 import tests.unit.detection.support.test_detection_holdout_run_interrupted_given as given
-from evals.cve.detection.holdout_results import RunInterrupted
+from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.run_files import RunInterrupted
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, KUBERNETES
 
@@ -22,6 +23,7 @@ async def test_a_fatal_provider_error_keeps_the_finished_target_in_a_partial_res
 
     assert interrupted.value.cause is fatal
     partial = interrupted.value.partial
+    assert isinstance(partial, DetectionHoldoutRunResult)
     assert partial.partial
     assert [target.flaw_id for target in partial.targets] == [finished.flaw_id]
 
@@ -50,4 +52,6 @@ async def test_any_other_exception_interrupts_the_run_the_same_way():
         )
 
     assert interrupted.value.cause is bug
-    assert [target.flaw_id for target in interrupted.value.partial.targets] == [finished.flaw_id]
+    partial = interrupted.value.partial
+    assert isinstance(partial, DetectionHoldoutRunResult)
+    assert [target.flaw_id for target in partial.targets] == [finished.flaw_id]

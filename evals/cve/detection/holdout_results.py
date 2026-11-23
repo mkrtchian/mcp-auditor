@@ -173,12 +173,3 @@ class DetectionHoldoutRunResult:
     throttled_requests: int
     partial: bool = False  # a run stopped by an exception, its finished entries only
     second_pass: Sequence[str] = ()  # run only because their solo second pre-run pass was clean
-
-
-class RunInterrupted(Exception):
-    """A run stopped by an exception out of one of its audits, with what had finished."""
-
-    def __init__(self, partial: DetectionHoldoutRunResult, cause: BaseException) -> None:
-        super().__init__(f"the run stopped on {type(cause).__name__}")
-        self.partial = partial
-        self.cause = cause

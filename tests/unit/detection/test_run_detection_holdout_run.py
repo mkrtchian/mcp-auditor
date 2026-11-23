@@ -10,8 +10,8 @@ import pytest
 import tests.unit.detection.support.holdout_command_deps as command_deps
 import tests.unit.detection.support.test_run_detection_holdout_run_given as given
 from evals import run_detection_holdout
-from evals.cve.detection.holdout_results import RunInterrupted
 from evals.cve.provider_errors import ProviderFatal
+from evals.cve.run_files import RunInterrupted
 from tests.unit.support import holdout_result_keys
 
 
