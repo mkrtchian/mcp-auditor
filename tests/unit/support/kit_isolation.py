@@ -1,7 +1,7 @@
 """Isolation checks for the kit, static and at runtime.
 
-Reused by test_kit_isolation.py and test_run_detection_holdout.py on the written `--out` tree:
-the one place that knows what "free of mcp_auditor" means for the kit.
+Reused by test_kit_isolation.py and test_detection_calibration_dossier.py on the written `--out`
+tree: the one place that knows what "free of mcp_auditor" means for the kit.
 """
 
 import ast

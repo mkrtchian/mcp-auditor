@@ -1,5 +1,6 @@
 """Whether each drawn target's calibration card is ready for a detection holdout run: the card
-exists, and its second-agent check ran under rule v11 or later."""
+exists, and its card check ran under the detection suite rule version CARD_CHECK_RULE_VERSION
+names, or a later one."""
 
 from collections.abc import Sequence
 

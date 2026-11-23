@@ -58,11 +58,6 @@ async def _check_one(
 ) -> str | None:
     reasons = await check(target)
     observed = await layout(target)
-    return not_run_reason(target, reasons, observed)
-
-
-def not_run_reason(target: Target, reasons: list[str], layout: LayoutCheck) -> str | None:
-    """Why a target is dropped from N before any audit, or None to run it."""
     if reasons:
         return "out of calibration: " + "; ".join(reasons)
-    return layout_failure(target, layout)
+    return layout_failure(target, observed)

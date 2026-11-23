@@ -6,8 +6,30 @@ import sys
 from pathlib import Path
 
 import tests.unit.detection.support.test_detection_calibration_dossier_given as given
+import tests.unit.detection.support.test_detection_calibration_dossier_then as then
+import tests.unit.support.kit_isolation as iso
 from evals.cve.census.classification import Classification
 from evals.cve.detection.draw_record import CalibrationCard
+
+
+def test_the_kit_holds_the_files_a_calibration_agent_needs(tmp_path: Path):
+    out = given.a_written_kit(tmp_path)
+
+    then.kit_holds_its_files(out)
+
+
+def test_the_kit_imports_nothing_of_the_auditor(tmp_path: Path):
+    out = given.a_written_kit(tmp_path)
+
+    assert iso.scan_tree(out) == {}
+
+
+def test_the_readme_names_the_kit_tag_and_every_acceptance_service(tmp_path: Path):
+    out = given.a_written_kit(tmp_path)
+
+    readme = (out / "README.md").read_text()
+    assert "mcp-auditor-kit-<service>:local" in readme
+    then.readme_names_every_acceptance_service(readme)
 
 
 def test_the_fixture_format_embeds_the_card_and_classification_schemas(tmp_path: Path):

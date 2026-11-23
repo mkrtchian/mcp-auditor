@@ -48,6 +48,7 @@ HOLDOUT_RUNS = 3  # detection-suite-rule.md, Run conditions and statistic, lower
 # detection-suite-rule.md, Run conditions and statistic, a constant, not a flag
 HOLDOUT_TEST_BUDGET = 10
 HOLDOUT_CONCURRENCY = 6
+DETECTION_HOLDOUT_RUN_REFUSED = "detection holdout run refused"
 
 type Audit = Callable[[Target], Awaitable[GradedAudit | IncompleteRun | DroppedRun]]
 
@@ -96,7 +97,7 @@ class RunHoldoutTargets(Protocol):
 async def run_holdout_targets(
     inputs: HoldoutRunInputs, *, deps: HoldoutDeps
 ) -> DetectionHoldoutRunResult:
-    _refuse_tracing()
+    refuse_tracing()
     _refuse_tools_filter(inputs.targets)
     _refuse_missing_census(inputs.targets, inputs.disclosure_dates)
     _refuse_unknown_places(inputs.targets, inputs.places)
@@ -116,7 +117,7 @@ async def run_holdout_targets(
 
 
 def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:
-    refuse_running_containers(deps.sweep.running_containers(tags), "detection holdout run refused")
+    refuse_running_containers(deps.sweep.running_containers(tags), DETECTION_HOLDOUT_RUN_REFUSED)
 
 
 async def _run_surviving(
@@ -132,17 +133,17 @@ async def _run_surviving(
         )
     if not assembled:
         raise Refused(
-            "detection holdout run refused",
+            DETECTION_HOLDOUT_RUN_REFUSED,
             ["no target survived the pre-run check", *(entry.reason for entry in all_not_run)],
         )
     result = _assemble_run(inputs, deps, assembled, all_not_run, tree)
     return dataclasses.replace(result, second_pass=pre_run.second_pass)
 
 
-def _refuse_tracing() -> None:
+def refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            "detection holdout run refused",
+            DETECTION_HOLDOUT_RUN_REFUSED,
             [f"{TRACING_ON}; a detection holdout run keeps no trace"],
         )
 
@@ -151,7 +152,7 @@ def _refuse_tools_filter(targets: Sequence[Target]) -> None:
     filtered = [target.flaw_id for target in targets if target.tools_filter is not None]
     if filtered:
         raise Refused(
-            "detection holdout run refused",
+            DETECTION_HOLDOUT_RUN_REFUSED,
             [f"the rule runs with no tools filter, but {name} carries one" for name in filtered],
         )
 
@@ -160,7 +161,7 @@ def _refuse_missing_census(targets: Sequence[Target], dates: Mapping[str, date])
     missing = [target.flaw_id for target in targets if target.flaw_id not in dates]
     if missing:
         raise Refused(
-            "detection holdout run refused",
+            DETECTION_HOLDOUT_RUN_REFUSED,
             [f"{name} is drawn but absent from the census" for name in missing],
         )
 
@@ -173,13 +174,13 @@ def _refuse_unknown_places(targets: Sequence[Target], places: Places) -> None:
         except ValueError as exc:
             reasons.append(f"{target.flaw_id}: {exc}")
     if reasons:
-        raise Refused("detection holdout run refused", reasons)
+        raise Refused(DETECTION_HOLDOUT_RUN_REFUSED, reasons)
 
 
 def _refuse_dirty_tree(tree: TreeState) -> None:
     if tree.dirty:
         raise Refused(
-            "detection holdout run refused",
+            DETECTION_HOLDOUT_RUN_REFUSED,
             ["the git tree is dirty: a detection holdout run publishes from a clean tree"],
         )
 

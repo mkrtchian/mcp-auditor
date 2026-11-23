@@ -4,18 +4,13 @@ from pathlib import Path
 import pytest
 
 import tests.unit.detection.support.holdout_command_deps as command_deps
-import tests.unit.support.kit_isolation as iso
 from evals import run_detection_holdout
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_run import run_holdout_targets
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.images import dockerfile_fingerprint, image_tag
-from evals.cve.kit import launch as kit_launch
-from evals.cve.planting_base import SENTINEL_SERVICE
 from evals.cve.run_images import RunDocker, target_services
-from evals.repository import REPO_ROOT
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.calibration_check_deps import deps_with
@@ -202,7 +197,9 @@ def test_calibration_dossier_on_an_unknown_flaw_refuses_with_exit_three(tmp_path
     assert not (tmp_path / "kit").exists()
 
 
-def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
+def test_calibration_dossier_writes_an_isolated_kit(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     census = censuses.written(tmp_path, censuses.a_census())
     out = tmp_path / "kit"
 
@@ -219,38 +216,7 @@ def test_calibration_dossier_writes_an_isolated_kit(tmp_path: Path):
     )
 
     assert exit_code == 0
-    for relative in (
-        f"advisories/{censuses.FLAW_WITH_A_CVE}.json",
-        "evals/__init__.py",
-        "evals/cve/grammar.py",
-        "evals/detection_places.json",
-        "evals/cve/kit/driver.py",
-        "docker/Dockerfile.sentinel",
-        "docker/Dockerfile.stand-in",
-        "evals/stand_ins/tls/fixture-authority.pem",
-        *(f"evals/stand_ins/{capture.name}" for capture in _COMMITTED_CAPTURES),
-        "README.md",
-        "fixture_format.md",
-        "layout.md",
-        "grammar_classes.md",
-    ):
-        assert (out / relative).exists(), relative
-    assert iso.scan_tree(out) == {}
-    readme = (out / "README.md").read_text()
-    assert "mcp-auditor-kit-<service>:local" in readme
-    for service in _acceptance_services():
-        assert f"`{service}`" in readme, service
-
-
-_COMMITTED_CAPTURES = sorted((REPO_ROOT / "evals" / "stand_ins").glob("*.json"))
-
-
-def _acceptance_services() -> set[str]:
-    services = {
-        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
-    }
-    return services | {SENTINEL_SERVICE}
-
-
-def test_the_kit_tags_its_images_outside_the_acceptance_namespace():
-    assert kit_launch.image_tag("x") == "mcp-auditor-kit-x:local"
+    assert (out / "README.md").exists()
+    assert f"Calibration kit for {censuses.FLAW_WITH_A_CVE} written to {out}" in (
+        capsys.readouterr().out
+    )

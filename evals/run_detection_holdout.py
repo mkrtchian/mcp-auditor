@@ -23,16 +23,18 @@ from evals.cve.detection.calibration_check_exit import (
     CalibrationCheckDeps,
     run_calibration_check,
 )
-from evals.cve.detection.holdout_card_readiness import unready_cards
+from evals.cve.detection.holdout_card_readiness import CARD_CHECK_RULE_VERSION, unready_cards
 from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
 from evals.cve.detection.holdout_markdown import render_markdown
 from evals.cve.detection.holdout_report import build_report
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_run import (
+    DETECTION_HOLDOUT_RUN_REFUSED,
     HOLDOUT_CONCURRENCY,
     HOLDOUT_RUNS,
     HoldoutDeps,
     HoldoutRunInputs,
+    refuse_tracing,
 )
 from evals.cve.detection.targets import Target
 from evals.cve.holdout_conditions import HoldoutConditions
@@ -50,7 +52,6 @@ from evals.cve.run_images import (
 from evals.eval_session import Refused
 from evals.repository import REPO_ROOT
 from evals.session_usage import quiet_throttle_waits
-from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
@@ -137,8 +138,8 @@ def _census(path: Path) -> Census:
 
 
 def _run(args: argparse.Namespace, deps: HoldoutCommandDeps) -> int:
-    _refuse_tracing()
-    refuse_existing_report(args.report, "detection holdout run refused")
+    refuse_tracing()
+    refuse_existing_report(args.report, DETECTION_HOLDOUT_RUN_REFUSED)
     conditions = deps.conditions()
     if not deps.drawn:
         print("no holdout target is drawn")
@@ -161,10 +162,11 @@ def _run(args: argparse.Namespace, deps: HoldoutCommandDeps) -> int:
 def _refuse_unready_cards(census: Census, drawn: Sequence[Target]) -> None:
     gaps = unready_cards(census.draw, [target.flaw_id for target in drawn])
     if gaps:
-        raise Refused(
-            "detection holdout run refused",
-            ["drawn targets whose card is not ready under detection suite rule v11", *gaps],
+        headline = (
+            "drawn targets whose card is not ready under detection suite rule"
+            f" v{CARD_CHECK_RULE_VERSION}"
         )
+        raise Refused(DETECTION_HOLDOUT_RUN_REFUSED, [headline, *gaps])
 
 
 @dataclasses.dataclass(frozen=True)
@@ -246,14 +248,6 @@ async def _check_calibrations(
         return await run_calibration_check(targets, load_places(DETECTION_PLACES), checks)
     finally:
         sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
-
-
-def _refuse_tracing() -> None:
-    if tracing_enabled():
-        raise Refused(
-            "detection holdout run refused",
-            [f"{TRACING_ON}; a detection holdout run keeps no trace"],
-        )
 
 
 if __name__ == "__main__":
