@@ -36,10 +36,10 @@ check that proves a repair (detection-suite-log.md, version 13).
 import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import IO
 
 from rich.markup import escape
 
+from evals.cve.detection.calibration_check import report_launch_error
 from evals.cve.detection.route_check import RouteObservations, has_route, route_observations
 from evals.cve.detection.targets import LaunchMode, Target, TargetVersion
 from evals.cve.environments import LaunchShape, connect
@@ -311,7 +311,8 @@ class _Observer:
                     observations = await route_observations(self.target, client, planted.launch)
                 return observations, dict(planted.nonces)
             except Exception as exc:
-                _report_launch_error(self.target.flaw_id, exc, server_stderr, self.report_detail)
+                label = f"{self.target.flaw_id} layout check launch error"
+                report_launch_error(label, exc, server_stderr, self.report_detail)
                 if not launched:
                     raise NotLaunched from exc
                 return _failed_observation(), {}
@@ -319,13 +320,3 @@ class _Observer:
 
 def _failed_observation() -> RouteObservations:
     return RouteObservations(scope=None, responses=(), call_errored=(), tools_list_succeeded=False)
-
-
-def _report_launch_error(
-    flaw_id: str, exc: Exception, server_stderr: IO[str], report_detail: ReportDetail
-) -> None:
-    reason = report_detail.describe(exc)
-    console.print(f"[yellow]{flaw_id} layout check launch error:[/yellow] {escape(reason)}")
-    server_stderr.seek(0)
-    for line in report_detail.server_lines(server_stderr.read().splitlines()[-10:]):
-        console.print(f"  {line}", markup=False, highlight=False)

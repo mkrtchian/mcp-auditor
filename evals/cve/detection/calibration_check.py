@@ -16,7 +16,7 @@ import json
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import IO, cast
+from typing import IO
 
 from rich.markup import escape
 
@@ -32,6 +32,8 @@ from evals.cve.proofs import is_aimed, proofs_in
 from evals.cve.units import Unit, unit_of_exchanges
 from evals.eval_display import console
 from mcp_auditor.domain.ports import MCPClientPort
+
+_STDERR_TAIL_LINES = 10
 
 
 async def check_calibrations(
@@ -180,7 +182,8 @@ class _Exercise:
                         self.options.on_ping(version, await client.ping())
                     benign, exploits = await self._calls(client)
             except Exception as exc:
-                _report_error(self.target.flaw_id, exc, server_stderr, self.options.report_detail)
+                label = f"{self.target.flaw_id} calibration check error"
+                report_launch_error(label, exc, server_stderr, self.options.report_detail)
                 if not launched:
                     raise NotLaunched from exc
                 return None
@@ -213,29 +216,21 @@ def _unit(exchanges: list[Exchange]) -> Unit:
     return unit_of_exchanges([(args, response.content) for _, args, response in exchanges])
 
 
-def _report_error(
-    flaw_id: str, exc: Exception, server_stderr: IO[str], report_detail: ReportDetail
+def report_launch_error(
+    label: str, exc: Exception, server_stderr: IO[str], report_detail: ReportDetail
 ) -> None:
     if report_detail.shows_server_text:
-        cause = _root_cause(exc)
+        cause: BaseException = exc
+        while isinstance(cause, BaseExceptionGroup) and len(cause.exceptions) == 1:
+            cause = cause.exceptions[0]
         reason = f"{type(cause).__name__}: {cause}"
     else:
         reason = report_detail.describe(exc)
-    console.print(f"[yellow]{flaw_id} calibration check error:[/yellow] {escape(reason)}")
-    for line in report_detail.server_lines(_tail(server_stderr)):
-        console.print(f"  {line}", markup=False, highlight=False)
-
-
-def _tail(server_stderr: IO[str], lines: int = 10) -> list[str]:
+    console.print(f"[yellow]{label}:[/yellow] {escape(reason)}")
     server_stderr.seek(0)
-    return server_stderr.read().splitlines()[-lines:]
-
-
-def _root_cause(exc: BaseException) -> BaseException:
-    if not isinstance(exc, BaseExceptionGroup):
-        return exc
-    group = cast("BaseExceptionGroup[BaseException]", exc)
-    return _root_cause(group.exceptions[0]) if len(group.exceptions) == 1 else group
+    tail = server_stderr.read().splitlines()[-_STDERR_TAIL_LINES:]
+    for line in report_detail.server_lines(tail):
+        console.print(f"  {line}", markup=False, highlight=False)
 
 
 def _report_out_of_calibration(

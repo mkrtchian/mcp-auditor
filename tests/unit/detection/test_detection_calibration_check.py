@@ -1,4 +1,5 @@
 import dataclasses
+import io
 import re
 from dataclasses import dataclass
 
@@ -11,15 +12,21 @@ from evals.cve.detection.calibration_check import (
     not_fixed_reasons,
     not_live_reasons,
     passes_calibration_check,
+    report_launch_error,
 )
 from evals.cve.detection.targets import TargetVersion
+from evals.cve.failure_text import FULL_DETAIL, TYPES_ONLY
 from evals.cve.grammar import FlawClass
 from evals.cve.units import unit_of_exchanges
+from tests.unit.support.captured_console import a_captured_console
 
 NONCE = "MCPAUDIT-0123456789abcdef"
 ID_OUTPUT = "uid=65534(nobody) gid=65534(nogroup)"
 INJECTED = {"command": "version; id; echo $FLAG"}
 PLAIN = {"command": "version"}
+LAUNCH_FAILURE = ExceptionGroup(
+    "unhandled errors", [ExceptionGroup("nested", [ConnectionError("Connection closed")])]
+)
 
 
 @dataclass(frozen=True)
@@ -175,3 +182,26 @@ def test_not_fixed_reasons_name_a_surviving_flaw_or_an_erroring_benign_call(
     result = not_fixed_reasons(COMMAND_TARGET, [unit_of_exchanges([exploit])], benign_errored)
 
     assert result == conditions
+
+
+def test_a_launch_error_under_full_detail_prints_its_root_cause_after_its_label(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
+
+    report_launch_error("CVE-DEAD check error", LAUNCH_FAILURE, io.StringIO("boom\n"), FULL_DETAIL)
+
+    assert output.getvalue().splitlines() == [
+        "CVE-DEAD check error: ConnectionError: Connection closed",
+        "  boom",
+    ]
+
+
+def test_a_launch_error_under_types_only_prints_no_server_text(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    output = a_captured_console(capsys, monkeypatch)
+
+    report_launch_error("CVE-DEAD check error", LAUNCH_FAILURE, io.StringIO("boom\n"), TYPES_ONLY)
+
+    assert output.getvalue().splitlines() == ["CVE-DEAD check error: ConnectionError"]
