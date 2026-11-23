@@ -50,7 +50,7 @@ def test_the_removal_at_start_removes_the_doris_cluster_by_its_name():
     doris = mutations.with_the_registered_backend(holdout_runs.a_server("PyPI:d"), "doris")
     docker = docker_hosts.DockerHost({docker_hosts.DORIS_TAG: [DORIS_CONTAINER]})
 
-    remove_backend_containers(docker_hosts.host_of(docker), run_images([doris]))
+    remove_backend_containers(docker.sweep, run_images([doris]))
 
     assert docker.removed == [DORIS_CONTAINER]
 
@@ -59,6 +59,6 @@ def test_the_removal_at_start_removes_no_container_by_name_for_a_built_backend()
     ckan = mutations.on_the_ckan_backend(holdout_runs.a_server("npm:ckan"))
     docker = docker_hosts.DockerHost({docker_hosts.CKAN_TAG: ["stale_front"]})
 
-    remove_backend_containers(docker_hosts.host_of(docker), run_images([ckan]))
+    remove_backend_containers(docker.sweep, run_images([ckan]))
 
     assert docker.removed == ["stale_front"]

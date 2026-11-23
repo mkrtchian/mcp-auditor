@@ -19,9 +19,10 @@ from evals.cve.launch_retry import PRE_RUN_LAUNCH_ATTEMPTS
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import nuisance_environment
 from evals.cve.nuisance.benign_call import benign_call_failure
-from evals.cve.nuisance.containers import ContainerHost, remove_backend_containers, run_images
+from evals.cve.nuisance.containers import remove_backend_containers, run_images
 from evals.cve.nuisance.results import NotRunCause, NotRunServer
 from evals.cve.nuisance.solo import gathered_then_alone
+from evals.cve.run_images import ContainerSweep
 
 type BenignCall = Callable[[AdmittedServer], Awaitable[str | None]]
 
@@ -36,11 +37,11 @@ class VetResult:
 
 
 async def drop_failing_servers(
-    servers: Sequence[AdmittedServer], benign_call: BenignCall, host: ContainerHost
+    servers: Sequence[AdmittedServer], benign_call: BenignCall, sweep: ContainerSweep
 ) -> VetResult:
     first_reasons = await gathered_then_alone(servers, benign_call)
     final_reasons = [  # one second pass at a time, in the servers' order
-        None if first is None else await _second_pass(server, benign_call, host)
+        None if first is None else await _second_pass(server, benign_call, sweep)
         for server, first in zip(servers, first_reasons, strict=True)
     ]
     passes = list(zip(servers, first_reasons, final_reasons, strict=True))
@@ -60,9 +61,9 @@ async def drop_failing_servers(
 
 
 async def _second_pass(
-    server: AdmittedServer, benign_call: BenignCall, host: ContainerHost
+    server: AdmittedServer, benign_call: BenignCall, sweep: ContainerSweep
 ) -> str | None:
-    remove_backend_containers(host, run_images([server]))
+    remove_backend_containers(sweep, run_images([server]))
     return await benign_call(server)
 
 

@@ -3,16 +3,17 @@ from collections.abc import Callable, Mapping, Sequence
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.solo import SOLO_SERVERS
 from evals.cve.nuisance.vetting import LaunchedBenignCall
+from evals.cve.run_images import ContainerSweep
 from tests.fakes import ScriptedBenignCall
 from tests.unit.nuisance.support.flaky_launches import FlakyLaunches
-from tests.unit.support.nuisance_docker_hosts import DockerHost, RemovalHost
+from tests.unit.support.nuisance_docker_hosts import DockerHost
 
 (SOLO_SERVER,) = SOLO_SERVERS
 
 
 class ScriptedVet:
     """A `ScriptedBenignCall` answering each package's successive calls with the reasons
-    `scripted` gives it, beside a container host running `running` per image tag. Both write to
+    `scripted` gives it, beside a `DockerHost` running `running` per image tag. Both write to
     one event list, `("call", package)` per call and `("removed", name)` per container removed,
     so the order of removals and calls reads off it."""
 
@@ -24,7 +25,7 @@ class ScriptedVet:
         self.events: list[tuple[str, str]] = []
         self._benign_call = ScriptedBenignCall(scripted)
         self._docker = DockerHost(running)
-        self.host = RemovalHost(self._docker.running, self._remove)
+        self.sweep = ContainerSweep(self._docker.running, self._remove)
 
     async def benign_call(self, server: AdmittedServer) -> str | None:
         self.events.append(("call", server.server_package))

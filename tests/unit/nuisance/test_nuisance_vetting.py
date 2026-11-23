@@ -96,7 +96,7 @@ async def test_a_server_answering_its_second_pass_survives_with_its_first_pass_r
     server = holdout_runs.a_server("npm:flaky")
     vet = given.ScriptedVet({"npm:flaky": ["boom", None]})
 
-    result = await drop_failing_servers([server], vet.benign_call, vet.host)
+    result = await drop_failing_servers([server], vet.benign_call, vet.sweep)
 
     assert result.surviving == [server]
     assert result.second_pass == {"npm:flaky": "boom"}
@@ -107,7 +107,7 @@ async def test_a_server_failing_both_passes_is_not_run_with_its_second_reason():
     vet = given.ScriptedVet({"npm:broken": ["first", "second"]})
 
     result = await drop_failing_servers(
-        [holdout_runs.a_server("npm:broken")], vet.benign_call, vet.host
+        [holdout_runs.a_server("npm:broken")], vet.benign_call, vet.sweep
     )
 
     assert result.not_run == [NotRunServer("npm:broken", "second", NotRunCause.BENIGN_CALL_FAILED)]
@@ -120,7 +120,7 @@ async def test_a_server_answering_its_first_pass_is_called_once_and_its_backend_
     vet = given.ScriptedVet({"npm:plain": ["boom", None]}, {docker_hosts.CKAN_TAG: ["ckan_front"]})
 
     await drop_failing_servers(
-        [ckan, holdout_runs.a_server("npm:plain")], vet.benign_call, vet.host
+        [ckan, holdout_runs.a_server("npm:plain")], vet.benign_call, vet.sweep
     )
 
     assert vet.calls.count("npm:ckan") == 1
@@ -131,7 +131,7 @@ async def test_the_ckan_containers_of_a_failing_server_are_removed_right_before_
     ckan = mutations.on_the_ckan_backend(holdout_runs.a_server("npm:ckan"))
     vet = given.ScriptedVet({"npm:ckan": ["boom", None]}, {docker_hosts.CKAN_TAG: ["ckan_front"]})
 
-    await drop_failing_servers([ckan], vet.benign_call, vet.host)
+    await drop_failing_servers([ckan], vet.benign_call, vet.sweep)
 
     assert vet.events == [("call", "npm:ckan"), ("removed", "ckan_front"), ("call", "npm:ckan")]
 
@@ -140,7 +140,7 @@ async def test_the_doris_cluster_of_a_failing_server_is_removed_right_before_its
     doris = mutations.with_the_registered_backend(holdout_runs.a_server("PyPI:d"), "doris")
     vet = given.ScriptedVet({"PyPI:d": ["boom", None]})
 
-    await drop_failing_servers([doris], vet.benign_call, vet.host)
+    await drop_failing_servers([doris], vet.benign_call, vet.sweep)
 
     assert vet.events == [("call", "PyPI:d"), ("removed", DORIS_CONTAINER), ("call", "PyPI:d")]
 
@@ -148,7 +148,7 @@ async def test_the_doris_cluster_of_a_failing_server_is_removed_right_before_its
 async def test_a_failing_server_with_no_backend_removes_nothing_before_its_second_call():
     vet = given.ScriptedVet({"npm:plain": ["boom", None]}, {docker_hosts.CKAN_TAG: ["ckan_front"]})
 
-    await drop_failing_servers([holdout_runs.a_server("npm:plain")], vet.benign_call, vet.host)
+    await drop_failing_servers([holdout_runs.a_server("npm:plain")], vet.benign_call, vet.sweep)
 
     assert vet.events == [("call", "npm:plain"), ("call", "npm:plain")]
 
@@ -157,7 +157,7 @@ async def test_every_second_pass_comes_after_every_first_pass_the_solo_servers_i
     servers = [holdout_runs.a_server(given.SOLO_SERVER), holdout_runs.a_server("npm:plain")]
     vet = given.ScriptedVet({given.SOLO_SERVER: ["boom", None], "npm:plain": ["boom", None]})
 
-    await drop_failing_servers(servers, vet.benign_call, vet.host)
+    await drop_failing_servers(servers, vet.benign_call, vet.sweep)
 
     assert vet.calls == ["npm:plain", given.SOLO_SERVER, given.SOLO_SERVER, "npm:plain"]
 
@@ -166,6 +166,6 @@ async def test_the_surviving_servers_keep_their_order_with_a_second_pass_server_
     servers = [holdout_runs.a_server(package) for package in ("npm:a", "npm:flaky", "npm:c")]
     vet = given.ScriptedVet({"npm:flaky": ["boom", None]})
 
-    result = await drop_failing_servers(servers, vet.benign_call, vet.host)
+    result = await drop_failing_servers(servers, vet.benign_call, vet.sweep)
 
     assert result.surviving == servers

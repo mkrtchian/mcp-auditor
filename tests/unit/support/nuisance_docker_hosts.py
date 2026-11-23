@@ -1,11 +1,12 @@
 import dataclasses
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.holdout_run import NuisanceDeps
+from evals.cve.run_images import ContainerSweep
 
 SERVER_TAG = nuisance_images.image_tag("filesystem-patched")
 (CKAN_TAG,) = BACKENDS["ckan"].images
@@ -22,6 +23,10 @@ class DockerHost:
         self.rebuilt: list[str] = []
         self.running_at_rebuild: list[str] = []
         self.removed: list[str] = []
+
+    @property
+    def sweep(self) -> ContainerSweep:
+        return ContainerSweep(self.running, self.remove)
 
     def running(self, tags: Sequence[str]) -> list[str]:
         return [name for tag in tags for name in self.containers.get(tag, [])]
@@ -44,16 +49,6 @@ class DockerHost:
         return None
 
 
-@dataclasses.dataclass(frozen=True)
-class RemovalHost:
-    running_containers: Callable[[Sequence[str]], list[str]]
-    remove_containers: Callable[[Sequence[str]], None]
-
-
-def host_of(docker: DockerHost) -> RemovalHost:
-    return RemovalHost(docker.running, docker.remove)
-
-
 def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:
     audit = holdout_runs.scripted(
         {server.server_package: [holdout_runs.an_audit(False) for _ in range(3)]}
@@ -62,6 +57,5 @@ def deps_on(host: DockerHost, server: AdmittedServer) -> NuisanceDeps:
         holdout_runs.deps_auditing(audit),
         benign_call=host.benign_call,
         rebuild=host.rebuild,
-        running_containers=host.running,
-        remove_containers=host.remove,
+        sweep=host.sweep,
     )

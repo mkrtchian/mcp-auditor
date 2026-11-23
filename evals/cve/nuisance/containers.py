@@ -14,7 +14,8 @@ containers, and a calibration check may run containers of the same images."""
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
@@ -25,18 +26,15 @@ from evals.cve.nuisance.backend_registry import (
     built_backend_tags,
 )
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
-from evals.cve.run_images import refuse_running_containers, sweep_containers
+from evals.cve.run_images import (
+    ContainerSweep,
+    refuse_running_containers,
+    refuse_without_closed_networks,
+    sweep_containers,
+)
 
 if TYPE_CHECKING:
     from evals.cve.nuisance.admission.admission import AdmittedServer
-
-
-class ContainerHost(Protocol):
-    @property
-    def running_containers(self) -> Callable[[Sequence[str]], list[str]]: ...
-
-    @property
-    def remove_containers(self) -> Callable[[Sequence[str]], None]: ...
 
 
 @dataclass(frozen=True)
@@ -50,6 +48,36 @@ class RunImages:
     @property
     def services(self) -> list[str]:
         return [*self.server_services, *self.backend_services]
+
+
+class RunContainerDeps(Protocol):
+    @property
+    def check_networks(self) -> Callable[[], None]: ...
+
+    @property
+    def rebuild(self) -> Callable[[Sequence[str]], None]: ...
+
+    @property
+    def sweep(self) -> ContainerSweep: ...
+
+
+@contextmanager
+def rebuilt_run_images(
+    servers: Sequence[AdmittedServer], deps: RunContainerDeps, refusal: str
+) -> Generator[None]:
+    """The one container sequence of a run and a vet, so a vet proves the launch a run makes. A
+    refusal raised before the yield sweeps nothing, since what it refuses may be an audit in
+    progress."""
+    refuse_without_closed_networks(deps.check_networks)
+    images = run_images(servers)
+    _refuse_server_containers(deps.sweep, images, refusal)
+    remove_backend_containers(deps.sweep, images)
+    deps.rebuild(images.services)
+    _refuse_server_containers(deps.sweep, images, refusal)
+    try:
+        yield
+    finally:
+        sweep_run_containers(deps.sweep, images)
 
 
 def run_images(servers: Sequence[AdmittedServer]) -> RunImages:
@@ -76,25 +104,25 @@ def server_services(servers: Sequence[AdmittedServer]) -> list[str]:
     return list(dict.fromkeys(server.service for server in servers))
 
 
-def refuse_server_containers(host: ContainerHost, images: RunImages, refusal: str) -> None:
-    refuse_running_containers(host.running_containers(images.server_tags), refusal)
+def _refuse_server_containers(sweep: ContainerSweep, images: RunImages, refusal: str) -> None:
+    refuse_running_containers(sweep.running_containers(images.server_tags), refusal)
 
 
-def remove_backend_containers(host: ContainerHost, images: RunImages) -> None:
+def remove_backend_containers(sweep: ContainerSweep, images: RunImages) -> None:
     """Before the rebuild: after it, the tag names the new image and no longer matches a
     container started from the previous build. A removal after the rebuild (the vet's second pass)
     finds the containers by tag, since they were started from the rebuilt image. A container named
     by its backend's registry entry is removed whether it runs or not, the removal being
     unchecked."""
-    running = host.running_containers(images.backend_tags) if images.backend_tags else []
+    running = sweep.running_containers(images.backend_tags) if images.backend_tags else []
     removed = [*running, *images.containers_removed_by_name]
     if removed:  # `docker rm -f` with no name fails
-        host.remove_containers(removed)
+        sweep.remove_containers(removed)
 
 
-def sweep_run_containers(host: ContainerHost, images: RunImages) -> None:
+def sweep_run_containers(sweep: ContainerSweep, images: RunImages) -> None:
     sweep_containers(
         [*images.server_tags, *images.backend_tags],
-        host.running_containers,
-        host.remove_containers,
+        sweep.running_containers,
+        sweep.remove_containers,
     )

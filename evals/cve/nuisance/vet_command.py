@@ -30,12 +30,7 @@ from evals.cve.nuisance.commands import (
     committed_walk_inputs,
     malformed_input_refused,
 )
-from evals.cve.nuisance.containers import (
-    refuse_server_containers,
-    remove_backend_containers,
-    run_images,
-    sweep_run_containers,
-)
+from evals.cve.nuisance.containers import rebuilt_run_images
 from evals.cve.nuisance.holdout_servers import run_population
 from evals.cve.nuisance.vetting import (
     LaunchedBenignCall,
@@ -43,12 +38,7 @@ from evals.cve.nuisance.vetting import (
     VetResult,
     drop_failing_servers,
 )
-from evals.cve.run_images import (
-    rebuild_images,
-    refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
-)
+from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, rebuild_images
 from evals.eval_session import Refused
 
 _REFUSAL = "nuisance vet refused"
@@ -57,8 +47,7 @@ _REFUSAL = "nuisance vet refused"
 @dataclass(frozen=True)
 class VetDeps:
     rebuild: Callable[[Sequence[str]], None]
-    running_containers: Callable[[Sequence[str]], list[str]]
-    remove_containers: Callable[[Sequence[str]], None]
+    sweep: ContainerSweep
     benign_call: Callable[[AdmittedServer], Awaitable[str | None]]  # its failure reason, or None
     check_networks: Callable[[], None]
     # Whether each server answered a ping after its handshake, by package, filled by benign_call.
@@ -80,8 +69,7 @@ def default_vet_deps(
     call = LaunchedBenignCall(tool_call_timeout, record_ping, launcher or ServerLauncher())
     return VetDeps(
         rebuild=rebuild_images,
-        running_containers=running_containers,
-        remove_containers=remove_containers,
+        sweep=DOCKER_SWEEP,
         benign_call=bounded(call, concurrency),
         check_networks=check_closed_network_support,
         ping_answers=ping_answers,
@@ -149,17 +137,8 @@ def _tool_call_timeout(
 
 
 async def vet_servers(servers: Sequence[AdmittedServer], deps: VetDeps) -> VetResult:
-    """In the run's order, so a vet proves the launch a run makes."""
-    refuse_without_closed_networks(deps.check_networks)
-    images = run_images(servers)
-    refuse_server_containers(deps, images, _REFUSAL)
-    remove_backend_containers(deps, images)
-    deps.rebuild(images.services)
-    refuse_server_containers(deps, images, _REFUSAL)
-    try:
-        return await drop_failing_servers(servers, deps.benign_call, deps)
-    finally:
-        sweep_run_containers(deps, images)
+    with rebuilt_run_images(servers, deps, _REFUSAL):
+        return await drop_failing_servers(servers, deps.benign_call, deps.sweep)
 
 
 def _print_vet_results(

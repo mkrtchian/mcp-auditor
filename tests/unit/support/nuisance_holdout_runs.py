@@ -11,6 +11,7 @@ from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.holdout_run import NuisanceDeps, RunProvenance, run_nuisance
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult, ServerExit
+from evals.cve.run_images import ContainerSweep
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_session import TreeState
 from evals.pricing import Prices
@@ -122,8 +123,7 @@ def deps_auditing(
         announce_audits=lambda audits: None,
         announce_run=lines.append,
         throttled_requests=lambda: throttled,
-        running_containers=docker.running,
-        remove_containers=docker.remove,
+        sweep=docker.sweep,
         check_networks=lambda: None,
     )
 
@@ -176,8 +176,7 @@ def deps_reaching_nothing() -> NuisanceDeps:
         announce_audits,
         announce_run,
         throttled_requests,
-        running_containers,
-        remove_containers,
+        ContainerSweep(running_containers, remove_containers),
         lambda: None,
     )
 

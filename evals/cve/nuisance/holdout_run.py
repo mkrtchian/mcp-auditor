@@ -35,13 +35,7 @@ from evals.cve.nuisance.audit import (
     nuisance_audit,
 )
 from evals.cve.nuisance.commands import NUISANCE_CONCURRENCY
-from evals.cve.nuisance.containers import (
-    refuse_server_containers,
-    remove_backend_containers,
-    run_images,
-    server_services,
-    sweep_run_containers,
-)
+from evals.cve.nuisance.containers import rebuilt_run_images, server_services
 from evals.cve.nuisance.counter import counter_fingerprint
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.holdout_run_status import Audit, announcing, print_run_status
@@ -55,12 +49,7 @@ from evals.cve.nuisance.results import (
 from evals.cve.nuisance.solo import first_failure_then_alone, played_alone
 from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers
 from evals.cve.run_files import RunInterrupted
-from evals.cve.run_images import (
-    rebuild_images,
-    refuse_without_closed_networks,
-    remove_containers,
-    running_containers,
-)
+from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, rebuild_images
 from evals.cve.run_interruption import sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.model_conditions import ModelConditions
@@ -84,8 +73,7 @@ class NuisanceDeps:
     announce_audits: Callable[[int], None]
     announce_run: Callable[[str], None]
     throttled_requests: Callable[[], int]
-    running_containers: Callable[[Sequence[str]], list[str]]
-    remove_containers: Callable[[Sequence[str]], None]
+    sweep: ContainerSweep
     check_networks: Callable[[], None]
 
 
@@ -144,22 +132,14 @@ async def run_nuisance(
     deps = deps or default_deps(RunOverrides.of_holdout(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
-    refuse_without_closed_networks(deps.check_networks)
-    images = run_images(population.audited)
-    refuse_server_containers(deps, images, NUISANCE_HOLDOUT_RUN_REFUSED)
-    remove_backend_containers(deps, images)
-    deps.rebuild(images.services)
-    refuse_server_containers(deps, images, NUISANCE_HOLDOUT_RUN_REFUSED)
-    try:
+    with rebuilt_run_images(population.audited, deps, NUISANCE_HOLDOUT_RUN_REFUSED):
         return await _run_surviving(population, deps, ctx, tree)
-    finally:
-        sweep_run_containers(deps, images)
 
 
 async def _run_surviving(
     population: RunPopulation, deps: NuisanceDeps, ctx: _RunContext, tree: TreeState
 ) -> NuisanceHoldoutRunResult:
-    vetted = await drop_failing_servers(population.audited, deps.benign_call, deps)
+    vetted = await drop_failing_servers(population.audited, deps.benign_call, deps.sweep)
     assembled, dropped, failure = await _run_all(vetted.surviving, deps, ctx)
     all_not_run = [*vetted.not_run, *dropped]
     if failure is not None:
@@ -215,8 +195,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         lambda audits: None,
         print_run_status,
         lambda: throttles.requests,
-        running_containers,
-        remove_containers,
+        DOCKER_SWEEP,
         check_closed_network_support,
     )
 

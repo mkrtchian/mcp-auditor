@@ -36,8 +36,7 @@ def deps_on(
 
     return VetDeps(
         rebuild=host.rebuild,
-        running_containers=host.running,
-        remove_containers=host.remove,
+        sweep=host.sweep,
         benign_call=benign_call,
         check_networks=lambda: None,
         ping_answers=recorded,

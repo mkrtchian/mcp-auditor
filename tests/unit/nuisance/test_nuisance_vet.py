@@ -96,8 +96,7 @@ async def test_a_server_container_seen_only_after_the_rebuild_refuses_and_is_lef
     containers = FakeContainerSweep.appearing_after_the_rebuild("concurrent_server")
     deps = dataclasses.replace(
         vets.deps_on(docker_hosts.DockerHost()),
-        running_containers=containers.running,
-        remove_containers=containers.remove,
+        sweep=containers.sweep,
     )
 
     with pytest.raises(Refused) as refused:

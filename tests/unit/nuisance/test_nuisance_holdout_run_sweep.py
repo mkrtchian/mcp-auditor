@@ -15,16 +15,18 @@ from tests.fakes import FakeContainerSweep
 
 
 async def test_a_container_of_the_run_images_running_at_start_refuses_before_the_rebuild():
+    containers = FakeContainerSweep.running_before_the_rebuild("leftover_server")
     deps = dataclasses.replace(
         holdout_runs.deps_reaching_nothing(),
         read_tree=lambda: TreeState(commit="c0ffee", dirty=False),
-        running_containers=FakeContainerSweep.running_before_the_rebuild("leftover_server").running,
+        sweep=containers.sweep,
     )
 
     with pytest.raises(Refused) as refused:
         await holdout_runs.run([holdout_runs.a_server()], deps)
 
     assert any("leftover_server" in reason for reason in refused.value.reasons)
+    assert containers.removed == []
 
 
 async def test_a_container_seen_only_after_the_rebuild_refuses_and_is_left_running():
