@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The header the detection suite's calibration check prints before its layout and route checks reads `layout check then route check` where it read `layout break then discovery route`.
 - The refusals of a census whose draw record is malformed name `detection suite rule vN` where they read `rule version N`, and `before the first re-walk` where they read `rule version None`.
 - `python -m evals.run_nuisance walk` tags an excluded server `[excluded_server]` where it read `[excluded]`.
+- The refusals of the nuisance admission and the header of `python -m evals.run_nuisance walk` name the nuisance walk where they read "the walk".
 
 ### Fixed
 

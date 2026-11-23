@@ -115,7 +115,7 @@ def _walk(args: argparse.Namespace) -> int:
         admission = committed_admission(args.admission, walk_inputs)
     governing = governing_steps(followed_draw(walk_inputs.census))
     outcomes = {identifier: step.outcome for identifier, step in governing.items()}
-    print(f"{len(population)} servers reached by the walk:")
+    print(f"{len(population)} servers reached by the nuisance walk:")
     for server in population:
         print(_walk_line(server, outcomes))
     if admission is not None:

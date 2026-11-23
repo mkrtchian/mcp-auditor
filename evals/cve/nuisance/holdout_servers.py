@@ -28,8 +28,9 @@ class RunPopulation:
 def run_population(
     reached: ReachedServers, admission: NuisanceAdmission, acceptance_target_servers: set[str]
 ) -> RunPopulation:
-    """The exits the walk derives (its marks, and no counted flaw for a server it reaches with no
-    flaw that may count), those of the admitted servers, then those the admission records."""
+    """The exits the nuisance walk derives (its marks, and no counted flaw for a server it reaches
+    with no flaw that may count), those of the admitted servers, then those the admission
+    records."""
     marked = {s.server_package: s.mark for s in reached.listed if s.mark is not None}
     outside = [ServerExit(package, mark) for package, mark in marked.items()]
     outside += [ServerExit(p, ExitReason.NO_COUNTED_FLAW) for p in reached.without_candidates]

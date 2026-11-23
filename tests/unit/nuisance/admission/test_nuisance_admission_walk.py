@@ -16,7 +16,7 @@ def test_an_admitted_server_the_walk_does_not_reach_is_refused():
 
     problems = admissions.problems_of(given.admitting_another_package_outside_the_walk(), census)
 
-    assert problems == [f"{admissions.OTHER_PACKAGE}: not reached by the walk"]
+    assert problems == [f"{admissions.OTHER_PACKAGE}: not reached by the nuisance walk"]
 
 
 def test_an_admitted_nuisance_acceptance_server_outside_the_walk_passes():
@@ -71,7 +71,7 @@ def test_a_recorded_exit_for_a_server_the_walk_does_not_reach_is_refused():
     admission = recording(admitting(), admissions.a_recorded_exit("npm:nowhere"))
 
     assert admissions.problems_of(admission) == [
-        "npm:nowhere: recorded exit for a server the walk does not reach"
+        "npm:nowhere: recorded exit for a server the nuisance walk does not reach"
     ]
 
 
@@ -133,5 +133,5 @@ def test_a_recorded_acceptance_target_reason_is_refused():
 
     reason = EXIT_REASON_TEXTS[ExitReason.ACCEPTANCE_TARGET_SERVER]
     assert admissions.problems_of(admission) == [
-        f"{package}: recorded exit for the reason '{reason}', which only the walk derives"
+        f"{package}: recorded exit for the reason '{reason}', which only the nuisance walk derives"
     ]

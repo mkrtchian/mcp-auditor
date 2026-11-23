@@ -8,7 +8,7 @@ from tests.unit.support.admission_mutations import admitting
 
 def admitting_another_package_outside_the_walk() -> NuisanceAdmission:
     """OTHER_PACKAGE admitted through SECOND_FLAW, a census flaw of it that is not a draw-order
-    candidate, so the walk never reaches it."""
+    candidate, so the nuisance walk never reaches it."""
     return admissions.admitting_the_server_of(
         admissions.SECOND_FLAW, admissions.OTHER_PACKAGE, "context-forge-nuisance"
     )

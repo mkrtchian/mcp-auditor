@@ -1,8 +1,8 @@
-"""The admission's agreement with the walk: every admitted server reached by it through its
-recorded reaching flaw (a nuisance acceptance server aside, admitted outside it), no more
+"""The admission's agreement with the nuisance walk: every admitted server reached by it through
+its recorded reaching flaw (a nuisance acceptance server aside, admitted outside it), no more
 servers entering through the addition than its logged size, and each exit the admission records
-on a server the walk lists, unmarked, not admitted and recorded once, for a reason the walk does
-not derive.
+on a server the nuisance walk lists, unmarked, not admitted and recorded once, for a reason the
+nuisance walk does not derive.
 """
 
 from collections import Counter
@@ -40,10 +40,10 @@ def _reach_problems(
             continue
         walked_server = walked.get(package)
         if walked_server is None:
-            problems.append(f"{package}: not reached by the walk")
+            problems.append(f"{package}: not reached by the nuisance walk")
         elif walked_server.reaching_flaw != server.reaching_flaw:
             problems.append(
-                f"{package}: reaching flaw {server.reaching_flaw} is not the walk's "
+                f"{package}: reaching flaw {server.reaching_flaw} is not the nuisance walk's "
                 f"{walked_server.reaching_flaw}"
             )
     return problems
@@ -79,7 +79,8 @@ def exit_problems(admission: NuisanceAdmission, walk_inputs: WalkInputs) -> list
 def _unlisted_exits(
     exits: Sequence[RecordedExit], reached: nuisance_walk.ReachedServers
 ) -> list[str]:
-    """A recorded exit on a server the walk does not list, or on one whose exit it derives."""
+    """A recorded exit on a server the nuisance walk does not list, or on one whose exit it
+    derives."""
     marks = {server.server_package: server.mark for server in reached.listed}
     derived = set(reached.without_candidates)
     problems: list[str] = []
@@ -87,14 +88,18 @@ def _unlisted_exits(
         package = recorded.server_package
         if package in derived:
             problems.append(
-                f"{package}: recorded exit for a server the walk reaches with no flaw that may "
-                f"count, whose exit it derives ({EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW]})"
+                f"{package}: recorded exit for a server the nuisance walk reaches with no flaw "
+                "that may count, whose exit it derives "
+                f"({EXIT_REASON_TEXTS[ExitReason.NO_COUNTED_FLAW]})"
             )
         elif package not in marks:
-            problems.append(f"{package}: recorded exit for a server the walk does not reach")
+            problems.append(
+                f"{package}: recorded exit for a server the nuisance walk does not reach"
+            )
         elif (mark := marks[package]) is not None:
             problems.append(
-                f"{package}: recorded exit for a server the walk marks ({EXIT_REASON_TEXTS[mark]})"
+                f"{package}: recorded exit for a server the nuisance walk marks "
+                f"({EXIT_REASON_TEXTS[mark]})"
             )
     return problems
 
@@ -117,7 +122,7 @@ def _admitted_exits(admission: NuisanceAdmission) -> list[str]:
 def _derived_reason_exits(exits: Sequence[RecordedExit]) -> list[str]:
     return [
         f"{recorded.server_package}: recorded exit for the reason "
-        f"'{EXIT_REASON_TEXTS[recorded.reason]}', which only the walk derives"
+        f"'{EXIT_REASON_TEXTS[recorded.reason]}', which only the nuisance walk derives"
         for recorded in exits
         if recorded.reason == ExitReason.ACCEPTANCE_TARGET_SERVER
     ]

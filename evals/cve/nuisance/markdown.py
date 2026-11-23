@@ -82,9 +82,9 @@ def _counts(per_run: Sequence[int]) -> str:
 
 def _exits_section(report: NuisanceReport) -> list[str]:
     """The servers outside the nuisance holdout layer, one row per reason of the rule in its order,
-    a reason with none included, so two runs read side by side, the exits the walk derives and
-    those the admission records alike. The reached servers whose admission is pending close the
-    section: no reason of the rule holds for them yet."""
+    a reason with none included, so two runs read side by side, the exits the nuisance walk derives
+    and those the admission records alike. The reached servers whose admission is pending close
+    the section: no reason of the rule holds for them yet."""
     by_reason: dict[ExitReason, list[str]] = {reason: [] for reason in ExitReason}
     for line in report.exits:
         by_reason[line.reason].append(line.server_package)

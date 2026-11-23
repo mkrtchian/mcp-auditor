@@ -2,8 +2,8 @@
 beyond the frozen draw record of the detection walk.
 
 It carries the addition that resumes the nuisance walk past the detection walk, the criterion
-settlements of the draw-order flaws the walk reaches there, and the identity settlements that name a
-flaw's server. `walk_record_problems` holds the load validation, raised joined by
+settlements of the draw-order flaws the nuisance walk reaches there, and the identity settlements
+that name a flaw's server. `walk_record_problems` holds the load validation, raised joined by
 `load_walk_record`. A record settlement never contradicts a draw settlement on the same flaw and
 criterion: that is what binds a later detection walk to the rulings written here. This module
 imports nothing from `walk`, which imports it.
@@ -44,7 +44,7 @@ class NuisanceWalkRecord(BaseModel):
 
 @dataclass(frozen=True)
 class WalkInputs:
-    """The census and the record, with the lookups the walk repeats per flaw indexed once:
+    """The census and the record, with the lookups the nuisance walk repeats per flaw indexed once:
     rescanning every flaw for every flaw made a population build quadratic."""
 
     census: Census
@@ -81,8 +81,8 @@ class WalkInputs:
         return indexed | identified
 
 
-# The walk leaves a flaw's grammar class to the admission, so a disagreement on it needs no
-# settlement here.
+# The nuisance walk leaves a flaw's grammar class to the admission, so a disagreement on it needs
+# no settlement here.
 _WALKED_CRITERIA = tuple(c for c in Criterion if c is not Criterion.GRAMMAR_CLASS)
 
 
