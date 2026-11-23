@@ -10,7 +10,7 @@ plants the flaw's own witness at its own coordinate, free of any catalogue place
 The dossier is rebuilt from the committed census (`CensusFlaw` fields alone), one advisory per
 census flaw of the server, never from the raw hand-downloaded exports. It also carries the rule,
 the confinement every nuisance server runs with, the benign probe, the stand-in capture tool and,
-for each census flaw of the server that is a holdout target, that target's holdout reference.
+for each census flaw of the server that is a holdout target, its holdout target reference.
 """
 
 import shutil

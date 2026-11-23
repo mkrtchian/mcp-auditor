@@ -6,7 +6,7 @@ from evals.cve.docker_paths import image_dockerfile
 from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
 
 
-def it_carries_the_holdout_reference_of(out: Path, target: Target) -> None:
+def it_carries_the_holdout_target_reference_of(out: Path, target: Target) -> None:
     fixture = holdout_fixture_file(target.flaw_id)
     text = (out / "reference" / "holdout_fixtures" / f"{fixture.name}.txt").read_text()
     assert text.startswith(fixture.read_text())

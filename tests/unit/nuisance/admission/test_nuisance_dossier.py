@@ -23,8 +23,8 @@ from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_doss
 from evals.cve.planting_base import SENTINEL_IMAGE, STAND_IN_IMAGE
 from evals.eval_session import Refused
 from evals.repository import REPO_ROOT
-from tests.unit.nuisance.admission.support.holdout_reference_checks import (
-    it_carries_the_holdout_reference_of,
+from tests.unit.nuisance.admission.support.holdout_target_reference_checks import (
+    it_carries_the_holdout_target_reference_of,
 )
 from tests.unit.support import censuses
 from tests.unit.support.committed_nuisance_admission import (
@@ -127,7 +127,7 @@ def test_the_written_dossier_imports_nothing_from_mcp_auditor(tmp_path: Path):
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
 
-def test_a_detection_holdout_server_dossier_carries_the_holdout_reference_of_each_target(
+def test_a_detection_holdout_server_dossier_carries_the_holdout_target_reference_of_each_target(
     tmp_path: Path,
 ):
     server = a_detection_holdout_server_with_its_own_fix_check()
@@ -135,7 +135,7 @@ def test_a_detection_holdout_server_dossier_carries_the_holdout_reference_of_eac
     out = given.a_written_dossier_of(tmp_path, server)
 
     for target in its_holdout_targets(server):
-        it_carries_the_holdout_reference_of(out, target)
+        it_carries_the_holdout_target_reference_of(out, target)
     assert iso.scan_tree(out) == {}
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
 
@@ -212,7 +212,7 @@ def test_the_fixture_format_names_every_field_the_run_refuses_unrecorded(tmp_pat
         assert re.search(rf"`\w+\.{name}`", fixture_format), name
 
 
-def test_the_fixture_format_names_every_fix_check_target_field(tmp_path: Path):
+def test_the_fixture_format_names_every_fix_check_fixture_field(tmp_path: Path):
     fixture_format = (given.a_written_dossier(tmp_path) / "fixture_format.md").read_text()
 
     section = fixture_format.split("## FixCheckFixture fields")[1].split("\n## ")[0]

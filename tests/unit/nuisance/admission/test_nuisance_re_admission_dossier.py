@@ -1,6 +1,7 @@
-"""The re-admission dossier carries what the two blind agents need to fill rule v3's fields for
-one admitted server: its record, the rule, the run's Dockerfiles and confinement, its fix-check
-modules and backend lifecycle, and the benign probe, all free of any mcp_auditor import."""
+"""The re-admission dossier carries what the two blind agents need to fill nuisance suite rule
+v3's fields for one admitted server: its record, the rule, the run's Dockerfiles and confinement,
+its fix-check modules and backend lifecycle, and the benign probe, all free of any mcp_auditor
+import."""
 
 import functools
 from collections.abc import Callable
@@ -32,8 +33,8 @@ from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.confinement import user_args
 from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE, confinement_args
 from evals.eval_session import Refused
-from tests.unit.nuisance.admission.support.holdout_reference_checks import (
-    it_carries_the_holdout_reference_of,
+from tests.unit.nuisance.admission.support.holdout_target_reference_checks import (
+    it_carries_the_holdout_target_reference_of,
 )
 from tests.unit.support.committed_nuisance_admission import (
     a_committed_server_with_fix_checks,
@@ -47,7 +48,7 @@ type DossierOf = Callable[[AdmittedServer], Path]
 SHAPES = [
     a_committed_server_with_fix_checks,
     given.a_committed_server_with_a_backend,
-    given.a_committed_server_with_a_holdout_copy,
+    given.a_committed_server_with_a_holdout_calibration_copy,
     a_detection_holdout_server_with_its_own_fix_check,
 ]
 
@@ -118,13 +119,15 @@ def test_a_backend_dossier_carries_its_backend_alone(dossier_of: DossierOf):
     assert not (out / "evals" / "cve" / "backends" / f"{another}.py").exists()
 
 
-def test_a_holdout_copy_dossier_carries_its_holdout_reference_as_text(dossier_of: DossierOf):
-    server = given.a_committed_server_with_a_holdout_copy()
+def test_a_holdout_calibration_copy_dossier_carries_its_holdout_target_reference_as_text(
+    dossier_of: DossierOf,
+):
+    server = given.a_committed_server_with_a_holdout_calibration_copy()
 
     out = dossier_of(server)
 
     for target in copied_holdout_targets(server, given.the_copy_resolution()):
-        it_carries_the_holdout_reference_of(out, target)
+        it_carries_the_holdout_target_reference_of(out, target)
         for service in (*target.images, target.patched_image):
             assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
 
@@ -137,7 +140,7 @@ def test_a_detection_holdout_server_with_its_own_fix_check_carries_its_reference
     out = dossier_of(server)
 
     for target in its_holdout_targets(server):
-        it_carries_the_holdout_reference_of(out, target)
+        it_carries_the_holdout_target_reference_of(out, target)
 
 
 @pytest.mark.parametrize(

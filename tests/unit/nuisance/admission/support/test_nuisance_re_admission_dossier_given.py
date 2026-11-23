@@ -58,7 +58,7 @@ def a_committed_server_with_a_backend() -> AdmittedServer:
     )
 
 
-def a_committed_server_with_a_holdout_copy() -> AdmittedServer:
+def a_committed_server_with_a_holdout_calibration_copy() -> AdmittedServer:
     resolution = the_copy_resolution()
     return next(
         server

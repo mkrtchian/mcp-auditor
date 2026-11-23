@@ -1,8 +1,8 @@
-"""The holdout reference a nuisance dossier ships for each census flaw of its server that is a
-holdout target: the target's fixture module and its builder's source as text, its Dockerfiles and
-its calibration card. Nuisance suite rule v4 lets the admission agents start from that fixture
-when the server's patched version is the one the holdout target's calibration checks (Admission),
-and adapt it otherwise.
+"""The holdout target reference a nuisance dossier ships for each census flaw of its server
+that is a holdout target: the target's fixture module and its builder's source as text, its
+Dockerfiles and its calibration card. Nuisance suite rule v4 lets the admission agents start from
+that fixture when the server's patched version is the one the holdout target's calibration checks
+(Admission), and adapt it otherwise.
 
 This module imports `holdout_targets`, which is not clean: only the files it writes must be.
 """

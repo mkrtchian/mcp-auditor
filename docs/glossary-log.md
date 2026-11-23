@@ -10,6 +10,7 @@ Some older words are kept on purpose in living code and data, since changing the
 
 | Older word | Current term | Kind | Date |
 |---|---|---|---|
+| `a_committed_server_with_a_holdout_copy` | `a_committed_server_with_a_holdout_calibration_copy` | rename | 2026-11-23 |
 | acceptance gate (ADR 006, the end-to-end eval as the gate of the whole system) | no successor: a role ADR 015 took away from the honeypot suite, which is now a regression guard gated by the honeypot gate | retired | 2026-09-21 |
 | acceptance gate (ADR 024, ADR 030, the detection rule, CONTRIBUTING) | detection gate | rename | 2026-11-11 |
 | acceptance gate (nuisance plans: the nuisance suite's gate) | nuisance gate | rename | 2026-11-11 |
@@ -82,6 +83,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | holdout census | census | rename | 2026-11-11 |
 | `HoldoutCensus` | census (`Census`) | rename | 2026-11-11 |
 | holdout log (`docs/holdout-log.md`) | detection suite log (`docs/detection-suite-log.md`) | rename | 2026-11-11 |
+| holdout reference | holdout target reference | rename | 2026-11-23 |
 | holdout rule (`docs/holdout-rule.md`) | detection suite rule (`docs/detection-suite-rule.md`) | rename | 2026-11-11 |
 | holdout run (ADRs, the detection suite rule, nuisance suite rule v1 to v6, logs, plans, code: a run of the detection holdout layer alone) | detection holdout run. "Holdout run" now names a run of the holdout layer of either suite. | moved meaning | 2026-11-21 |
 | holdout server (the server of a holdout target) | detection holdout server. "Holdout server" is now always qualified by its suite. | moved meaning | 2026-11-11 |

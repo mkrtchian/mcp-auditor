@@ -192,6 +192,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **witness**: the random value a fix check plants where the flaw reaches. No audit sees it. Not: nonce.
 - **positive control**: the witness surfacing on the vulnerable version, which shows that the exploit works and that the flaw is real.
 - **holdout calibration copy**: a fix check taken from the current calibration of a detection holdout target, for its drawn flaw and its siblings. It applies when the server's patched version is the one that calibration checks, and when its positive control rests on no stand-in that relays the flaw's effect. When the target's fixture fingerprint changes, it is copied again before the next run. While the target's calibration is being repaired, or once the target leaves the detection holdout layer, the flaw goes through its own fix check. Code: `source = "detection_holdout_calibration"`, `holdout_fingerprint` in the admission file.
+- **holdout target reference**: what the kit of an admission agent carries for the holdout target of its server, when it has one: the target's detection fixture and builder as text, its Dockerfiles and its card. When the server's patched version is the one that target's calibration checks, the admission agents may start from that fixture, its backend included. Nothing in the kit imports or runs the reference. Code: `reference/` in the kit, `write_holdout_target_references`.
 - **benign call** (nuisance): a call to a counted tool, written from its description and not aimed at the flaw, that must return without error before each run, with an optional expected text and prerequisite calls. Not: the detection benign call.
 - **vet**: the no-LLM check, before a nuisance holdout run, that each audited server lists its counted tools and answers its benign calls through the run's own launch. Code: `python -m evals.run_nuisance vet`.
 - **alarm**: a test case or chain judged FAIL on a counted tool, in a category valid for the class of a counted flaw that tool carried. A chain counts when any of its steps calls such a tool.
@@ -237,6 +238,7 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **confinement**: the confined execution regime of an audit, or the confinement a suite launches its servers with (user, dropped capabilities, memory bound).
 - **coverage**: coverage gap or distribution coverage.
 - **declared**: declared container, declared flip, declared function, a root the server declares.
+- **dossier**: admission dossier or re-admission dossier (the kit of an admission agent, written by `nuisance-dossier`), calibration dossier (the kit of a calibration agent, written by `calibration-dossier`), or advisory dossier (the advisories of one census flaw as one JSON file, in a kit or in the classifiers' input of `classify-dossier`).
 - **eval**: the judge eval, or an instrument by its name. The words "the evals" alone mean the instruments.
 - **exit**: an exit (a reason a server is outside the holdout nuisance rate), or an exit code of a command.
 - **fixed**: a fixed version (no exploit surfaces), or a flaw fixed on a release.
