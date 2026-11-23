@@ -53,8 +53,8 @@ async def test_an_old_nonce_in_an_argument_does_not_fool_the_replay():
     then.the_credit_is_kept(outcome)
 
 
-async def test_a_fresh_nonce_of_another_location_strikes_nothing():
-    run = given.a_fresh_other_location_run()
+async def test_a_fresh_nonce_of_another_place_strikes_nothing():
+    run = given.a_fresh_other_place_run()
 
     outcome = await replay_with_causes(run)
 

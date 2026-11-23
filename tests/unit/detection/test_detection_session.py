@@ -227,7 +227,7 @@ async def test_without_a_baseline_directory_every_target_has_no_baseline_and_the
     assert result.gate.outcome == GateOutcome.GREEN
 
 
-async def test_a_file_of_a_target_no_longer_benchmarked_is_orphaned_and_not_compared(
+async def test_a_file_of_a_target_no_longer_an_acceptance_target_is_orphaned_and_not_compared(
     tmp_path: Path,
 ):
     orphan = given.an_orphaned_file(tmp_path)

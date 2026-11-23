@@ -3,10 +3,10 @@ import importlib.util
 from pathlib import Path
 
 # These modules are the paths a holdout target must never travel: the detection gate
-# (session_model's _BENCHMARKED = ACCEPTANCE_TARGETS), the preflight, the judge fixture draw
-# (seeded from ACCEPTANCE_TARGETS) and the probe corpus (iterated over ACCEPTANCE_TARGETS). A plain
-# import of the holdout target module in any of them would let a holdout flaw reach the measured
-# instruments, so the AST scan pins them clean.
+# (session_model's _ACCEPTANCE_FLAW_IDS, from ACCEPTANCE_TARGETS), the preflight, the judge fixture
+# draw (seeded from ACCEPTANCE_TARGETS) and the probe corpus (iterated over ACCEPTANCE_TARGETS). A
+# plain import of the holdout target module in any of them would let a holdout flaw reach the
+# measured instruments, so the AST scan pins them clean.
 _INSTRUMENTS = (
     "cve/detection/session_model.py",
     "detection_preflight.py",

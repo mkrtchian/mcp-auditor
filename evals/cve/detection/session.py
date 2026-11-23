@@ -48,7 +48,7 @@ class DetectionSessionResult:
     audits: list[DetectionAudit]  # the completed main runs, never a retest
     gate: DetectionGateResult | None  # None under --no-baseline
     not_run: dict[str, list[str]]  # target to its out-of-calibration reasons, every mode
-    orphans: list[str]  # baseline files of targets no longer benchmarked
+    orphans: list[str]  # baseline files of flaws no longer acceptance targets
     written: list[WrittenBaseline]
     recording_refused: list[str]  # why a recording was refused once the runs were paid for
     exit_code: int

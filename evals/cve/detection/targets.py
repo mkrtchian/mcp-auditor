@@ -82,7 +82,7 @@ class Target:
     severity: str
     classes: frozenset[FlawClass]
     aim: re.Pattern[str]
-    reaches: frozenset[str]  # the flaw's reachable_by tokens, among the three in cve_places
+    reaches: frozenset[str]  # the flaw's reaches, among evals.cve.places.REACHES
     kept_places: tuple[str, ...]  # place ids the flaw alone reaches, empty until filled
     images: tuple[str, ...]  # services of evals/docker/compose.yml
     server_image: str  # the service of images that runs the audited server
@@ -139,10 +139,9 @@ class Target:
         to_plant: Sequence[Place],
         *,
         version: TargetVersion = TargetVersion.VULNERABLE,
-        nonces: NonceSource = RANDOM_NONCES,
         shape: LaunchShape | None = None,
     ) -> AsyncGenerator[PlantedLaunch]:
-        spec = self.planting_spec(to_plant, nonces)
+        spec = self.planting_spec(to_plant)
         async with entered_in_thread(self.environment(spec, version, shape)) as planted_launch:
             yield planted_launch
 

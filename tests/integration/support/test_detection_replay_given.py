@@ -55,21 +55,21 @@ _OLD_NONCES = {FLAW_ID: OLD_FLAW, OTHER_ID: OLD_OTHER}
 Serve = Callable[[PlantingSpec], list[str]]
 
 
-# --- the runs, each a RunToCheck the replay settles ---
+# --- the runs, each a RunToCheck the replay checks ---
 
 
 def a_declared_run() -> RunToCheck:
-    # The location is reached by a declared path, so the patched version serves it too: struck.
+    # The place is reached by a declared path, so the patched version serves it too: struck.
     return _single_run(_serving({FLAW_PATH: FLAW_ID}))
 
 
 def a_flaw_run() -> RunToCheck:
-    # Only the flaw reaches the location, so the patched version serves nothing: kept.
+    # Only the flaw reaches the place, so the patched version serves nothing: kept.
     return _single_run(_serving({}))
 
 
 def a_chain_run() -> RunToCheck:
-    # A two-step chain whose second step reaches the location only via the flaw: kept.
+    # A two-step chain whose second step reaches the place only via the flaw: kept.
     return _run(_serving({}), _prep_then_flaw_chain_report(), _calls(PREP_PATH, FLAW_PATH))
 
 
@@ -89,8 +89,8 @@ def an_echoed_old_nonce_run() -> RunToCheck:
     return _run(_echoing(), report, _calls(FLAW_PATH, OLD_FLAW))
 
 
-def a_fresh_other_location_run() -> RunToCheck:
-    # The patched version surfaces a fresh nonce for another location on the recorded path, which
+def a_fresh_other_place_run() -> RunToCheck:
+    # The patched version surfaces a fresh nonce for another place on the recorded path, which
     # the run never proved, so nothing is struck: kept.
     return _run(
         _serving({FLAW_PATH: OTHER_ID}),

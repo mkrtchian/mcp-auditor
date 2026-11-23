@@ -40,10 +40,10 @@ async def test_every_exploit_reads_as_aimed_and_the_benign_call_does_not(target:
     assert not is_aimed(benign, target.aim)
 
 
-def test_the_repository_bypass_cve_is_out_of_scope_with_a_reason():
+def test_the_repository_bypass_flaw_is_out_of_scope_with_a_reason():
     assert "CVE-2025-68145" not in {target.flaw_id for target in ACCEPTANCE_TARGETS}
 
-    bypass = next(cve for cve in OUT_OF_SCOPE_FLAWS if cve.flaw_id == "CVE-2025-68145")
+    bypass = next(flaw for flaw in OUT_OF_SCOPE_FLAWS if flaw.flaw_id == "CVE-2025-68145")
     assert bypass.reason
 
 
@@ -85,7 +85,7 @@ def test_every_acceptance_target_runs_its_normal_launch(target: Target):
 def test_only_the_git_target_declares_a_read_write_layout():
     mounts = {t.flaw_id: t.planting_host.layout_mount for t in ACCEPTANCE_TARGETS}
 
-    assert [cve for cve, mount in mounts.items() if mount is LayoutMount.READ_WRITE] == [
+    assert [flaw_id for flaw_id, mount in mounts.items() if mount is LayoutMount.READ_WRITE] == [
         "CVE-2025-68143"
     ]
 
@@ -152,6 +152,6 @@ async def _recorded(call: ExploitCall) -> Unit:
     # The symlink traversal discovers the planted links by listing the checkout, so the fake
     # names at least one archive<N> for its read chain to issue an aimed read_file.
     listing = ToolResponse(content="archive0\narchive7\n")
-    recorder = ExchangeLog(FakeMCPClient([], responses={"list_directory": listing}))
-    await call(a_fictional_places(), recorder)
-    return unit_of_exchanges([(args, response.content) for _, args, response in recorder.exchanges])
+    log = ExchangeLog(FakeMCPClient([], responses={"list_directory": listing}))
+    await call(a_fictional_places(), log)
+    return unit_of_exchanges([(args, response.content) for _, args, response in log.exchanges])

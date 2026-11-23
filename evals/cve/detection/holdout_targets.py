@@ -3,7 +3,7 @@ evals/cve/detection/holdout_fixtures/. Each is a Target, which every check the d
 reuses (calibration_check.check_target, route_check, layout_check, baseline.fixture_fingerprint)
 takes unchanged.
 
-A Target is not clean of mcp_auditor (its builder yields a cve_environments.Launch and its
+A Target is not clean of mcp_auditor (its builder yields an evals.cve.environments.Launch and its
 exploits are typed on MCPClientPort); it does not need to be, since the kit's isolation test scans
 the kit, not these modules.
 

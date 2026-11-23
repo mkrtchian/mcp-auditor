@@ -89,10 +89,14 @@ class GatedSession:
     tree: TreeState | None
 
     def baselines(self) -> Baselines:
-        return {flaw_id: b for flaw_id, b in self.files.items() if flaw_id in _BENCHMARKED}
+        return {flaw_id: b for flaw_id, b in self.files.items() if flaw_id in _ACCEPTANCE_FLAW_IDS}
 
     def orphans(self) -> list[str]:
-        return [f"{flaw_id}.json" for flaw_id in sorted(self.files) if flaw_id not in _BENCHMARKED]
+        return [
+            f"{flaw_id}.json"
+            for flaw_id in sorted(self.files)
+            if flaw_id not in _ACCEPTANCE_FLAW_IDS
+        ]
 
 
-_BENCHMARKED = frozenset(target.flaw_id for target in ACCEPTANCE_TARGETS)
+_ACCEPTANCE_FLAW_IDS = frozenset(target.flaw_id for target in ACCEPTANCE_TARGETS)
