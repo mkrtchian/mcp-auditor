@@ -1,6 +1,6 @@
 import dataclasses
 
-import tests.unit.nuisance.gate.support.test_nuisance_gate_report_given as given
+import tests.unit.nuisance.gate.support.test_nuisance_gate_report_then as then
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS
 from evals.cve.nuisance.gate.gate_report import GATE_LEGEND, render_markdown, server_lines
 from tests.unit.nuisance.gate.support.nuisance_gate_reports import (
@@ -8,8 +8,8 @@ from tests.unit.nuisance.gate.support.nuisance_gate_reports import (
     NOT_ADMITTED,
     OUTSIDE,
     a_held_server_beside_a_regression,
-    a_not_gated_server_with_an_alarm,
     a_report_of,
+    an_inconclusive_server_with_an_alarm,
 )
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import FILESYSTEM, KUBERNETES
 from tests.unit.support.nuisance_holdout_runs import COUNTED_TOOL
@@ -24,15 +24,15 @@ def test_the_markdown_carries_the_verdict_the_runs_the_flagged_tools_and_the_lis
     assert "npm:mcp-server-kubernetes: regression, the alarm reproduced in 4 of 5 retests" in (
         markdown
     )
-    held_row = given.row_of(markdown, FILESYSTEM.server_package)
-    regression_row = given.row_of(markdown, KUBERNETES.server_package)
+    held_row = then.row_of(markdown, FILESYSTEM.server_package)
+    regression_row = then.row_of(markdown, KUBERNETES.server_package)
     assert "| ... |" in held_row
     assert "| A.. |" in regression_row
     assert "| 4/5 |" in regression_row
     assert COUNTED_TOOL in regression_row
     assert COUNTED_TOOL not in held_row
-    assert given.section(markdown, "## Not admitted") == [f"- {NOT_ADMITTED}"]
-    assert given.section(markdown, "## Outside the gate") == [
+    assert then.section(markdown, "## Not admitted") == [f"- {NOT_ADMITTED}"]
+    assert then.section(markdown, "## Outside the gate") == [
         f"- {OUTSIDE.server_package}: {EXIT_REASON_TEXTS[OUTSIDE.reason]}"
     ]
 
@@ -41,15 +41,15 @@ def test_the_servers_table_shows_the_baseline_runs_beside_the_runs_with_a_legend
     markdown = render_markdown(a_report_of(a_held_server_beside_a_regression()))
 
     assert "| Server | Outcome | Baseline | Runs | Retests | Detail |" in markdown
-    held_row = given.row_of(markdown, FILESYSTEM.server_package)
+    held_row = then.row_of(markdown, FILESYSTEM.server_package)
     assert held_row.startswith(f"| {FILESYSTEM.server_package} | held | ...... | ... | - |")
     assert GATE_LEGEND in markdown
 
 
-def test_a_not_gated_server_shows_its_detail_before_its_flagged_tools():
-    markdown = render_markdown(a_report_of(a_not_gated_server_with_an_alarm()))
+def test_an_inconclusive_server_shows_its_detail_before_its_flagged_tools():
+    markdown = render_markdown(a_report_of(an_inconclusive_server_with_an_alarm()))
 
-    row = given.row_of(markdown, KUBERNETES.server_package)
+    row = then.row_of(markdown, KUBERNETES.server_package)
     assert f"| {FLAGGED_IN_BASELINE}; run 1: {COUNTED_TOOL} |" in row
     assert "| .....A | A.. |" in row
 
@@ -72,7 +72,7 @@ def test_a_refused_recording_reads_as_refused_in_the_recording_section():
 
     markdown = render_markdown(a_report_of(session))
 
-    assert given.section(markdown, "## Recording") == ["- refused: HEAD moved"]
+    assert then.section(markdown, "## Recording") == ["- refused: HEAD moved"]
 
 
 def test_server_lines_read_each_completed_server_from_its_audits():

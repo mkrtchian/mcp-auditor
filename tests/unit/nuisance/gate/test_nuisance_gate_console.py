@@ -48,13 +48,13 @@ def test_the_table_shows_each_server_with_its_baseline_runs_and_retests(
     assert GATE_LEGEND in output.getvalue()
 
 
-def test_a_not_gated_server_shows_its_detail_before_its_flagged_tools(
+def test_an_inconclusive_server_shows_its_detail_before_its_flagged_tools(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ):
     output = a_captured_console(capsys, monkeypatch)
 
-    print_nuisance_gate_summary(given.a_not_gated_report(), REPORT_PATH)
+    print_nuisance_gate_summary(given.an_inconclusive_report(), REPORT_PATH)
 
     assert f"{FLAGGED_IN_BASELINE}; run 1: {COUNTED_TOOL}" in output.getvalue()
 

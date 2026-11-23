@@ -35,12 +35,12 @@ def without_any_llm_key(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
-def a_gate_set_of_one_server(
+def arguments_for_one_gate_server(
     tmp_path: Path, admitted: NuisanceAdmission | None = None
 ) -> list[str]:
     """The census, walk record and admission arguments of a gate whose one server is GATE_SERVER,
     admitted by `admitted`, by default fully recorded."""
-    return _gate_arguments(
+    return _arguments_with_a_report(
         tmp_path,
         admissions.a_census_with_an_acceptance_server(),
         admitted or admissions.admitting_the_acceptance_server(),
@@ -51,7 +51,7 @@ OTHER_GATE_FLAW = "CVE-2025-65513"
 OTHER_GATE_SERVER = "npm:other-acceptance"
 
 
-def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
+def arguments_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
     """The arguments of a gate of GATE_SERVER, fully recorded, and OTHER_GATE_SERVER, whose
     admission predates the fields nuisance suite rule v3 adds."""
     census = census_draws.with_a_walk_skipping(
@@ -71,10 +71,12 @@ def a_gate_set_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
         admissions.admitting_the_server_of(OTHER_GATE_FLAW, OTHER_GATE_SERVER, "other-nuisance")
     )
     both = recorded.model_copy(update={"servers": [*recorded.servers, *other.servers]})
-    return _gate_arguments(tmp_path, census, both)
+    return _arguments_with_a_report(tmp_path, census, both)
 
 
-def _gate_arguments(tmp_path: Path, census: Census, admitted: NuisanceAdmission) -> list[str]:
+def _arguments_with_a_report(
+    tmp_path: Path, census: Census, admitted: NuisanceAdmission
+) -> list[str]:
     return [
         *gate_arguments(tmp_path, census, admissions.written(tmp_path, admitted)),
         "--report",

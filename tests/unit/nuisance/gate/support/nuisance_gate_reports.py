@@ -1,6 +1,13 @@
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 from evals.cve.nuisance.exits import ExitReason
-from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison, ServerOutcome, decide
+from evals.cve.nuisance.gate.gate import (
+    NuisanceGateResult,
+    ServerCandidate,
+    ServerComparison,
+    ServerOutcome,
+    compare_server,
+    decide,
+)
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport, server_lines
 from evals.cve.nuisance.gate.gate_session_model import GateAudit, NuisanceGateSession
 from evals.cve.nuisance.results import ServerExit
@@ -12,6 +19,7 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
 
 NOT_ADMITTED = "npm:mcp-fetch-server"
 OUTSIDE = ServerExit("PyPI:mcp-server-git", ExitReason.NOT_OVER_STDIO)
+FLAGGED_IN_BASELINE = "flagged in 1 of 6 baseline runs"
 
 
 def a_held_server_beside_a_regression() -> NuisanceGateSession:
@@ -44,19 +52,19 @@ def a_held_server_beside_a_regression() -> NuisanceGateSession:
     )
 
 
-def a_not_gated_server_with_an_alarm() -> NuisanceGateSession:
+def an_inconclusive_server_with_an_alarm() -> NuisanceGateSession:
+    package = KUBERNETES.server_package
     runs = [True, False, False]
-    comparison = ServerComparison(
-        server_package=KUBERNETES.server_package,
-        outcome=ServerOutcome.NOT_GATED,
-        candidate_runs=runs,
-        baseline_runs=[False] * 5 + [True],
-        detail=FLAGGED_IN_BASELINE,
+    comparison = compare_server(
+        nuisance_gate_baselines.a_confirmed_baseline([False] * 5 + [True], package),
+        ServerCandidate(
+            server_package=package,
+            fixture_fingerprint=nuisance_gate_baselines.FIXTURE,
+            runs=runs,
+            completed=True,
+        ),
     )
-    return _session(_audits(KUBERNETES.server_package, runs), decide([comparison], []))
-
-
-FLAGGED_IN_BASELINE = "flagged in 1 of 6 baseline runs"
+    return _session(_audits(package, runs), decide([comparison], []))
 
 
 def _session(audits: list[GateAudit], gate: NuisanceGateResult) -> NuisanceGateSession:

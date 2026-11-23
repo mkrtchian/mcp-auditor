@@ -1,14 +1,14 @@
 from evals.cve.nuisance.gate.gate_report import NuisanceGateReport
 from tests.unit.nuisance.gate.support.nuisance_gate_reports import (
     a_held_server_beside_a_regression,
-    a_not_gated_server_with_an_alarm,
     a_report_of,
+    an_inconclusive_server_with_an_alarm,
 )
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import KUBERNETES
 
 
-def a_not_gated_report() -> NuisanceGateReport:
-    return a_report_of(a_not_gated_server_with_an_alarm())
+def an_inconclusive_report() -> NuisanceGateReport:
+    return a_report_of(an_inconclusive_server_with_an_alarm())
 
 
 def a_report_that_recorded() -> NuisanceGateReport:
