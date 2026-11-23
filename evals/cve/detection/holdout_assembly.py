@@ -8,14 +8,7 @@ from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, Holdo
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import LaunchMode, Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
-from evals.cve.holdout_conditions import HoldoutConditions
 from evals.pricing import AuditPrices
-from mcp_auditor.config import Settings
-
-
-def holdout_prices(conditions: HoldoutConditions, settings: Settings) -> AuditPrices:
-    prices = conditions.prices
-    return AuditPrices(prices[settings.resolve_model()], prices[settings.resolve_judge_model()])
 
 
 def assemble_target(

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from evals.eval_session import Refused
-from evals.pricing import Prices
+from evals.pricing import AuditPrices, Prices
 
 CONDITIONS_PATH = Path(__file__).parents[1] / "holdout_conditions.json"
 
@@ -52,6 +52,9 @@ class HoldoutConditions:
         reasons = self._chain_reasons()
         if reasons:
             raise Refused("run conditions not ready", reasons)
+
+    def audit_prices(self, model: str, judge_model: str) -> AuditPrices:
+        return AuditPrices(self.prices[model], self.prices[judge_model])
 
     def _chain_reasons(self) -> list[str]:
         if None in (self.chain_budget, self.max_chain_steps, self.tool_call_timeout):

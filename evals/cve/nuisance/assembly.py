@@ -16,14 +16,14 @@ from evals.cve.nuisance.counting import (
 )
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus, NuisanceServerResult
 from evals.cve.units import JudgeCategory
-from evals.pricing import Prices, call_cost
+from evals.pricing import AuditPrices
 
 
 def assemble_server(
     server: AdmittedServer,
     audits: Sequence[NuisanceAudit],
     draw_order: Sequence[DrawEntry],
-    prices: tuple[Prices, Prices],
+    prices: AuditPrices,
 ) -> NuisanceServerResult:
     split = split_flaw_of(server, draw_order)
     counting = ServerCounting(
@@ -31,7 +31,6 @@ def assemble_server(
         split_tools=frozenset() if split is None else _flaw_tools(server, split.identifier),
         declared_function=declared_function_tools(server),
     )
-    gen_price, judge_price = prices
     reports = [audit.report for audit in audits]
     return NuisanceServerResult(
         server_package=server.server_package,
@@ -40,11 +39,7 @@ def assemble_server(
         statuses=tuple(_run_status(audit, counting) for audit in audits),
         counted_tools_count=len(counting.counted),
         tools_count=len(reports[0].tool_reports),
-        run_cost=sum(
-            call_cost(report.generator_usage, gen_price)
-            + call_cost(report.judge_usage, judge_price)
-            for report in reports
-        ),
+        run_cost=sum(prices.cost(report.generator_usage, report.judge_usage) for report in reports),
     )
 
 

@@ -15,7 +15,7 @@ from datetime import date
 from typing import Any, Protocol
 
 from evals.cve.detection.baseline import fixture_fingerprint, grammar_fingerprint
-from evals.cve.detection.holdout_assembly import assemble_target, holdout_prices
+from evals.cve.detection.holdout_assembly import assemble_target
 from evals.cve.detection.holdout_audit import DroppedRun, IncompleteRun
 from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import (
@@ -194,7 +194,9 @@ async def _run_all(
     finished, failure = await first_failure(
         surviving, lambda target: _run_target(target, deps.audit, inputs.runs)
     )
-    prices = holdout_prices(inputs.conditions, inputs.settings)
+    prices = inputs.conditions.audit_prices(
+        inputs.settings.resolve_model(), inputs.settings.resolve_judge_model()
+    )
     assembled: list[tuple[Target, HoldoutTargetResult]] = []
     dropped: list[NotRunTarget] = []
     for target, outcomes in finished:

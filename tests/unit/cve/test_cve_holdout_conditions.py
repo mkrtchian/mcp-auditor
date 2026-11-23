@@ -7,7 +7,7 @@ import pytest
 
 from evals.cve.holdout_conditions import Cutoff, load_conditions
 from evals.eval_session import Refused
-from evals.pricing import Prices
+from evals.pricing import AuditPrices, Prices
 
 
 def test_a_complete_file_loads(tmp_path: Path):
@@ -56,6 +56,20 @@ def test_a_complete_file_passes_require_ready(tmp_path: Path):
     conditions = load_conditions(_write(tmp_path, _complete_payload()))
 
     conditions.require_ready(["gpt-6-luna"])
+
+
+def test_audit_prices_puts_each_model_on_its_own_side(tmp_path: Path):
+    payload = _complete_payload()
+    payload["prices"] = {
+        "gpt-6-luna": {"input": 0.10, "cached_input": 0.01, "output": 0.50},
+        "gpt-7-sol": {"input": 2.0, "cached_input": 0.2, "output": 8.0},
+    }
+    conditions = load_conditions(_write(tmp_path, payload))
+
+    assert conditions.audit_prices("gpt-6-luna", "gpt-7-sol") == AuditPrices(
+        generator=Prices(input=0.10, cached_input=0.01, output=0.50),
+        judge=Prices(input=2.0, cached_input=0.2, output=8.0),
+    )
 
 
 @pytest.mark.parametrize("missing", ["chain_budget", "max_chain_steps", "tool_call_timeout"])

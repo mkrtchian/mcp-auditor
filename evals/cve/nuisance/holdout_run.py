@@ -65,7 +65,6 @@ from evals.cve.run_images import (
 from evals.cve.run_interruption import sibling_runs
 from evals.eval_session import Refused, TreeState, read_tree
 from evals.model_conditions import ModelConditions
-from evals.pricing import Prices
 from evals.session_usage import SessionThrottles
 from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings
@@ -240,6 +239,9 @@ async def _run_all(
     finished, failure = await first_failure_then_alone(
         surviving, lambda server: _run_server(server, audit, ctx.runs)
     )
+    prices = ctx.conditions.audit_prices(
+        ctx.settings.resolve_model(), ctx.settings.resolve_judge_model()
+    )
     assembled: list[tuple[AdmittedServer, NuisanceServerResult]] = []
     dropped: list[NotRunServer] = []
     for server, outcomes in finished:
@@ -247,7 +249,7 @@ async def _run_all(
             reason = DROPPED_RUN_REASONS[outcomes.cause]
             dropped.append(NotRunServer(server.server_package, reason, outcomes.cause))
         else:
-            result = assemble_server(server, outcomes, ctx.draw_order, _prices(ctx))
+            result = assemble_server(server, outcomes, ctx.draw_order, prices)
             assembled.append((server, result))
     return assembled, dropped, failure
 
@@ -263,11 +265,6 @@ async def _run_server(
     if causes:
         return DroppedRun.from_causes(causes)
     return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
-
-
-def _prices(ctx: _RunContext) -> tuple[Prices, Prices]:
-    prices = ctx.conditions.prices
-    return prices[ctx.settings.resolve_model()], prices[ctx.settings.resolve_judge_model()]
 
 
 def _assemble_run(

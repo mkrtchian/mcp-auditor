@@ -11,13 +11,13 @@ from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.assembly import assemble_server, split_flaw_of
 from evals.cve.nuisance.results import NuisanceHoldoutRunStatus
 from evals.cve.server_health import ServerHealth
-from evals.pricing import call_cost
+from evals.pricing import AuditPrices
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 
 _EARLY = date(2025, 3, 1)
 _LATE = date(2026, 4, 1)
-_PRICES = (holdout_runs.LUNA_PRICE, holdout_runs.LUNA_PRICE)
+_PRICES = AuditPrices(holdout_runs.LUNA_PRICE, holdout_runs.LUNA_PRICE)
 
 
 def test_the_split_flaw_is_the_first_counted_flaw_in_draw_order():
@@ -83,9 +83,7 @@ def test_a_server_is_assembled_from_its_audits_in_run_order():
     assert result.declared_function_fail_per_run == [0, 0, 0]
     assert (result.counted_tools_count, result.tools_count) == (1, 1)
     generator = audits[0].report.generator_usage
-    one_run = call_cost(generator, holdout_runs.LUNA_PRICE) + call_cost(
-        judge, holdout_runs.LUNA_PRICE
-    )
+    one_run = _PRICES.cost(generator, judge)
     assert result.run_cost == pytest.approx(3 * one_run)
     assert (result.split_flaw, result.split_disclosure_date) == (holdout_runs.FIRST_FLAW, _EARLY)
 
