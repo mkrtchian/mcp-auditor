@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.file_baselines import load_checked
-from evals.cve.images import image_ids
+from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer, NuisanceAdmission
 from evals.cve.nuisance.admission.admission_walk import standing_exit
@@ -54,7 +54,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     ServerRuns,
 )
 from evals.cve.nuisance.gate.gate_session_recording import record, recording_tree
-from evals.cve.nuisance.images import backend_image_ids, image_tag
+from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.results import ServerExit
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
 from evals.cve.nuisance.vetting import LaunchedBenignCall, drop_failing_servers

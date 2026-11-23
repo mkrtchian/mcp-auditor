@@ -3,7 +3,7 @@ refused or unreadable step, or one whose prompt was longer than the model's cont
 kept and counted downstream, a launch failure, a throttled attempt or a transient provider error
 is retried, and a fatal provider error stops the run."""
 
-from collections.abc import Awaitable, Callable, Generator, Mapping
+from collections.abc import Awaitable, Callable, Collection, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -14,7 +14,6 @@ from evals.cve.audit_attempts import INCOMPLETE_ATTEMPTS, describe_missed_call_c
 from evals.cve.environments import Launch
 from evals.cve.failure_text import ReportDetail
 from evals.cve.launch_audit import (
-    AuditShape,
     SessionAuditor,
     UndecidableLaunch,
     audit_launch,
@@ -69,6 +68,11 @@ class DroppedRun:
 
     cause: NotRunCause
 
+    @classmethod
+    def from_causes(cls, causes: Collection[NotRunCause]) -> "DroppedRun":
+        """Throttled, else provider error, else launch failure."""
+        return cls(next(cause for cause in _DROP_PRECEDENCE if cause in causes))
+
 
 @dataclass(frozen=True)
 class NuisanceAudit:
@@ -87,13 +91,9 @@ async def audit_once(
     down is a launch failure."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
-    overrides = auditor.overrides
-    shape = AuditShape(
-        None, overrides.chain_budget, overrides.max_chain_steps, overrides.tool_call_timeout
-    )
     try:
         async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-            audit = await audit_launch(launch, auditor.auditor, shape)
+            audit = await audit_launch(launch, auditor.auditor, auditor.overrides.shape(None))
     except AuditFailed as failure:
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause
@@ -158,7 +158,7 @@ async def nuisance_audit(
             f"[yellow]{server.server_package}: {_failure(outcome)},"
             f" attempt {number}/{NUISANCE_INFRA_ATTEMPTS}[/yellow]"
         )
-    return DroppedRun(next(cause for cause in _DROP_PRECEDENCE if cause in causes))
+    return DroppedRun.from_causes(causes)
 
 
 _DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)

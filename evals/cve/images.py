@@ -38,8 +38,8 @@ def image_ids(names: Sequence[str], tag: Callable[[str], str] = image_tag) -> di
 
 
 def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
-    # check=False, keeping the tags that resolve: a provenance lookup never raises. A target
-    # dropped before launch never reaches assembly, so its backend image is never looked up.
+    # check=False, keeping the tags that resolve: a provenance lookup never raises. A target or
+    # server dropped before launch never reaches assembly, so its backend image is never looked up.
     ids: dict[str, str] = {}
     for tag in tags:
         inspected = subprocess.run(

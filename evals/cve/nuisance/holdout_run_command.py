@@ -39,12 +39,13 @@ from evals.cve.nuisance.commands import (
 )
 from evals.cve.nuisance.holdout_run import (
     NUISANCE_CONCURRENCY,
+    NUISANCE_HOLDOUT_RUN_REFUSED,
     NUISANCE_RUNS,
     NuisanceDeps,
     RunOrchestrator,
     RunProvenance,
     default_deps,
-    nuisance_overrides,
+    refuse_tracing,
     run_nuisance,
 )
 from evals.cve.nuisance.holdout_servers import RunPopulation, run_population
@@ -60,7 +61,6 @@ from evals.cve.run_files import (
     write_result,
 )
 from evals.eval_session import Refused, last_commit
-from evals.tracing import TRACING_ON, tracing_enabled
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_REPORT_PATH = "output/nuisance_report.json"
@@ -89,8 +89,8 @@ def add_run_arguments(parser: argparse.ArgumentParser, deps: RunCommandDeps) -> 
 
 
 def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:
-    _refuse_tracing()
-    refuse_existing_report(args.report, "nuisance holdout run refused")
+    refuse_tracing()
+    refuse_existing_report(args.report, NUISANCE_HOLDOUT_RUN_REFUSED)
     conditions = deps.conditions()
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
@@ -101,7 +101,7 @@ def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:
         population = run_population(
             reached_servers(walk_inputs), admission, acceptance_target_servers(walk_inputs)
         )
-    refuse_unrecorded(population.audited, "nuisance holdout run refused")
+    refuse_unrecorded(population.audited, NUISANCE_HOLDOUT_RUN_REFUSED)
     _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
     settings = deps.settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
@@ -117,14 +117,6 @@ def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:
     return 0
 
 
-def _refuse_tracing() -> None:
-    if tracing_enabled():
-        raise Refused(
-            "nuisance holdout run refused",
-            [f"{TRACING_ON}; a nuisance holdout run keeps no trace"],
-        )
-
-
 def _refuse_stale_holdout_calibration_copies(
     servers: Sequence[AdmittedServer], draw: DrawRecord | None
 ) -> None:
@@ -134,7 +126,7 @@ def _refuse_stale_holdout_calibration_copies(
             "holdout calibration copies taken from a fixture that has since changed"
             " or left the detection holdout layer"
         )
-        raise Refused("nuisance holdout run refused", [reason, *stale])
+        raise Refused(NUISANCE_HOLDOUT_RUN_REFUSED, [reason, *stale])
 
 
 def current_copy_fingerprints(draw: DrawRecord | None) -> dict[str, str]:
@@ -160,7 +152,7 @@ class _ReadyRun:
 def _audit_admitted_servers(
     args: argparse.Namespace, ready: _ReadyRun, deps: RunCommandDeps
 ) -> NuisanceHoldoutRunResult:
-    run_deps = deps.run_deps(nuisance_overrides(ready.conditions), args.concurrency)
+    run_deps = deps.run_deps(RunOverrides.of_holdout(ready.conditions), args.concurrency)
     with partial_result_kept(args.report), Progress(console=display.console) as bar:
         return asyncio.run(
             deps.orchestrate(

@@ -24,7 +24,7 @@ from evals.cve.detection.holdout_run import HOLDOUT_TEST_BUDGET
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import HoldoutConditions
-from evals.cve.images import image_ids
+from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
@@ -48,7 +48,6 @@ from evals.cve.nuisance.holdout_run_status import Audit, announcing, print_run_s
 from evals.cve.nuisance.holdout_servers import RunPopulation
 from evals.cve.nuisance.results import (
     DROPPED_RUN_REASONS,
-    NotRunCause,
     NotRunServer,
     NuisanceHoldoutRunResult,
     NuisanceServerResult,
@@ -72,8 +71,7 @@ from mcp_auditor.config import Settings
 
 NUISANCE_RUNS = 2  # set in docs/nuisance-suite-log.md, a --runs flag lowers it
 NUISANCE_CONCURRENCY = 6
-_REFUSAL = "nuisance holdout run refused"
-_DROP_PRECEDENCE = (NotRunCause.THROTTLED, NotRunCause.PROVIDER_ERROR, NotRunCause.LAUNCH_FAILURE)
+NUISANCE_HOLDOUT_RUN_REFUSED = "nuisance holdout run refused"
 # The test budget is the detection holdout run's HOLDOUT_TEST_BUDGET: the rule reads the holdout
 # nuisance rate beside the holdout detection rate, whose test budget is a constant, not a flag
 # (detection-suite-rule.md, Run conditions and statistic (A holdout run audits every target)), so no
@@ -145,19 +143,19 @@ async def run_nuisance(
     concurrency: int = NUISANCE_CONCURRENCY,
     deps: NuisanceDeps | None = None,
 ) -> NuisanceHoldoutRunResult:
-    _refuse_tracing()
+    refuse_tracing()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
     conditions.require_ready(model_ids)
     ctx = _RunContext(conditions, settings, draw_order, model_ids, runs, concurrency, provenance)
-    deps = deps or default_deps(nuisance_overrides(conditions), concurrency)
+    deps = deps or default_deps(RunOverrides.of_holdout(conditions), concurrency)
     tree = deps.read_tree()
     _refuse_dirty_tree(tree)
     refuse_without_closed_networks(deps.check_networks)
     images = run_images(population.audited)
-    refuse_server_containers(deps, images, _REFUSAL)
+    refuse_server_containers(deps, images, NUISANCE_HOLDOUT_RUN_REFUSED)
     remove_backend_containers(deps, images)
     deps.rebuild(images.services)
-    refuse_server_containers(deps, images, _REFUSAL)
+    refuse_server_containers(deps, images, NUISANCE_HOLDOUT_RUN_REFUSED)
     try:
         return await _run_surviving(population, deps, ctx, tree)
     finally:
@@ -177,7 +175,7 @@ async def _run_surviving(
         )
     if not assembled:
         raise Refused(
-            _REFUSAL,
+            NUISANCE_HOLDOUT_RUN_REFUSED,
             [
                 "no server survived the vet and the runs",
                 *(entry.reason for entry in all_not_run),
@@ -187,10 +185,10 @@ async def _run_surviving(
     return dataclasses.replace(result, second_pass=vetted.second_pass)
 
 
-def _refuse_tracing() -> None:
+def refuse_tracing() -> None:
     if tracing_enabled():
         raise Refused(
-            _REFUSAL,
+            NUISANCE_HOLDOUT_RUN_REFUSED,
             [f"{TRACING_ON}; a nuisance holdout run keeps no trace"],
         )
 
@@ -198,16 +196,9 @@ def _refuse_tracing() -> None:
 def _refuse_dirty_tree(tree: TreeState) -> None:
     if tree.dirty:
         raise Refused(
-            _REFUSAL,
+            NUISANCE_HOLDOUT_RUN_REFUSED,
             ["the git tree is dirty: a nuisance holdout run publishes from a clean tree"],
         )
-
-
-def nuisance_overrides(conditions: HoldoutConditions) -> RunOverrides:
-    chain, steps = conditions.chain_budget, conditions.max_chain_steps
-    timeout = conditions.tool_call_timeout
-    assert chain is not None and steps is not None and timeout is not None  # require_ready passed
-    return RunOverrides(chain, steps, timeout)
 
 
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
@@ -224,7 +215,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         bounded(LaunchedBenignCall(timeout), concurrency),
         rebuild_images,
         functools.partial(image_ids, tag=nuisance_images.image_tag),
-        nuisance_images.backend_image_ids,
+        backend_image_ids,
         read_tree,
         lambda: datetime.now(UTC).isoformat(),
         lambda audits: None,
@@ -269,9 +260,8 @@ async def _run_server(
     else:
         outcomes = await sibling_runs(runs, lambda: audit(server))
     causes = {outcome.cause for outcome in outcomes if isinstance(outcome, DroppedRun)}
-    for cause in _DROP_PRECEDENCE:
-        if cause in causes:
-            return DroppedRun(cause)
+    if causes:
+        return DroppedRun.from_causes(causes)
     return [outcome for outcome in outcomes if not isinstance(outcome, DroppedRun)]
 
 
