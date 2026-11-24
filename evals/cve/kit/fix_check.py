@@ -4,16 +4,18 @@ Parity note: the nuisance counterpart of driver.check_target. Where driver check
 calibration of a holdout target against the frozen list, the fix check plants the flaw's own
 witness at its own coordinate (no detection_places.json, no kept-records lookup) and reproduces it
 on the vulnerable version, the flaw's patched version and, when it differs, the server's patched
-version. The
-grading reuses the clean grammar (evals.cve.proofs and units) unchanged, entered synchronously like
-driver: one flaw at a time, no event loop, no evals/concurrency.
+version. The grading reuses the clean grammar (evals.cve.proofs and units) unchanged. The builder
+is entered synchronously, as in driver, so fix checks run side by side (`run_nuisance fix-check
+--concurrency`) stand and tear down their launches one at a time, and the kit stays clear of
+evals/concurrency.
 
 The result is a pure function of the exchanges each version records (`fix_check_result`), kept
 apart from the launches so the record logic is tested with no Docker, as driver keeps
-not_live_reasons apart from its _Exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
-field for field, except relies_on_relaying_stand_in, a judgment the admission records and the kit
-does not observe; it is kit-local because the kit imports nothing from mcp_auditor and the admission
-module reaches it through evals.cve.detection.baseline. A parity test pins the two field sets equal.
+not_live_reasons apart from its `_Exercise`. FixCheckResult mirrors
+evals.cve.nuisance.admission.admission.FixCheckRecord field for field apart from what the
+admission records and the kit does not observe (test_kit_isolation.py names those fields and pins
+the rest equal). It is kit-local so that a dossier copying the kit does not carry the admission
+model and its import closure.
 """
 
 import json

@@ -249,7 +249,7 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **launch**: one start of a server or a fixture (per-launch). The command an audit starts is the server command. A relaunch starts the audited server again inside one audit, and a per-launch backend stays through it.
 - **miss / missed**: a miss (a known flaw not found in a run), or a missed model call.
 - **patched version**: a target's patched version, a flaw's own patched version, or a nuisance server's patched version (the first release that fixes every counted flaw).
-- **probe**: model probe or benign probe (the command that plays a re-admitted server's benign calls). As a verb, "probe" describes what the auditor does to the audited server.
+- **probe**: model probe, benign probe (the command that plays a re-admitted server's benign calls), the probes the planting code sends from a probe container to each sentinel and stand-in before the launched server starts, or a capture's plain and form probes (a `GET` on each scheme to a generated path that does not exist, recording the host's default answer, the form probe adding a percent-encoded suffix to measure `path_form`, never a form `POST`). As a verb, "probe" describes what the auditor does to the audited server, and what the planting code and the capture tool do through these probes.
 - **provider**: model provider (the LLM vendor) or OpenRouter provider (the host OpenRouter routes a call to).
 - **reach**: a flaw's reach (read, exec or fetch), a walk that reaches a flaw, or the reached status (a nonce in a unit judged PASS).
 - **recording**: as a noun, a baseline recording only. The verb keeps its everyday sense: a run records its conditions.

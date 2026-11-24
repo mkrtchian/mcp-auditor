@@ -1,11 +1,13 @@
 """The benign probe a re-admission agent runs on a server's patched image, free of mcp_auditor.
 
-Parity note: it mirrors `run_nuisance vet`, which makes the same benign calls through the run's
-own launch. The record is the dossier's admission_record.json, or an agent's own record, read as
-plain JSON, since nuisance_admission is not clean. The single-container launch is the run's
-(nuisance_confinement.single_container_launch_args), serving the record's public names from this
-tree's `evals/stand_ins/`, and a backend launch goes through backend_launch, both pinned to
-the run launch by tests.
+Parity note: it mirrors `run_nuisance vet` by playing every benign call the record lists (vet
+plays one per counted tool) through the run's own launch. The record is the dossier's
+admission_record.json, or an agent's own record: its host is validated as a `PlantingHost` and
+the rest read as plain JSON, so the dossier does not carry the admission model and its import
+closure. The single-container launch is the run's
+(evals.cve.nuisance.confinement.single_container_launch_args, pinned by a test), serving the
+record's public names from this tree's `evals/stand_ins/`, and a backend launch goes through
+backend_launch, which the run's provisioner also calls, so it is the run's by construction.
 """
 
 import argparse

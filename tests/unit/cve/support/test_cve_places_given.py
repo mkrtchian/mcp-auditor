@@ -16,13 +16,12 @@ def an_entry(
     kind: str = "file",
     coordinates: dict[str, Any] | None = None,
     reaches: list[str] | None = None,
-    family: str = "fictional-family",
     source: str = "catalogue",
 ) -> dict[str, Any]:
     return {
         "id": place_id,
         "source": source,
-        "family": family,
+        "family": "fictional-family",
         "reachable_by": ["arbitrary_read"] if reaches is None else reaches,
         "kind": kind,
         "coordinates": {"path": "/fictional/default"} if coordinates is None else coordinates,
