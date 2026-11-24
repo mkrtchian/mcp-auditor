@@ -7,10 +7,9 @@ import pytest
 
 from evals.cve.detection.command_deps import DetectionCommandDeps
 from evals.cve.detection.session import run_gated
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, target_services
 from evals.cve.images import image_tag
 from evals.cve.launch_audit import RunOverrides
-from evals.cve.run_images import target_services
 from evals.detection_preflight import preflight_ok
 from evals.gate_outcome import CRASHED_EXIT
 from tests.unit.detection.support import run_detection_cli as cli

@@ -26,7 +26,7 @@ from evals.cve.detection.holdout_results import (
 )
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
-from evals.cve.detection.targets import Target
+from evals.cve.detection.targets import Target, target_services
 from evals.cve.holdout_conditions import (
     HOLDOUT_TEST_BUDGET,
     HoldoutConditions,
@@ -40,7 +40,6 @@ from evals.cve.run_images import (
     refuse_running_containers,
     refuse_without_closed_networks,
     sweep_containers,
-    target_services,
 )
 from evals.cve.run_interruption import first_failure, sibling_runs
 from evals.eval_session import Refused, TreeState
@@ -113,7 +112,7 @@ async def run_holdout_targets(
     try:
         return await _run_surviving(inputs, deps, tree)
     finally:
-        sweep_containers(tags, deps.sweep.running_containers, deps.sweep.remove_containers)
+        sweep_containers(tags, deps.sweep)
 
 
 def _refuse_running_containers(deps: HoldoutDeps, tags: Sequence[str]) -> None:

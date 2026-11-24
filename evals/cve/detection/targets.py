@@ -367,10 +367,17 @@ ACCEPTANCE_TARGETS: list[Target] = [
 
 
 def acceptance_services() -> set[str]:
-    services = {
-        name for target in ACCEPTANCE_TARGETS for name in (*target.images, target.patched_image)
-    }
-    return services | {SENTINEL_SERVICE}
+    return {*target_services(ACCEPTANCE_TARGETS), SENTINEL_SERVICE}
+
+
+def target_services(targets: Sequence[Target]) -> list[str]:
+    """The deduplicated compose services of every target: its images and its patched image."""
+    services: list[str] = []
+    for target in targets:
+        for service in (*target.images, target.patched_image):
+            if service not in services:
+                services.append(service)
+    return services
 
 
 OUT_OF_SCOPE_FLAWS: list[OutOfScopeFlaw] = [

@@ -13,11 +13,11 @@ from dataclasses import dataclass
 from rich.console import Console
 
 from evals.cve.closed_network import ClosedNetworkUnsupported, check_closed_network_support
-from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target
+from evals.cve.detection.targets import ACCEPTANCE_TARGETS, Target, target_services
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ImageStore, ensure_images
 from evals.cve.planting import SENTINEL_SERVICE
 from evals.cve.planting_base import STAND_IN_SERVICE
-from evals.cve.run_images import DOCKER_REQUIREMENT, target_services
+from evals.cve.run_images import DOCKER_REQUIREMENT
 
 console = Console()
 

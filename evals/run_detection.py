@@ -50,13 +50,14 @@ from evals.cve.detection.targets import (
     OUT_OF_SCOPE_FLAWS,
     OutOfScopeFlaw,
     Target,
+    target_services,
 )
 from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.images import image_ids, image_tag
 from evals.cve.launch_audit import NO_OVERRIDES
 from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_files import write_report
-from evals.cve.run_images import sweep_containers, target_services
+from evals.cve.run_images import sweep_containers
 from evals.eval_display import console
 from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused, TreeState
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
@@ -144,7 +145,7 @@ async def _run(args: argparse.Namespace, flaws: _FlawSelection, deps: DetectionC
             return await run_calibration_check(flaws.graded, places, checks)
         return await _run_graded(args, flaws, _CommandRun(places, deps))
     finally:
-        sweep_containers(tags, deps.sweep.running_containers, deps.sweep.remove_containers)
+        sweep_containers(tags, deps.sweep)
 
 
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:

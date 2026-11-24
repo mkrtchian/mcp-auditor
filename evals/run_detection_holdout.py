@@ -37,7 +37,7 @@ from evals.cve.detection.holdout_run import (
     HoldoutRunInputs,
     refuse_tracing,
 )
-from evals.cve.detection.targets import Target
+from evals.cve.detection.targets import Target, target_services
 from evals.cve.holdout_conditions import HoldoutConditions, run_model_ids
 from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
 from evals.cve.launch_audit import RunOverrides
@@ -47,7 +47,6 @@ from evals.cve.run_images import (
     ContainerSweep,
     refuse_without_closed_networks,
     sweep_containers,
-    target_services,
 )
 from evals.eval_session import Refused
 from evals.model_provider_errors import ProviderFatal
@@ -230,7 +229,7 @@ async def _check_calibrations(
     try:
         return await run_calibration_check(targets, load_places(DETECTION_PLACES), checks)
     finally:
-        sweep_containers(tags, sweep.running_containers, sweep.remove_containers)
+        sweep_containers(tags, sweep)
 
 
 if __name__ == "__main__":

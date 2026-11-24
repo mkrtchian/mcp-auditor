@@ -1,27 +1,16 @@
-"""The image rebuild both run orchestrators share, the compose services of the targets, and the
-containers of the run's images: refused when running before a run, swept at its end with
-`docker rm -f -v`, so a container's anonymous volumes go with it."""
+"""What both run orchestrators check on the Docker daemon around a run: closed-network support,
+and the containers of the run's images, refused when running before a run and swept at its end
+with `docker rm -f -v`, so a container's anonymous volumes go with it."""
 
 import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
 from evals.cve.closed_network import ClosedNetworkUnsupported, check_closed_network_support
-from evals.cve.detection.targets import Target
 from evals.cve.images import ComposeImageStore, ImageStore
 from evals.eval_session import Refused
 
 DOCKER_REQUIREMENT = "Docker Engine 28.0 or later is required"
-
-
-def target_services(targets: Sequence[Target]) -> list[str]:
-    """The deduplicated compose services of every target: its images and its patched image."""
-    services: list[str] = []
-    for target in targets:
-        for service in (*target.images, target.patched_image):
-            if service not in services:
-                services.append(service)
-    return services
 
 
 def refuse_without_closed_networks(
@@ -83,20 +72,16 @@ def refuse_running_containers(running: Sequence[str], refusal: str) -> None:
         )
 
 
-def sweep_containers(
-    tags: Sequence[str],
-    list_running: Callable[[Sequence[str]], list[str]],
-    remove: Callable[[Sequence[str]], None],
-) -> None:
+def sweep_containers(tags: Sequence[str], sweep: ContainerSweep) -> None:
     """Some servers outlive the end of their audit, the SIGKILL of their `docker` CLI included."""
     # A failed listing is only warned of, as a failed removal is not checked: an error raised
     # from the run's `finally` would replace the run result it guards. The next run's container
     # check refuses while a leftover is running.
     try:
-        running = list_running(tags)
+        running = sweep.running_containers(tags)
     except subprocess.CalledProcessError:
         print("could not list the containers of the run's images, none removed")
         return
     if running:
-        remove(running)
+        sweep.remove_containers(running)
         print(f"removed {len(running)} containers of the run's images left running")

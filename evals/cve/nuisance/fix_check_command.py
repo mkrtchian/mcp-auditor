@@ -96,7 +96,7 @@ def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:
         docker.refresh_backend_images(backend_services)
         return asyncio.run(check_fixes(fixtures, _recorded_fix_checks(admission), docker))
     finally:
-        sweep_containers(tags, docker.sweep.running_containers, docker.sweep.remove_containers)
+        sweep_containers(tags, docker.sweep)
 
 
 def _selected_fixtures(

@@ -121,8 +121,4 @@ def remove_backend_containers(sweep: ContainerSweep, images: RunImages) -> None:
 
 
 def sweep_run_containers(sweep: ContainerSweep, images: RunImages) -> None:
-    sweep_containers(
-        [*images.server_tags, *images.backend_tags],
-        sweep.running_containers,
-        sweep.remove_containers,
-    )
+    sweep_containers([*images.server_tags, *images.backend_tags], sweep)

@@ -1,7 +1,7 @@
 import tests.unit.detection.support.test_detection_targets_given as given
 import tests.unit.support.fictional_planting as planting
 from evals.cve.detection import exploits
-from evals.cve.detection.targets import LaunchMode, TargetVersion
+from evals.cve.detection.targets import LaunchMode, TargetVersion, target_services
 from evals.cve.environments import LaunchShape
 from evals.cve.images import image_tag
 from evals.cve.layout import PROJECT
@@ -9,6 +9,7 @@ from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition
 from tests.fakes.mcp_client import FakeMCPClient
 from tests.unit.detection.support.fictional_places import a_fictional_places
+from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 from tests.unit.support.docker_argv import value_after, values_after
 
 
@@ -99,3 +100,18 @@ def test_an_env_place_is_planted_through_arguments_with_no_docker():
 
 def _a_payload(arguments: dict[str, object]) -> AuditPayload:
     return AuditPayload(category=AuditCategory.INJECTION, description="probe", arguments=arguments)
+
+
+def test_target_services_dedups_images_and_patched_images():
+    first = an_acceptance_target(FILESYSTEM, images=("app",), patched_image="app-patched")
+    second = an_acceptance_target(
+        FILESYSTEM, images=("app", "sentinel"), patched_image="other-patched"
+    )
+
+    services = target_services([first, second])
+
+    assert services == ["app", "app-patched", "sentinel", "other-patched"]
+
+
+def test_target_services_is_empty_for_no_target():
+    assert target_services([]) == []

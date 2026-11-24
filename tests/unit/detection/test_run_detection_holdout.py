@@ -6,8 +6,8 @@ import pytest
 import tests.unit.detection.support.holdout_command_deps as command_deps
 import tests.unit.detection.support.test_run_detection_holdout_given as given
 from evals import run_detection_holdout
+from evals.cve.detection.targets import target_services
 from evals.cve.images import image_tag
-from evals.cve.run_images import target_services
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.detection.support.calibration_check_deps import deps_with

@@ -4,8 +4,9 @@ import tests.unit.detection.support.holdout_command_deps as command_deps
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.detection.calibration_check_exit import CalibrationCheckDeps
 from evals.cve.detection.holdout_command_deps import HoldoutCommandDeps
+from evals.cve.detection.targets import target_services
 from evals.cve.images import dockerfile_fingerprint, image_tag
-from evals.cve.run_images import RunDocker, target_services
+from evals.cve.run_images import RunDocker
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
 from tests.unit.support.acceptance_targets import an_acceptance_target
