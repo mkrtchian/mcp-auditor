@@ -58,12 +58,12 @@ def a_suite_running(audit: HoneypotAudit, runs: int) -> Callable[[], int]:
     return evaluate
 
 
-def an_error_caused_by_a_forbidden_status() -> ChatGoogleGenerativeAIError:
+def an_error_caused_by_a_payment_required_status() -> ChatGoogleGenerativeAIError:
     # langchain_google_genai raises an unmapped client status as a plain error, its code on the
     # google-genai error it is raised from.
-    response = httpx.Response(403, request=httpx.Request("POST", "https://provider.test/v1"))
-    body = {"error": {"code": 403, "status": "PERMISSION_DENIED", "message": "key lacks access"}}
-    cause = ClientError(403, body, response)
+    response = httpx.Response(402, request=httpx.Request("POST", "https://provider.test/v1"))
+    body = {"error": {"code": 402, "status": "PAYMENT_REQUIRED", "message": "billing disabled"}}
+    cause = ClientError(402, body, response)
     try:
         raise ChatGoogleGenerativeAIError("Error calling model 'gemini'") from cause
     except ChatGoogleGenerativeAIError as error:

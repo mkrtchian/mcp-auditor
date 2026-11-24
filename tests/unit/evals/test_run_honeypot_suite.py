@@ -63,14 +63,14 @@ def test_a_fatal_model_provider_error_stops_the_suite_with_its_traceback(
 def test_a_fatal_status_on_the_error_raised_from_stops_the_suite_with_both_errors(
     capsys: pytest.CaptureFixture[str],
 ):
-    error = given.an_error_caused_by_a_forbidden_status()
+    error = given.an_error_caused_by_a_payment_required_status()
 
     code = exit_code_of(given.a_suite_running(given.an_audit_raising(error), runs=1))
 
     output = capsys.readouterr()
     assert code == 4
     assert "Error calling model 'gemini'" in output.err
-    assert "key lacks access" in output.err
+    assert "billing disabled" in output.err
 
 
 async def test_a_transient_model_provider_error_is_a_failed_run(capsys: pytest.CaptureFixture[str]):
