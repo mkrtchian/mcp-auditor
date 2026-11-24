@@ -36,6 +36,17 @@ class AdvisoryRecord(SourceRecord):
     references: list[str]
 
 
+_ADVISORY_PAGES = {
+    SourceName.GHSA: "https://github.com/advisories/{}",
+    SourceName.NVD: "https://nvd.nist.gov/vuln/detail/{}",
+    SourceName.OSV: "https://osv.dev/vulnerability/{}",
+}
+
+
+def advisory_urls(records: Sequence[SourceRecord]) -> list[str]:
+    return [_ADVISORY_PAGES[record.source].format(record.id) for record in records]
+
+
 def read_ghsa(clone: Path) -> Iterator[AdvisoryRecord]:
     reviewed = clone / "advisories" / "github-reviewed"
     for path in sorted(reviewed.rglob("*.json")):

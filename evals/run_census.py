@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from evals import eval_display as display
 from evals.cve.census.census import CENSUS_PATH, CLASSIFIERS, load_census
 from evals.cve.census.classification import CENSUS_GRAMMAR_CLASSES, Classification
+from evals.cve.census.committed import committed_census
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.grouping import READERS, ProofJudgment
 from evals.cve.census.identity import Flaw
@@ -28,6 +29,7 @@ from evals.cve.census.sources import (
     Download,
     SourceName,
     SourceProvenance,
+    advisory_urls,
     clone_commit,
     read_ghsa,
     read_nvd,
@@ -48,14 +50,11 @@ from evals.repository import REPO_ROOT
 
 SOURCES = REPO_ROOT / "output" / "census" / "sources"
 WORK = REPO_ROOT / "output" / "census" / "work"
+_GHSA_CLONE = "advisory-database"
+_OSV_EXPORT = "all.zip"
+_NVD_FEEDS = "nvdcve-2.0-*.json.gz"
 INCOMPLETE_EXIT = 1
 REFUSED_EXIT = 3
-
-_ADVISORY_PAGES = {
-    SourceName.GHSA: "https://github.com/advisories/{}",
-    SourceName.NVD: "https://nvd.nist.gov/vuln/detail/{}",
-    SourceName.OSV: "https://osv.dev/vulnerability/{}",
-}
 
 
 class Dossier(BaseModel):
@@ -162,11 +161,7 @@ def _assemble(args: argparse.Namespace) -> int:
 
 
 def _draw_order(args: argparse.Namespace) -> int:
-    try:
-        census = load_census(args.census)
-    except ValueError as error:
-        raise Refused("Refused: the census is malformed.", [str(error)]) from error
-    entries = draw_order(census)
+    entries = draw_order(committed_census(args.census))
     print(f"{len(entries)} candidates in draw order:")
     for entry in entries:
         print(f"  {entry.digest[:12]}  {entry.identifier}  {entry.disclosure_date}")
@@ -182,19 +177,14 @@ def _complete_collection(args: argparse.Namespace) -> Collection:
 
 
 def _collection(sources: Path, work: Path) -> Collection:
-    missing = [
-        str(path)
-        for path in (sources / "advisory-database", sources / "all.zip")
-        if not path.exists()
-    ] + ([] if _nvd_feeds(sources) else [f"{sources}/nvdcve-2.0-*.json.gz"])
+    ghsa, osv, feeds = sources / _GHSA_CLONE, sources / _OSV_EXPORT, _nvd_feeds(sources)
+    missing = [str(path) for path in (ghsa, osv) if not path.exists()] + (
+        [] if feeds else [f"{sources}/{_NVD_FEEDS}"]
+    )
     if missing:
         raise Refused("Refused: an export is missing.", missing)
     work.mkdir(parents=True, exist_ok=True)
-    records = itertools.chain(
-        read_ghsa(sources / "advisory-database"),
-        read_nvd(_nvd_feeds(sources)),
-        read_osv(sources / "all.zip"),
-    )
+    records = itertools.chain(read_ghsa(ghsa), read_nvd(feeds), read_osv(osv))
     return Collection(records, _work(work))
 
 
@@ -214,14 +204,14 @@ def _read_all[Record: BaseModel](work: Path, stem: str, schema: type[Record]) ->
 
 
 def _nvd_feeds(sources: Path) -> list[Path]:
-    return sorted(sources.glob("nvdcve-2.0-*.json.gz"))
+    return sorted(sources.glob(_NVD_FEEDS))
 
 
 def _dossier(flaw: Flaw, identifier: str) -> Dossier:
     return Dossier(
         identifier=identifier,
         ids=sorted(flaw.ids),
-        advisory_urls=[_ADVISORY_PAGES[record.source].format(record.id) for record in flaw.records],
+        advisory_urls=advisory_urls(flaw.records),
         records=flaw.records,
     )
 
@@ -236,9 +226,9 @@ def _provenance(sources: Path, work: Path) -> SourceProvenance:
     if undated:
         raise Refused("Assembly refused: a feed has no download date.", undated)
     return source_provenance(
-        clone_commit(sources / "advisory-database"),
+        clone_commit(sources / _GHSA_CLONE),
         [Download(feed, downloads.nvd[feed.name]) for feed in feeds],
-        Download(sources / "all.zip", downloads.osv),
+        Download(sources / _OSV_EXPORT, downloads.osv),
     )
 
 

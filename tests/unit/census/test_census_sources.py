@@ -7,6 +7,8 @@ from evals.cve.census.sources import (
     AdvisoryRecord,
     Download,
     SourceName,
+    SourceRecord,
+    advisory_urls,
     clone_commit,
     read_ghsa,
     read_nvd,
@@ -156,6 +158,23 @@ def test_an_osv_reference_without_a_url_is_left_out(tmp_path: Path):
     [record] = read_osv(export)
 
     assert record.references == ["https://example.org/gateway"]
+
+
+def test_each_record_links_to_the_advisory_page_of_its_source():
+    records = [
+        SourceRecord(source=source, id=identifier, published=None, withdrawn=None, rejected=False)
+        for source, identifier in [
+            (SourceName.GHSA, "GHSA-aaaa-bbbb-cccc"),
+            (SourceName.NVD, "CVE-2025-1234"),
+            (SourceName.OSV, "PYSEC-2025-12"),
+        ]
+    ]
+
+    assert advisory_urls(records) == [
+        "https://github.com/advisories/GHSA-aaaa-bbbb-cccc",
+        "https://nvd.nist.gov/vuln/detail/CVE-2025-1234",
+        "https://osv.dev/vulnerability/PYSEC-2025-12",
+    ]
 
 
 def test_the_provenance_records_the_hash_of_each_download_and_its_date(tmp_path: Path):

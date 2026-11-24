@@ -17,7 +17,8 @@ from rich.progress import Progress
 from evals import eval_display as display
 from evals.cli_arguments import positive_int
 from evals.cve.audit_progress import AuditProgress
-from evals.cve.census.census import CENSUS_PATH, Census, load_census
+from evals.cve.census.census import CENSUS_PATH, Census
+from evals.cve.census.committed import committed_census
 from evals.cve.detection import calibration_dossier
 from evals.cve.detection.calibration_check_exit import (
     CalibrationCheckDeps,
@@ -114,19 +115,10 @@ def _add_calibration_check(commands: "_SubParsersAction[argparse.ArgumentParser]
 
 
 def _calibration_dossier(args: argparse.Namespace, _deps: HoldoutCommandDeps) -> int:
-    census = _census(args.census)
+    census = committed_census(args.census)
     calibration_dossier.write_kit(census, args.flaw, args.out)
     print(f"Calibration kit for {args.flaw} written to {args.out}")
     return 0
-
-
-def _census(path: Path) -> Census:
-    """Only the census load reads a ValueError as a refusal: a malformed census must not read as
-    success, and a ValueError raised later is a crash."""
-    try:
-        return load_census(path)
-    except ValueError as error:
-        raise Refused("Refused: the census is malformed.", [str(error)]) from error
 
 
 def _run(args: argparse.Namespace, deps: HoldoutCommandDeps) -> int:
@@ -136,7 +128,7 @@ def _run(args: argparse.Namespace, deps: HoldoutCommandDeps) -> int:
     if not deps.drawn:
         print("no holdout target is drawn")
         return 0
-    census = _census(args.census)
+    census = committed_census(args.census)
     _refuse_unready_cards(census, deps.drawn)
     settings = load_settings()
     model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
