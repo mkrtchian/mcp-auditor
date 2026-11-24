@@ -14,7 +14,7 @@ from evals.cve.nuisance.audit import (
 )
 from evals.cve.nuisance.gate.gate_audit import gate_run
 from evals.cve.nuisance.results import NotRunCause
-from evals.cve.provider_errors import ProviderFatal
+from evals.model_provider_errors import ProviderFatal
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.nuisance.support.test_nuisance_retry_policy_given import (
     PROVIDER_ERROR,

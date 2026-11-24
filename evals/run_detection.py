@@ -55,12 +55,12 @@ from evals.cve.holdout_conditions import CONDITIONS_PATH, load_conditions
 from evals.cve.images import image_ids, image_tag
 from evals.cve.launch_audit import NO_OVERRIDES
 from evals.cve.places import DETECTION_PLACES, Places, load_places
-from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import write_report
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
 from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
+from evals.model_provider_errors import ProviderFatal, describe_provider_error
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings

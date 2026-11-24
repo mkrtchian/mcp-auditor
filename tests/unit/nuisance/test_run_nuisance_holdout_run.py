@@ -11,8 +11,8 @@ import tests.unit.nuisance.support.test_run_nuisance_holdout_run_given as given
 import tests.unit.support.nuisance_admissions as admissions
 from evals import run_nuisance
 from evals.cve.nuisance.holdout_run import NUISANCE_RUNS
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import RunInterrupted
+from evals.model_provider_errors import ProviderFatal
 from tests.unit.support.admission_mutations import (
     a_server_with_a_holdout_calibration_copy_at,
     admitting,

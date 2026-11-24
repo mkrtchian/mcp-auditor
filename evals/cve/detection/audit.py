@@ -35,16 +35,16 @@ from evals.cve.launch_audit import (
 )
 from evals.cve.places import Place, Places, kept_records
 from evals.cve.planting import PlantingFailed
-from evals.cve.provider_errors import (
+from evals.cve.report_units import units_of
+from evals.cve.server_health import NO_INCIDENTS, ServerHealth
+from evals.eval_display import console
+from evals.metrics import blocked_reasons
+from evals.model_provider_errors import (
     AuditFailed,
     ProviderErrorKind,
     ProviderFatal,
     describe_provider_error,
 )
-from evals.cve.report_units import units_of
-from evals.cve.server_health import NO_INCIDENTS, ServerHealth
-from evals.eval_display import console
-from evals.metrics import blocked_reasons
 from evals.session_usage import SessionThrottles, throttled_model_calls
 from mcp_auditor.domain.models import AuditReport
 

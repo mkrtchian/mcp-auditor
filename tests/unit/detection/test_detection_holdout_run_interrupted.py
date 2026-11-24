@@ -5,8 +5,8 @@ import pytest
 
 import tests.unit.detection.support.test_detection_holdout_run_interrupted_given as given
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import RunInterrupted
+from evals.model_provider_errors import ProviderFatal
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, GIT, KUBERNETES
 

@@ -17,7 +17,7 @@ from evals.cve.detection.session_model import GradedAudit
 from evals.cve.environments import Launch
 from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.launch_audit import UndecidableLaunch
-from evals.cve.provider_errors import ProviderFatal
+from evals.model_provider_errors import ProviderFatal
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support import test_detection_audit_failures_given as given
 from tests.unit.detection.support.detection_audits import (

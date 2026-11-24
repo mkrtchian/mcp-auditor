@@ -41,7 +41,6 @@ from evals.cve.holdout_conditions import HoldoutConditions
 from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
 from evals.cve.launch_audit import RunOverrides
 from evals.cve.places import DETECTION_PLACES, load_places
-from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.cve.run_files import partial_result_kept, refuse_existing_report, write_result
 from evals.cve.run_images import (
     ContainerSweep,
@@ -50,6 +49,7 @@ from evals.cve.run_images import (
     target_services,
 )
 from evals.eval_session import Refused
+from evals.model_provider_errors import ProviderFatal, describe_provider_error
 from evals.repository import REPO_ROOT
 from evals.session_usage import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging

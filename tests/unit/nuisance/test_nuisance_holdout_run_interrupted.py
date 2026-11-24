@@ -6,8 +6,8 @@ import pytest
 import tests.unit.nuisance.support.test_nuisance_holdout_run_interrupted_given as given
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import RunInterrupted
+from evals.model_provider_errors import ProviderFatal
 
 
 async def test_a_fatal_provider_error_keeps_the_finished_server_in_a_partial_result():

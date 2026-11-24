@@ -25,9 +25,9 @@ from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.planting_base import LABEL
-from evals.cve.provider_errors import audit_failures_unwrapped, classified
 from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
+from evals.model_provider_errors import audit_failures_unwrapped, classified
 from evals.session_usage import SessionThrottles
 from mcp_auditor.adapters.llm import create_judge_llm, create_llm
 from mcp_auditor.adapters.llm_throttling import one_audit

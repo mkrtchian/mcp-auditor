@@ -52,10 +52,10 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
 )
 from evals.cve.nuisance.results import ServerExit
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
+from evals.model_provider_errors import ProviderFatal
 
 DEFAULT_GATE_REPORT_PATH = "output/nuisance_gate_report.json"
 _BASELINES = "evals/baselines/nuisance/"

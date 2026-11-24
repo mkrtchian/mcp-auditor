@@ -22,8 +22,8 @@ from evals.cve.nuisance.audit import (
 )
 from evals.cve.nuisance.confinement import single_container_run_args
 from evals.cve.nuisance.results import NotRunCause
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
+from evals.model_provider_errors import ProviderFatal
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 from tests.unit.support.captured_console import a_captured_console

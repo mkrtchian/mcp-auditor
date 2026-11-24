@@ -10,8 +10,8 @@ from langchain_core.exceptions import (
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData
 
-from evals.cve.provider_errors import ProviderErrorKind, classify, describe_provider_error
-from tests.unit.cve.support import test_cve_provider_errors_given as given
+from evals.model_provider_errors import ProviderErrorKind, classify, describe_provider_error
+from tests.unit.evals.support import test_model_provider_errors_given as given
 from tests.unit.support import provider_errors
 
 FATAL = ProviderErrorKind.FATAL

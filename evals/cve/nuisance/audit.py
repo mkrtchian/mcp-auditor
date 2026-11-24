@@ -25,14 +25,14 @@ from evals.cve.nuisance.confinement import single_container_launch_args
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioned_launch
 from evals.cve.nuisance.results import NotRunCause
-from evals.cve.provider_errors import (
+from evals.cve.server_health import ServerHealth
+from evals.eval_display import console
+from evals.model_provider_errors import (
     AuditFailed,
     ProviderErrorKind,
     ProviderFatal,
     describe_provider_error,
 )
-from evals.cve.server_health import ServerHealth
-from evals.eval_display import console
 from evals.session_usage import throttled_model_calls
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport

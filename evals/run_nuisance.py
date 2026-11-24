@@ -29,8 +29,8 @@ from evals.cve.nuisance.gate.gate_command import add_gate_arguments
 from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps, add_run_arguments
 from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
-from evals.cve.provider_errors import ProviderFatal, describe_provider_error
 from evals.eval_session import Refused
+from evals.model_provider_errors import ProviderFatal, describe_provider_error
 from evals.session_usage import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 

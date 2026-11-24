@@ -58,6 +58,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
 | `evals/baselines/judge_isolation.json` | `evals/baselines/judge.json` | rename | 2026-11-11 |
 | `evals.cve_preflight` | `evals.detection_preflight` | rename | 2026-11-11 |
+| `evals/cve/provider_errors.py` | `evals/model_provider_errors.py` | rename | 2026-11-24 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |
 | `evals/holdout_census_method.md` | `evals/census_method.md` | rename | 2026-11-11 |
 | `evals/holdout_fixtures/` | `evals/cve/detection/holdout_fixtures/` | rename | 2026-11-11 |

@@ -12,8 +12,8 @@ from evals.cve.launch_audit import (
     UndecidableLaunch,
     audit_launch,
 )
-from evals.cve.provider_errors import AuditFailed, ProviderErrorKind
 from evals.cve.server_health import ServerHealth
+from evals.model_provider_errors import AuditFailed, ProviderErrorKind
 
 A_LAUNCH = Launch("docker", ["run", "server"], chain_budget=3, max_chain_steps=5)
 THE_LAUNCH_OWN = AuditShape(None, None, None, None)

@@ -18,8 +18,8 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
     WrittenBaseline,
 )
-from evals.cve.provider_errors import ProviderFatal
 from evals.gate_outcome import GateOutcome
+from evals.model_provider_errors import ProviderFatal
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
 from tests.unit.support import census_draws, censuses

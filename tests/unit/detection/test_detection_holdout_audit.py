@@ -17,8 +17,8 @@ from evals.cve.detection.holdout_audit import (
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.provider_errors import ProviderFatal
 from evals.cve.server_health import ServerHealth
+from evals.model_provider_errors import ProviderFatal
 from mcp_auditor.domain.model_calls import MissedCallCause
 from tests.unit.detection.support.detection_audits import ScriptedAttempts
 from tests.unit.detection.support.detection_reports import a_detected_grade

@@ -51,6 +51,8 @@ _OLD_TEST_STEMS = (
     "test_cve_oracle",
     "test_cve_oracle_given",
     "test_cve_preflight",
+    "test_cve_provider_errors",
+    "test_cve_provider_errors_given",
     "test_cve_public_stand_ins_given",
     "test_cve_recording",
     "test_cve_recording_client",
@@ -462,7 +464,7 @@ RETIRED_WORDS = (
             r"images|interruption)|fixture_(?:provenance|sources)|calibration_dossier|"
             r"admission_calibration)\b(?!\.(?:json|md))|evals[./]probe(?:_candidates|_corpus|"
             r"_subset)?(?:\.py\b|(?= import\b))|evals[./]cve[./]nuisance[./]run(?:_status|"
-            r"_containers)?\b"
+            r"_containers)?\b|evals[./]cve[./]provider_errors\b"
         ),
         re.NOFLAG,
     ),
