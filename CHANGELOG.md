@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A fatal model provider error during `python -m evals.run_nuisance gate` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
 - A fatal model provider error during `python -m evals.run_detection` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
 - A fatal model provider error (authentication, permission, model not found, a billing limit) during `python -m evals.run_honeypot_suite`, in a run or a retest, stops the suite at the first such error, prints its full traceback, its chain included, and exits with code 4: each run it failed printed a warning and a traceback while the other runs went on, and the suite then exited 3.
+- The benign probe (`python -m evals.cve.kit.benign_probe`) reads a record whose host omits `public_names`, as 42 of the 65 committed admission records do and as the first-admission dossier invites an agent to write, where it raised a `KeyError`, and it reads every field of the host, as the run does.
 
 ## [0.5.0] - 2026-11-22
 

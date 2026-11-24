@@ -18,12 +18,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from pydantic import TypeAdapter
+
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
 from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse
 from evals.cve.kit.launch import Launch
 from evals.cve.nuisance.confinement import single_container_launch_args
-from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
+from evals.cve.planting_base import PlantingHost
 
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 
@@ -118,16 +120,7 @@ def probe_launch(
 
 
 def record_host(record: Mapping[str, Any]) -> PlantingHost:
-    host = record["host"]
-    names = host["public_names"]
-    return PlantingHost(
-        SymbolicUser(host["user"]),
-        host["working_directory"],
-        host["has_network"],
-        PublicNames(
-            tuple(names["stand_ins"]), tuple(names["trust"]), tuple(names["ip_label_domains"])
-        ),
-    )
+    return TypeAdapter(PlantingHost).validate_python(record["host"])
 
 
 @contextmanager

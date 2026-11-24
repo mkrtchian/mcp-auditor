@@ -11,6 +11,7 @@ from evals.cve.kit.benign_probe import (
     probe_client,
     probe_launch,
     record_calls,
+    record_host,
     report_lines,
     single_container_launch,
 )
@@ -86,6 +87,18 @@ def test_the_probe_launch_of_a_record_with_a_backend_is_its_lifecycle_launch():
     assert launch.command == "docker"
     assert args[:2] == ["run", "--name"]
     assert args[3:] == ["the-image", record["host"]["working_directory"], *record["launch"]]
+
+
+def test_a_record_host_without_public_names_declares_none():
+    record = given.a_record_whose_host_omits_public_names()
+
+    assert record_host(record) == given.a_server().host
+
+
+def test_the_record_host_is_the_admitted_host():
+    server = given.a_server_with_every_host_field_set()
+
+    assert record_host(given.the_record_of(server)) == server.host
 
 
 async def test_probe_client_answers_each_call_in_order():

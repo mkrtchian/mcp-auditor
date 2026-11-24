@@ -11,7 +11,7 @@ from evals.cve.kit.benign_probe import ProbeCall, ProbeOutcome, ProbeReport
 from evals.cve.kit.client import KitResponse, KitTool
 from evals.cve.kit.launch import Launch
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
-from evals.cve.planting_base import PlantingHost
+from evals.cve.planting_base import LayoutMount, PlantingHost, PublicNames, SymbolicUser
 from tests.fakes import FakeKitClient
 
 
@@ -22,6 +22,25 @@ def a_record_with_a_backend() -> dict[str, Any]:
 
 def a_server() -> AdmittedServer:
     return admissions.an_admission().servers[0]
+
+
+def a_record_whose_host_omits_public_names() -> dict[str, Any]:
+    record = the_record_of(a_server())
+    del record["host"]["public_names"]
+    return record
+
+
+def a_server_with_every_host_field_set() -> AdmittedServer:
+    names = PublicNames(("api.example.com",), ("SSL_CERT_FILE",), ("nip.io",))
+    host = PlantingHost(
+        SymbolicUser.UNPRIVILEGED,
+        "/srv/app",
+        has_network=True,
+        public_names=names,
+        layout_mount=LayoutMount.READ_WRITE,
+        baked_work=True,
+    )
+    return mutations.with_host(a_server(), host)
 
 
 def the_record_of(server: AdmittedServer) -> dict[str, Any]:
