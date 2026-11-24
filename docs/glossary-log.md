@@ -124,6 +124,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | planting layer | planting code | rename | 2026-11-11 |
 | `PlantKind` | `PlaceKind` | rename | 2026-11-11 |
 | `primary_number`, primary number (detection suite rule v11) | holdout detection rate (`holdout_detection_rate`) | rename | 2026-11-11 |
+| `print_refusal` | `print_titled_reasons` (it prints a crash panel too) | rename | 2026-11-24 |
 | `probed_target`, `target` (stand-in captures) | `probed_request_target`, `request_target` | rename | 2026-11-11 |
 | `ProviderError` (the nuisance audit's outcome) | `ProviderErrorAttempt` | rename | 2026-11-23 |
 | `provisioner_of`, `BackendProvisioner` | `provisioned_launch` | rename | 2026-11-23 |

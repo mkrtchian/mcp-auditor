@@ -88,11 +88,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         return args.command(args)
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        display.print_titled_reasons(refusal.title, refusal.reasons)
         return REFUSED_EXIT
     except ValueError as error:
         # A malformed export or work file, which must not read as an incomplete census (exit 1).
-        display.print_refusal("Refused: a file is malformed.", [str(error)])
+        display.print_titled_reasons("Refused: a file is malformed.", [str(error)])
         return REFUSED_EXIT
 
 

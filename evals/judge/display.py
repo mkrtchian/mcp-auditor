@@ -11,8 +11,8 @@ from evals.eval_display import (
     console,
     print_declarations,
     print_outcome,
-    print_refusal,
     print_throttles,
+    print_titled_reasons,
 )
 from evals.gate import ProtectedCells
 from evals.judge.baseline import JUDGE_BASELINE_PATH, JudgeBaseline
@@ -41,7 +41,7 @@ def print_summary(
     if result.written:
         _print_written(result.written)
     if result.recording_refused:
-        print_refusal("Recording refused.", result.recording_refused)
+        print_titled_reasons("Recording refused.", result.recording_refused)
 
 
 def _runs_table(per_run: list[JudgeMetrics]) -> Table:

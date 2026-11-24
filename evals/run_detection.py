@@ -82,7 +82,9 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
     _reject_unknown_flaws(args.flaw, {t.flaw_id for t in (*flaws.graded, *flaws.tracked)})
     refusal = _flag_refusal(args)
     if refusal:
-        display.print_refusal(RECORDING_REFUSED if args.record_baseline else "Refused.", [refusal])
+        display.print_titled_reasons(
+            RECORDING_REFUSED if args.record_baseline else "Refused.", [refusal]
+        )
         return NOT_COMPARABLE_EXIT
 
     # Says nothing of detection nor of the fixtures, so a crash in every mode.
@@ -93,10 +95,10 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
         with silenced_stdio_logging():
             return asyncio.run(_run(args, flaws, deps))
     except Refused as refused:
-        display.print_refusal(refused.title, refused.reasons)
+        display.print_titled_reasons(refused.title, refused.reasons)
         return NOT_COMPARABLE_EXIT
     except ProviderFatal as fatal:
-        display.print_refusal(
+        display.print_titled_reasons(
             "Crashed: a fatal model provider error stopped the run.",
             [describe_provider_error(fatal.cause)],
         )
@@ -239,7 +241,7 @@ async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _Com
     print_detection_summary(report, report_path)
     print_recording(session, _recorded_flags(args))
     if session.recording_refused:
-        display.print_refusal(RECORDING_REFUSED, session.recording_refused)
+        display.print_titled_reasons(RECORDING_REFUSED, session.recording_refused)
         return NOT_COMPARABLE_EXIT
     return session.exit_code
 

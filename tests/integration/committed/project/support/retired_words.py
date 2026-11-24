@@ -336,6 +336,7 @@ RETIRED_WORDS = (
         re.NOFLAG,
     ),
     RetiredWord("planting-layer", r"\bplanting layer\b", re.IGNORECASE),
+    RetiredWord("print-refusal", r"\bprint_refusal\b", re.NOFLAG),
     RetiredWord("readmission", r"readmission", re.IGNORECASE),
     RetiredWord(
         "refused-credit",

@@ -34,7 +34,7 @@ def print_outcome(outcome: GateOutcome, reasons: list[str]) -> None:
     console.print(Panel("\n".join([_OUTCOME_STYLES[outcome], *_bullets(reasons)])))
 
 
-def print_refusal(title: str, reasons: list[str]) -> None:
+def print_titled_reasons(title: str, reasons: list[str]) -> None:
     lines = [f"[bold red]{title}[/bold red]", *_bullets(reasons)]
     console.print(Panel("\n".join(lines)))
 

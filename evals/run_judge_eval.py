@@ -14,7 +14,7 @@ from rich.progress import Progress
 
 from evals.cli_arguments import positive_int
 from evals.declared_flips import Instrument
-from evals.eval_display import console, print_refusal
+from evals.eval_display import console, print_titled_reasons
 from evals.eval_session import REPOSITORY_TREE, Refused, declarations_of_head, read_tree
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
 from evals.judge.baseline import JUDGE_BASELINE_PATH
@@ -57,7 +57,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         code = _evaluate(args)
     except Refused as refusal:
-        print_refusal(refusal.title, refusal.reasons)
+        print_titled_reasons(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()

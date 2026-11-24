@@ -50,10 +50,10 @@ def main(argv: Sequence[str] | None = None, deps: NuisanceCommandDeps | None = N
         with silenced_stdio_logging():
             return args.command(args)
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        display.print_titled_reasons(refusal.title, refusal.reasons)
         return REFUSED_EXIT
     except ProviderFatal as fatal:
-        display.print_refusal(
+        display.print_titled_reasons(
             "Crashed: a fatal model provider error stopped the run.",
             [describe_provider_error(fatal.cause)],
         )

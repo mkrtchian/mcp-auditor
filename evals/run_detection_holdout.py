@@ -67,10 +67,10 @@ def main(argv: Sequence[str] | None = None, deps: HoldoutCommandDeps | None = No
         with silenced_stdio_logging():
             return args.command(args, deps or HoldoutCommandDeps())
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        display.print_titled_reasons(refusal.title, refusal.reasons)
         return REFUSED_EXIT
     except ProviderFatal as fatal:
-        display.print_refusal(
+        display.print_titled_reasons(
             "Crashed: a fatal model provider error stopped the run.",
             [describe_provider_error(fatal.cause)],
         )
@@ -222,7 +222,7 @@ def _calibration_check(args: argparse.Namespace, deps: HoldoutCommandDeps) -> in
         # A fixture-config error out of check_target (an unknown kept id, a planting_spec refusal)
         # is a crash, not a target out of calibration (exit 1) nor the malformed census main
         # reports (exit 3).
-        display.print_refusal(
+        display.print_titled_reasons(
             "Crashed: a detection fixture of a holdout target is misconfigured.", [str(error)]
         )
         return CRASHED_EXIT

@@ -57,7 +57,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         _draw(args)
     except Refused as refusal:
-        display.print_refusal(refusal.title, refusal.reasons)
+        display.print_titled_reasons(refusal.title, refusal.reasons)
         sys.exit(REFUSED_EXIT)
 
 

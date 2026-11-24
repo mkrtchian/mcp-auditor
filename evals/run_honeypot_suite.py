@@ -13,7 +13,7 @@ from evals.baseline import Baseline, load_baseline, write_baseline
 from evals.cell_grid import GateGrid, RunAgainstBaseline, cell_grid, outcome_rows
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
-from evals.eval_display import console, print_refusal
+from evals.eval_display import console, print_titled_reasons
 from evals.eval_session import (
     RECORDING_REFUSED,
     REPOSITORY_TREE,
@@ -69,7 +69,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         code = _evaluate(args)
     except Refused as refusal:
-        print_refusal(refusal.title, refusal.reasons)
+        print_titled_reasons(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()
