@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from evals.cve.census.census import CLASSIFIERS, Census
-from evals.cve.census.classification import Criterion, Primitive, criteria_met
+from evals.cve.census.classification import Criterion, Primitive, met_by_either_classifier
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
 from evals.cve.census.grouping import DRAW_ORDER_CRITERIA
@@ -174,7 +174,7 @@ def _met(flaw: str, walk_inputs: WalkInputs, criterion: Criterion) -> bool:
     if settlement is not None:
         return settlement.ruling
     seen = walk_inputs.classifications_by_flaw.get(flaw, [])
-    return any(criteria_met(c)[criterion] for c in seen)
+    return met_by_either_classifier(seen, criterion)
 
 
 def _tools_reached(flaw: str, walk_inputs: WalkInputs) -> bool:

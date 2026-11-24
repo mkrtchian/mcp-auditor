@@ -17,6 +17,7 @@ from evals.cve.census.classification import (
     Criterion,
     criteria_met,
     in_grammar,
+    met_by_either_classifier,
     normalized_class,
 )
 
@@ -54,7 +55,7 @@ def compute_figures(
 ) -> CensusFigures:
     pairs = _pairs(classifications)
     published = [pair for pair in pairs if pair[0].flaw not in withdrawn]
-    servers = [pair for pair in published if _met_under_rule(pair, Criterion.MCP_SERVER)]
+    servers = [pair for pair in published if met_by_either_classifier(pair, Criterion.MCP_SERVER)]
     reachable = [pair for pair in servers if _reachable(pair)]
     return CensusFigures(
         agreement={field: _agreement(pairs, _field(field)) for field in _COMPARED_FIELDS},
@@ -62,7 +63,7 @@ def compute_figures(
         effect_class_membership_agreement=_agreement(pairs, _grammar_membership),
         reachable=_share(len(reachable), len(servers)),
         grammar_covered=_share(
-            sum(_met_under_rule(pair, Criterion.GRAMMAR_CLASS) for pair in reachable),
+            sum(met_by_either_classifier(pair, Criterion.GRAMMAR_CLASS) for pair in reachable),
             len(reachable),
         ),
         breakdowns={
@@ -78,12 +79,8 @@ def _pairs(classifications: dict[str, list[Classification]]) -> list[Pair]:
     return [(classification, second_by_flaw[classification.flaw]) for classification in first]
 
 
-def _met_under_rule(pair: Pair, criterion: Criterion) -> bool:
-    return any(criteria_met(classification)[criterion] for classification in pair)
-
-
 def _reachable(pair: Pair) -> bool:
-    return _met_under_rule(pair, Criterion.STDIO_TOOLS_CALL) and _met_under_rule(
+    return met_by_either_classifier(pair, Criterion.STDIO_TOOLS_CALL) and met_by_either_classifier(
         pair, Criterion.EFFECT_IN_TOOL_RESPONSE
     )
 

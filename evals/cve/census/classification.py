@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import date
 from enum import StrEnum
 
@@ -58,6 +59,12 @@ class Classification(BaseModel):
     runs_in_container: bool
     effect_class: str
     first_failed_criterion: Criterion | None
+
+
+def met_by_either_classifier(
+    classifications: Iterable[Classification], criterion: Criterion
+) -> bool:
+    return any(criteria_met(classification)[criterion] for classification in classifications)
 
 
 def criteria_met(classification: Classification) -> dict[Criterion, bool]:

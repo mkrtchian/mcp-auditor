@@ -3,8 +3,8 @@
 Two readers judge, each on its own, how the effect of each flaw the rule gives them could be
 proven in a tool response, and group the flaws by that proof. The flaws a reader places in
 `NO_PROOF_GROUP` are the known gap as that reader finds it (ADR 029). A flaw
-meets a criterion when either classifier finds that it does, as in evals/cve/census/figures.py,
-so it falls outside the grammar only when both place it there.
+meets a criterion when either classifier finds that it does, so it falls outside the grammar
+only when both place it there.
 """
 
 from collections import defaultdict
@@ -12,14 +12,15 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from evals.cve.census.classification import Classification, Criterion, criteria_met, in_grammar
+from evals.cve.census.classification import Classification, Criterion, met_by_either_classifier
 from evals.cve.census.exclusions import ACCEPTANCE_TARGET_FLAWS, EXCLUDED_SERVERS
 from evals.cve.census.figures import Share
 
 READERS = ("reader_1", "reader_2")
 NO_PROOF_GROUP = "no_proof_in_tool_output"
 
-# The criteria of eligibility checkable from an advisory, the class criterion of version 3 aside.
+# The criteria of eligibility an advisory can check (detection suite rule, Eligibility).
+# Criterion.GRAMMAR_CLASS left them with detection suite rule v4.
 DRAW_ORDER_CRITERIA = (
     Criterion.MCP_SERVER,
     Criterion.STDIO_TOOLS_CALL,
@@ -35,18 +36,6 @@ class ProofJudgment(BaseModel):
     reason: str
 
 
-def draw_order_flaws(
-    classifications: dict[str, list[Classification]], candidates: set[str]
-) -> set[str]:
-    """The flaws of `candidates` that meet the draw-order criteria, the container gate aside:
-    a flaw of a server judged unable to run in a container is still drawn and calibrated."""
-    return {
-        flaw
-        for flaw, seen in _by_flaw(classifications).items()
-        if flaw in candidates and in_draw_order(flaw, seen)
-    }
-
-
 def grouped_flaws(
     classifications: dict[str, list[Classification]], candidates: set[str]
 ) -> set[str]:
@@ -54,7 +43,7 @@ def grouped_flaws(
     return {
         flaw
         for flaw in gap_population(classifications, candidates)
-        if not any(in_grammar(classification.effect_class) for classification in seen[flaw])
+        if not met_by_either_classifier(seen[flaw], Criterion.GRAMMAR_CLASS)
     }
 
 
@@ -63,12 +52,23 @@ def gap_population(
 ) -> set[str]:
     """The flaws of `candidates` that meet the criteria of the draw order and whose server
     either classifier finds able to run in a container: the denominator of the known gap."""
+    seen = _by_flaw(classifications)
+    return {
+        flaw
+        for flaw in draw_order_flaws(classifications, candidates)
+        if any(classification.runs_in_container for classification in seen[flaw])
+    }
+
+
+def draw_order_flaws(
+    classifications: dict[str, list[Classification]], candidates: set[str]
+) -> set[str]:
+    """The flaws of `candidates` that meet the draw-order criteria, the container gate aside:
+    a flaw of a server judged unable to run in a container is still drawn and calibrated."""
     return {
         flaw
         for flaw, seen in _by_flaw(classifications).items()
-        if flaw in candidates
-        and in_draw_order(flaw, seen)
-        and any(classification.runs_in_container for classification in seen)
+        if flaw in candidates and _in_draw_order(flaw, seen)
     }
 
 
@@ -94,12 +94,9 @@ def _by_flaw(classifications: dict[str, list[Classification]]) -> dict[str, list
     return seen
 
 
-def in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
+def _in_draw_order(flaw: str, seen: Sequence[Classification]) -> bool:
     return (
         flaw not in ACCEPTANCE_TARGET_FLAWS
-        and all(
-            any(criteria_met(classification)[criterion] for classification in seen)
-            for criterion in DRAW_ORDER_CRITERIA
-        )
+        and all(met_by_either_classifier(seen, criterion) for criterion in DRAW_ORDER_CRITERIA)
         and any(classification.server_package not in EXCLUDED_SERVERS for classification in seen)
     )
