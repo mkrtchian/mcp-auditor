@@ -6,9 +6,11 @@ from evals.cve.audit_attempts import (
     IncompleteAttempt,
     MissedCallWording,
     graded_despite_missed_model_calls,
+    incomplete_causes,
+    is_incomplete,
 )
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit, incomplete_causes, is_incomplete
+from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.counter import flagged_tools
 from evals.cve.nuisance.counting import counted_tools
 from mcp_auditor.domain.models import AuditReport

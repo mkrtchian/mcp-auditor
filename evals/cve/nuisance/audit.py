@@ -34,18 +34,9 @@ from evals.model_provider_errors import (
     describe_provider_error,
 )
 from evals.session_usage import throttled_model_calls
-from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
 NUISANCE_INFRA_ATTEMPTS = 3  # one try, two retries
-
-_INCOMPLETE_CAUSES = frozenset(
-    {
-        MissedCallCause.PROVIDER_REFUSAL,
-        MissedCallCause.UNREADABLE_ANSWER,
-        MissedCallCause.PROMPT_TOO_LONG,
-    }
-)
 
 
 @dataclass(frozen=True)
@@ -157,13 +148,3 @@ def _failure(outcome: NuisanceAudit | LaunchFailed | ProviderErrorAttempt) -> st
     if isinstance(outcome, ProviderErrorAttempt):
         return f"provider error ({outcome.description})"
     return f"run failed to launch ({escape(outcome.reason)})"
-
-
-def incomplete_causes(report: AuditReport) -> frozenset[MissedCallCause]:
-    return frozenset(
-        missed.cause for missed in report.missed_model_calls if missed.cause in _INCOMPLETE_CAUSES
-    )
-
-
-def is_incomplete(report: AuditReport) -> bool:
-    return any(missed.cause in _INCOMPLETE_CAUSES for missed in report.missed_model_calls)

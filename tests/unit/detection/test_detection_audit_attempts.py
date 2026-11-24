@@ -3,14 +3,14 @@ import pytest
 import tests.unit.support.grammar_inputs as grammar
 from evals.cve.audit_attempts import (
     INCOMPLETE_ATTEMPTS,
+    INCOMPLETE_CAUSES,
     AttemptOutcome,
     IncompleteAttempt,
     ProviderErrorAttempt,
     ThrottledAttempt,
     graded_despite_missed_model_calls,
-    graded_or_incomplete,
 )
-from evals.cve.detection.audit import DETECTION_GATE_WORDING
+from evals.cve.detection.audit import DETECTION_GATE_WORDING, graded_or_incomplete
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from mcp_auditor.domain.model_calls import MissedCallCause
@@ -109,7 +109,7 @@ def test_a_detection_is_kept_whatever_model_call_was_missed(cause: MissedCallCau
     assert outcome.status == TargetStatus.DETECTED
 
 
-@pytest.mark.parametrize("cause", list(MissedCallCause))
+@pytest.mark.parametrize("cause", sorted(INCOMPLETE_CAUSES))
 def test_a_miss_with_a_missed_model_call_is_not_graded_and_carries_its_cause(
     cause: MissedCallCause,
 ):

@@ -7,8 +7,9 @@ from dataclasses import dataclass
 
 from rich.markup import escape
 
+from evals.cve.audit_attempts import is_incomplete
 from evals.cve.nuisance.admission.admission import AdmittedServer
-from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit, is_incomplete
+from evals.cve.nuisance.audit import DroppedRun, NuisanceAudit
 from evals.cve.nuisance.counter import flagged_tools
 from evals.cve.nuisance.counting import counted_tools
 from evals.cve.nuisance.results import DROPPED_RUN_REASONS

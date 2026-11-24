@@ -14,7 +14,7 @@ from evals.cve.audit_attempts import (
     ProviderErrorAttempt,
     ThrottledAttempt,
     graded_despite_missed_model_calls,
-    graded_or_incomplete,
+    incomplete_causes,
 )
 from evals.cve.detection.replay import ReplayOutcome, RunToCheck, replay_with_causes
 from evals.cve.detection.session_model import AuditTarget, GradedAudit
@@ -153,6 +153,17 @@ async def _graded(run: RunToCheck, health: ServerHealth) -> GradedAudit | Incomp
     return GradedAudit(
         outcome, run.report, health, replayed.unchecked_reason, replayed.attempt_failures
     )
+
+
+def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
+    """A detection carries its own proof and stands whatever model call was missed. A run that
+    did not detect with a missed model call says nothing of detection, the struck credit
+    included."""
+    # A throttled attempt never reaches here: `attempt_once` returns a `ThrottledAttempt` first.
+    causes = incomplete_causes(report)
+    if causes and grade.status not in DETECTION_RUNGS:
+        return IncompleteAttempt(report, causes)
+    return grade
 
 
 async def checked_grade(

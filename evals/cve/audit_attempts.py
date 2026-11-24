@@ -3,7 +3,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from evals.cve.grammar import DETECTION_RUNGS, RunGrade
 from evals.cve.server_health import NO_INCIDENTS, ServerHealth
 from evals.eval_display import console
 from mcp_auditor.domain.model_calls import MissedCallCause
@@ -14,6 +13,12 @@ from mcp_auditor.domain.models import AuditReport
 # prompts differ from one audit to the next, so a new attempt usually passes the provider's filter
 # and gets a readable answer.
 INCOMPLETE_ATTEMPTS = 3
+_CAUSE_WORDING = {
+    MissedCallCause.PROVIDER_REFUSAL: "refused by the model provider",
+    MissedCallCause.UNREADABLE_ANSWER: "unreadable model answer",
+    MissedCallCause.PROMPT_TOO_LONG: "prompt longer than the model's context window",
+}
+INCOMPLETE_CAUSES = frozenset(_CAUSE_WORDING)
 
 
 @dataclass(frozen=True)
@@ -77,23 +82,15 @@ async def graded_despite_missed_model_calls[T](
     return None
 
 
-_CAUSE_WORDING = {
-    MissedCallCause.PROVIDER_REFUSAL: "refused by the model provider",
-    MissedCallCause.UNREADABLE_ANSWER: "unreadable model answer",
-    MissedCallCause.PROMPT_TOO_LONG: "prompt longer than the model's context window",
-}
-
-
 def describe_missed_call_causes(causes: frozenset[MissedCallCause]) -> str:
     return " and ".join(wording for cause, wording in _CAUSE_WORDING.items() if cause in causes)
 
 
-def graded_or_incomplete(grade: RunGrade, report: AuditReport) -> RunGrade | IncompleteAttempt:
-    """A detection carries its own proof and stands whatever model call was missed. A run that
-    did not detect with a missed model call says nothing of detection, the struck credit
-    included."""
-    if report.missed_model_calls and grade.status not in DETECTION_RUNGS:
-        return IncompleteAttempt(
-            report, frozenset(missed.cause for missed in report.missed_model_calls)
-        )
-    return grade
+def incomplete_causes(report: AuditReport) -> frozenset[MissedCallCause]:
+    return frozenset(
+        missed.cause for missed in report.missed_model_calls if missed.cause in INCOMPLETE_CAUSES
+    )
+
+
+def is_incomplete(report: AuditReport) -> bool:
+    return any(missed.cause in INCOMPLETE_CAUSES for missed in report.missed_model_calls)
