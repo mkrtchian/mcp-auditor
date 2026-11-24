@@ -104,18 +104,19 @@ def unpinned_bases(instructions: Sequence[str]) -> list[str]:
         words = instruction.split()
         if words[0].upper() != "FROM":
             continue
-        reference, stage = _base_and_stage(words[1:])
-        if reference not in stages and not _PINNED.search(reference):
+        reference, stage = base_and_stage(words[1:])
+        if reference.lower() not in stages and not _PINNED.search(reference):
             unpinned.append(reference)
         if stage:
             stages.add(stage)
     return unpinned
 
 
-def _base_and_stage(arguments: list[str]) -> tuple[str, str | None]:
+def base_and_stage(arguments: Sequence[str]) -> tuple[str, str | None]:
+    """The stage comes back lowercased, since Docker reads stage names case-insensitively."""
     words = [word for word in arguments if not word.startswith("--")]
     has_stage = len(words) >= 3 and words[1].upper() == "AS"
-    return words[0], words[2] if has_stage else None
+    return words[0], words[2].lower() if has_stage else None
 
 
 @dataclass(frozen=True)

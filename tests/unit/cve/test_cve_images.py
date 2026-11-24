@@ -186,6 +186,12 @@ def test_a_reference_to_an_earlier_stage_needs_no_digest():
     assert unpinned_bases(instructions) == ["alpine:3.20"]
 
 
+def test_a_stage_name_is_read_case_insensitively():
+    instructions = [f"FROM python:3.12-slim@{DIGEST} AS Builder", "FROM builder"]
+
+    assert unpinned_bases(instructions) == []
+
+
 def test_a_lower_case_from_is_read():
     assert unpinned_bases(["from node:20"]) == ["node:20"]
 

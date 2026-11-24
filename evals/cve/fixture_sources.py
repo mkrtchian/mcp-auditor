@@ -9,6 +9,7 @@ from collections.abc import Collection, Sequence
 from pathlib import Path
 
 from evals.cve.fixture_provenance import StandInRecord
+from evals.cve.images import base_and_stage
 from evals.cve.nuisance.admission.admission_records import SeedRecord
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
@@ -27,20 +28,15 @@ def unsourced_copies(instructions: Sequence[str]) -> list[str]:
         keyword = words[0].upper()
         flags = [word for word in words[1:] if word.startswith("--")]
         if keyword == "FROM":
-            stages |= _declared_stage(words)
+            _, stage = base_and_stage(words[1:])
+            if stage:
+                stages.add(stage)
         if keyword == "COPY":
             problems.append(_copy_problem(flags, stages, instruction))
         if keyword == "ADD":
             sources = [word for word in words[1:] if not word.startswith("--")][:-1]
             problems += [_add_problem(source, flags, instruction) for source in sources]
     return [problem for problem in problems if problem]
-
-
-def _declared_stage(words: Sequence[str]) -> set[str]:
-    operands = [word for word in words[1:] if not word.startswith("--")]
-    if len(operands) == 3 and operands[1].upper() == "AS":
-        return {operands[2].lower()}
-    return set()
 
 
 def _copy_problem(flags: Sequence[str], stages: Collection[str], instruction: str) -> str:
