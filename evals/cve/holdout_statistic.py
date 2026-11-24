@@ -64,13 +64,6 @@ class SideStatistic:
 
 
 @dataclass(frozen=True)
-class Contrast:
-    side_a: Side
-    side_b: Side
-    interval: Interval
-
-
-@dataclass(frozen=True)
 class MethodPlacement:
     method: str
     interval: Interval
@@ -121,13 +114,6 @@ def split_by_side(
 
 def side_of(disclosure_date: date, cutoff: date) -> Side:
     return Side.PRE_CUTOFF if disclosure_date <= cutoff else Side.POST_CUTOFF
-
-
-def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
-    if side_a.targets < MIN_SIDE or side_b.targets < MIN_SIDE:
-        return None
-    interval = newcombe(side_a.share_sum, side_a.targets, side_b.share_sum, side_b.targets)
-    return Contrast(side_a.side, side_b.side, interval)
 
 
 def detection_rate_controls(

@@ -34,6 +34,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | capability number, capability rate (ADR 015) | holdout detection rate | rename | 2026-11-11 |
 | challenger (ADR 019) | candidate model | rename | 2026-09-26 |
 | CI gate (the calibration job) | calibration check | rename | 2026-11-11 |
+| `Contrast`, `contrast()` (the holdout statistic's interval between the two sides) | the cited interval of `check_conclusion` (`Conclusion.cited.interval`), which the reports print as the contrast | rename | 2026-11-24 |
 | CVE acceptance gate (ADR 024) | detection gate | rename | 2026-11-11 |
 | CVE benchmark (the detection suite alone) | detection suite. "CVE benchmark" now names both suites and what they share. | moved meaning | 2026-11-11 |
 | CVE family (CLAUDE.md, labeling log, nuisance log: the detection suite's targets, set against the nuisance fix checks) | detection suite | rename | 2026-11-11 |

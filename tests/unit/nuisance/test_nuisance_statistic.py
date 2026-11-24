@@ -11,7 +11,6 @@ from evals.cve.holdout_statistic import Placement, Side
 from evals.cve.nuisance.statistic import (
     check_conclusion,
     cited_interval,
-    contrast,
     holdout_nuisance_rate,
     incomplete_as_flagged,
     nuisance_rate_controls,
@@ -61,18 +60,13 @@ def test_split_share_sum_counts_only_the_runs_flagged_through_the_split_flaw():
     assert side.interval == wilson(2 / 3, 2)
 
 
-def test_contrast_is_none_below_five_servers_a_side():
-    pre, post = sides_of(4, pre_flagged=3)
-    assert contrast(pre, post) is None
-
-
-def test_contrast_is_the_newcombe_interval_over_the_split_sums_at_five_a_side():
+def test_check_conclusion_cites_the_newcombe_interval_of_the_observed_shares():
     pre, post = sides_of(5, pre_flagged=3, post_flagged=1)
-    result = contrast(pre, post)
-    assert result is not None
+    conclusion = check_conclusion(pre, post, RUNS, grid=COARSE_GRID)
+    assert conclusion is not None
     assert math.isclose(pre.split_share_sum, 5.0)
     assert math.isclose(post.split_share_sum, 5 / 3)
-    assert result.interval == newcombe(pre.split_share_sum, 5, post.split_share_sum, 5)
+    assert conclusion.cited.interval == newcombe(pre.split_share_sum, 5, post.split_share_sum, 5)
 
 
 def test_check_conclusion_is_none_below_five_servers_a_side():

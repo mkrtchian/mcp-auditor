@@ -19,11 +19,11 @@ from evals.cve.holdout_report_lines import (
     two_sides,
 )
 from evals.cve.holdout_statistic import (
+    Conclusion,
     Side,
     SideStatistic,
     check_conclusion,
     cited_interval,
-    contrast,
     detection_rate_controls,
     holdout_detection_rate,
     split_by_side,
@@ -80,6 +80,7 @@ def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -
     cutoff = RunCutoffModel.latest(run.cutoffs)
     split = split_by_side(run.targets, cutoff.date)
     pair = two_sides(split)
+    conclusion = None if pair is None else check_conclusion(*pair, run.runs, grid=grid)
     return HoldoutReport(
         holdout_detection_rate=holdout_detection_rate(run.targets),
         cited_interval=IntervalModel.of(cited_interval(run.targets)),
@@ -89,8 +90,8 @@ def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -
         },
         run_cutoff=cutoff,
         sides=[_side_line(side) for side in split.values()],
-        contrast=_contrast_line(pair),
-        conclusion=_conclusion_line(pair, run.runs, grid),
+        contrast=_contrast_line(conclusion),
+        conclusion=_conclusion_line(conclusion),
         ladder=dict(Counter(target.detected_runs for target in run.targets)),
         targets=[TargetLine.of(target) for target in run.targets],
         not_run=[NotRunLine.of(target) for target in run.not_run],
@@ -128,22 +129,14 @@ def build_report(run: DetectionHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) -
     )
 
 
-def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> IntervalModel | None:
-    if pair is None:
-        return None
-    result = contrast(*pair)
-    return None if result is None else IntervalModel.of(result.interval)
+def _contrast_line(conclusion: Conclusion | None) -> IntervalModel | None:
+    # The contrast is the cited Newcombe interval of the conclusion check (detection suite rule,
+    # Run conditions and statistic).
+    return None if conclusion is None else IntervalModel.of(conclusion.cited.interval)
 
 
-def _conclusion_line(
-    pair: tuple[SideStatistic, SideStatistic] | None, runs: int, grid: Grid
-) -> ConclusionLine | None:
-    if pair is None:
-        return None
-    conclusion = check_conclusion(*pair, runs, grid=grid)
-    if conclusion is None:
-        return None
-    return ConclusionLine.of(conclusion)
+def _conclusion_line(conclusion: Conclusion | None) -> ConclusionLine | None:
+    return None if conclusion is None else ConclusionLine.of(conclusion)
 
 
 def _side_line(side: SideStatistic) -> SideLine:

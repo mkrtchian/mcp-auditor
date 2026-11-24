@@ -16,7 +16,6 @@ from evals.cve.holdout_statistic import (
     check_conclusion,
     cited_interval,
     conclude,
-    contrast,
     detection_rate_controls,
     holdout_detection_rate,
     observed,
@@ -112,9 +111,11 @@ def test_split_numbers_and_interval_are_wilson_per_side():
     assert side.interval == wilson(1.0, 2)
 
 
-def test_contrast_is_none_below_five_targets_a_side():
-    pre, post = _split_sides(4, 4, detected_runs=3)
-    assert contrast(pre, post) is None
+def test_check_conclusion_cites_the_newcombe_interval_of_the_observed_shares():
+    pre, post = _split_sides(5, 5, detected_runs=3)
+    conclusion = check_conclusion(pre, post, RUNS, grid=COARSE_GRID)
+    assert conclusion is not None
+    assert conclusion.cited.interval == newcombe(pre.share_sum, 5, post.share_sum, 5)
 
 
 def _split_sides(pre: int, post: int, detected_runs: int):
@@ -127,13 +128,6 @@ def _split_sides(pre: int, post: int, detected_runs: int):
     ]
     split = split_by_side(results, RUN_CUTOFF)
     return split[Side.PRE_CUTOFF], split[Side.POST_CUTOFF]
-
-
-def test_contrast_is_the_newcombe_interval_at_five_targets_a_side():
-    pre, post = _split_sides(5, 5, detected_runs=3)
-    result = contrast(pre, post)
-    assert result is not None
-    assert result.interval == newcombe(pre.share_sum, 5, post.share_sum, 5)
 
 
 def test_check_conclusion_is_none_below_five_targets_a_side():

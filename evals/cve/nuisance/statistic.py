@@ -12,11 +12,10 @@ from dataclasses import dataclass
 from datetime import date
 
 from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
-from evals.cve.holdout_intervals import Interval, newcombe, wilson
+from evals.cve.holdout_intervals import Interval, wilson
 from evals.cve.holdout_statistic import (
     MIN_SIDE,
     Conclusion,
-    Contrast,
     Reading,
     Side,
     conclude,
@@ -67,15 +66,6 @@ def split_by_side(
         side: SideStatistic(side, tuple(members), wilson(_split_share_sum(members), len(members)))
         for side, members in by_side.items()
     }
-
-
-def contrast(side_a: SideStatistic, side_b: SideStatistic) -> Contrast | None:
-    if side_a.servers < MIN_SIDE or side_b.servers < MIN_SIDE:
-        return None
-    interval = newcombe(
-        side_a.split_share_sum, side_a.servers, side_b.split_share_sum, side_b.servers
-    )
-    return Contrast(side_a.side, side_b.side, interval)
 
 
 def nuisance_rate_controls(

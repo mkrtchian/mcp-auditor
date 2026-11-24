@@ -15,7 +15,7 @@ from evals.cve.holdout_report_lines import (
     RunCutoffModel,
     two_sides,
 )
-from evals.cve.holdout_statistic import Side
+from evals.cve.holdout_statistic import Conclusion, Side
 from evals.cve.nuisance.exits import ExitReason
 from evals.cve.nuisance.results import (
     NotRunCause,
@@ -28,7 +28,6 @@ from evals.cve.nuisance.statistic import (
     SideStatistic,
     check_conclusion,
     cited_interval,
-    contrast,
     holdout_nuisance_rate,
     nuisance_rate_controls,
     split_by_side,
@@ -142,6 +141,7 @@ def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) ->
     cutoff = RunCutoffModel.latest(run.cutoffs)
     split = split_by_side(run.servers, cutoff.date)
     pair = two_sides(split)
+    conclusion = None if pair is None else check_conclusion(*pair, run.runs, grid=grid)
     return NuisanceReport(
         holdout_nuisance_rate=holdout_nuisance_rate(run.servers),
         cited_interval=IntervalModel.of(cited_interval(run.servers)),
@@ -151,8 +151,8 @@ def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) ->
         },
         run_cutoff=cutoff,
         sides=[_side_line(side) for side in split.values()],
-        contrast=_contrast_line(pair),
-        conclusion=_conclusion_line(pair, run.runs, grid),
+        contrast=_contrast_line(conclusion),
+        conclusion=_conclusion_line(conclusion),
         servers=[_server_line(server) for server in run.servers],
         not_run=[NotRunLine.of(server) for server in run.not_run],
         second_pass=dict(run.second_pass),
@@ -194,22 +194,14 @@ def build_report(run: NuisanceHoldoutRunResult, *, grid: Grid = DEFAULT_GRID) ->
     )
 
 
-def _contrast_line(pair: tuple[SideStatistic, SideStatistic] | None) -> IntervalModel | None:
-    if pair is None:
-        return None
-    result = contrast(*pair)
-    return None if result is None else IntervalModel.of(result.interval)
+def _contrast_line(conclusion: Conclusion | None) -> IntervalModel | None:
+    # The contrast is the cited Newcombe interval of the conclusion check (detection suite rule,
+    # Run conditions and statistic).
+    return None if conclusion is None else IntervalModel.of(conclusion.cited.interval)
 
 
-def _conclusion_line(
-    pair: tuple[SideStatistic, SideStatistic] | None, runs: int, grid: Grid
-) -> ConclusionLine | None:
-    if pair is None:
-        return None
-    conclusion = check_conclusion(*pair, runs, grid=grid)
-    if conclusion is None:
-        return None
-    return ConclusionLine.of(conclusion)
+def _conclusion_line(conclusion: Conclusion | None) -> ConclusionLine | None:
+    return None if conclusion is None else ConclusionLine.of(conclusion)
 
 
 def _side_line(side: SideStatistic) -> SideLine:
