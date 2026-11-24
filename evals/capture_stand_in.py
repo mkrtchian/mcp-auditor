@@ -100,11 +100,13 @@ def main(argv: Sequence[str] | None = None, transport: httpx.BaseTransport | Non
     provenance = _provenance(hosts.pop(), arguments, headers)
     probed_request_target = f"/{secrets.token_hex(8)}"
     probes = default_requests(provenance.host, probed_request_target, schemes)
-    fetched = _fetch_all([*requests, *probes], headers, transport)
-    plain, form = fetched[len(requests) : -len(schemes)], fetched[-len(schemes) :]
-    defaults = [ProbedDefault(*pair) for pair in zip(plain, form, strict=True)]
-    record = capture_record(provenance, fetched[: len(requests)], defaults)
-    record = with_kept_defaults(record, kept)
+    with _client(headers, transport) as client:
+        routes = [_fetch(client, request) for request in requests]
+        defaults = [
+            ProbedDefault(_fetch(client, probe.plain), _fetch(client, probe.form))
+            for probe in probes
+        ]
+    record = with_kept_defaults(capture_record(provenance, routes, defaults), kept)
     Path(parsed.out).write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
     return 0
 
@@ -176,7 +178,7 @@ def path_form(probe: ProbedDefault) -> Literal["decoded", "raw"] | None:
     digits = form_body.count(plain.request_target[1:])
     if quotes == 0 and digits == 0:
         return None
-    media = _same_answer(probe)
+    media = _quoting_media_type(probe)
     decoded = form_body.count(body_quoting(urllib.parse.unquote(form.request_target), media))
     raw = form_body.count(body_quoting(form.request_target, media))
     if (decoded, raw, digits) == (quotes, 0, quotes):
@@ -190,7 +192,7 @@ def path_form(probe: ProbedDefault) -> Literal["decoded", "raw"] | None:
     )
 
 
-def _same_answer(probe: ProbedDefault) -> str:
+def _quoting_media_type(probe: ProbedDefault) -> str:
     plain, form = probe.plain, probe.form
     media = media_type(plain.headers)
     if media not in QUOTING_MEDIA_TYPES:
@@ -269,14 +271,11 @@ def _first_ipv4(host: str) -> str:
     return str(socket.getaddrinfo(host, None, socket.AF_INET)[0][4][0])
 
 
-def _fetch_all(
-    requests: Sequence[CaptureRequest],
-    headers: tuple[tuple[str, str], ...],
-    transport: httpx.BaseTransport | None,
-) -> list[CapturedResponse]:
+def _client(
+    headers: tuple[tuple[str, str], ...], transport: httpx.BaseTransport | None
+) -> httpx.Client:
     sent = [("Accept-Encoding", "identity"), *headers]
-    with httpx.Client(follow_redirects=False, headers=sent, transport=transport) as client:
-        return [_fetch(client, request) for request in requests]
+    return httpx.Client(follow_redirects=False, headers=sent, transport=transport)
 
 
 def _fetch(client: httpx.Client, request: CaptureRequest) -> CapturedResponse:

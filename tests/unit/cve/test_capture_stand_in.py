@@ -275,13 +275,24 @@ def test_a_default_whose_quote_the_stand_in_cannot_reproduce_is_refused(
         )
 
 
-def test_the_default_requests_are_the_plain_then_the_form_probe_on_each_scheme():
-    requests = default_requests("example.com", PROBED_REQUEST_TARGET)
+def test_the_default_requests_pair_the_plain_and_the_form_probe_on_each_scheme():
+    probes = default_requests("example.com", PROBED_REQUEST_TARGET)
 
-    assert [(request.method, str(request.url)) for request in requests] == [
-        ("GET", "http://example.com/0123456789abcdef"),
-        ("GET", "https://example.com/0123456789abcdef"),
-        ("GET", "http://example.com/0123456789abcdef%3Cx%3E%22%27"),
-        ("GET", "https://example.com/0123456789abcdef%3Cx%3E%22%27"),
+    assert [
+        (probe.plain.method, str(probe.plain.url), probe.form.method, str(probe.form.url))
+        for probe in probes
+    ] == [
+        (
+            "GET",
+            "http://example.com/0123456789abcdef",
+            "GET",
+            "http://example.com/0123456789abcdef%3Cx%3E%22%27",
+        ),
+        (
+            "GET",
+            "https://example.com/0123456789abcdef",
+            "GET",
+            "https://example.com/0123456789abcdef%3Cx%3E%22%27",
+        ),
     ]
-    assert {request.url.raw_path for request in requests[2:]} == {b"/0123456789abcdef%3Cx%3E%22%27"}
+    assert {probe.form.url.raw_path for probe in probes} == {b"/0123456789abcdef%3Cx%3E%22%27"}

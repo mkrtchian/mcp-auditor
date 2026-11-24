@@ -28,13 +28,22 @@ class CaptureRequest:
     form_field: str | None = None
 
 
+@dataclass(frozen=True)
+class DefaultProbeRequests:
+    plain: CaptureRequest
+    form: CaptureRequest
+
+
 def default_requests(
     host: str, probed_request_target: str, schemes: Sequence[str] = SCHEMES
-) -> list[CaptureRequest]:
-    request_targets = (probed_request_target, probed_request_target + FORM_SUFFIX)
+) -> list[DefaultProbeRequests]:
     return [
-        CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{request_target}"))
-        for request_target in request_targets
+        DefaultProbeRequests(
+            plain=CaptureRequest("GET", httpx.URL(f"{scheme}://{host}{probed_request_target}")),
+            form=CaptureRequest(
+                "GET", httpx.URL(f"{scheme}://{host}{probed_request_target}{FORM_SUFFIX}")
+            ),
+        )
         for scheme in schemes
     ]
 
