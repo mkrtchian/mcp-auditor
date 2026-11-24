@@ -1,8 +1,7 @@
 from datetime import date
 
-from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery, draw_candidates
-from evals.cve.census.figures import compute_figures
-from evals.cve.census.grouping import READERS, ProofJudgment, gap_population, known_gap
+from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery, derived_parts
+from evals.cve.census.grouping import READERS, ProofJudgment
 from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection.draw_record import (
@@ -108,9 +107,8 @@ def a_census_drawing(identifiers: list[str]) -> Census:
         classifier: [censuses.a_classification(flaw=identifier) for identifier in identifiers]
         for classifier in CLASSIFIERS
     }
-    dates = {identifier: date(2025, 6, 10) for identifier in identifiers}
     groupings: dict[str, list[ProofJudgment]] = {reader: [] for reader in READERS}
-    population = gap_population(classifications, draw_candidates(flaws))
+    derived = derived_parts(flaws, classifications, groupings)
     calibration = [
         AgentRecord(role=role, scope=identifier, model="m")
         for identifier in identifiers
@@ -127,10 +125,10 @@ def a_census_drawing(identifiers: list[str]) -> Census:
         flaws=flaws,
         vulnerablemcp=[],
         classifications=classifications,
-        date_mismatches=[],
-        figures=compute_figures(classifications, dates, set()),
+        date_mismatches=derived.date_mismatches,
+        figures=derived.figures,
         groupings=groupings,
-        known_gap=known_gap(groupings, population),
+        known_gap=derived.known_gap,
         draw=_a_draw_of(identifiers),
     )
 

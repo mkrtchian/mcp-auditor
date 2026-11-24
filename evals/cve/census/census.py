@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from datetime import date
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -265,20 +265,39 @@ def _grouping_problems(census: Census) -> list[str]:
 
 
 def _derived_problems(census: Census) -> list[str]:
-    dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
-    withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
-    population = gap_population(census.classifications, draw_candidates(census.flaws))
+    derived = derived_parts(census.flaws, census.classifications, census.groupings)
     problems: list[str] = []
-    if census.date_mismatches != date_mismatches(census.classifications, dates):
+    if census.date_mismatches != derived.date_mismatches:
         problems.append("date mismatches differ from their computation")
-    if census.figures != compute_figures(census.classifications, dates, withdrawn):
+    if census.figures != derived.figures:
         problems.append("figures differ from their computation")
-    if census.known_gap != known_gap(census.groupings, population):
+    if census.known_gap != derived.known_gap:
         problems.append("known gap differs from its computation")
     return problems
 
 
-def date_mismatches(
+class DerivedParts(NamedTuple):
+    date_mismatches: list[DateMismatch]
+    figures: CensusFigures
+    known_gap: dict[str, Share]
+
+
+def derived_parts(
+    flaws: Sequence[CensusFlaw],
+    classifications: dict[str, list[Classification]],
+    groupings: dict[str, list[ProofJudgment]],
+) -> DerivedParts:
+    dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
+    withdrawn = {flaw.identifier for flaw in flaws if flaw.withdrawn}
+    population = gap_population(classifications, draw_candidates(flaws))
+    return DerivedParts(
+        date_mismatches=_date_mismatches(classifications, dates),
+        figures=compute_figures(classifications, dates, withdrawn),
+        known_gap=known_gap(groupings, population),
+    )
+
+
+def _date_mismatches(
     classifications: dict[str, list[Classification]], disclosure_dates: dict[str, date]
 ) -> list[DateMismatch]:
     return [

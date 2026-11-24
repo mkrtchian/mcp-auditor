@@ -18,12 +18,10 @@ from evals.cve.census.census import (
     Discovery,
     TermHits,
     census_flaw,
-    date_mismatches,
-    draw_candidates,
+    derived_parts,
 )
 from evals.cve.census.classification import Classification
-from evals.cve.census.figures import compute_figures
-from evals.cve.census.grouping import ProofJudgment, gap_population, known_gap
+from evals.cve.census.grouping import ProofJudgment
 from evals.cve.census.identity import Flaw, disclosure_date, merge
 from evals.cve.census.prefilter import INITIAL_TERMS, PrefilterTerm, matches
 from evals.cve.census.sources import AdvisoryRecord, SourceName, SourceProvenance
@@ -125,8 +123,7 @@ class Collection:
 
     def census(self, inputs: AssemblyInputs) -> Census:
         flaws = [flaw for _, flaw in self.census_members()]
-        dates = {flaw.identifier: flaw.disclosure_date for flaw in flaws}
-        withdrawn = {flaw.identifier for flaw in flaws if flaw.withdrawn}
+        derived = derived_parts(flaws, inputs.classifications, inputs.groupings)
         return Census(
             sources=inputs.sources,
             agents=inputs.agents,
@@ -135,12 +132,10 @@ class Collection:
             flaws=flaws,
             vulnerablemcp=self._work.vulnerablemcp,
             classifications=inputs.classifications,
-            date_mismatches=date_mismatches(inputs.classifications, dates),
-            figures=compute_figures(inputs.classifications, dates, withdrawn),
+            date_mismatches=derived.date_mismatches,
+            figures=derived.figures,
             groupings=inputs.groupings,
-            known_gap=known_gap(
-                inputs.groupings, gap_population(inputs.classifications, draw_candidates(flaws))
-            ),
+            known_gap=derived.known_gap,
         )
 
     def _found_by_agents(self) -> dict[str, set[Discovery]]:

@@ -9,8 +9,7 @@ from evals.cve.census.census import (
     Discovery,
     TermHits,
     census_flaw,
-    date_mismatches,
-    draw_candidates,
+    derived_parts,
 )
 from evals.cve.census.classification import (
     Classification,
@@ -19,14 +18,7 @@ from evals.cve.census.classification import (
     SoftwareKind,
     Transport,
 )
-from evals.cve.census.figures import compute_figures
-from evals.cve.census.grouping import (
-    NO_PROOF_GROUP,
-    READERS,
-    ProofJudgment,
-    gap_population,
-    known_gap,
-)
+from evals.cve.census.grouping import NO_PROOF_GROUP, READERS, ProofJudgment
 from evals.cve.census.identity import merge
 from evals.cve.census.prefilter import INITIAL_TERMS
 from evals.cve.census.sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
@@ -71,6 +63,7 @@ def a_census() -> Census:
         for classifier in CLASSIFIERS
     }
     groupings = {reader: [no_proof(GHSA_ONLY_FLAW)] for reader in READERS}
+    derived = derived_parts(flaws, classifications, groupings)
     return Census(
         sources=a_provenance(),
         agents=[
@@ -87,10 +80,10 @@ def a_census() -> Census:
             VulnerableMcpEntry(cve_id=FLAW_WITH_A_CVE, listed=date(2025, 7, 3), found=True)
         ],
         classifications=classifications,
-        date_mismatches=[],
-        figures=compute_figures(classifications, dates, withdrawn=set()),
+        date_mismatches=derived.date_mismatches,
+        figures=derived.figures,
         groupings=groupings,
-        known_gap=known_gap(groupings, gap_population(classifications, draw_candidates(flaws))),
+        known_gap=derived.known_gap,
     )
 
 
@@ -143,16 +136,8 @@ def a_flaw_with_records(*records: AdvisoryRecord) -> CensusFlaw:
 
 
 def recomputed(census: Census) -> Census:
-    dates = {flaw.identifier: flaw.disclosure_date for flaw in census.flaws}
-    withdrawn = {flaw.identifier for flaw in census.flaws if flaw.withdrawn}
-    population = gap_population(census.classifications, draw_candidates(census.flaws))
-    return census.model_copy(
-        update={
-            "figures": compute_figures(census.classifications, dates, withdrawn),
-            "date_mismatches": date_mismatches(census.classifications, dates),
-            "known_gap": known_gap(census.groupings, population),
-        }
-    )
+    derived = derived_parts(census.flaws, census.classifications, census.groupings)
+    return census.model_copy(update=derived._asdict())
 
 
 def a_classification(**overrides: Any) -> Classification:
