@@ -192,6 +192,12 @@ def test_a_stage_name_is_read_case_insensitively():
     assert unpinned_bases(instructions) == []
 
 
+def test_a_from_naming_a_stage_in_another_case_is_an_image_reference():
+    instructions = [f"FROM python:3.12-slim@{DIGEST} AS builder", "FROM Builder"]
+
+    assert unpinned_bases(instructions) == ["Builder"]
+
+
 def test_a_lower_case_from_is_read():
     assert unpinned_bases(["from node:20"]) == ["node:20"]
 

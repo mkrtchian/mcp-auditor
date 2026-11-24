@@ -27,4 +27,6 @@ def count(args: Sequence[str], segment: Sequence[str]) -> int:
 def mount_of(args: Sequence[str], container_path: str) -> str:
     """The full `-v host:container[:mode]` value mounted at the container path."""
     mounts = values_after(args, "-v")
-    return next(mount for mount in mounts if mount.split(":")[1] == container_path)
+    mount = next((mount for mount in mounts if mount.split(":")[1] == container_path), None)
+    assert mount is not None, f"nothing is mounted at {container_path}: {mounts}"
+    return mount
