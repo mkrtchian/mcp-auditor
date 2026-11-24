@@ -10,7 +10,6 @@ from evals.cve.fixture_sources import (
     unserved_captures,
     unsourced_copies,
 )
-from evals.cve.nuisance.admission.admission_records import SeedRecord
 
 _SHA256 = "a" * 64
 _COMMIT = "0123456789abcdef0123456789abcdef01234567"
@@ -75,15 +74,11 @@ def test_a_local_copy_or_an_unpinned_remote_add_is_refused(instructions: list[st
 
 
 def test_a_seed_pin_in_the_covered_text_passes():
-    assert unfingerprinted_pins([_a_seed_pinned(_COMMIT)], f"RUN git checkout {_COMMIT}") == []
+    assert unfingerprinted_pins([_COMMIT], f"RUN git checkout {_COMMIT}") == []
 
 
 def test_a_seed_pin_absent_from_the_covered_text_is_refused():
-    assert unfingerprinted_pins([_a_seed_pinned(_COMMIT)], "RUN true") == [_COMMIT]
-
-
-def test_a_seed_without_a_pin_needs_no_covered_text():
-    assert unfingerprinted_pins([_a_seed_pinned(None)], "") == []
+    assert unfingerprinted_pins([_COMMIT], "RUN true") == [_COMMIT]
 
 
 def test_a_stand_in_in_a_covered_file_holding_its_request_passes(tmp_path: Path):
@@ -147,10 +142,6 @@ def test_a_stand_in_without_a_capture_needs_no_generic_stand_in(tmp_path: Path):
 
 def _a_captured_stand_in(file: str, request: str) -> StandInRecord:
     return _a_stand_in(file, request).model_copy(update={"capture": "host.json"})
-
-
-def _a_seed_pinned(pin: str | None) -> SeedRecord:
-    return SeedRecord(item="/seed.txt", kind="published_sample", citation="README", pin=pin)
 
 
 def _a_stand_in(file: str, request: str) -> StandInRecord:

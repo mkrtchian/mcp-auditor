@@ -28,7 +28,9 @@ def every_dockerfile_copies_nothing_unsourced(server: AdmittedServer) -> None:
 def every_seed_pin_is_fingerprinted(server: AdmittedServer) -> None:
     covered = "\n".join(_fingerprinted_text(path) for path in fingerprinted_files(server))
 
-    assert unfingerprinted_pins(server.seeds or [], covered) == []
+    pins = [seed.pin for seed in server.seeds or [] if seed.pin is not None]
+
+    assert unfingerprinted_pins(pins, covered) == []
 
 
 def every_stand_in_is_a_fingerprinted_file_holding_its_requests(server: AdmittedServer) -> None:

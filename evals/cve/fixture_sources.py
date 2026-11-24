@@ -5,12 +5,11 @@ content only.
 """
 
 import re
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from pathlib import Path
 
 from evals.cve.fixture_provenance import StandInRecord
 from evals.cve.images import base_and_stage
-from evals.cve.nuisance.admission.admission_records import SeedRecord
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
 _GIT_CHECKSUM = re.compile(r"--checksum=[0-9a-f]{40}")
@@ -75,8 +74,7 @@ def _is_git(source: str) -> bool:
     return source.startswith(("git@", "git://")) or source.split("#")[0].endswith(".git")
 
 
-def unfingerprinted_pins(seeds: Sequence[SeedRecord], covered_text: str) -> list[str]:
-    pins = [seed.pin for seed in seeds if seed.pin is not None]
+def unfingerprinted_pins(pins: Iterable[str], covered_text: str) -> list[str]:
     return [pin for pin in pins if pin not in covered_text]
 
 

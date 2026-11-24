@@ -10,17 +10,16 @@ import tests.unit.cve.support.test_cve_closed_network_refusal_given as given
 import tests.unit.cve.support.test_cve_closed_network_refusal_then as then
 import tests.unit.nuisance.gate.support.nuisance_gate_sessions as gate_sessions
 import tests.unit.support.nuisance_docker_hosts as docker_hosts
-import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_vets as vets
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.cve.nuisance.vet_command import vet_servers
 from evals.eval_session import Refused
-from tests.unit.support import detection_holdout_runs
+from tests.unit.support import detection_holdout_runs, nuisance_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 
 
 async def test_a_nuisance_holdout_run_refuses_before_any_rebuild():
-    server = holdout_runs.a_server()
+    server = nuisance_holdout_runs.a_server()
     host = docker_hosts.DockerHost()
     deps = dataclasses.replace(
         docker_hosts.deps_on(host, server),
@@ -28,7 +27,7 @@ async def test_a_nuisance_holdout_run_refuses_before_any_rebuild():
     )
 
     with pytest.raises(Refused) as refused:
-        await holdout_runs.run([server], deps)
+        await nuisance_holdout_runs.run([server], deps)
 
     then.refused_for_the_daemon(refused.value)
     assert host.rebuilt == []
@@ -41,13 +40,13 @@ async def test_a_vet_refuses_before_any_rebuild():
     )
 
     with pytest.raises(Refused) as refused:
-        await vet_servers([holdout_runs.a_server()], deps)
+        await vet_servers([nuisance_holdout_runs.a_server()], deps)
 
     then.refused_for_the_daemon(refused.value)
     assert host.rebuilt == []
 
 
-async def test_a_gate_refuses_before_any_rebuild(tmp_path: Path):
+async def test_a_nuisance_gate_refuses_before_any_rebuild(tmp_path: Path):
     rebuild = given.CountingRebuild()
     harness = dataclasses.replace(
         gate_sessions.a_harness(tmp_path, gate_sessions.scripted({})),
