@@ -13,6 +13,7 @@ from evals.cve.planting import (
     planted,
 )
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.docker_argv import value_after
 
 # --- per-kind spec intents --------------------------------------------------------------
 
@@ -248,7 +249,7 @@ def test_a_hostname_place_on_a_launch_with_a_holder_lands_on_the_holder_not_the_
     with planted(spec, "image:tag", docker) as args:
         assert args.hostname == ()
         holder = planting.only(docker.holders)
-        assert planting.following(docker.holders[holder], "--hostname") == spec.nonces["hostname-1"]
+        assert value_after(docker.holders[holder], "--hostname") == spec.nonces["hostname-1"]
 
 
 def test_a_hostname_place_without_a_holder_lands_on_the_target():
@@ -270,7 +271,7 @@ def test_a_work_host_works_in_a_tmpfs_owned_by_the_unprivileged_account_and_stic
     args = _args_in(spec)
 
     assert args.working_directory == ("-w", "/work")
-    assert planting.following(args.mounts, "--tmpfs") == "/work:exec,mode=1777,uid=65534,gid=65534"
+    assert value_after(args.mounts, "--tmpfs") == "/work:exec,mode=1777,uid=65534,gid=65534"
 
 
 def test_another_working_directory_gets_no_tmpfs():

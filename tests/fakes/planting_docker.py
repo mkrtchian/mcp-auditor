@@ -15,10 +15,11 @@ from urllib.parse import urlsplit
 
 from evals.cve.planting_base import ImageAccounts, PlantingFailed, check_layout_outer
 
-IMAGE_PASSWD = (
+_IMAGE_PASSWD = (
     "root:x:0:0:root:/root:/bin/sh\nnobody:x:65534:65534:nobody:/nonexistent:/bin/false\n"
 )
-IMAGE_GROUP = "root:x:0:\nnobody:x:65534:\n"
+_IMAGE_GROUP = "root:x:0:\nnobody:x:65534:\n"
+_IMAGE_ACCOUNTS = ImageAccounts(_IMAGE_PASSWD, _IMAGE_GROUP)
 # Names Docker writes into every container's /etc/hosts as the container itself.
 _OWN_LOOPBACK_NAMES = ("ip6-localhost", "ip6-loopback")
 
@@ -31,9 +32,6 @@ class HostFile:
 
 @dataclass
 class FakePlantingDocker:
-    accounts: ImageAccounts = field(
-        default_factory=lambda: ImageAccounts(IMAGE_PASSWD, IMAGE_GROUP)
-    )
     fail: Mapping[str, int] = field(default_factory=dict[str, int])
     fail_errors: Mapping[str, Exception] = field(default_factory=dict[str, Exception])
     fail_teardown: frozenset[str] = frozenset()
@@ -56,7 +54,7 @@ class FakePlantingDocker:
 
     def image_accounts(self, image_tag: str) -> ImageAccounts:
         self._maybe_fail("image_accounts")
-        return self.accounts
+        return _IMAGE_ACCOUNTS
 
     def write_host_file(self, content: str, mode: int) -> str:
         self._maybe_fail("write_host_file", OSError("cannot write host file"))

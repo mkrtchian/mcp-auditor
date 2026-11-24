@@ -2,7 +2,7 @@ import pytest
 
 import tests.unit.support.fictional_planting as planting
 from evals.cve.places import LayoutAnchor
-from evals.cve.planting import RANDOM_NONCES, planting_spec
+from evals.cve.planting import RANDOM_NONCES
 from evals.cve.planting_base import LayoutNode
 from evals.cve.planting_spec import URL_SAFE_USERINFO
 
@@ -56,11 +56,7 @@ def test_the_production_token_is_url_safe_for_a_remote_url_userinfo():
 @pytest.mark.parametrize("token", ["needs@encoding", "needs:encoding", "needs/encoding"])
 def test_a_git_remote_url_nonce_that_is_not_url_safe_raises_naming_the_id_not_the_value(token: str):
     with pytest.raises(ValueError) as caught:
-        planting_spec(
-            [planting.git_remote_url_place()],
-            planting.unprivileged_host(),
-            planting.FixedTokenNonces(token),
-        )
+        planting.spec_of([planting.git_remote_url_place()], nonces=planting.FixedTokenNonces(token))
 
     assert "bare-remote-url-fic" in str(caught.value)
     assert token not in str(caught.value)

@@ -6,6 +6,7 @@ from evals.cve.planting import PlantingFailed, planted
 from evals.cve.planting_base import PublicNames, own_network_args
 from evals.cve.planting_spec import served_file
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.docker_argv import environment, value_after
 
 
 def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_no_holder():
@@ -20,8 +21,8 @@ def test_a_name_host_on_a_launch_with_a_network_is_an_alias_on_the_bridge_with_n
         assert docker.holders == {}
         network = next(iter(docker.networks))
         sentinel = docker.sentinels[planting.only(docker.sentinels)]
-        assert planting.following(sentinel, "--network") == network
-        assert planting.following(sentinel, "--network-alias") == "fictional-service"
+        assert value_after(sentinel, "--network") == network
+        assert value_after(sentinel, "--network-alias") == "fictional-service"
         assert args.network == tuple(own_network_args(network))
 
 
@@ -35,12 +36,12 @@ def test_an_ip_literal_host_yields_a_holder_address_setup_sentinel_and_target_ne
     with planted(spec, "image:tag", docker) as args:
         network = next(iter(docker.networks))
         holder = planting.only(docker.holders)
-        assert planting.following(docker.holders[holder], "--network") == network
-        setup = planting.only_list(docker.address_setups)
+        assert value_after(docker.holders[holder], "--network") == network
+        [setup] = docker.address_setups
         assert "NET_ADMIN" in setup and "--cap-drop" in setup
         assert "198.51.100.5/32" in setup
         sentinel = planting.only(docker.sentinels)
-        assert planting.following(docker.sentinels[sentinel], "--network") == f"container:{holder}"
+        assert value_after(docker.sentinels[sentinel], "--network") == f"container:{holder}"
         assert "NET_BIND_SERVICE" in docker.sentinels[sentinel]
         assert "BIND_ADDR=198.51.100.5" in docker.sentinels[sentinel]
         assert args.network == ("--network", f"container:{holder}")
@@ -55,7 +56,7 @@ def test_an_ip_literal_host_without_network_holds_on_network_none():
     with planted(spec, "image:tag", docker) as args:
         assert docker.networks == set()
         holder = planting.only(docker.holders)
-        assert planting.following(docker.holders[holder], "--network") == "none"
+        assert value_after(docker.holders[holder], "--network") == "none"
         assert args.network == ("--network", f"container:{holder}")
 
 
@@ -88,11 +89,8 @@ def test_a_loopback_literal_and_localhost_yield_a_holder_and_no_address_setup():
     with planted(spec, "image:tag", docker):
         assert len(docker.holders) == 1
         assert docker.address_setups == []
-        bound = {
-            planting.following(args, "-e", prefix="BIND_ADDR=")
-            for args in docker.sentinels.values()
-        }
-        assert bound == {"BIND_ADDR=127.0.0.5", "BIND_ADDR=127.0.0.1"}
+        bound = {environment(args)["BIND_ADDR"] for args in docker.sentinels.values()}
+        assert bound == {"127.0.0.5", "127.0.0.1"}
 
 
 def test_a_name_host_without_network_adds_a_reserved_address_and_binds_the_sentinel_to_it():
@@ -107,10 +105,7 @@ def test_a_name_host_without_network_adds_a_reserved_address_and_binds_the_senti
     with planted(spec, "image:tag", docker):
         holder = planting.only(docker.holders)
         assert "--add-host" in docker.holders[holder]
-        assert (
-            planting.following(docker.holders[holder], "--add-host")
-            == f"internal.fictional:{reserved}"
-        )
+        assert value_after(docker.holders[holder], "--add-host") == f"internal.fictional:{reserved}"
         sentinel = planting.only(docker.sentinels)
         assert f"BIND_ADDR={reserved}" in docker.sentinels[sentinel]
 

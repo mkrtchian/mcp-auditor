@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.cve.support.planting_mounts as mounts
 import tests.unit.support.fictional_planting as planting
 from evals.cve.planting import DockerPlanting, PlantingFailed, planted
 from tests.fakes.planting_docker import FakePlantingDocker, HostFile
@@ -29,14 +30,12 @@ def test_an_account_emits_a_passwd_entry_under_the_fixed_uid_and_replaces_the_us
     with planted(spec, "image:tag", docker) as args:
         name = spec.nonces["account-1"]
         assert args.user == ("--user", "60123:60123", "-e", "HOME=/tmp")
-        assert "-v" in args.mounts
-        passwd = _passwd_content(docker)
+        passwd = mounts.mounted_content(docker, args.mounts, "/etc/passwd")
+        group = mounts.mounted_content(docker, args.mounts, "/etc/group")
         assert "root:x:0:0" in passwd  # the image's own entries are kept
         assert f"{name}:x:60123:60123::/tmp:" in passwd
-        group = next(
-            f.content for f in docker.host_files.values() if f"{name}:x:60123:\n" in f.content
-        )
         assert "root:x:0:\n" in group  # the image's own group entries are kept
+        assert f"{name}:x:60123:\n" in group
 
 
 # --- failures and teardown --------------------------------------------------------------
@@ -156,7 +155,3 @@ def test_the_docker_adapter_refuses_to_remove_a_directory_that_is_no_layout_oute
 def _only_value(mapping: dict[str, HostFile]) -> HostFile:
     assert len(mapping) == 1
     return next(iter(mapping.values()))
-
-
-def _passwd_content(docker: FakePlantingDocker) -> str:
-    return next(f.content for f in docker.host_files.values() if "root:x:0:0" in f.content)

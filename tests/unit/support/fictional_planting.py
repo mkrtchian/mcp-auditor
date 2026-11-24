@@ -15,7 +15,6 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import PublicNames
 from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.support.docker_argv import value_after
 
 
 def spec_of(
@@ -144,17 +143,6 @@ class FixedTokenNonces:
 def only(registry: dict[str, list[str]]) -> str:
     assert len(registry) == 1
     return next(iter(registry))
-
-
-def only_list(items: list[list[str]]) -> list[str]:
-    assert len(items) == 1
-    return items[0]
-
-
-def following(args: list[str] | tuple[str, ...], flag: str, *, prefix: str | None = None) -> str:
-    if prefix is not None:
-        return next(value for value in args if value.startswith(prefix))
-    return value_after(args, flag)
 
 
 def nothing_left_alive(docker: FakePlantingDocker) -> None:
