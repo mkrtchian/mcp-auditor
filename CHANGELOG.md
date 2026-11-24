@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The command refusals of a census whose draw record is malformed name `detection suite rule vN` where they read `rule version N`, and `before the first re-walk` where they read `rule version None`.
 - `python -m evals.run_nuisance walk` tags an excluded server `[excluded_server]` where it read `[excluded]`.
 - The refusals a command prints on an inconsistent nuisance admission, and the header of `python -m evals.run_nuisance walk`, name the nuisance walk where they read "the walk".
+- Every command that builds images, the detection preflight, the probe corpus capture, the two holdout runs, `python -m evals.run_nuisance vet` and `python -m evals.run_nuisance gate`, reports a failed image build one way, `ImageBuildFailed` naming the services and quoting the last 40 lines of the build's stdout, then the last 40 of its stderr. The four run commands showed a `RuntimeError` with the same two tails. The preflight and the probe corpus capture quoted 20 lines of stderr alone, which miss the cause: Compose's bake builder writes the output of the failing step, the error that says why, on stdout only. The exit codes do not change.
 
 ### Fixed
 

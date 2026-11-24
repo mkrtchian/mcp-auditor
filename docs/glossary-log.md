@@ -98,6 +98,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `holdout_target_references` (the function of `re_admission_dossier.py`, while `write_holdout_target_references` keeps its name) | `copied_holdout_targets` | rename | 2026-11-23 |
 | `holdout_vetting`, vet, pre-run vetting (holdout plans, `holdout_vetting` docstring) | pre-run check. "Vet" now names only the nuisance check of benign calls. | moved meaning | 2026-11-11 |
 | host (an OpenRouter provider, as in "host-level block" and "pins its hosts", plans/2026-10-15_openrouter-provider.md) | OpenRouter provider | rename | 2026-11-22 |
+| `ImageBuildFailed.stderr_tail` | `ImageBuildFailed.output_tail` (the last 40 lines of the build's stdout, then of its stderr) | rename | 2026-11-24 |
 | judge isolation eval | judge eval | rename | 2026-11-11 |
 | `judged_cases` (the audit's state channel) | processed cases | rename | 2026-11-11 |
 | known gap of the holdout | known gap | rename | 2026-11-11 |
@@ -134,6 +135,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `REACHABLE_BY`, `Place.reachable_by` | reach (`REACHES`, `Place.reaches`), the JSON key `reachable_by` of `evals/detection_places.json` is kept | rename | 2026-11-11 |
 | readmission | re-admission | rename | 2026-11-11 |
 | `--readmission` | `--re-admission` | rename | 2026-11-11 |
+| `rebuild_images` (`evals/cve/run_images.py`) | `ComposeImageStore.build` (`evals/cve/images.py`), which every command that builds images now calls | rename | 2026-11-24 |
 | `RecordingClient`, `KitRecorder`, `RecordingLLM` | `ExchangeLog`, `KitExchangeLog`, `CapturingLLM` ("recording" names only a baseline recording) | rename | 2026-11-11 |
 | refusal, `refusals` (the model probe's count of `TestCaseBatch` answers that are unparsed or short, `evals/probe_method.md`) | incomplete batch, `incomplete_batches` | rename | 2026-11-23 |
 | refused credit | struck credit | rename | 2026-11-11 |

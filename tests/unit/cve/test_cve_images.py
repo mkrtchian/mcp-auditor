@@ -112,7 +112,7 @@ def test_no_service_builds_nothing():
     assert build.batches == []
 
 
-def test_a_compose_store_build_failure_raises_with_its_services_and_stderr_tail():
+def test_a_compose_store_build_failure_raises_with_its_services_and_both_output_tails():
     services = [f"server-{index}" for index in range(2 * COMPOSE_BUILD_BATCH_SIZE)]
     failing_batch = services[COMPOSE_BUILD_BATCH_SIZE:]
     build = given.ScriptedComposeBuild(failing=failing_batch[0])
@@ -120,9 +120,12 @@ def test_a_compose_store_build_failure_raises_with_its_services_and_stderr_tail(
     with pytest.raises(ImageBuildFailed) as raised:
         ComposeImageStore(run_batch=build).build(services)
 
+    tail = raised.value.output_tail.splitlines()
     assert raised.value.services == tuple(failing_batch)
-    assert raised.value.stderr_tail.splitlines()[-1] == build.failure_line()
-    assert "step 0\n" not in raised.value.stderr_tail
+    assert tail[39] == build.failing_step_line()
+    assert tail[-1] == build.failure_line()
+    assert "stdout 0" not in tail
+    assert "stderr 0" not in tail
 
 
 def test_the_injected_tag_selects_which_namespace_is_read():

@@ -9,7 +9,7 @@ from typing import Any
 from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
-from evals.cve.images import backend_image_ids, image_ids
+from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import audit_once, nuisance_audit
@@ -26,7 +26,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
 )
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.vetting import LaunchedBenignCall
-from evals.cve.run_images import DOCKER_SWEEP, rebuild_images
+from evals.cve.run_images import DOCKER_SWEEP
 from evals.eval_session import read_tree
 from evals.session_usage import SessionThrottles
 from mcp_auditor.config import Settings, load_settings
@@ -53,7 +53,7 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
         benign_call=bounded(LaunchedBenignCall(conditions.tool_call_timeout), concurrency),
         announce_audits=lambda _: None,
         throttled_requests=lambda: throttles.requests,
-        rebuild=rebuild_images,
+        rebuild=ComposeImageStore().build,
         image_ids=functools.partial(image_ids, tag=image_tag),
         backend_image_ids=backend_image_ids,
         read_tree=read_tree,

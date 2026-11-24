@@ -93,7 +93,7 @@ def _target_image_problems() -> list[str]:
     try:
         ensure_images(_VULNERABLE_SERVICES, ComposeImageStore())
     except ImageBuildFailed as error:
-        return [f"building {', '.join(error.services)} failed:\n{error.stderr_tail}"]
+        return [f"building {', '.join(error.services)} failed:\n{error.output_tail}"]
     return []
 
 

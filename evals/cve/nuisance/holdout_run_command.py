@@ -31,7 +31,7 @@ from evals.cve.holdout_conditions import (
     committed_conditions,
     run_model_ids,
 )
-from evals.cve.images import backend_image_ids, image_ids
+from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
@@ -71,7 +71,7 @@ from evals.cve.run_files import (
     write_report,
     write_result,
 )
-from evals.cve.run_images import DOCKER_SWEEP, rebuild_images
+from evals.cve.run_images import DOCKER_SWEEP
 from evals.eval_session import Refused, last_commit, read_tree
 from evals.session_usage import SessionThrottles
 from mcp_auditor.config import Settings, load_settings
@@ -91,7 +91,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     return NuisanceDeps(
         bounded(audit, concurrency),
         bounded(LaunchedBenignCall(timeout), concurrency),
-        rebuild_images,
+        ComposeImageStore().build,
         functools.partial(image_ids, tag=nuisance_images.image_tag),
         backend_image_ids,
         read_tree,

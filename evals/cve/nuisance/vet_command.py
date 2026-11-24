@@ -15,6 +15,7 @@ from evals.concurrency import bounded
 from evals.cve.closed_network import check_closed_network_support
 from evals.cve.environments import TOOL_CALL_TIMEOUT
 from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
+from evals.cve.images import ComposeImageStore
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
 from evals.cve.nuisance.benign_call import BenignCallCheck
@@ -32,7 +33,7 @@ from evals.cve.nuisance.vetting import (
     VetResult,
     drop_failing_servers,
 )
-from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep, rebuild_images
+from evals.cve.run_images import DOCKER_SWEEP, ContainerSweep
 from evals.eval_session import Refused
 
 _REFUSAL = "nuisance vet refused"
@@ -58,7 +59,7 @@ def default_vet_deps(
 
     call = LaunchedBenignCall(tool_call_timeout, record_ping, launcher or ServerLauncher())
     return VetDeps(
-        rebuild=rebuild_images,
+        rebuild=ComposeImageStore().build,
         sweep=DOCKER_SWEEP,
         benign_call=bounded(call, concurrency),
         check_networks=check_closed_network_support,

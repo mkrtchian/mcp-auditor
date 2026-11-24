@@ -68,7 +68,7 @@ def preflight_ok(docker: PreflightDocker = HOST_DOCKER) -> bool:
         rebuilt = ensure_images(expected_services(ACCEPTANCE_TARGETS), docker.images)
     except ImageBuildFailed as error:
         console.print(f"[red]Image build failed:[/red] {', '.join(error.services)}")
-        console.print(error.stderr_tail, markup=False, highlight=False)
+        console.print(error.output_tail, markup=False, highlight=False)
         return False
     if rebuilt:
         console.print(f"[yellow]Rebuilt stale images:[/yellow] {', '.join(rebuilt)}")

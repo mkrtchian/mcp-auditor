@@ -6,9 +6,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.support.test_cve_run_images_given as given
 from evals.cve.run_images import (
-    rebuild_images,
     remove_containers,
     sweep_containers,
     target_services,
@@ -30,27 +28,6 @@ def test_target_services_dedups_images_and_patched_images():
 
 def test_target_services_is_empty_for_no_target():
     assert target_services([]) == []
-
-
-def test_a_failed_image_build_raises_with_the_tail_of_its_output():
-    stdout = "\n".join(f"step {index}" for index in range(50))
-    build = given.a_build_exiting(1, stdout, "failed to solve: no such file")
-
-    with pytest.raises(RuntimeError) as raised:
-        rebuild_images(["app", "app-patched"], run_batch=build)
-
-    message = str(raised.value)
-    assert "app, app-patched" in message
-    assert "step 49" in message
-    assert "step 10" in message
-    assert "step 9\n" not in message
-    assert "failed to solve: no such file" in message
-
-
-def test_a_successful_image_build_prints_nothing(capsys: pytest.CaptureFixture[str]):
-    rebuild_images(["app"], run_batch=given.a_build_exiting(0, "built app"))
-
-    assert capsys.readouterr() == ("", "")
 
 
 def test_a_sweep_whose_listing_fails_warns_and_removes_nothing(

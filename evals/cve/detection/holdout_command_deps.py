@@ -31,11 +31,11 @@ from evals.cve.holdout_conditions import (
     HoldoutConditions,
     committed_conditions,
 )
-from evals.cve.images import backend_image_ids, image_ids
+from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.places import Places
 from evals.cve.run_files import ReportWriter, write_report
-from evals.cve.run_images import DOCKER_SWEEP, RunDocker, rebuild_images
+from evals.cve.run_images import DOCKER_SWEEP, RunDocker
 from evals.eval_session import last_commit, read_tree
 from evals.session_usage import SessionThrottles
 
@@ -64,7 +64,7 @@ def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> H
         bounded(audit, concurrency),
         bounded(check, concurrency),
         bounded(layout, concurrency),
-        rebuild_images,
+        ComposeImageStore().build,
         image_ids,
         backend_image_ids,
         read_tree,

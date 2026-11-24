@@ -14,7 +14,7 @@ from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 
 FINGERPRINT_LABEL = "org.mcp-auditor.dockerfile-fingerprint"
 COMPOSE_FILE = DOCKER_DIRECTORY / "compose.yml"
-_STDERR_TAIL_LINES = 20
+_BUILD_TAIL_LINES = 40
 # One `docker compose build` of some seventy images makes BuildKit abandon one at random with
 # "context deadline exceeded", while each builds fine in a small group.
 COMPOSE_BUILD_BATCH_SIZE = 8
@@ -54,10 +54,10 @@ def backend_image_ids(tags: Sequence[str]) -> dict[str, str]:
 
 
 class ImageBuildFailed(Exception):
-    def __init__(self, services: Sequence[str], stderr_tail: str):
-        super().__init__(f"docker compose build {' '.join(services)} failed:\n{stderr_tail}")
+    def __init__(self, services: Sequence[str], output_tail: str):
+        super().__init__(f"docker compose build {' '.join(services)} failed:\n{output_tail}")
         self.services = tuple(services)
-        self.stderr_tail = stderr_tail
+        self.output_tail = output_tail
 
 
 class ImageStore(Protocol):
@@ -155,8 +155,15 @@ class ComposeImageStore:
     def build(self, services: Sequence[str]) -> None:
         failed = compose_build(services, self.run_batch)
         if failed:
-            tail = "\n".join(failed.stderr.splitlines()[-_STDERR_TAIL_LINES:])
-            raise ImageBuildFailed(failed.services, tail)
+            # Compose's bake builder writes the failing step's output on stdout only, and the
+            # quoted instruction with `failed to solve` on stderr.
+            raise ImageBuildFailed(
+                failed.services, f"{_tail(failed.stdout)}\n{_tail(failed.stderr)}"
+            )
+
+
+def _tail(output: str) -> str:
+    return "\n".join(output.splitlines()[-_BUILD_TAIL_LINES:])
 
 
 def compose_build(

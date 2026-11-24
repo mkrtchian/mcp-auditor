@@ -8,30 +8,10 @@ from dataclasses import dataclass, field
 
 from evals.cve.closed_network import ClosedNetworkUnsupported, check_closed_network_support
 from evals.cve.detection.targets import Target
-from evals.cve.images import (
-    ComposeImageStore,
-    ImageStore,
-    RunBatch,
-    compose_build,
-    compose_build_batch,
-)
+from evals.cve.images import ComposeImageStore, ImageStore
 from evals.eval_session import Refused
 
-_BUILD_TAIL_LINES = 40
 DOCKER_REQUIREMENT = "Docker Engine 28.0 or later is required"
-
-
-def rebuild_images(services: Sequence[str], run_batch: RunBatch = compose_build_batch) -> None:
-    failed = compose_build(services, run_batch)
-    if failed:
-        raise RuntimeError(
-            f"docker compose build failed for {', '.join(failed.services)}:\n"
-            f"{_tail(failed.stdout)}\n{_tail(failed.stderr)}"
-        )
-
-
-def _tail(output: str) -> str:
-    return "\n".join(output.splitlines()[-_BUILD_TAIL_LINES:])
 
 
 def target_services(targets: Sequence[Target]) -> list[str]:
