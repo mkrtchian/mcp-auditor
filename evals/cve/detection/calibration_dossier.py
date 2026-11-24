@@ -16,12 +16,11 @@ from pathlib import Path
 
 from evals.cve import places
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
-from evals.cve.census.classification import Classification
+from evals.cve.census.classification import CENSUS_GRAMMAR_CLASSES, Classification
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import acceptance_services
 from evals.cve.kit_dossier import KIT_ROOTS, Dossier, advisory_dossier, copy_kit_sources
 from evals.eval_session import Refused
-from evals.run_census import GRAMMAR_CLASSES
 
 
 class CandidateDossier(Dossier):
@@ -73,7 +72,7 @@ def _copy_sources(out: Path) -> None:
 
 
 def _write_docs(out: Path) -> None:
-    (out / "grammar_classes.md").write_text(GRAMMAR_CLASSES)
+    (out / "grammar_classes.md").write_text(CENSUS_GRAMMAR_CLASSES)
     (out / "layout.md").write_text(_LAYOUT)
     (out / "fixture_format.md").write_text(_fixture_format())
     (out / "README.md").write_text(_readme())

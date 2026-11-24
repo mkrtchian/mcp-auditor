@@ -80,6 +80,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | fresh targets (ADR 015, ADR 028, README) | holdout targets | rename | 2026-11-11 |
 | `.github/workflows/cve-calibration.yml` | `.github/workflows/detection-calibration-check.yml` | rename | 2026-11-11 |
 | `GateVerdict`, gate verdict, verdict of the gate (ADR 020, labeling log, plans) | gate outcome | rename | 2026-11-11 |
+| `GRAMMAR_CLASSES` (the Markdown page of the classes in `evals/run_census.py`) | `CENSUS_GRAMMAR_CLASSES` (`evals/cve/census/classification.py`). `GRAMMAR_CLASSES` names only the tuple of class names | rename | 2026-11-24 |
 | holdout (the detection holdout layer alone) | detection holdout layer. "Holdout" now names a role of both suites. | moved meaning | 2026-11-11 |
 | holdout calibration (fix-check source) | holdout calibration copy (`detection_holdout_calibration`) | rename | 2026-11-11 |
 | holdout calibration (CLAUDE.md, plans: `run_holdout calibrate`) | calibration check of the holdout targets | rename | 2026-11-11 |

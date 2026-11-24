@@ -1,4 +1,8 @@
+import re
+
 from evals.cve.census.classification import (
+    GRAMMAR_CLASS_DEFINITIONS,
+    GRAMMAR_CLASSES,
     Criterion,
     SoftwareKind,
     Transport,
@@ -55,3 +59,11 @@ def test_stdio_and_http_with_tools_meets_the_stdio_tools_call():
 def test_grammar_membership_ignores_case_and_surrounding_whitespace():
     assert in_grammar("  Command_Execution ")
     assert not in_grammar("command execution")
+
+
+def test_the_census_classes_are_the_classes_its_definitions_define():
+    """The definitions also ship in the calibration and admission dossiers, so a class they gain
+    fails this test, which is the moment to split the census's text from the dossiers'."""
+    defined = re.findall(r"^- `(\w+)`:", GRAMMAR_CLASS_DEFINITIONS, flags=re.MULTILINE)
+
+    assert tuple(defined) == GRAMMAR_CLASSES

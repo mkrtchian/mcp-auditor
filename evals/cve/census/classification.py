@@ -41,7 +41,28 @@ class Criterion(StrEnum):
     PINNABLE = "pinnable"
 
 
+# The census's grammar classes, as given to the classifiers (evals/census_method.md, reading 4)
+# and recorded at the rule's commit (docs/detection-suite-log.md, 2026-10-07). Frozen with the
+# census: a grammar change does not change them.
 GRAMMAR_CLASSES = ("read_outside_scope", "command_execution", "internal_fetch")
+
+# Written from the docstring of evals/cve/grammar.py, which stays untouched.
+GRAMMAR_CLASS_DEFINITIONS = """\
+- `read_outside_scope`: the server reads data outside the scope it declares, such as a file
+  outside the directories it allows, and returns it.
+- `command_execution`: the server executes a command of the caller's choice.
+- `internal_fetch`: the server fetches an internal address of the caller's choice and returns
+  what it got.
+"""
+
+CENSUS_GRAMMAR_CLASSES = f"""\
+# The effect classes of the grammar
+
+A class names the effect a client of the server can observe in a tool response, not a CWE.
+An argument injection is filed under the effect it produces. A flaw whose effect falls in
+none of these three classes gets a class name of your own.
+
+{GRAMMAR_CLASS_DEFINITIONS}"""
 
 
 class Classification(BaseModel):

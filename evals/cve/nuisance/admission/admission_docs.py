@@ -5,11 +5,11 @@ exists."""
 import json
 import shlex
 
+from evals.cve.census.classification import GRAMMAR_CLASS_DEFINITIONS
 from evals.cve.detection.targets import acceptance_services
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.confinement import single_container_run_args
 from evals.cve.planting_base import PlantingHost, SymbolicUser, confinement_args
-from evals.run_census import GRAMMAR_CLASS_DEFINITIONS
 
 IMAGE_PLACEHOLDER = "<image>"
 
