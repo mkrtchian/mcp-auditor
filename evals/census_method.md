@@ -74,7 +74,7 @@ Then write the download days into `output/census/work/downloads.json`, one per N
 - `classify-dossier --out DIR` refuses an incomplete census, then writes one file per flaw (its identifier, every ID, the advisory pages and the full source records), `classification_schema.json` (the classifiers' output schema) and `grammar_classes.md` (the definitions of reading 4).
 - `assemble` refuses an incomplete census, a classifier output that misses a flaw and a missing reader's grouping, then builds the census, computes the hits of each pre-filter term, the date mismatches, the figures and each reader's known gap, checks it with `load_census` and writes `evals/census.json` (`--census PATH` writes elsewhere). `load_census` refuses a grouping that misses or repeats a flaw the rule gives to the readers, or that groups another flaw, and a reader with no record in `agents*.jsonl`.
 
-A refusal exits `3`, a malformed export or work file included. Every subcommand takes `--sources DIR` and `--work DIR`.
+A command refusal exits `3`, a malformed export or work file included. Every subcommand takes `--sources DIR` and `--work DIR`.
 
 ## Operating procedure
 

@@ -119,7 +119,7 @@ CLI flags override config file values. `unconfined`, `image` and `mount` are del
 
 ## Exit codes
 
-Without `--ci`, an audit that reaches its report exits with code 0 whatever it found. With or without `--ci`, the audit exits with code 1 before any server is launched when the launch is refused (Docker not running, a launcher with no default image, a path the auditor will not mount, a variable it will not relay) or when the model cannot be set up (a missing API key, for instance). The auditor prints the reason of the refusal or of the failed setup before it exits.
+Without `--ci`, an audit that reaches its report exits with code 0 whatever it found. With or without `--ci`, the audit exits with code 1 before any server is launched when the launch is refused (Docker not running, a launcher with no default image, a path the auditor will not mount, a variable it will not relay) or when the model cannot be set up (a missing API key, for instance). The auditor prints the reason of the launch refusal or of the failed setup before it exits.
 
 `--ci` replaces Rich UI with plain text, keeps all diagnostic output, and exits with code 1 if any finding meets the severity threshold. It exits with code 3 when the audit is incomplete: a model call was missed, or a tool was left with a coverage gap, which includes cases or chains not sent (a tool the auditor stopped calling, or a server taken as down). A clean result then covers less than was asked for. A relaunch alone does not make the audit incomplete. Findings take precedence: an incomplete audit with a finding at or above the threshold exits with code 1.
 

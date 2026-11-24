@@ -15,9 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The model probe's report and console count incomplete batches (statistics key `incomplete_batches`, column "Incomplete batches") where they counted refusals: a `TestCaseBatch` answer that does not parse or falls short of the corpus budget is not a provider refusal.
 - The conditions line of the detection suite's acceptance markdown report and console reads `test budget N` where it read `budget N`.
 - The header the detection suite's calibration check prints before its layout and route checks reads `layout check then route check` where it read `layout break then discovery route`.
-- The refusals of a census whose draw record is malformed name `detection suite rule vN` where they read `rule version N`, and `before the first re-walk` where they read `rule version None`.
+- The command refusals of a census whose draw record is malformed name `detection suite rule vN` where they read `rule version N`, and `before the first re-walk` where they read `rule version None`.
 - `python -m evals.run_nuisance walk` tags an excluded server `[excluded_server]` where it read `[excluded]`.
-- The refusals of the nuisance admission and the header of `python -m evals.run_nuisance walk` name the nuisance walk where they read "the walk".
+- The refusals a command prints on an inconsistent nuisance admission, and the header of `python -m evals.run_nuisance walk`, name the nuisance walk where they read "the walk".
 
 ### Fixed
 
