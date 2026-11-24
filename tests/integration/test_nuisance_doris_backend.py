@@ -1,11 +1,12 @@
 """A real Docker launch of the kit's Doris backend builder.
 
 The guard the unit isolation test cannot be: the builder ensures the heavy FE+BE cluster and
-yields a launch that connects, and the holdout fixture's benign call answers without error. Behind
-NUISANCE_DORIS=1 because it pulls apache/doris:all-in-one-4.1.3 and mysql:8.0.46, both pinned by
-digest, waits on the cluster's health (up to 240 s + 180 s) and leaves the persistent cluster and
-its two networks running, as a holdout run does by design. Under the flag, Docker absent skips, or
-fails when CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py convention).
+yields a launch that connects, and the benign call of the holdout target's detection fixture answers
+without error. Behind NUISANCE_DORIS=1 because it pulls apache/doris:all-in-one-4.1.3 and
+mysql:8.0.46, both pinned by digest, waits on the cluster's health (up to 240 s + 180 s) and leaves
+the persistent cluster and its two networks running, as a holdout run does by design. Under the
+flag, Docker absent skips, or fails when CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py
+convention).
 """
 
 import os
