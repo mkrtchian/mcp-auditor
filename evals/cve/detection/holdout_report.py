@@ -10,6 +10,14 @@ from pydantic import BaseModel
 from evals.cve.detection.holdout_not_run import NotRunLine
 from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
 from evals.cve.detection.holdout_target_line import TargetLine
+from evals.cve.detection.statistic import (
+    SideStatistic,
+    check_conclusion,
+    cited_interval,
+    detection_rate_controls,
+    holdout_detection_rate,
+    split_by_side,
+)
 from evals.cve.holdout_hierarchical import DEFAULT_GRID, Grid
 from evals.cve.holdout_report_lines import (
     ConclusionLine,
@@ -18,16 +26,7 @@ from evals.cve.holdout_report_lines import (
     RunCutoffModel,
     two_sides,
 )
-from evals.cve.holdout_statistic import (
-    Conclusion,
-    Side,
-    SideStatistic,
-    check_conclusion,
-    cited_interval,
-    detection_rate_controls,
-    holdout_detection_rate,
-    split_by_side,
-)
+from evals.cve.holdout_statistic import Conclusion, Side
 
 
 class SideLine(BaseModel):

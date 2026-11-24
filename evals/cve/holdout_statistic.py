@@ -1,17 +1,13 @@
-"""The holdout-specific aggregation over per-target results: the holdout detection rate (the mean
-detection share), its Wilson interval and controls, the cutoff-side split, the contrast between
-sides and the conclusion check that reads the contrast against zero under every method.
-
-The result value objects live in holdout_results so the report and the orchestrator share them
-without a cycle. The split recomputes each target's side from its disclosure date against the
-run's own cutoff, passed in."""
+"""What both holdout rates share: the cutoff sides, the readings of a side or a run, the rate
+controls, the four contrast methods and the conclusion rule that reads the contrast against zero
+under every method. Each suite aggregates its own results into these readings, the detection
+suite in detection/statistic and the nuisance suite in nuisance/statistic."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
-from evals.cve.detection.holdout_results import HoldoutTargetResult
 from evals.cve.holdout_hierarchical import (
     DEFAULT_GRID,
     GammaPrior,
@@ -25,7 +21,6 @@ from evals.cve.holdout_intervals import (
     clopper_pearson,
     jeffreys,
     newcombe,
-    wilson,
 )
 
 _GAMMA_1_1 = GammaPrior(shape=1.0, scale=1.0)
@@ -42,25 +37,6 @@ class Placement(StrEnum):
     ABOVE = "above"
     BELOW = "below"
     STRADDLES = "straddles"
-
-
-@dataclass(frozen=True)
-class SideStatistic:
-    side: Side
-    results: tuple[HoldoutTargetResult, ...]
-    interval: Interval
-
-    @property
-    def targets(self) -> int:
-        return len(self.results)
-
-    @property
-    def share_sum(self) -> float:
-        return sum(result.detection_share for result in self.results)
-
-    @property
-    def number(self) -> float:
-        return self.share_sum / self.targets
 
 
 @dataclass(frozen=True)
@@ -91,39 +67,8 @@ class Conclusion:
     disagreeing: tuple[MethodPlacement, ...]
 
 
-def holdout_detection_rate(results: Sequence[HoldoutTargetResult]) -> float:
-    return sum(result.detection_share for result in results) / len(results)
-
-
-def cited_interval(results: Sequence[HoldoutTargetResult]) -> Interval:
-    return wilson(_share_sum(results), len(results))
-
-
-def split_by_side(
-    results: Sequence[HoldoutTargetResult], run_cutoff: date
-) -> dict[Side, SideStatistic]:
-    by_side: dict[Side, list[HoldoutTargetResult]] = {}
-    for result in results:
-        side = side_of(result.disclosure_date, run_cutoff)
-        by_side.setdefault(side, []).append(result)
-    return {
-        side: SideStatistic(side, tuple(members), wilson(_share_sum(members), len(members)))
-        for side, members in by_side.items()
-    }
-
-
 def side_of(disclosure_date: date, cutoff: date) -> Side:
     return Side.PRE_CUTOFF if disclosure_date <= cutoff else Side.POST_CUTOFF
-
-
-def detection_rate_controls(
-    results: Sequence[HoldoutTargetResult], runs: int, *, grid: Grid = DEFAULT_GRID
-) -> dict[str, Interval]:
-    reading = Reading(_share_sum(results), tuple(r.detected_runs for r in results))
-    return {
-        **rate_controls(reading, runs, grid),
-        "unchecked_as_misses_wilson": wilson(_unchecked_sum(results, runs), reading.members),
-    }
 
 
 def rate_controls(reading: Reading, runs: int, grid: Grid) -> dict[str, Interval]:
@@ -134,24 +79,6 @@ def rate_controls(reading: Reading, runs: int, grid: Grid) -> dict[str, Interval
         "hierarchical_gamma_1_1": hierarchical_interval(member_runs, runs, _GAMMA_1_1, grid),
         "hierarchical_gamma_2_2": hierarchical_interval(member_runs, runs, _GAMMA_2_2, grid),
     }
-
-
-def check_conclusion(
-    side_a: SideStatistic, side_b: SideStatistic, runs: int, *, grid: Grid = DEFAULT_GRID
-) -> Conclusion | None:
-    if side_a.targets < MIN_SIDE or side_b.targets < MIN_SIDE:
-        return None
-    cited, *others = [
-        *read_contrast(observed(side_a), observed(side_b), runs, grid=grid),
-        *read_contrast(
-            unchecked_as_misses(side_a, runs),
-            unchecked_as_misses(side_b, runs),
-            runs,
-            "_unchecked",
-            grid=grid,
-        ),
-    ]
-    return conclude(cited, others)
 
 
 def conclude(cited: MethodPlacement, others: Sequence[MethodPlacement]) -> Conclusion:
@@ -185,17 +112,6 @@ def read_contrast(
     ]
 
 
-def observed(side: SideStatistic) -> Reading:
-    return Reading(side.share_sum, tuple(r.detected_runs for r in side.results))
-
-
-def unchecked_as_misses(side: SideStatistic, runs: int) -> Reading:
-    return Reading(
-        _unchecked_sum(side.results, runs),
-        tuple(r.detected_runs_if_unchecked_missed for r in side.results),
-    )
-
-
 def placed(method: str, interval: Interval) -> MethodPlacement:
     return MethodPlacement(method, interval, placement_of(interval))
 
@@ -206,11 +122,3 @@ def placement_of(interval: Interval) -> Placement:
     if interval.high < 0:
         return Placement.BELOW
     return Placement.STRADDLES
-
-
-def _share_sum(results: Sequence[HoldoutTargetResult]) -> float:
-    return sum(result.detection_share for result in results)
-
-
-def _unchecked_sum(results: Sequence[HoldoutTargetResult], runs: int) -> float:
-    return sum(result.detected_runs_if_unchecked_missed / runs for result in results)

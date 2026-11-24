@@ -58,8 +58,15 @@ def a_run_result() -> DetectionHoldoutRunResult:
 
 
 def a_target_result(
-    flaw_id: str, *, disclosure_date: date, detected_runs: int, incomplete_runs: int = 0
+    flaw_id: str,
+    *,
+    disclosure_date: date = date(2026, 1, 1),
+    detected_runs: int,
+    detected_runs_if_unchecked_missed: int | None = None,
+    incomplete_runs: int = 0,
 ) -> HoldoutTargetResult:
+    if detected_runs_if_unchecked_missed is None:
+        detected_runs_if_unchecked_missed = detected_runs
     return HoldoutTargetResult(
         flaw_id=flaw_id,
         disclosure_date=disclosure_date,
@@ -69,7 +76,7 @@ def a_target_result(
         statuses=tuple(
             DetectionHoldoutRunStatus(
                 detected=index < detected_runs,
-                detected_if_unchecked_missed=index < detected_runs,
+                detected_if_unchecked_missed=index < detected_runs_if_unchecked_missed,
                 surfaced_places=["srv_config"] if index < detected_runs else [],
                 struck_places=[],
                 unchecked_places=[],

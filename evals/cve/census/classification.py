@@ -90,7 +90,7 @@ def met_by_either_classifier(
 
 def criteria_met(classification: Classification) -> dict[Criterion, bool]:
     # A server may still fail criterion 1 (no tools, no public package), so only the
-    # classifier's verdict tells whether it is met.
+    # classifier's first failed criterion tells whether it is met.
     return _read_from_fields(classification) | {
         Criterion.MCP_SERVER: classification.first_failed_criterion != Criterion.MCP_SERVER
     }
