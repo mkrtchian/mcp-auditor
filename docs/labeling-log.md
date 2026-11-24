@@ -1434,3 +1434,15 @@ Commit: the one that adds this entry.
 **Fingerprint.** All four are unchanged. The grammar fingerprint stays `58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1` and the counter fingerprint `b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161`. The map from flaw ID to fixture fingerprint of the 41 detection targets, serialized as JSON with sorted keys, hashes with SHA-256 to `689da547ef98cf466f67be55cdb28b319790d9e21b8ea6df2df85624c6dc420b`, and the same map from server package to fixture fingerprint of the 65 admitted nuisance servers to `0444a788e1477df424ea3b29ab0dc2a2c1bacf55746975126c0ae46e667cfc5d`.
 
 **The four questions of ADR 016.** (1) The change lands in the instrument, the images the nuisance gate builds before it audits. No prompt, guard or default of the system under test moves. (2) It was raised by a review of the nuisance suite against the coding standards, not by a measured value: no gate run exists. (3) A provisioner builds a backend image only when its tag is absent, while the fixture fingerprint hashes the backend's current Dockerfile, so a gate could record a fingerprint naming a backend it did not audit. The criterion is that the fingerprint a gate records names the images it audited, and it reads no measured value. (4) It applies to every server of the gate, whatever its backend, and brings the gate to the image set the nuisance holdout run and the vet already rebuild.
+
+### 2026-11-24, the honeypot suite stops at the first fatal model provider error
+
+Commit: the one that adds this entry.
+
+**State.** The honeypot baseline stays confirmed and is not reset. No label or fixture case moves.
+
+**What changes.** A fatal model provider error (authentication, permission, model not found, a billing limit), in a run or a retest of the honeypot suite, stops the suite at the first such error: it prints the error's full traceback, its chain included, and exits `4`, where each run it failed printed a warning and a traceback while the other runs went on, and the suite then exited `3` (all runs failed, or fewer completed runs than requested), and a retest it failed was a failed retest. The runs and retests in flight are cancelled and no report is written. The classification it reads is the one the CVE benchmark uses, moved unchanged out of `evals/cve/` beforehand (`evals/model_provider_errors.py`).
+
+**Fingerprint.** The ground truth fingerprint stays `072b33c72ecc3732df4df957ed3ff63662a6747ccb87ac29ed5332d1031cb025`.
+
+**The four questions of ADR 016.** (1) The change lands in the instrument, how the honeypot suite's runner ends on a fatal model provider error. No prompt, guard or default of the system under test moves, and no label, fixture case or rule of the gate. (2) It was raised by a review of how the eval commands exit, not by a measured value. (3) A run that met a fatal error already left the honeypot gate not comparable (fewer completed runs than requested, or a failed retest), with its recording refused, so no green or red outcome and no baseline a recording would write changes. (4) It applies alike to every run and retest of the honeypot suite.

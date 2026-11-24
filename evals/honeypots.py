@@ -77,7 +77,8 @@ async def audit_honeypots(audit: HoneypotAudit) -> tuple[VerdictMap, AuditReport
         async with asyncio.TaskGroup() as group:
             tasks = [group.create_task(audit(honeypot)) for honeypot in HONEYPOTS]
     except ExceptionGroup as failures:
-        raise failures.exceptions[0] from None
+        leaf = failures.exceptions[0]
+        raise leaf from leaf.__cause__
     reports = [task.result() for task in tasks]
     verdicts: VerdictMap = {}
     merged = AuditReport(server_command="evals", tool_reports=[], provider_usage=ProviderUsage())

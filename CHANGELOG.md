@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `python -m evals.run_nuisance gate` rebuilds the built backend images of its servers, and the sentinel and stand-in images when a backend-less server declares public names, as the nuisance holdout run and the vet do: it rebuilt the server images alone, so a gate could audit an old backend image under a fixture fingerprint naming its new Dockerfile.
 - A fatal model provider error during `python -m evals.run_nuisance gate` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
 - A fatal model provider error during `python -m evals.run_detection` prints the crash panel with the error's type and status, exit code still 4: it printed a traceback, which carried the provider's message to stderr.
+- A fatal model provider error (authentication, permission, model not found, a billing limit) during `python -m evals.run_honeypot_suite`, in a run or a retest, stops the suite at the first such error, prints its full traceback, its chain included, and exits with code 4: each run it failed printed a warning and a traceback while the other runs went on, and the suite then exited 3.
 
 ## [0.5.0] - 2026-11-22
 

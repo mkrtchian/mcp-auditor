@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import sys
 import traceback
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -66,15 +66,19 @@ class HoneypotRunResult:
 def main(argv: Sequence[str] | None = None) -> None:
     quiet_throttle_waits()
     args = parse_args(argv)
+    raise SystemExit(exit_code_of(lambda: _evaluate(args)))
+
+
+def exit_code_of(evaluate: Callable[[], int]) -> int:
     try:
-        code = _evaluate(args)
+        code = evaluate()
     except Refused as refusal:
         print_titled_reasons(refusal.title, refusal.reasons)
         code = NOT_COMPARABLE_EXIT
     except Exception:
         traceback.print_exc()
         code = CRASHED_EXIT
-    raise SystemExit(code)
+    return code
 
 
 def _evaluate(args: argparse.Namespace) -> int:

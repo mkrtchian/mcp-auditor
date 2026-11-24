@@ -13,6 +13,7 @@ from evals.honeypot.decision import CompletedRun, RunsOutcome
 from evals.honeypot.display import print_run_result
 from evals.honeypots import HONEYPOTS, HoneypotConfig, audit_honeypots
 from evals.metrics import RunDetail, VerdictMap
+from evals.model_provider_errors import ProviderErrorKind, classify
 from evals.tracing import tracing_enabled
 from mcp_auditor.domain.models import AuditReport
 
@@ -46,7 +47,9 @@ async def _run_or_warn(
 ) -> CompletedRun | None:
     try:
         verdicts, report, trace_ids = await _run_one(audit, index, tracker)
-    except Exception:
+    except Exception as error:
+        if classify(error) is ProviderErrorKind.FATAL:
+            raise
         tracker.progress.console.print(
             f"[yellow]Warning: run {index + 1}/{tracker.total_runs} failed:[/yellow]"
         )

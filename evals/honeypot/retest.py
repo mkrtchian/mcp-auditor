@@ -7,6 +7,7 @@ from evals.gate import CellComparison, CellOutcome, Observation, RetestRule, app
 from evals.ground_truth import Cell
 from evals.honeypots import HoneypotConfig
 from evals.metrics import VerdictMap
+from evals.model_provider_errors import ProviderErrorKind, classify
 
 RetestAudit = Callable[[HoneypotConfig], Awaitable[VerdictMap]]
 
@@ -55,10 +56,13 @@ class Retester:
     async def _retest_or_fail(
         self, honeypot: HoneypotConfig, flipped: list[Cell], rule: RetestRule
     ) -> dict[Cell, list[bool]] | str:
-        """The retests of one server, or the failure message when one of them raised."""
+        """The retests of one server, or the failure message when one of them raised an error
+        other than a fatal model provider error, which stops the retests."""
         try:
             return await self._retest_server(honeypot, flipped, rule)
-        except Exception:
+        except Exception as error:
+            if classify(error) is ProviderErrorKind.FATAL:
+                raise
             self.announce(f"Warning: a retest of {honeypot.name} failed:")
             self.warn(traceback.format_exc())
             return f"a retest of {honeypot.name} failed"
