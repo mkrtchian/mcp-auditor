@@ -1,6 +1,6 @@
 from evals.capture_defaults import FORM_SUFFIX
 from evals.capture_stand_in import CapturedResponse, CaptureProvenance, ProbedDefault
-from tests.unit.cve.support.stand_in_captures import PROBED_TARGET
+from tests.unit.support.fictional_stand_ins import PROBED_REQUEST_TARGET
 
 A_PROVENANCE = CaptureProvenance(
     host="example.com",
@@ -9,8 +9,8 @@ A_PROVENANCE = CaptureProvenance(
     command="uv run python -m evals.capture_stand_in --out x.json https://example.com/",
     request_headers=(("Authorization", "Bearer calib-token"),),
 )
-FORM_TARGET = PROBED_TARGET + FORM_SUFFIX
-HTML_DECODED = f"{PROBED_TARGET}&lt;x&gt;&#34;&#39;"
+FORM_REQUEST_TARGET = PROBED_REQUEST_TARGET + FORM_SUFFIX
+HTML_DECODED = f"{PROBED_REQUEST_TARGET}&lt;x&gt;&#34;&#39;"
 
 _HTML = ("Content-Type", "text/html; charset=utf-8")
 
@@ -32,8 +32,8 @@ def a_probed_default(
     headers: tuple[tuple[str, str], ...], plain_body: str, form_body: str
 ) -> ProbedDefault:
     return ProbedDefault(
-        plain=a_not_found_answer("https", PROBED_TARGET, headers, plain_body),
-        form=a_not_found_answer("https", FORM_TARGET, headers, form_body),
+        plain=a_not_found_answer("https", PROBED_REQUEST_TARGET, headers, plain_body),
+        form=a_not_found_answer("https", FORM_REQUEST_TARGET, headers, form_body),
     )
 
 
@@ -55,14 +55,14 @@ def a_not_found_answer(
 
 def a_not_found_default(scheme: str) -> ProbedDefault:
     return ProbedDefault(
-        plain=a_not_found_answer(scheme, PROBED_TARGET),
-        form=a_not_found_answer(scheme, FORM_TARGET),
+        plain=a_not_found_answer(scheme, PROBED_REQUEST_TARGET),
+        form=a_not_found_answer(scheme, FORM_REQUEST_TARGET),
     )
 
 
 NOT_FOUND_DEFAULTS = (a_not_found_default("http"), a_not_found_default("https"))
 AN_HTML_PROBE = a_probed_default(
     (_HTML,),
-    f"<a href='{PROBED_TARGET}'>{PROBED_TARGET}</a>",
+    f"<a href='{PROBED_REQUEST_TARGET}'>{PROBED_REQUEST_TARGET}</a>",
     f"<a href='{HTML_DECODED}'>{HTML_DECODED}</a>",
 )

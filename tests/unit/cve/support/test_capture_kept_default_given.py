@@ -4,10 +4,10 @@ from typing import Any
 
 import httpx
 
-from tests.unit.cve.support.stand_in_captures import (
+from tests.unit.support.fictional_stand_ins import (
     HOST,
-    PROBED_TARGET,
-    a_stand_in_directory,
+    PROBED_REQUEST_TARGET,
+    a_stand_ins_directory,
 )
 
 _JSON = ("Content-Type", "application/json")
@@ -15,16 +15,19 @@ AN_ADDRESS_HOST_URL = "https://127.0.0.1/core/v2/rest/product/A"
 OLD_HTTP_DEFAULT: dict[str, Any] = {
     "path_form": None,
     "body": "",
-    "headers": [["Location", f"https://example.com{PROBED_TARGET}"], ["Server", "awselb/2.0"]],
+    "headers": [
+        ["Location", f"https://{HOST}{PROBED_REQUEST_TARGET}"],
+        ["Server", "awselb/2.0"],
+    ],
     "status": 301,
-    "probed_request_target": PROBED_TARGET,
+    "probed_request_target": PROBED_REQUEST_TARGET,
     "scheme": "http",
 }
 
 
 def an_old_capture(directory: Path) -> Path:
     """A committed capture whose http default lists its keys in an order no model writes."""
-    a_stand_in_directory(directory)
+    a_stand_ins_directory(directory)
     out = directory / f"{HOST}.json"
     capture = json.loads(out.read_text())
     capture["defaults"][0] = OLD_HTTP_DEFAULT

@@ -1,6 +1,6 @@
 from typing import Any
 
-from tests.unit.cve.support.stand_in_captures import a_route
+from tests.unit.support.fictional_stand_ins import a_route
 
 ACTION = "DescribeDBClusters"
 ISSUE_OPERATION = "IssueView"

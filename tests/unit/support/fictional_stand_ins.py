@@ -1,21 +1,23 @@
 import json
 from pathlib import Path
+from typing import Any
 
 HOST = "public.fict"
 ADDRESS = "93.184.215.14"  # a global unicast address, as the loader requires
 CERTIFICATE = "fictional leaf"
 KEY = "fictional key"
 AUTHORITY = "fictional authority"
+PROBED_REQUEST_TARGET = "/0123456789abcdef"
 
 
-def a_stand_ins_directory(directory: Path) -> Path:
-    capture = {
+def a_stand_ins_directory(directory: Path, **capture_overrides: Any) -> Path:
+    capture: dict[str, Any] = {
         "host": HOST,
         "address": ADDRESS,
         "source": "capture",
         "captured_at": "2026-11-02T10:00:00Z",
         "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
-        "request_headers": list[list[str]](),
+        "request_headers": [],
         "routes": [
             {
                 "scheme": "http",
@@ -26,8 +28,9 @@ def a_stand_ins_directory(directory: Path) -> Path:
                 "body": "<html></html>",
             }
         ],
-        "defaults": [_default("http"), _default("https")],
+        "defaults": [a_default("http"), a_default("https")],
     }
+    capture.update(capture_overrides)
     (directory / f"{HOST}.json").write_text(json.dumps(capture))
     tls = directory / "tls"
     tls.mkdir()
@@ -37,12 +40,40 @@ def a_stand_ins_directory(directory: Path) -> Path:
     return directory
 
 
-def _default(scheme: str) -> dict[str, object]:
+def a_default(
+    scheme: str,
+    *,
+    probed_request_target: str = PROBED_REQUEST_TARGET,
+    headers: list[list[str]] | None = None,
+    body: str = "<html>not found</html>",
+    path_form: str | None = None,
+) -> dict[str, Any]:
     return {
         "scheme": scheme,
-        "probed_request_target": "/0123456789abcdef",
+        "probed_request_target": probed_request_target,
         "status": 404,
-        "headers": [["Content-Type", "text/html"]],
-        "body": "<html>not found</html>",
-        "path_form": None,
+        "headers": [["Content-Type", "text/html"]] if headers is None else headers,
+        "body": body,
+        "path_form": path_form,
     }
+
+
+def a_route(
+    scheme: str,
+    method: str = "GET",
+    action: str | None = None,
+    form_field: str | None = None,
+) -> dict[str, Any]:
+    route: dict[str, Any] = {
+        "scheme": scheme,
+        "method": method,
+        "request_target": "/",
+        "status": 200,
+        "headers": [],
+        "body": "",
+    }
+    if action is not None:
+        route["action"] = action
+    if form_field is not None:
+        route["form_field"] = form_field
+    return route

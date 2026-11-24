@@ -7,7 +7,7 @@ import tests.unit.cve.support.test_capture_stand_in_given as given
 from evals.capture_defaults import CaptureRequest, default_requests
 from evals.capture_stand_in import ProbedDefault, capture_record, parse_request, path_form
 from evals.cve.public_stand_ins import StandInCapture
-from tests.unit.cve.support.stand_in_captures import PROBED_TARGET
+from tests.unit.support.fictional_stand_ins import PROBED_REQUEST_TARGET
 
 _HTML = ("Content-Type", "text/html; charset=utf-8")
 _JSON = ("Content-Type", "application/json")
@@ -67,8 +67,10 @@ def test_a_route_with_a_content_coding_is_refused():
 
 
 def test_a_default_with_a_content_coding_is_refused():
-    plain = replace(given.a_not_found_answer("https", PROBED_TARGET), headers=(_GZIP,))
-    coded = ProbedDefault(plain=plain, form=given.a_not_found_answer("https", given.FORM_TARGET))
+    plain = replace(given.a_not_found_answer("https", PROBED_REQUEST_TARGET), headers=(_GZIP,))
+    coded = ProbedDefault(
+        plain=plain, form=given.a_not_found_answer("https", given.FORM_REQUEST_TARGET)
+    )
 
     with pytest.raises(ValueError, match="Content-Encoding gzip"):
         capture_record(given.A_PROVENANCE, [], (given.a_not_found_default("http"), coded))
@@ -147,16 +149,16 @@ def test_the_record_says_it_was_captured():
     StandInCapture.model_validate(record)
 
 
-def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_path_form():
-    location = ("Location", f"https://example.com{PROBED_TARGET}")
+def test_each_default_keeps_its_scheme_probed_request_target_status_headers_body_and_path_form():
+    location = ("Location", f"https://example.com{PROBED_REQUEST_TARGET}")
     redirect = ProbedDefault(
         plain=replace(
             given.a_not_found_answer(
-                "http", PROBED_TARGET, (location, ("Server", "cloudflare")), ""
+                "http", PROBED_REQUEST_TARGET, (location, ("Server", "cloudflare")), ""
             ),
             status=301,
         ),
-        form=replace(given.a_not_found_answer("http", given.FORM_TARGET), status=301),
+        form=replace(given.a_not_found_answer("http", given.FORM_REQUEST_TARGET), status=301),
     )
 
     record = capture_record(given.A_PROVENANCE, [given.a_route()], [redirect, given.AN_HTML_PROBE])
@@ -164,7 +166,7 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
     assert record["defaults"] == [
         {
             "scheme": "http",
-            "probed_request_target": PROBED_TARGET,
+            "probed_request_target": PROBED_REQUEST_TARGET,
             "status": 301,
             "headers": [list(location), ["Server", "cloudflare"]],
             "body": "",
@@ -172,7 +174,7 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
         },
         {
             "scheme": "https",
-            "probed_request_target": PROBED_TARGET,
+            "probed_request_target": PROBED_REQUEST_TARGET,
             "status": 404,
             "headers": [list(_HTML)],
             "body": given.AN_HTML_PROBE.plain.body.decode(),
@@ -189,16 +191,16 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
         (
             given.a_probed_default(
                 (_JSON,),
-                f'{{"path": "{PROBED_TARGET}"}}',
-                f'{{"path": "{PROBED_TARGET}<x>\\"\'"}}',
+                f'{{"path": "{PROBED_REQUEST_TARGET}"}}',
+                f'{{"path": "{PROBED_REQUEST_TARGET}<x>\\"\'"}}',
             ),
             "decoded",
         ),
         (
             given.a_probed_default(
                 (_HTML,),
-                f"<p>{PROBED_TARGET}</p><p>{PROBED_TARGET}</p>",
-                f"<p>{given.FORM_TARGET}</p><p>{given.FORM_TARGET}</p>",
+                f"<p>{PROBED_REQUEST_TARGET}</p><p>{PROBED_REQUEST_TARGET}</p>",
+                f"<p>{given.FORM_REQUEST_TARGET}</p><p>{given.FORM_REQUEST_TARGET}</p>",
             ),
             "raw",
         ),
@@ -206,13 +208,13 @@ def test_each_default_keeps_its_scheme_probed_target_status_headers_body_and_pat
     ],
     ids=["html_decoded", "json_decoded", "html_raw", "no_quote"],
 )
-def test_the_path_form_is_the_form_in_which_the_form_probe_quotes_its_target(
+def test_the_path_form_is_the_form_in_which_the_form_probe_quotes_its_request_target(
     probe: ProbedDefault, expected: str | None
 ):
     assert path_form(probe) == expected
 
 
-_PYTHON_ESCAPED = f"{PROBED_TARGET}&lt;x&gt;&quot;&#x27;"
+_PYTHON_ESCAPED = f"{PROBED_REQUEST_TARGET}&lt;x&gt;&quot;&#x27;"
 
 
 @pytest.mark.parametrize(
@@ -220,14 +222,14 @@ _PYTHON_ESCAPED = f"{PROBED_TARGET}&lt;x&gt;&quot;&#x27;"
     [
         (
             given.a_probed_default(
-                (("Content-Type", "text/plain"),), PROBED_TARGET, given.FORM_TARGET
+                (("Content-Type", "text/plain"),), PROBED_REQUEST_TARGET, given.FORM_REQUEST_TARGET
             ),
             "neither HTML nor JSON",
         ),
         (
             given.a_probed_default(
                 (_HTML,),
-                f"{PROBED_TARGET} {PROBED_TARGET}",
+                f"{PROBED_REQUEST_TARGET} {PROBED_REQUEST_TARGET}",
                 f"{_PYTHON_ESCAPED} {_PYTHON_ESCAPED}",
             ),
             "form probe",
@@ -235,14 +237,14 @@ _PYTHON_ESCAPED = f"{PROBED_TARGET}&lt;x&gt;&quot;&#x27;"
         (
             given.a_probed_default(
                 (_HTML,),
-                f"{PROBED_TARGET} {PROBED_TARGET}",
-                f"{given.HTML_DECODED} {given.FORM_TARGET}",
+                f"{PROBED_REQUEST_TARGET} {PROBED_REQUEST_TARGET}",
+                f"{given.HTML_DECODED} {given.FORM_REQUEST_TARGET}",
             ),
             "form probe",
         ),
         (
             given.a_probed_default(
-                (_HTML,), f"{PROBED_TARGET} {PROBED_TARGET}", given.HTML_DECODED
+                (_HTML,), f"{PROBED_REQUEST_TARGET} {PROBED_REQUEST_TARGET}", given.HTML_DECODED
             ),
             "form probe",
         ),
@@ -274,7 +276,7 @@ def test_a_default_whose_quote_the_stand_in_cannot_reproduce_is_refused(
 
 
 def test_the_default_requests_are_the_plain_then_the_form_probe_on_each_scheme():
-    requests = default_requests("example.com", PROBED_TARGET)
+    requests = default_requests("example.com", PROBED_REQUEST_TARGET)
 
     assert [(request.method, str(request.url)) for request in requests] == [
         ("GET", "http://example.com/0123456789abcdef"),
