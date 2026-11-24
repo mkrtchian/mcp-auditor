@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.support.nuisance_queue_walks as queue_walks
+import tests.unit.nuisance.support.test_run_nuisance_given as given
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
@@ -58,6 +59,18 @@ def test_walk_without_an_admission_prints_no_count_line(
     assert exit_code == 0
     assert "(addition)" in out
     assert "servers of the addition" not in out
+
+
+def test_walk_tags_an_excluded_server(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    arguments = given.a_walk_reaching_an_excluded_server(tmp_path)
+
+    exit_code = run_nuisance.main(["walk", *arguments])
+
+    [line] = [
+        each for each in capsys.readouterr().out.splitlines() if walks.AN_EXCLUDED_SERVER in each
+    ]
+    assert exit_code == 0
+    assert line.endswith("  [excluded_server]")
 
 
 def test_a_malformed_census_exits_three(tmp_path: Path):
