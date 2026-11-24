@@ -16,7 +16,11 @@ from typing import Any, Protocol
 
 from evals.cve.census.draw_order import DrawEntry
 from evals.cve.detection.baseline import grammar_fingerprint
-from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET, HoldoutConditions
+from evals.cve.holdout_conditions import (
+    HOLDOUT_TEST_BUDGET,
+    HoldoutConditions,
+    run_model_ids,
+)
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.assembly import assemble_server
@@ -85,9 +89,7 @@ class NuisanceHoldoutRunInputs:
 
     @property
     def model_ids(self) -> list[str]:
-        return list(
-            dict.fromkeys([self.settings.resolve_model(), self.settings.resolve_judge_model()])
-        )
+        return run_model_ids(self.settings)
 
 
 class RunOrchestrator(Protocol):

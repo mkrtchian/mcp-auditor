@@ -29,6 +29,7 @@ from evals.cve.holdout_conditions import (
     HOLDOUT_TEST_BUDGET,
     HoldoutConditions,
     committed_conditions,
+    run_model_ids,
 )
 from evals.cve.images import backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
@@ -138,8 +139,7 @@ def run(args: argparse.Namespace, deps: RunCommandDeps) -> int:
     refuse_unrecorded(population.audited, NUISANCE_HOLDOUT_RUN_REFUSED)
     _refuse_stale_holdout_calibration_copies(population.audited, walk_inputs.census.draw)
     settings = deps.settings()
-    model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
-    conditions.require_ready(model_ids)
+    conditions.require_ready(run_model_ids(settings))
     ready = _ReadyRun(walk_inputs, population, conditions, settings)
     result = _audit_admitted_servers(args, ready, deps)
     write_result(args.report, result)

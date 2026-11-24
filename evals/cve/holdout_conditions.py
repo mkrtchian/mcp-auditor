@@ -1,6 +1,6 @@
 """The run conditions of a holdout run: the test budget, the dataclasses and the loader for
 `evals/holdout_conditions.json`. Loading never checks readiness, so inspecting the
-file stays cheap; the run calls `require_ready` with its own models."""
+file stays cheap; the run calls `require_ready` with `run_model_ids`."""
 
 import json
 from collections.abc import Sequence
@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from evals.eval_session import Refused
 from evals.pricing import AuditPrices, Prices
+from mcp_auditor.config import Settings
 
 CONDITIONS_PATH = Path(__file__).parents[1] / "holdout_conditions.json"
 # detection-suite-rule.md, Run conditions and statistic, a constant, not a flag. The nuisance
@@ -73,6 +74,11 @@ def _incomplete_cutoff_reasons(model: str, cutoff: Cutoff) -> list[str]:
     if not (cutoff.source or "").strip():
         reasons.append(f"no cutoff source for {model}")
     return reasons
+
+
+def run_model_ids(settings: Settings) -> list[str]:
+    # Generator first: RunCutoffModel.latest names it when it shares the judge's cutoff date.
+    return list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
 
 
 def committed_conditions() -> HoldoutConditions:

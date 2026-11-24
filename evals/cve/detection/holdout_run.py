@@ -27,7 +27,11 @@ from evals.cve.detection.holdout_results import (
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
-from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET, HoldoutConditions
+from evals.cve.holdout_conditions import (
+    HOLDOUT_TEST_BUDGET,
+    HoldoutConditions,
+    run_model_ids,
+)
 from evals.cve.images import image_tag
 from evals.cve.places import Places, kept_records
 from evals.cve.run_files import RunInterrupted
@@ -81,9 +85,7 @@ class HoldoutRunInputs:
 
     @property
     def model_ids(self) -> list[str]:
-        return list(
-            dict.fromkeys([self.settings.resolve_model(), self.settings.resolve_judge_model()])
-        )
+        return run_model_ids(self.settings)
 
 
 class RunHoldoutTargets(Protocol):

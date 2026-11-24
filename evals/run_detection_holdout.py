@@ -38,7 +38,7 @@ from evals.cve.detection.holdout_run import (
     refuse_tracing,
 )
 from evals.cve.detection.targets import Target
-from evals.cve.holdout_conditions import HoldoutConditions
+from evals.cve.holdout_conditions import HoldoutConditions, run_model_ids
 from evals.cve.images import COMPOSE_FILE, ImageStore, image_tag, stale_services
 from evals.cve.launch_audit import RunOverrides
 from evals.cve.places import DETECTION_PLACES, load_places
@@ -131,8 +131,7 @@ def _run(args: argparse.Namespace, deps: HoldoutCommandDeps) -> int:
     census = committed_census(args.census)
     _refuse_unready_cards(census, deps.drawn)
     settings = load_settings()
-    model_ids = list(dict.fromkeys([settings.resolve_model(), settings.resolve_judge_model()]))
-    conditions.require_ready(model_ids)
+    conditions.require_ready(run_model_ids(settings))
     run = _audit_drawn_targets(args, _ReadyHoldoutRun(census, conditions, settings), deps)
     write_result(args.report, run)
     report = build_report(run)

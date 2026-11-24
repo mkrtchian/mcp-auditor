@@ -5,9 +5,10 @@ from typing import cast
 
 import pytest
 
-from evals.cve.holdout_conditions import Cutoff, load_conditions
+from evals.cve.holdout_conditions import Cutoff, load_conditions, run_model_ids
 from evals.eval_session import Refused
 from evals.pricing import AuditPrices, Prices
+from mcp_auditor.config import Settings
 
 
 def test_a_complete_file_loads(tmp_path: Path):
@@ -191,3 +192,17 @@ def test_require_ready_reports_the_chain_reason_first_beside_a_missing_cutoff(tm
     assert len(reasons) == 3
     assert "chain settings and tool call timeout not set" in reasons[0]
     assert "no logged cutoff for gpt-7-sol" in reasons
+
+
+def test_a_run_needs_its_generator_first_then_its_judge():
+    settings = Settings(
+        provider="openai", model="gpt-6-luna", judge_model="claude-haiku-5-5", reasoning="none"
+    )
+
+    assert run_model_ids(settings) == ["gpt-6-luna", "claude-haiku-5-5"]
+
+
+def test_a_run_whose_judge_is_its_generator_needs_that_model_once():
+    settings = Settings(provider="openai", model="gpt-6-luna", judge_model="", reasoning="none")
+
+    assert run_model_ids(settings) == ["gpt-6-luna"]

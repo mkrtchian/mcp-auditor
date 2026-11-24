@@ -41,18 +41,19 @@ def hierarchical_interval(
 ) -> Interval:
     """95 % equal-tailed credible interval on the shared mean rate theta, marginalising the
     concentration d under its Gamma prior; theta ~ Beta(1, 1)."""
-    thetas = _theta_grid(grid.theta_points)
-    ds = _d_grid(grid.d_points)
-    log_prior_d = [_gamma_logpdf(d, d_prior) + math.log(d) for d in ds]
+    lattice = _lattice(grid, d_prior)
     counts = Counter(successes_per_member)
 
     def marginal(theta: float) -> float:
         return _logsumexp(
-            [_side_loglik(counts, runs, theta, d) + log_prior_d[j] for j, d in enumerate(ds)]
+            [
+                _side_loglik(counts, runs, theta, d) + lattice.log_prior_d[j]
+                for j, d in enumerate(lattice.ds)
+            ]
         )
 
-    masses = _normalize([marginal(theta) for theta in thetas])
-    low, high = _equal_tailed(thetas, masses)
+    masses = _normalize([marginal(theta) for theta in lattice.thetas])
+    low, high = _equal_tailed(lattice.thetas, masses)
     return Interval(max(0.0, low), min(1.0, high))
 
 
@@ -65,31 +66,39 @@ def contrast_hierarchical(
 ) -> Interval:
     """95 % equal-tailed credible interval on theta_a - theta_b, the two sides sharing one
     concentration d."""
-    thetas = _theta_grid(grid.theta_points)
-    ds = _d_grid(grid.d_points)
-    log_prior_d = [_gamma_logpdf(d, d_prior) + math.log(d) for d in ds]
+    lattice = _lattice(grid, d_prior)
     counts_a = Counter(side_a)
     counts_b = Counter(side_b)
-    diff_mass = _difference_mass(thetas, ds, log_prior_d, counts_a, counts_b, runs)
-    low, high = _equal_tailed(_difference_support(thetas), diff_mass)
+    diff_mass = _difference_mass(lattice, counts_a, counts_b, runs)
+    low, high = _equal_tailed(_difference_support(lattice.thetas), diff_mass)
     return Interval(max(-1.0, low), min(1.0, high))
 
 
+@dataclass(frozen=True)
+class _Lattice:
+    thetas: list[float]
+    ds: list[float]
+    log_prior_d: list[float]
+
+
+def _lattice(grid: Grid, d_prior: GammaPrior) -> _Lattice:
+    thetas = _theta_grid(grid.theta_points)
+    ds = _d_grid(grid.d_points)
+    # The d grid is log-spaced, so the prior carries the log d Jacobian.
+    log_prior_d = [_gamma_logpdf(d, d_prior) + math.log(d) for d in ds]
+    return _Lattice(thetas, ds, log_prior_d)
+
+
 def _difference_mass(
-    thetas: list[float],
-    ds: list[float],
-    log_prior_d: list[float],
-    counts_a: Counter[int],
-    counts_b: Counter[int],
-    runs: int,
+    lattice: _Lattice, counts_a: Counter[int], counts_b: Counter[int], runs: int
 ) -> list[float]:
-    offset = len(thetas) - 1
-    mass = [0.0] * (2 * len(thetas) - 1)
-    log_evidence, cond_a, cond_b = _per_d_terms(thetas, ds, log_prior_d, counts_a, counts_b, runs)
+    offset = len(lattice.thetas) - 1
+    mass = [0.0] * (2 * len(lattice.thetas) - 1)
+    log_evidence, cond_a, cond_b = _per_d_terms(lattice, counts_a, counts_b, runs)
     ceiling = max(log_evidence)
     # Every product dropped by the weight or support cut is below 1e-18 of the largest one,
     # far under what the 95 % quantiles can see.
-    for j in range(len(ds)):
+    for j in range(len(lattice.ds)):
         weight = math.exp(log_evidence[j] - ceiling)
         if weight < _NEGLIGIBLE:
             continue
@@ -116,12 +125,7 @@ def _support(row: list[float]) -> tuple[int, int]:
 
 
 def _per_d_terms(
-    thetas: list[float],
-    ds: list[float],
-    log_prior_d: list[float],
-    counts_a: Counter[int],
-    counts_b: Counter[int],
-    runs: int,
+    lattice: _Lattice, counts_a: Counter[int], counts_b: Counter[int], runs: int
 ) -> tuple[list[float], list[list[float]], list[list[float]]]:
     """Per-d log evidence (prior times each side's marginal over theta) and the two
     theta-conditionals normalised to sum to one; the side marginals must keep their own scale so
@@ -129,11 +133,11 @@ def _per_d_terms(
     log_evidence: list[float] = []
     cond_a: list[list[float]] = []
     cond_b: list[list[float]] = []
-    for j, d in enumerate(ds):
-        logs_a = [_side_loglik(counts_a, runs, theta, d) for theta in thetas]
-        logs_b = [_side_loglik(counts_b, runs, theta, d) for theta in thetas]
+    for j, d in enumerate(lattice.ds):
+        logs_a = [_side_loglik(counts_a, runs, theta, d) for theta in lattice.thetas]
+        logs_b = [_side_loglik(counts_b, runs, theta, d) for theta in lattice.thetas]
         lse_a, lse_b = _logsumexp(logs_a), _logsumexp(logs_b)
-        log_evidence.append(log_prior_d[j] + lse_a + lse_b)
+        log_evidence.append(lattice.log_prior_d[j] + lse_a + lse_b)
         cond_a.append([math.exp(value - lse_a) for value in logs_a])
         cond_b.append([math.exp(value - lse_b) for value in logs_b])
     return log_evidence, cond_a, cond_b
