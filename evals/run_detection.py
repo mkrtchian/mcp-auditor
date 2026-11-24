@@ -58,7 +58,7 @@ from evals.cve.places import DETECTION_PLACES, Places, load_places
 from evals.cve.run_files import write_report
 from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
-from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
+from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused, TreeState
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
 from evals.model_provider_errors import ProviderFatal
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
@@ -219,6 +219,16 @@ def _refused_flags(args: argparse.Namespace) -> Refused | None:
     return Refused(RECORDING_REFUSED if args.record_baseline else "Refused.", [reason])
 
 
+@dataclass(frozen=True)
+class _GradedRun:
+    tree: TreeState
+    conditions: DetectionRunConditions
+    measurement: MeasurementSettings | None
+    pricing: CostPricing | None
+    throttles: SessionThrottles
+    session: DetectionSessionResult
+
+
 async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _CommandRun) -> int:
     tree = run.deps.read_tree()
     conditions = run_conditions(load_settings(), args.runs, args.budget)
@@ -229,22 +239,33 @@ async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _Com
     with Progress(console=console) as bar:
         tracking = _Tracking(throttles, AuditProgress(bar))
         session = await run.deps.session(options, _harness(args, run, tracking))
+    graded = _GradedRun(tree, conditions, measurement, pricing, throttles, session)
+    return _published(args, _report(args, flaws, graded), session)
+
+
+def _report(args: argparse.Namespace, flaws: _FlawSelection, graded: _GradedRun) -> DetectionReport:
+    session, pricing, throttles = graded.session, graded.pricing, graded.throttles
     results = [_result(target, session, args.budget) for target in flaws.graded]
     results.extend(out_of_scope_results(flaws.tracked))
-    report = DetectionReport(
-        conditions=conditions,
+    return DetectionReport(
+        conditions=graded.conditions,
         concurrency=args.concurrency,
         throttled_requests=throttles.requests,
         provider_usage=throttles.usage,
-        commit=tree.commit,
-        dirty=tree.dirty,
+        commit=graded.tree.commit,
+        dirty=graded.tree.dirty,
         results=results,
         gate=session.gate,
         recording_refused=session.recording_refused,
-        measurement=measurement,
+        measurement=graded.measurement,
         costs=[] if pricing is None else pricing.costs(throttles.by_target),
         prices_as_of=None if pricing is None else pricing.as_of,
     )
+
+
+def _published(
+    args: argparse.Namespace, report: DetectionReport, session: DetectionSessionResult
+) -> int:
     report_path = Path(args.report)
     write_report(report_path, report, render_markdown(report))
     export_detection_judged_cases(session.audits, report_path)
