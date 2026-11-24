@@ -24,15 +24,13 @@ from evals.cve.detection.baseline import fixture_fingerprint
 from evals.cve.detection.draw_record import DrawRecord
 from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.environments import TOOL_CALL_TIMEOUT
-from evals.cve.failure_text import TYPES_ONLY
 from evals.cve.holdout_conditions import (
-    HOLDOUT_TEST_BUDGET,
     HoldoutConditions,
     committed_conditions,
     run_model_ids,
 )
 from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
-from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_holdout_auditor
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.holdout_calibration_copies import (
@@ -81,7 +79,7 @@ DEFAULT_REPORT_PATH = "output/nuisance_report.json"
 
 def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     throttles = SessionThrottles()
-    run_auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
+    run_auditor = build_holdout_auditor()
     auditor = SessionAuditor(run_auditor, overrides, throttles)
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 

@@ -8,12 +8,14 @@ import json
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from evals.cve.detection.holdout_results import DetectionHoldoutRunResult
-from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.eval_session import Refused
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 
 def refuse_existing_report(report: Path, title: str) -> None:
@@ -33,9 +35,7 @@ def refuse_existing_report(report: Path, title: str) -> None:
 class RunInterrupted(Exception):
     """A run stopped by an exception out of one of its audits, with what had finished."""
 
-    def __init__(
-        self, partial: DetectionHoldoutRunResult | NuisanceHoldoutRunResult, cause: BaseException
-    ) -> None:
+    def __init__(self, partial: "DataclassInstance", cause: BaseException) -> None:
         super().__init__(f"the run stopped on {type(cause).__name__}")
         self.partial = partial
         self.cause = cause
@@ -51,7 +51,7 @@ def partial_result_kept(report: Path) -> Generator[None]:
         raise interrupted.cause  # noqa: B904
 
 
-def write_result(report: Path, run: DetectionHoldoutRunResult | NuisanceHoldoutRunResult) -> None:
+def write_result(report: Path, run: "DataclassInstance") -> None:
     path = result_path(report)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dataclasses.asdict(run), default=str, indent=2))

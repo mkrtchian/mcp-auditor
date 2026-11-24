@@ -3,7 +3,6 @@ the committed run conditions, the run orchestrator and its live dependencies, gi
 files. Building it does no I/O. A module apart from `command_deps`, so that no module
 run_detection imports reaches the holdout targets."""
 
-import dataclasses
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -26,13 +25,9 @@ from evals.cve.detection.layout_observation import observe_layout
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.detection.targets import Target
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.holdout_conditions import (
-    HOLDOUT_TEST_BUDGET,
-    HoldoutConditions,
-    committed_conditions,
-)
+from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
-from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
+from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_holdout_auditor
 from evals.cve.places import Places
 from evals.cve.run_files import ReportWriter, write_report
 from evals.cve.run_images import DOCKER_SWEEP, RunDocker
@@ -47,7 +42,7 @@ class HoldoutDepsFactory(Protocol):
 
 
 def default_deps(places: Places, overrides: RunOverrides, concurrency: int) -> HoldoutDeps:
-    auditor = dataclasses.replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
+    auditor = build_holdout_auditor()
     throttles = SessionThrottles()
     session = SessionAuditor(auditor, overrides, throttles)
 

@@ -23,7 +23,8 @@ from rich.markup import escape
 
 from evals.cve.environments import TOOL_CALL_TIMEOUT, Launch, connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
-from evals.cve.failure_text import FULL_DETAIL, ReportDetail
+from evals.cve.failure_text import FULL_DETAIL, TYPES_ONLY, ReportDetail
+from evals.cve.holdout_conditions import HOLDOUT_TEST_BUDGET
 from evals.cve.planting_base import LABEL
 from evals.cve.server_health import ServerHealth, health_of
 from evals.eval_display import console
@@ -37,6 +38,7 @@ from mcp_auditor.domain.container_name import Undecidable, declared_container_na
 from mcp_auditor.domain.models import AttackContext, AuditReport
 from mcp_auditor.domain.ports import LLMPort, MCPClientPort
 from mcp_auditor.graph.builder import build_graph
+from mcp_auditor.graph.state import AuditInput
 
 if TYPE_CHECKING:
     from evals.cve.holdout_conditions import HoldoutConditions
@@ -61,6 +63,10 @@ class Auditor:
     report_detail: ReportDetail = FULL_DETAIL
     connect: Connect = connect
     build_graph: Callable[..., Any] = build_graph
+
+
+def build_holdout_auditor() -> Auditor:
+    return replace(build_auditor(HOLDOUT_TEST_BUDGET), report_detail=TYPES_ONLY)
 
 
 def build_auditor(test_budget: int) -> Auditor:
@@ -132,21 +138,21 @@ async def audit_launch(launch: Launch, auditor: Auditor, shape: AuditShape) -> L
     container = named(launch)
     with audit_failures_unwrapped(), open(os.devnull, "w") as devnull:
         async with auditor.connect(container, devnull, tool_call_timeout=timeout) as client:
-            recorder = ExchangeLog(client)
+            exchange_log = ExchangeLog(client)
             graph = auditor.build_graph(
                 auditor.llm,
-                AuditedServer(recorder),
+                AuditedServer(exchange_log),
                 judge_llm=auditor.judge_llm,
                 tools_filter=shape.tools_filter,
             )
             with one_audit():
                 result = await classified(graph.ainvoke(_graph_input(launch, auditor, shape)))
             report: AuditReport = result["audit_report"]
-            health = health_of(client, recorder.exchanges, report)
+            health = health_of(client, exchange_log.exchanges, report)
     # Read on the relaunches, not on a gap, so a relaunch that failed after the last call counts.
     if any(not relaunch.succeeded for relaunch in report.relaunches):
         raise ServerTakenAsDown("the auditor failed to relaunch the server")
-    return LaunchAudit(report, recorder.exchanges, health, recorder.relaunched_after)
+    return LaunchAudit(report, exchange_log.exchanges, health, exchange_log.relaunched_after)
 
 
 def named(launch: Launch) -> Launch:
@@ -162,14 +168,14 @@ def named(launch: Launch) -> Launch:
             return replace(launch, args=["run", "--name", name, *launch.args[1:]])
 
 
-def _graph_input(launch: Launch, auditor: Auditor, shape: AuditShape) -> dict[str, object]:
-    return {
-        "server_command": f"{launch.command} {' '.join(launch.args)}",
-        "test_budget": auditor.test_budget,
-        "attack_context": AttackContext(),
-        "chain_budget": _either(shape.chain_budget, launch.chain_budget),
-        "max_chain_steps": _either(shape.max_chain_steps, launch.max_chain_steps),
-    }
+def _graph_input(launch: Launch, auditor: Auditor, shape: AuditShape) -> AuditInput:
+    return AuditInput(
+        server_command=f"{launch.command} {' '.join(launch.args)}",
+        test_budget=auditor.test_budget,
+        attack_context=AttackContext(),
+        chain_budget=_either(shape.chain_budget, launch.chain_budget),
+        max_chain_steps=_either(shape.max_chain_steps, launch.max_chain_steps),
+    )
 
 
 def _either(forced: int | None, own: int) -> int:

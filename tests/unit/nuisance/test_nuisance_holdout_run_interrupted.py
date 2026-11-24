@@ -63,5 +63,6 @@ async def test_the_partial_result_names_the_servers_run_after_their_second_pass(
         await holdout_runs.run(servers, deps)
 
     partial = interrupted.value.partial
+    assert isinstance(partial, NuisanceHoldoutRunResult)
     assert partial.partial
     assert partial.second_pass == {"npm:done": "boom"}
