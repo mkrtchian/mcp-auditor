@@ -87,7 +87,7 @@ def test_the_fix_check_refuses_with_exit_three_on_a_daemon_that_cannot_close_a_n
 
     code = run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()), deps)
 
-    assert code == run_nuisance.REFUSED_EXIT
+    assert code == 3
     assert DOCKER_REQUIREMENT in capsys.readouterr().out
 
 

@@ -31,7 +31,7 @@ def test_run_refuses_when_tracing_is_on(monkeypatch: pytest.MonkeyPatch):
 
     exit_code = run_detection_holdout.main(["run"], command_deps.a_command_reaching_nothing())
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
 
 
 def test_run_refuses_an_acceptance_target_for_its_tools_filter(
@@ -46,7 +46,7 @@ def test_run_refuses_an_acceptance_target_for_its_tools_filter(
 
     exit_code = run_detection_holdout.main(["run", "--census", str(census)], deps)
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
     assert (
         f"the rule runs with no tools filter, but {command_deps.DRAWN_FLAW} carries one"
         in capsys.readouterr().out
@@ -65,7 +65,7 @@ def test_run_refuses_an_existing_report_file_before_any_dep(
         ["run", "--report", str(report)], command_deps.a_command_reaching_nothing()
     )
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
     assert "--report" in capsys.readouterr().out
 
 
@@ -81,7 +81,7 @@ def test_run_refuses_a_drawn_target_whose_card_is_not_ready(
         command_deps.a_drawn_run_reaching_nothing(),
     )
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
     out = capsys.readouterr().out
     assert f"{command_deps.DRAWN_FLAW}: no draw record" in out
     assert "not ready under detection suite rule v11" in out

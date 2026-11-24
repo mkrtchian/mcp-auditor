@@ -60,7 +60,7 @@ from evals.cve.run_images import sweep_containers, target_services
 from evals.eval_display import console
 from evals.eval_session import RECORD_WITHOUT_BASELINE, RECORDING_REFUSED, Refused
 from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT
-from evals.model_provider_errors import ProviderFatal, describe_provider_error
+from evals.model_provider_errors import ProviderFatal
 from evals.session_usage import SessionThrottles, quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import load_settings
@@ -75,17 +75,10 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
     deps = DetectionCommandDeps() if deps is None else deps
     quiet_throttle_waits()
     args = _parse_args(argv)
-    flaws = _FlawSelection(
-        graded=_filter_by_flaw(ACCEPTANCE_TARGETS, args.flaw),
-        tracked=_filter_by_flaw(OUT_OF_SCOPE_FLAWS, args.flaw),
-    )
-    _reject_unknown_flaws(args.flaw, {t.flaw_id for t in (*flaws.graded, *flaws.tracked)})
-    refusal = _flag_refusal(args)
-    if refusal:
-        display.print_titled_reasons(
-            RECORDING_REFUSED if args.record_baseline else "Refused.", [refusal]
-        )
-        return NOT_COMPARABLE_EXIT
+    flaws = _selected_flaws(args.flaw)
+    refused = _refused_flags(args)
+    if refused is not None:
+        return display.print_exit_panel(refused)
 
     # Says nothing of detection nor of the fixtures, so a crash in every mode.
     if not deps.preflight():
@@ -94,15 +87,8 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
     try:
         with silenced_stdio_logging():
             return asyncio.run(_run(args, flaws, deps))
-    except Refused as refused:
-        display.print_titled_reasons(refused.title, refused.reasons)
-        return NOT_COMPARABLE_EXIT
-    except ProviderFatal as fatal:
-        display.print_titled_reasons(
-            "Crashed: a fatal model provider error stopped the run.",
-            [describe_provider_error(fatal.cause)],
-        )
-        return CRASHED_EXIT
+    except (Refused, ProviderFatal) as ending:
+        return display.print_exit_panel(ending)
     except Exception:
         traceback.print_exc()
         return CRASHED_EXIT
@@ -112,6 +98,26 @@ def main(argv: Sequence[str] | None = None, deps: DetectionCommandDeps | None = 
 class _FlawSelection:
     graded: list[Target]
     tracked: list[OutOfScopeFlaw]
+
+
+def _selected_flaws(ids: list[str] | None) -> _FlawSelection:
+    flaws = _FlawSelection(
+        graded=_filter_by_flaw(ACCEPTANCE_TARGETS, ids),
+        tracked=_filter_by_flaw(OUT_OF_SCOPE_FLAWS, ids),
+    )
+    if ids:
+        unknown = set(ids) - {flaw.flaw_id for flaw in (*flaws.graded, *flaws.tracked)}
+        if unknown:
+            console.print(f"[red]Unknown flaw ID(s):[/red] {', '.join(sorted(unknown))}")
+            sys.exit(2)
+    return flaws
+
+
+def _filter_by_flaw[T: (Target, OutOfScopeFlaw)](items: list[T], ids: list[str] | None) -> list[T]:
+    if not ids:
+        return items
+    wanted = set(ids)
+    return [item for item in items if item.flaw_id in wanted]
 
 
 @dataclass(frozen=True)
@@ -199,14 +205,18 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _flag_refusal(args: argparse.Namespace) -> str | None:
+def _refused_flags(args: argparse.Namespace) -> Refused | None:
     if args.survey and (args.calibration_check or args.record_baseline or args.no_baseline):
-        return "--survey runs no audit: it neither records nor gates"
-    if args.calibration_check and (args.record_baseline or args.no_baseline):
-        return "--calibration-check runs no audit: it neither records nor gates"
-    if args.record_baseline and args.no_baseline:
-        return RECORD_WITHOUT_BASELINE
-    return measurement_refusal(args)
+        reason = "--survey runs no audit: it neither records nor gates"
+    elif args.calibration_check and (args.record_baseline or args.no_baseline):
+        reason = "--calibration-check runs no audit: it neither records nor gates"
+    elif args.record_baseline and args.no_baseline:
+        reason = RECORD_WITHOUT_BASELINE
+    else:
+        reason = measurement_refusal(args)
+    if reason is None:
+        return None
+    return Refused(RECORDING_REFUSED if args.record_baseline else "Refused.", [reason])
 
 
 async def _run_graded(args: argparse.Namespace, flaws: _FlawSelection, run: _CommandRun) -> int:
@@ -299,22 +309,6 @@ def _recorded_flags(args: argparse.Namespace) -> list[str]:
     if args.budget != DETECTION_TEST_BUDGET:
         flags.append(f"--budget {args.budget}")
     return flags
-
-
-def _filter_by_flaw[T: (Target, OutOfScopeFlaw)](items: list[T], ids: list[str] | None) -> list[T]:
-    if not ids:
-        return items
-    wanted = set(ids)
-    return [item for item in items if item.flaw_id in wanted]
-
-
-def _reject_unknown_flaws(ids: list[str] | None, known: set[str]) -> None:
-    if not ids:
-        return
-    unknown = set(ids) - known
-    if unknown:
-        console.print(f"[red]Unknown flaw ID(s):[/red] {', '.join(sorted(unknown))}")
-        sys.exit(2)
 
 
 if __name__ == "__main__":

@@ -49,14 +49,13 @@ from evals.cve.run_images import (
     target_services,
 )
 from evals.eval_session import Refused
-from evals.model_provider_errors import ProviderFatal, describe_provider_error
+from evals.model_provider_errors import ProviderFatal
 from evals.repository import REPO_ROOT
 from evals.session_usage import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 from mcp_auditor.config import Settings, load_settings
 
 DEFAULT_REPORT_PATH = "output/detection_holdout_report.json"
-REFUSED_EXIT = 3
 CRASHED_EXIT = 4
 
 
@@ -66,15 +65,8 @@ def main(argv: Sequence[str] | None = None, deps: HoldoutCommandDeps | None = No
     try:
         with silenced_stdio_logging():
             return args.command(args, deps or HoldoutCommandDeps())
-    except Refused as refusal:
-        display.print_titled_reasons(refusal.title, refusal.reasons)
-        return REFUSED_EXIT
-    except ProviderFatal as fatal:
-        display.print_titled_reasons(
-            "Crashed: a fatal model provider error stopped the run.",
-            [describe_provider_error(fatal.cause)],
-        )
-        return CRASHED_EXIT
+    except (Refused, ProviderFatal) as ending:
+        return display.print_exit_panel(ending)
 
 
 def _parser() -> argparse.ArgumentParser:

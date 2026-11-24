@@ -96,7 +96,7 @@ def test_a_missing_walk_record_is_refused_as_not_committed(
         ]
     )
 
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert "the nuisance walk record is not committed" in capsys.readouterr().out
 
 
@@ -137,7 +137,7 @@ def test_run_refuses_tracing_before_reading_the_admission(
     )
 
     out = capsys.readouterr().out
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert "nuisance holdout run refused" in out
     assert "malformed" not in out
 
@@ -154,6 +154,6 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     )
 
     out = capsys.readouterr().out
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert "the census, the walk record or the admission is malformed" in out
     assert f"grammar fingerprint {stale.grammar_fingerprint} is not the current" in out

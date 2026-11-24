@@ -70,7 +70,7 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_daemon_that_cannot_c
 
     exit_code = run_detection_holdout.main(["calibration-check"], deps)
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
     assert "Docker Engine 28.0 or later is required" in capsys.readouterr().out
 
 
@@ -107,7 +107,7 @@ def test_the_calibration_check_refuses_with_exit_three_on_a_stale_or_absent_imag
 
     exit_code = run_detection_holdout.main(["calibration-check"], deps)
 
-    assert exit_code == run_detection_holdout.REFUSED_EXIT
+    assert exit_code == 3
     out = capsys.readouterr().out
     assert f"image of {stale} is stale or absent" in out
     assert f"image of {absent} is stale or absent" in out

@@ -9,7 +9,9 @@ from rich.table import Table
 from rich.text import Text
 
 from evals.baseline import BaselineStatus
-from evals.gate_outcome import GateOutcome
+from evals.eval_session import Refused
+from evals.gate_outcome import CRASHED_EXIT, NOT_COMPARABLE_EXIT, GateOutcome
+from evals.model_provider_errors import ProviderFatal, describe_provider_error
 
 console = Console()
 
@@ -32,6 +34,17 @@ _OUTCOME_STYLES = {
 
 def print_outcome(outcome: GateOutcome, reasons: list[str]) -> None:
     console.print(Panel("\n".join([_OUTCOME_STYLES[outcome], *_bullets(reasons)])))
+
+
+def print_exit_panel(ending: Refused | ProviderFatal) -> int:
+    if isinstance(ending, Refused):
+        print_titled_reasons(ending.title, ending.reasons)
+        return NOT_COMPARABLE_EXIT
+    print_titled_reasons(
+        "Crashed: a fatal model provider error stopped the run.",
+        [describe_provider_error(ending.cause)],
+    )
+    return CRASHED_EXIT
 
 
 def print_titled_reasons(title: str, reasons: list[str]) -> None:

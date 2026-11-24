@@ -86,7 +86,7 @@ def test_a_server_container_running_at_start_refuses_with_nothing_rebuilt(
 
     exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert "leftover_server" in capsys.readouterr().out
     assert host.rebuilt == []
     assert host.removed == []
@@ -138,7 +138,7 @@ def test_a_failing_rebuild_exits_four_and_prints_the_error(
 
     exit_code = run_nuisance.main(["vet", *arguments], harness.deps)
 
-    assert exit_code == run_nuisance.CRASHED_EXIT
+    assert exit_code == 4
     assert "docker compose build failed for filesystem-nuisance" in capsys.readouterr().err
 
 

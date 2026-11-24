@@ -18,7 +18,6 @@ from evals.repository import REPO_ROOT
 WALK_RECORD_PATH = REPO_ROOT / "evals" / "nuisance_walk_record.json"
 NUISANCE_CONCURRENCY = 6
 UNKNOWN_SERVER_EXIT = 2
-REFUSED_EXIT = 3
 CRASHED_EXIT = 4
 
 

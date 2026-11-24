@@ -96,7 +96,7 @@ def test_gate_refuses_a_server_with_an_unrecorded_field_before_any_audit(
     exit_code = run_nuisance.main(["gate", *arguments], recording.deps)
 
     out = capsys.readouterr().out
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert f"{given.GATE_SERVER}: real_software (1 tool)" in out
     assert not (tmp_path / "nuisance_gate_report.json").exists()
 
@@ -116,7 +116,7 @@ def test_gate_refuses_only_the_selected_servers_with_an_unrecorded_field(
     )
 
     assert selected_recorded == 0
-    assert selected_unrecorded == run_nuisance.REFUSED_EXIT
+    assert selected_unrecorded == 3
     assert f"{given.OTHER_GATE_SERVER}: real_software" in output.getvalue()
 
 
@@ -205,7 +205,7 @@ def test_a_fatal_provider_error_prints_the_crash_panel_without_its_message(
     exit_code = run_nuisance.main(["gate", *arguments], deps)
 
     captured = capsys.readouterr()
-    assert exit_code == run_nuisance.CRASHED_EXIT
+    assert exit_code == 4
     assert given.REVOKED_KEY not in captured.err
     assert given.REVOKED_KEY not in captured.out
     assert "PermissionError" in captured.out

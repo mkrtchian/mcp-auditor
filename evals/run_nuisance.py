@@ -17,8 +17,6 @@ from evals.cve.nuisance.admission.re_admission_dossier import (
 from evals.cve.nuisance.admission.walk import NuisanceServer, nuisance_population
 from evals.cve.nuisance.admission.walk_record import followed_draw
 from evals.cve.nuisance.commands import (
-    CRASHED_EXIT,
-    REFUSED_EXIT,
     add_committed_input_arguments,
     committed_admission,
     committed_walk_inputs,
@@ -30,7 +28,7 @@ from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps, add_run_arguments
 from evals.cve.nuisance.vet_command import VetCommandDeps, add_vet_arguments
 from evals.eval_session import Refused
-from evals.model_provider_errors import ProviderFatal, describe_provider_error
+from evals.model_provider_errors import ProviderFatal
 from evals.session_usage import quiet_throttle_waits
 from mcp_auditor.adapters.log_redaction import silenced_stdio_logging
 
@@ -49,15 +47,8 @@ def main(argv: Sequence[str] | None = None, deps: NuisanceCommandDeps | None = N
     try:
         with silenced_stdio_logging():
             return args.command(args)
-    except Refused as refusal:
-        display.print_titled_reasons(refusal.title, refusal.reasons)
-        return REFUSED_EXIT
-    except ProviderFatal as fatal:
-        display.print_titled_reasons(
-            "Crashed: a fatal model provider error stopped the run.",
-            [describe_provider_error(fatal.cause)],
-        )
-        return CRASHED_EXIT
+    except (Refused, ProviderFatal) as ending:
+        return display.print_exit_panel(ending)
 
 
 def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:

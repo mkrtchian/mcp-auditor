@@ -34,7 +34,7 @@ def test_run_refuses_an_existing_report_file_before_any_dep(
 
     exit_code = run_nuisance.main(["run", "--report", str(report)], deps)
 
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert "--report" in capsys.readouterr().out
 
 
@@ -48,7 +48,7 @@ def test_run_refuses_a_server_with_an_unrecorded_field_before_its_settings(
     exit_code = run_nuisance.main(command, deps)
 
     out = capsys.readouterr().out
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert f"{admissions.SERVER_PACKAGE}: real_software (2 tools)" in out
     assert not (tmp_path / "nuisance_report.json").with_suffix(".result.json").exists()
 
@@ -63,7 +63,7 @@ def test_run_refuses_a_holdout_calibration_copy_whose_flaw_left_the_layer_before
     exit_code = run_nuisance.main(given.a_run_command(tmp_path, admission), deps)
 
     words = " ".join(capsys.readouterr().out.replace("│", " ").split())
-    assert exit_code == run_nuisance.REFUSED_EXIT
+    assert exit_code == 3
     assert (
         "taken from a fixture that has since changed or left the detection holdout layer" in words
     )
@@ -117,7 +117,7 @@ def test_a_fatal_provider_error_exits_four_keeping_the_partial_result(
     exit_code = run_nuisance.main(given.a_run_command(tmp_path), deps)
 
     out = capsys.readouterr().out
-    assert exit_code == run_nuisance.CRASHED_EXIT
+    assert exit_code == 4
     assert "PermissionError" in out
     assert "sk-secret" not in out
     assert json.loads(report.with_suffix(".result.json").read_text())["partial"]
