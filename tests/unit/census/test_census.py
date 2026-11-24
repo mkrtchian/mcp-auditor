@@ -85,7 +85,7 @@ def test_a_census_with_one_defect_is_refused(
 ):
     path = censuses.written(tmp_path, defect(censuses.a_census()))
 
-    with pytest.raises(ValueError, match=re.escape(refusal)):
+    with pytest.raises(ValueError, match=re.escape(f"invalid census {path}: {refusal}") + "$"):
         load_census(path)
 
 

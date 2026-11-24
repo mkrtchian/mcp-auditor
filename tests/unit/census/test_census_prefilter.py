@@ -1,4 +1,4 @@
-from evals.cve.census.prefilter import INITIAL_TERMS, PrefilterTerm, matches, prefilter
+from evals.cve.census.prefilter import INITIAL_TERMS, PrefilterTerm, matches
 from evals.cve.census.sources import SourceName
 from tests.unit.census.support import advisory_sources
 
@@ -57,13 +57,3 @@ def test_a_package_term_does_not_match_the_text():
     record = advisory_sources.a_record(summary="A flaw in @scope/name", packages=[])
 
     assert not matches(record, [a_package_term("@scope/name")])
-
-
-def test_the_prefilter_keeps_the_matching_records_in_order():
-    first = advisory_sources.a_record(id="GHSA-1", summary="An MCP server flaw")
-    unrelated = advisory_sources.a_record(id="GHSA-2", **UNRELATED, packages=[])
-    second = advisory_sources.a_record(id="GHSA-3", details="model context protocol")
-
-    hits = prefilter([first, unrelated, second], INITIAL_TERMS)
-
-    assert [hit.id for hit in hits] == ["GHSA-1", "GHSA-3"]

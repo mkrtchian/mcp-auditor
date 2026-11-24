@@ -6,6 +6,7 @@ from tests.unit.census.support.test_census_draw_order_given import (
     AN_ACCEPTANCE_TARGET_FLAW,
     AN_EXCLUDED_SERVER,
 )
+from tests.unit.support import censuses
 
 
 def test_draw_digest_is_the_known_sha256_of_a_fixed_identifier():
@@ -39,8 +40,8 @@ def test_draw_order_keeps_only_the_draw_order_candidates():
     flaws = [
         given.a_flaw("CVE-2026-0001"),
         given.a_flaw("CVE-2026-0002"),  # a server that does not run in a container is still drawn
-        given.a_flaw("CVE-2026-0003", withdrawn=True),
-        given.a_flaw("CVE-2026-0004", no_census_identifier=True),
+        given.a_withdrawn_flaw("CVE-2026-0003"),
+        given.a_flaw_without_a_census_identifier("PYSEC-2026-4"),
         given.a_flaw("CVE-2026-0005"),
         given.a_flaw(AN_ACCEPTANCE_TARGET_FLAW),
         given.a_flaw("CVE-2026-0007"),
@@ -50,10 +51,10 @@ def test_draw_order_keeps_only_the_draw_order_candidates():
             "CVE-2026-0001": {},
             "CVE-2026-0002": {"runs_in_container": False},
             "CVE-2026-0003": {},
-            "CVE-2026-0004": {},
+            "PYSEC-2026-4": {},
             "CVE-2026-0005": {"server_package": AN_EXCLUDED_SERVER},
             AN_ACCEPTANCE_TARGET_FLAW: {},
-            "CVE-2026-0007": {"pinnable": False, "first_failed_criterion": "pinnable"},
+            "CVE-2026-0007": censuses.NOT_PINNABLE,
         }
     )
     census = given.a_census(flaws, classifications)

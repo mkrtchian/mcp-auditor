@@ -3,13 +3,10 @@ from datetime import date
 from evals.cve.census.classification import Criterion, SoftwareKind, Transport
 from evals.cve.census.figures import Share, compute_figures
 from tests.unit.census.support import classifier_pairs
+from tests.unit.support.censuses import OUTSIDE_THE_GRAMMAR
 
 HTTP_ONLY = {"transport": Transport.HTTP, "first_failed_criterion": Criterion.STDIO_TOOLS_CALL}
 A_CLIENT = {"software_kind": SoftwareKind.CLIENT, "first_failed_criterion": Criterion.MCP_SERVER}
-OUTSIDE_THE_GRAMMAR = {
-    "effect_class": "denial_of_service",
-    "first_failed_criterion": Criterion.GRAMMAR_CLASS,
-}
 
 
 def test_agreement_is_the_share_of_flaws_on_which_both_classifiers_give_the_same_value():

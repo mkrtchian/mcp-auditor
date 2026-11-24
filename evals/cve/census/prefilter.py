@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import Literal
 
 from pydantic import BaseModel
@@ -17,12 +17,6 @@ INITIAL_TERMS = (
     PrefilterTerm(text="mcp", kind="string", added_for=None, reason=None),
     PrefilterTerm(text="model context protocol", kind="string", added_for=None, reason=None),
 )
-
-
-def prefilter(
-    records: Iterable[AdvisoryRecord], terms: Sequence[PrefilterTerm]
-) -> list[AdvisoryRecord]:
-    return [record for record in records if matches(record, terms)]
 
 
 def matches(record: AdvisoryRecord, terms: Sequence[PrefilterTerm]) -> bool:

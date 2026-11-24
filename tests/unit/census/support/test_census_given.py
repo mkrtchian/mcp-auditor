@@ -38,8 +38,8 @@ def with_a_non_canonical_identifier(census: Census) -> Census:
 
 def with_a_wrong_disclosure_date(census: Census) -> Census:
     flaw = _flaw(census, GHSA_ONLY_FLAW)
-    return _with_flaw(
-        census, GHSA_ONLY_FLAW, disclosure_date=flaw.disclosure_date + timedelta(days=1)
+    return recomputed(
+        _with_flaw(census, GHSA_ONLY_FLAW, disclosure_date=flaw.disclosure_date + timedelta(days=1))
     )
 
 
@@ -121,7 +121,7 @@ def with_a_judgment_without_a_reason(census: Census) -> Census:
 
 def with_three_readers(census: Census) -> Census:
     third = {"reader_3": census.groupings[READERS[0]]}
-    return census.model_copy(update={"groupings": census.groupings | third})
+    return recomputed(census.model_copy(update={"groupings": census.groupings | third}))
 
 
 def with_a_reader_without_an_agent_record(census: Census) -> Census:
