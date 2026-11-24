@@ -13,19 +13,27 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import PublicNames
 
+
+@dataclass(frozen=True)
+class StandInAnswer:
+    body: str
+    headers: tuple[tuple[str, str], ...] = ()
+    status: int = 200
+
+
 STAND_IN_HOST = "public.fict"
 STAND_IN_ADDRESS = "93.184.215.14"  # a global unicast address, as the capture loader requires
-PROBED_TARGET = "/0123456789abcdef"
+PROBED_REQUEST_TARGET = "/0123456789abcdef"
 PLAIN_BODY = "the plain stand-in body"
-# A captured route is replayed verbatim, so the probed target in it stays as captured.
-SECURE_BODY = f"the secure stand-in body, {PROBED_TARGET} as captured"
+# A captured route is served verbatim, so the probed request target in it stays as captured.
+SECURE_BODY = f"the secure stand-in body, {PROBED_REQUEST_TARGET} as captured"
 MISSING_BODY = "the secure stand-in's answer to an unknown path"
 # A request target a client sends percent-encoded, every character the escapings rewrite in it.
 QUOTED_REQUEST = "/a%3Cb%3E%22%27"
 CAPTURED_DATE = "Wed, 04 Nov 2026 07:36:50 GMT"
 # The secure route's headers as a host sends them: duplicates, a lowercase name, and the
 # connection and framing headers of the capture's own connection, with a length that is wrong
-# for the replayed body.
+# for the served body.
 SECURE_HEADERS = (
     ("Date", CAPTURED_DATE),
     ("Content-Type", "text/plain"),
@@ -37,7 +45,7 @@ SECURE_HEADERS = (
     ("strict-transport-security", "max-age=31536000"),
     ("Content-Length", "999"),
 )
-SECURE_REPLAYED = (
+SECURE_SERVED = (
     ("Date", CAPTURED_DATE),
     ("Content-Type", "text/plain"),
     ("Server", "cloudflare"),
@@ -45,7 +53,7 @@ SECURE_REPLAYED = (
     ("Set-Cookie", "second=2; Path=/"),
     ("strict-transport-security", "max-age=31536000"),
 )
-HEAD_ONLY_TARGET = "/checked"
+HEAD_ONLY_REQUEST_TARGET = "/checked"
 # A HEAD route's captured length is the host's length for the body it did not send, kept as is.
 HEAD_ONLY_HEADERS = (
     ("Content-Type", "text/html"),
@@ -53,7 +61,7 @@ HEAD_ONLY_HEADERS = (
     ("keep-alive", "timeout=5"),
     ("Date", CAPTURED_DATE),
 )
-HEAD_ONLY_REPLAYED = (
+HEAD_ONLY_SERVED = (
     ("Content-Type", "text/html"),
     ("Content-Length", "1256"),
     ("Date", CAPTURED_DATE),
@@ -62,23 +70,32 @@ REDIRECT_SERVER = ("Server", "cloudflare")
 # Two AWS routes on one `POST /`, written as the services' published examples are: the JSON
 # protocol keys on the full `X-Amz-Target` value, the query protocol on the bare `Action` value.
 SECRET_ACTION = "secretsmanager.GetSecretValue"
-SECRET_BODY = '{"Name": "fict", "SecretString": "the secret"}'
-SECRET_HEADERS = (("Content-Type", "application/x-amz-json-1.1"),)
+SECRET_ANSWER = StandInAnswer(
+    '{"Name": "fict", "SecretString": "the secret"}',
+    (("Content-Type", "application/x-amz-json-1.1"),),
+)
 INSTANCES_ACTION = "DescribeDBInstances"
-INSTANCES_BODY = "<DescribeDBInstancesResponse></DescribeDBInstancesResponse>"
-INSTANCES_HEADERS = (("Content-Type", "text/xml"),)
+INSTANCES_ANSWER = StandInAnswer(
+    "<DescribeDBInstancesResponse></DescribeDBInstancesResponse>", (("Content-Type", "text/xml"),)
+)
 # A search form's route, chosen by the field the form body carries.
-FORM_TARGET = "/html/"
+FORM_REQUEST_TARGET = "/html/"
 FORM_FIELD = "q"
-RESULTS_BODY = "<html>the results for wikipedia</html>"
-RESULTS_HEADERS = (("Content-Type", "text/html"),)
+RESULTS_ANSWER = StandInAnswer(
+    "<html>the results for wikipedia</html>", (("Content-Type", "text/html"),)
+)
 # A GraphQL API's routes, chosen by the operation name the JSON body's query declares.
-GRAPHQL_TARGET = "/graphql"
+GRAPHQL_REQUEST_TARGET = "/graphql"
 ISSUES_OPERATION = "IssueList"
-ISSUES_BODY = '{"data": {"repository": {"name": "fict"}}}'
-ISSUES_HEADERS = (("Content-Type", "application/json; charset=utf-8"),)
-GRAPHQL_FALLBACK_BODY = '{"data": {"viewer": {"login": "fict"}}}'
-GRAPHQL_FALLBACK_HEADERS = (("Content-Type", "application/json"), ("X-Fallback", "graphql"))
+ISSUES_ANSWER = StandInAnswer(
+    '{"data": {"repository": {"name": "fict"}}}',
+    (("Content-Type", "application/json; charset=utf-8"),),
+)
+GRAPHQL_FALLBACK_ANSWER = StandInAnswer(
+    '{"data": {"viewer": {"login": "fict"}}}',
+    (("Content-Type", "application/json"), ("X-Fallback", "graphql")),
+)
+MISSING_ANSWER = StandInAnswer(MISSING_BODY, (("Content-Type", "text/plain"),), 404)
 _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "generate.sh"
 
 
@@ -95,27 +112,29 @@ class QuotingCase:
     body: str
     quoted_request: str
 
-    def answer(self, target: str) -> str:
-        return self.body.replace(PROBED_TARGET, target)
+    def answer(self, request_target: str) -> str:
+        return self.body.replace(PROBED_REQUEST_TARGET, request_target)
 
 
 QUOTING_CASES = {
     "decoded_html": QuotingCase(
         "text/html; charset=utf-8",
         "decoded",
-        f'<option value="/fr{PROBED_TARGET}">fr</option><p>No page at {PROBED_TARGET}.</p>',
+        f'<option value="/fr{PROBED_REQUEST_TARGET}">fr</option>'
+        f"<p>No page at {PROBED_REQUEST_TARGET}.</p>",
         "/a&lt;b&gt;&#34;&#39;",
     ),
     "decoded_json": QuotingCase(
         "application/json",
         "decoded",
-        f'{{"path": "{PROBED_TARGET}", "error": "no route for {PROBED_TARGET}"}}',
+        f'{{"path": "{PROBED_REQUEST_TARGET}", "error": "no route for {PROBED_REQUEST_TARGET}"}}',
         "/a<b>\\\"'",
     ),
     "raw_html": QuotingCase(
         "text/html",
         "raw",
-        f'<option value="/fr{PROBED_TARGET}">fr</option><p>No page at {PROBED_TARGET}.</p>',
+        f'<option value="/fr{PROBED_REQUEST_TARGET}">fr</option>'
+        f"<p>No page at {PROBED_REQUEST_TARGET}.</p>",
         QUOTED_REQUEST,
     ),
 }
@@ -138,11 +157,11 @@ def a_stand_ins_directory(
             _route("http", PLAIN_BODY, [["Content-Type", "text/plain"]]),
             _route("https", SECURE_BODY, [list(header) for header in SECURE_HEADERS]),
             _head_only_route(),
-            _post_route("/", SECRET_ACTION, SECRET_BODY, SECRET_HEADERS),
-            _post_route("/", INSTANCES_ACTION, INSTANCES_BODY, INSTANCES_HEADERS),
+            a_post_route("/", SECRET_ACTION, SECRET_ANSWER),
+            a_post_route("/", INSTANCES_ACTION, INSTANCES_ANSWER),
             _form_route(),
-            _post_route(GRAPHQL_TARGET, ISSUES_OPERATION, ISSUES_BODY, ISSUES_HEADERS),
-            _post_route(GRAPHQL_TARGET, None, GRAPHQL_FALLBACK_BODY, GRAPHQL_FALLBACK_HEADERS),
+            a_post_route(GRAPHQL_REQUEST_TARGET, ISSUES_OPERATION, ISSUES_ANSWER),
+            a_post_route(GRAPHQL_REQUEST_TARGET, None, GRAPHQL_FALLBACK_ANSWER),
             *more_routes,
         ],
         "defaults": [_redirect_to_https(), secure_default],
@@ -154,6 +173,22 @@ def a_stand_ins_directory(
         capture_output=True,
     )
     return directory
+
+
+def a_post_route(
+    request_target: str, action: str | None, answer: StandInAnswer
+) -> dict[str, object]:
+    route: dict[str, object] = {
+        "scheme": "https",
+        "method": "POST",
+        "request_target": request_target,
+        "status": answer.status,
+        "headers": [list(header) for header in answer.headers],
+        "body": answer.body,
+    }
+    if action is not None:
+        route["action"] = action
+    return route
 
 
 def _route(scheme: str, body: str, headers: list[list[str]]) -> dict[str, object]:
@@ -171,48 +206,32 @@ def _head_only_route() -> dict[str, object]:
     return {
         "scheme": "https",
         "method": "HEAD",
-        "request_target": HEAD_ONLY_TARGET,
+        "request_target": HEAD_ONLY_REQUEST_TARGET,
         "status": 200,
         "headers": [list(header) for header in HEAD_ONLY_HEADERS],
         "body": "",
     }
 
 
-def _post_route(
-    request_target: str, action: str | None, body: str, headers: Sequence[tuple[str, str]]
-) -> dict[str, object]:
-    route: dict[str, object] = {
-        "scheme": "https",
-        "method": "POST",
-        "request_target": request_target,
-        "status": 200,
-        "headers": [list(header) for header in headers],
-        "body": body,
-    }
-    if action is not None:
-        route["action"] = action
-    return route
-
-
 def _form_route() -> dict[str, object]:
     return {
         "scheme": "https",
         "method": "POST",
-        "request_target": FORM_TARGET,
+        "request_target": FORM_REQUEST_TARGET,
         "form_field": FORM_FIELD,
-        "status": 200,
-        "headers": [list(header) for header in RESULTS_HEADERS],
-        "body": RESULTS_BODY,
+        "status": RESULTS_ANSWER.status,
+        "headers": [list(header) for header in RESULTS_ANSWER.headers],
+        "body": RESULTS_ANSWER.body,
     }
 
 
 def _redirect_to_https() -> dict[str, object]:
     return {
         "scheme": "http",
-        "probed_request_target": PROBED_TARGET,
+        "probed_request_target": PROBED_REQUEST_TARGET,
         "status": 301,
         "headers": [
-            ["Location", f"https://{STAND_IN_HOST}{PROBED_TARGET}"],
+            ["Location", f"https://{STAND_IN_HOST}{PROBED_REQUEST_TARGET}"],
             list(REDIRECT_SERVER),
         ],
         "body": "",
@@ -223,10 +242,10 @@ def _redirect_to_https() -> dict[str, object]:
 def _not_found() -> dict[str, object]:
     return {
         "scheme": "https",
-        "probed_request_target": PROBED_TARGET,
-        "status": 404,
-        "headers": [["Content-Type", "text/plain"]],
-        "body": MISSING_BODY,
+        "probed_request_target": PROBED_REQUEST_TARGET,
+        "status": MISSING_ANSWER.status,
+        "headers": [list(header) for header in MISSING_ANSWER.headers],
+        "body": MISSING_ANSWER.body,
         "path_form": None,
     }
 
@@ -234,7 +253,7 @@ def _not_found() -> dict[str, object]:
 def _quoting_not_found(case: QuotingCase) -> dict[str, object]:
     return {
         "scheme": "https",
-        "probed_request_target": PROBED_TARGET,
+        "probed_request_target": PROBED_REQUEST_TARGET,
         "status": 404,
         "headers": [["Content-Type", case.content_type]],
         "body": case.body,

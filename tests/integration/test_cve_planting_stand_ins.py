@@ -12,6 +12,7 @@ import pytest
 import tests.integration.support.stand_in_answers as stand_in_answers
 import tests.integration.support.stand_in_capture as stand_in_capture
 import tests.integration.support.stand_in_fetches as stand_in_fetches
+import tests.integration.support.test_cve_planting_stand_ins_given as given
 import tests.integration.support.test_cve_planting_stand_ins_then as then
 from evals.cve import planting_docker
 from evals.cve.planting import DockerPlanting, planted
@@ -74,7 +75,9 @@ def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_prob
         )
 
     assert route.body == stand_in_capture.SECURE_BODY
-    stand_in_answers.answered_with(unknown, 404, quoting.answer(quoting.quoted_request))
+    stand_in_answers.answered_with(
+        unknown, stand_in_capture.StandInAnswer(quoting.answer(quoting.quoted_request), status=404)
+    )
 
 
 def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_ones(
@@ -90,13 +93,13 @@ def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_o
         route = stand_in_fetches.fetch_as_target(args, f"https://{host}/")
         fallback = stand_in_fetches.fetch_as_target(args, f"https://{host}/", method="HEAD")
         head_route = stand_in_fetches.fetch_as_target(
-            args, f"https://{host}{stand_in_capture.HEAD_ONLY_TARGET}", method="HEAD"
+            args, f"https://{host}{stand_in_capture.HEAD_ONLY_REQUEST_TARGET}", method="HEAD"
         )
         default = stand_in_fetches.fetch_as_target(args, f"http://{host}/uncaptured")
 
-    stand_in_answers.carries(route, stand_in_capture.SECURE_REPLAYED, secure_length)
-    stand_in_answers.carries(fallback, stand_in_capture.SECURE_REPLAYED, secure_length)
-    stand_in_answers.carries(head_route, stand_in_capture.HEAD_ONLY_REPLAYED, None)
+    stand_in_answers.carries(route, stand_in_capture.SECURE_SERVED, secure_length)
+    stand_in_answers.carries(fallback, stand_in_capture.SECURE_SERVED, secure_length)
+    stand_in_answers.carries(head_route, stand_in_capture.HEAD_ONLY_SERVED, None)
     stand_in_answers.carries(
         default, [("Location", f"https://{host}/uncaptured"), stand_in_capture.REDIRECT_SERVER], 0
     )
@@ -110,62 +113,47 @@ def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
     ) as args:
         json_protocol = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.JSON_PROTOCOL_REQUEST
+            args, url, "POST", given.JSON_PROTOCOL_REQUEST
         )
         query_protocol = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.QUERY_PROTOCOL_REQUEST
+            args, url, "POST", given.QUERY_PROTOCOL_REQUEST
         )
-        unknown = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.UNKNOWN_ACTION_REQUEST
-        )
+        unknown = stand_in_fetches.fetch_as_target(args, url, "POST", given.UNKNOWN_ACTION_REQUEST)
 
-    stand_in_answers.answered_by_its_route(
-        json_protocol, stand_in_capture.SECRET_HEADERS, stand_in_capture.SECRET_BODY
-    )
-    stand_in_answers.answered_by_its_route(
-        query_protocol, stand_in_capture.INSTANCES_HEADERS, stand_in_capture.INSTANCES_BODY
-    )
-    stand_in_answers.answered_with(unknown, 404, stand_in_capture.MISSING_BODY)
+    stand_in_answers.answered_by_its_route(json_protocol, stand_in_capture.SECRET_ANSWER)
+    stand_in_answers.answered_by_its_route(query_protocol, stand_in_capture.INSTANCES_ANSWER)
+    stand_in_answers.answered_with(unknown, stand_in_capture.MISSING_ANSWER)
 
 
 def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_path: Path):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_TARGET}"
+    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
     ) as args:
-        named = stand_in_fetches.fetch_as_target(args, url, "POST", stand_in_fetches.ISSUES_REQUEST)
-        other = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.OTHER_OPERATION_REQUEST
-        )
+        named = stand_in_fetches.fetch_as_target(args, url, "POST", given.ISSUES_REQUEST)
+        other = stand_in_fetches.fetch_as_target(args, url, "POST", given.OTHER_OPERATION_REQUEST)
         anonymous = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.ANONYMOUS_OPERATION_REQUEST
+            args, url, "POST", given.ANONYMOUS_OPERATION_REQUEST
         )
 
-    stand_in_answers.answered_by_its_route(
-        named, stand_in_capture.ISSUES_HEADERS, stand_in_capture.ISSUES_BODY
-    )
-    fallback = (stand_in_capture.GRAPHQL_FALLBACK_HEADERS, stand_in_capture.GRAPHQL_FALLBACK_BODY)
-    stand_in_answers.answered_by_its_route(other, *fallback)
-    stand_in_answers.answered_by_its_route(anonymous, *fallback)
+    stand_in_answers.answered_by_its_route(named, stand_in_capture.ISSUES_ANSWER)
+    stand_in_answers.answered_by_its_route(other, stand_in_capture.GRAPHQL_FALLBACK_ANSWER)
+    stand_in_answers.answered_by_its_route(anonymous, stand_in_capture.GRAPHQL_FALLBACK_ANSWER)
 
 
 def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.FORM_TARGET}"
+    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.FORM_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
     ) as args:
-        carrying = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.SEARCH_REQUEST
-        )
+        carrying = stand_in_fetches.fetch_as_target(args, url, "POST", given.SEARCH_REQUEST)
         lacking = stand_in_fetches.fetch_as_target(
-            args, url, "POST", stand_in_fetches.FIELDLESS_SEARCH_REQUEST
+            args, url, "POST", given.FIELDLESS_SEARCH_REQUEST
         )
 
-    stand_in_answers.answered_by_its_route(
-        carrying, stand_in_capture.RESULTS_HEADERS, stand_in_capture.RESULTS_BODY
-    )
-    stand_in_answers.answered_with(lacking, 404, stand_in_capture.MISSING_BODY)
+    stand_in_answers.answered_by_its_route(carrying, stand_in_capture.RESULTS_ANSWER)
+    stand_in_answers.answered_with(lacking, stand_in_capture.MISSING_ANSWER)

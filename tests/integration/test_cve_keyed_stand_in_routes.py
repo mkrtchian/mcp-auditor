@@ -41,9 +41,9 @@ def test_a_json_protocol_action_answers_its_keyed_member_value_and_errs_on_any_o
             stand_in_fetches.fetch_as_target(args, url, "POST", each) for each in requests
         ]
 
-    stand_in_answers.answered_by_its_route(keyed, given.DESCRIBED_HEADERS, given.DESCRIBED_BODY)
+    stand_in_answers.answered_by_its_route(keyed, given.DESCRIBED_ANSWER)
     for other in others:
-        stand_in_answers.answered_with(other, *given.SECRET_NOT_FOUND)
+        stand_in_answers.answered_with(other, given.SECRET_NOT_FOUND)
 
 
 def test_a_query_protocol_action_answers_its_keyed_field_value_and_errs_on_any_other(
@@ -64,16 +64,16 @@ def test_a_query_protocol_action_answers_its_keyed_field_value_and_errs_on_any_o
             stand_in_fetches.fetch_as_target(args, url, "POST", each) for each in requests
         ]
 
-    stand_in_answers.answered_by_its_route(keyed, given.CLUSTERS_HEADERS, given.CLUSTERS_BODY)
+    stand_in_answers.answered_by_its_route(keyed, given.CLUSTERS_ANSWER)
     for other in others:
-        stand_in_answers.answered_with(other, *given.CLUSTER_NOT_FOUND)
+        stand_in_answers.answered_with(other, given.CLUSTER_NOT_FOUND)
 
 
 def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its_string(
     tmp_path: Path,
 ):
     directory = given.a_keyed_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_TARGET}"
+    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
@@ -81,8 +81,8 @@ def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its
         integer = stand_in_fetches.fetch_as_target(args, url, "POST", given.an_issue_request(1))
         string = stand_in_fetches.fetch_as_target(args, url, "POST", given.an_issue_request("1"))
 
-    stand_in_answers.answered_by_its_route(integer, given.ISSUE_HEADERS, given.ISSUE_BODY)
-    stand_in_answers.answered_with(string, *given.ISSUE_NOT_FOUND)
+    stand_in_answers.answered_by_its_route(integer, given.ISSUE_ANSWER)
+    stand_in_answers.answered_with(string, given.ISSUE_NOT_FOUND)
 
 
 def test_an_unkeyed_action_keeps_its_answer_whatever_its_body(tmp_path: Path):
@@ -101,6 +101,4 @@ def test_an_unkeyed_action_keeps_its_answer_whatever_its_body(tmp_path: Path):
         ]
 
     for answer in answers:
-        stand_in_answers.answered_by_its_route(
-            answer, stand_in_capture.SECRET_HEADERS, stand_in_capture.SECRET_BODY
-        )
+        stand_in_answers.answered_by_its_route(answer, stand_in_capture.SECRET_ANSWER)

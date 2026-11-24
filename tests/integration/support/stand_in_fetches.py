@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 from evals.cve.planting import PlantedArgs
 from evals.cve.planting_base import STAND_IN_IMAGE
-from tests.integration.support.stand_in_capture import INSTANCES_ACTION, SECRET_ACTION
 from tests.integration.support.target_commands import TargetCommand, run_as_target
 
 
@@ -13,43 +12,26 @@ class Sent:
     body: str
 
 
-JSON_PROTOCOL_REQUEST = Sent(
-    (("X-Amz-Target", SECRET_ACTION), ("Content-Type", "application/x-amz-json-1.1")),
-    '{"SecretId": "fict"}',
-)
-QUERY_PROTOCOL_REQUEST = Sent(
-    (("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),),
-    f"Action={INSTANCES_ACTION}&Version=2014-10-31",
-)
-UNKNOWN_ACTION_REQUEST = Sent(
-    (
-        ("X-Amz-Target", "secretsmanager.ListSecrets"),
-        ("Content-Type", "application/x-amz-json-1.1"),
-    ),
-    "{}",
-)
-_FORM_CONTENT = (("Content-Type", "application/x-www-form-urlencoded"),)
-SEARCH_REQUEST = Sent(_FORM_CONTENT, "q=wikipedia&kl=fr-fr")
-FIELDLESS_SEARCH_REQUEST = Sent(_FORM_CONTENT, "kl=fr-fr")
-_JSON_CONTENT = (("Content-Type", "application/json; charset=utf-8"),)
-# Shaped like gh's: the fragments come before the operation.
-ISSUES_REQUEST = Sent(
-    _JSON_CONTENT,
-    json.dumps(
-        {
-            "query": "fragment issue on Issue {\n\tnumber\n}\n\t"
-            "query IssueList($owner: String!) { repository(owner: $owner) { name } }"
-        }
-    ),
-)
-OTHER_OPERATION_REQUEST = Sent(
-    _JSON_CONTENT, json.dumps({"query": "query ViewerLogin { viewer { login } }"})
-)
-ANONYMOUS_OPERATION_REQUEST = Sent(
-    _JSON_CONTENT, json.dumps({"query": "query { viewer { login } }"})
-)
-# The stand-in image's Python as the target: http.client sends the target as given and follows
-# no redirect, and the default context verifies TLS against the default paths, which
+def an_aws_json_request(action: str, body: str) -> Sent:
+    return Sent((("X-Amz-Target", action), ("Content-Type", "application/x-amz-json-1.1")), body)
+
+
+def an_aws_query_request(action: str, fields: str = "") -> Sent:
+    return Sent(
+        (("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),),
+        f"Action={action}&Version=2014-10-31{fields}",
+    )
+
+
+def a_graphql_request(query: str, variables: dict[str, object] | None = None) -> Sent:
+    body: dict[str, object] = {"query": query}
+    if variables is not None:
+        body["variables"] = variables
+    return Sent((("Content-Type", "application/json; charset=utf-8"),), json.dumps(body))
+
+
+# The stand-in image's Python as the target: http.client sends the request target as given and
+# follows no redirect, and the default context verifies TLS against the default paths, which
 # `SSL_CERT_FILE` points at the fixture authority.
 _FETCH = (
     "import http.client,json,ssl,sys,urllib.parse\n"
