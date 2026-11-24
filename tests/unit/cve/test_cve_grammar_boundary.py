@@ -2,8 +2,8 @@ from types import ModuleType
 
 import pytest
 
-import tests.unit.cve.support.test_cve_grammar_boundary_given as given
 from evals.cve import grammar, proofs, units
+from evals.cve.dossier_closure import import_closure
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
 
 
@@ -24,6 +24,5 @@ def test_every_eval_verdict_translates_to_a_grammar_verdict_of_the_same_value(
 
 @pytest.mark.parametrize("module", [grammar, proofs, units], ids=lambda module: module.__name__)
 def test_the_grammar_imports_nothing_of_the_auditor(module: ModuleType):
-    imported = given.modules_imported_by(module)
-
-    assert not {name for name in imported if name.split(".")[0] == "mcp_auditor"}
+    # Raises naming the import chain as soon as the closure reaches mcp_auditor.
+    import_closure([module.__name__])

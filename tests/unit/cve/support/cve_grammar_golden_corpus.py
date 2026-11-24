@@ -1,6 +1,7 @@
 """The fixed corpus the grammar golden master grades: the reports and units of the grammar
 unit tests, and the judge cases drawn from detection suite runs, pinned by id. The generator
-(`test_cve_grammar_golden_given`) grades it and freezes the result."""
+(`test_cve_grammar_golden_given`) adds the replay-strike and credit-check cases, grades it all
+and freezes the result."""
 
 from collections import defaultdict
 from typing import Any
@@ -10,10 +11,9 @@ from evals.cve.grammar import MissKind, RunGrade
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit, unit_of_exchanges
 from evals.judge.fixture import JudgeCase, JudgeInputs, load_fixture
-from evals.repository import REPO_ROOT
+from evals.run_judge_eval import FIXTURES_PATH
 from mcp_auditor.domain.models import AttackChain, AuditReport, ChainStep, EvalVerdict, TestCase
 
-JUDGE_FIXTURE_PATH = REPO_ROOT / "evals" / "fixtures" / "judge_cases.json"
 NONCE = grammar.NONCE
 FAIL = grammar.FAIL
 PASS = grammar.PASS
@@ -61,7 +61,7 @@ def command_target_reports() -> dict[str, AuditReport]:
     }
 
 
-def test_exchanges() -> dict[str, Unit]:
+def exchange_units() -> dict[str, Unit]:
     return {
         "aim_in_a_nested_dict": unit_of_exchanges(
             [({"options": {"source": grammar.AIMED_PATH}}, "ok")]
@@ -82,7 +82,7 @@ def test_exchanges() -> dict[str, Unit]:
     }
 
 
-def test_resolutions() -> dict[str, list[RunGrade]]:
+def resolution_grades() -> dict[str, list[RunGrade]]:
     return {
         "highest_rung_over_runs": [
             grammar.a_missed_run(MissKind.NOT_AIMED),
@@ -104,7 +104,7 @@ def test_resolutions() -> dict[str, list[RunGrade]]:
 
 
 def cases_by_target() -> dict[str, list[JudgeCase]]:
-    cases = {case.id: case for case in load_fixture(JUDGE_FIXTURE_PATH).cases}
+    cases = {case.id: case for case in load_fixture(FIXTURES_PATH).cases}
     by_target: defaultdict[str, list[JudgeCase]] = defaultdict(list)
     for case_id in CVE_CASE_IDS:
         by_target[cases[case_id].origin.removeprefix("cve ")].append(cases[case_id])

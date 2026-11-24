@@ -2,11 +2,11 @@
 `not_live_reasons`, `not_fixed_reasons` and `struck_by_replay` return on a fixed corpus,
 recorded in `cve_grammar_golden.json`.
 
-The corpus is built by `cve_grammar_golden_corpus`: the reports and units of the grammar unit
-tests, the CVE cases of the judge fixture pinned by id, each judged FAIL and PASS with nonce
-variants and chains of each target's cases, and the credit-check and replay-strike cases. A
-case is graded against its target's classes and aim, with the planted nonce as the only
-proof.
+The corpus is built by `cve_grammar_golden_corpus` (the reports and units of the grammar unit
+tests, and the CVE cases of the judge fixture pinned by id, each judged FAIL and PASS with nonce
+variants and chains of each target's cases), and here by `_strike_pairs` and `_check_cases`
+(the replay-strike and credit-check cases). A case is graded against its target's classes and
+aim, with the planted nonce as the only proof.
 
 The file is regenerated only in a commit that changes what the grammar grades, or what
 `not_live_reasons` or `not_fixed_reasons` reports, beside its labeling log entry, or in the
@@ -22,7 +22,7 @@ import tests.unit.cve.support.cve_grammar_golden_corpus as corpus
 import tests.unit.cve.support.strike_inputs as strike
 import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
-from evals.cve.grammar import CreditCheck, GradedTarget, grade_run, resolve
+from evals.cve.grammar import CreditCheck, GradedTarget, PlantedTarget, grade_run, resolve
 from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons
 from evals.cve.proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
 from evals.cve.report_units import units_of
@@ -44,11 +44,11 @@ def golden_entries() -> dict[str, Any]:
     }
     entries |= {
         f"tests/exchanges/{name}": _unit_entry(unit, grammar.a_read_target())
-        for name, unit in corpus.test_exchanges().items()
+        for name, unit in corpus.exchange_units().items()
     }
     entries |= {
         f"resolve/tests/{name}": resolve(grades).model_dump(mode="json")
-        for name, grades in corpus.test_resolutions().items()
+        for name, grades in corpus.resolution_grades().items()
     }
     for flaw_id, cases in corpus.cases_by_target().items():
         entries |= _target_entries(flaw_id, cases)
@@ -121,10 +121,12 @@ _MERGED_SIBLINGS = {"CVE-2025-53110": "CVE-2025-53109"}
 _REMOVED_GRADED_UNDER = {"CVE-2025-68145": "CVE-2025-68143"}
 
 
-def _graded_target(flaw_id: str) -> grammar.FakeTarget:
+def _graded_target(flaw_id: str) -> PlantedTarget:
     keeper = _REMOVED_GRADED_UNDER.get(flaw_id) or _MERGED_SIBLINGS.get(flaw_id, flaw_id)
     [target] = [target for target in ACCEPTANCE_TARGETS if target.flaw_id == keeper]
-    return grammar.FakeTarget(target.classes, {grammar.PLACE: grammar.NONCE}, target.aim)
+    return PlantedTarget(
+        classes=target.classes, aim=target.aim, nonces={grammar.PLACE: grammar.NONCE}
+    )
 
 
 def _resolved(target: GradedTarget, reports: Iterable[AuditReport]) -> dict[str, Any]:

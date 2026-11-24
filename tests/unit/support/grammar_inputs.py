@@ -1,9 +1,7 @@
 import re
-from collections.abc import Mapping
-from dataclasses import dataclass
 from typing import Any
 
-from evals.cve.grammar import FlawClass, MissKind, RunGrade, TargetStatus
+from evals.cve.grammar import FlawClass, MissKind, PlantedTarget, RunGrade, TargetStatus
 from evals.cve.units import JudgeCategory
 from mcp_auditor.domain.models import (
     AttackChain,
@@ -24,6 +22,7 @@ from mcp_auditor.domain.models import (
 NONCE = "s3nt1nel_ab12cd34ef56"
 PLACE = "planted"
 AIMED_PATH = "/outside/flag"
+READ_AIM = re.compile(r"^/outside/")
 UNAIMED_PATH = "/inside/file"
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
@@ -33,27 +32,20 @@ RESOURCE_ABUSE = AuditCategory.RESOURCE_ABUSE
 INPUT_VALIDATION = AuditCategory.INPUT_VALIDATION
 
 
-@dataclass(frozen=True)
-class FakeTarget:
-    classes: frozenset[FlawClass]
-    nonces: Mapping[str, str]
-    aim: re.Pattern[str]
-
-
-def a_read_target() -> FakeTarget:
+def a_read_target() -> PlantedTarget:
     return a_target_under(FlawClass.READ_OUTSIDE_SCOPE)
 
 
-def a_command_target() -> FakeTarget:
-    return FakeTarget(
-        frozenset({FlawClass.COMMAND_EXECUTION}),
-        {PLACE: NONCE},
-        re.compile(r"[;&|`]|\$\("),
+def a_command_target() -> PlantedTarget:
+    return PlantedTarget(
+        classes=frozenset({FlawClass.COMMAND_EXECUTION}),
+        aim=re.compile(r"[;&|`]|\$\("),
+        nonces={PLACE: NONCE},
     )
 
 
-def a_target_under(*classes: FlawClass) -> FakeTarget:
-    return FakeTarget(frozenset(classes), {PLACE: NONCE}, re.compile(r"^/outside/"))
+def a_target_under(*classes: FlawClass) -> PlantedTarget:
+    return PlantedTarget(classes=frozenset(classes), aim=READ_AIM, nonces={PLACE: NONCE})
 
 
 def a_case(

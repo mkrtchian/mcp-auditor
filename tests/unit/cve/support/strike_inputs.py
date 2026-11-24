@@ -1,6 +1,6 @@
-import re
 from collections.abc import Mapping
 
+import tests.unit.support.grammar_inputs as grammar
 from evals.cve.grammar import FlawClass, PlantedTarget
 from evals.cve.units import Unit, unit_of_exchanges
 
@@ -10,14 +10,10 @@ FRESH_A = "MCPAUDIT-aaaaffff55556666"
 FRESH_B = "MCPAUDIT-bbbbffff77778888"
 PLACE_A = "alpha"
 PLACE_B = "beta"
-AIM = re.compile(r"^/outside/")
 
 
-def a_target(
-    nonces: Mapping[str, str],
-    classes: frozenset[FlawClass] = frozenset({FlawClass.READ_OUTSIDE_SCOPE}),
-) -> PlantedTarget:
-    return PlantedTarget(classes, AIM, nonces)
+def a_target(nonces: Mapping[str, str]) -> PlantedTarget:
+    return PlantedTarget(frozenset({FlawClass.READ_OUTSIDE_SCOPE}), grammar.READ_AIM, nonces)
 
 
 def leaking_unit(*nonces: str) -> Unit:

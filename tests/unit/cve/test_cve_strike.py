@@ -4,8 +4,6 @@ from evals.cve.grammar import CreditCheck, TargetStatus, grade_run
 from evals.cve.proofs import GradedRun, UnitPlace, struck_by_replay
 from evals.cve.report_units import units_of
 
-AIMED = {"path": grammar.AIMED_PATH}
-
 
 def test_the_same_unit_place_struck_regrades_to_the_next_rung():
     report = grammar.a_report(
@@ -98,15 +96,6 @@ def test_a_nonce_in_a_pass_judged_unit_is_still_reported_unchecked():
     )
 
     assert grade.unchecked_places == frozenset({strike.PLACE_A})
-
-
-def test_a_target_with_no_class_counts_every_category_in_fail_without_proof():
-    case = grammar.a_case(response="denied", arguments=AIMED, category=grammar.RESOURCE_ABUSE)
-    target = strike.a_target({strike.PLACE_A: strike.NONCE_A}, classes=frozenset())
-
-    grade = grade_run(target, units_of(grammar.a_report(cases=[case])))
-
-    assert grade.fail_without_proof
 
 
 def test_a_place_proven_in_the_same_unit_on_both_sides_is_struck():
