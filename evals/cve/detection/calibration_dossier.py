@@ -136,8 +136,10 @@ _FIXTURE_FORMAT = """\
 # The fixture format
 
 Author a `KitTarget` (`evals/cve/kit/target.py`) and run it through the kit driver
-(`evals/cve/kit/driver.py`). The maintainer transplants it into
-`evals/cve/detection/holdout_targets.py` by swapping two import lines and nothing else:
+(`evals/cve/kit/driver.py`). The maintainer transplants it into a new module under
+`evals/cve/detection/holdout_fixtures/` that defines `TARGET` as a `Target` with the same fields
+and that `evals/cve/detection/holdout_targets.py` lists, by swapping two import lines and nothing
+else:
 
 - `from evals.cve.kit.client import KitClient` -> the auditor's `MCPClientPort` and
   `ToolResponse` (the exploits run unchanged: `KitResponse` mirrors `ToolResponse`).

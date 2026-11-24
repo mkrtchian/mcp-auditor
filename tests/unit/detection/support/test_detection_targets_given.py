@@ -6,8 +6,9 @@ from pathlib import Path
 
 from evals.cve.backends.kubernetes import StoodControlPlane
 from evals.cve.backends.kubernetes_detection import ControlPlaneDocker, kubernetes_injection_env
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
+from evals.cve.kit.target import LaunchMode
 from evals.cve.planting import PlantingSpec
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.acceptance_targets import KUBERNETES, an_acceptance_target

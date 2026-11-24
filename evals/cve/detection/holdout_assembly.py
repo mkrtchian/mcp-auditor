@@ -6,8 +6,9 @@ from datetime import date
 from evals.cve.detection.holdout_audit import IncompleteRun
 from evals.cve.detection.holdout_results import DetectionHoldoutRunStatus, HoldoutTargetResult
 from evals.cve.detection.session_model import GradedAudit
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.targets import Target
 from evals.cve.grammar import DETECTION_RUNGS, RunGrade
+from evals.cve.kit.target import LaunchMode
 from evals.pricing import AuditPrices
 
 

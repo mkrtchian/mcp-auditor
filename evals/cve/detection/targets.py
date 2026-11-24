@@ -22,6 +22,12 @@ from evals.cve.environments import (
 )
 from evals.cve.grammar import FlawClass
 from evals.cve.images import image_tag
+from evals.cve.kit.target import (  # defined in the kit, so a transplanted fixture keeps them
+    NO_FALLBACK_SCOPE,
+    FallbackScope,
+    FallbackScopeKind,
+    LaunchMode,
+)
 from evals.cve.places import Place, Places
 from evals.cve.planting import (
     RANDOM_NONCES,
@@ -38,37 +44,6 @@ from mcp_auditor.domain.ports import MCPClientPort
 class TargetVersion(StrEnum):
     VULNERABLE = "vulnerable"
     PATCHED = "patched"
-
-
-class LaunchMode(StrEnum):
-    """The launch a target runs under, read by `environment()` to pick the launch shape. NORMAL is
-    the frozen layout; FALLBACK is the launch the rule switches to on a break
-    (detection-suite-rule.md, Deployment layout (A server the layout breaks)). The layout check only
-    reports; the maintainer sets this field from calibration like kept_places, and every acceptance
-    target keeps NORMAL (no target breaks)."""
-
-    NORMAL = "normal"
-    FALLBACK = "fallback"
-
-
-class FallbackScopeKind(StrEnum):
-    """The three shapes the rule distinguishes for the fallback scope (detection-suite-rule.md,
-    Deployment layout (A server the layout breaks)): the default the server documents, an empty
-    directory outside the layout when the server requires a scope and documents none, and no scope
-    when the scope is optional."""
-
-    DOCUMENTED_DEFAULT = "documented_default"
-    EMPTY_OUTSIDE = "empty_outside"
-    OPTIONAL = "optional"
-
-
-@dataclass(frozen=True)
-class FallbackScope:
-    kind: FallbackScopeKind
-    path: str | None = None  # the concrete scope for DOCUMENTED_DEFAULT and EMPTY_OUTSIDE
-
-
-_NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
 
 
 # The filesystem CVEs surface the leak through a read tool, but the blind
@@ -98,7 +73,7 @@ class Target:
     tools_filter: frozenset[str] | None
     ci_skip_reason: str | None = None
     launch_mode: LaunchMode = LaunchMode.NORMAL  # maintainer-set from calibration, like kept_places
-    fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE  # the launch the rule switches to on a break
+    fallback_scope: FallbackScope = NO_FALLBACK_SCOPE  # the launch the rule switches to on a break
     # Kept places whose nonce the ordinary surface shows, settled at calibration (the replay strikes
     # a credit through that surface): the layout check fails only on another place's leak.
     settled_leaks: frozenset[str] = frozenset()
@@ -293,7 +268,7 @@ ACCEPTANCE_TARGETS: list[Target] = [
         # mcp-server-git's --repository is optional (each tool carries a per-call repo_path), so the
         # rule's optional-scope branch applies: the fallback launches with no scope
         # (detection-suite-rule.md, Deployment layout (A server the layout breaks)).
-        fallback_scope=_NO_FALLBACK_SCOPE,
+        fallback_scope=NO_FALLBACK_SCOPE,
     ),
     Target(
         flaw_id="CVE-2025-53355",

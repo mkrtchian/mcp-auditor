@@ -5,9 +5,10 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.targets import Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.grammar import FlawClass
+from evals.cve.kit.target import LaunchMode
 from evals.cve.places import Coordinates, LayoutAnchor, Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, SymbolicUser
 from evals.cve.planting_base import LayoutMount, PublicNames

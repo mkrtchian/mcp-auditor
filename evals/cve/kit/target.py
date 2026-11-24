@@ -1,13 +1,10 @@
-"""KitTarget: the fixture the calibration agent writes and driver consumes, free of mcp_auditor.
+"""The fixture the calibration agent writes and the kit driver consumes, free of mcp_auditor.
 
-Parity note: it mirrors evals/cve/detection/targets.Target (with LaunchMode / FallbackScope).
-KitTarget is a flat field-for-field mirror of the fields a holdout target carries, with
-`exploits`/`benign` typed against KitClient and `builder` against launch.Launch. The maintainer's
-transplant into evals/cve/detection/holdout_targets.py swaps the two import lines (client ->
-mcp_auditor ports, launch -> evals.cve.environments) and wraps the authored KitTarget into a Target
-appended to HOLDOUT_TARGETS; nothing else changes. test_kit_isolation.py pins the field
-parity so the mirror cannot drift. LaunchMode / FallbackScope are kit-local copies so the exported
-kit stays standalone, depending only on the clean modules the dossier copies.
+KitTarget carries a subset of the fields of evals/cve/detection/targets.Target, so an authored
+fixture transplants into a Target by swapping its client and launch imports (the calibration
+dossier's fixture_format.md gives the procedure); test_kit_isolation pins the subset. LaunchMode
+and FallbackScope are defined here, the repository's Target imports them, so the kit stays
+standalone and a transplanted fixture keeps them.
 """
 
 import re
@@ -29,12 +26,23 @@ from evals.cve.planting import (
 from evals.cve.planting import planting_spec as compute_planting_spec
 
 
-class LaunchMode(StrEnum):  # mirror of evals/cve/detection/targets.LaunchMode
+class LaunchMode(StrEnum):
+    """The launch a target runs under, read by `Target.environment()` to pick the launch shape.
+    NORMAL is the frozen layout; FALLBACK is the launch the rule switches to on a break
+    (detection-suite-rule.md, Deployment layout (A server the layout breaks)). The layout check only
+    reports; the maintainer sets this field from calibration like kept_places, and every acceptance
+    target keeps NORMAL (no target breaks)."""
+
     NORMAL = "normal"
     FALLBACK = "fallback"
 
 
-class FallbackScopeKind(StrEnum):  # mirror of evals/cve/detection/targets.FallbackScopeKind
+class FallbackScopeKind(StrEnum):
+    """The three shapes the rule distinguishes for the fallback scope (detection-suite-rule.md,
+    Deployment layout (A server the layout breaks)): the default the server documents, an empty
+    directory outside the layout when the server requires a scope and documents none, and no scope
+    when the scope is optional."""
+
     DOCUMENTED_DEFAULT = "documented_default"
     EMPTY_OUTSIDE = "empty_outside"
     OPTIONAL = "optional"
@@ -43,10 +51,10 @@ class FallbackScopeKind(StrEnum):  # mirror of evals/cve/detection/targets.Fallb
 @dataclass(frozen=True)
 class FallbackScope:
     kind: FallbackScopeKind
-    path: str | None = None
+    path: str | None = None  # the concrete scope for DOCUMENTED_DEFAULT and EMPTY_OUTSIDE
 
 
-_NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
+NO_FALLBACK_SCOPE = FallbackScope(FallbackScopeKind.OPTIONAL)
 
 KitExploit = Callable[[Places, KitClient], Awaitable[None]]
 KitBuilder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]]
@@ -67,7 +75,7 @@ class KitTarget:
     exploits: tuple[KitExploit, ...]
     benign: KitExploit
     launch_mode: LaunchMode = LaunchMode.NORMAL
-    fallback_scope: FallbackScope = _NO_FALLBACK_SCOPE
+    fallback_scope: FallbackScope = NO_FALLBACK_SCOPE
 
     def planting_spec(
         self, to_plant: Sequence[Place], nonces: NonceSource = RANDOM_NONCES

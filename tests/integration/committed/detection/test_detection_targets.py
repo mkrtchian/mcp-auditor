@@ -6,11 +6,10 @@ import yaml
 from evals.cve.detection.targets import (
     ACCEPTANCE_TARGETS,
     OUT_OF_SCOPE_FLAWS,
-    FallbackScopeKind,
-    LaunchMode,
     Target,
 )
 from evals.cve.exchange_log import ExchangeLog
+from evals.cve.kit.target import FallbackScopeKind, LaunchMode
 from evals.cve.layout import PROJECT
 from evals.cve.places import Places
 from evals.cve.planting_base import LayoutMount

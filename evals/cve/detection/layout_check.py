@@ -24,7 +24,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from evals.cve.detection.route_check import RouteObservations, has_route
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.targets import Target
+from evals.cve.kit.target import LaunchMode
 from evals.cve.places import Place, Places
 
 _GAVE_UP_REASON = "the container cannot run the server"

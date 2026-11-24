@@ -1,9 +1,10 @@
 import tests.unit.detection.support.test_detection_targets_given as given
 import tests.unit.support.fictional_planting as planting
 from evals.cve.detection import exploits
-from evals.cve.detection.targets import LaunchMode, TargetVersion, target_services
+from evals.cve.detection.targets import TargetVersion, target_services
 from evals.cve.environments import LaunchShape
 from evals.cve.images import image_tag
+from evals.cve.kit.target import LaunchMode
 from evals.cve.layout import PROJECT
 from mcp_auditor.domain.audited_server import AuditedServer
 from mcp_auditor.domain.models import AuditCategory, AuditPayload, BlockedPayload, ToolDefinition

@@ -30,11 +30,12 @@ from evals.cve import (
     units,
 )
 from evals.cve.detection import holdout_environments
-from evals.cve.detection.targets import LaunchMode, Target
+from evals.cve.detection.targets import Target
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
 from evals.cve.file_baselines import BaselineStore
 from evals.cve.grammar import DETECTION_RUNGS, FlawClass, TargetStatus
 from evals.cve.images import dockerfile_instructions
+from evals.cve.kit.target import LaunchMode
 from evals.cve.places import Coordinates, Place, PlaceKind, Places, kept_records
 from evals.cve.planting import PlantingHost
 from evals.cve.planting_base import LayoutMount

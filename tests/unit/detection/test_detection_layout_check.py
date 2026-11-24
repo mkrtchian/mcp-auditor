@@ -10,7 +10,7 @@ from evals.cve.detection.layout_check import (
     unrouted_kept_places,
 )
 from evals.cve.detection.route_check import RouteObservations
-from evals.cve.detection.targets import LaunchMode
+from evals.cve.kit.target import LaunchMode
 from evals.cve.places import LayoutAnchor, PlaceKind
 from tests.unit.detection.support.fictional_places import a_catalogue_place, a_layout_place
 from tests.unit.detection.support.layouts import SOUND_LAYOUT
