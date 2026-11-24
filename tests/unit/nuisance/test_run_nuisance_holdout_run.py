@@ -94,6 +94,14 @@ def test_run_records_the_census_walk_record_and_admission_commits_in_its_result(
     assert result["admission_commit"] == "commit-of-nuisance_admission.json"
 
 
+def test_run_hands_its_orchestrator_two_runs_by_default(tmp_path: Path):
+    deps, captured = given.an_admitted_run_capturing_its_inputs()
+
+    assert run_nuisance.main(given.a_run_command(tmp_path), deps) == 0
+
+    assert [inputs.runs for inputs in captured] == [2]
+
+
 def test_run_writes_its_result_before_the_report(tmp_path: Path):
     deps = given.an_admitted_run_failing_its_report_write()
     report = tmp_path / "nuisance_report.json"

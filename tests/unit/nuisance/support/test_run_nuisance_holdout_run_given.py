@@ -54,6 +54,21 @@ def an_admitted_run_keeping_its_provenance() -> NuisanceCommandDeps:
     return _run_with(run)
 
 
+def an_admitted_run_capturing_its_inputs() -> tuple[
+    NuisanceCommandDeps, list[NuisanceHoldoutRunInputs]
+]:
+    captured: list[NuisanceHoldoutRunInputs] = []
+
+    async def orchestrator(
+        inputs: NuisanceHoldoutRunInputs, /, *, deps: NuisanceDeps
+    ) -> NuisanceHoldoutRunResult:
+        captured.append(inputs)
+        return a_run_result()
+
+    run = dataclasses.replace(_an_admitted_run(a_run_result()), orchestrate=orchestrator)
+    return _run_with(run), captured
+
+
 def a_run_result() -> NuisanceHoldoutRunResult:
     return a_run([a_server_result()])
 

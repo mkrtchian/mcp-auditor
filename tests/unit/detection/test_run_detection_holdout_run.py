@@ -103,6 +103,20 @@ def test_run_writes_the_report_beside_its_result(tmp_path: Path, monkeypatch: py
     assert not json.loads(report.with_suffix(".result.json").read_text())["partial"]
 
 
+def test_run_hands_its_orchestrator_three_runs_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    command_deps.a_ready_run(monkeypatch)
+    deps, captured = given.a_drawn_run_capturing_its_inputs()
+
+    exit_code = run_detection_holdout.main(
+        _run_flags(tmp_path, tmp_path / "holdout_report.json"), deps
+    )
+
+    assert exit_code == 0
+    assert [inputs.runs for inputs in captured] == [3]
+
+
 def test_the_result_and_the_report_carry_the_glossary_keys(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
