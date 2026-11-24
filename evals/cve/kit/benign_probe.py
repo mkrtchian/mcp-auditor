@@ -11,7 +11,6 @@ the run launch by tests.
 import argparse
 import asyncio
 import json
-import os
 import tempfile
 from collections.abc import Callable, Coroutine, Generator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
@@ -21,7 +20,7 @@ from typing import Any
 
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
-from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse, docker_client_env
+from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse
 from evals.cve.kit.launch import Launch
 from evals.cve.nuisance.confinement import single_container_launch_args
 from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
@@ -54,11 +53,7 @@ class ProbeReport:
 async def probe(launch: Launch, calls: Sequence[ProbeCall], tool_call_timeout: int) -> ProbeReport:
     with tempfile.TemporaryFile("w+") as server_stderr:
         async with KitMCPClient.connect(
-            launch.command,
-            launch.args,
-            env=docker_client_env(os.environ),
-            errlog=server_stderr,
-            tool_call_timeout=tool_call_timeout,
+            launch, errlog=server_stderr, tool_call_timeout=tool_call_timeout
         ) as client:
             return await probe_client(client, calls)
 

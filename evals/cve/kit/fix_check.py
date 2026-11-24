@@ -17,7 +17,6 @@ module reaches it through evals.cve.detection.baseline. A parity test pins the t
 """
 
 import json
-import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping
@@ -25,7 +24,7 @@ from dataclasses import asdict, dataclass, replace
 from typing import Literal
 
 from evals.cve.grammar import FlawClass, PlantedTarget
-from evals.cve.kit.client import KitClient, KitMCPClient, docker_client_env
+from evals.cve.kit.client import KitClient, KitMCPClient
 from evals.cve.kit.driver import Exchange, KitExchangeLog, unit_of
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitBuilder
@@ -140,12 +139,7 @@ async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:
     with tempfile.TemporaryFile("w+") as server_stderr:
         try:
             with fixture.builder(image_tag(service), spec, LaunchShape.NORMAL) as launch:
-                async with KitMCPClient.connect(
-                    launch.command,
-                    launch.args,
-                    env=docker_client_env(os.environ),
-                    errlog=server_stderr,
-                ) as client:
+                async with KitMCPClient.connect(launch, errlog=server_stderr) as client:
                     connected = True
                     benign = KitExchangeLog(client)
                     for benign_call in fixture.benign_calls:

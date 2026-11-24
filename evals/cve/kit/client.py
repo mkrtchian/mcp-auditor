@@ -11,7 +11,8 @@ Containment is the Docker target and the layout mounts alone.
 """
 
 import asyncio
-from collections.abc import AsyncGenerator, Mapping, Sequence
+import os
+from collections.abc import AsyncGenerator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Protocol, Self
@@ -21,8 +22,11 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import get_default_environment, stdio_client
 from mcp.types import PaginatedRequestParams, TextContent, Tool
 
+from evals.cve.kit.launch import Launch
+
 _DEFAULT_TOOL_CALL_TIMEOUT = 60
 _INITIALIZE_TIMEOUT = 120
+_LIST_TOOLS_TIMEOUT = 120
 
 # The host-side `docker` client variables (not the container's). The MCP SDK passes only a
 # minimal environment to the process it spawns, so a rootless DOCKER_HOST would be lost at launch
@@ -54,38 +58,31 @@ class KitClient(Protocol):
     async def call_tool(self, name: str, args: dict[str, Any]) -> KitResponse: ...
 
 
-def docker_client_env(environ: Mapping[str, str]) -> dict[str, str]:
-    return {name: environ[name] for name in _DOCKER_CLIENT_VARIABLES if name in environ}
-
-
 class KitMCPClient:
     _session: ClientSession
     _tool_call_timeout: int
-    _list_tools_timeout: float
 
     @classmethod
     @asynccontextmanager
     async def connect(
         cls,
-        command: str,
-        args: Sequence[str],
+        launch: Launch,
         *,
-        env: Mapping[str, str] | None = None,
         errlog: Any = None,
         tool_call_timeout: int = _DEFAULT_TOOL_CALL_TIMEOUT,
-        initialize_timeout: float = _INITIALIZE_TIMEOUT,
     ) -> AsyncGenerator[Self]:
         client = cls()
         client._tool_call_timeout = tool_call_timeout
-        client._list_tools_timeout = initialize_timeout
         params = StdioServerParameters(
-            command=command, args=list(args), env=get_default_environment() | dict(env or {})
+            command=launch.command,
+            args=list(launch.args),
+            env=get_default_environment() | _docker_client_env(os.environ),
         )
         body_error: BaseException | None = None
         try:
             async with AsyncExitStack() as stack:
                 client._session = await _open_session(stack, params, errlog)
-                async with asyncio.timeout(initialize_timeout):
+                async with asyncio.timeout(_INITIALIZE_TIMEOUT):
                     await client._session.initialize()
                 try:
                     yield client
@@ -102,7 +99,7 @@ class KitMCPClient:
                 raise body_error  # noqa: B904
 
     async def list_tools(self) -> list[KitTool]:
-        async with asyncio.timeout(self._list_tools_timeout):
+        async with asyncio.timeout(_LIST_TOOLS_TIMEOUT):
             tools = await _list_every_page(self._session)
         return [_to_kit_tool(tool) for tool in tools]
 
@@ -116,6 +113,10 @@ class KitMCPClient:
             return KitResponse(str(exc), True)
         text = "\n".join(item.text for item in result.content if isinstance(item, TextContent))
         return KitResponse(text, result.isError)
+
+
+def _docker_client_env(environ: Mapping[str, str]) -> dict[str, str]:
+    return {name: environ[name] for name in _DOCKER_CLIENT_VARIABLES if name in environ}
 
 
 def _only_broken_streams(group: BaseExceptionGroup) -> bool:

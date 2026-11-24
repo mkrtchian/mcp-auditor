@@ -11,7 +11,6 @@ that runs as any account but the unprivileged one or the one named after a nonce
 Docker options the builder yields.
 """
 
-import os
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,13 +18,7 @@ from enum import StrEnum
 from typing import Any
 
 from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
-from evals.cve.kit.client import (
-    KitClient,
-    KitMCPClient,
-    KitResponse,
-    KitTool,
-    docker_client_env,
-)
+from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse, KitTool
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitTarget
 from evals.cve.places import Place, Places, kept_records
@@ -136,12 +129,7 @@ async def _exercise(
         try:
             with target.builder(image, spec, LaunchShape.NORMAL) as launch:
                 options = options_before_image(launch.args, image)
-                async with KitMCPClient.connect(
-                    launch.command,
-                    launch.args,
-                    env=docker_client_env(os.environ),
-                    errlog=server_stderr,
-                ) as client:
+                async with KitMCPClient.connect(launch, errlog=server_stderr) as client:
                     benign = KitExchangeLog(client)
                     await target.benign(places, benign)
                     exploits: list[KitExchangeLog] = []

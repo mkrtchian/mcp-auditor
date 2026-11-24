@@ -29,7 +29,7 @@ Landmine flags (CLAUDE.md), each named against the failure it guards:
 
 import os
 import subprocess
-from collections.abc import Generator, Mapping, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
@@ -79,8 +79,6 @@ _WORKSPACE = ANCHOR_PATHS[LayoutAnchor.WORKSPACE]  # the mount target, /srv
 _PROJECT = ANCHOR_PATHS[LayoutAnchor.PROJECT]  # the in-scope checkout, /srv/app
 _CHECKOUT = Path(_PROJECT).relative_to(_WORKSPACE)  # the checkout's path under the temp root
 
-FALLBACK_SCOPE = _PROJECT  # the documented default scope a broken scope-carrying server falls to
-
 
 @dataclass(frozen=True)
 class Launch:
@@ -89,12 +87,6 @@ class Launch:
     chain_budget: int = 0
     max_chain_steps: int = 3
     scope: str | None = None
-
-
-@dataclass(frozen=True)
-class PlantedLaunch:
-    launch: Launch
-    nonces: Mapping[str, str]
 
 
 @contextmanager

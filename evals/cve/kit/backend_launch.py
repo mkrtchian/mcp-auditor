@@ -1,10 +1,10 @@
 """The server launch of a nuisance server with a backend, from that backend's lifecycle record.
 
-Parity note: it mirrors evals/cve/nuisance/provisioners.py, whose provisioners build the same argv
-from the same backend functions. A test pins every registered backend's launch here equal to its
-provisioner's. A shared backend's containers, which `ensure` brings up, serve every launch and
-stay running once the launch ends, only the server container is removed. A per-launch backend is
-stood for this launch alone and removed with its server.
+The nuisance provisioner (evals/cve/nuisance/provisioners.provisioned_launch) runs this launch with
+an admitted server's image, host and launch, and wraps it in the repository's Launch, since
+evals.cve.environments reaches mcp_auditor. A shared backend's containers, which `ensure` brings
+up, serve every launch and stay running once the launch ends, only the server container is
+removed. A per-launch backend is stood for this launch alone and removed with its server.
 """
 
 import importlib

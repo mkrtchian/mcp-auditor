@@ -16,7 +16,7 @@ import pytest
 from evals.cve.backends.doris import DORIS_DB
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images, image_tag
 from evals.cve.kit.backends import doris_backend_env
-from evals.cve.kit.client import KitMCPClient, docker_client_env
+from evals.cve.kit.client import KitMCPClient
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
 
@@ -44,9 +44,7 @@ async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
     spec = planting_spec((), host, RANDOM_NONCES)
     with doris_backend_env(image_tag(_SERVICE), spec) as launch:
-        async with KitMCPClient.connect(
-            launch.command, launch.args, env=docker_client_env(os.environ)
-        ) as client:
+        async with KitMCPClient.connect(launch) as client:
             tools = await client.list_tools()
             response = await client.call_tool(
                 "get_table_comment", {"table_name": "mytable", "db_name": DORIS_DB}

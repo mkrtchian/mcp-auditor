@@ -6,13 +6,12 @@ the test_cve_planting.py convention (CVE_PLANTING_REQUIRED=1 turns the skip into
 missing or foreign image is rebuilt through compose.
 """
 
-import os
 import subprocess
 
 import pytest
 
 from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images, image_tag
-from evals.cve.kit.client import KitMCPClient, docker_client_env
+from evals.cve.kit.client import KitMCPClient
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
@@ -51,9 +50,7 @@ async def test_list_tools_and_a_benign_call_over_a_real_launch():
     spec = planting_spec((), host, RANDOM_NONCES)
     with filesystem_env(_IMAGE, spec) as launch:
         options = options_before_image(launch.args, _IMAGE)
-        async with KitMCPClient.connect(
-            launch.command, launch.args, env=docker_client_env(os.environ)
-        ) as client:
+        async with KitMCPClient.connect(launch) as client:
             tools = await client.list_tools()
             response = await client.call_tool("list_directory", {"path": "/srv/app"})
 
