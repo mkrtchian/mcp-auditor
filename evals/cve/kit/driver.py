@@ -1,9 +1,10 @@
 """The no-LLM calibration check the agent runs until a fixture reproduces, free of mcp_auditor.
 
-Parity note: it mirrors evals/cve/detection/calibration_check.check_target (with
-not_live_reasons / not_fixed_reasons) and evals/cve/exchange_log.ExchangeLog. Rewritten on
-the kit client and KitTarget; the grading logic reuses the clean grammar (evals.cve.grammar,
-proofs and units) unchanged, so the kit grades exactly as the detection suite does. Unlike the
+Parity note: it mirrors evals/cve/detection/calibration_check.check_target and
+evals/cve/exchange_log.ExchangeLog, rewritten on the kit client and KitTarget. not_live_reasons
+and not_fixed_reasons are defined here and the repository's calibration check imports them, so
+the grammar golden master and the detection unit tests pin what the kit grades. The grading
+logic reuses the clean grammar (evals.cve.grammar, proofs and units) unchanged. Unlike the
 repository's calibration check, the builder is entered synchronously (no worker thread): the kit
 checks one target's calibration at a time, so there is no event loop to keep free, and the kit
 stays clear of evals/concurrency. Beyond the repository's check, `check_target` reports a launch
@@ -20,7 +21,7 @@ from typing import Any
 from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
 from evals.cve.kit.client import KitClient, KitMCPClient, KitResponse, KitTool
 from evals.cve.kit.launch import LaunchShape, image_tag
-from evals.cve.kit.target import KitTarget
+from evals.cve.kit.target import KitExploit, KitTarget
 from evals.cve.places import Place, Places, kept_records
 from evals.cve.planting_base import UNPRIVILEGED_GID, UNPRIVILEGED_UID, PlantingSpec
 from evals.cve.proofs import is_aimed, proofs_in
@@ -57,14 +58,15 @@ async def check_target(target: KitTarget, places: Places) -> list[str]:
     vulnerable version, then the patched one once it is torn down."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    vulnerable = await _exercise(target, records, TargetVersion.VULNERABLE, places)
+    exercise = _Exercise(target, records, places)
+    vulnerable = await exercise.version(TargetVersion.VULNERABLE)
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
     reasons = not_live_reasons(
         _graded(target, vulnerable), _units(vulnerable.exploits), unit_of(vulnerable.benign)
     )
     reasons += _account_conditions(TargetVersion.VULNERABLE, vulnerable)
-    patched = await _exercise(target, records, TargetVersion.PATCHED, places)
+    patched = await exercise.version(TargetVersion.PATCHED)
     if patched is None:
         reasons.append(_launch_failed(TargetVersion.PATCHED))
     else:
@@ -116,30 +118,39 @@ class _Exercised:
     benign: list[Exchange]
 
 
-async def _exercise(
-    target: KitTarget,
-    records: tuple[Place, ...],
-    version: TargetVersion,
-    places: Places,
-) -> _Exercised | None:
-    spec = target.planting_spec(records)
-    service = target.patched_image if version is TargetVersion.PATCHED else target.server_image
-    image = image_tag(service)
-    with tempfile.TemporaryFile("w+") as server_stderr:
-        try:
-            with target.builder(image, spec, LaunchShape.NORMAL) as launch:
-                options = options_before_image(launch.args, image)
-                async with KitMCPClient.connect(launch, errlog=server_stderr) as client:
-                    benign = KitExchangeLog(client)
-                    await target.benign(places, benign)
-                    exploits: list[KitExchangeLog] = []
-                    for exploit in target.exploits:
-                        recorder = KitExchangeLog(client)
-                        await exploit(places, recorder)
-                        exploits.append(recorder)
-        except Exception:
-            return None
-    return _Exercised(spec, options, [r.exchanges for r in exploits], benign.exchanges)
+@dataclass(frozen=True)
+class _Exercise:
+    target: KitTarget
+    records: tuple[Place, ...]
+    places: Places
+
+    async def version(self, version: TargetVersion) -> _Exercised | None:
+        target = self.target
+        spec = target.planting_spec(self.records)
+        service = target.patched_image if version is TargetVersion.PATCHED else target.server_image
+        image = image_tag(service)
+        with tempfile.TemporaryFile("w+") as server_stderr:
+            try:
+                with target.builder(image, spec, LaunchShape.NORMAL) as launch:
+                    options = options_before_image(launch.args, image)
+                    async with KitMCPClient.connect(launch, errlog=server_stderr) as client:
+                        benign, exploits = await self._calls(client)
+            except Exception:
+                return None
+        return _Exercised(spec, options, exploits, benign)
+
+    async def _calls(self, client: KitClient) -> tuple[list[Exchange], list[list[Exchange]]]:
+        benign = await logged_exchanges(self.target.benign, self.places, client)
+        exploits = [
+            await logged_exchanges(exploit, self.places, client) for exploit in self.target.exploits
+        ]
+        return benign, exploits
+
+
+async def logged_exchanges(call: KitExploit, places: Places, client: KitClient) -> list[Exchange]:
+    log = KitExchangeLog(client)
+    await call(places, log)
+    return log.exchanges
 
 
 def options_before_image(args: Sequence[str], image: str) -> list[str]:

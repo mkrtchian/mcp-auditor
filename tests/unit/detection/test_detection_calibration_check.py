@@ -9,14 +9,13 @@ import tests.unit.detection.support.test_detection_calibration_check_given as gi
 from evals.cve.detection.calibration_check import (
     CheckOptions,
     check_target,
-    not_fixed_reasons,
-    not_live_reasons,
     passes_calibration_check,
     report_launch_error,
 )
 from evals.cve.detection.targets import TargetVersion
 from evals.cve.failure_text import FULL_DETAIL, TYPES_ONLY
 from evals.cve.grammar import FlawClass
+from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons
 from evals.cve.units import unit_of_exchanges
 from tests.unit.support.captured_console import a_captured_console
 

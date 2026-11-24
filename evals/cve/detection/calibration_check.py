@@ -14,7 +14,7 @@ version answers a ping sent right after the handshake, which no verdict reads.
 import asyncio
 import json
 import tempfile
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import IO
 
@@ -24,11 +24,11 @@ from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
-from evals.cve.grammar import GradedTarget, PlantedTarget, ProofKind
+from evals.cve.grammar import PlantedTarget
+from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons
 from evals.cve.launch_audit import Connect
 from evals.cve.launch_retry import NotLaunched, first_launch
 from evals.cve.places import Place, Places, kept_records
-from evals.cve.proofs import is_aimed, proofs_in
 from evals.cve.units import Unit, unit_of_exchanges
 from evals.eval_display import console
 from mcp_auditor.domain.ports import MCPClientPort
@@ -109,25 +109,6 @@ async def check_target(
     return reasons
 
 
-def not_live_reasons(target: GradedTarget, exploits: Sequence[Unit], benign: Unit) -> list[str]:
-    nonce = ProofKind.PLANTED_NONCE.value
-    conditions: list[str] = []
-    if not target.nonces:
-        conditions.append("keeps no place")
-    for index, exploit in enumerate(exploits):
-        if not is_aimed(exploit, target.aim):
-            conditions.append(f"exploit {index} not aimed")
-    surfaced = {place for exploit in exploits for place in proofs_in(exploit, target)}
-    for place_id in sorted(target.nonces):
-        if place_id not in surfaced:
-            conditions.append(f"exploit surfaces no nonce for {place_id}")
-    if proofs_in(benign, target):
-        conditions.append(f"negative control: benign call surfaces {nonce}")
-    if is_aimed(benign, target.aim):
-        conditions.append("negative control: benign call reads as aimed")
-    return conditions
-
-
 def _launch_failed(version: TargetVersion) -> str:
     return f"the {version.value} version did not launch"
 
@@ -143,19 +124,6 @@ def _not_fixed_reasons(target: Target, patched: _Exercised) -> list[str]:
     return not_fixed_reasons(
         _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
     )
-
-
-def not_fixed_reasons(
-    target: GradedTarget, exploits: Sequence[Unit], benign_errored: bool
-) -> list[str]:
-    conditions = [
-        f"patched: exploit {index} still surfaces {place_id}"
-        for index, exploit in enumerate(exploits)
-        for place_id in sorted(proofs_in(exploit, target))
-    ]
-    if benign_errored:
-        conditions.append("patched: benign call errored")
-    return conditions
 
 
 @dataclass(frozen=True)

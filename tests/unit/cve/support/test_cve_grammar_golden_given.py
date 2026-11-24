@@ -21,9 +21,9 @@ from typing import Any
 import tests.unit.cve.support.cve_grammar_golden_corpus as corpus
 import tests.unit.cve.support.strike_inputs as strike
 import tests.unit.support.grammar_inputs as grammar
-from evals.cve.detection.calibration_check import not_fixed_reasons, not_live_reasons
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.grammar import CreditCheck, GradedTarget, grade_run, resolve
+from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons
 from evals.cve.proofs import GradedRun, UnitPlace, is_aimed, proofs_in, struck_by_replay
 from evals.cve.report_units import units_of
 from evals.cve.units import Unit

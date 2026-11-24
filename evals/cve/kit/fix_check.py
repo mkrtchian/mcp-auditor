@@ -10,7 +10,7 @@ driver: one flaw at a time, no event loop, no evals/concurrency.
 
 The result is a pure function of the exchanges each version records (`fix_check_result`), kept
 apart from the launches so the record logic is tested with no Docker, as driver keeps
-not_live_reasons apart from its _exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
+not_live_reasons apart from its _Exercise. FixCheckResult mirrors nuisance_admission.FixCheckRecord
 field for field, except relies_on_relaying_stand_in, a judgment the admission records and the kit
 does not observe; it is kit-local because the kit imports nothing from mcp_auditor and the admission
 module reaches it through evals.cve.detection.baseline. A parity test pins the two field sets equal.
@@ -19,21 +19,21 @@ module reaches it through evals.cve.detection.baseline. A parity test pins the t
 import json
 import re
 import tempfile
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from typing import Literal
 
 from evals.cve.grammar import FlawClass, PlantedTarget
-from evals.cve.kit.client import KitClient, KitMCPClient
-from evals.cve.kit.driver import Exchange, KitExchangeLog, unit_of
+from evals.cve.kit.client import KitMCPClient
+from evals.cve.kit.driver import Exchange, logged_exchanges, unit_of
 from evals.cve.kit.launch import LaunchShape, image_tag
-from evals.cve.kit.target import KitBuilder
+from evals.cve.kit.target import KitBuilder, KitExploit
 from evals.cve.places import Place, Places
 from evals.cve.planting import RANDOM_NONCES, NonceSource, PlantingHost, PlantingSpec
 from evals.cve.planting import planting_spec as compute_planting_spec
 from evals.cve.proofs import is_aimed, proofs_in
 
-FixCheckExploit = Callable[[Places, KitClient], Awaitable[None]]
+FixCheckExploit = KitExploit
 
 
 @dataclass(frozen=True)
@@ -141,21 +141,20 @@ async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:
             with fixture.builder(image_tag(service), spec, LaunchShape.NORMAL) as launch:
                 async with KitMCPClient.connect(launch, errlog=server_stderr) as client:
                     connected = True
-                    benign = KitExchangeLog(client)
-                    for benign_call in fixture.benign_calls:
-                        await benign_call(places, benign)
-                    exploits: list[KitExchangeLog] = []
-                    for exploit in fixture.exploits:
-                        exploit_log = KitExchangeLog(client)
-                        await exploit(places, exploit_log)
-                        exploits.append(exploit_log)
+                    benign: list[Exchange] = []
+                    for call in fixture.benign_calls:
+                        benign += await logged_exchanges(call, places, client)
+                    exploits = [
+                        await logged_exchanges(exploit, places, client)
+                        for exploit in fixture.exploits
+                    ]
         except Exception as exc:
             # Only a launch or connection failure reads as "did not launch"; an exploit that
             # raises once the client is up is the agent's bug and propagates as itself.
             if connected:
                 raise
             raise RuntimeError(f"the {service} version did not launch") from exc
-    return Exercised(spec.nonces, [r.exchanges for r in exploits], benign.exchanges)
+    return Exercised(spec.nonces, exploits, benign)
 
 
 def _surfaces(fixture: FixCheckFixture, exercise: Exercised) -> bool:
