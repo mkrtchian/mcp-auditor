@@ -1,5 +1,5 @@
-"""Where a fixture's stand-in outputs come from, shared by the nuisance admission and the holdout
-calibration card: what the stand-in replaces, why the real software cannot run under the
+"""Where a fixture's stand-in outputs come from, shared by the nuisance admission and a holdout
+target's card: what the stand-in replaces, why the real software cannot run under the
 confinement, the repository file that implements it, and the source of each output it serves.
 Beside it, the release of each real software a fixture runs.
 """

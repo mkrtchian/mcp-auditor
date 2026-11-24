@@ -1,6 +1,6 @@
 """The Docker integration tests skip when a prerequisite is missing, and fail instead under
-`CVE_PLANTING_REQUIRED=1`, set by the CI integration job and the CVE calibration job: a green
-step there must mean the Docker path ran."""
+`CVE_PLANTING_REQUIRED=1`, set by the CI integration job and the detection calibration check job:
+a green step there must mean the Docker path ran."""
 
 import os
 import shutil

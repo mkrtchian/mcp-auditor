@@ -63,8 +63,9 @@ def gap_population(
 def draw_order_flaws(
     classifications: dict[str, list[Classification]], candidates: set[str]
 ) -> set[str]:
-    """The flaws of `candidates` that meet the draw-order criteria, the container gate aside:
-    a flaw of a server judged unable to run in a container is still drawn and calibrated."""
+    """The flaws of `candidates` that meet the draw-order criteria, the runs-in-container
+    criterion aside: a flaw of a server judged unable to run in a container is still drawn and
+    calibrated."""
     return {
         flaw
         for flaw, seen in _by_flaw(classifications).items()

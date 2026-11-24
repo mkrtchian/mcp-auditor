@@ -8,7 +8,7 @@ from evals.eval_display import console
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import AuditReport
 
-# A missed model call (a policy refusal, an unreadable answer or a prompt longer than the model's
+# A missed model call (a provider refusal, an unreadable answer or a prompt longer than the model's
 # context window) leaves a run with no detection or counted alarm saying nothing. The generated
 # prompts differ from one audit to the next, so a new attempt usually passes the provider's filter
 # and gets a readable answer.

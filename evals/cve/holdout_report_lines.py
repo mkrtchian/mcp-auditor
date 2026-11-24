@@ -136,7 +136,7 @@ def incomplete_runs_lines(
     count: int, touched: Sequence[str], by_cause: Mapping[str, int]
 ) -> list[str]:
     """The count with the members it touches (detection-suite-rule.md, Run conditions and statistic
-    (An audit with a step refused)), then one line per cause."""
+    (An audit with a model call refused by the model provider)), then one line per cause."""
     count_line = f"{INCOMPLETE_RUNS}: {count}"
     cause_lines = [f"- {cause}: {runs} run(s)" for cause, runs in sorted(by_cause.items())]
     return [f"{count_line} ({', '.join(touched)})" if touched else count_line, *cause_lines]
