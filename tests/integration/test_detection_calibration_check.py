@@ -16,9 +16,8 @@ from evals.cve.detection.layout_report import check_layouts_and_routes
 from evals.cve.detection.survey import TargetSurvey, survey_all, survey_one
 from evals.cve.detection.targets import Target, TargetVersion
 from evals.cve.failure_text import TYPES_ONLY
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
 from evals.cve.places import DETECTION_PLACES, Places, load_places
-from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
+from tests.integration.support.docker_prerequisites import image_prerequisites
 from tests.unit.support.acceptance_targets import GIT, an_acceptance_target
 
 
@@ -276,14 +275,8 @@ async def test_check_layouts_and_routes_fails_a_normal_target_the_layout_breaks_
 
 
 async def test_the_git_target_starts_on_the_valid_reference_arm(capsys: pytest.CaptureFixture[str]):
-    missing = missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
     target = an_acceptance_target(GIT)
-    try:
-        ensure_images([target.server_image, target.patched_image], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
+    image_prerequisites([target.server_image, target.patched_image])
 
     failures = await check_layouts_and_routes([target], load_places(DETECTION_PLACES))
 

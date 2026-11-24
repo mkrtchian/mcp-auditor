@@ -1,21 +1,18 @@
 """A real Docker launch of the filesystem acceptance image through the kit launch and client.
 
 The guard the unit isolation test cannot be: a landmine Docker flag lost in the copy fails
-list_tools or the benign call here, where the static scan sees nothing. Skipped without Docker,
-the test_cve_planting.py convention (CVE_PLANTING_REQUIRED=1 turns the skip into a failure). A
-missing or foreign image is rebuilt through compose.
+list_tools or the benign call here, where the static scan sees nothing. Skipped or failed as
+`docker_prerequisites` says. A missing or foreign image is rebuilt through compose.
 """
-
-import subprocess
 
 import pytest
 
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images, image_tag
+from evals.cve.images import image_tag
 from evals.cve.kit.client import KitMCPClient
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
-from tests.integration.support.docker_prerequisites import skip_or_require
+from tests.integration.support.docker_prerequisites import image_prerequisites
 
 _SERVICE = "filesystem"
 _IMAGE = image_tag(_SERVICE)
@@ -23,26 +20,7 @@ _IMAGE = image_tag(_SERVICE)
 
 @pytest.fixture(autouse=True, scope="module")
 def _prerequisites() -> None:
-    missing = _missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
-    try:
-        ensure_images([_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
-
-
-def _missing_prerequisite() -> str | None:
-    if _docker("version") != 0:
-        return "the kit integration test needs Docker"
-    return None
-
-
-def _docker(*args: str) -> int:
-    try:
-        return subprocess.run(["docker", *args], capture_output=True, text=True).returncode
-    except OSError:
-        return 127
+    image_prerequisites([_SERVICE])
 
 
 async def test_list_tools_and_a_benign_call_over_a_real_launch():

@@ -3,11 +3,8 @@
 # the only instrument of the production `DockerPlanting` and the readiness probe (the fake
 # stands in everywhere else), so it must go red on a planting regression.
 #
-# Skipped without Docker, as `test_confined_launch.py` is. `CVE_PLANTING_REQUIRED=1`, set by
-# the CI integration job and the CVE calibration job, turns that skip into a failure: a green
-# step there must mean the planting path ran. A missing or foreign sentinel image is rebuilt
+# Skipped or failed as `docker_prerequisites` says. A missing or foreign sentinel image is rebuilt
 # through compose before the first case.
-import os
 import time
 
 import pytest
@@ -17,27 +14,14 @@ import tests.integration.support.recording_planting as recording_planting
 import tests.integration.support.test_cve_planting_given as given
 import tests.integration.support.test_cve_planting_then as then
 from evals.cve import planting_docker
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve.layout import owned_layout
 from evals.cve.planting import DockerPlanting, PlantingFailed, planted
-from evals.cve.planting_base import (
-    SENTINEL_IMAGE,
-    SENTINEL_SERVICE,
-    UNPRIVILEGED_GID,
-    UNPRIVILEGED_UID,
-)
-from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
+from evals.cve.planting_base import SENTINEL_IMAGE, SENTINEL_SERVICE
+from tests.integration.support.docker_prerequisites import image_prerequisites
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _planting_prerequisites() -> None:
-    missing = missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
-    try:
-        ensure_images([SENTINEL_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
+    image_prerequisites([SENTINEL_SERVICE])
 
 
 @pytest.mark.parametrize("shape", ["no_network", "holder", "bridge_alias"])
@@ -196,15 +180,6 @@ def test_work_starts_empty_takes_a_file_and_names_no_nonce_as_its_owner(with_an_
     assert observed.created
     assert not any(nonce in observed.listing for nonce in spec.nonces.values())
     assert "nobody" in observed.listing
-
-
-def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_link():
-    with owned_layout(DockerPlanting(), given.a_tree_holding_a_dangling_absolute_link) as root:
-        link = os.lstat(root / given.DANGLING_LINK)
-        assert (link.st_uid, link.st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
-        assert (root.stat().st_uid, root.stat().st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
-
-    assert not root.parent.exists()
 
 
 def test_a_probe_killed_past_its_run_timeout_leaves_no_container(monkeypatch: pytest.MonkeyPatch):

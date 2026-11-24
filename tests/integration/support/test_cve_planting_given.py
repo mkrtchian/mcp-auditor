@@ -3,7 +3,6 @@ import subprocess
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
 
 from evals.cve.closed_network import create_closed_network
 from evals.cve.planting import (
@@ -21,12 +20,6 @@ from tests.integration.support.target_commands import READ_TIMEOUT, TargetComman
 
 # Docker reads the `g` suffix as 1024³ bytes.
 MEMORY_BOUND_BYTES = int(MEMORY_BOUND.removesuffix("g")) * 1024**3
-DANGLING_LINK = "leak/report"
-
-
-def a_tree_holding_a_dangling_absolute_link(root: Path) -> None:
-    (root / "leak").mkdir(parents=True)
-    (root / DANGLING_LINK).symlink_to("/nowhere/in/the/helper")
 
 
 @dataclass(frozen=True)

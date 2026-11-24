@@ -22,10 +22,16 @@ from tests.unit.support.docker_argv import mount_of
 LayoutBuilder = Callable[[Path], None]
 GIT_SERVICE = "git"  # the read-write git launch's image, which carries git, unlike the sentinel
 UNPRIVILEGED_USER = "65534:65534"  # the layout's owner
+DANGLING_LINK = "leak/report"
 
 
 def the_full_layout(root: Path) -> None:
     build_layout(root, [])
+
+
+def a_tree_holding_a_dangling_absolute_link(root: Path) -> None:
+    (root / "leak").mkdir(parents=True)
+    (root / DANGLING_LINK).symlink_to("/nowhere/in/the/helper")
 
 
 @dataclass(frozen=True)

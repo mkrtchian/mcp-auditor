@@ -5,8 +5,7 @@ yields a launch that connects, and the benign call of the holdout target's detec
 without error. Behind NUISANCE_DORIS=1 because it pulls apache/doris:all-in-one-4.1.3 and
 mysql:8.0.46, both pinned by digest, waits on the cluster's health (up to 240 s + 180 s) and leaves
 the persistent cluster and its two networks running, as a holdout run does by design. Under the
-flag, Docker absent skips, or fails when CVE_PLANTING_REQUIRED=1 (the test_cve_planting.py
-convention).
+flag, skipped or failed as `docker_prerequisites` says.
 """
 
 import os
@@ -14,11 +13,11 @@ import os
 import pytest
 
 from evals.cve.backends.doris import DORIS_DB
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images, image_tag
+from evals.cve.images import image_tag
 from evals.cve.kit.backends import doris_backend_env
 from evals.cve.kit.client import KitMCPClient
 from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
-from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
+from tests.integration.support.docker_prerequisites import image_prerequisites
 
 _SERVICE = "holdout-2025-66335-doris-patched"
 
@@ -31,13 +30,7 @@ def _prerequisites() -> None:
             "mysql:8.0.46, both pinned by digest, waits on the cluster and leaves it running; "
             "set NUISANCE_DORIS=1 to run"
         )
-    missing = missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
-    try:
-        ensure_images([_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
+    image_prerequisites([_SERVICE])
 
 
 async def test_the_doris_backend_builder_launches_and_answers_a_benign_call():

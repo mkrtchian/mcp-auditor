@@ -4,28 +4,24 @@
 # the real adapter hands every node over to that account, and that it removes whatever a
 # read-write server left in the tree.
 #
-# Skipped without Docker, failed under `CVE_PLANTING_REQUIRED=1`, as `test_cve_planting.py`. A
-# missing or foreign sentinel or git image is rebuilt through compose before the first case, and
-# the first case pulls the pinned busybox the hand-over and the removal run.
+# Skipped or failed as `docker_prerequisites` says. A missing or foreign sentinel or git image is
+# rebuilt through compose before the first case, and the first case pulls the pinned busybox the
+# hand-over and the removal run.
+
+import os
 
 import pytest
 
 import tests.integration.support.test_cve_layout_mount_given as given
-from evals.cve.images import ComposeImageStore, ImageBuildFailed, ensure_images
-from evals.cve.layout import build_empty_layout
-from evals.cve.planting_base import SENTINEL_SERVICE
-from tests.integration.support.docker_prerequisites import missing_prerequisite, skip_or_require
+from evals.cve.layout import build_empty_layout, owned_layout
+from evals.cve.planting_base import SENTINEL_SERVICE, UNPRIVILEGED_GID, UNPRIVILEGED_UID
+from evals.cve.planting_docker import DOCKER_PLANTING
+from tests.integration.support.docker_prerequisites import image_prerequisites
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _docker_prerequisites() -> None:
-    missing = missing_prerequisite()
-    if missing is not None:
-        skip_or_require(missing)
-    try:
-        ensure_images([SENTINEL_SERVICE, given.GIT_SERVICE], ComposeImageStore())
-    except ImageBuildFailed as error:
-        pytest.fail(str(error))
+    image_prerequisites([SENTINEL_SERVICE, given.GIT_SERVICE])
 
 
 def test_an_unprivileged_server_resolves_the_layout_by_absolute_path_and_from_its_parent():
@@ -71,6 +67,15 @@ def test_every_node_of_the_layout_belongs_to_the_unprivileged_account(
     results = given.an_unprivileged_server_reads(builder, [command])
 
     assert results[command] == given.CommandResult(0, ""), results
+
+
+def test_the_adapter_hands_over_and_removes_a_tree_holding_a_dangling_absolute_link():
+    with owned_layout(DOCKER_PLANTING, given.a_tree_holding_a_dangling_absolute_link) as root:
+        link = os.lstat(root / given.DANGLING_LINK)
+        assert (link.st_uid, link.st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
+        assert (root.stat().st_uid, root.stat().st_gid) == (UNPRIVILEGED_UID, UNPRIVILEGED_GID)
+
+    assert not root.parent.exists()
 
 
 def test_a_server_on_the_read_write_git_launch_writes_to_the_checkout_and_git_accepts_it():
