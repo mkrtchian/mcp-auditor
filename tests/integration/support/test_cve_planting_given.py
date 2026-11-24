@@ -4,18 +4,12 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
+import tests.unit.support.fictional_planting as fictional
 from evals.cve.closed_network import create_closed_network
-from evals.cve.planting import (
-    RANDOM_NONCES,
-    PlantedArgs,
-    PlantingHost,
-    PlantingSpec,
-    SymbolicUser,
-    planting_spec,
-)
+from evals.cve.planting import RANDOM_NONCES, PlantedArgs, PlantingSpec
 from evals.cve.planting_base import LABEL, MEMORY_BOUND, SENTINEL_IMAGE
 from evals.cve.planting_spec import request_target
-from tests.integration.support.planting_specs import IP_LITERAL, spec_of
+from tests.integration.support.planting_specs import IP_LITERAL, an_endpoint_spec
 from tests.integration.support.target_commands import READ_TIMEOUT, TargetCommand, run_as_target
 
 # Docker reads the `g` suffix as 1024³ bytes.
@@ -82,11 +76,10 @@ def host_search_domain_reaches_a_plain_container() -> bool:
 
 def a_launch_of_shape(shape: str) -> PlantingSpec:
     if shape == "no_network":
-        planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", False)
-        return planting_spec([], planting_host, RANDOM_NONCES)
+        return fictional.spec_of([], fictional.unprivileged_host(), RANDOM_NONCES)
     if shape == "holder":
-        return spec_of(IP_LITERAL, "/fict/secret", has_network=True)
-    return spec_of("meta.fict", "/fict/secret", has_network=True)
+        return an_endpoint_spec(IP_LITERAL, "/fict/secret", has_network=True)
+    return an_endpoint_spec("meta.fict", "/fict/secret", has_network=True)
 
 
 def read_as_target(args: PlantedArgs, host: str, path: str) -> str:

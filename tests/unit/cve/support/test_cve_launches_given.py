@@ -3,30 +3,13 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from evals.cve.places import Coordinates, Place, PlaceKind
-from evals.cve.planting import (
-    RANDOM_NONCES,
-    PlantingHost,
-    PlantingSpec,
-    SymbolicUser,
-    planting_spec,
-)
+from evals.cve.planting import RANDOM_NONCES, PlantingSpec
 from evals.cve.planting_base import LAYOUT_PREFIX
+from tests.unit.support.fictional_planting import file_place, spec_of, unprivileged_host
 
 
 def a_spec_with_a_file_place() -> PlantingSpec:
-    place = Place(
-        id="file-1",
-        family="fictional",
-        reaches=frozenset({"arbitrary_read"}),
-        kind=PlaceKind.FILE,
-        coordinates=Coordinates(PlaceKind.FILE, path="/etc/fictional/secret"),
-    )
-    return planting_spec((place,), _no_network_host(), RANDOM_NONCES)
-
-
-def _no_network_host() -> PlantingHost:
-    return PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
+    return spec_of([file_place()], unprivileged_host(working_directory="/"), RANDOM_NONCES)
 
 
 @contextmanager

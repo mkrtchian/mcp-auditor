@@ -9,7 +9,7 @@ from collections.abc import Generator
 from evals.cve.closed_network import create_closed_network
 from evals.cve.planting import DockerPlanting, PlantedArgs, confinement_args, planted
 from evals.cve.planting_base import LABEL, SENTINEL_IMAGE
-from tests.integration.support.planting_specs import IP_LITERAL, spec_of
+from tests.integration.support.planting_specs import IP_LITERAL, an_endpoint_spec
 
 PINNED_NAME = "pinned.test"
 UNPINNED_NAME = "example.com"
@@ -86,7 +86,7 @@ def a_container_on(network: str) -> Generator[str]:
 @contextlib.contextmanager
 def a_planted_launch_with_a_network() -> Generator[PlantedArgs]:
     """An IP-literal sentinel, so the launch joins a holder on the planting's own network."""
-    spec = spec_of(IP_LITERAL, "/fict/secret", has_network=True)
+    spec = an_endpoint_spec(IP_LITERAL, "/fict/secret", has_network=True)
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         yield args
 

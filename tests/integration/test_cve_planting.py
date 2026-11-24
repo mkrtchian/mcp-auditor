@@ -51,7 +51,7 @@ def test_the_holder_and_the_target_run_under_the_memory_bound_with_no_swap():
 
 
 def test_a_planted_ip_literal_endpoint_serves_its_nonce():
-    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/secret")
+    spec = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         body = given.read_as_target(args, planting_specs.IP_LITERAL, "/fict/secret")
@@ -60,8 +60,8 @@ def test_a_planted_ip_literal_endpoint_serves_its_nonce():
 
 
 def test_two_coexisting_launches_each_serve_their_own_nonce():
-    spec_a = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/a")
-    spec_b = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/b")
+    spec_a = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, "/fict/a")
+    spec_b = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, "/fict/b")
 
     with (
         planted(spec_a, SENTINEL_IMAGE, DockerPlanting()) as args_a,
@@ -88,7 +88,7 @@ def test_two_coexisting_launches_each_serve_their_own_nonce():
     ],
 )
 def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
-    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, path)
+    spec = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, path)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         body = given.read_as_target(args, planting_specs.IP_LITERAL, path)
@@ -102,7 +102,7 @@ def test_a_path_a_client_rewrites_on_the_wire_serves_the_nonce(path: str):
     ids=["reserved_block_add_host", "bridge_alias", "localhost"],
 )
 def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool):
-    spec = planting_specs.spec_of(host, "/fict/secret", has_network=has_network)
+    spec = planting_specs.an_endpoint_spec(host, "/fict/secret", has_network=has_network)
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         body = given.read_as_target(args, host, "/fict/secret")
@@ -112,7 +112,7 @@ def test_a_name_host_serves_its_nonce_read_by_name(host: str, has_network: bool)
 
 @pytest.mark.parametrize("has_network", [False, True], ids=["no_network", "network"])
 def test_a_file_place_beside_a_name_host_still_serves_its_nonce(has_network: bool):
-    spec = planting_specs.spec_of(
+    spec = planting_specs.an_endpoint_spec(
         "meta.fict", "/fict/secret", has_network=has_network, file_at="/etc/fict"
     )
 
@@ -126,7 +126,7 @@ def test_a_file_place_over_etc_hosts_beside_a_name_host_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
-    spec = planting_specs.spec_of("meta.fict", "/fict/secret", file_at="/etc/hosts")
+    spec = planting_specs.an_endpoint_spec("meta.fict", "/fict/secret", file_at="/etc/hosts")
 
     with pytest.raises(PlantingFailed), planted(spec, SENTINEL_IMAGE, DockerPlanting()):
         pass
@@ -136,7 +136,7 @@ def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_fails_the_probe(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr("evals.cve.planting_docker._SENTINEL_PROBE_BUDGET", 3.0)
-    spec = planting_specs.spec_of(
+    spec = planting_specs.an_endpoint_spec(
         "meta.fict", "/fict/secret", has_network=True, file_at="/etc/resolv.conf"
     )
 
@@ -145,7 +145,7 @@ def test_a_file_place_over_resolv_conf_beside_a_bridge_alias_fails_the_probe(
 
 
 def test_a_one_sentinel_launch_tears_down_well_under_the_sigterm_grace():
-    spec = planting_specs.spec_of(planting_specs.IP_LITERAL, "/fict/secret")
+    spec = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, "/fict/secret")
 
     with planted(spec, SENTINEL_IMAGE, DockerPlanting()) as args:
         assert given.read_as_target(args, planting_specs.IP_LITERAL, "/fict/secret")
@@ -159,7 +159,7 @@ def test_no_labelled_container_or_network_outlives_two_launches():
     docker = recording_planting.RecordingPlanting()
 
     for suffix in ("/fict/one", "/fict/two"):
-        spec = planting_specs.spec_of(planting_specs.IP_LITERAL, suffix, has_network=True)
+        spec = planting_specs.an_endpoint_spec(planting_specs.IP_LITERAL, suffix, has_network=True)
         with planted(spec, SENTINEL_IMAGE, docker) as args:
             assert (
                 given.read_as_target(args, planting_specs.IP_LITERAL, suffix)
