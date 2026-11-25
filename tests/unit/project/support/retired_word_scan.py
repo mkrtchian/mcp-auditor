@@ -6,9 +6,9 @@ glossary, `docs/usage.md`, `docs/evals.md`, the two rules, the preambles of the 
 `.github/workflows/`. Everything else is historical and never read: ADRs, plans, the glossary
 log, the published CHANGELOG sections, the dated log entries, and the committed records (every
 JSON file under the code roots), key files, binaries and the files above 100 KB under the code
-roots, which embed a device capture. The glossary test, its given module and the modules that
-hold the patterns and the exemptions are skipped too. A test name is also read with `_` as a
-space, so a retired word inside a snake_case name is found.
+roots, which embed a device capture. The modules that hold the patterns and the exemptions are
+skipped too. A test name is also read with `_` as a space, so a retired word inside a snake_case
+name is found.
 """
 
 import bisect
@@ -116,9 +116,6 @@ _WHOLE_FILES = (
 _CODE_ROOTS = ("src", "evals", "tests")
 _WORKFLOWS = ".github/workflows"
 _SKIPPED = (
-    "tests/unit/project/test_glossary.py",
-    "tests/unit/project/support/test_glossary_given.py",
-    "tests/integration/committed/project/test_glossary.py",
     "tests/integration/committed/project/support/retired_words.py",
     "tests/integration/committed/project/support/retired_word_exemptions.py",
 )
