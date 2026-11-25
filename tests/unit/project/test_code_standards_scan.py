@@ -297,6 +297,17 @@ def test_a_shared_support_module_importing_a_given_is_foreign():
     assert given.found(source) == [(FOREIGN, "test_thing_given")]
 
 
+def test_a_test_importing_the_given_of_a_same_named_test_elsewhere_is_foreign():
+    source = given.a_source(
+        """
+        import tests.unit.area.support.test_thing_given as given
+        """,
+        path="tests/integration/committed/area/test_thing.py",
+    )
+
+    assert given.found(source) == [(FOREIGN, "test_thing_given")]
+
+
 def test_a_module_outside_the_tests_may_import_a_given():
     source = given.a_source(
         """

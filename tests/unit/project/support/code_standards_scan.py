@@ -2,10 +2,11 @@
 
 Three standards, each read on the AST of one module. Newspaper order: a top-level function every
 user of which sits below it, and no code Python runs at import time uses, is out of order. One
-given/then pair per test file: under `tests/`, only `test_x.py`, `test_x_given.py` and
-`test_x_then.py` import `test_x_given` or `test_x_then`. Fakes, not mocks: no
-`monkeypatch.setattr`. A violation's line is reported, never compared: the debt list keys a
-violation by path, standard and symbol, so an unrelated edit never moves it.
+given/then pair per test file: under `tests/`, only `test_x.py` and the `test_x_given.py` and
+`test_x_then.py` of its directory's `support/` (or beside it) import that `test_x_given` or
+`test_x_then`. Fakes, not mocks: no `monkeypatch.setattr`. A violation's line is reported,
+never compared: the debt list keys a violation by path, standard and symbol, so an unrelated edit
+never moves it.
 """
 
 import ast
@@ -150,30 +151,46 @@ _GIVEN_OR_THEN = re.compile(r"(test_\w+)_(?:given|then)")
 def _foreign_given_then_imports(source: SourceFile, module: ast.Module) -> list[Violation]:
     if not source.path.startswith("tests/"):
         return []
-    importer = PurePosixPath(source.path).stem
+    owned = _owners(source.path)
     return [
-        Violation(source.path, CodeStandard.FOREIGN_GIVEN_THEN, imported, line)
+        Violation(source.path, CodeStandard.FOREIGN_GIVEN_THEN, last, line)
         for imported, line in sorted(_imported_modules(module), key=lambda pair: pair[1])
-        if (match := _GIVEN_OR_THEN.fullmatch(imported)) and importer not in _owners(match.group(1))
+        if _GIVEN_OR_THEN.fullmatch(last := imported.split(".")[-1]) and imported not in owned
     ]
 
 
-# The last component of every module an import may name: `import a.b`, `from a import b` (b may
-# be a module) and `from a.b import name`.
+# The full dotted name of every module an import may name: `import a.b`, `from a import b` (b may
+# be a module) and `from a.b import name`. A relative import is not resolved against its package.
 def _imported_modules(module: ast.Module) -> list[tuple[str, int]]:
     imported: list[tuple[str, int]] = []
     for node in ast.walk(module):
         if isinstance(node, ast.Import):
-            imported += [(alias.name.split(".")[-1], node.lineno) for alias in node.names]
+            imported += [(alias.name, node.lineno) for alias in node.names]
         elif isinstance(node, ast.ImportFrom):
             if node.module:
-                imported.append((node.module.split(".")[-1], node.lineno))
-            imported += [(alias.name, node.lineno) for alias in node.names]
+                imported.append((node.module, node.lineno))
+            package = f"{node.module}." if node.module else ""
+            imported += [(f"{package}{alias.name}", node.lineno) for alias in node.names]
     return imported
 
 
-def _owners(test_stem: str) -> set[str]:
-    return {test_stem, f"{test_stem}_given", f"{test_stem}_then"}
+# A test's given and then sit in its directory's `support/`, or beside it. A given or then maps
+# back to the test it serves, so it owns the same modules.
+def _owners(path: str) -> set[str]:
+    importer = PurePosixPath(path).with_suffix("")
+    directory, test = importer.parent, importer.name
+    if match := _GIVEN_OR_THEN.fullmatch(test):
+        test = match.group(1)
+        if directory.name == "support":
+            directory = directory.parent
+    package = ".".join(directory.parts)
+    return {
+        f"{package}.{test}",
+        f"{package}.support.{test}_given",
+        f"{package}.support.{test}_then",
+        f"{package}.{test}_given",
+        f"{package}.{test}_then",
+    }
 
 
 def _monkeypatch_setattrs(source: SourceFile, module: ast.Module) -> list[Violation]:
