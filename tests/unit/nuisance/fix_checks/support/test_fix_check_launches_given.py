@@ -9,9 +9,11 @@ from evals.cve.nuisance.fix_checks import (
     cve_2026_35402_neo4j_cypher,
     cve_2026_41041_gravitino,
     cve_2026_46341_apify,
+    cve_2026_55787_flyto,
     cve_2026_61462_gitlab,
     cve_2026_77252_atlassian,
     mcp_ssh_fix_check,
+    n8n_redirect_stand_in,
 )
 
 _ADDRESS = "10.0.0.100"
@@ -60,4 +62,9 @@ CONFINED_LAUNCHES: dict[str, Callable[[], list[str]]] = {
 HAND_BUILT_LAUNCHES: dict[str, Callable[[], list[str]]] = {
     **CONFINED_LAUNCHES,
     **UNCONFINED_LAUNCHES,
+}
+
+JOINER_LAUNCHES: dict[str, Callable[[], list[str]]] = {
+    "flyto-server": lambda: cve_2026_55787_flyto.server_launch("holder", "image").args,
+    "n8n-server": lambda: n8n_redirect_stand_in.server_launch("holder", "image").args,
 }

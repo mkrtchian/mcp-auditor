@@ -35,6 +35,9 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 # TEST-NET-3: bound inside the holder's namespace, so the server's SSRF guard treats the
 # stand-in's origin as an ordinary public host rather than loopback.
 STAND_IN_IP = "203.0.113.10"
+_SENTINEL_HOST = "127.0.0.1"
+_SENTINEL_PATH = "/flag"
+_SENTINEL_URL = f"http://{_SENTINEL_HOST}{_SENTINEL_PATH}"
 MARKER = "redirect-trigger"
 AUDIT_MARKER = "filesystem"
 
@@ -48,7 +51,7 @@ RUN cat > /standin.py <<'PY'
 import json, os, re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-REDIR_TARGET = os.environ.get('REDIR_TARGET', 'http://127.0.0.1/flag')
+REDIR_TARGET = os.environ.get('REDIR_TARGET', '{_SENTINEL_URL}')
 BIND_ADDR = os.environ.get('BIND_ADDR', '0.0.0.0')
 MARKER = '{MARKER}'
 AUDIT_MARKER = '{AUDIT_MARKER}'
@@ -116,7 +119,7 @@ def http_place(place_id: str) -> Place:
         family="fix_check",
         reaches=frozenset({"internal_fetch"}),
         kind=PlaceKind.HTTP_ENDPOINT,
-        coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host="127.0.0.1", path="/flag"),
+        coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host=_SENTINEL_HOST, path=_SENTINEL_PATH),
     )
 
 
@@ -138,7 +141,7 @@ def ssrf_redirect_env(
         _run_detached(sentinel, _sentinel_tail(holder, nonce))
         _run_detached(stand_in, _stand_in_tail(holder))
         time.sleep(1.5)
-        yield _server_launch(holder, image)
+        yield server_launch(holder, image)
     finally:
         _remove(stand_in, sentinel, holder)
 
@@ -185,8 +188,8 @@ def _sentinel_tail(holder: str, nonce: str) -> list[str]:
         "--cap-add", "NET_BIND_SERVICE",
         "--network", f"container:{holder}",
         "-e", f"FLAG={nonce}",
-        "-e", "SERVE_FILE=/flag",
-        "-e", "BIND_ADDR=127.0.0.1",
+        "-e", f"SERVE_FILE={_SENTINEL_PATH}",
+        "-e", f"BIND_ADDR={_SENTINEL_HOST}",
         SENTINEL_IMAGE,
     ]  # fmt: skip
 
@@ -195,13 +198,13 @@ def _stand_in_tail(holder: str) -> list[str]:
     return [
         "--cap-add", "NET_BIND_SERVICE",
         "--network", f"container:{holder}",
-        "-e", "REDIR_TARGET=http://127.0.0.1/flag",
+        "-e", f"REDIR_TARGET={_SENTINEL_URL}",
         "-e", f"BIND_ADDR={STAND_IN_IP}",
         _STAND_IN_TAG,
     ]  # fmt: skip
 
 
-def _server_launch(holder: str, image: str) -> Launch:
+def server_launch(holder: str, image: str) -> Launch:
     return Launch(
         command="docker",
         args=[
@@ -209,19 +212,9 @@ def _server_launch(holder: str, image: str) -> Launch:
             *confinement_args(),
             *unprivileged_user_args(),
             "--network", f"container:{holder}",
-            *n8n_server_env_args(),
+            "-e", f"N8N_API_URL=http://{STAND_IN_IP}/",
+            "-e", "N8N_API_KEY=calib-key",
+            "-e", "N8N_MCP_TELEMETRY_DISABLED=true",
             image,
         ],
     )  # fmt: skip
-
-
-def n8n_server_env_args() -> list[str]:
-    """The server's own env, pointed at the stand-in with telemetry off. Pure: no Docker call."""
-    return [
-        "-e",
-        f"N8N_API_URL=http://{STAND_IN_IP}/",
-        "-e",
-        "N8N_API_KEY=calib-key",
-        "-e",
-        "N8N_MCP_TELEMETRY_DISABLED=true",
-    ]
