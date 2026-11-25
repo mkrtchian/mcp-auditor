@@ -1,13 +1,13 @@
 from evals.cve.nuisance.admission.holdout_target_reference import holdout_fixture_file
 from evals.cve.nuisance.admission.re_admission_dossier import copied_holdout_targets
-from tests.unit.nuisance.admission.support import (
-    test_nuisance_re_admission_dossier_given as re_admission,
+from tests.unit.support.committed_nuisance_admission import (
+    the_committed_admission,
+    the_copy_resolution,
 )
-from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
 def test_every_copied_flaw_resolves_to_one_target_and_one_fixture():
-    resolution = re_admission.the_copy_resolution()
+    resolution = the_copy_resolution()
     for server in the_committed_admission().servers:
         calibrated = {
             flaw.flaw

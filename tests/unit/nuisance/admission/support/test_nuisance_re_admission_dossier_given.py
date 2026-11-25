@@ -6,9 +6,7 @@ from pathlib import Path
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
-from evals.cve.detection.holdout_targets import HOLDOUT_TARGETS
 from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
-from evals.cve.nuisance.admission.holdout_calibration_copies import copy_targets
 from evals.cve.nuisance.admission.re_admission_dossier import (
     copied_holdout_targets,
     re_admission_plan,
@@ -20,6 +18,7 @@ from evals.repository import REPO_ROOT
 from tests.unit.support.committed_nuisance_admission import (
     the_committed_admission,
     the_committed_walk_inputs,
+    the_copy_resolution,
 )
 
 PER_LAUNCH_NETWORK_PREFIX = "fake-per-launch-net"
@@ -64,12 +63,6 @@ def a_committed_server_with_a_holdout_calibration_copy() -> AdmittedServer:
         server
         for server in the_committed_admission().servers
         if copied_holdout_targets(server, resolution)
-    )
-
-
-def the_copy_resolution() -> dict[str, str]:
-    return copy_targets(
-        [target.flaw_id for target in HOLDOUT_TARGETS], the_committed_walk_inputs().census.draw
     )
 
 

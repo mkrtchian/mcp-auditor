@@ -41,7 +41,10 @@ from tests.unit.nuisance.support.committed_admission_servers import (
     a_detection_holdout_server_with_its_own_fix_check,
     its_holdout_targets,
 )
-from tests.unit.support.committed_nuisance_admission import the_committed_admission
+from tests.unit.support.committed_nuisance_admission import (
+    the_committed_admission,
+    the_copy_resolution,
+)
 
 type DossierOf = Callable[[AdmittedServer], Path]
 
@@ -90,7 +93,7 @@ def test_a_fix_check_dossier_carries_its_record_rule_dockerfiles_and_fix_checks(
     record = AdmittedServer.model_validate_json((out / "admission_record.json").read_text())
     assert record == server
     assert (out / "nuisance-suite-rule.md").read_text() == NUISANCE_SUITE_RULE.read_text()
-    services = re_admission_dockerfiles(server, given.the_copy_resolution())
+    services = re_admission_dockerfiles(server, the_copy_resolution())
     for service in (*services, SENTINEL_SERVICE, STAND_IN_SERVICE):
         assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
     for module in (
@@ -126,7 +129,7 @@ def test_a_holdout_calibration_copy_dossier_carries_its_holdout_target_reference
 
     out = dossier_of(server)
 
-    for target in copied_holdout_targets(server, given.the_copy_resolution()):
+    for target in copied_holdout_targets(server, the_copy_resolution()):
         it_carries_the_holdout_target_reference_of(out, target)
         for service in (*target.images, target.patched_image):
             assert (out / "evals" / "docker" / image_dockerfile(service).name).exists(), service
