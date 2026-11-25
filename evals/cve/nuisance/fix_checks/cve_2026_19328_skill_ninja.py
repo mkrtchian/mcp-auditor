@@ -8,7 +8,7 @@ configured: the root is the working directory, trusted because it holds a projec
 
 The witness is the name of a skill directory, `<root>/.github/skills/<nonce>/`, on a read-only
 mount outside the workspace root: `skillNinja_list` returns the names of the skill directories
-under the path it is given, so the nonce surfaces as a directory name and never as file content,
+under the path it is given, so the witness surfaces as a directory name and never as file content,
 which no tool of the flaw returns. `skillNinja_uninstall` of a skill the path does not hold
 answers with the same listing. `skillNinja_install` and `skillNinja_recommend` reach the flaw with
 the same out-of-root path but return a write error and the path's top-level project analysis, so
@@ -36,7 +36,7 @@ WORKSPACE = "/workspace"
 OUTSIDE_ROOT = "/outside"
 AIM = re.compile(re.escape(OUTSIDE_ROOT))
 
-# The nonce is the name of the last directory: the builder plants it there, nothing at this path
+# The witness is the name of the last directory: the builder plants it there, nothing at this path
 # is file content.
 WITNESS = Place(
     id="skill-ninja-outside-skill-name",
@@ -60,8 +60,8 @@ def skill_ninja_env(
         shutil.rmtree(outside, ignore_errors=True)
 
 
-def _plant_skill_directory(outside: Path, nonce: str) -> None:
-    skill = outside / ".github" / "skills" / nonce
+def _plant_skill_directory(outside: Path, witness: str) -> None:
+    skill = outside / ".github" / "skills" / witness
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("# A skill\n")
     for current, _, files in os.walk(outside):

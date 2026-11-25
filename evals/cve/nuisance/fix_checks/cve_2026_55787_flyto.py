@@ -59,7 +59,7 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
 
 
 def _http_place(place_id: str) -> Place:
-    # The loopback sentinel each SSRF exploit reaches; the builder serves its nonce at /flag.
+    # The loopback sentinel each SSRF exploit reaches; the builder serves the witness at /flag.
     return Place(
         id=place_id,
         family="fix_check",
@@ -146,13 +146,13 @@ def ipv6_loopback_env(
     # CVE-2026-73530: `http://[::]/` routes to the IPv6 loopback, which the standard sentinel cannot
     # bind. A default-bound (dual-stack) sentinel in the server's own namespace holder is reached on
     # loopback by both `[::]` and `localhost`.
-    nonce = next(iter(spec.nonces.values()))
+    witness = next(iter(spec.nonces.values()))
     token = secrets.token_hex(4)
     holder = f"mcp-auditor-kit-flyto530-h-{token}"
     sentinel = f"mcp-auditor-kit-flyto530-s-{token}"
     try:
         _start_holder(holder)
-        _run_detached(sentinel, _sentinel_tail(holder, nonce))
+        _run_detached(sentinel, _sentinel_tail(holder, witness))
         time.sleep(1.5)
         yield server_launch(holder, image)
     finally:
@@ -235,7 +235,7 @@ def redirect_ssrf_env(
     # CVE-2026-67424: the guard validates the first URL (the allowlisted redirector at
     # localhost:8080) but follows its 302 to the internal sentinel at 127.0.0.1:80 without
     # revalidating. The redirector and the sentinel share the server's namespace holder.
-    nonce = next(iter(spec.nonces.values()))
+    witness = next(iter(spec.nonces.values()))
     _ensure_redirector_image()
     token = secrets.token_hex(4)
     holder = f"mcp-auditor-kit-flyto424-h-{token}"
@@ -243,7 +243,7 @@ def redirect_ssrf_env(
     redirector = f"mcp-auditor-kit-flyto424-r-{token}"
     try:
         _start_holder(holder)
-        _run_detached(sentinel, _sentinel_tail(holder, nonce, ("-e", "BIND_ADDR=127.0.0.1")))
+        _run_detached(sentinel, _sentinel_tail(holder, witness, ("-e", "BIND_ADDR=127.0.0.1")))
         _run_detached(
             redirector,
             [

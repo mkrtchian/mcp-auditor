@@ -52,7 +52,7 @@ def memory_keeper_env(
         yield Launch(command="docker", args=_run_args(image, export))
 
 
-def _witness_export(nonce: str) -> str:
+def _witness_export(witness: str) -> str:
     return json.dumps(
         {
             "version": "0.4.0",
@@ -66,7 +66,7 @@ def _witness_export(nonce: str) -> str:
                 "created_at": "2020-01-01T00:00:00.000Z",
             },
             "contextItems": [
-                {"key": WITNESS_KEY, "value": nonce, "category": None, "priority": None}
+                {"key": WITNESS_KEY, "value": witness, "category": None, "priority": None}
             ],
             "fileCache": [],
             "checkpoints": [],

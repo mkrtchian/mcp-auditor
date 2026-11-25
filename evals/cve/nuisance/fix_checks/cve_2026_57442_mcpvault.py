@@ -21,15 +21,15 @@ that takes its scope as a trailing argument. The vault is writable by the unpriv
 as a user's own vault is, so the note-editing tools answer; no call creates a directory, so the
 host user removes everything the server writes.
 
-Besides the witness file, the nested directory holds one note carrying the nonce as a frontmatter
+Besides the witness file, the nested directory holds one note carrying the witness as a frontmatter
 tag and as its body, the form the frontmatter, tag and search tools return. The responses of
 `get_notes_info`, `list_directory`, `get_vault_stats`, `patch_note`, `update_frontmatter`,
 `write_note` and `delete_note` carry no file content (metadata, names or a fixed success text),
 so their exploits are aimed and surface nothing themselves. `list_all_tags` returns the nested
-note's tag lowercased, which the case-sensitive nonce match does not read, so its exploit is
+note's tag lowercased, which the case-sensitive witness match does not read, so its exploit is
 aimed only too. `list_all_tags` and `get_vault_stats` take no path, so each runs after an aimed
 listing of the nested directory, and `delete_note` deletes the note `write_note` writes there.
-The moves surface the nonce by reading the moved note back from its ordinary path.
+The moves surface the witness by reading the moved note back from its ordinary path.
 """
 
 import dataclasses
@@ -98,14 +98,14 @@ def mcpvault_env(
             )
 
 
-def _write_vault(vault: Path, nonce: str) -> None:
+def _write_vault(vault: Path, witness: str) -> None:
     nested = vault / _NESTED_DIRECTORY
     nested.mkdir(parents=True)
     for directory in (vault, vault / "sub", nested):
         os.chmod(directory, 0o777)
     _write_world_writable(vault / _WELCOME_NOTE, "hello\n")
-    _write_world_writable(vault / _NESTED_FILE, nonce)
-    _write_world_writable(vault / _NESTED_NOTE, f"---\ntags:\n  - {nonce}\n---\n{nonce}\n")
+    _write_world_writable(vault / _NESTED_FILE, witness)
+    _write_world_writable(vault / _NESTED_NOTE, f"---\ntags:\n  - {witness}\n---\n{witness}\n")
 
 
 def _write_world_writable(path: Path, content: str) -> None:

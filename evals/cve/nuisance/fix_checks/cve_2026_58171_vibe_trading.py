@@ -8,7 +8,7 @@ parsed content, so a planted file named run.json that parses as a SwarmRun surfa
 final_report field in the response. The 0.1.10 fix rejects a run_id that is absolute,
 multi-segment, or contains "." / ".." / a path separator before the join.
 
-The generic per-file plant writes the bare nonce as content, but get_run_result needs a file
+The generic per-file plant writes the bare witness as content, but get_run_result needs a file
 that parses as a SwarmRun, so the witness is written by hand below (spec.files cleared) instead
 of through the generic mount, on the model of the mcpvault fixture's nested-mount workaround.
 The runs base directory sits seven segments below the filesystem root on the pinned
@@ -18,7 +18,7 @@ harmlessly at the root), landing on a witness mounted directly at /tmp/run.json.
 
 get_run_result and get_swarm_status load the run through the same traversal and return the
 same projection with final_report. retry_run loads it through the same traversal too, then starts
-a new run from the loaded run's preset_name: the planted run names the nonce as its preset, so on
+a new run from the loaded run's preset_name: the planted run names the witness as its preset, so on
 0.1.9 the preset lookup fails with an error quoting it. The planted run is completed, so
 retry_run's reconcile writes nothing to the read-only mount.
 """
@@ -85,10 +85,10 @@ def vibe_trading_env(
             )
 
 
-def _swarm_run_json(nonce: str) -> str:
+def _swarm_run_json(witness: str) -> str:
     return (
-        f'{{"id": "planted", "preset_name": "{nonce}", "status": "completed", '
-        f'"created_at": "2024-01-01T00:00:00Z", "final_report": "{nonce}"}}'
+        f'{{"id": "planted", "preset_name": "{witness}", "status": "completed", '
+        f'"created_at": "2024-01-01T00:00:00Z", "final_report": "{witness}"}}'
     )
 
 

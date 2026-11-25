@@ -9,7 +9,7 @@ notebook the server's user can read or write, outside the initialized workspace.
 (ef20992) canonicalises with `Path.resolve()` and asserts the result sits inside the canonical
 workspace root via `relative_to()`, in the one `resolve_path` every tool calls.
 
-The witness notebook carries the nonce in a markdown cell and in the stream output of a code
+The planted notebook carries the witness in a markdown cell and in the stream output of a code
 cell, so the exploits of `read_notebook`, `read_cell`, `read_notebook_outputs` and
 `read_cell_output` surface it. `list_notebooks` answers paths, and `create_notebook`,
 `edit_cell` and `add_cell` a confirmation, so their exploits list or write outside the workspace,
@@ -104,7 +104,7 @@ def _in_workspace(tool: str, arguments: dict[str, object]) -> FixCheckExploit:
 def notebook_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    """Plant a valid `.ipynb` carrying the witness nonce outside the workspace scope (`/srv/app`)
+    """Plant a valid `.ipynb` carrying the witness outside the workspace scope (`/srv/app`)
     and a benign notebook inside it, then launch the server over stdio against a writable
     `/srv`. The server has no scope-carrying deployment layout, so this mounts its own tree at
     /srv instead of the one evals.cve.layout builds."""
@@ -127,11 +127,11 @@ def notebook_env(
         )
 
 
-def _plant_notebooks(root: Path, nonce: str) -> None:
+def _plant_notebooks(root: Path, witness: str) -> None:
     app = root / "app"
     app.mkdir()
     (app / "main.ipynb").write_text(_notebook(_markdown_cell("benign workspace notebook")))
-    (root / "secret.ipynb").write_text(_notebook(_markdown_cell(nonce), _printed_cell(nonce)))
+    (root / "secret.ipynb").write_text(_notebook(_markdown_cell(witness), _printed_cell(witness)))
     # World-writable so the unprivileged (65534) server can run the write tools.
     for directory in (root, app):
         os.chmod(directory, 0o777)
