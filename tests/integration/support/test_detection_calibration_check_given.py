@@ -15,8 +15,8 @@ from tests.integration.support.detection_fake_targets import (
     a_file_place,
     reading,
 )
+from tests.integration.support.support_servers import CALIBRATION_READ_SERVER_PATH
 
-READ_SERVER_PATH = pathlib.Path(__file__).resolve().parent / "detection_read_server.py"
 KEPT_FLAG_ID = "fict-flag"
 KEPT = (KEPT_FLAG_ID,)
 OUTSIDE_ID = "fict-outside"
@@ -61,7 +61,7 @@ def a_target_whose_layout_breaks_the_patched_version(flaw_id: str) -> Target:
         if "patched" in image and shape is not LaunchShape.EMPTY_LAYOUT:
             yield Launch("docker", ["run", sys.executable, "-c", "import sys; sys.exit(1)"])
         else:
-            args = ["run", sys.executable, str(READ_SERVER_PATH), *_serve_args(spec)]
+            args = ["run", sys.executable, str(CALIBRATION_READ_SERVER_PATH), *_serve_args(spec)]
             yield Launch("docker", args)
 
     return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
@@ -191,7 +191,7 @@ def _serving_builder(
             args += counter.args(is_patched, shape)
         if broken_tools_list:
             args.append("broken-tools-list")
-        yield Launch("docker", ["run", sys.executable, str(READ_SERVER_PATH), *args])
+        yield Launch("docker", ["run", sys.executable, str(CALIBRATION_READ_SERVER_PATH), *args])
 
     return builder
 

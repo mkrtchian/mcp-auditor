@@ -1,5 +1,5 @@
-"""A read server for the replay and client transport integration tests, modelled on
-detection_read_server.py.
+"""A read server for the client transport, cancellation, failure, resume and kit client
+integration tests, and for the detection replay.
 
 Each `PATH=NONCE` argument serves that nonce behind that path, `echo` makes a read return its own
 path argument (so a replay sent an old nonce in an argument sees it echoed back), and
@@ -18,7 +18,7 @@ import time
 
 from mcp.server.fastmcp import FastMCP
 
-app = FastMCP("detection-replay-read-server")
+app = FastMCP("read-server")
 
 _served: dict[str, str] = {}
 _echo = False

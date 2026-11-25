@@ -21,7 +21,7 @@ class _BrokenToolsList(FastMCP):
         raise RuntimeError("tools/list broke")
 
 
-app = (_BrokenToolsList if "broken-tools-list" in sys.argv else FastMCP)("detection-read-server")
+app = (_BrokenToolsList if "broken-tools-list" in sys.argv else FastMCP)("calibration-read-server")
 
 _served: dict[str, str] = {}
 _errors: set[str] = set()

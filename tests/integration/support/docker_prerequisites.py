@@ -15,26 +15,26 @@ from mcp_auditor.adapters.docker import DockerRuntime
 
 
 def image_prerequisites(services: Sequence[str]) -> None:
-    missing = missing_prerequisite()
+    missing = _missing_docker()
     if missing is not None:
-        skip_or_require(missing)
+        _skip_or_require(missing)
     _ensure_or_fail(services)
 
 
 def stand_in_prerequisites() -> None:
-    missing = missing_prerequisite() or _missing_openssl()
+    missing = _missing_docker() or _missing_openssl()
     if missing is not None:
-        skip_or_require(missing)
+        _skip_or_require(missing)
     _ensure_or_fail([SENTINEL_SERVICE, STAND_IN_SERVICE])
 
 
-def missing_prerequisite() -> str | None:
+def _missing_docker() -> str | None:
     if not DockerRuntime().available():
         return "this test needs Docker"
     return None
 
 
-def skip_or_require(missing: str) -> NoReturn:
+def _skip_or_require(missing: str) -> NoReturn:
     if os.environ.get("CVE_PLANTING_REQUIRED") == "1":
         pytest.fail(missing)
     pytest.skip(missing)

@@ -169,6 +169,9 @@ Some older words are kept on purpose in living code and data, since changing the
 | stub | stand-in, or the real software | rename | 2026-11-02 |
 | target (the audited server, its command) | audited server, server command. "Target" now names the unit of the detection suite. | moved meaning | 2026-11-11 |
 | target (an HTTP request's target in a stand-in route, the `target` key of `evals/stand_ins/*.json`) | request target (`request_target`) | moved meaning | 2026-11-11 |
+| `test_mcp_client_given.paginated_launch` | `support_servers.a_paginated_server` | rename | 2026-11-25 |
+| `tests/integration/support/detection_read_server.py` | `tests/integration/support/calibration_read_server.py` | rename | 2026-11-25 |
+| `tests/integration/support/detection_replay_read_server.py` | `tests/integration/support/read_server.py` | rename | 2026-11-25 |
 | `tests/unit/census/support/advisory_sources.py` | `tests/unit/support/advisory_sources.py` | rename | 2026-11-25 |
 | `tests/unit/detection/support/layouts.py` | `tests/unit/support/layouts.py` | rename | 2026-11-25 |
 | `tests/unit/support/retired_word_scan.py` | `tests/unit/project/support/retired_word_scan.py` | rename | 2026-11-25 |
