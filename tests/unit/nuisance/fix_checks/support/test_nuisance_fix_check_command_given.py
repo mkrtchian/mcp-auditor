@@ -9,8 +9,7 @@ import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
 from evals.cve.closed_network import ClosedNetworkUnsupported
 from evals.cve.kit.fix_check import FixCheckFixture, FixCheckResult
-from evals.cve.nuisance.admission.admission import BackendFixture, FixCheckRecord, NuisanceAdmission
-from evals.cve.nuisance.backend_registry import BACKENDS
+from evals.cve.nuisance.admission.admission import FixCheckRecord, NuisanceAdmission
 from evals.cve.nuisance.fix_check_command import FixCheckCommandDeps, FixCheckDeps
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import FakeContainerSweep
@@ -107,6 +106,4 @@ def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> 
 
 
 def an_admission_on_the_ckan_backend() -> NuisanceAdmission:
-    ckan = BACKENDS["ckan"]
-    backend = BackendFixture(provisioner="ckan", images=list(ckan.images), network=ckan.network)
-    return mutations.admitting(mutations.with_a_backend(admissions.an_admitted_server(), backend))
+    return mutations.admitting(mutations.on_the_ckan_backend(admissions.an_admitted_server()))

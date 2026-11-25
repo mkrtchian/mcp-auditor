@@ -6,12 +6,16 @@ import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 from evals.cve.backends.lifecycle import BackendLifecycle
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.launch_audit import NO_OVERRIDES, RunOverrides, SessionAuditor
-from evals.cve.nuisance.admission.admission import AdmittedServer, BackendFixture
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.session_usage import SessionThrottles
 from mcp_auditor.domain.model_calls import MissedCallCause, MissedModelCall, ModelCallKind
 from mcp_auditor.domain.models import AuditReport
 from tests.unit.support.admission_mutations import with_a_backend
-from tests.unit.support.nuisance_admissions import a_fake_lifecycle, an_admitted_server
+from tests.unit.support.nuisance_admissions import (
+    a_fake_lifecycle,
+    a_registered_backend_fixture,
+    an_admitted_server,
+)
 
 
 def an_auditor_on_a_noisy_server(lost_calls: int) -> SessionAuditor:
@@ -60,10 +64,7 @@ def a_lifecycle_launching_an_unreadable_name() -> BackendLifecycle:
 
 def a_server_backed_by(lifecycle: BackendLifecycle) -> AdmittedServer:
     """A server whose backend fixture names the lifecycle, as `a_backend_registry` registers it."""
-    fixture = BackendFixture(
-        provisioner=lifecycle.key, images=["fake/backend:1.0"], network="fake-net"
-    )
-    return with_a_backend(an_admitted_server(), fixture)
+    return with_a_backend(an_admitted_server(), a_registered_backend_fixture(lifecycle.key))
 
 
 def a_lifecycle_raising(error: Exception) -> BackendLifecycle:

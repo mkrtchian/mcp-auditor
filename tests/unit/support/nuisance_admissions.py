@@ -13,6 +13,7 @@ from evals.cve.detection import baseline as detection_baseline
 from evals.cve.grammar import FlawClass
 from evals.cve.nuisance.admission.admission import (
     AdmittedServer,
+    BackendFixture,
     BenignCall,
     FieldAgreement,
     FixCheckRecord,
@@ -67,6 +68,13 @@ def a_backend_registry(lifecycle: BackendLifecycle | None = None) -> dict[str, R
             served=(),
         )
     }
+
+
+def a_registered_backend_fixture(key: str = "fake") -> BackendFixture:
+    registered = a_backend_registry(a_fake_lifecycle(key))[key]
+    return BackendFixture(
+        provisioner=key, images=list(registered.images), network=registered.network
+    )
 
 
 def a_fake_lifecycle(key: str = "fake") -> BackendLifecycle:
@@ -171,14 +179,14 @@ def a_flaw_record(
     )
 
 
-def a_passing_fix_check(server_patched_surfaces: bool | None = None) -> FixCheckRecord:
+def a_passing_fix_check() -> FixCheckRecord:
     return FixCheckRecord(
         source="fix_check",
         witness="nonce-0",
         exploit_calls=["read_file"],
         vulnerable_surfaces=True,
         patched_surfaces=False,
-        server_patched_surfaces=server_patched_surfaces,
+        server_patched_surfaces=None,
         patched_benign_errored=False,
         relies_on_relaying_stand_in=False,
     )
@@ -242,9 +250,8 @@ def an_admitted_server() -> AdmittedServer:
     )
 
 
-def a_server(flaws: list[FlawRecord], patched_version: str = PATCHED_VERSION) -> AdmittedServer:
-    server = an_admitted_server()
-    return server.model_copy(update={"flaws": flaws, "patched_version": patched_version})
+def a_server(flaws: list[FlawRecord]) -> AdmittedServer:
+    return an_admitted_server().model_copy(update={"flaws": flaws})
 
 
 def a_recorded_exit(
