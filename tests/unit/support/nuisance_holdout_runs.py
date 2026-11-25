@@ -24,9 +24,7 @@ from tests.fakes import FakeContainerSweep, ScriptedBenignCall
 from tests.unit.support.holdout_run_conditions import SETTINGS, ready_conditions
 from tests.unit.support.unreached import unreached
 
-FIRST_FLAW = admissions.FIRST_FLAW
-SECOND_FLAW = admissions.SECOND_FLAW
-COUNTED_TOOL = f"{FIRST_FLAW}_read"
+COUNTED_TOOL = f"{admissions.FIRST_FLAW}_read"
 RECORDED_AT = "2026-10-22T00:00:00+00:00"
 DEFAULT_RUNS = 3
 
@@ -46,7 +44,7 @@ def a_server(
         if flaws is not None
         else [
             admissions.a_flaw_record(
-                FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, admissions.PATCHED_VERSION
+                admissions.FIRST_FLAW, FlawClass.READ_OUTSIDE_SCOPE, admissions.PATCHED_VERSION
             )
         ]
     )
@@ -165,7 +163,7 @@ async def run(
     the run conditions."""
     inputs = NuisanceHoldoutRunInputs(
         population=RunPopulation(servers, exits, pending),
-        draw_order=draw_entries((FIRST_FLAW, date(2026, 1, 1))),
+        draw_order=draw_entries((admissions.FIRST_FLAW, date(2026, 1, 1))),
         conditions=ready_conditions(),
         settings=SETTINGS,
         provenance=RunProvenance(

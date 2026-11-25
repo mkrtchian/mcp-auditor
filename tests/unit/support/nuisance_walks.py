@@ -14,8 +14,6 @@ from tests.unit.support import census_draws, censuses
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
-OUTSIDE_THE_GRAMMAR: dict[str, Any] = censuses.OUTSIDE_THE_GRAMMAR
-NOT_PINNABLE: dict[str, Any] = censuses.NOT_PINNABLE
 EFFECT_HIDDEN: dict[str, Any] = {"effect_in_tool_response": False}
 
 A_CURRENT_TARGET_FLAW = ACCEPTANCE_TARGETS[0].flaw_id

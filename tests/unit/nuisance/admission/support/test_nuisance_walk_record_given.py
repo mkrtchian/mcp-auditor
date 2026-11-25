@@ -3,6 +3,7 @@ from evals.cve.census.census import Census
 from evals.cve.census.classification import Criterion
 from evals.cve.detection.draw_record import Settlement
 from evals.cve.nuisance.admission.walk_record import IdentitySettlement, NuisanceWalkRecord
+from tests.unit.support import censuses
 
 
 def a_census_settling(flaw: str, criterion: Criterion, ruling: bool) -> Census:
@@ -15,7 +16,7 @@ def a_census() -> Census:
     return walks.a_census_walking(
         [("walked", "drawn", "npm:srv1")],
         queued={"server_package": "npm:srv2"},
-        unpinnable={"server_package": "npm:srv3", **walks.NOT_PINNABLE},
+        unpinnable={"server_package": "npm:srv3", **censuses.NOT_PINNABLE},
     )
 
 
@@ -26,7 +27,9 @@ def a_census_split_on_the_effect_of(flaw: str) -> Census:
 
 def a_census_split_on_the_grammar_class_of(flaw: str) -> Census:
     """The second classifier files the flaw outside the grammar, the first inside."""
-    return walks.with_the_second_classifier_overriding(a_census(), flaw, walks.OUTSIDE_THE_GRAMMAR)
+    return walks.with_the_second_classifier_overriding(
+        a_census(), flaw, censuses.OUTSIDE_THE_GRAMMAR
+    )
 
 
 def a_census_naming_two_packages_for_the_queue() -> Census:

@@ -15,6 +15,7 @@ from evals.cve.nuisance.admission.walk import (
 )
 from evals.cve.nuisance.admission.walk_record import normalized_package, reached_identifiers
 from evals.cve.nuisance.exits import ExitReason
+from tests.unit.support import censuses
 
 
 def test_reached_identifiers_raises_without_a_draw():
@@ -96,9 +97,9 @@ def test_candidate_counted_flaws_leave_the_class_to_the_admission():
             ("resources", "drawn", "npm:srv"),
         ],
         good_http=given.OVER_HTTP,
-        no_grammar=walks.OUTSIDE_THE_GRAMMAR,
+        no_grammar=censuses.OUTSIDE_THE_GRAMMAR,
         hidden=walks.EFFECT_HIDDEN,
-        unpinnable=walks.NOT_PINNABLE,
+        unpinnable=censuses.NOT_PINNABLE,
         resources=given.ON_RESOURCES,
     )
 
@@ -110,7 +111,7 @@ def test_candidate_counted_flaws_leave_the_class_to_the_admission():
 
 
 def test_a_pinnable_settlement_brings_a_flaw_in():
-    census = walks.a_census_walking([("u", "drawn", "npm:srv")], u=walks.NOT_PINNABLE)
+    census = walks.a_census_walking([("u", "drawn", "npm:srv")], u=censuses.NOT_PINNABLE)
     brought_in = walks.with_a_settlement(census, "u", Criterion.PINNABLE, True)
 
     before = candidate_counted_flaws("npm:srv", walks.walk_inputs_of(census))
@@ -136,7 +137,7 @@ def test_a_false_stdio_tools_call_settlement_leaves_a_flaw_reached_through_tools
 def test_a_server_whose_only_flaw_both_classifiers_file_outside_the_grammar_stays():
     census = walks.a_census_walking(
         [("ok", "drawn", "npm:ok"), ("outside", "drawn", "npm:outside")],
-        outside=walks.OUTSIDE_THE_GRAMMAR,
+        outside=censuses.OUTSIDE_THE_GRAMMAR,
     )
 
     then.the_population_is(walks.walk_inputs_of(census), "npm:ok", "npm:outside")

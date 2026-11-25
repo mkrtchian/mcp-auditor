@@ -1,3 +1,4 @@
+import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.walk import NuisanceServer, ReachedServers
@@ -11,11 +12,11 @@ def a_listing(*walked: NuisanceServer) -> ReachedServers:
 def walked(package: str, mark: ExitReason | None) -> NuisanceServer:
     return NuisanceServer(
         server_package=package,
-        reaching_flaw=holdout_runs.FIRST_FLAW,
+        reaching_flaw=admissions.FIRST_FLAW,
         reaching_position=1,
         in_addition=False,
-        flaws=(holdout_runs.FIRST_FLAW,),
-        candidate_counted_flaws=(holdout_runs.FIRST_FLAW,),
+        flaws=(admissions.FIRST_FLAW,),
+        candidate_counted_flaws=(admissions.FIRST_FLAW,),
         mark=mark,
     )
 
