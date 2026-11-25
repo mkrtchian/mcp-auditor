@@ -4,7 +4,14 @@ exists."""
 
 import json
 import shlex
+from dataclasses import dataclass
 
+from evals.cve.backends.kubernetes import (
+    CONTROL_PLANE_IMAGE,
+    CONTROL_PLANE_NETWORK,
+    CONTROL_PLANE_SERVICE,
+    KUBECONFIG,
+)
 from evals.cve.census.classification import GRAMMAR_CLASS_DEFINITIONS
 from evals.cve.detection.targets import acceptance_services
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
@@ -17,7 +24,7 @@ IMAGE_PLACEHOLDER = "<image>"
 def fixture_format(backend: str | None) -> str:
     flaw = json.dumps(FlawRecord.model_json_schema(), indent=2)
     server = json.dumps(AdmittedServer.model_json_schema(), indent=2)
-    paragraph = KIT_BACKEND_PARAGRAPHS[backend] if backend is not None else ""
+    paragraph = KIT_BACKENDS[backend].paragraph if backend is not None else ""
     return _FIXTURE_FORMAT.format(
         flaw_record=flaw, admitted_server=server, backend_paragraph=paragraph
     )
@@ -204,8 +211,37 @@ network, so a DNS name or an out-of-range IP fails `docker run` opaquely. `DORIS
 is the holdout target's launch the agents may start from, not a value to copy.
 """
 
-# The backends whose builder the kit ships (evals/cve/kit/backends.py).
-KIT_BACKEND_PARAGRAPHS: dict[str, str] = {"doris": _DORIS_BUILDER_PARAGRAPH}
+_KUBERNETES_BUILDER_PARAGRAPH = f"""
+## The Kubernetes backend
+
+This server records the `kubernetes` backend, an upstream control plane stood for each launch
+by `evals/cve/backends/kubernetes.py`, which builds `{CONTROL_PLANE_IMAGE}`
+from `evals/docker/Dockerfile.{CONTROL_PLANE_SERVICE}` when it is absent. It has no
+kubelet, so the cluster has no node. Its `FixCheckFixture.builder` stands one with
+`stood_control_plane(name)`, the name prefixed by your images' prefix, and runs the server with
+the planting's run arguments plus `--network <control plane network>` and the control plane's
+`mount_args()`, which mount its `admin.conf` at `{KUBECONFIG}`, kubectl's default path
+under `HOME=/tmp`. Record the backend as `{{"provisioner": "kubernetes", "images":
+["{CONTROL_PLANE_IMAGE}"], "network": "{CONTROL_PLANE_NETWORK}"}}` and
+`host.has_network` as true: the run stands its own control plane on a closed network of that
+prefix for each launch.
+"""
+
+
+@dataclass(frozen=True)
+class KitBackend:
+    closure_roots: tuple[str, ...]  # the modules the dossier copies with their import closure
+    built_services: tuple[str, ...]  # the Dockerfiles it copies under evals/docker/
+    paragraph: str  # appended to fixture_format.md
+
+
+# The backends whose builder or lifecycle a first-admission dossier ships.
+KIT_BACKENDS: dict[str, KitBackend] = {
+    "doris": KitBackend(("evals.cve.kit.backends",), (), _DORIS_BUILDER_PARAGRAPH),
+    "kubernetes": KitBackend(
+        ("evals.cve.backends.kubernetes",), (CONTROL_PLANE_SERVICE,), _KUBERNETES_BUILDER_PARAGRAPH
+    ),
+}
 
 _README = """\
 # Isolated admission dossier

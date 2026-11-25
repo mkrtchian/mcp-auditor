@@ -18,12 +18,14 @@ from pathlib import Path
 
 from evals.cve import dossier_closure
 from evals.cve.census.census import Census
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit_dossier import KIT_ROOTS, advisory_dossier, copy_kit_sources
 from evals.cve.nuisance.admission import holdout_target_reference
 from evals.cve.nuisance.admission import walk as nuisance_walk
 from evals.cve.nuisance.admission.admission_docs import (
     ADMISSION_GRAMMAR_CLASSES,
-    KIT_BACKEND_PARAGRAPHS,
+    KIT_BACKENDS,
+    KitBackend,
     admission_confinement_text,
     admission_readme,
     fixture_format,
@@ -49,7 +51,7 @@ def write_dossier(
     _write_advisories(walk_inputs.census, identifiers, out)
     copy_kit_sources(out, (*KIT_ROOTS, "evals.cve.kit.fix_check"))
     if backend is not None:
-        dossier_closure.copy_closure(out, ["evals.cve.kit.backends"])
+        _copy_kit_backend(out, KIT_BACKENDS[backend])
     dossier_closure.copy_closure(out, ["evals.cve.kit.benign_probe", "evals.capture_stand_in"])
     holdout_target_reference.write_holdout_target_references(
         out,
@@ -60,11 +62,20 @@ def write_dossier(
 
 
 def _refuse_unknown_backend(backend: str | None) -> None:
-    if backend is not None and backend not in KIT_BACKEND_PARAGRAPHS:
+    if backend is not None and backend not in KIT_BACKENDS:
         raise Refused(
             f"Refused: no backend named {backend!r}.",
-            [f"--backend takes one of: {', '.join(sorted(KIT_BACKEND_PARAGRAPHS))}"],
+            [f"--backend takes one of: {', '.join(sorted(KIT_BACKENDS))}"],
         )
+
+
+def _copy_kit_backend(out: Path, backend: KitBackend) -> None:
+    dossier_closure.copy_closure(out, list(backend.closure_roots))
+    docker_out = out / "evals" / "docker"
+    for service in backend.built_services:
+        docker_out.mkdir(parents=True, exist_ok=True)
+        source = image_dockerfile(service)
+        shutil.copyfile(source, docker_out / source.name)
 
 
 def _write_advisories(census: Census, identifiers: list[str], out: Path) -> None:

@@ -65,7 +65,9 @@ def _parser(deps: NuisanceCommandDeps) -> argparse.ArgumentParser:
     dossier.add_argument("--server", required=True)
     dossier.add_argument("--out", type=Path, required=True)
     dossier.add_argument(
-        "--backend", default=None, help="copy the kit builder and lifecycle of this backend (doris)"
+        "--backend",
+        default=None,
+        help="copy the kit builder or lifecycle of this backend (doris, kubernetes)",
     )
     dossier.add_argument(
         "--re-admission", action="store_true", help="write the re-admission dossier instead"

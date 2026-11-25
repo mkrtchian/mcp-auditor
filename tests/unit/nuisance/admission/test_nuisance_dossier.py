@@ -15,8 +15,14 @@ import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.kit_isolation as iso
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
+from evals.cve.backends.kubernetes import (
+    CONTROL_PLANE_IMAGE,
+    CONTROL_PLANE_NETWORK,
+    CONTROL_PLANE_SERVICE,
+)
 from evals.cve.detection.calibration_dossier import write_kit
 from evals.cve.detection.targets import acceptance_services
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.admission_docs import admission_confinement_text
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
@@ -87,6 +93,27 @@ def test_a_backend_dossier_imports_closed(tmp_path: Path):
     assert "169.254.0.0/16" in fixture_format
     assert "DORIS_SERVER_LAUNCH" in fixture_format
     assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
+
+
+def test_a_kubernetes_backend_dossier_carries_the_control_plane(tmp_path: Path):
+    out = given.a_written_dossier(tmp_path, backend="kubernetes")
+
+    assert (out / "evals" / "cve" / "backends" / "kubernetes.py").exists()
+    dockerfile = out / "evals" / "docker" / "Dockerfile.kube-control-plane"
+    assert dockerfile.read_text() == image_dockerfile(CONTROL_PLANE_SERVICE).read_text()
+    assert not (out / "evals" / "cve" / "backends" / "doris.py").exists()
+    fixture_format = (out / "fixture_format.md").read_text()
+    assert "stood_control_plane" in fixture_format
+    assert CONTROL_PLANE_IMAGE in fixture_format
+    assert CONTROL_PLANE_NETWORK in fixture_format
+    assert iso.import_closure_offenders(iso.kit_modules(out), root=out) == []
+
+
+def test_a_doris_backend_dossier_carries_no_control_plane(tmp_path: Path):
+    out = given.a_written_dossier(tmp_path, backend="doris")
+
+    assert not (out / "evals" / "cve" / "backends" / "kubernetes.py").exists()
+    assert not (out / "evals" / "docker").exists()
 
 
 def test_an_unknown_backend_is_refused(tmp_path: Path):
