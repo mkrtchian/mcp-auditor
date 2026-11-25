@@ -7,7 +7,6 @@ from pathlib import Path
 from evals.cve.environments import git_init_traversal_env
 from evals.cve.images import image_tag
 from evals.cve.layout import build_layout, owned_layout
-from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from evals.cve.planting_base import (
     LABEL,
     SENTINEL_IMAGE,
@@ -17,6 +16,7 @@ from evals.cve.planting_base import (
 )
 from evals.cve.planting_docker import DOCKER_PLANTING
 from tests.integration.support.planting_specs import a_work_spec
+from tests.unit.support.backend_launch_specs import an_empty_spec
 from tests.unit.support.docker_argv import mount_of
 
 LayoutBuilder = Callable[[Path], None]
@@ -65,10 +65,7 @@ class GitLaunchRun:
 def an_unprivileged_server_on_the_git_launch_runs(command: str) -> GitLaunchRun:
     """The command run by `sh` in the git image, on the git launch's own options under a host
     declaring a read-write layout."""
-    host = PlantingHost(
-        SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=LayoutMount.READ_WRITE
-    )
-    spec = planting_spec((), host, RANDOM_NONCES)
+    spec = an_empty_spec(LayoutMount.READ_WRITE)
     image = image_tag(GIT_SERVICE)
     with git_init_traversal_env(image, spec) as launch:
         options = launch.args[: launch.args.index(image)]

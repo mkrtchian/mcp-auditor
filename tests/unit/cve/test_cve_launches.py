@@ -44,8 +44,8 @@ from tests.unit.support.audited_launch_builders import (
     KIT_BUILDERS,
     Builder,
     SpecBuilder,
-    an_empty_spec,
 )
+from tests.unit.support.backend_launch_specs import an_empty_spec
 from tests.unit.support.docker_argv import carries, environment, mount_of, value_after
 
 

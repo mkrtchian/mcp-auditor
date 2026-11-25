@@ -1,10 +1,10 @@
-"""Planting specs a backed launch builder takes: with a holder, without one, with no network, or
-on a target's kept places."""
+"""Planting specs a backed launch builder takes: with a holder, without one, empty (no place, no
+network), or on a target's kept places."""
 
 from evals.cve.detection.targets import Target
 from evals.cve.places import DETECTION_PLACES, kept_records, load_places
 from evals.cve.planting import RANDOM_NONCES, PlantingSpec, planting_spec
-from evals.cve.planting_base import PlantingHost, SymbolicUser
+from evals.cve.planting_base import LayoutMount, PlantingHost, SymbolicUser
 from tests.unit.support.fictional_planting import endpoint_place
 
 
@@ -22,13 +22,13 @@ def a_spec_without_a_holder() -> PlantingSpec:
     return spec
 
 
-def a_spec_with_no_network() -> PlantingSpec:
-    return planting_spec((), _a_host(has_network=False), RANDOM_NONCES)
+def an_empty_spec(mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingSpec:
+    return planting_spec((), _a_host(has_network=False, mount=mount), RANDOM_NONCES)
 
 
 def a_spec_of_the_kept_places(target: Target) -> PlantingSpec:
     return target.planting_spec(kept_records(target.kept_places, load_places(DETECTION_PLACES)))
 
 
-def _a_host(*, has_network: bool) -> PlantingHost:
-    return PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=has_network)
+def _a_host(*, has_network: bool, mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingHost:
+    return PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=has_network, layout_mount=mount)

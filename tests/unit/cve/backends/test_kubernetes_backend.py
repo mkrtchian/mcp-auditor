@@ -61,7 +61,7 @@ def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
         pytest.raises(ValueError, match="has_network"),
         kubernetes_injection_env(
             "img",
-            specs.a_spec_with_no_network(),
+            specs.an_empty_spec(),
             docker=FakePlantingDocker(),
             control_plane=control_plane.docker(),
         ),

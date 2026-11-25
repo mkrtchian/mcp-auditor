@@ -11,8 +11,8 @@ from evals.cve.images import image_tag
 from evals.cve.kit.client import KitMCPClient
 from evals.cve.kit.driver import TargetVersion, launch_user_condition, options_before_image
 from evals.cve.kit.launch import filesystem_env
-from evals.cve.planting import RANDOM_NONCES, PlantingHost, SymbolicUser, planting_spec
 from tests.integration.support.docker_prerequisites import image_prerequisites
+from tests.unit.support.backend_launch_specs import an_empty_spec
 
 _SERVICE = "filesystem"
 _IMAGE = image_tag(_SERVICE)
@@ -24,8 +24,7 @@ def _prerequisites() -> None:
 
 
 async def test_list_tools_and_a_benign_call_over_a_real_launch():
-    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False)
-    spec = planting_spec((), host, RANDOM_NONCES)
+    spec = an_empty_spec()
     with filesystem_env(_IMAGE, spec) as launch:
         options = options_before_image(launch.args, _IMAGE)
         async with KitMCPClient.connect(launch) as client:

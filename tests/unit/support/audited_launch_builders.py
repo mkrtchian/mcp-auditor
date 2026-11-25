@@ -55,8 +55,8 @@ from evals.cve.environments import (
 )
 from evals.cve.kit import launch as kit_launch
 from evals.cve.nuisance.confinement import single_container_launch_args, single_container_run_args
-from evals.cve.planting import RANDOM_NONCES, PlantingSpec, planting_spec
-from evals.cve.planting_base import LayoutMount, PlantingHost, PublicNames, SymbolicUser
+from evals.cve.planting import PlantingSpec
+from evals.cve.planting_base import PlantingHost, PublicNames, SymbolicUser
 from tests.fakes.planting_docker import FakePlantingDocker
 
 _IMAGE = "img"
@@ -93,16 +93,11 @@ def _on_an_empty_spec(
 ) -> AuditedLaunchBuilder:
     @contextmanager
     def launched(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
-        spec = an_empty_spec()
+        spec = specs.an_empty_spec()
         with builder(_IMAGE, spec, docker=FakePlantingDocker()) as launch:
             yield BuiltLaunch(launch.args, spec.host)
 
     return AuditedLaunchBuilder(launched, backend_sources, takes_an_empty_spec=True)
-
-
-def an_empty_spec(mount: LayoutMount = LayoutMount.READ_ONLY) -> PlantingSpec:
-    host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, layout_mount=mount)
-    return planting_spec((), host, RANDOM_NONCES)
 
 
 @contextmanager

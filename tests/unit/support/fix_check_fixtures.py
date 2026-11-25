@@ -8,7 +8,6 @@ from evals.cve.places import Coordinates, Place, PlaceKind
 from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser
 
 WITNESS_ID = "witness"
-AIM = re.compile(r"cat ")
 
 
 def a_fix_check_fixture(
@@ -19,8 +18,8 @@ def a_fix_check_fixture(
     return FixCheckFixture(
         flaw="CVE-2025-0001",
         effect_class=FlawClass.READ_OUTSIDE_SCOPE,
-        aim=AIM,
-        witness=a_witness(witness_path),
+        aim=re.compile(r"cat "),
+        witness=_a_witness(witness_path),
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, working_directory, has_network=False),
         builder=_unused_builder,
         exploits=(),
@@ -31,7 +30,7 @@ def a_fix_check_fixture(
     )
 
 
-def a_witness(path: str = "/tmp/witness") -> Place:
+def _a_witness(path: str) -> Place:
     return Place(
         id=WITNESS_ID,
         family="fix_check",

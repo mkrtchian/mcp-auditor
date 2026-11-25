@@ -128,7 +128,8 @@ class FakeNonces:
 
 
 class FixedTokenNonces:
-    """Yields one caller-chosen token, for the url-safety refusal of a git-remote-url place."""
+    """Every draw yields the same caller-chosen token, so a test can name the value a place is
+    planted with."""
 
     def __init__(self, token: str) -> None:
         self._token = token
