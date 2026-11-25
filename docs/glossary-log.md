@@ -105,6 +105,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `ImageBuildFailed.stderr_tail` | `ImageBuildFailed.output_tail` (the last 40 lines of the build's stdout, then of its stderr) | rename | 2026-11-24 |
 | judge isolation eval | judge eval | rename | 2026-11-11 |
 | `judged_cases` (the audit's state channel) | processed cases | rename | 2026-11-11 |
+| `kit_isolation.mcp_auditor_imports` (the import scan of the isolation checks, for `mcp_auditor` alone) | `kit_isolation.scan_tree(root, package)`, which takes the package and also counts `from X import y` when `X.y` is in it | rename | 2026-11-25 |
 | known gap of the holdout | known gap | rename | 2026-11-11 |
 | location id | place id | rename | 2026-11-11 |
 | `marker()` (the function of `domain/redaction.py`) | `redaction_marker()` | rename | 2026-11-22 |

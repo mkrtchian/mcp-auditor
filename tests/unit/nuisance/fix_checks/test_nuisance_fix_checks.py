@@ -1,4 +1,3 @@
-import ast
 import importlib.util
 from pathlib import Path
 
@@ -25,27 +24,4 @@ def test_no_fix_check_module_imports_mcp_auditor():
 
 
 def test_no_fix_check_module_imports_cve_environments():
-    offenders = {
-        str(path): names
-        for path in sorted(_FIX_CHECK_DIR.rglob("*.py"))
-        if (names := _cve_environments_imports(path.read_text(), str(path)))
-    }
-    assert offenders == {}
-
-
-def _cve_environments_imports(source: str, filename: str) -> list[str]:
-    offenders: list[str] = []
-    for node in ast.walk(ast.parse(source, filename=filename)):
-        if isinstance(node, ast.Import):
-            offenders += [alias.name for alias in node.names if _is_cve_environments(alias.name)]
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module is not None
-            and _is_cve_environments(node.module)
-        ):
-            offenders.append(node.module)
-    return offenders
-
-
-def _is_cve_environments(name: str) -> bool:
-    return name == _ENVIRONMENTS or name.startswith(f"{_ENVIRONMENTS}.")
+    assert scan_tree(_FIX_CHECK_DIR, package=_ENVIRONMENTS) == {}
