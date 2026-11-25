@@ -36,12 +36,12 @@ from evals.eval_session import Refused
 from tests.unit.nuisance.admission.support.holdout_target_reference_checks import (
     it_carries_the_holdout_target_reference_of,
 )
-from tests.unit.support.committed_nuisance_admission import (
+from tests.unit.nuisance.support.committed_admission_servers import (
     a_committed_server_with_fix_checks,
     a_detection_holdout_server_with_its_own_fix_check,
     its_holdout_targets,
-    the_committed_admission,
 )
+from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 type DossierOf = Callable[[AdmittedServer], Path]
 

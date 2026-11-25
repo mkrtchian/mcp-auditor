@@ -31,7 +31,7 @@ def test_every_unset_field_is_named_for_its_server_with_its_count():
             given.with_a_tool_left_out_by_its_declared_function_unrecorded,
             "declared_function_is_effect (1 tool)",
         ),
-        (given.a_holdout_copy_without_its_fingerprint, "holdout_fingerprint (1 flaw)"),
+        (given.a_holdout_calibration_copy_without_its_fingerprint, "holdout_fingerprint (1 flaw)"),
         (given.without_an_expected_text, "expect (1 benign call)"),
         (given.without_prerequisite_calls, "before (1 benign call)"),
         (given.without_a_relaying_stand_in_judgment, "relies_on_relaying_stand_in (1 flaw)"),

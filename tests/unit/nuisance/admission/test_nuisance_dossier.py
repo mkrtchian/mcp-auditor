@@ -26,11 +26,11 @@ from evals.repository import REPO_ROOT
 from tests.unit.nuisance.admission.support.holdout_target_reference_checks import (
     it_carries_the_holdout_target_reference_of,
 )
-from tests.unit.support import censuses
-from tests.unit.support.committed_nuisance_admission import (
+from tests.unit.nuisance.support.committed_admission_servers import (
     a_detection_holdout_server_with_its_own_fix_check,
     its_holdout_targets,
 )
+from tests.unit.support import censuses
 
 
 def test_writes_the_isolated_admission_dossier(tmp_path: Path):

@@ -7,8 +7,10 @@ import pytest
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
 from evals import run_nuisance
+from tests.unit.nuisance.support.committed_admission_servers import (
+    a_committed_server_with_fix_checks,
+)
 from tests.unit.support import censuses
-from tests.unit.support.committed_nuisance_admission import a_committed_server_with_fix_checks
 
 
 def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]):

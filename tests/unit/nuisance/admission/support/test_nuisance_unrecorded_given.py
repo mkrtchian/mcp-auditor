@@ -42,7 +42,7 @@ def with_a_tool_left_out_by_its_declared_function_unrecorded(
     return mutations.with_the_first_flaw(server, changed)
 
 
-def a_holdout_copy_without_its_fingerprint(server: AdmittedServer) -> AdmittedServer:
+def a_holdout_calibration_copy_without_its_fingerprint(server: AdmittedServer) -> AdmittedServer:
     return mutations.with_the_first_flaw(server, _fix_check_copied_from_the_holdout)
 
 
