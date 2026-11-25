@@ -15,6 +15,7 @@ import tests.integration.support.test_cve_keyed_stand_in_routes_given as given
 from evals.cve.planting import DockerPlanting, planted
 from evals.cve.planting_base import SENTINEL_IMAGE
 from tests.integration.support.docker_prerequisites import stand_in_prerequisites
+from tests.unit.support.fictional_stand_ins import HOST as STAND_IN_HOST
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -26,7 +27,7 @@ def test_a_json_protocol_action_answers_its_keyed_member_value_and_errs_on_any_o
     tmp_path: Path,
 ):
     directory = given.a_keyed_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}/"
+    url = f"https://{STAND_IN_HOST}/"
     requests = [
         given.a_secret_request(f'{{"SecretId": "{given.SECRET_ID}"}}'),
         given.a_secret_request('{"SecretId": "AnotherSecret"}'),
@@ -50,7 +51,7 @@ def test_a_query_protocol_action_answers_its_keyed_field_value_and_errs_on_any_o
     tmp_path: Path,
 ):
     directory = given.a_keyed_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}/"
+    url = f"https://{STAND_IN_HOST}/"
     requests = [
         given.a_clusters_request(f"&DBClusterIdentifier={given.CLUSTER_ID}"),
         given.a_clusters_request("&DBClusterIdentifier=other-cluster"),
@@ -73,7 +74,7 @@ def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its
     tmp_path: Path,
 ):
     directory = given.a_keyed_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
+    url = f"https://{STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
@@ -87,7 +88,7 @@ def test_a_graphql_operation_keyed_on_an_integer_answers_the_integer_and_not_its
 
 def test_an_unkeyed_action_keeps_its_answer_whatever_its_body(tmp_path: Path):
     directory = given.a_keyed_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}/"
+    url = f"https://{STAND_IN_HOST}/"
     bodies = ['{"SecretId": "AnotherSecret"}', "not json"]
 
     with planted(

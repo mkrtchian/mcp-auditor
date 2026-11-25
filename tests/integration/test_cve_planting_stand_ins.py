@@ -19,6 +19,7 @@ from evals.cve.planting import DockerPlanting, planted
 from evals.cve.planting_base import SENTINEL_IMAGE
 from tests.integration.support.docker_prerequisites import stand_in_prerequisites
 from tests.integration.support.recording_planting import RecordingPlanting, nothing_it_made_outlives
+from tests.unit.support.fictional_stand_ins import HOST as STAND_IN_HOST
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -31,7 +32,7 @@ def test_a_planted_stand_in_serves_its_capture_by_name_and_its_default_for_anyth
 ):
     stand_ins_directory = stand_in_capture.a_stand_ins_directory(tmp_path)
     docker = RecordingPlanting()
-    host = stand_in_capture.STAND_IN_HOST
+    host = STAND_IN_HOST
 
     with (
         caplog.at_level(logging.WARNING, logger=planting_docker.__name__),
@@ -64,7 +65,7 @@ def test_a_planted_stand_in_quotes_the_request_where_its_default_quotes_the_prob
 ):
     quoting = stand_in_capture.QUOTING_CASES[case]
     directory = stand_in_capture.a_stand_ins_directory(tmp_path, quoting)
-    host = stand_in_capture.STAND_IN_HOST
+    host = STAND_IN_HOST
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
@@ -84,7 +85,7 @@ def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_o
     tmp_path: Path,
 ):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    host = stand_in_capture.STAND_IN_HOST
+    host = STAND_IN_HOST
     secure_length = len(stand_in_capture.SECURE_BODY.encode())
 
     with planted(
@@ -107,7 +108,7 @@ def test_a_planted_stand_in_serves_the_captured_headers_without_the_connection_o
 
 def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}/"
+    url = f"https://{STAND_IN_HOST}/"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
@@ -127,7 +128,7 @@ def test_a_planted_stand_in_answers_a_post_by_its_aws_action(tmp_path: Path):
 
 def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_path: Path):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
+    url = f"https://{STAND_IN_HOST}{stand_in_capture.GRAPHQL_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory
@@ -145,7 +146,7 @@ def test_a_planted_stand_in_answers_a_graphql_post_by_its_operation_name(tmp_pat
 
 def test_a_planted_stand_in_answers_a_form_post_by_the_field_it_carries(tmp_path: Path):
     directory = stand_in_capture.a_stand_ins_directory(tmp_path)
-    url = f"https://{stand_in_capture.STAND_IN_HOST}{stand_in_capture.FORM_REQUEST_TARGET}"
+    url = f"https://{STAND_IN_HOST}{stand_in_capture.FORM_REQUEST_TARGET}"
 
     with planted(
         stand_in_capture.a_stand_in_spec(), SENTINEL_IMAGE, DockerPlanting(), directory

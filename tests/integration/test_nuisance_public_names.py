@@ -22,6 +22,7 @@ from tests.integration.support.recording_planting import (
     no_container_it_started_outlives,
 )
 from tests.unit.support.docker_argv import value_after
+from tests.unit.support.fictional_stand_ins import HOST as STAND_IN_HOST
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -30,10 +31,10 @@ def _stand_in_prerequisites() -> None:
 
 
 def test_a_backend_less_server_reaches_its_public_name_through_the_stand_in(tmp_path: Path):
-    names = PublicNames(stand_ins=(stand_in_capture.STAND_IN_HOST,))
+    names = PublicNames(stand_ins=(STAND_IN_HOST,))
     host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False, public_names=names)
     docker = RecordingPlanting()
-    fetch = ["-qO-", f"http://{stand_in_capture.STAND_IN_HOST}/"]
+    fetch = ["-qO-", f"http://{STAND_IN_HOST}/"]
 
     with single_container_launch_args(
         SENTINEL_IMAGE,

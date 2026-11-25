@@ -4,14 +4,16 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.cve.planting import (
-    RANDOM_NONCES,
-    PlantingHost,
-    PlantingSpec,
-    SymbolicUser,
-    planting_spec,
-)
+import tests.unit.support.fictional_planting as fictional_planting
+from evals.cve.planting import RANDOM_NONCES, PlantingSpec
 from evals.cve.planting_base import PublicNames
+from tests.unit.support.fictional_stand_ins import (
+    HOST,
+    PROBED_REQUEST_TARGET,
+    a_capture,
+    a_default,
+    a_route,
+)
 
 
 @dataclass(frozen=True)
@@ -21,21 +23,18 @@ class StandInAnswer:
     status: int = 200
 
 
-STAND_IN_HOST = "public.fict"
-STAND_IN_ADDRESS = "93.184.215.14"  # a global unicast address, as the capture loader requires
-PROBED_REQUEST_TARGET = "/0123456789abcdef"
 PLAIN_BODY = "the plain stand-in body"
 # A captured route is served verbatim, so the probed request target in it stays as captured.
 SECURE_BODY = f"the secure stand-in body, {PROBED_REQUEST_TARGET} as captured"
 MISSING_BODY = "the secure stand-in's answer to an unknown path"
 # A request target a client sends percent-encoded, every character the escapings rewrite in it.
 QUOTED_REQUEST = "/a%3Cb%3E%22%27"
-CAPTURED_DATE = "Wed, 04 Nov 2026 07:36:50 GMT"
+_CAPTURED_DATE = "Wed, 04 Nov 2026 07:36:50 GMT"
 # The secure route's headers as a host sends them: duplicates, a lowercase name, and the
 # connection and framing headers of the capture's own connection, with a length that is wrong
 # for the served body.
-SECURE_HEADERS = (
-    ("Date", CAPTURED_DATE),
+_SECURE_HEADERS = (
+    ("Date", _CAPTURED_DATE),
     ("Content-Type", "text/plain"),
     ("Transfer-Encoding", "chunked"),
     ("Connection", "keep-alive"),
@@ -46,7 +45,7 @@ SECURE_HEADERS = (
     ("Content-Length", "999"),
 )
 SECURE_SERVED = (
-    ("Date", CAPTURED_DATE),
+    ("Date", _CAPTURED_DATE),
     ("Content-Type", "text/plain"),
     ("Server", "cloudflare"),
     ("Set-Cookie", "first=1; Path=/"),
@@ -55,16 +54,16 @@ SECURE_SERVED = (
 )
 HEAD_ONLY_REQUEST_TARGET = "/checked"
 # A HEAD route's captured length is the host's length for the body it did not send, kept as is.
-HEAD_ONLY_HEADERS = (
+_HEAD_ONLY_HEADERS = (
     ("Content-Type", "text/html"),
     ("Content-Length", "1256"),
     ("keep-alive", "timeout=5"),
-    ("Date", CAPTURED_DATE),
+    ("Date", _CAPTURED_DATE),
 )
 HEAD_ONLY_SERVED = (
     ("Content-Type", "text/html"),
     ("Content-Length", "1256"),
-    ("Date", CAPTURED_DATE),
+    ("Date", _CAPTURED_DATE),
 )
 REDIRECT_SERVER = ("Server", "cloudflare")
 # Two AWS routes on one `POST /`, written as the services' published examples are: the JSON
@@ -100,9 +99,9 @@ _GENERATE_TLS = Path(__file__).parents[3] / "evals" / "stand_ins" / "tls" / "gen
 
 
 def a_stand_in_spec() -> PlantingSpec:
-    names = PublicNames(stand_ins=(STAND_IN_HOST,), trust=("SSL_CERT_FILE",))
-    planting_host = PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/fictional", True, names)
-    return planting_spec([], planting_host, RANDOM_NONCES)
+    names = PublicNames(stand_ins=(HOST,), trust=("SSL_CERT_FILE",))
+    host = fictional_planting.unprivileged_host(has_network=True, public_names=names)
+    return fictional_planting.spec_of([], host, RANDOM_NONCES)
 
 
 @dataclass(frozen=True)
@@ -145,117 +144,73 @@ def a_stand_ins_directory(
     quoting: QuotingCase | None = None,
     more_routes: Sequence[dict[str, object]] = (),
 ) -> Path:
-    secure_default = _not_found() if quoting is None else _quoting_not_found(quoting)
-    capture = {
-        "host": STAND_IN_HOST,
-        "address": STAND_IN_ADDRESS,
-        "source": "capture",
-        "captured_at": "2026-11-02T10:00:00Z",
-        "command": "uv run python -m evals.capture_stand_in --out x.json http://public.fict/",
-        "request_headers": list[list[str]](),
-        "routes": [
-            _route("http", PLAIN_BODY, [["Content-Type", "text/plain"]]),
-            _route("https", SECURE_BODY, [list(header) for header in SECURE_HEADERS]),
-            _head_only_route(),
-            a_post_route("/", SECRET_ACTION, SECRET_ANSWER),
-            a_post_route("/", INSTANCES_ACTION, INSTANCES_ANSWER),
-            _form_route(),
-            a_post_route(GRAPHQL_REQUEST_TARGET, ISSUES_OPERATION, ISSUES_ANSWER),
-            a_post_route(GRAPHQL_REQUEST_TARGET, None, GRAPHQL_FALLBACK_ANSWER),
-            *more_routes,
-        ],
-        "defaults": [_redirect_to_https(), secure_default],
-    }
-    (directory / f"{STAND_IN_HOST}.json").write_text(json.dumps(capture))
+    capture = a_capture(
+        routes=_routes(more_routes), defaults=[_redirect_to_https(), _secure_default(quoting)]
+    )
+    (directory / f"{HOST}.json").write_text(json.dumps(capture))
     subprocess.run(
-        [str(_GENERATE_TLS), "--out", str(directory / "tls"), STAND_IN_HOST],
+        [str(_GENERATE_TLS), "--out", str(directory / "tls"), HOST],
         check=True,
         capture_output=True,
     )
     return directory
 
 
+def _routes(more_routes: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    plain = StandInAnswer(PLAIN_BODY, (("Content-Type", "text/plain"),))
+    head_only = {
+        **a_route("https", "HEAD"),
+        "request_target": HEAD_ONLY_REQUEST_TARGET,
+        **_answered(StandInAnswer("", _HEAD_ONLY_HEADERS)),
+    }
+    form = {
+        **a_route("https", "POST", form_field=FORM_FIELD),
+        "request_target": FORM_REQUEST_TARGET,
+        **_answered(RESULTS_ANSWER),
+    }
+    return [
+        {**a_route("http"), **_answered(plain)},
+        {**a_route("https"), **_answered(StandInAnswer(SECURE_BODY, _SECURE_HEADERS))},
+        head_only,
+        a_post_route("/", SECRET_ACTION, SECRET_ANSWER),
+        a_post_route("/", INSTANCES_ACTION, INSTANCES_ANSWER),
+        form,
+        a_post_route(GRAPHQL_REQUEST_TARGET, ISSUES_OPERATION, ISSUES_ANSWER),
+        a_post_route(GRAPHQL_REQUEST_TARGET, None, GRAPHQL_FALLBACK_ANSWER),
+        *more_routes,
+    ]
+
+
 def a_post_route(
     request_target: str, action: str | None, answer: StandInAnswer
 ) -> dict[str, object]:
-    route: dict[str, object] = {
-        "scheme": "https",
-        "method": "POST",
+    return {
+        **a_route("https", "POST", action),
         "request_target": request_target,
+        **_answered(answer),
+    }
+
+
+def _answered(answer: StandInAnswer) -> dict[str, object]:
+    return {
         "status": answer.status,
         "headers": [list(header) for header in answer.headers],
         "body": answer.body,
     }
-    if action is not None:
-        route["action"] = action
-    return route
-
-
-def _route(scheme: str, body: str, headers: list[list[str]]) -> dict[str, object]:
-    return {
-        "scheme": scheme,
-        "method": "GET",
-        "request_target": "/",
-        "status": 200,
-        "headers": headers,
-        "body": body,
-    }
-
-
-def _head_only_route() -> dict[str, object]:
-    return {
-        "scheme": "https",
-        "method": "HEAD",
-        "request_target": HEAD_ONLY_REQUEST_TARGET,
-        "status": 200,
-        "headers": [list(header) for header in HEAD_ONLY_HEADERS],
-        "body": "",
-    }
-
-
-def _form_route() -> dict[str, object]:
-    return {
-        "scheme": "https",
-        "method": "POST",
-        "request_target": FORM_REQUEST_TARGET,
-        "form_field": FORM_FIELD,
-        "status": RESULTS_ANSWER.status,
-        "headers": [list(header) for header in RESULTS_ANSWER.headers],
-        "body": RESULTS_ANSWER.body,
-    }
 
 
 def _redirect_to_https() -> dict[str, object]:
-    return {
-        "scheme": "http",
-        "probed_request_target": PROBED_REQUEST_TARGET,
-        "status": 301,
-        "headers": [
-            ["Location", f"https://{STAND_IN_HOST}{PROBED_REQUEST_TARGET}"],
-            list(REDIRECT_SERVER),
-        ],
-        "body": "",
-        "path_form": None,
-    }
+    headers = [["Location", f"https://{HOST}{PROBED_REQUEST_TARGET}"], list(REDIRECT_SERVER)]
+    return {**a_default("http", headers=headers, body=""), "status": 301}
 
 
-def _not_found() -> dict[str, object]:
-    return {
-        "scheme": "https",
-        "probed_request_target": PROBED_REQUEST_TARGET,
-        "status": MISSING_ANSWER.status,
-        "headers": [list(header) for header in MISSING_ANSWER.headers],
-        "body": MISSING_ANSWER.body,
-        "path_form": None,
-    }
-
-
-def _quoting_not_found(case: QuotingCase) -> dict[str, object]:
-    return {
-        "scheme": "https",
-        "probed_request_target": PROBED_REQUEST_TARGET,
-        "status": 404,
-        "headers": [["Content-Type", case.content_type]],
-        "body": case.body,
-        "path_form": case.path_form,
-    }
+def _secure_default(quoting: QuotingCase | None) -> dict[str, object]:
+    if quoting is None:
+        headers = [list(header) for header in MISSING_ANSWER.headers]
+        return a_default("https", headers=headers, body=MISSING_ANSWER.body)
+    return a_default(
+        "https",
+        headers=[["Content-Type", quoting.content_type]],
+        body=quoting.body,
+        path_form=quoting.path_form,
+    )

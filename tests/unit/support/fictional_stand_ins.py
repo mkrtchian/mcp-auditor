@@ -11,6 +11,17 @@ PROBED_REQUEST_TARGET = "/0123456789abcdef"
 
 
 def a_stand_ins_directory(directory: Path, **capture_overrides: Any) -> Path:
+    capture = a_capture(**capture_overrides)
+    (directory / f"{HOST}.json").write_text(json.dumps(capture))
+    tls = directory / "tls"
+    tls.mkdir()
+    (tls / f"{HOST}.pem").write_text(CERTIFICATE)
+    (tls / f"{HOST}-key.pem").write_text(KEY)
+    (tls / "fixture-authority.pem").write_text(AUTHORITY)
+    return directory
+
+
+def a_capture(**overrides: Any) -> dict[str, Any]:
     capture: dict[str, Any] = {
         "host": HOST,
         "address": ADDRESS,
@@ -30,14 +41,8 @@ def a_stand_ins_directory(directory: Path, **capture_overrides: Any) -> Path:
         ],
         "defaults": [a_default("http"), a_default("https")],
     }
-    capture.update(capture_overrides)
-    (directory / f"{HOST}.json").write_text(json.dumps(capture))
-    tls = directory / "tls"
-    tls.mkdir()
-    (tls / f"{HOST}.pem").write_text(CERTIFICATE)
-    (tls / f"{HOST}-key.pem").write_text(KEY)
-    (tls / "fixture-authority.pem").write_text(AUTHORITY)
-    return directory
+    capture.update(overrides)
+    return capture
 
 
 def a_default(
