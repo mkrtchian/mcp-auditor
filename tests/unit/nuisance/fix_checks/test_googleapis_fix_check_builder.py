@@ -6,9 +6,9 @@ LAUNCH_HOST = 123
 
 
 def test_the_witness_responder_sits_on_both_bridges_and_redirects_to_its_private_address():
-    args = googleapis.responder_args("name", "nonce-value", LAUNCH_HOST)
+    args = googleapis.responder_args("name", "witness-value", LAUNCH_HOST)
 
-    assert "WITNESS_NONCE=nonce-value" in args
+    assert "WITNESS_NONCE=witness-value" in args
     assert values_after(args, "--network") == [
         f"name={GOOGLEAPIS_BRIDGE},ip=198.18.3.{LAUNCH_HOST}",
         f"name={googleapis.INTERNAL_BRIDGE},ip=10.199.0.{LAUNCH_HOST}",

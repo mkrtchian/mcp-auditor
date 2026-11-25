@@ -87,7 +87,7 @@ _CHECKS = {Networks.CLOSABLE: _closes_networks, Networks.UNSUPPORTED: _cannot_cl
 
 
 def a_result_matching(record: FixCheckRecord, **overrides: Any) -> FixCheckResult:
-    fields = record.model_dump(exclude={"relies_on_relaying_stand_in", "holdout_fingerprint"})
+    fields = record.model_dump(include={field.name for field in dataclasses.fields(FixCheckResult)})
     return FixCheckResult(**{**fields, **overrides})
 
 

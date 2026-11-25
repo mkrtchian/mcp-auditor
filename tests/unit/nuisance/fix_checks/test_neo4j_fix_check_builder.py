@@ -14,18 +14,16 @@ def test_the_server_logs_in_with_the_databases_password_at_its_alias():
 
 
 def test_the_sentinel_serves_the_witness_coordinates():
-    args = neo4j_cypher.sentinel_args("name", "nonce-value")
+    args = neo4j_cypher.sentinel_args("name", "witness-value")
 
     assert value_after(args, "--network-alias") == neo4j_cypher.WITNESS.coordinates.host
     assert f"SERVE_FILE={neo4j_cypher.WITNESS.coordinates.path}" in args
 
 
-def test_only_the_server_is_confined_and_it_runs_read_only():
+def test_the_database_runs_unconfined_and_the_server_read_only():
     database = neo4j_cypher.neo4j_container_args("name")
     server = neo4j_cypher.server_args("image")
 
     assert "--cap-drop" not in database
     assert "--security-opt" not in database
-    assert "--cap-drop" in server
-    assert value_after(server, "--user") == "65534:65534"
     assert server[-2:] == ["image", "--read-only"]

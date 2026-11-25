@@ -4,7 +4,7 @@ import zipfile
 from evals.cve.nuisance.fix_checks.excel_witness_workbook import workbook_holding
 
 
-def test_the_workbook_holds_the_nonce_in_the_first_cell_of_the_named_sheet():
+def test_the_workbook_holds_the_witness_in_the_first_cell_of_the_named_sheet():
     archive = zipfile.ZipFile(io.BytesIO(workbook_holding("MCPAUDIT-abc123", "Data")))
 
     assert 'name="Data"' in archive.read("xl/workbook.xml").decode()

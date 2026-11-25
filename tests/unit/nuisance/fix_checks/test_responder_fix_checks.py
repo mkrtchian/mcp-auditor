@@ -7,12 +7,12 @@ ADDRESS = given.RESPONDER_ADDRESS
 
 
 @pytest.mark.parametrize("check", given.RESPONDER_FIX_CHECKS, ids=lambda c: c.flaw)
-def test_each_responder_serves_its_witness_nonce_at_the_given_address_on_its_bridge(
+def test_each_responder_serves_its_witness_at_the_given_address_on_its_bridge(
     check: given.ResponderFixCheck,
 ):
-    args = check.responder_args("name", "nonce-value", ADDRESS)
+    args = check.responder_args("name", "witness-value", ADDRESS)
 
-    assert carries(args, ["-e", f"{check.witness_variable}=nonce-value"])
+    assert carries(args, ["-e", f"{check.witness_variable}=witness-value"])
     assert value_after(args, "--ip") == ADDRESS
     assert value_after(args, "--network") == check.bridge
     assert args[-1] == check.responder_image
