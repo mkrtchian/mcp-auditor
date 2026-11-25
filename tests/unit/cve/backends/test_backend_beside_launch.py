@@ -1,5 +1,5 @@
-import tests.unit.cve.backends.support.backend_launch_specs as specs
 import tests.unit.cve.backends.support.test_backend_beside_launch_given as given
+import tests.unit.support.backend_launch_specs as specs
 from evals.cve.layout import WORKSPACE
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import mount_of, values_after

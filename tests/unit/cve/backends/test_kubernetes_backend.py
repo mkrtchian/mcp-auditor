@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.backends.support.backend_launch_specs as specs
-import tests.unit.cve.backends.support.fake_control_planes as fake_control_planes
 import tests.unit.cve.backends.support.test_kubernetes_backend_given as given
 import tests.unit.cve.backends.support.test_kubernetes_backend_then as then
+import tests.unit.support.backend_launch_specs as specs
+import tests.unit.support.fake_control_planes as fake_control_planes
 from evals.cve.backends.kubernetes import LIFECYCLE
 from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
 from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import FIXTURE, kubectl_env

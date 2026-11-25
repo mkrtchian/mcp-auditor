@@ -1,9 +1,6 @@
 from collections.abc import Sequence
 
 from evals.cve.backends.searxng import SearxngDocker
-from evals.cve.detection.holdout_fixtures.cve_2026_58485_searxng import TARGET
-from evals.cve.places import DETECTION_PLACES, kept_records, load_places
-from evals.cve.planting_base import PlantingSpec
 from tests.fakes.planting_docker import FakePlantingDocker
 
 
@@ -33,7 +30,3 @@ class FakeSearxng:
 
     def docker(self) -> SearxngDocker:
         return SearxngDocker(self.start, self.wait_ready, self.remove)
-
-
-def the_targets_spec() -> PlantingSpec:
-    return TARGET.planting_spec(kept_records(TARGET.kept_places, load_places(DETECTION_PLACES)))

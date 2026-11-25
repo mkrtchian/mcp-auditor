@@ -1,7 +1,7 @@
 import pytest
 
-import tests.unit.cve.backends.support.fake_searxng as fake_searxng
 import tests.unit.cve.backends.support.test_searxng_backend_given as given
+import tests.unit.support.fake_searxng as fake_searxng
 from evals.cve.backends.searxng import SEARXNG_IMAGE
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.cve.backends.support.fixture_authority import trusts_the_fixture_authority

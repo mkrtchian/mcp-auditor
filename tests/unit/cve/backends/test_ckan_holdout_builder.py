@@ -2,12 +2,14 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.backends.support.fake_ckan as fake_ckan
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_given as given
 import tests.unit.cve.backends.support.test_ckan_holdout_builder_then as then
+import tests.unit.support.backend_launch_specs as specs
+import tests.unit.support.fake_ckan as fake_ckan
 from evals.cve.backends.ckan import CKAN_BRIDGE, CKAN_PARTS
 from evals.cve.backends.ckan_holdout import ckan_ssrf_env
 from evals.cve.backends.doris import LINK_LOCAL_NETWORK, start_doris_sentinel
+from evals.cve.detection.holdout_fixtures import cve_2026_33060_ckan
 from tests.fakes import ScriptedDockerExecutable
 from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.docker_argv import value_after
@@ -26,7 +28,7 @@ def test_the_server_reaches_demo_ckan_org_on_the_front_and_trusts_the_fixture_au
 def test_the_launch_stands_the_stack_then_a_sentinel_per_kept_place_and_no_holder():
     ckan = fake_ckan.FakeCkanDocker()
     planting = FakePlantingDocker()
-    spec = fake_ckan.the_targets_spec()
+    spec = specs.a_spec_of_the_kept_places(cve_2026_33060_ckan.TARGET)
     hosts = sorted(sentinel.host for sentinel in spec.sentinels)
 
     with ckan_ssrf_env("img", spec, docker=planting, ckan=ckan.docker()):
@@ -37,10 +39,9 @@ def test_the_launch_stands_the_stack_then_a_sentinel_per_kept_place_and_no_holde
 
 def test_the_launch_removes_its_server_and_its_sentinels_on_exit():
     ckan = fake_ckan.FakeCkanDocker()
+    spec = specs.a_spec_of_the_kept_places(cve_2026_33060_ckan.TARGET)
 
-    with ckan_ssrf_env(
-        "img", fake_ckan.the_targets_spec(), docker=FakePlantingDocker(), ckan=ckan.docker()
-    ) as launch:
+    with ckan_ssrf_env("img", spec, docker=FakePlantingDocker(), ckan=ckan.docker()) as launch:
         server = value_after(launch.args, "--name")
 
     assert sorted(ckan.removed) == sorted([server, *(f"sentinel-{h}" for h in ckan.sentinel_hosts)])
@@ -50,7 +51,7 @@ def test_no_ckan_part_runs_on_the_network_the_sentinels_take(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     docker = ScriptedDockerExecutable({}).installed(monkeypatch, tmp_path)
-    [sentinel] = fake_ckan.the_targets_spec().sentinels[:1]
+    [sentinel] = specs.a_spec_of_the_kept_places(cve_2026_33060_ckan.TARGET).sentinels[:1]
 
     start_doris_sentinel(sentinel)
 

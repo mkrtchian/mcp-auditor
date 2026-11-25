@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.unit.cve.backends.support.backend_launch_specs as specs
+import tests.unit.support.backend_launch_specs as specs
 import tests.unit.support.fake_sshd as fake_sshd
 from evals.cve.backends.mcp_ssh_holdout import mcp_ssh_injection_env
 from evals.cve.backends.mcp_ssh_sshd import (

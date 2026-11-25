@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from evals.cve.detection import holdout_environments
+from evals.cve.planting import RANDOM_NONCES, planting_spec
 from evals.cve.planting_base import PlantingHost, PlantingSpec, SentinelIntent, SymbolicUser
 
 
@@ -49,23 +50,8 @@ def doris_helpers_faked(monkeypatch: pytest.MonkeyPatch, recorder: OverlapRecord
 
 
 def a_minimal_doris_spec() -> PlantingSpec:
-    # No place and no sentinel: the builder materialises the neutral layout and stands nothing.
-    return PlantingSpec(
-        host=PlantingHost(
-            user=SymbolicUser.UNPRIVILEGED, working_directory="/srv/app", has_network=True
-        ),
-        places=(),
-        nonces={},
-        files=(),
-        env=(),
-        account=None,
-        hostname=None,
-        sentinels=(),
-        address_setups=(),
-        host_entries=(),
-        needs_network=False,
-        needs_holder=False,
-        unplaceable=0,
+    return planting_spec(
+        (), PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv/app", has_network=True), RANDOM_NONCES
     )
 
 

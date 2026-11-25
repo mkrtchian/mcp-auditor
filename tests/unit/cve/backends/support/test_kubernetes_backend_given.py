@@ -5,7 +5,7 @@ import pytest
 from evals.cve.backends.kubernetes import READY_LINE
 from evals.cve.planting_base import PlantingHost, SymbolicUser
 from tests.fakes import CLOSED_NETWORK_INSPECT, ScriptedDockerExecutable
-from tests.unit.cve.backends.support.fake_control_planes import ADMIN_CONF
+from tests.unit.support.fake_control_planes import ADMIN_CONF
 
 
 def a_host() -> PlantingHost:

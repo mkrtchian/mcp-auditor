@@ -3,7 +3,7 @@ import pytest
 from evals.cve.backends.doris import DORIS_SERVER_LAUNCH, doris_server_args
 from evals.cve.detection import holdout_environments
 from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.cve.backends.support.doris_launch import (
+from tests.unit.support.doris_launch import (
     OverlapRecorder,
     a_minimal_doris_spec,
     doris_helpers_faked,

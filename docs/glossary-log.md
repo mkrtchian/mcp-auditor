@@ -161,6 +161,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | stub | stand-in, or the real software | rename | 2026-11-02 |
 | target (the audited server, its command) | audited server, server command. "Target" now names the unit of the detection suite. | moved meaning | 2026-11-11 |
 | target (an HTTP request's target in a stand-in route, the `target` key of `evals/stand_ins/*.json`) | request target (`request_target`) | moved meaning | 2026-11-11 |
+| `the_targets_spec` (of `fake_ckan.py` and `fake_searxng.py`) | `backend_launch_specs.a_spec_of_the_kept_places` | rename | 2026-11-25 |
 | twin (bare twin, replayed twins, nuisance twin) | no successor: the bare repository, the units a replay pairs, the nuisance counterpart of a module or a test | retired | 2026-11-11 |
 | `--ungated` | `--no-baseline` | rename | 2026-11-11 |
 | `UnparseableOutput` | `UnreadableAnswer` | rename | 2026-11-22 |

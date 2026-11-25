@@ -14,11 +14,11 @@ from typing import Any, Protocol
 
 import pytest
 
-import tests.unit.cve.backends.support.backend_launch_specs as specs
-import tests.unit.cve.backends.support.doris_launch as doris_launch
-import tests.unit.cve.backends.support.fake_ckan as fake_ckan
-import tests.unit.cve.backends.support.fake_control_planes as fake_control_planes
-import tests.unit.cve.backends.support.fake_searxng as fake_searxng
+import tests.unit.support.backend_launch_specs as specs
+import tests.unit.support.doris_launch as doris_launch
+import tests.unit.support.fake_ckan as fake_ckan
+import tests.unit.support.fake_control_planes as fake_control_planes
+import tests.unit.support.fake_searxng as fake_searxng
 import tests.unit.support.fake_sshd as fake_sshd
 import tests.unit.support.fictional_stand_ins as stand_ins
 from evals.cve.backends import (
@@ -46,6 +46,7 @@ from evals.cve.detection.holdout_environments import (
     mysql_db_env,
     ssrf_redirect_env,
 )
+from evals.cve.detection.holdout_fixtures import cve_2026_33060_ckan, cve_2026_58485_searxng
 from evals.cve.environments import (
     command_injection_env,
     filesystem_env,
@@ -114,7 +115,7 @@ def _doris(_tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltL
 
 @contextmanager
 def _ckan(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
-    spec = fake_ckan.the_targets_spec()
+    spec = specs.a_spec_of_the_kept_places(cve_2026_33060_ckan.TARGET)
     stack = fake_ckan.FakeCkanDocker().docker()
     with ckan_ssrf_env(_IMAGE, spec, docker=FakePlantingDocker(), ckan=stack) as launch:
         yield BuiltLaunch(launch.args, spec.host)
@@ -140,7 +141,7 @@ def _mcp_ssh(tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[Buil
 
 @contextmanager
 def _searxng(_tmp_path: Path, _monkeypatch: pytest.MonkeyPatch) -> Generator[BuiltLaunch]:
-    spec = fake_searxng.the_targets_spec()
+    spec = specs.a_spec_of_the_kept_places(cve_2026_58485_searxng.TARGET)
     planting = FakePlantingDocker()
     stand = fake_searxng.FakeSearxng(planting).docker()
     with searxng_env(_IMAGE, spec, docker=planting, searxng=stand) as launch:

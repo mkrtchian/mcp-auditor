@@ -6,7 +6,7 @@ import tests.unit.cve.backends.support.test_doris_serialization_given as given
 from evals.concurrency import entered_in_thread
 from evals.cve.detection import holdout_environments
 from tests.fakes.planting_docker import FakePlantingDocker
-from tests.unit.cve.backends.support.doris_launch import (
+from tests.unit.support.doris_launch import (
     OverlapRecorder,
     a_minimal_doris_spec,
     doris_helpers_faked,
