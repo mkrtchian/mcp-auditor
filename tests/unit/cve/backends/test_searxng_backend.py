@@ -74,7 +74,7 @@ def test_searxng_is_removed_before_the_holder_even_when_the_launch_raises():
 
 def test_a_searxng_that_never_answers_is_removed_and_no_server_launches():
     planting = FakePlantingDocker()
-    searxng = given.a_searxng_that_never_answers(planting)
+    searxng = fake_searxng.FakeSearxng(planting, answers=False)
 
     with pytest.raises(RuntimeError, match="never answered"), given.a_launch(planting, searxng):
         pytest.fail("the server launched")

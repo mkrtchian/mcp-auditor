@@ -48,10 +48,6 @@ def the_server_takes_the_token_the_seed_created(
     )
 
 
-def the_two_servers_join_two_networks(first: Sequence[str], second: Sequence[str]) -> None:
-    assert value_after(first, "--network") != value_after(second, "--network")
-
-
 def the_server_its_backend_and_its_network_were_removed(
     docker: ScriptedDockerExecutable, server: str
 ) -> None:

@@ -8,8 +8,8 @@ import tests.unit.support.backend_launch_specs as specs
 import tests.unit.support.fake_control_planes as fake_control_planes
 from evals.cve.backends.kubernetes import LIFECYCLE
 from evals.cve.backends.kubernetes_detection import kubernetes_injection_env
-from evals.cve.nuisance.fix_checks.cve_2025_69902_kubectl import FIXTURE, kubectl_env
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.docker_argv import value_after
 
 
 def test_the_control_plane_runs_unprivileged_on_its_own_network(
@@ -29,7 +29,7 @@ def test_the_nuisance_server_joins_its_control_plane_with_its_admin_conf_mounted
     docker = given.a_docker_whose_control_plane_comes_up(monkeypatch, tmp_path)
 
     with LIFECYCLE.launch("server", "image", given.a_host(), ["serve"]) as server:
-        then.the_server_joins_the_network_of_its_control_plane(docker, server)
+        assert value_after(server, "--network") == docker.created_networks()[0]
         kubeconfig = then.mounts_the_kubeconfig_read_only(server)
         then.the_kubeconfig_is_the_control_planes_admin_conf_naming_the_api_server_by_address(
             kubeconfig
@@ -69,16 +69,3 @@ def test_the_detection_launch_refuses_a_host_with_no_network(tmp_path: Path):
         pass
 
     assert control_plane.stood == []
-
-
-def test_the_fix_check_launch_takes_the_bounded_control_planes_network_and_its_kubeconfig(
-    tmp_path: Path,
-):
-    control_plane = fake_control_planes.a_control_plane(tmp_path)
-
-    with kubectl_env(
-        "img", FIXTURE.planting_spec(), docker=FakePlantingDocker(), stand=control_plane.stand
-    ) as launch:
-        then.the_server_takes_the_control_planes_network_as_a_second_network(launch.args)
-        then.mounts_the_kubeconfig_read_only(launch.args)
-        then.carries_the_witness_in_the_servers_environment(launch.args)

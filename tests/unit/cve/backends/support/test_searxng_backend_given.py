@@ -8,10 +8,6 @@ from tests.fakes.planting_docker import FakePlantingDocker
 from tests.unit.support.fake_searxng import FakeSearxng
 
 
-def a_searxng_that_never_answers(planting: FakePlantingDocker) -> FakeSearxng:
-    return FakeSearxng(planting, answers=False)
-
-
 def a_launch(planting: FakePlantingDocker, searxng: FakeSearxng) -> AbstractContextManager[Launch]:
     spec = specs.a_spec_of_the_kept_places(cve_2026_58485_searxng.TARGET)
     return searxng_env("img", spec, docker=planting, searxng=searxng.docker())

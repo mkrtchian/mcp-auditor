@@ -44,7 +44,7 @@ def test_two_launches_stand_two_backends(monkeypatch: pytest.MonkeyPatch, tmp_pa
         LIFECYCLE.launch("first", "image", given.a_host(), []) as first,
         LIFECYCLE.launch("second", "image", given.a_host(), []) as second,
     ):
-        then.the_two_servers_join_two_networks(first, second)
+        assert value_after(first, "--network") != value_after(second, "--network")
 
     assert len(docker.started()) == 2
 

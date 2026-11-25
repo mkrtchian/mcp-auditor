@@ -13,16 +13,19 @@ ADMIN_CONF = (
 
 class FakeControlPlane:
     """Stands a control plane on a named network with a kubeconfig file, and records each
-    stand-up."""
+    stand-up and the network it yields."""
 
     def __init__(self, kubeconfig: Path) -> None:
         self.kubeconfig = kubeconfig
         self.stood: list[str] = []
+        self.networks: list[str] = []
 
     @contextmanager
     def stand(self, name: str) -> Generator[StoodControlPlane]:
         self.stood.append(name)
-        yield StoodControlPlane(f"kube-net-{len(self.stood)}", self.kubeconfig)
+        network = f"kube-net-{len(self.stood)}"
+        self.networks.append(network)
+        yield StoodControlPlane(network, self.kubeconfig)
 
     def connect(self, network: str, container: str) -> None:
         pass
