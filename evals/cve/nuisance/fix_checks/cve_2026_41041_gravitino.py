@@ -9,17 +9,17 @@ reaches a sibling metalake's catalog and lists its schemas: reach = internal_fet
 client wraps every path identifier in `urllib.parse.quote(segment, safe="")`, so the dot-segments
 are encoded and the request stays inside `metalake_demo`. Every counted tool carries the same
 unencoded interpolation, so each has an exploit that injects the traversal into its own identifier;
-only `get_list_of_schemas` lists schema names, so the planted nonce surfaces through it.
+only `get_list_of_schemas` lists schema names, so the planted witness surfaces through it.
 
 The run singleton never carries the witness (it is where every run reads), so the builder
 stands its own Gravitino stack (the backend's three parts) on a per-launch closed network, seeds
 the run's `metalake_demo` metalake (the backend's seed) plus a sibling `hidden` metalake whose
-`secretcat` catalog holds one schema named the planted nonce, points the server's `--gravitino-uri`
-at that stack's `gravitino`, and reaps the containers and the network. The benign calls read
-`metalake_demo`, so the stack keeps the PostgreSQL and the Kafka the relational and messaging
-catalogs manage. The exploits are written out (`gravitino_exploits`) and name the objects of an
-earlier seed: the traversal leaves the launched metalake whatever the names after it, and only
-`get_list_of_schemas` surfaces the nonce.
+`secretcat` catalog holds one schema named the planted witness, points the server's
+`--gravitino-uri` at that stack's `gravitino`, and reaps the containers and the network. The benign
+calls read `metalake_demo`, so the stack keeps the PostgreSQL and the Kafka the relational and
+messaging catalogs manage. The exploits are written out (`gravitino_exploits`) and name the objects
+of an earlier seed: the traversal leaves the launched metalake whatever the names after it, and only
+`get_list_of_schemas` surfaces the witness.
 """
 
 import json
@@ -61,8 +61,9 @@ WITNESS = Place(
     id="gravitino-41041-hidden-schema",
     family="fix_check",
     reaches=frozenset({"internal_fetch"}),
-    # The nonce is a token seeded as a schema name under the sibling metalake, not an address: the
-    # surfacing is the nonce appearing in the traversal's response, graded by the aim and the nonce.
+    # The witness is a token seeded as a schema name under the sibling metalake, not an address:
+    # the surfacing is the witness appearing in the traversal's response, graded by the aim and the
+    # witness.
     kind=PlaceKind.HOSTNAME,
     coordinates=Coordinates(PlaceKind.HOSTNAME),
 )
@@ -213,7 +214,7 @@ def _wait_until(container: str, probe: Sequence[str]) -> None:
         time.sleep(3)
 
 
-def _seed(instance: str, nonce: str) -> None:
+def _seed(instance: str, witness: str) -> None:
     for request in GRAVITINO_SEED:
         _request(instance, request.method, f"/metalakes{request.path}", request.body)
     _exec(instance, "mkdir", "-p", FILESET_DIRECTORY)
@@ -240,7 +241,7 @@ def _seed(instance: str, nonce: str) -> None:
         instance,
         "POST",
         f"/metalakes/{HIDDEN_METALAKE}/catalogs/{HIDDEN_CATALOG}/schemas",
-        {"name": nonce, "comment": "demo", "properties": {}},
+        {"name": witness, "comment": "demo", "properties": {}},
     )
 
 

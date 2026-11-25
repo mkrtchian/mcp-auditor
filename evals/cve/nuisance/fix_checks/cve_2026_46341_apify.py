@@ -6,10 +6,10 @@ fetch-apify-docs only fetches documentation URLs from Apify and Crawlee. In the 
 reach = internal_fetch. 0.9.21 parses the URL and compares its hostname to a set, so the same URL
 is rejected before any fetch.
 
-The run serves no suffix host, and check_fix plants a fresh random nonce per exercise: the builder
-stands its own responder with that nonce on the backend's bridge, pins the suffix host to it, and
-reaps it when the launch ends. The responder serves its own page carrying the nonce, never what it
-is sent. docs.apify.com is the backend's stand-in, serving its capture. The responder's
+The run serves no suffix host, and check_fix plants a fresh random witness per exercise: the
+builder stands its own responder with that witness on the backend's bridge, pins the suffix host to
+it, and reaps it when the launch ends. The responder serves its own page carrying the witness, never
+what it is sent. docs.apify.com is the backend's stand-in, serving its capture. The responder's
 certificate is self-signed, so this launch alone turns off Node's certificate check
 (NODE_TLS_REJECT_UNAUTHORIZED=0). It is not the server and carries neither the flaw nor the fix.
 """
@@ -57,7 +57,7 @@ WITNESS = Place(
     coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host=APIFY_SUFFIX_HOST, path="/"),
 )
 # An exploit is aimed when its arguments name the suffix host (`docs.apify.com.` followed by more
-# labels). The benign URL has `/` after `.com`, and the nonce is in the response, never in the
+# labels). The benign URL has `/` after `.com`, and the witness is in the response, never in the
 # arguments.
 AIM = re.compile(r"docs\.apify\.com\.")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
@@ -91,7 +91,7 @@ def apify_env(
         apify_rm(name)
 
 
-def responder_args(name: str, nonce: str, address: str) -> list[str]:
+def responder_args(name: str, witness: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
         "--name", name,
@@ -100,7 +100,7 @@ def responder_args(name: str, nonce: str, address: str) -> list[str]:
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"WITNESS_NONCE={nonce}",
+        "-e", f"WITNESS_NONCE={witness}",
         APIFY_RESPONDER_IMAGE,
     ]  # fmt: skip
 

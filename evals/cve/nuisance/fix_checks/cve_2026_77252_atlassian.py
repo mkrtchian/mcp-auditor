@@ -7,8 +7,8 @@ out-of-allowlist DEMO project or space returns its content. 0.22.0 only narrows 
 with the caller's filter, so the DEMO query comes back empty.
 
 The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
-nonce per exercise: the builder stands its own responder of the same image with that nonce, on the
-backend's bridge, and reaps it when the launch ends. The responder is a stand-in Jira and
+witness per exercise: the builder stands its own responder of the same image with that witness, on
+the backend's bridge, and reaps it when the launch ends. The responder is a stand-in Jira and
 Confluence API, not the server, and carries neither the flaw nor the fix.
 """
 
@@ -52,7 +52,7 @@ WITNESS = Place(
     coordinates=Coordinates(PlaceKind.FILE, path="/secret"),
 )
 # An exploit is aimed when its arguments name the out-of-allowlist scope; the benign calls name
-# only PROJ and TEAM, and the nonce is in the response, never in the arguments.
+# only PROJ and TEAM, and the witness is in the response, never in the arguments.
 AIM = re.compile(r"DEMO")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
@@ -85,7 +85,7 @@ def atlassian_env(
         atlassian_rm(name)
 
 
-def responder_args(name: str, nonce: str, address: str) -> list[str]:
+def responder_args(name: str, witness: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
         "--name", name,
@@ -94,7 +94,7 @@ def responder_args(name: str, nonce: str, address: str) -> list[str]:
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"DEMO_SUMMARY={nonce}",
+        "-e", f"DEMO_SUMMARY={witness}",
         ATLASSIAN_RESPONDER_IMAGE,
     ]  # fmt: skip
 

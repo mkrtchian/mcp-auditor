@@ -6,13 +6,13 @@ fetched and its body returned: reach = internal_fetch. The patched build pins th
 graph.facebook.com and rejects any other, so the same URL is refused before any fetch.
 
 The run's graph.facebook.com stand-in carries no witness and serves no other name, and check_fix
-plants a fresh random nonce per exercise: the builder stands its own container of a sentinel image
-that the run never builds (`Dockerfile.facebook-ads-sentinel`) with that nonce, on the backend's
-bridge, aliases the attacker host to it on this module's server launches only, and reaps it when
-the launch ends. The sentinel holds the nonce at the place the flaw reaches and serves it as JSON
-for any request, echoing nothing of the request. graph.facebook.com stays on the shared stand-in,
-which answers the benign call. Neither container is the server, and neither carries the flaw nor
-the fix.
+plants a fresh random witness per exercise: the builder stands its own container of a sentinel
+image that the run never builds (`Dockerfile.facebook-ads-sentinel`) with that witness, on the
+backend's bridge, aliases the attacker host to it on this module's server launches only, and reaps
+it when the launch ends. The sentinel holds the witness at the place the flaw reaches and serves it
+as JSON for any request, echoing nothing of the request. graph.facebook.com stays on the shared
+stand-in, which answers the benign call. Neither container is the server, and neither carries the
+flaw nor the fix.
 
 The sentinel serves a certificate of its own, generated when its image is built and naming the
 attacker host only, outside the fixture authority, so nothing a run builds or serves carries that
@@ -72,7 +72,7 @@ WITNESS = Place(
     coordinates=Coordinates(PlaceKind.HTTP_ENDPOINT, host=ATTACKER_HOST, path="/"),
 )
 # An exploit is aimed when its arguments name the attacker host, which the benign graph.facebook.com
-# URL never does. The nonce is in the response body, never in the arguments.
+# URL never does. The witness is in the response body, never in the arguments.
 AIM = re.compile(r"attacker\.example\.test")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
@@ -107,7 +107,7 @@ def facebook_ads_env(
         shutil.rmtree(directory, ignore_errors=True)
 
 
-def sentinel_args(name: str, nonce: str, address: str) -> list[str]:
+def sentinel_args(name: str, witness: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
         "--name", name,
@@ -116,7 +116,7 @@ def sentinel_args(name: str, nonce: str, address: str) -> list[str]:
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"WITNESS_NONCE={nonce}",
+        "-e", f"WITNESS_NONCE={witness}",
         SENTINEL_IMAGE,
     ]  # fmt: skip
 

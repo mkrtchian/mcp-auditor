@@ -17,9 +17,9 @@ the patched build. The benign calls, one per counted tool, use real job ids with
 
 The responder serves this fix check only (`evals.cve.backends.gitlab_responder`), so the fixture
 names its compose service for `fix-check` to refresh. The singleton responder cannot carry the
-witness, since check_fix plants a fresh random nonce per exercise: the builder stands its own
-responder of the same image with that nonce, on the responder's bridge, and reaps it when the
-launch ends. It serves the nonce on any `/internal/` path and the singleton's answers elsewhere.
+witness, since check_fix plants a fresh random witness per exercise: the builder stands its own
+responder of the same image with that witness, on the responder's bridge, and reaps it when the
+launch ends. It serves the witness on any `/internal/` path and the singleton's answers elsewhere.
 The server's `GITLAB_API_URL` is overridden to that responder with a `-e`, which wins over the
 image's baked `ENV`, while the baked token and toolsets stay. The responder is not the server and
 carries neither the flaw nor the fix.
@@ -67,7 +67,7 @@ WITNESS = Place(
     ),
 )
 # An exploit is aimed when its arguments carry the literal traversal. The benign job id has none,
-# and the nonce is in the response, never in the arguments.
+# and the witness is in the response, never in the arguments.
 AIM = re.compile(r"\.\./")
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
@@ -98,7 +98,7 @@ def gitlab_env(
         gitlab_rm(name)
 
 
-def responder_args(name: str, nonce: str, address: str) -> list[str]:
+def responder_args(name: str, witness: str, address: str) -> list[str]:
     return [
         "run", "-d", "--rm",
         "--name", name,
@@ -107,7 +107,7 @@ def responder_args(name: str, nonce: str, address: str) -> list[str]:
         "--ip", address,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"WITNESS_NONCE={nonce}",
+        "-e", f"WITNESS_NONCE={witness}",
         GITLAB_RESPONDER_IMAGE,
     ]  # fmt: skip
 

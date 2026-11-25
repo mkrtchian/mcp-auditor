@@ -9,10 +9,10 @@ build follows. The patched build (1.10.0) rejects the dot segments and blocks th
 private address.
 
 The shared singleton responder cannot carry the witness, since check_fix plants a fresh random
-nonce per exercise: the builder stands its own responder with that nonce, from an image of its own
-that the run never builds (`Dockerfile.googleapis-witness-responder`), and reaps it when the launch
-ends. It serves the nonce on both witness routes and on the redirect's `/sentinel`, and the run
-responder's two answers elsewhere. It is not the server and carries neither flaw nor fix.
+witness per exercise: the builder stands its own responder with that witness, from an image of its
+own that the run never builds (`Dockerfile.googleapis-witness-responder`), and reaps it when the
+launch ends. It serves the witness on both witness routes and on the redirect's `/sentinel`, and
+the run responder's two answers elsewhere. It is not the server and carries neither flaw nor fix.
 
 The patched build only lets a request through to a public-range address, so the benign call needs
 the responder on one, while the redirect has to land on a private one for the patched build to block
@@ -99,7 +99,7 @@ def googleapis_env(
         googleapis_rm(name)
 
 
-def responder_args(name: str, nonce: str, launch_host: int) -> list[str]:
+def responder_args(name: str, witness: str, launch_host: int) -> list[str]:
     public_address = _address(GOOGLEAPIS_SUBNET, launch_host)
     return [
         "run", "-d", "--rm",
@@ -109,7 +109,7 @@ def responder_args(name: str, nonce: str, launch_host: int) -> list[str]:
         "--network", f"name={INTERNAL_BRIDGE},ip={_address(INTERNAL_SUBNET, launch_host)}",
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"WITNESS_NONCE={nonce}",
+        "-e", f"WITNESS_NONCE={witness}",
         "-e", f"REDIRECT_TARGET=http://{_address(INTERNAL_SUBNET, launch_host)}/sentinel",
         WITNESS_RESPONDER_IMAGE,
     ]  # fmt: skip

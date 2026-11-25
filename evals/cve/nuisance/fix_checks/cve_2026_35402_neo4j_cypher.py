@@ -9,12 +9,12 @@ past the gate, and reaches an internal URL from the Neo4j engine itself, not the
 that rejects anything classified 'rw', so the same query is refused before it runs.
 
 The SSRF originates in the Neo4j engine, so the fix check stands three containers on one closed
-labeled bridge (no route to the host or the Internet): a sentinel serving the per-launch nonce under
-a stable network alias the engine resolves regardless of container name, a fresh Neo4j database
-(APOC unrestricted, file import off) under its own stable alias, and the server pointed at that
-alias by `-e` (NEO4J_URI and its credentials), so the engine the patched run image starts for
-itself goes unused. None of the three carries both the flaw and the fix; the vulnerable and
-patched arms differ only in the server image.
+labeled bridge (no route to the host or the Internet): a sentinel serving the per-launch witness
+under a stable network alias the engine resolves regardless of container name, a fresh Neo4j
+database (APOC unrestricted, file import off) under its own stable alias, and the server pointed at
+that alias by `-e` (NEO4J_URI and its credentials), so the engine the patched run image starts for
+itself goes unused. None of the three carries both the flaw and the fix; the vulnerable and patched
+arms differ only in the server image.
 """
 
 import re
@@ -95,7 +95,7 @@ def neo4j_env(
         _remove(sentinel, database)
 
 
-def sentinel_args(name: str, nonce: str) -> list[str]:
+def sentinel_args(name: str, witness: str) -> list[str]:
     return [
         "run", "-d", "--rm",
         "--name", name,
@@ -104,7 +104,7 @@ def sentinel_args(name: str, nonce: str) -> list[str]:
         "--network-alias", _SENTINEL_ALIAS,
         *confinement_args(),
         "--cap-add", "NET_BIND_SERVICE",
-        "-e", f"FLAG={nonce}",
+        "-e", f"FLAG={witness}",
         "-e", "SERVE_FILE=/latest/flag",
         SENTINEL_IMAGE,
     ]  # fmt: skip

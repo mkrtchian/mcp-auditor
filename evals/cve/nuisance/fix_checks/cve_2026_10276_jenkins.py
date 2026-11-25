@@ -13,13 +13,13 @@ a build lookup, so their exploits are aimed without surfacing (either surfacing 
 verdict).
 
 The backend is the real Jenkins controller. The shared singleton cannot carry the witness, since
-check_fix plants a fresh random nonce per exercise: the builder stands its own Jenkins of the same
-image on the backend's bridge, writes the nonce into that Jenkins's `userContent` tree (served by
-Jenkins itself at `/userContent/`, outside every job), and reaps it when the launch ends. The
-per-launch controller runs under the confinement of the CVE benchmark, memory bound included, as
-every per-launch fix-check container does. The server's `JENKINS_URL` is overridden to that
-Jenkins with a `-e`, which wins over the image's baked `ENV`. Jenkins is not the server and carries
-neither the flaw nor the fix.
+check_fix plants a fresh random witness per exercise: the builder stands its own Jenkins of the
+same image on the backend's bridge, writes the witness into that Jenkins's `userContent` tree
+(served by Jenkins itself at `/userContent/`, outside every job), and reaps it when the launch
+ends. The per-launch controller runs under the confinement of the CVE benchmark, memory bound
+included, as every per-launch fix-check container does. The server's `JENKINS_URL` is overridden to
+that Jenkins with a `-e`, which wins over the image's baked `ENV`. Jenkins is not the server and
+carries neither the flaw nor the fix.
 """
 
 import re
@@ -66,7 +66,7 @@ WITNESS = Place(
     ),
 )
 # An exploit is aimed when its arguments carry the percent-encoded traversal. The benign job path
-# has none, and the nonce is in the response, never in the arguments.
+# has none, and the witness is in the response, never in the arguments.
 AIM = re.compile(r"%2e%2e", re.I)
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
@@ -115,7 +115,7 @@ def controller_args(name: str, address: str) -> list[str]:
     ]  # fmt: skip
 
 
-def plant_args(name: str, nonce: str) -> list[str]:
+def plant_args(name: str, witness: str) -> list[str]:
     # The witness sits in Jenkins's own userContent tree, at the build-shaped paths the read tools
     # append to jobPath; Jenkins serves it to an authenticated reader as any userContent file.
     script = (
@@ -123,7 +123,7 @@ def plant_args(name: str, nonce: str) -> list[str]:
         ' && printf %s "$W" > "$d/consoleText"'
         ' && printf \'{"result":"%s"}\' "$W" > "$d/api/json"'
     )
-    return ["exec", "-e", f"W={nonce}", name, "sh", "-c", script]
+    return ["exec", "-e", f"W={witness}", name, "sh", "-c", script]
 
 
 def server_args(image: str, controller_address: str) -> list[str]:
