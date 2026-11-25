@@ -88,6 +88,8 @@ _OLD_TEST_STEMS = (
     "test_fix_check_resolver",
     "test_fixture_provenance",
     "test_fixture_sources",
+    "test_geekgod_fs_fix_check_builder",
+    "test_geekgod_fs_fix_check_builder_given",
     "test_holdout_audit",
     "test_holdout_card_readiness",
     "test_holdout_census",

@@ -1,5 +1,7 @@
-import tests.unit.nuisance.fix_checks.support.test_geekgod_fs_fix_check_builder_given as given
 from evals.cve.nuisance.fix_checks import cve_2026_7400_geekgod_fs as geekgod_fs
+from tests.integration.committed.nuisance.fix_checks.support import (
+    test_geekgod_fs_fix_check_given as given,
+)
 
 DECLARED_SCOPE = "/tmp"
 MODIFYING_TOOLS = frozenset(

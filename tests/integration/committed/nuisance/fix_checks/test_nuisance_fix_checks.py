@@ -1,6 +1,5 @@
 import pytest
 
-import tests.unit.nuisance.fix_checks.support.recorded_exchanges as recording
 from evals.cve.docker_paths import image_dockerfile
 from evals.cve.kit.driver import unit_of
 from evals.cve.kit.fix_check import FixCheckFixture
@@ -10,10 +9,15 @@ from evals.cve.proofs import is_aimed
 from tests.integration.committed.nuisance.fix_checks.support import (
     test_nuisance_fix_checks_given as given,
 )
+from tests.integration.committed.nuisance.fix_checks.support.recorded_exchanges import (
+    flaw_record,
+    reached_tools,
+    recorded,
+)
 from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
-def test_every_counted_flaw_has_a_fix_check_fixture_unless_its_fix_check_is_a_copy():
+def test_every_counted_flaw_without_a_holdout_calibration_copy_has_a_fix_check_fixture():
     fixture_flaws = {fixture.flaw for fixture in FIX_CHECK_FIXTURES}
     for server in the_committed_admission().servers:
         for flaw in counted_flaws(server):
@@ -27,29 +31,27 @@ def test_every_counted_flaw_has_a_fix_check_fixture_unless_its_fix_check_is_a_co
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 async def test_every_exploit_reads_as_aimed_and_no_benign_call_does(fixture: FixCheckFixture):
     for exploit in fixture.exploits:
-        assert is_aimed(unit_of(await recording.recorded(fixture, exploit)), fixture.aim)
-    assert not is_aimed(
-        unit_of(await recording.recorded(fixture, *fixture.benign_calls)), fixture.aim
-    )
+        assert is_aimed(unit_of(await recorded(fixture, exploit)), fixture.aim)
+    assert not is_aimed(unit_of(await recorded(fixture, *fixture.benign_calls)), fixture.aim)
 
 
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 async def test_the_exploits_call_exactly_the_flaws_tools(fixture: FixCheckFixture):
-    exchanges = await recording.recorded(fixture, *fixture.exploits)
+    exchanges = await recorded(fixture, *fixture.exploits)
 
-    assert {name for name, _, _ in exchanges} == recording.reached_tools(fixture)
+    assert {name for name, _, _ in exchanges} == reached_tools(fixture)
 
 
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
 def test_the_fixture_effect_class_is_the_flaws(fixture: FixCheckFixture):
-    assert fixture.effect_class == recording.flaw_record(fixture).effect_class
+    assert fixture.effect_class == flaw_record(fixture).effect_class
 
 
 @pytest.mark.parametrize(
     "fixture", [t for t in FIX_CHECK_FIXTURES if t.benign_calls], ids=lambda t: t.flaw
 )
 async def test_every_counted_tool_has_a_benign_call(fixture: FixCheckFixture):
-    exchanges = await recording.recorded(fixture, *fixture.benign_calls)
+    exchanges = await recorded(fixture, *fixture.benign_calls)
 
     assert given.counted_tools(fixture) <= {name for name, _, _ in exchanges}
 
@@ -62,13 +64,13 @@ def test_every_version_of_a_fix_check_has_its_dockerfile(fixture: FixCheckFixtur
 
 
 @pytest.mark.parametrize("fixture", FIX_CHECK_FIXTURES, ids=lambda t: t.flaw)
-def test_the_last_patched_version_is_the_image_the_run_audits_or_its_release(
+def test_the_servers_patched_version_is_the_image_the_run_audits_or_its_release(
     fixture: FixCheckFixture,
 ):
     # A `<service>-patched` image carries what only the fix check reads, which the run image may
     # not, on the run's release: every build argument it pins is one the run Dockerfile pins.
-    last_patched = fixture.server_patched_service or fixture.patched_service
+    server_patched_service = fixture.server_patched_service or fixture.patched_service
     service = given.admitted_server(fixture).service
 
-    assert last_patched in (service, f"{service}-patched")
-    assert given.build_arguments(last_patched) <= given.build_arguments(service)
+    assert server_patched_service in (service, f"{service}-patched")
+    assert given.build_arguments(server_patched_service) <= given.build_arguments(service)

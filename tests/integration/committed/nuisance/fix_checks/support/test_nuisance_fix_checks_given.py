@@ -3,7 +3,7 @@ from evals.cve.images import dockerfile_instructions
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.counting import flaw_counted_tools
-from tests.unit.nuisance.fix_checks.support.recorded_exchanges import flaw_record
+from tests.integration.committed.nuisance.fix_checks.support.recorded_exchanges import flaw_record
 from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
 
