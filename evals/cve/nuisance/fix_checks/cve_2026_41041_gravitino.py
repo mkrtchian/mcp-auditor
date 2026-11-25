@@ -31,7 +31,7 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
-from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_PORT
+from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_PORT, GRAVITINO_SERVER_LAUNCH
 from evals.cve.backends.gravitino_seed import FILESET_DIRECTORY, GRAVITINO_SEED, METALAKE
 from evals.cve.closed_network import create_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
@@ -71,8 +71,6 @@ WITNESS = Place(
 # metalake. The benign calls carry seeded names only, so none is aimed.
 AIM = re.compile(re.escape(TRAVERSAL))
 _INSTANCE_ALIAS = "gravitino"
-_SERVER_URI = f"http://{_INSTANCE_ALIAS}:{GRAVITINO_PORT}"
-_SERVER_LAUNCH = ["--metalake", METALAKE, "--gravitino-uri", _SERVER_URI]
 _API = f"http://localhost:{GRAVITINO_PORT}/api"
 _READY_SECONDS = 300.0
 
@@ -181,7 +179,7 @@ def server_args(image: str, network: str) -> list[str]:
         *unprivileged_user_args(),
         "-w", HOST.working_directory,
         image,
-        *_SERVER_LAUNCH,
+        *GRAVITINO_SERVER_LAUNCH,
     ]  # fmt: skip
 
 

@@ -149,39 +149,49 @@ def ipv6_loopback_env(
     holder = f"mcp-auditor-kit-flyto530-h-{token}"
     sentinel = f"mcp-auditor-kit-flyto530-s-{token}"
     try:
-        _run_detached(
-            holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
-        )
-        _run_detached(
-            sentinel,
-            [
-                "--cap-add",
-                "NET_BIND_SERVICE",
-                "--network",
-                f"container:{holder}",
-                "-e",
-                f"FLAG={nonce}",
-                "-e",
-                "SERVE_FILE=/flag",
-                SENTINEL_IMAGE,
-            ],
-        )
+        _start_holder(holder)
+        _run_detached(sentinel, _sentinel_tail(holder, nonce))
         time.sleep(1.5)
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                *unprivileged_user_args(),
-                "--network",
-                f"container:{holder}",
-                image,
-            ],
-        )
+        yield server_launch(holder, image)
     finally:
         _remove(sentinel, holder)
+
+
+def _start_holder(holder: str) -> None:
+    _run_detached(
+        holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
+    )
+
+
+def _sentinel_tail(holder: str, witness: str, bind: tuple[str, ...] = ()) -> list[str]:
+    return [
+        "--cap-add",
+        "NET_BIND_SERVICE",
+        "--network",
+        f"container:{holder}",
+        "-e",
+        f"FLAG={witness}",
+        "-e",
+        "SERVE_FILE=/flag",
+        *bind,
+        SENTINEL_IMAGE,
+    ]
+
+
+def server_launch(holder: str, image: str) -> Launch:
+    return Launch(
+        command="docker",
+        args=[
+            "run",
+            "-i",
+            "--rm",
+            *confinement_args(),
+            *unprivileged_user_args(),
+            "--network",
+            f"container:{holder}",
+            image,
+        ],
+    )
 
 
 def _run_detached(name: str, tail: list[str]) -> None:
@@ -230,25 +240,8 @@ def redirect_ssrf_env(
     sentinel = f"mcp-auditor-kit-flyto424-s-{token}"
     redirector = f"mcp-auditor-kit-flyto424-r-{token}"
     try:
-        _run_detached(
-            holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
-        )
-        _run_detached(
-            sentinel,
-            [
-                "--cap-add",
-                "NET_BIND_SERVICE",
-                "--network",
-                f"container:{holder}",
-                "-e",
-                f"FLAG={nonce}",
-                "-e",
-                "SERVE_FILE=/flag",
-                "-e",
-                "BIND_ADDR=127.0.0.1",
-                SENTINEL_IMAGE,
-            ],
-        )
+        _start_holder(holder)
+        _run_detached(sentinel, _sentinel_tail(holder, nonce, ("-e", "BIND_ADDR=127.0.0.1")))
         _run_detached(
             redirector,
             [
@@ -260,19 +253,7 @@ def redirect_ssrf_env(
             ],
         )
         time.sleep(1.5)
-        yield Launch(
-            command="docker",
-            args=[
-                "run",
-                "-i",
-                "--rm",
-                *confinement_args(),
-                *unprivileged_user_args(),
-                "--network",
-                f"container:{holder}",
-                image,
-            ],
-        )
+        yield server_launch(holder, image)
     finally:
         _remove(redirector, sentinel, holder)
 
