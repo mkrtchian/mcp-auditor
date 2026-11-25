@@ -7,9 +7,8 @@ from evals.ground_truth import cell_key
 from evals.honeypot.fault_catalog import NO_STABLE_FAIL_CELL, Expectation
 from evals.honeypot.fault_harness import FaultResult
 from evals.honeypots import MERGED_GROUND_TRUTH
+from evals.recording import FLIPPED_OUTCOMES
 from mcp_auditor.domain.models import AuditCategory, EvalVerdict
-
-_FLIPPED = {CellOutcome.FLIP, CellOutcome.REGRESSION, CellOutcome.FLIP_NOT_REPRODUCED}
 
 
 def expectation_met(result: FaultResult, expectation: Expectation) -> None:
@@ -46,7 +45,7 @@ def the_half_loss_obeys_the_rules(result: FaultResult, fixture: Baseline) -> Non
 
 def some_pass_cells_flipped(result: FaultResult) -> None:
     pass_cells = _cells_labelled(EvalVerdict.PASS)
-    flipped = [key for key in pass_cells if result.paired.cells[key].outcome in _FLIPPED]
+    flipped = [key for key in pass_cells if result.paired.cells[key].outcome in FLIPPED_OUTCOMES]
     assert flipped, _summary(result)
 
 
@@ -58,7 +57,7 @@ def only_the_declared_category_flipped(
     assert declared, observed
     for key in declared:
         assert result.paired.cells[key].outcome == CellOutcome.DECLARED, f"{key}: {observed}"
-    flipped = [key for key, cell in result.paired.cells.items() if cell.outcome in _FLIPPED]
+    flipped = [key for key, cell in result.paired.cells.items() if cell.outcome in FLIPPED_OUTCOMES]
     assert flipped == [], observed
 
 

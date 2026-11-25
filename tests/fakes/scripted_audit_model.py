@@ -15,6 +15,9 @@ from mcp_auditor.domain.models import (
 )
 
 _NO_USAGE = ProviderUsage()
+# The budget at which one case per requested category fills a batch, so the generator makes no
+# retry.
+FULL_BATCH_BUDGET = len(AuditCategory)
 # `build_attack_generation_prompt` lists the categories right under this line, up to a blank
 # line. The category guidance further down also starts lines with `- info_leakage:`.
 _CATEGORY_LIST_HEADER = "Distribute test cases across these attack categories:\n"

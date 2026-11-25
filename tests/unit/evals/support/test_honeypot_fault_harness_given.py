@@ -19,7 +19,7 @@ from mcp_auditor.domain.models import (
     ToolResponse,
 )
 from mcp_auditor.domain.ports import LLMPort
-from tests.fakes.scripted_audit_model import ScriptedAuditModel
+from tests.fakes.scripted_audit_model import FULL_BATCH_BUDGET, ScriptedAuditModel
 
 
 def many_detections_and_a_pass_and_an_uncovered_cell() -> VerdictMap:
@@ -62,8 +62,6 @@ async def verdicts_of(judge: LLMPort, calls: int) -> list[EvalVerdict]:
     ]
 
 
-# One case per category, as in the fault injection integration test.
-FAULT_INJECTION_TEST_BUDGET = 5
 MANY_TOOLS = [
     ToolDefinition(name=f"tool_{index}", input_schema={"type": "object"}) for index in range(20)
 ]
@@ -99,4 +97,4 @@ def a_faulted_audit_losing_detections(clients: dict[str, GatedClient]) -> Faulte
         for honeypot in HONEYPOTS
         if honeypot.name in clients
     }
-    return FaultedAudit(fault, models, FAULT_INJECTION_TEST_BUDGET, servers)
+    return FaultedAudit(fault, models, FULL_BATCH_BUDGET, servers)

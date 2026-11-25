@@ -8,8 +8,8 @@ from mcp_auditor.adapters.mcp_client import SessionBounds, StdioMCPClient
 from mcp_auditor.adapters.server_launch import ServerLaunch
 
 # Long enough that a caller made to wait the opening out shows it.
-SLOW_OPENING_SECONDS = 60
-_SLOW_OPENING = SessionBounds(initialize=SLOW_OPENING_SECONDS)
+_SLOW_OPENING_SECONDS = 60
+_SLOW_OPENING = SessionBounds(initialize=_SLOW_OPENING_SECONDS)
 
 
 async def a_session_opened(launch: ServerLaunch, bounds: SessionBounds = _SLOW_OPENING) -> None:
@@ -28,7 +28,8 @@ async def cancelled_after(seconds: float, caller: "asyncio.Task[None]") -> float
     await asyncio.sleep(seconds)
     started = time.monotonic()
     caller.cancel()
-    await asyncio.wait({caller}, timeout=SLOW_OPENING_SECONDS)  # a caller that hangs fails its test
+    # A caller that hangs fails its test.
+    await asyncio.wait({caller}, timeout=_SLOW_OPENING_SECONDS)
     return time.monotonic() - started
 
 

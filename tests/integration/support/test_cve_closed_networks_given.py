@@ -49,19 +49,19 @@ def host_ipv4_addresses() -> list[str]:
 
 @contextlib.contextmanager
 def a_closed_network() -> Generator[str]:
-    name = a_network_name()
+    name = _a_test_resource_name()
     create_closed_network(name)
     with _removed_at_exit(name):
         yield name
 
 
-def a_network_name() -> str:
+def _a_test_resource_name() -> str:
     return f"{LABEL}-closed-test-{secrets.token_hex(6)}"
 
 
 @contextlib.contextmanager
 def an_open_network() -> Generator[str]:
-    name = a_network_name()
+    name = _a_test_resource_name()
     _docker("network", "create", "--label", LABEL, name)
     with _removed_at_exit(name):
         yield name
@@ -93,7 +93,7 @@ def a_planted_launch_with_a_network() -> Generator[PlantedArgs]:
 
 @contextlib.contextmanager
 def a_container_with(args: PlantedArgs) -> Generator[str]:
-    name = f"{LABEL}-closed-test-{secrets.token_hex(6)}"
+    name = _a_test_resource_name()
     _docker(
         "run", "-d", "--rm", "--label", LABEL, "--name", name, *confinement_args(),
         *args.run_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, "300",
@@ -106,7 +106,7 @@ def a_container_with(args: PlantedArgs) -> Generator[str]:
 
 @contextlib.contextmanager
 def a_started_container_on(network: str) -> Generator[str]:
-    name = f"{LABEL}-closed-test-{secrets.token_hex(6)}"
+    name = _a_test_resource_name()
     try:
         _docker(
             "run", "-d", "--rm", "--label", LABEL, "--name", name, "--network", network,
