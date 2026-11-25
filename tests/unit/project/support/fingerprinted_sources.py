@@ -14,8 +14,7 @@ from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.nuisance import counter, fingerprint
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.honeypots import HONEYPOTS
-
-REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+from evals.repository import REPO_ROOT
 
 
 def fingerprinted_sources() -> frozenset[str]:
@@ -42,4 +41,4 @@ def fingerprinted_sources() -> frozenset[str]:
 
 
 def _relative(paths: Iterable[Path]) -> frozenset[str]:
-    return frozenset(path.resolve().relative_to(REPOSITORY_ROOT).as_posix() for path in paths)
+    return frozenset(path.resolve().relative_to(REPO_ROOT).as_posix() for path in paths)

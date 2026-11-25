@@ -39,13 +39,13 @@ class SourceFile:
 def violations(source: SourceFile) -> list[Violation]:
     module = ast.parse(source.text, filename=source.path)
     return [
-        *newspaper_violations(source, module),
-        *foreign_given_then_imports(source, module),
-        *monkeypatch_setattrs(source, module),
+        *_newspaper_violations(source, module),
+        *_foreign_given_then_imports(source, module),
+        *_monkeypatch_setattrs(source, module),
     ]
 
 
-def newspaper_violations(source: SourceFile, module: ast.Module) -> list[Violation]:
+def _newspaper_violations(source: SourceFile, module: ast.Module) -> list[Violation]:
     eager = _eager_loads(module)
     deferred = [_deferred_loads(statement) for statement in module.body]
     found: list[Violation] = []
@@ -147,7 +147,7 @@ def _loads(nodes: list[ast.AST] | list[ast.stmt]) -> set[str]:
 _GIVEN_OR_THEN = re.compile(r"(test_\w+)_(?:given|then)")
 
 
-def foreign_given_then_imports(source: SourceFile, module: ast.Module) -> list[Violation]:
+def _foreign_given_then_imports(source: SourceFile, module: ast.Module) -> list[Violation]:
     if not source.path.startswith("tests/"):
         return []
     importer = PurePosixPath(source.path).stem
@@ -176,7 +176,7 @@ def _owners(test_stem: str) -> set[str]:
     return {test_stem, f"{test_stem}_given", f"{test_stem}_then"}
 
 
-def monkeypatch_setattrs(source: SourceFile, module: ast.Module) -> list[Violation]:
+def _monkeypatch_setattrs(source: SourceFile, module: ast.Module) -> list[Violation]:
     if "monkeypatch.setattr" not in source.text:  # spares the walk of nearly every module
         return []
     found: list[Violation] = []

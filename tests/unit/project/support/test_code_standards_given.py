@@ -1,11 +1,11 @@
 import subprocess
 import tomllib
 
+from evals.repository import REPO_ROOT
 from tests.unit.project.support.code_standards_debt import DEBTS, Debt
 from tests.unit.project.support.code_standards_scan import SourceFile, Violation, violations
-from tests.unit.project.support.fingerprinted_sources import REPOSITORY_ROOT
 
-PACKAGE = REPOSITORY_ROOT / "src" / "mcp_auditor"
+PACKAGE = REPO_ROOT / "src" / "mcp_auditor"
 HEXAGON = ("domain", "graph")
 
 
@@ -44,16 +44,16 @@ def banned_modules(layer: str) -> set[str]:
 def _swept_paths() -> list[str]:
     listed = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.py"],
-        cwd=REPOSITORY_ROOT,
+        cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=True,
     ).stdout.splitlines()
-    return sorted(path for path in set(listed) if (REPOSITORY_ROOT / path).is_file())
+    return sorted(path for path in set(listed) if (REPO_ROOT / path).is_file())
 
 
 def _source(path: str) -> SourceFile:
-    return SourceFile(path, (REPOSITORY_ROOT / path).read_text())
+    return SourceFile(path, (REPO_ROOT / path).read_text())
 
 
 def _key(entry: Violation | Debt) -> tuple[str, str, str]:
