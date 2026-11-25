@@ -17,7 +17,7 @@ from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
 from tests.unit.detection.support.detection_audits import a_report_missing
-from tests.unit.support import detection_holdout_runs
+from tests.unit.support import detection_holdout_runs, holdout_run_conditions
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
 
 
@@ -57,7 +57,7 @@ async def test_a_target_is_assembled_from_its_runs():
     assert assembled.tools_count == 1
     assert assembled.class_labels == ("command_execution",)
     assert assembled.run_cost == pytest.approx(
-        3 * call_cost(provider, detection_holdout_runs.LUNA_PRICE)
+        3 * call_cost(provider, holdout_run_conditions.LUNA_PRICE)
     )
 
 
@@ -112,7 +112,7 @@ async def test_an_incomplete_run_counts_as_not_detected_and_is_billed():
     assert assembled.incomplete_runs == 2
     assert result.incomplete_run_count == 2
     assert assembled.run_cost == pytest.approx(
-        3 * call_cost(provider, detection_holdout_runs.LUNA_PRICE)
+        3 * call_cost(provider, holdout_run_conditions.LUNA_PRICE)
     )
 
 

@@ -13,7 +13,7 @@ from evals.cve.run_files import write_report
 from evals.cve.run_images import RunDocker
 from tests.fakes import FakeContainerSweep
 from tests.fakes.image_store import FakeImageStore
-from tests.unit.support import censuses, detection_holdout_runs
+from tests.unit.support import censuses, detection_holdout_runs, holdout_run_conditions
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 from tests.unit.support.census_draws import a_census_drawing
 
@@ -62,7 +62,7 @@ def _holdout_deps_reaching_nothing(*_: object) -> HoldoutDeps:
 
 def a_drawn_run_reaching_nothing() -> HoldoutCommandDeps:
     """A drawn target under ready run conditions, its run and every Docker call unreached."""
-    return replace(a_command_reaching_nothing(), conditions=detection_holdout_runs.ready_conditions)
+    return replace(a_command_reaching_nothing(), conditions=holdout_run_conditions.ready_conditions)
 
 
 def a_command_reaching_nothing() -> HoldoutCommandDeps:

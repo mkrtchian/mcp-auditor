@@ -20,6 +20,7 @@ from evals.eval_session import Refused, TreeState
 from evals.pricing import call_cost
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
+from tests.unit.support import holdout_run_conditions
 
 
 async def test_every_audited_server_is_assembled_with_the_run_conditions():
@@ -50,7 +51,9 @@ async def test_every_audited_server_is_assembled_with_the_run_conditions():
     assert result.not_run == []
     assert result.incomplete_run_count == 1
     assert result.total_cost == pytest.approx(sum(s.run_cost for s in result.servers))
-    assert result.total_cost == pytest.approx(4 * call_cost(usage, holdout_runs.LUNA_PRICE))
+    assert result.total_cost == pytest.approx(
+        4 * call_cost(usage, holdout_run_conditions.LUNA_PRICE)
+    )
 
 
 async def test_a_run_records_the_census_walk_record_and_admission_commits_apart():

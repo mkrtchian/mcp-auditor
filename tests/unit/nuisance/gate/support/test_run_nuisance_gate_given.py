@@ -23,7 +23,7 @@ from evals.model_provider_errors import ProviderFatal
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
 from tests.unit.support import census_draws, censuses
-from tests.unit.support.detection_holdout_runs import SETTINGS, ready_conditions
+from tests.unit.support.holdout_run_conditions import SETTINGS, ready_conditions
 
 GATE_SERVER = admissions.ACCEPTANCE_PACKAGE
 REVOKED_KEY = "sk-secret"

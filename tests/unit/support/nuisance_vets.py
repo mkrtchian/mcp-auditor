@@ -2,12 +2,12 @@ import dataclasses
 from collections.abc import Mapping, Sequence
 
 import tests.unit.support.nuisance_admissions as admissions
-import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance import images as nuisance_images
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.vet_command import VetCommandDeps, VetDeps
 from evals.run_nuisance import NuisanceCommandDeps
 from tests.fakes import ScriptedBenignCall
+from tests.unit.support import holdout_run_conditions
 from tests.unit.support.nuisance_docker_hosts import DockerHost
 
 SERVER = admissions.SERVER_PACKAGE
@@ -52,7 +52,7 @@ class VetHarness:
         self.built_with: tuple[int, int] | None = None
         self._vet_deps = vet_deps
         conditions = dataclasses.replace(
-            holdout_runs.conditions(), tool_call_timeout=run_conditions_timeout
+            holdout_run_conditions.ready_conditions(), tool_call_timeout=run_conditions_timeout
         )
         self.deps = NuisanceCommandDeps(
             vet=VetCommandDeps(conditions=lambda: conditions, vet_deps=self._built)

@@ -16,7 +16,7 @@ from evals.run_nuisance import NuisanceCommandDeps
 from mcp_auditor.config import Settings
 from tests.unit.nuisance.support.nuisance_report_runs import a_run, a_server_result
 from tests.unit.support import census_draws, censuses
-from tests.unit.support.detection_holdout_runs import ready_conditions
+from tests.unit.support.holdout_run_conditions import ready_conditions
 
 
 def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:

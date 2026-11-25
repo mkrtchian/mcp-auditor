@@ -13,10 +13,11 @@ from evals.cve.server_health import ServerHealth
 from evals.pricing import AuditPrices
 from mcp_auditor.domain.model_calls import MissedCallCause
 from mcp_auditor.domain.models import ProviderUsage
+from tests.unit.support import holdout_run_conditions
 
 _EARLY = date(2025, 3, 1)
 _LATE = date(2026, 4, 1)
-_PRICES = AuditPrices(holdout_runs.LUNA_PRICE, holdout_runs.LUNA_PRICE)
+_PRICES = AuditPrices(holdout_run_conditions.LUNA_PRICE, holdout_run_conditions.LUNA_PRICE)
 
 
 def test_the_split_flaw_is_the_first_counted_flaw_in_draw_order():
