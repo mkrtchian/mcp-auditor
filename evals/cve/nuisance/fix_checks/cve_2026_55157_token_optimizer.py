@@ -3,8 +3,9 @@
 smart_user's get-user-info interpolates `username` into a shell string run through execAsync. A
 literal `"` closes the quoting, `;` chains a printf that emits a 7-field passwd line whose GECOS
 (field 4) carries a command-substitution `$(cat /flag)`, and a trailing ` #` comments out the rest.
-The server parses that field into `fullName`, so the /flag nonce surfaces in the tool response. The
-patched build (5.1.1) runs argv-mode execFileSafe + assertSafeArg, so nothing executes.
+The server parses that field into `fullName`, so the witness in /flag surfaces in the tool
+response. The patched build (5.1.1) runs argv-mode execFileSafe + assertSafeArg, so nothing
+executes.
 
 The witness and aim follow the command-injection convention the kanban pilot established: a /flag
 file read by `cat /flag`, so the exploit's username argument carries the aim and the benign call

@@ -8,7 +8,7 @@ screenshot reach the same injection but turn any stderr into an error carrying t
 and the idb client or the xcrun stand-in, cut short by the injection, always writes an error
 there, so their exploits leave the witness unsurfaced. The patched build (1.3.3, fix eb53a4f)
 replaces the shell exec with execFile argv arrays and validates `udid` against a strict UUID
-pattern, so the injection is rejected and no nonce surfaces.
+pattern, so the injection is rejected and no witness surfaces.
 
 Both images run the real idb client (fb-idb) against a stand-in of the macOS-only idb_companion,
 with a stand-in of Xcode's `xcrun simctl`, so a benign call with no udid resolves the booted

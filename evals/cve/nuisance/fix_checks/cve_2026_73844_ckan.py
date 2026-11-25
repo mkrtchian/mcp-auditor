@@ -3,8 +3,8 @@
 Every CKAN tool fetches `${server_url}/api/3/action/<action>` through makeCkanRequest for its
 caller-supplied server_url, a public-range host included, on both builds. In the affected range
 (0.4.108, the vulnerable build) makeCkanRequest returns the raw body of an upstream error in the
-tool response, so a sentinel server_url is fetched and its nonce surfaces: reach =
-internal_fetch. 0.4.112 returns a generic error message instead, so no nonce surfaces. Each
+tool response, so a sentinel server_url is fetched and its witness surfaces: reach =
+internal_fetch. 0.4.112 returns a generic error message instead, so no witness surfaces. Each
 exploit sends one listed tool to the sentinel. The two MQA tools accept only a dati.gov.it
 server_url, so theirs carries the portal name as userinfo, which passes that check in 0.4.108
 yet resolves to the sentinel host.

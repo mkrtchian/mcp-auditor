@@ -6,7 +6,7 @@ witness (a /flag file read by `cat /flag`). CVE-2025-53818 injects through add_c
 `issue_number`; CVE-2026-0756 injects through create_issue's `title`.
 
 The patched build (v0.4.1) passes each argument as one literal argv element and validates
-`issue_number`, so no nonce surfaces. The benign calls exercise the four tools on the sample
+`issue_number`, so no witness surfaces. The benign calls exercise the four tools on the sample
 checkout at /work/Hello-World (octocat/Hello-World), with the real gh against the api.github.com
 stand-in, carrying both the v0.3.0 repo-argument API and the v0.4.x path-argument API so one
 call shape works on both services.

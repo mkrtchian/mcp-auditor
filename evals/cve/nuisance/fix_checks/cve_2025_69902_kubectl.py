@@ -8,7 +8,7 @@ server's patched version is the flaw's patched version, so server_patched_servic
 
 The witness sits in a container environment variable; each exploit's query triggers the
 direct-kubectl branch, then chains an environment reader after a shell separator. On shell=True
-the reader runs and the nonce surfaces; on shell=False the tokens are inert kubectl arguments. The
+the reader runs and the witness surfaces; on shell=False the tokens are inert kubectl arguments. The
 aim matches the reader, never the benign "get pods".
 
 kubectl reaches the run's backend, an upstream control plane stood for each launch

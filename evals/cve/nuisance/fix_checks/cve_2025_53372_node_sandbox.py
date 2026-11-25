@@ -14,7 +14,7 @@ exit, so execSync rejects and stop.js folds that stderr into the error text it r
 others run the injected `cat /flag` but return nothing that carries it: sandbox_initialize
 discards the `docker run` output and returns the container name it generated, run_js_ephemeral
 returns the output of the code it runs, and sandbox_exec and run_js return the invocation's
-stdout, while the nonce is written to stderr.
+stdout, while the witness is written to stderr.
 
 The real Debian docker.io CLI is installed, and only the Docker daemon it speaks to is replaced,
 at the Engine API, by the node sandbox engine, the run's own backend: the builder stands one

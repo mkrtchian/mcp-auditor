@@ -3,7 +3,7 @@
 n8n_test_workflow validates the trigger URL's origin against an SSRF allowlist, then follows a
 302 from that origin without re-validating the redirect target (the main axios client's default
 maxRedirects), returning the response body to the caller. 2.50.1 sets maxRedirects: 0 on this
-request, so the redirect is not followed and no nonce surfaces: vulnerable_service 2.50.0,
+request, so the redirect is not followed and no witness surfaces: vulnerable_service 2.50.0,
 patched_service 2.50.1. The server's shipped 2.50.2 postdates the fix, so server_patched_service
 is set rather than None (unlike CVE-2026-44694, whose patched version is the server's own).
 

@@ -7,8 +7,8 @@ makes the gateway fetch that internal address and return its body: reach = inter
 entrypoint of the two fix-check images (Dockerfile.contextforge-vuln and -patched, the run image
 carrying none of it) registers one REST tool per planted endpoint and flips /etc/hosts from the
 public to the internal sentinel address, so invoking the tool surfaces the witness it serves. 1.0.7
-re-resolves and pins the host at invocation and blocks the link-local metadata address, so no nonce
-surfaces.
+re-resolves and pins the host at invocation and blocks the link-local metadata address, so no
+witness surfaces.
 
 The benign REST tool fetching httpbin.org is a run-time concern recorded in the admission, not a
 fix-check one, so this fixture stands only the contextforge_env sentinel and carries no benign call.

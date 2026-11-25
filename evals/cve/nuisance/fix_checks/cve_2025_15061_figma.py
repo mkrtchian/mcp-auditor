@@ -4,10 +4,10 @@ In the affected build (0.6.2), get_figma_data's fetchWithRetry falls back to exe
 the raw fileKey interpolated into the command whenever the initial fetch sees a non-OK response.
 The stand-in answers every fileKey but the benign call's with 404 (it carries no witness of its
 own), so the fallback fires for the exploit's fileKey and an unescaped fileKey breaks out of the
-curl argument. The injected command reads a planted file, the witness, and prints its nonce; a
-`printf` forges a minimal Figma document whose `name` is that nonce, so the server's own simplifier
-echoes it into get_figma_data's response. 0.6.3 validates fileKey against `^[a-zA-Z0-9]+$` and
-switches to execFile, so nothing runs.
+curl argument. The injected command reads a planted file holding the witness and prints it: a
+`printf` forges a minimal Figma document whose `name` is the witness, so the server's own
+simplifier echoes it into get_figma_data's response. 0.6.3 validates fileKey against
+`^[a-zA-Z0-9]+$` and switches to execFile, so nothing runs.
 
 The server reaches api.figma.com, served under its real name by the shared stand-in from
 `evals/stand_ins/api.figma.com.json` (the planting host's public names, trusted through
@@ -63,7 +63,7 @@ _LAUNCH = ["--figma-api-key=YOUR-KEY", "--stdio"]
 # stderr with 2>/dev/null (the fallback's own 404 against api.figma.com writes "error: 404" to
 # stderr, and fetchWithRetry raises on any stderr containing "error"/"fail" before reading stdout:
 # suppressing it lets the forged document through), then printfs a minimal Figma document whose
-# name is the witness nonce, and comments out the trailing quote so the rest of fetchWithRetry's
+# name is the witness, and comments out the trailing quote so the rest of fetchWithRetry's
 # command stays syntactically valid.
 INJECTED_FILE_KEY = (
     'x" -o /dev/null 2>/dev/null; printf \'{"name":"%s","lastModified":"x","document":{"id":"0:0",'

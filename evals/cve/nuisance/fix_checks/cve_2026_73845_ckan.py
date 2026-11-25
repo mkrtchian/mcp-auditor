@@ -4,8 +4,8 @@ The MQA tools (ckan_get_mqa_quality and ckan_get_mqa_quality_details) fetch
 `${server_url}/api/3/action/package_show` for their caller-supplied server_url. In the affected
 range (0.4.108, the vulnerable build) an allowlist bypass of the form `http://dati.gov.it@<host>`
 (the portal name as userinfo) passes the portal check yet resolves to <host>, so the sentinel is
-fetched and its nonce surfaces: reach = internal_fetch. 0.4.112 parses the host past the userinfo
-and rejects it, so no nonce surfaces. Either MQA tool surfacing counts; both are counted tools, so
+fetched and its witness surfaces: reach = internal_fetch. 0.4.112 parses the host past the userinfo
+and rejects it, so no witness surfaces. Either MQA tool surfacing counts; both are counted tools, so
 both are exercised.
 
 The benign MQA call reaching the CKAN backend is a run-time concern recorded in the admission, not

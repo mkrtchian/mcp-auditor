@@ -6,9 +6,9 @@ injection in the MCP server's list-projects tool).
 workspace root that closes the quote (`" ; cat /flag; echo "`) breaks out into a second command
 whose stdout (`cat /flag`) is captured as if it were `find` output: the server treats each
 resulting line as a discovered config file path and echoes it back as `configFile`/
-`configFilePath` in the tool's own response, so the /flag nonce surfaces there. The patched build
-(4.29.3) checks that each workspaceRoots entry is a directory and runs `find` through `execFile`,
-with no shell, so the same payload yields no match and no nonce.
+`configFilePath` in the tool's own response, so the witness in /flag surfaces there. The patched
+build (4.29.3) checks that each workspaceRoots entry is a directory and runs `find` through
+`execFile`, with no shell, so the same payload yields no match and no witness.
 
 The npm package `serverless@<version>` is a thin installer stub: `run.js`/`binary.js` are
 byte-identical across every release and always fetch the current build from a single,

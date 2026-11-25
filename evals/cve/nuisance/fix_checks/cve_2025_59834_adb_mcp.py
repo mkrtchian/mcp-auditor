@@ -16,7 +16,7 @@ discard every intermediate command's stdout and re-read a local temp file that o
 pull populates; the device-only injection above breaks that real pull (the shell splits it into
 two unrelated commands), so the temp file never exists and the tool returns an ENOENT error with
 no witness. Both were confirmed empirically against the built images (vulnerable: ENOENT, no
-nonce; patched: same ENOENT, irrelevant either way), so no exploit goes through them.
+witness; patched: same ENOENT, irrelevant either way), so no exploit goes through them.
 
 Both images run the real adb (Android SDK Platform-Tools r37.0.1). The Android device, which cannot
 run under the confinement (the emulator needs /dev/kvm) nor as a backend within the memory bound,
