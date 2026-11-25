@@ -1,6 +1,6 @@
 """Where the living text may still say a retired word, and why."""
 
-from tests.unit.support.retired_word_scan import AllowedLine, Exemptions
+from tests.unit.project.support.retired_word_scan import AllowedLine
 
 ALLOWLIST = (
     AllowedLine(
@@ -154,5 +154,3 @@ ALLOWLIST = (
         "the rule lists the word among those a fixture may not carry",
     ),
 )
-
-EXEMPTIONS = Exemptions(ALLOWLIST)

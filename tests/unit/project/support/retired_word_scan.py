@@ -45,11 +45,6 @@ class AllowedLine:
 
 
 @dataclass(frozen=True)
-class Exemptions:
-    allowlist: tuple[AllowedLine, ...] = ()
-
-
-@dataclass(frozen=True)
 class Hit:
     path: str
     line_number: int  # 0 for the file path itself
@@ -63,15 +58,11 @@ class Scan:
     stale_entries: tuple[AllowedLine, ...]
 
 
-def scan(root: Path, words: tuple[RetiredWord, ...], exemptions: Exemptions) -> Scan:
-    _refuse_unknown_ids(words, exemptions)
-    hits = [hit for text in living_texts(root) for hit in _hits_in(text, words)]
-    violations = tuple(
-        hit for hit in hits if not any(entry.allows(hit) for entry in exemptions.allowlist)
-    )
-    stale = tuple(
-        entry for entry in exemptions.allowlist if not any(entry.allows(hit) for hit in hits)
-    )
+def scan(root: Path, words: tuple[RetiredWord, ...], allowlist: tuple[AllowedLine, ...]) -> Scan:
+    _refuse_unknown_ids(words, allowlist)
+    hits = [hit for text in _living_texts(root) for hit in _hits_in(text, words)]
+    violations = tuple(hit for hit in hits if not any(entry.allows(hit) for entry in allowlist))
+    stale = tuple(entry for entry in allowlist if not any(entry.allows(hit) for hit in hits))
     return Scan(violations, stale)
 
 
@@ -80,22 +71,22 @@ def imports_the_glossary(root: Path) -> bool:
     return claude_md.is_file() and "@docs/glossary.md" in claude_md.read_text().splitlines()
 
 
-def _refuse_unknown_ids(words: tuple[RetiredWord, ...], exemptions: Exemptions) -> None:
+def _refuse_unknown_ids(words: tuple[RetiredWord, ...], allowlist: tuple[AllowedLine, ...]) -> None:
     known = {word.id for word in words}
-    named = {entry.pattern_id for entry in exemptions.allowlist}
+    named = {entry.pattern_id for entry in allowlist}
     if unknown := sorted(named - known):
         raise ValueError(f"exemptions name unknown pattern ids: {unknown}")
 
 
 @dataclass(frozen=True)
-class LivingText:
+class _LivingText:
     path: str
     first_line_number: int
     text: str
     path_counts: bool
 
 
-def living_texts(root: Path) -> Iterator[LivingText]:
+def _living_texts(root: Path) -> Iterator[_LivingText]:
     for relative in _WHOLE_FILES:
         yield from _whole(root, relative, path_counts=False)
     for relative, cut in _CUT_FILES.items():
@@ -158,7 +149,7 @@ def _files_under(root: Path, directory: str) -> Iterator[str]:
             yield relative.as_posix()
 
 
-def _whole(root: Path, relative: str, path_counts: bool) -> Iterator[LivingText]:
+def _whole(root: Path, relative: str, path_counts: bool) -> Iterator[_LivingText]:
     path = root / relative
     if not path.is_file():
         return
@@ -166,7 +157,7 @@ def _whole(root: Path, relative: str, path_counts: bool) -> Iterator[LivingText]
         text = path.read_text()
     except UnicodeDecodeError:
         return
-    yield LivingText(relative, 1, text, path_counts)
+    yield _LivingText(relative, 1, text, path_counts)
 
 
 # A cut keeps the lines from the first that `starts` accepts up to, not including, the first
@@ -196,7 +187,7 @@ _CUT_FILES = {
 }
 
 
-def _cut(root: Path, relative: str, cut: _Cut) -> Iterator[LivingText]:
+def _cut(root: Path, relative: str, cut: _Cut) -> Iterator[_LivingText]:
     path = root / relative
     if not path.is_file():
         return
@@ -205,10 +196,10 @@ def _cut(root: Path, relative: str, cut: _Cut) -> Iterator[LivingText]:
     end = next(
         (index for index in range(start + 1, len(lines)) if cut.ends(lines[index])), len(lines)
     )
-    yield LivingText(relative, start + 1, "\n".join(lines[start:end]), path_counts=False)
+    yield _LivingText(relative, start + 1, "\n".join(lines[start:end]), path_counts=False)
 
 
-def _hits_in(text: LivingText, words: tuple[RetiredWord, ...]) -> Iterator[Hit]:
+def _hits_in(text: _LivingText, words: tuple[RetiredWord, ...]) -> Iterator[Hit]:
     lines = text.text.split("\n")
     line_starts = _line_starts(text.text)
     # In a path, `_`, `/`, `.` and `-` separate words, so the path is also read with spaces.

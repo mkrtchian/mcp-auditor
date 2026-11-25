@@ -3,9 +3,8 @@ from pathlib import Path
 import pytest
 
 import tests.unit.project.support.test_glossary_given as given
-from tests.unit.support.retired_word_scan import (
+from tests.unit.project.support.retired_word_scan import (
     AllowedLine,
-    Exemptions,
     imports_the_glossary,
     scan,
 )
@@ -59,9 +58,8 @@ def test_a_retired_word_is_skipped_in_historical_text(
 
 def test_an_allowlisted_line_passes(tmp_path: Path):
     root = given.a_tree(tmp_path, {"docs/glossary.md": given.A_LINE_WITH_THE_WORD})
-    exemptions = Exemptions(allowlist=(given.an_entry_for("docs/*.md", "still says"),))
 
-    result = scan(root, given.FIXTURE_WORDS, exemptions)
+    result = scan(root, given.FIXTURE_WORDS, (given.an_entry_for("docs/*.md", "still says"),))
 
     assert (result.violations, result.stale_entries) == ((), ())
 
@@ -70,7 +68,7 @@ def test_an_allowlist_entry_matching_no_line_is_stale(tmp_path: Path):
     root = given.a_tree(tmp_path, {"docs/glossary.md": "A line the word has left.\n"})
     entry = given.an_entry_for("docs/glossary.md", "the word has left")
 
-    result = scan(root, given.FIXTURE_WORDS, Exemptions(allowlist=(entry,)))
+    result = scan(root, given.FIXTURE_WORDS, (entry,))
 
     assert result.stale_entries == (entry,)
 
@@ -81,10 +79,10 @@ def test_an_unknown_pattern_id_in_the_exemptions_is_refused(tmp_path: Path):
     entry = AllowedLine("docs/*.md", "no-such-word", "a line", "an entry naming no pattern")
 
     with pytest.raises(ValueError, match="no-such-word"):
-        scan(root, given.FIXTURE_WORDS, Exemptions(allowlist=(entry,)))
+        scan(root, given.FIXTURE_WORDS, (entry,))
 
 
-def test_a_claude_md_without_the_glossary_line_is_refused(tmp_path: Path):
+def test_a_claude_md_without_the_glossary_line_does_not_import_the_glossary(tmp_path: Path):
     root = given.a_tree(tmp_path, {"CLAUDE.md": "# Project\n\nSee docs/glossary.md.\n"})
 
     assert not imports_the_glossary(root)

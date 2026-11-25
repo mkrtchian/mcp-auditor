@@ -2,7 +2,7 @@
 
 import re
 
-from tests.unit.support.retired_word_scan import RetiredWord
+from tests.unit.project.support.retired_word_scan import RetiredWord
 
 _OLD_TEST_STEMS = (
     "cve_layout_check_golden",

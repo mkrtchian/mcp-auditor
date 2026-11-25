@@ -2,12 +2,12 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from tests.unit.support.retired_word_scan import AllowedLine, Exemptions, RetiredWord, Scan
+from tests.unit.project.support.retired_word_scan import AllowedLine, RetiredWord, Scan
 
 THE_WORD = "oldterm"
 THE_WORD_ID = "fixture-word"
 FIXTURE_WORDS = (RetiredWord(THE_WORD_ID, rf"\b{THE_WORD}\b", re.IGNORECASE),)
-NO_EXEMPTION = Exemptions()
+NO_EXEMPTION: tuple[AllowedLine, ...] = ()
 A_LINE_WITH_THE_WORD = f"A line that still says {THE_WORD}.\n"
 A_TEST_NAMED_WITH_THE_WORD = f"def test_the_{THE_WORD}_is_still_named():\n    pass\n"
 

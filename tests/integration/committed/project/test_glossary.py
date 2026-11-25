@@ -1,9 +1,9 @@
 import pytest
 
 from evals.repository import REPO_ROOT
-from tests.integration.committed.project.support.retired_word_exemptions import EXEMPTIONS
+from tests.integration.committed.project.support.retired_word_exemptions import ALLOWLIST
 from tests.integration.committed.project.support.retired_words import RETIRED_WORDS
-from tests.unit.support.retired_word_scan import (
+from tests.unit.project.support.retired_word_scan import (
     Scan,
     imports_the_glossary,
     oversized_files,
@@ -22,7 +22,7 @@ THE_ANDROID_DOCKERFILES = (
 # Scanning the repository takes seconds, so its two tests share one scan.
 @pytest.fixture(scope="module")
 def repository_scan() -> Scan:
-    return scan(REPO_ROOT, RETIRED_WORDS, EXEMPTIONS)
+    return scan(REPO_ROOT, RETIRED_WORDS, ALLOWLIST)
 
 
 def test_living_files_use_no_retired_word(repository_scan: Scan):
