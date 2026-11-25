@@ -11,6 +11,8 @@ Some older words are kept on purpose in living code and data, since changing the
 | Older word | Current term | Kind | Date |
 |---|---|---|---|
 | `a_committed_server_with_a_holdout_copy` | `a_committed_server_with_a_holdout_calibration_copy` | rename | 2026-11-23 |
+| `a_counted_target_whose_exploit_misses`, `a_counted_target_whose_tools_list_breaks` (the calibration check givens whose launches are counted) | `a_target_whose_exploit_misses_counting_launches`, `a_target_whose_tools_list_breaks_counting_launches` | rename | 2026-11-25 |
+| `a_holdout_copy_without_its_fingerprint` | `a_holdout_calibration_copy_without_its_fingerprint` | rename | 2026-11-25 |
 | acceptance gate (ADR 006, the end-to-end eval as the gate of the whole system) | no successor: a role ADR 015 took away from the honeypot suite, which is now a regression guard gated by the honeypot gate | retired | 2026-09-21 |
 | acceptance gate (ADR 024, ADR 030, the detection rule, CONTRIBUTING) | detection gate | rename | 2026-11-11 |
 | acceptance gate (nuisance plans: the nuisance suite's gate) | nuisance gate | rename | 2026-11-11 |
@@ -84,6 +86,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | fixed (honeypot grid tag) | `improved`. "Fixed" now names a patched version where no exploit surfaces. | moved meaning | 2026-11-11 |
 | `fixture_sources._joined` (the Dockerfile continuation joiner) | `images.joined_instructions`, which the committed hostname checks call too | rename | 2026-11-25 |
 | flaw that sets the version, version-setting flaw | counted flaw | rename | 2026-11-11 |
+| `FLAW_ID` (`tests/integration/support/test_detection_replay_given.py`, a place id) | `FLAW_PLACE_ID` | rename | 2026-11-25 |
 | fresh targets (ADR 015, ADR 028, README) | holdout targets | rename | 2026-11-11 |
 | `.github/workflows/cve-calibration.yml` | `.github/workflows/detection-calibration-check.yml` | rename | 2026-11-11 |
 | `GateVerdict`, gate verdict, verdict of the gate (ADR 020, labeling log, plans) | gate outcome | rename | 2026-11-11 |
