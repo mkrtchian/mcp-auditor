@@ -1,8 +1,9 @@
 import pytest
 
-from evals.cve.backends.doris import DORIS_SERVER_LAUNCH, doris_server_args
+from evals.cve.backends.doris import DORIS_SERVER_LAUNCH, doris_cluster_run_args, doris_server_args
 from evals.cve.detection import holdout_environments
 from tests.fakes.planting_docker import FakePlantingDocker
+from tests.unit.support.docker_argv import carries
 from tests.unit.support.doris_launch import (
     OverlapRecorder,
     a_minimal_doris_spec,
@@ -24,3 +25,15 @@ def test_the_helper_and_the_holdout_env_differ_only_by_the_layout(
     helper = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
 
     assert strip_pair(helper, "--name") == strip_pair(env_args, "--name")
+
+
+def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():
+    assert carries(doris_cluster_run_args(), ["-e", "BE_CONFIG_EXTRA=public_host = doris"])
+
+
+def test_the_doris_cluster_answers_on_its_alias():
+    assert carries(doris_cluster_run_args(), ["--network-alias", "doris"])
+
+
+def test_the_doris_cluster_is_named_after_its_alias():
+    assert carries(doris_cluster_run_args(), ["--hostname", "doris"])

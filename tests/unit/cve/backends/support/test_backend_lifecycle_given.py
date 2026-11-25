@@ -1,4 +1,3 @@
-import re
 import threading
 from collections.abc import Callable, Generator, Sequence
 from contextlib import AbstractContextManager, contextmanager
@@ -24,6 +23,7 @@ from evals.cve.backends import (
 from evals.cve.backends.lifecycle import BackendLifecycle, PerLaunchBackend
 from evals.cve.kit import launch as kit_launch
 from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
+from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.provisioners import provisioned_launch
 from evals.cve.planting_base import PlantingHost, SymbolicUser
@@ -88,65 +88,23 @@ def shared_lifecycle_of(key: str) -> BackendLifecycle:
     return lifecycle
 
 
-def a_lifecycle_without_side_effects(key: str) -> BackendLifecycle | PerLaunchBackend:
-    match lifecycle_of(key):
-        case BackendLifecycle() as shared:
-            return replace(shared, ensure=_noop_ensure, remove=_noop_remove)
-        case PerLaunchBackend():
-            return _a_quiet_per_launch_backend(key)
-
-
-def _a_quiet_per_launch_backend(key: str) -> PerLaunchBackend:
-    # Each per-launch backend's own launch, with a stand-up that starts no container.
-    match key:
-        case "node_sandbox_engine":
-            launch = node_sandbox_engine.engine_launch(_a_socket_with_no_engine, _noop_remove)
-        case "gitlab":
-            launch = gitlab.gitlab_launch(_a_gitlab_with_no_container, _noop_remove)
-        case "kubernetes":
-            launch = kubernetes.control_plane_launch(
-                _a_control_plane_with_no_container, _noop_remove
-            )
-        case _:
-            raise AssertionError(f"give the per-launch backend {key} a quiet stand-up here")
-    return PerLaunchBackend(key, launch)
-
-
-@contextmanager
-def _a_socket_with_no_engine(name: str) -> Generator[Path]:
-    yield Path("/tmp/engine-socket-directory/docker.sock")
-
-
-@contextmanager
-def _a_gitlab_with_no_container(name: str) -> Generator[gitlab.StoodGitLab]:
-    yield gitlab.StoodGitLab(f"{gitlab.GITLAB_NETWORK}-quiet", "token-of-the-stand-up")
-
-
-@contextmanager
-def _a_control_plane_with_no_container(name: str) -> Generator[kubernetes.StoodControlPlane]:
-    yield kubernetes.StoodControlPlane(
-        f"{kubernetes.CONTROL_PLANE_NETWORK}-quiet", Path("/tmp/kubeconfig-directory/config")
-    )
-
-
 def a_module_whose_lifecycle_is_neither_kind(name: str) -> ModuleType:
     module = ModuleType(name)
     module.__dict__["LIFECYCLE"] = object()
     return module
 
 
-def _noop_ensure() -> None:
-    pass
-
-
-def _noop_remove(name: str) -> None:
-    pass
-
-
 def through_the_provisioner(
     lifecycle: BackendLifecycle | PerLaunchBackend,
 ) -> AbstractContextManager[Launch]:
     return provisioned_launch(lifecycle, admissions.an_admitted_server())
+
+
+def an_admitted_server_with_a_distinctive_host() -> AdmittedServer:
+    admitted = admissions.an_admitted_server()
+    return admitted.model_copy(
+        update={"host": replace(admitted.host, working_directory="/srv/app", has_network=True)}
+    )
 
 
 def through_the_kit(
@@ -159,13 +117,6 @@ def a_host() -> PlantingHost:
     return PlantingHost(SymbolicUser.UNPRIVILEGED, "/srv", has_network=False)
 
 
-def with_the_name_masked(args: Sequence[str]) -> list[str]:
-    masked = list(args)
-    position = masked.index("--name") + 1
-    masked[position] = re.sub(r"[0-9a-f]{32}$", "<uuid>", masked[position])
-    return masked
-
-
 def name_of(args: Sequence[str]) -> str:
     return args[list(args).index("--name") + 1]
 
@@ -173,21 +124,22 @@ def name_of(args: Sequence[str]) -> str:
 class RecordingLifecycle:
     def __init__(self) -> None:
         self.events: list[str] = []
+        self.launched_servers: list[tuple[str, PlantingHost, list[str]]] = []
         self.lifecycle = BackendLifecycle(
-            "fake", threading.Lock(), self._ensure, _named_server_args, self._remove
+            "fake", threading.Lock(), self._ensure, self._server_args, self._remove
         )
+
+    def _server_args(
+        self, name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
+    ) -> list[str]:
+        self.launched_servers.append((image, host, list(server_launch)))
+        return ["run", "--name", name, image, *server_launch]
 
     def _ensure(self) -> None:
         self.events.append("ensure")
 
     def _remove(self, name: str) -> None:
         self.events.append(f"remove {name}")
-
-
-def _named_server_args(
-    name: str, image: str, host: PlantingHost, server_launch: Sequence[str]
-) -> list[str]:
-    return ["run", "--name", name, image, *server_launch]
 
 
 class RecordingPerLaunchBackend:

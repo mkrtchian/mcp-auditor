@@ -3,12 +3,9 @@ from pathlib import Path
 import pytest
 
 import tests.unit.cve.backends.support.test_backend_lifecycle_given as given
-import tests.unit.support.admission_mutations as mutations
-import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.registered_responders as registered_responders
-from evals.cve.backends import doris
 from evals.cve.backends.responder import Responder
-from evals.cve.kit.backend_launch import backend_launch, lifecycle_of
+from evals.cve.kit.backend_launch import lifecycle_of
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.images import image_tag
 from evals.cve.nuisance.provisioners import provisioned_launch
@@ -19,6 +16,7 @@ from evals.cve.planting_base import (
     resolver_args,
 )
 from tests.fakes import ScriptedDockerExecutable
+from tests.unit.cve.backends.support.quiet_backends import a_lifecycle_without_side_effects
 from tests.unit.support.docker_argv import carries, count, value_after
 
 
@@ -32,18 +30,21 @@ def test_an_unknown_backend_key_is_refused_by_name():
         lifecycle_of("ghost")
 
 
-@pytest.mark.parametrize("key", sorted(BACKENDS))
-def test_the_kit_backend_launch_is_the_provisioner_launch(key: str):
-    quiet = given.a_lifecycle_without_side_effects(key)
-    server = mutations.with_the_registered_backend(admissions.an_admitted_server(), key)
+def test_the_provisioner_launches_the_admitted_servers_image_with_its_host_and_launch():
+    fake = given.RecordingLifecycle()
+    server = given.an_admitted_server_with_a_distinctive_host()
 
-    with provisioned_launch(quiet, server) as run_launch:
-        run_args = run_launch.args
-    with backend_launch(quiet, image_tag(server.service), server.host, server.launch) as kit:
-        kit_command, kit_args = kit.command, kit.args
+    with provisioned_launch(fake.lifecycle, server) as launch:
+        assert launch.command == "docker"
 
-    assert kit_command == run_launch.command
-    assert given.with_the_name_masked(kit_args) == given.with_the_name_masked(run_args)
+    assert fake.launched_servers == [(image_tag(server.service), server.host, server.launch)]
+    assert launch.args == [
+        "run",
+        "--name",
+        given.name_of(launch.args),
+        image_tag(server.service),
+        *server.launch,
+    ]
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
@@ -74,7 +75,7 @@ LAUNCHERS = [
 def test_a_backend_launch_names_its_server_after_the_backend(
     key: str, launch_through: given.Launcher
 ):
-    with launch_through(given.a_lifecycle_without_side_effects(key)) as launch:
+    with launch_through(a_lifecycle_without_side_effects(key)) as launch:
         name = given.name_of(launch.args)
 
     assert name.startswith(f"{LABEL}-{key}-server-")
@@ -84,38 +85,38 @@ def test_a_backend_launch_names_its_server_after_the_backend(
 def test_a_backend_launch_ensures_on_entry_and_removes_its_server_on_exit(
     launch_through: given.Launcher,
 ):
-    recording = given.RecordingLifecycle()
+    fake = given.RecordingLifecycle()
 
-    with launch_through(recording.lifecycle) as launch:
-        assert recording.events == ["ensure"]
+    with launch_through(fake.lifecycle) as launch:
+        assert fake.events == ["ensure"]
 
-    assert recording.events == ["ensure", f"remove {given.name_of(launch.args)}"]
+    assert fake.events == ["ensure", f"remove {given.name_of(launch.args)}"]
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
 def test_a_backend_launch_removes_its_server_when_the_body_raises(launch_through: given.Launcher):
-    recording = given.RecordingLifecycle()
+    fake = given.RecordingLifecycle()
 
-    with pytest.raises(RuntimeError), launch_through(recording.lifecycle):
+    with pytest.raises(RuntimeError), launch_through(fake.lifecycle):
         raise RuntimeError("the probe failed")
 
-    assert recording.events[0] == "ensure"
-    assert recording.events[1].startswith(f"remove {LABEL}-fake-server-")
+    assert fake.events[0] == "ensure"
+    assert fake.events[1].startswith(f"remove {LABEL}-fake-server-")
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
 def test_two_launches_of_one_backend_are_open_at_once(launch_through: given.Launcher):
-    recording = given.RecordingLifecycle()
+    fake = given.RecordingLifecycle()
 
-    with launch_through(recording.lifecycle) as first:
-        assert not recording.lifecycle.lock.locked()
-        with launch_through(recording.lifecycle) as second:
+    with launch_through(fake.lifecycle) as first:
+        assert not fake.lifecycle.lock.locked()
+        with launch_through(fake.lifecycle) as second:
             assert given.name_of(second.args) != given.name_of(first.args)
 
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_every_backend_server_joins_its_registered_network_confined_as_the_hosts_user(key: str):
-    with given.through_the_kit(given.a_lifecycle_without_side_effects(key)) as launch:
+    with given.through_the_kit(a_lifecycle_without_side_effects(key)) as launch:
         args = launch.args
 
     assert value_after(args, "--network").startswith(BACKENDS[key].network)
@@ -130,7 +131,7 @@ def test_every_backend_server_joins_its_registered_network_confined_as_the_hosts
 
 @pytest.mark.parametrize("key", sorted(BACKENDS))
 def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_option(key: str):
-    with given.through_the_kit(given.a_lifecycle_without_side_effects(key)) as launch:
+    with given.through_the_kit(a_lifecycle_without_side_effects(key)) as launch:
         args = launch.args
 
     assert carries(args, memory_bound_args())
@@ -141,59 +142,46 @@ def test_every_backend_server_argv_carries_the_memory_bound_and_the_resolver_opt
 def test_a_per_launch_backend_is_stood_on_entry_and_the_server_takes_the_arguments_it_yields(
     launch_through: given.Launcher,
 ):
-    recording = given.RecordingPerLaunchBackend()
+    fake = given.RecordingPerLaunchBackend()
 
-    with launch_through(recording.backend) as launch:
+    with launch_through(fake.backend) as launch:
         name = given.name_of(launch.args)
-        assert recording.events == [f"stand {name}"]
+        assert fake.events == [f"stand {name}"]
         assert launch.command == "docker"
         assert "TOKEN=token-0" in launch.args
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
 def test_a_per_launch_backend_is_removed_with_its_server_on_exit(launch_through: given.Launcher):
-    recording = given.RecordingPerLaunchBackend()
+    fake = given.RecordingPerLaunchBackend()
 
-    with launch_through(recording.backend) as launch:
+    with launch_through(fake.backend) as launch:
         name = given.name_of(launch.args)
 
-    assert recording.events == [f"stand {name}", f"remove {name}"]
+    assert fake.events == [f"stand {name}", f"remove {name}"]
     assert name.startswith(f"{LABEL}-fake_per_launch-server-")
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
 def test_a_per_launch_backend_is_removed_when_the_body_raises(launch_through: given.Launcher):
-    recording = given.RecordingPerLaunchBackend()
+    fake = given.RecordingPerLaunchBackend()
 
-    with pytest.raises(RuntimeError), launch_through(recording.backend):
+    with pytest.raises(RuntimeError), launch_through(fake.backend):
         raise RuntimeError("the probe failed")
 
-    assert [event.split()[0] for event in recording.events] == ["stand", "remove"]
+    assert [event.split()[0] for event in fake.events] == ["stand", "remove"]
 
 
 @pytest.mark.parametrize("launch_through", LAUNCHERS)
 def test_two_concurrent_launches_of_one_server_stand_two_backends(launch_through: given.Launcher):
-    recording = given.RecordingPerLaunchBackend()
+    fake = given.RecordingPerLaunchBackend()
 
-    with launch_through(recording.backend) as first, launch_through(recording.backend) as second:
+    with launch_through(fake.backend) as first, launch_through(fake.backend) as second:
         assert "TOKEN=token-0" in first.args
         assert "TOKEN=token-1" in second.args
 
-    stood = [event for event in recording.events if event.startswith("stand")]
+    stood = [event for event in fake.events if event.startswith("stand")]
     assert stood == [f"stand {given.name_of(first.args)}", f"stand {given.name_of(second.args)}"]
-
-
-def test_the_kit_launch_of_a_per_launch_backend_is_the_provisioner_launch():
-    server = admissions.an_admitted_server()
-
-    with provisioned_launch(given.RecordingPerLaunchBackend().backend, server) as run_launch:
-        run_args = run_launch.args
-    kit_backend = given.RecordingPerLaunchBackend().backend
-    with backend_launch(kit_backend, image_tag(server.service), server.host, server.launch) as kit:
-        kit_command, kit_args = kit.command, kit.args
-
-    assert kit_command == run_launch.command
-    assert given.with_the_name_masked(kit_args) == given.with_the_name_masked(run_args)
 
 
 def test_a_backend_module_whose_lifecycle_is_neither_kind_is_refused_by_name():
@@ -227,15 +215,3 @@ def test_every_backend_container_is_bounded_and_confined(container: given.Backen
     assert count(args, resolver_args()) == container.resolver_options, container.reason
     assert carries(args, confinement_args()) == container.confined, container.reason
     assert not (container.confined and "--cap-add" in args)
-
-
-def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():
-    assert carries(doris.doris_cluster_run_args(), ["-e", "BE_CONFIG_EXTRA=public_host = doris"])
-
-
-def test_the_doris_cluster_answers_on_its_alias():
-    assert carries(doris.doris_cluster_run_args(), ["--network-alias", "doris"])
-
-
-def test_the_doris_cluster_is_named_after_its_alias():
-    assert carries(doris.doris_cluster_run_args(), ["--hostname", "doris"])

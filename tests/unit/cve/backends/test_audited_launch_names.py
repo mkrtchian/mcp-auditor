@@ -15,18 +15,16 @@ from tests.unit.support.audited_launch_builders import (
     LaunchOnFakes,
 )
 
-_NAMED = given.named_server_args()
+_NAMED = given.named_run_args()
 _AUDITED = {
     **{builder.__name__: entry.launched for builder, entry in AUDITED_LAUNCH_BUILDERS.items()},
     **NUISANCE_LAUNCHES,
 }
 
 
-@pytest.mark.parametrize("server_args", _NAMED.values(), ids=list(_NAMED))
-def test_a_server_beside_its_backend_reads_to_the_name_it_was_given(
-    server_args: given.ServerArgs,
-):
-    assert declared_container_name(given.run_args_of(server_args)) == given.SERVER
+@pytest.mark.parametrize("run_args", _NAMED.values(), ids=list(_NAMED))
+def test_a_server_beside_its_backend_reads_to_the_name_it_was_given(run_args: list[str]):
+    assert declared_container_name(run_args) == given.SERVER
 
 
 @pytest.mark.parametrize("launched", _AUDITED.values(), ids=list(_AUDITED))
