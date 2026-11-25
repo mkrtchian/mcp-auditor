@@ -21,24 +21,24 @@ def an_openai_billing_limit(code: str = "insufficient_quota") -> openai.RateLimi
 def an_openai_rate_limit(
     headers: dict[str, str] | None = None, body: dict[str, Any] | None = None
 ) -> openai.RateLimitError:
-    response = httpx2.Response(429, headers=headers, request=httpx2.Request("POST", _URL))
-    return openai.RateLimitError("Error code: 429 - slow down", response=response, body=body)
+    return openai.RateLimitError(
+        "Error code: 429 - slow down", response=_response(429, headers), body=body
+    )
 
 
 def an_openai_bad_request(message: str, code: str | None) -> openai.BadRequestError:
-    response = httpx2.Response(400, request=httpx2.Request("POST", _URL))
     body = {"message": message, "type": "invalid_request_error", "code": code}
-    return openai.BadRequestError(f"Error code: 400 - {body}", response=response, body=body)
+    return openai.BadRequestError(f"Error code: 400 - {body}", response=_response(400), body=body)
 
 
 def an_anthropic_rate_limit(headers: dict[str, str] | None = None) -> anthropic.RateLimitError:
-    response = httpx2.Response(429, headers=headers, request=httpx2.Request("POST", _URL))
-    return anthropic.RateLimitError("Error code: 429 - slow down", response=response, body=None)
+    return anthropic.RateLimitError(
+        "Error code: 429 - slow down", response=_response(429, headers), body=None
+    )
 
 
 def an_openai_server_error() -> openai.InternalServerError:
-    response = httpx2.Response(500, request=httpx2.Request("POST", _URL))
-    return openai.InternalServerError("Error code: 500", response=response, body=None)
+    return openai.InternalServerError("Error code: 500", response=_response(500), body=None)
 
 
 def a_google_rate_limit(headers: dict[str, str]) -> GoogleRateLimitError:
@@ -62,18 +62,12 @@ def an_anthropic_spend_limit_reached() -> AnthropicInvalidRequestError:
         "You have reached your specified API usage limits."
         " You will regain access on 2026-11-01 at 00:00 UTC."
     )
-    body = _anthropic_body("invalid_request_error", message)
-    return AnthropicInvalidRequestError(
-        message="Error code: 400", response=_response(400), body=body
-    )
+    return _an_anthropic_bad_request(message)
 
 
 def an_anthropic_workspace_spend_limit_reached() -> AnthropicInvalidRequestError:
     message = "You have reached your specified workspace API usage limits."
-    body = _anthropic_body("invalid_request_error", message)
-    return AnthropicInvalidRequestError(
-        message="Error code: 400", response=_response(400), body=body
-    )
+    return _an_anthropic_bad_request(message)
 
 
 def an_anthropic_credit_balance_too_low() -> AnthropicInvalidRequestError:
@@ -81,10 +75,7 @@ def an_anthropic_credit_balance_too_low() -> AnthropicInvalidRequestError:
         "Your credit balance is too low to access the Anthropic API."
         " Please go to Plans & Billing to upgrade or purchase credits."
     )
-    body = _anthropic_body("invalid_request_error", message)
-    return AnthropicInvalidRequestError(
-        message="Error code: 400", response=_response(400), body=body
-    )
+    return _an_anthropic_bad_request(message)
 
 
 def an_anthropic_spend_cap_reached() -> AnthropicRateLimitError:
@@ -98,9 +89,14 @@ def an_anthropic_spend_cap_reached() -> AnthropicRateLimitError:
 
 
 def an_anthropic_invalid_request() -> AnthropicInvalidRequestError:
-    body = _anthropic_body("invalid_request_error", "max_tokens: field required")
+    return _an_anthropic_bad_request("max_tokens: field required")
+
+
+def _an_anthropic_bad_request(message: str) -> AnthropicInvalidRequestError:
     return AnthropicInvalidRequestError(
-        message="Error code: 400", response=_response(400), body=body
+        message="Error code: 400",
+        response=_response(400),
+        body=_anthropic_body("invalid_request_error", message),
     )
 
 
@@ -113,5 +109,5 @@ def _anthropic_body(
     return {"type": "error", "error": error, "request_id": "req_test"}
 
 
-def _response(status: int) -> httpx2.Response:
-    return httpx2.Response(status, request=httpx2.Request("POST", _URL))
+def _response(status: int, headers: dict[str, str] | None = None) -> httpx2.Response:
+    return httpx2.Response(status, headers=headers, request=httpx2.Request("POST", _URL))

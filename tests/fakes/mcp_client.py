@@ -46,9 +46,9 @@ class FakeMCPClient:
         return _next(self._relaunch_answers)
 
 
-def a_timeout_response(tool_call_timeout: int = 60) -> ToolResponse:
+def a_timeout_response() -> ToolResponse:
     return ToolResponse(
-        content=f"Tool call timed out after {tool_call_timeout}s",
+        content="Tool call timed out after 60s",
         is_error=True,
         error_type="TimeoutError",
     )

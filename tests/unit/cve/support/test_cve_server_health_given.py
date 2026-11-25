@@ -2,13 +2,14 @@ import tests.unit.support.grammar_inputs as grammar
 from mcp_auditor.domain.models import AuditReport, CoverageGap, ToolResponse
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from mcp_auditor.domain.shown_response import MAX_SHOWN_LENGTH
+from tests.fakes.mcp_client import a_lost_connection_response
 
 
 def a_response(error_type: str | None, content: str) -> ToolResponse:
     return ToolResponse(content=content, is_error=error_type is not None, error_type=error_type)
 
 
-LOST = a_response("McpError", "Connection closed")
+LOST = a_lost_connection_response()
 ANSWERED = a_response(None, "ok")
 
 

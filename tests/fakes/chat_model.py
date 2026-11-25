@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 @dataclass
-class FakeAIMessage:
+class _FakeAIMessage:
     usage_metadata: dict[str, Any]
     response_metadata: dict[str, Any] = field(default_factory=dict[str, Any])
     additional_kwargs: dict[str, Any] = field(default_factory=dict[str, Any])
@@ -76,7 +76,7 @@ def raw_response(
 ) -> dict[str, Any]:
     usage_metadata: dict[str, Any] = {"input_tokens": input_tokens, "output_tokens": output_tokens}
     return {
-        "raw": FakeAIMessage(usage_metadata=usage_metadata | (details or {})),
+        "raw": _FakeAIMessage(usage_metadata=usage_metadata | (details or {})),
         "parsed": parsed,
     }
 

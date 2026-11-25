@@ -15,10 +15,10 @@ from mcp_auditor.domain.models import (
     AuditPayload,
     AuditReport,
     ToolDefinition,
-    ToolResponse,
 )
 from mcp_auditor.domain.server_liveness import Relaunch, RelaunchCause
 from tests.fakes import FakeLLM, FakeMCPClient
+from tests.fakes.mcp_client import a_lost_connection_response
 
 type _Invocation = Callable[[AuditedServer], Awaitable[AuditReport]]
 
@@ -120,8 +120,9 @@ def a_client_whose_relaunch_fails() -> FakeMCPClient:
 
 class _NoisyClient(FakeMCPClient):
     def __init__(self, non_protocol_lines: int, relaunch_answers: Sequence[bool] = (True,)) -> None:
-        lost = ToolResponse(content="Connection closed", is_error=True, error_type="McpError")
-        super().__init__([_READ], {"read": lost}, relaunch_answers=relaunch_answers)
+        super().__init__(
+            [_READ], {"read": a_lost_connection_response()}, relaunch_answers=relaunch_answers
+        )
         self.non_protocol_lines = non_protocol_lines
 
 
