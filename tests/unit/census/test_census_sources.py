@@ -15,7 +15,7 @@ from evals.cve.census.sources import (
     read_osv,
     source_provenance,
 )
-from tests.unit.census.support import advisory_sources
+from tests.unit.support import advisory_sources
 
 
 def test_the_ghsa_reader_yields_each_reviewed_advisory(tmp_path: Path):

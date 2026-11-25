@@ -9,8 +9,7 @@ from pydantic import ValidationError
 import tests.unit.census.support.test_census_given as given
 from evals.cve.census.census import Census, DateMismatch, load_census
 from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, read_jsonl
-from tests.unit.census.support import advisory_sources
-from tests.unit.support import censuses
+from tests.unit.support import advisory_sources, censuses
 
 
 def test_a_well_formed_census_loads(tmp_path: Path):

@@ -5,7 +5,7 @@ import pytest
 
 from evals.cve.census.identity import disclosure_date, flaw_id_of, merge
 from evals.cve.census.sources import read_osv
-from tests.unit.census.support import advisory_sources
+from tests.unit.support import advisory_sources
 
 
 def test_a_ghsa_its_nvd_record_and_an_osv_record_are_one_flaw_identified_by_the_cve():

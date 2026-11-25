@@ -1,6 +1,6 @@
 from evals.cve.census.prefilter import INITIAL_TERMS, PrefilterTerm, matches
 from evals.cve.census.sources import SourceName
-from tests.unit.census.support import advisory_sources
+from tests.unit.support import advisory_sources
 
 UNRELATED = {"summary": "Overflow in an image codec", "details": "A crafted PNG crashes it."}
 

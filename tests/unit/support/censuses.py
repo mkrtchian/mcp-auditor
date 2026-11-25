@@ -23,7 +23,7 @@ from evals.cve.census.identity import merge
 from evals.cve.census.prefilter import INITIAL_TERMS
 from evals.cve.census.sources import AdvisoryRecord, SourceFile, SourceName, SourceProvenance
 from evals.cve.census.work import AgentRecord, AgentRole, HitDecision, VulnerableMcpEntry
-from tests.unit.census.support import advisory_sources
+from tests.unit.support import advisory_sources
 
 FLAW_WITH_A_CVE = "CVE-2025-0001"
 ITS_GHSA = "GHSA-aaaa-bbbb-cccc"

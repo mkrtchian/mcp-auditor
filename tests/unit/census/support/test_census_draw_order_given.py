@@ -4,8 +4,7 @@ from typing import Any
 from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import Classification
 from evals.cve.census.grouping import READERS
-from tests.unit.census.support import advisory_sources
-from tests.unit.support import censuses
+from tests.unit.support import advisory_sources, censuses
 
 AN_EXCLUDED_SERVER = "npm:mcp-fetch-server"
 AN_ACCEPTANCE_TARGET_FLAW = "CVE-2025-65513"

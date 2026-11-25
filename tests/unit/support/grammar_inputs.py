@@ -23,7 +23,7 @@ NONCE = "s3nt1nel_ab12cd34ef56"
 PLACE = "planted"
 AIMED_PATH = "/outside/flag"
 READ_AIM = re.compile(r"^/outside/")
-UNAIMED_PATH = "/inside/file"
+_UNAIMED_PATH = "/inside/file"
 FAIL = EvalVerdict.FAIL
 PASS = EvalVerdict.PASS
 INJECTION = AuditCategory.INJECTION
@@ -56,7 +56,7 @@ def a_case(
     arguments: dict[str, Any] | None = None,
 ) -> TestCase:
     return TestCase(
-        payload=_a_payload(category, arguments or {"path": UNAIMED_PATH}),
+        payload=_a_payload(category, arguments or {"path": _UNAIMED_PATH}),
         response=response,
         error=error,
         judge_result=_a_result(verdict, category) if verdict else None,
@@ -77,7 +77,7 @@ def a_step(
     observation: str = "",
 ) -> ChainStep:
     return ChainStep(
-        payload=_a_payload(INFO_LEAKAGE, arguments or {"path": UNAIMED_PATH}),
+        payload=_a_payload(INFO_LEAKAGE, arguments or {"path": _UNAIMED_PATH}),
         response=response,
         error=error,
         observation=observation,

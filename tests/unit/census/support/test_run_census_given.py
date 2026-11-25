@@ -12,8 +12,7 @@ from evals.cve.census.grouping import READERS
 from evals.cve.census.prefilter import PrefilterTerm
 from evals.cve.census.sources import AdvisoryRecord, SourceName
 from evals.cve.census.work import AgentRecord, AgentRole, Downloads, Gap, HitDecision, read_jsonl
-from tests.unit.census.support import advisory_sources
-from tests.unit.support import censuses
+from tests.unit.support import advisory_sources, censuses
 
 DOWNLOADED = date(2026, 10, 8)
 MCP_SUMMARY = "Path traversal in an MCP filesystem server"

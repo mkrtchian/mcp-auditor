@@ -9,8 +9,7 @@ from evals.cve.census.census import Discovery, load_census
 from evals.cve.census.draw_order import draw_order
 from evals.cve.census.grouping import READERS
 from evals.cve.census.sources import SourceName
-from tests.unit.census.support import advisory_sources
-from tests.unit.support import censuses
+from tests.unit.support import advisory_sources, censuses
 
 GHSA = SourceName.GHSA
 OSV = SourceName.OSV
