@@ -53,11 +53,13 @@ Some older words are kept on purpose in living code and data, since changing the
 | `_duplicate_benign_calls` | `_conflicting_benign_calls` | rename | 2026-11-23 |
 | e2e eval, E2E evals, end-to-end eval, honeypot e2e suite (ADR 003, ADR 006, ADR 007, ADR 015, ADR 034, CONTRIBUTING) | honeypot suite | rename | 2026-11-11 |
 | `e2e-eval` (the honeypot CI job) | `honeypot-suite` | rename | 2026-11-11 |
+| `ensure_apify_responder` (`evals/cve/backends/apify.py`, which stands the two capture stand-ins) | `ensure_apify_stand_ins` | rename | 2026-11-25 |
 | `entry_id` (of a place) | place id (`place_id`) | rename | 2026-11-11 |
 | `eval_result`, `EvalResult` | judge result (`judge_result`) | rename | 2026-11-11 |
 | `evals/baselines/cve/` | `evals/baselines/detection/` | rename | 2026-11-11 |
 | `evals/baselines/honeypot_e2e.json` | `evals/baselines/honeypot.json` | rename | 2026-11-11 |
 | `evals/baselines/judge_isolation.json` | `evals/baselines/judge.json` | rename | 2026-11-11 |
+| `evals/cve/backends/neo4j.py` (the module of the Neo4j image tag and Dockerfile only the CVE-2026-35402 fix check builds) | no successor: `NEO4J_IMAGE` and `NEO4J_BACKEND_DOCKERFILE` are in that fix check, `evals/cve/nuisance/fix_checks/cve_2026_35402_neo4j_cypher.py` | retired | 2026-11-25 |
 | `evals.cve_preflight` | `evals.detection_preflight` | rename | 2026-11-11 |
 | `evals/cve/provider_errors.py` | `evals/model_provider_errors.py` | rename | 2026-11-24 |
 | `evals/holdout_census.json` | `evals/census.json` | rename | 2026-11-11 |

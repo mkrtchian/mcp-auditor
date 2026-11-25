@@ -25,7 +25,6 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from evals.cve.backends.neo4j import NEO4J_BACKEND_DOCKERFILE, NEO4J_IMAGE
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.grammar import FlawClass
@@ -42,6 +41,8 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import LABEL, SENTINEL_IMAGE, own_network_args
 
+NEO4J_IMAGE = "mcp-auditor-cve-neo4j-backend:local"
+NEO4J_BACKEND_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.neo4j-backend"
 BRIDGE = "mcp-auditor-kit-neo4j-ssrf-bridge"
 _SENTINEL_ALIAS = "metadata-internal"
 _NEO4J_ALIAS = "neo4j-db"

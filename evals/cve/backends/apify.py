@@ -1,5 +1,4 @@
-"""The stand-ins the @apify/actors-mcp-server CVE-2026-46341 fix check reaches, and the responder
-image it adds for the witness.
+"""The stand-ins the @apify/actors-mcp-server CVE-2026-46341 fix check reaches.
 
 The run no longer drives this module: its two public hosts are served by the holder under their real
 names (the server's admission records them in `host.public_names.stand_ins`). What stays is what the
@@ -18,26 +17,23 @@ the generic orphan sweep, so no lock is held across the yield.
 
 The server reaches both as outbound HTTPS fetches. Each name is pinned to its stand-in with
 `--add-host`, and the server trusts the fixture authority through `NODE_EXTRA_CA_CERTS`, the one
-setting Node.js documents for an extra trusted root, mounted read-only. `APIFY_TOKEN`, without
-which the server refuses to start with its default Actor tools, takes the placeholder the
-server's README gives. The fix check adds its own suffix-host responder (`APIFY_SUFFIX_HOST`,
-`APIFY_RESPONDER_IMAGE`), the place its witness sits, which no run serves.
+setting Node.js documents for an extra trusted root, mounted read-only. The fix check's launch, the
+only one that reads these arguments, also sets NODE_TLS_REJECT_UNAUTHORIZED=0 for its self-signed
+suffix-host responder, which turns off certificate checking for the whole process, these stand-ins
+included. `APIFY_TOKEN`, without which the server refuses to start with its default Actor tools,
+takes the placeholder the server's README gives.
 """
 
 import threading
 
 from evals.cve.backends.responder import Responder, remove
-from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
+from evals.cve.docker_paths import image_dockerfile
 from evals.cve.planting_base import STAND_IN_IMAGE, STAND_IN_SERVICE
 from evals.cve.public_stand_ins import stand_in_files
 
-APIFY_RESPONDER_IMAGE = "mcp-auditor-cve-apify-responder:local"
-APIFY_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.apify-responder"
 APIFY_BRIDGE = "mcp-auditor-cve-apify-bridge"
 APIFY_SUBNET = "198.18.1.0/24"  # RFC 2544: overlaps no other responder's subnet
 DOCS_HOST = "docs.apify.com"
-APIFY_BENIGN_HOST = DOCS_HOST
-APIFY_SUFFIX_HOST = f"{DOCS_HOST}.example.test"
 API_HOST = "api.apify.com"
 # .2 was the retired inline responder's singleton; a fix check's own responders sit at .100-.250.
 _DOCS_STAND_IN_IP = "198.18.1.4"
@@ -84,7 +80,7 @@ def apify_network_args() -> list[str]:
     ]  # fmt: skip
 
 
-def ensure_apify_responder() -> None:
+def ensure_apify_stand_ins() -> None:
     _DOCS_STAND_IN.ensure()
     _API_STAND_IN.ensure()
 

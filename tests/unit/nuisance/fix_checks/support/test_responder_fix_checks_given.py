@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.cve.backends.apify import APIFY_BRIDGE, APIFY_RESPONDER_IMAGE, APIFY_SUFFIX_HOST
+from evals.cve.backends.apify import APIFY_BRIDGE
 from evals.cve.backends.facebook_ads import FACEBOOK_ADS_BENIGN_HOST, FACEBOOK_ADS_RESPONDER_IP
 from evals.cve.backends.gitlab_responder import GITLAB_BRIDGE, GITLAB_RESPONDER_IMAGE
 from evals.cve.nuisance.backend_registry import BACKENDS
@@ -44,9 +44,9 @@ RESPONDER_FIX_CHECKS = [
         "apify",
         apify.responder_args,
         apify.server_args,
-        lambda address: [f"{APIFY_SUFFIX_HOST}:{address}"],
+        lambda address: [f"{apify.APIFY_SUFFIX_HOST}:{address}"],
         network=APIFY_BRIDGE,
-        image=APIFY_RESPONDER_IMAGE,
+        image=apify.APIFY_RESPONDER_IMAGE,
     ),
     ResponderFixCheck(
         atlassian.FIXTURE.flaw,

@@ -22,17 +22,15 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 from evals.cve.backends.apify import (
-    APIFY_BENIGN_HOST,
     APIFY_BRIDGE,
     APIFY_LAUNCH_LOCK,
-    APIFY_RESPONDER_DOCKERFILE,
-    APIFY_RESPONDER_IMAGE,
     APIFY_SUBNET,
-    APIFY_SUFFIX_HOST,
+    DOCS_HOST,
     apify_network_args,
     apify_rm,
-    ensure_apify_responder,
+    ensure_apify_stand_ins,
 )
+from evals.cve.docker_paths import DOCKER_DIRECTORY
 from evals.cve.grammar import FlawClass
 from evals.cve.kit.client import KitClient
 from evals.cve.kit.fix_check import FixCheckFixture
@@ -46,6 +44,10 @@ from evals.cve.planting import (
     unprivileged_user_args,
 )
 from evals.cve.planting_base import LABEL, own_network_args
+
+APIFY_RESPONDER_IMAGE = "mcp-auditor-cve-apify-responder:local"
+APIFY_RESPONDER_DOCKERFILE = DOCKER_DIRECTORY / "Dockerfile.apify-responder"
+APIFY_SUFFIX_HOST = f"{DOCS_HOST}.example.test"
 
 WITNESS = Place(
     id="apify-46341-mirror",
@@ -72,7 +74,7 @@ def apify_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
     with APIFY_LAUNCH_LOCK:
-        ensure_apify_responder()
+        ensure_apify_stand_ins()
     _ensure_responder_image()
     name = f"mcp-auditor-kit-apify-r-{secrets.token_hex(4)}"
     address = _per_launch_address()
@@ -142,7 +144,7 @@ async def _exploit_suffix_host(places: Places, client: KitClient) -> None:
 
 
 async def _benign_documentation_page(places: Places, client: KitClient) -> None:
-    await client.call_tool(_TOOL, {"url": f"https://{APIFY_BENIGN_HOST}/academy"})
+    await client.call_tool(_TOOL, {"url": f"https://{DOCS_HOST}/academy"})
 
 
 FIXTURE = FixCheckFixture(
