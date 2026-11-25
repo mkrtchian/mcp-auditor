@@ -17,7 +17,7 @@ def a_walk_with_a_queue_server(
     of both servers when `admitted`, else a missing admission path. QUEUE_SERVER's admission
     predates the fields nuisance suite rule v3 adds when `queue_server_unrecorded`."""
     census = census_draws.with_a_walk_skipping(
-        censuses.with_a_cve_of(censuses.a_census(), QUEUE_FLAW, QUEUE_SERVER),
+        censuses.with_a_classified_flaw(censuses.a_census(), QUEUE_FLAW, QUEUE_SERVER),
         admissions.FIRST_FLAW,
     )
     admission_path = tmp_path / "absent.json"

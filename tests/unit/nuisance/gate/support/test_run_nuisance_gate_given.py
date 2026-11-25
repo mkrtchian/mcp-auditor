@@ -55,8 +55,8 @@ def arguments_beside_an_unrecorded_server(tmp_path: Path) -> list[str]:
     """The arguments of a gate of GATE_SERVER, fully recorded, and OTHER_GATE_SERVER, whose
     admission predates the fields nuisance suite rule v3 adds."""
     census = census_draws.with_a_walk_skipping(
-        censuses.with_a_cve_of(
-            censuses.with_a_cve_of(
+        censuses.with_a_classified_flaw(
+            censuses.with_a_classified_flaw(
                 censuses.a_census(),
                 admissions.ACCEPTANCE_FLAW,
                 admissions.ACCEPTANCE_PACKAGE,

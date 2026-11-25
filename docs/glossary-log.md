@@ -32,6 +32,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | calibration workshop | kit | rename | 2026-11-11 |
 | capability figure, holdout figure (plans) | holdout detection rate, or a holdout number of either suite | rename | 2026-11-11 |
 | capability number, capability rate (ADR 015) | holdout detection rate | rename | 2026-11-11 |
+| `censuses.with_a_cve_of` | `with_a_classified_flaw` | rename | 2026-11-25 |
 | challenger (ADR 019) | candidate model | rename | 2026-09-26 |
 | CI gate (the calibration job) | calibration check | rename | 2026-11-11 |
 | `Contrast`, `contrast()` (the holdout statistic's interval between the two sides) | the cited interval of `check_conclusion` (`Conclusion.cited.interval`), which the reports print as the contrast | rename | 2026-11-24 |

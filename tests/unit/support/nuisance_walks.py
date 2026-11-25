@@ -7,10 +7,10 @@ from evals.cve.census.classification import Criterion
 from evals.cve.census.draw_order import draw_digest
 from evals.cve.census.exclusions import EXCLUDED_SERVERS
 from evals.cve.census.sources import SourceName, SourceRecord
-from evals.cve.detection.draw_record import DetectionWalkStep, DrawRecord, Settlement
+from evals.cve.detection.draw_record import DetectionWalkStep, Settlement
 from evals.cve.detection.targets import ACCEPTANCE_TARGETS
 from evals.cve.nuisance.admission.walk_record import Addition, NuisanceWalkRecord, WalkInputs
-from tests.unit.support import censuses
+from tests.unit.support import census_draws, censuses
 
 Outcome = Literal["drawn", "skipped", "given_up", "excluded"]
 
@@ -65,18 +65,11 @@ def a_census_walking(
         ]
         for classifier in CLASSIFIERS
     }
-    draw = DrawRecord(
-        rule_commit="abc1234",
-        grammar_fingerprint="deadbeef",
-        settlements=[],
-        walk=[
+    draw = census_draws.a_cardless_draw(
+        [
             DetectionWalkStep(identifier=identifier, outcome=outcome, reason="")
             for identifier, outcome, _package in steps
-        ],
-        cards=[],
-        card_checks=[],
-        give_ups=[],
-        drawn=[],
+        ]
     )
     return _bare_census(order).model_copy(update={"classifications": classifications, "draw": draw})
 

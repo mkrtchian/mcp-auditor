@@ -1,8 +1,7 @@
 from datetime import date
 
-from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw, Discovery, derived_parts
+from evals.cve.census.census import CLASSIFIERS, Census, derived_parts
 from evals.cve.census.grouping import READERS, ProofJudgment
-from evals.cve.census.sources import SourceName, SourceRecord
 from evals.cve.census.work import AgentRecord, AgentRole
 from evals.cve.detection.draw_record import (
     CalibrationCard,
@@ -12,7 +11,7 @@ from evals.cve.detection.draw_record import (
     GiveUp,
     GiveUpReason,
 )
-from tests.unit.support import censuses
+from tests.unit.support import advisory_sources, censuses
 
 A_DRAWN_FLAW = "CVE-2025-0001"
 A_TWICE_GIVEN_UP_FLAW = "GHSA-dddd-eeee-ffff"
@@ -102,7 +101,12 @@ def a_census_with_draw(draw: DrawRecord) -> Census:
 
 
 def a_census_drawing(identifiers: list[str]) -> Census:
-    flaws = [_flaw(identifier) for identifier in identifiers]
+    flaws = [
+        censuses.a_flaw_with_records(
+            advisory_sources.an_nvd(identifier, published=date(2025, 6, 10))
+        )
+        for identifier in identifiers
+    ]
     classifications = {
         classifier: [censuses.a_classification(flaw=identifier) for identifier in identifiers]
         for classifier in CLASSIFIERS
@@ -133,24 +137,6 @@ def a_census_drawing(identifiers: list[str]) -> Census:
     )
 
 
-def _flaw(identifier: str) -> CensusFlaw:
-    record = SourceRecord(
-        source=SourceName.NVD,
-        id=identifier,
-        published=date(2025, 6, 10),
-        withdrawn=None,
-        rejected=False,
-    )
-    return CensusFlaw(
-        identifier=identifier,
-        no_census_identifier=False,
-        ids=[identifier],
-        records=[record],
-        disclosure_date=date(2025, 6, 10),
-        found_by=[Discovery.PREFILTER],
-    )
-
-
 def _a_draw_of(identifiers: list[str]) -> DrawRecord:
     return DrawRecord(
         rule_commit="abc1234",
@@ -173,14 +159,18 @@ def _a_draw_of(identifiers: list[str]) -> DrawRecord:
 def with_a_walk_skipping(census: Census, flaw: str) -> Census:
     """The census with a draw whose detection walk is one `skipped` step on `flaw`, which
     `load_census` accepts with no card and no calibration agent."""
-    draw = DrawRecord(
+    skipped = DetectionWalkStep(identifier=flaw, outcome="skipped", reason="")
+    return census.model_copy(update={"draw": a_cardless_draw([skipped])})
+
+
+def a_cardless_draw(walk: list[DetectionWalkStep]) -> DrawRecord:
+    return DrawRecord(
         rule_commit="abc1234",
         grammar_fingerprint="deadbeef",
         settlements=[],
-        walk=[DetectionWalkStep(identifier=flaw, outcome="skipped", reason="")],
+        walk=walk,
         cards=[],
         card_checks=[],
         give_ups=[],
         drawn=[],
     )
-    return census.model_copy(update={"draw": draw})

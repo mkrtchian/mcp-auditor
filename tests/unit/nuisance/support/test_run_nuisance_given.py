@@ -11,7 +11,7 @@ def a_walk_reaching_an_excluded_server(tmp_path: Path) -> list[str]:
     """The `walk` arguments of a census whose queue reaches AN_EXCLUDED_SERVER through QUEUE_FLAW,
     the two classifiers naming different packages and the walk record settling the identity on
     the excluded one, with a missing admission path."""
-    with_the_flaw = censuses.with_a_cve_of(
+    with_the_flaw = censuses.with_a_classified_flaw(
         censuses.a_census(), QUEUE_FLAW, walks.AN_EXCLUDED_SERVER
     )
     disagreeing = censuses.recomputed(

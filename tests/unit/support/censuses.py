@@ -113,7 +113,7 @@ def written(tmp_path: Path, census: Census) -> Path:
     return path
 
 
-def with_a_cve_of(census: Census, flaw_id: str, server_package: str) -> Census:
+def with_a_classified_flaw(census: Census, flaw_id: str, server_package: str) -> Census:
     """A valid census that also classifies `flaw_id` under `server_package`."""
     flaw = a_flaw_with_records(advisory_sources.an_nvd(flaw_id))
     classification = a_classification(
