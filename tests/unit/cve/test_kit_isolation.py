@@ -1,5 +1,5 @@
 """The pin that keeps the kit free of mcp_auditor: the written kit's import closure, a static scan
-of the kit, a negative control, and the KitTarget/Target field transplant rule."""
+of the kit, two negative controls of the scan, and the KitTarget/Target field transplant rule."""
 
 from dataclasses import fields
 from pathlib import Path
@@ -34,6 +34,14 @@ def test_scan_flags_a_planted_mcp_auditor_import(tmp_path: Path):
         (_KIT_DIR / "client.py").read_text() + "\nimport mcp_auditor  # negative control\n"
     )
     assert iso.scan_tree(tmp_path) == {str(planted): ["mcp_auditor"]}
+
+
+def test_scan_flags_a_module_of_the_package_imported_from_its_parent(tmp_path: Path):
+    planted = tmp_path / "builder.py"
+    planted.write_text("from evals.cve import environments  # negative control\n")
+    assert iso.scan_tree(tmp_path, package="evals.cve.environments") == {
+        str(planted): ["evals.cve.environments"]
+    }
 
 
 # A drawn target is a Target the maintainer wraps a KitTarget into, so every KitTarget field
