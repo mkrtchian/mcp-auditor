@@ -18,9 +18,9 @@ from evals.cve.run_images import ContainerSweep
 from evals.eval_session import TreeState
 from mcp_auditor.domain.models import AuditReport, ProviderUsage
 from tests.fakes import FakeContainerSweep
-from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
 from tests.unit.support.holdout_run_conditions import SETTINGS, ready_conditions
+from tests.unit.support.layouts import SOUND_LAYOUT
 from tests.unit.support.unreached import unreached
 
 RECORDED_AT = "2026-10-28T09:30:00+00:00"

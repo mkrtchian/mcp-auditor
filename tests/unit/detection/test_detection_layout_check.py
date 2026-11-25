@@ -13,8 +13,8 @@ from evals.cve.detection.route_check import RouteObservations
 from evals.cve.kit.target import LaunchMode
 from evals.cve.places import LayoutAnchor, PlaceKind
 from tests.unit.detection.support.fictional_places import a_catalogue_place, a_layout_place
-from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.support.acceptance_targets import FILESYSTEM, an_acceptance_target
+from tests.unit.support.layouts import SOUND_LAYOUT
 
 _A_TARGET = an_acceptance_target(
     FILESYSTEM, launch_mode=LaunchMode.NORMAL, settled_leaks=frozenset()

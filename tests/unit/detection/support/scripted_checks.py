@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from evals.cve.detection.layout_check import LayoutCheck
 from evals.cve.detection.targets import Target
-from tests.unit.detection.support.layouts import SOUND_LAYOUT
+from tests.unit.support.layouts import SOUND_LAYOUT
 
 LIVE: list[str] = []
 

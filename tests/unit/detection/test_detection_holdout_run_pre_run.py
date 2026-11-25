@@ -9,10 +9,10 @@ import pytest
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.kit.target import LaunchMode
 from evals.eval_session import Refused
-from tests.unit.detection.support.layouts import SOUND_LAYOUT
 from tests.unit.detection.support.scripted_checks import ScriptedChecks
 from tests.unit.support import detection_holdout_runs
 from tests.unit.support.acceptance_targets import FILESYSTEM, KUBERNETES
+from tests.unit.support.layouts import SOUND_LAYOUT
 
 
 async def test_a_target_out_of_calibration_is_not_run():

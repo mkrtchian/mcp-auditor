@@ -9,7 +9,7 @@ from evals.cve.detection.holdout_pre_run_check import check_before_run
 from evals.cve.detection.holdout_results import NotRunCause
 from evals.cve.detection.layout_check import layout_failure
 from tests.unit.detection.support import scripted_checks
-from tests.unit.detection.support.layouts import SOUND_LAYOUT
+from tests.unit.support.layouts import SOUND_LAYOUT
 
 
 async def test_a_target_out_of_calibration_on_its_first_pass_runs_when_its_second_pass_is_clean():
