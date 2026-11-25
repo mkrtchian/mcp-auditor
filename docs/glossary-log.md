@@ -157,6 +157,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | report-only server | nuisance holdout server | rename | 2026-11-11 |
 | `reset_containers`, `backend_reset_containers` (a persistent backend's containers, removed by name when a nuisance command starts) | `containers_removed_by_name`, `backend_containers_removed_by_name` | rename | 2026-11-23 |
 | rubric (ADR 014: the judge's criteria) | judge criteria. "Rubric" now names only the labeling rubric, the sense of ADR 016 and ADR 027. | moved meaning | 2026-11-11 |
+| `ScriptedCalls` (`tests/unit/nuisance/support/test_nuisance_retry_policy_given.py`) | `ScriptedAttempts` (`tests/unit/support/scripted_attempts.py`) | rename | 2026-11-25 |
 | selection rule (ADR 015, ADR 028, ADR 029, ADR 031) | detection suite rule | rename | 2026-11-11 |
 | sentinel (the planted value, ADR 014 to ADR 024, plans before 2026-10-11, and the witness in nuisance plans: "sentinel nonce") | nonce, or witness in a fix check. "Sentinel" now names only the sidecar container. | moved meaning | 2026-10-11 |
 | sentinel route | no successor: the responder route that serves a witness | retired | 2026-11-11 |

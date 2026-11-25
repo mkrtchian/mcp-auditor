@@ -1,10 +1,9 @@
 import dataclasses
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
 
 import tests.unit.support.grammar_inputs as grammar
 import tests.unit.support.launch_audit_fakes as launch_audit_fakes
-from evals.cve.audit_attempts import AttemptOutcome
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
@@ -58,16 +57,3 @@ def a_report_missing(*causes: MissedCallCause) -> AuditReport:
         for cause in causes
     ]
     return grammar.a_report().model_copy(update={"missed_model_calls": missed})
-
-
-class ScriptedAttempts[T]:
-    def __init__(self, outcomes: Sequence[AttemptOutcome[T] | BaseException]) -> None:
-        self._outcomes = list(outcomes)
-        self.calls = 0
-
-    async def __call__(self) -> AttemptOutcome[T]:
-        self.calls += 1
-        outcome = self._outcomes.pop(0)
-        if isinstance(outcome, BaseException):
-            raise outcome
-        return outcome

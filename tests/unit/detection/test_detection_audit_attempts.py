@@ -14,9 +14,10 @@ from evals.cve.detection.audit import DETECTION_GATE_WORDING, graded_or_incomple
 from evals.cve.detection.session_model import GradedAudit
 from evals.cve.grammar import MissKind, RunGrade, TargetStatus
 from mcp_auditor.domain.model_calls import MissedCallCause
-from tests.unit.detection.support.detection_audits import TARGET, ScriptedAttempts, a_report_missing
+from tests.unit.detection.support.detection_audits import TARGET, a_report_missing
 from tests.unit.detection.support.detection_reports import a_detected_grade
 from tests.unit.support.captured_console import a_captured_console
+from tests.unit.support.scripted_attempts import ScriptedAttempts
 
 _REFUSED = frozenset({MissedCallCause.PROVIDER_REFUSAL})
 
@@ -49,7 +50,7 @@ async def test_an_audit_missing_a_model_call_at_every_attempt_is_a_run_not_compl
         IncompleteAttempt(grammar.a_report(), _REFUSED),
         *[unreadable] * (INCOMPLETE_ATTEMPTS - 1),
     ]
-    attempt = ScriptedAttempts[GradedAudit](outcomes)
+    attempt = ScriptedAttempts[AttemptOutcome[GradedAudit]](outcomes)
 
     grade = await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
@@ -71,7 +72,7 @@ async def test_an_attempt_whose_prompt_was_too_long_names_its_cause(
     output = a_captured_console(capsys, monkeypatch)
     too_long = IncompleteAttempt(grammar.a_report(), frozenset({MissedCallCause.PROMPT_TOO_LONG}))
     graded = GradedAudit(a_detected_grade(), grammar.a_report())
-    attempt = ScriptedAttempts[GradedAudit]([too_long, graded])
+    attempt = ScriptedAttempts[AttemptOutcome[GradedAudit]]([too_long, graded])
 
     await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
@@ -93,7 +94,7 @@ async def test_an_attempt_thrown_away_is_not_audited_again(
     thrown_away: AttemptOutcome[GradedAudit],
 ):
     a_captured_console(capsys, monkeypatch)
-    attempt = ScriptedAttempts[GradedAudit]([thrown_away])
+    attempt = ScriptedAttempts[AttemptOutcome[GradedAudit]]([thrown_away])
 
     grade = await graded_despite_missed_model_calls(TARGET.flaw_id, attempt, DETECTION_GATE_WORDING)
 
