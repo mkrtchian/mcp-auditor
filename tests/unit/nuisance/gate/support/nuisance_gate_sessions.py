@@ -4,6 +4,7 @@ from pathlib import Path
 import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
+from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
 from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
 from evals.cve.nuisance.gate.gate_audit import GateRun
@@ -20,6 +21,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
 from evals.eval_session import TreeState
 from evals.gate_outcome import GateOutcome
 from tests.fakes import FakeContainerSweep, ScriptedBenignCall
+from tests.unit.support.nuisance_docker_hosts import DockerHost
 
 # Services whose Dockerfiles exist, since the session fingerprints each server's fixture.
 FILESYSTEM = holdout_runs.a_server(
@@ -63,12 +65,13 @@ def a_harness(
     tree_after_runs: TreeState | None = None,
     announce: Callable[[int], None] = lambda _: None,
     throttled_requests: int = 0,
-    containers: FakeContainerSweep | None = None,
+    containers: FakeContainerSweep | DockerHost | None = None,
 ) -> NuisanceGateHarness:
     """`benign_call` scripts each package's failure reasons as `ScriptedBenignCall` reads them.
     `tree_after_runs` is what every read of the tree after the first returns, `tree` by
-    default."""
+    default. A `DockerHost` also rebuilds, and its benign call starts the backend first."""
     docker = containers or FakeContainerSweep()
+    scripted_call = ScriptedBenignCall(benign_call)
     reads: list[TreeState] = []
 
     def read_tree() -> TreeState:
@@ -78,10 +81,14 @@ def a_harness(
 
     return NuisanceGateHarness(
         audit=audit,
-        benign_call=ScriptedBenignCall(benign_call),
+        benign_call=(
+            _starting_the_backend(docker, scripted_call)
+            if isinstance(docker, DockerHost)
+            else scripted_call
+        ),
         announce_audits=announce,
         throttled_requests=lambda: throttled_requests,
-        rebuild=lambda services: None,
+        rebuild=docker.rebuild if isinstance(docker, DockerHost) else lambda services: None,
         image_ids=lambda names: {name: f"sha256:{name}" for name in names},
         backend_image_ids=lambda tags: {tag: f"sha256:{tag}" for tag in tags},
         read_tree=read_tree,
@@ -90,6 +97,14 @@ def a_harness(
         check_networks=lambda: None,
         sweep=docker.sweep,
     )
+
+
+def _starting_the_backend(host: DockerHost, scripted_call: ScriptedBenignCall) -> BenignCallCheck:
+    async def call(server: AdmittedServer) -> str | None:
+        await host.benign_call(server)
+        return await scripted_call(server)
+
+    return call
 
 
 def options(

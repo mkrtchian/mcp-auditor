@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 
 import tests.unit.nuisance.gate.support.test_nuisance_gate_benign_calls_given as given
+import tests.unit.support.nuisance_docker_hosts as docker_hosts
 from evals.cve.nuisance.backend_registry import BACKENDS
 from evals.cve.nuisance.gate.gate import ServerOutcome
 from evals.cve.nuisance.gate.gate_session import run_gate
 from evals.eval_session import RECORDING_REFUSED, Refused
 from evals.gate_outcome import GateOutcome
-from tests.fakes import FakeContainerSweep
 from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
     FILESYSTEM,
     KUBERNETES,
@@ -22,6 +22,7 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
     the_one_server_ends,
 )
 from tests.unit.support.admission_mutations import on_the_ckan_backend
+from tests.unit.support.nuisance_docker_hosts import DockerHost
 
 
 async def test_a_server_whose_benign_call_fails_is_not_run_and_not_comparable(tmp_path: Path):
@@ -100,14 +101,10 @@ async def test_a_built_backend_container_left_running_is_removed_before_the_firs
 ):
     server = on_the_ckan_backend(FILESYSTEM)
     a_gated_file(tmp_path, server)
-    containers = FakeContainerSweep.running_before_the_rebuild("stale_backend")
+    host = DockerHost({docker_hosts.CKAN_TAG: ["stale_backend"]})
     harness, removed_at_benign_calls = given.watching_removals_at_each_benign_call(
-        a_harness(
-            tmp_path,
-            scripted({server.server_package: clean_runs()}),
-            containers=containers,
-        ),
-        containers,
+        a_harness(tmp_path, scripted({server.server_package: clean_runs()}), containers=host),
+        host,
     )
 
     await run_gate(options([server]), harness)
@@ -120,17 +117,10 @@ async def test_the_gate_rebuilds_the_built_backend_service_with_the_server_servi
 ):
     server = on_the_ckan_backend(FILESYSTEM)
     a_gated_file(tmp_path, server)
-    containers = FakeContainerSweep.running_before_the_rebuild("stale_backend")
-    harness, rebuilt, removed_at_the_rebuild = given.watching_the_rebuild(
-        a_harness(
-            tmp_path,
-            scripted({server.server_package: clean_runs()}),
-            containers=containers,
-        ),
-        containers,
-    )
+    host = DockerHost({docker_hosts.CKAN_TAG: ["stale_backend"]})
+    harness = a_harness(tmp_path, scripted({server.server_package: clean_runs()}), containers=host)
 
     await run_gate(options([server]), harness)
 
-    assert rebuilt == [server.service, *BACKENDS["ckan"].built_services]
-    assert removed_at_the_rebuild == ["stale_backend"]
+    assert host.rebuilt == [server.service, *BACKENDS["ckan"].built_services]
+    assert "stale_backend" not in host.running_at_rebuild
