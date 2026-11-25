@@ -69,8 +69,8 @@ def a_jira_issue(responder: types.ModuleType, key: str) -> Answer:
     return _answer(responder, "GET", f"/rest/api/2/issue/{key}?fields=summary")
 
 
-def _answer(responder: types.ModuleType, method: str, target: str) -> Answer:
-    status, body = responder.answer(method, target)
+def _answer(responder: types.ModuleType, method: str, request_target: str) -> Answer:
+    status, body = responder.answer(method, request_target)
     return Answer(status, body)
 
 
@@ -93,11 +93,11 @@ def serving(responder: types.ModuleType) -> Generator[http.server.HTTPServer]:
         server.server_close()
 
 
-def a_request(server: http.server.HTTPServer, method: str, target: str) -> Served:
+def a_request(server: http.server.HTTPServer, method: str, request_target: str) -> Served:
     connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
     try:
         body = b"{}" if method in ("POST", "PUT", "PATCH") else None
-        connection.request(method, target, body=body)
+        connection.request(method, request_target, body=body)
         response = connection.getresponse()
         return Served(
             response.status, {k.lower(): v for k, v in response.getheaders()}, response.read()

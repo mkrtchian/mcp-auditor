@@ -1,4 +1,5 @@
-"""The Doris holdout launch on fakes: its helpers patched out and a spec that plants nothing."""
+"""The detection holdout Doris launch on fakes: its helpers patched out and a spec that plants
+nothing."""
 
 import threading
 import time

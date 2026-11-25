@@ -57,7 +57,7 @@ def test_known_hosts_is_installed_mode_0644_and_handed_to_its_owner_with_chown_a
     assert value_after(chown, "--network") == "none"
 
 
-def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: Path):
+def test_the_detection_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: Path):
     sshd = fake_sshd.an_sshd(tmp_path)
 
     with mcp_ssh_injection_env(
@@ -67,7 +67,7 @@ def test_the_holdout_launch_mounts_a_root_owned_known_hosts_read_only(tmp_path: 
         assert sshd.owners == [ROOT]
 
 
-def test_the_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):
+def test_the_detection_holdout_launch_refuses_a_host_with_no_network(tmp_path: Path):
     sshd = fake_sshd.an_sshd(tmp_path)
 
     with (

@@ -124,7 +124,7 @@ def test_any_other_cql_answers_the_bare_rest_error_without_the_query(
 
 
 @pytest.mark.parametrize(
-    ("method", "target"),
+    ("method", "request_target"),
     [
         ("GET", "/rest/api/2/project"),
         ("POST", "/rest/api/2/issue"),
@@ -134,10 +134,10 @@ def test_any_other_cql_answers_the_bare_rest_error_without_the_query(
     ],
 )
 def test_every_other_method_and_path_answers_jiras_404_with_no_server_header(
-    method: str, target: str, monkeypatch: pytest.MonkeyPatch
+    method: str, request_target: str, monkeypatch: pytest.MonkeyPatch
 ):
     with given.serving(given.the_responder(monkeypatch)) as server:
-        served = given.a_request(server, method, target)
+        served = given.a_request(server, method, request_target)
 
     assert served.status == 404
     assert json.loads(served.body) == JIRA_ERROR

@@ -12,19 +12,19 @@ from tests.unit.support.doris_launch import (
 )
 
 
-# The nuisance launch mounts no layout (the nuisance suite has none); past it, the holdout launch
-# must not drift from it.
-def test_the_helper_and_the_holdout_env_differ_only_by_the_layout(
+# The nuisance launch mounts no layout (the nuisance suite has none); past it, the detection
+# holdout launch must not drift from it.
+def test_the_nuisance_and_the_detection_holdout_doris_launches_differ_only_by_the_layout(
     monkeypatch: pytest.MonkeyPatch,
 ):
     doris_helpers_faked(monkeypatch, OverlapRecorder())
     spec = a_minimal_doris_spec()
 
     with holdout_environments.doris_db_env("image", spec, docker=FakePlantingDocker()) as launch:
-        env_args = strip_pair(launch.args, "-v")
-    helper = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
+        detection_launch = strip_pair(launch.args, "-v")
+    nuisance_launch = doris_server_args("server-name", "image", spec.host, DORIS_SERVER_LAUNCH)
 
-    assert strip_pair(helper, "--name") == strip_pair(env_args, "--name")
+    assert strip_pair(nuisance_launch, "--name") == strip_pair(detection_launch, "--name")
 
 
 def test_the_doris_cluster_sets_the_backends_public_host_to_its_alias():
