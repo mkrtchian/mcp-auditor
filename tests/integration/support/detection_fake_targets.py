@@ -12,7 +12,8 @@ from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser
 from mcp_auditor.domain.ports import MCPClientPort
 
-OUTSIDE_AIM = re.compile(r"^/outside/")
+_OUTSIDE_AIM = re.compile(r"^/outside/")
+EXPLOIT_PATH = "/outside/flag"
 
 Builder = Callable[[str, PlantingSpec, LaunchShape], AbstractContextManager[Launch]]
 Call = Callable[[Places, MCPClientPort], Awaitable[None]]
@@ -23,7 +24,7 @@ def a_fake_target(
     builder: Builder,
     benign: Call,
     *,
-    aim: re.Pattern[str] = OUTSIDE_AIM,
+    aim: re.Pattern[str] = _OUTSIDE_AIM,
     kept_places: tuple[str, ...],
 ) -> Target:
     return Target(
@@ -38,7 +39,7 @@ def a_fake_target(
         patched_image="fake-patched",
         planting_host=PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=False),
         builder=builder,
-        exploits=(reading("/outside/flag"),),
+        exploits=(reading(EXPLOIT_PATH),),
         benign=benign,
         awaited_capability=None,
         note="",

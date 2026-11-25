@@ -8,7 +8,7 @@ def the_credit_is_kept(outcome: ReplayOutcome) -> None:
 
 
 def the_flaw_credit_is_struck(outcome: ReplayOutcome) -> None:
-    assert {pair.place_id for pair in outcome.check.struck} == {given.FLAW_ID}
+    assert {pair.place_id for pair in outcome.check.struck} == {given.FLAW_PLACE_ID}
     _decided_with_no_failed_attempt(outcome)
 
 

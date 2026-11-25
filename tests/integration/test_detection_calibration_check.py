@@ -183,7 +183,7 @@ async def test_a_vulnerable_launch_that_fails_three_times_did_not_launch(tmp_pat
 async def test_an_out_of_calibration_reason_read_from_a_launch_is_not_retried(
     tmp_path: pathlib.Path,
 ):
-    target = given.a_counted_target_whose_exploit_misses("CVE-MISS", tmp_path)
+    target = given.a_target_whose_exploit_misses_counting_launches("CVE-MISS", tmp_path)
 
     conditions = await check_target(target, given.a_places_mapping())
 
@@ -235,7 +235,7 @@ async def test_a_layout_launch_that_fails_three_times_is_a_failed_observation(
 
 @pytest.mark.usefixtures("docker_on_the_host")
 async def test_a_launched_server_whose_tools_list_fails_is_observed_once(tmp_path: pathlib.Path):
-    target = given.a_counted_target_whose_tools_list_breaks("CVE-NOLIST", tmp_path)
+    target = given.a_target_whose_tools_list_breaks_counting_launches("CVE-NOLIST", tmp_path)
 
     vulnerable, _ = await observe_versions(target, given.a_places_mapping())
 

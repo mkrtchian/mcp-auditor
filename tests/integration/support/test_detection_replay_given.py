@@ -18,7 +18,7 @@ import tests.unit.support.grammar_inputs as grammar
 from evals.cve.detection.replay import RecordedCall, RunToCheck
 from evals.cve.detection.targets import Target
 from evals.cve.environments import Launch, LaunchShape
-from evals.cve.grammar import FlawClass, PlantedTarget
+from evals.cve.grammar import PlantedTarget
 from evals.cve.launch_audit import Auditor, AuditShape, Connect, LaunchAudit, audit_launch
 from evals.cve.places import Places, kept_records
 from evals.cve.planting import PlantingSpec
@@ -34,25 +34,20 @@ from mcp_auditor.domain.models import (
 )
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes import FakeLLM
-from tests.integration.support.detection_fake_targets import (
-    OUTSIDE_AIM,
-    a_fake_target,
-    a_file_place,
-    reading,
-)
+from tests.integration.support.detection_fake_targets import a_fake_target, a_file_place, reading
 from tests.integration.support.support_servers import READ_SERVER_PATH
 from tests.unit.auditor.support.graph_builders import a_judgment, a_payload
 
-FLAW_ID = "fict-flaw"
-OTHER_ID = "fict-other"
-FLAW_PATH = "/outside/flag"  # the path the shared fake target's exploit reads
-PREP_PATH = "/outside/prep"
-OTHER_PATH = "/outside/other"
-OLD_FLAW = "MCPAUDIT-" + "a" * 32
-OLD_OTHER = "MCPAUDIT-" + "b" * 32
-_OLD_NONCES = {FLAW_ID: OLD_FLAW, OTHER_ID: OLD_OTHER}
+FLAW_PLACE_ID = "fict-flaw"
+_OTHER_PLACE_ID = "fict-other"
+_FLAW_PATH = "/outside/flag"
+_PREP_PATH = "/outside/prep"
+_OTHER_PATH = "/outside/other"
+_OLD_FLAW_NONCE = "MCPAUDIT-" + "a" * 32
+_OLD_OTHER_NONCE = "MCPAUDIT-" + "b" * 32
+_OLD_NONCES = {FLAW_PLACE_ID: _OLD_FLAW_NONCE, _OTHER_PLACE_ID: _OLD_OTHER_NONCE}
 
-Serve = Callable[[PlantingSpec], list[str]]
+_Serve = Callable[[PlantingSpec], list[str]]
 
 
 # --- the runs, each a RunToCheck the replay checks ---
@@ -60,7 +55,7 @@ Serve = Callable[[PlantingSpec], list[str]]
 
 def a_declared_run() -> RunToCheck:
     # The place is reached by a declared path, so the patched version serves it too: struck.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}))
+    return _single_run(_serving({_FLAW_PATH: FLAW_PLACE_ID}))
 
 
 def a_flaw_run() -> RunToCheck:
@@ -70,7 +65,7 @@ def a_flaw_run() -> RunToCheck:
 
 def a_chain_run() -> RunToCheck:
     # A two-step chain whose second step reaches the place only via the flaw: kept.
-    return _run(_serving({}), _prep_then_flaw_chain_report(), _calls(PREP_PATH, FLAW_PATH))
+    return _run(_serving({}), _prep_then_flaw_chain_report(), _calls(_PREP_PATH, _FLAW_PATH))
 
 
 def an_echoed_old_nonce_run() -> RunToCheck:
@@ -80,30 +75,34 @@ def an_echoed_old_nonce_run() -> RunToCheck:
         chains=[
             grammar.a_chain(
                 [
-                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
-                    grammar.a_step(arguments={"path": OLD_FLAW}, response=f"echo {OLD_FLAW}"),
+                    grammar.a_step(
+                        arguments={"path": _FLAW_PATH}, response=f"leaked {_OLD_FLAW_NONCE}"
+                    ),
+                    grammar.a_step(
+                        arguments={"path": _OLD_FLAW_NONCE}, response=f"echo {_OLD_FLAW_NONCE}"
+                    ),
                 ]
             )
         ]
     )
-    return _run(_echoing(), report, _calls(FLAW_PATH, OLD_FLAW))
+    return _run(_echoing(), report, _calls(_FLAW_PATH, _OLD_FLAW_NONCE))
 
 
 def a_fresh_other_place_run() -> RunToCheck:
     # The patched version surfaces a fresh nonce for another place on the recorded path, which
     # the run never proved, so nothing is struck: kept.
     return _run(
-        _serving({FLAW_PATH: OTHER_ID}),
+        _serving({_FLAW_PATH: _OTHER_PLACE_ID}),
         _flaw_report(),
-        _calls(FLAW_PATH),
-        kept=(FLAW_ID, OTHER_ID),
+        _calls(_FLAW_PATH),
+        kept=(FLAW_PLACE_ID, _OTHER_PLACE_ID),
     )
 
 
 def a_declared_run_on_a_server_noisy_at_shutdown() -> RunToCheck:
     # Every call is answered, then the patched server writes to stdout as it exits, which the
     # MCP client raises on when the launch is left: the complete attempt still decides.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}, noisy_shutdown=True))
+    return _single_run(_serving({_FLAW_PATH: FLAW_PLACE_ID}, noisy_shutdown=True))
 
 
 def a_patched_launch_failure_run() -> RunToCheck:
@@ -116,7 +115,7 @@ def a_server_dying_while_answering_run() -> RunToCheck:
 
 def a_server_dying_after_a_call_run() -> RunToCheck:
     return _run(
-        _serving({}, exit_on_call=2), _prep_then_flaw_chain_report(), _calls(PREP_PATH, FLAW_PATH)
+        _serving({}, exit_on_call=2), _prep_then_flaw_chain_report(), _calls(_PREP_PATH, _FLAW_PATH)
     )
 
 
@@ -125,16 +124,16 @@ def a_detection_kept_when_the_patched_dies_where_the_vulnerable_did_run() -> Run
     # dies on call 2, so the replay ends where the vulnerable run did and keeps the call-1 credit.
     report = grammar.a_report(
         cases=[
-            grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH}),
+            grammar.a_case(response=f"leaked {_OLD_FLAW_NONCE}", arguments={"path": _FLAW_PATH}),
             grammar.a_case(
-                response="Connection closed", arguments={"path": PREP_PATH}, verdict=grammar.PASS
+                response="Connection closed", arguments={"path": _PREP_PATH}, verdict=grammar.PASS
             ),
         ]
     )
     return _run(
         _serving({}, exit_on_call=2),
         report,
-        _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH),
+        _calls_ending_in_lost_connection(_FLAW_PATH, _PREP_PATH),
     )
 
 
@@ -142,19 +141,19 @@ def a_straddling_chain_struck_despite_a_lost_connection_run() -> RunToCheck:
     # The credit is earned at step 1, the vulnerable connection is lost at step 2, but the patched
     # server survives and serves the fresh nonce at step 2: ending at the first vulnerable loss
     # would leave step 2 empty and keep a credit the full replay strikes.
-    return _straddling_run(_serving({PREP_PATH: FLAW_ID}))
+    return _straddling_run(_serving({_PREP_PATH: FLAW_PLACE_ID}))
 
 
 def a_transient_patched_death_at_the_vulnerable_loss_run() -> RunToCheck:
     # The first patched launch dies by chance at step 2, where the vulnerable run lost its
     # connection. Later launches survive and serve the fresh nonce there, so a retry strikes.
-    return _straddling_run(_dying_by_launch({PREP_PATH: FLAW_ID}, (2,)))
+    return _straddling_run(_dying_by_launch({_PREP_PATH: FLAW_PLACE_ID}, (2,)))
 
 
 def a_truncated_then_failed_attempts_run() -> RunToCheck:
     # Truncated at step 2 on the first launch, then lost at step 1, which the vulnerable run
     # answered, on the two later launches: no attempt completes.
-    return _straddling_run(_dying_by_launch({PREP_PATH: FLAW_ID}, (2, 1, 1)))
+    return _straddling_run(_dying_by_launch({_PREP_PATH: FLAW_PLACE_ID}, (2, 1, 1)))
 
 
 def a_lost_connection_at_a_relaunch_point_run() -> RunToCheck:
@@ -162,19 +161,21 @@ def a_lost_connection_at_a_relaunch_point_run() -> RunToCheck:
     # The patched server dies at call 2 too, and the relaunched one serves the declared path at
     # call 3: struck.
     lost = _a_response("McpError", "Connection closed")
-    return _relaunched_at_call_2_run(_serving({FLAW_PATH: FLAW_ID}, exit_on_call=2), lost)
+    return _relaunched_at_call_2_run(_serving({_FLAW_PATH: FLAW_PLACE_ID}, exit_on_call=2), lost)
 
 
 def a_timeout_at_a_relaunch_point_run() -> RunToCheck:
     # As above, with the second call timing out on a server whose loop it blocks.
     timed_out = _a_response("TimeoutError", "Tool call timed out after 2s")
-    return _relaunched_at_call_2_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=2), timed_out)
+    return _relaunched_at_call_2_run(
+        _serving({_FLAW_PATH: FLAW_PLACE_ID}, hang_on_call=2), timed_out
+    )
 
 
 def a_patched_server_stopping_answering_run() -> RunToCheck:
     # The vulnerable run answered its one call. The patched server blocks its loop on it, so the
     # call times out and the ping after it gets no answer.
-    return _single_run(_serving({FLAW_PATH: FLAW_ID}, hang_on_call=1))
+    return _single_run(_serving({_FLAW_PATH: FLAW_PLACE_ID}, hang_on_call=1))
 
 
 def connect_pinging_within(seconds: float) -> Connect:
@@ -201,9 +202,9 @@ async def a_recorded_audit() -> LaunchAudit:
     # The guard blocks the destructive payload, which is then neither sent nor judged.
     batch = TestCaseBatch(
         cases=[
-            a_payload(AuditCategory.INPUT_VALIDATION, {"path": PREP_PATH}),
+            a_payload(AuditCategory.INPUT_VALIDATION, {"path": _PREP_PATH}),
             a_payload(AuditCategory.INJECTION, {"path": "1; rm -rf /"}),
-            a_payload(AuditCategory.INFO_LEAKAGE, {"path": FLAW_PATH}),
+            a_payload(AuditCategory.INFO_LEAKAGE, {"path": _FLAW_PATH}),
         ]
     )
     llm = FakeLLM([batch, a_judgment(), a_judgment(), AttackContext()])
@@ -217,68 +218,71 @@ async def a_recorded_audit() -> LaunchAudit:
 # --- builders and run assembly ---
 
 
-def _relaunched_at_call_2_run(serve: Serve, second: ToolResponse) -> RunToCheck:
+def _relaunched_at_call_2_run(serve: _Serve, second: ToolResponse) -> RunToCheck:
     report = grammar.a_report(
         cases=[
-            grammar.a_case(response="ok", arguments={"path": PREP_PATH}, verdict=grammar.PASS),
+            grammar.a_case(response="ok", arguments={"path": _PREP_PATH}, verdict=grammar.PASS),
             grammar.a_case(
-                response=second.content, arguments={"path": PREP_PATH}, verdict=grammar.PASS
+                response=second.content, arguments={"path": _PREP_PATH}, verdict=grammar.PASS
             ),
-            grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH}),
+            grammar.a_case(response=f"leaked {_OLD_FLAW_NONCE}", arguments={"path": _FLAW_PATH}),
         ]
     )
-    calls = _calls(PREP_PATH)
-    calls.append(("read", {"path": PREP_PATH}, second))
-    calls.extend(_calls(FLAW_PATH))
+    calls = _calls(_PREP_PATH)
+    calls.append(("read", {"path": _PREP_PATH}, second))
+    calls.extend(_calls(_FLAW_PATH))
     run = _run(serve, report, calls)
     return dataclasses.replace(run, relaunched_after=[2])
 
 
-def _straddling_run(serve: Serve) -> RunToCheck:
+def _straddling_run(serve: _Serve) -> RunToCheck:
     report = grammar.a_report(
         chains=[
             grammar.a_chain(
                 [
-                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
-                    grammar.a_step(arguments={"path": PREP_PATH}, response="Connection closed"),
+                    grammar.a_step(
+                        arguments={"path": _FLAW_PATH}, response=f"leaked {_OLD_FLAW_NONCE}"
+                    ),
+                    grammar.a_step(arguments={"path": _PREP_PATH}, response="Connection closed"),
                 ]
             )
         ]
     )
-    return _run(serve, report, _calls_ending_in_lost_connection(FLAW_PATH, PREP_PATH))
+    return _run(serve, report, _calls_ending_in_lost_connection(_FLAW_PATH, _PREP_PATH))
 
 
-def _single_run(serve: Serve | None) -> RunToCheck:
-    return _run(serve, _flaw_report(), _calls(FLAW_PATH))
+def _single_run(serve: _Serve | None) -> RunToCheck:
+    return _run(serve, _flaw_report(), _calls(_FLAW_PATH))
 
 
 def _run(
-    serve: Serve | None,
+    serve: _Serve | None,
     report: AuditReport,
     calls: list[RecordedCall],
-    kept: tuple[str, ...] = (FLAW_ID,),
+    kept: tuple[str, ...] = (FLAW_PLACE_ID,),
 ) -> RunToCheck:
-    places = a_places_mapping()
+    places = _places_mapping()
     nonces = {place: _OLD_NONCES[place] for place in kept}
+    target = _a_target(serve, kept)
     return RunToCheck(
-        target=_a_target(serve, kept),
-        run_target=PlantedTarget(frozenset({FlawClass.READ_OUTSIDE_SCOPE}), OUTSIDE_AIM, nonces),
+        target=target,
+        run_target=PlantedTarget(target.classes, target.aim, nonces),
         report=report,
         recorded_calls=calls,
         records=kept_records(kept, places),
     )
 
 
-def a_places_mapping() -> Places:
+def _places_mapping() -> Places:
     return {
-        FLAW_ID: a_file_place(FLAW_ID, FLAW_PATH),
-        OTHER_ID: a_file_place(OTHER_ID, OTHER_PATH),
+        FLAW_PLACE_ID: a_file_place(FLAW_PLACE_ID, _FLAW_PATH),
+        _OTHER_PLACE_ID: a_file_place(_OTHER_PLACE_ID, _OTHER_PATH),
     }
 
 
 def _flaw_report() -> AuditReport:
     return grammar.a_report(
-        cases=[grammar.a_case(response=f"leaked {OLD_FLAW}", arguments={"path": FLAW_PATH})]
+        cases=[grammar.a_case(response=f"leaked {_OLD_FLAW_NONCE}", arguments={"path": _FLAW_PATH})]
     )
 
 
@@ -287,8 +291,10 @@ def _prep_then_flaw_chain_report() -> AuditReport:
         chains=[
             grammar.a_chain(
                 [
-                    grammar.a_step(arguments={"path": PREP_PATH}, response="ok"),
-                    grammar.a_step(arguments={"path": FLAW_PATH}, response=f"leaked {OLD_FLAW}"),
+                    grammar.a_step(arguments={"path": _PREP_PATH}, response="ok"),
+                    grammar.a_step(
+                        arguments={"path": _FLAW_PATH}, response=f"leaked {_OLD_FLAW_NONCE}"
+                    ),
                 ]
             )
         ]
@@ -315,7 +321,7 @@ def _serving(
     exit_on_call: int = 0,
     hang_on_call: int = 0,
     noisy_shutdown: bool = False,
-) -> Serve:
+) -> _Serve:
     def serve(spec: PlantingSpec) -> list[str]:
         args = [f"{path}={spec.nonces[place_id]}" for path, place_id in paths_to_ids.items()]
         if exit_on_call:
@@ -329,7 +335,7 @@ def _serving(
     return serve
 
 
-def _dying_by_launch(paths_to_ids: dict[str, str], exits: tuple[int, ...]) -> Serve:
+def _dying_by_launch(paths_to_ids: dict[str, str], exits: tuple[int, ...]) -> _Serve:
     # The target's builder calls serve once per launch, so the n-th call picks the n-th exit.
     # 0, or a launch past the end of exits, serves without exiting.
     remaining = iter(exits)
@@ -340,15 +346,15 @@ def _dying_by_launch(paths_to_ids: dict[str, str], exits: tuple[int, ...]) -> Se
     return serve
 
 
-def _echoing() -> Serve:
+def _echoing() -> _Serve:
     return lambda _spec: ["echo"]
 
 
-def _dead() -> Serve | None:
+def _dead() -> _Serve | None:
     return None
 
 
-def _a_target(serve: Serve | None, kept: tuple[str, ...]) -> Target:
+def _a_target(serve: _Serve | None, kept: tuple[str, ...]) -> Target:
     @contextmanager
     def builder(_image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
         if serve is None:
@@ -356,4 +362,4 @@ def _a_target(serve: Serve | None, kept: tuple[str, ...]) -> Target:
         else:
             yield Launch("docker", ["run", sys.executable, str(READ_SERVER_PATH), *serve(spec)])
 
-    return a_fake_target("CVE-REPLAY", builder, reading(PREP_PATH), kept_places=kept)
+    return a_fake_target("CVE-REPLAY", builder, reading(_PREP_PATH), kept_places=kept)

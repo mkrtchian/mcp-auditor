@@ -10,6 +10,7 @@ from evals.cve.environments import Launch, LaunchShape
 from evals.cve.places import Places
 from evals.cve.planting import PlantingSpec
 from tests.integration.support.detection_fake_targets import (
+    EXPLOIT_PATH,
     Builder,
     a_fake_target,
     a_file_place,
@@ -17,24 +18,25 @@ from tests.integration.support.detection_fake_targets import (
 )
 from tests.integration.support.support_servers import CALIBRATION_READ_SERVER_PATH
 
-KEPT_FLAG_ID = "fict-flag"
-KEPT = (KEPT_FLAG_ID,)
-OUTSIDE_ID = "fict-outside"
-INSIDE_ID = "fict-inside"
+_KEPT_FLAG_ID = "fict-flag"
+_KEPT = (_KEPT_FLAG_ID,)
+_OUTSIDE_ID = "fict-outside"
+_INSIDE_ID = "fict-inside"
+_BENIGN_PATH = "/inside/file"
 
 
 def a_places_mapping() -> Places:
     """Resolves the single kept place of the calibration targets. Its coordinate is only read by
     planting_spec (the fake builder does not enter planted), so it stays a plain file place."""
-    return {KEPT_FLAG_ID: a_file_place(KEPT_FLAG_ID, "/outside/flag")}
+    return {_KEPT_FLAG_ID: a_file_place(_KEPT_FLAG_ID, EXPLOIT_PATH)}
 
 
 def a_survey_places_mapping() -> Places:
     """Two candidate file places the survey plants together: one the exploit reaches, one the
     benign call reaches. Both are reachable by arbitrary_read, the survey target's reach."""
     return {
-        OUTSIDE_ID: a_file_place(OUTSIDE_ID, "/outside/flag"),
-        INSIDE_ID: a_file_place(INSIDE_ID, "/inside/file"),
+        _OUTSIDE_ID: a_file_place(_OUTSIDE_ID, EXPLOIT_PATH),
+        _INSIDE_ID: a_file_place(_INSIDE_ID, _BENIGN_PATH),
     }
 
 
@@ -45,11 +47,11 @@ def a_target_whose_server_exits_at_startup(flaw_id: str, last_words: str) -> Tar
             "docker", ["run", sys.executable, "-c", f"import sys; sys.exit({last_words!r})"]
         )
 
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def a_live_target(flaw_id: str) -> Target:
-    return a_fake_target(flaw_id, _serving_builder(), reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, _serving_builder(), reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def a_target_whose_layout_breaks_the_patched_version(flaw_id: str) -> Target:
@@ -64,43 +66,43 @@ def a_target_whose_layout_breaks_the_patched_version(flaw_id: str) -> Target:
             args = ["run", sys.executable, str(CALIBRATION_READ_SERVER_PATH), *_serve_args(spec)]
             yield Launch("docker", args)
 
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def a_target_whose_benign_call_leaks(flaw_id: str) -> Target:
-    return a_fake_target(flaw_id, _serving_builder(), reading("/outside/flag"), kept_places=KEPT)
+    return a_fake_target(flaw_id, _serving_builder(), reading(EXPLOIT_PATH), kept_places=_KEPT)
 
 
 def a_target_whose_aim_matches_nothing(flaw_id: str) -> Target:
     return a_fake_target(
         flaw_id,
         _serving_builder(),
-        reading("/inside/file"),
+        reading(_BENIGN_PATH),
         aim=re.compile(r"^/nowhere/"),
-        kept_places=KEPT,
+        kept_places=_KEPT,
     )
 
 
 def a_target_with_no_kept_place(flaw_id: str) -> Target:
-    return a_fake_target(flaw_id, _serving_builder(), reading("/inside/file"), kept_places=())
+    return a_fake_target(flaw_id, _serving_builder(), reading(_BENIGN_PATH), kept_places=())
 
 
 def a_target_whose_exploit_misses(flaw_id: str) -> Target:
     # The vulnerable server surfaces nothing, so the aimed exploit reaches no nonce.
     return a_fake_target(
-        flaw_id, _serving_builder(vulnerable=False), reading("/inside/file"), kept_places=KEPT
+        flaw_id, _serving_builder(vulnerable=False), reading(_BENIGN_PATH), kept_places=_KEPT
     )
 
 
 def a_target_whose_patched_version_still_surfaces(flaw_id: str) -> Target:
     return a_fake_target(
-        flaw_id, _serving_builder(patched=True), reading("/inside/file"), kept_places=KEPT
+        flaw_id, _serving_builder(patched=True), reading(_BENIGN_PATH), kept_places=_KEPT
     )
 
 
 def a_target_whose_patched_benign_errors(flaw_id: str) -> Target:
-    builder = _serving_builder(patched_error_paths=("/inside/file",))
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    builder = _serving_builder(patched_error_paths=(_BENIGN_PATH,))
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def a_target_whose_vulnerable_launch_fails(
@@ -109,7 +111,7 @@ def a_target_whose_vulnerable_launch_fails(
     """Live once launched. Its vulnerable server exits at startup on its first `times` launches."""
     counter = _LaunchCounter(_launches_directory(tmp_path), vulnerable_failures=times)
     builder = _serving_builder(counter=counter)
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def a_target_whose_reference_launch_fails(
@@ -123,19 +125,21 @@ def a_target_whose_reference_launch_fails(
         failing_shape=LaunchShape.EMPTY_LAYOUT,
     )
     builder = _serving_builder(counter=counter)
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
-def a_counted_target_whose_exploit_misses(flaw_id: str, tmp_path: pathlib.Path) -> Target:
+def a_target_whose_exploit_misses_counting_launches(flaw_id: str, tmp_path: pathlib.Path) -> Target:
     counter = _LaunchCounter(_launches_directory(tmp_path))
     builder = _serving_builder(vulnerable=False, counter=counter)
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
-def a_counted_target_whose_tools_list_breaks(flaw_id: str, tmp_path: pathlib.Path) -> Target:
+def a_target_whose_tools_list_breaks_counting_launches(
+    flaw_id: str, tmp_path: pathlib.Path
+) -> Target:
     counter = _LaunchCounter(_launches_directory(tmp_path))
     builder = _serving_builder(counter=counter, broken_tools_list=True)
-    return a_fake_target(flaw_id, builder, reading("/inside/file"), kept_places=KEPT)
+    return a_fake_target(flaw_id, builder, reading(_BENIGN_PATH), kept_places=_KEPT)
 
 
 def launches_of(tmp_path: pathlib.Path, version: TargetVersion) -> int:
@@ -170,7 +174,7 @@ def a_survey_target(flaw_id: str) -> Target:
     # Serves every planted place on both versions, so the exploit reads the outside place and the
     # benign call the inside place, and the patched launch still surfaces the outside place.
     return a_fake_target(
-        flaw_id, _serving_builder(patched=True), reading("/inside/file"), kept_places=()
+        flaw_id, _serving_builder(patched=True), reading(_BENIGN_PATH), kept_places=()
     )
 
 

@@ -58,7 +58,7 @@ async def test_a_fresh_nonce_of_another_place_strikes_nothing():
 
     outcome = await replay_with_causes(run)
 
-    assert given.FLAW_ID not in {pair.place_id for pair in outcome.check.struck}
+    assert given.FLAW_PLACE_ID not in {pair.place_id for pair in outcome.check.struck}
     assert not outcome.check.unchecked
     assert outcome.unchecked_reason is None
 
