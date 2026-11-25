@@ -55,6 +55,8 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import LABEL, own_network_args
 
+# The host is nominal: the witness sits on the per-launch responder, at an address drawn at each
+# launch, never on the singleton.
 WITNESS = Place(
     id="gitlab-61462-internal",
     family="fix_check",

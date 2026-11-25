@@ -64,7 +64,8 @@ HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 
 _TOOL = "fetch-apify-docs"
 _SERVER_LAUNCH: list[str] = []
-# The singleton sits on the bridge's first address, the per-launch responders above it.
+# The backend's two stand-ins sit low on the bridge (evals.cve.backends.apify), the per-launch
+# responders above them.
 _FIRST_PER_LAUNCH_HOST = 100
 _LAST_PER_LAUNCH_HOST = 250
 

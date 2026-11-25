@@ -40,11 +40,13 @@ BENIGN_PRODUCT = "G36QQNFV-DEMO"
 # real demo product. is_aimed reads the argument values, so the traversal separates them.
 AIM = re.compile(r"\.\./token")
 
+# The file kind draws the witness for planting, which also mounts it at /opt/marker.dat (no tool
+# reads it); the builder serves it at the /token route the traversal reaches.
 WITNESS = Place(
     id=WITNESS_ID,
     family="rest_token_endpoint",
     reaches=frozenset({"arbitrary_read"}),
-    kind=PlaceKind.FILE,  # a nonce carrier only; the builder places the nonce in the /token route
+    kind=PlaceKind.FILE,
     coordinates=Coordinates(PlaceKind.FILE, path="/opt/marker.dat"),
 )
 HOST = PlantingHost(

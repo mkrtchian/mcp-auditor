@@ -1,11 +1,12 @@
 # Fix-check-only witness host for CVE-2026-19956 (gomarble-ai/facebook-ads-mcp-server): the
 # out-of-host target attacker.example.test the vulnerable fetch_pagination_url follows. It holds
 # WITNESS_NONCE at the place the flaw reaches and serves it as a JSON page (the server calls
-# response.json()) for any request, echoing nothing of the request. It is never built or started by
-# a nuisance command: the stand-in those commands launch for graph.facebook.com is
-# Dockerfile.facebook-ads-responder. The certificate is its own, self-signed at build for
-# attacker.example.test only, outside the fixture authority: the fix check reads it from the built
-# image and trusts it on its own launch alone, through REQUESTS_CA_BUNDLE.
+# response.json()) for any request, echoing nothing of the request. It is built and started by the
+# CVE-2026-19956 fix check only, never by a nuisance holdout run, the vet or the nuisance gate: the
+# stand-in those three launch for graph.facebook.com is Dockerfile.facebook-ads-responder. The
+# certificate is its own, self-signed at build for attacker.example.test only, outside the fixture
+# authority: the fix check reads it from the built image and trusts it on its own launch alone,
+# through REQUESTS_CA_BUNDLE.
 FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 
 RUN apk add --no-cache openssl \

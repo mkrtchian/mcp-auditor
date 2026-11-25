@@ -17,9 +17,9 @@ responder's two answers elsewhere. It is not the server and carries neither flaw
 The patched build only lets a request through to a public-range address, so the benign call needs
 the responder on one, while the redirect has to land on a private one for the patched build to block
 it. The responder and the server therefore both join two closed bridges (no route to the host or the
-Internet), the backend's public one and a private one of this fixture, at the same per-launch host
-number on each. The server's upstream is overridden to the public address with a `-e`, which wins
-over the image's baked `ENV`.
+Internet), the backend's public one and a private one of this fixture, the responder at the same
+per-launch host number on each. The server's upstream is overridden to the public address with a
+`-e`, which wins over the image's baked `ENV`.
 """
 
 import re

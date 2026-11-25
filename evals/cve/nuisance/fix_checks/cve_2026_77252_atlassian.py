@@ -42,6 +42,8 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import LABEL, own_network_args
 
+# The coordinates are nominal: the builder hands the witness to its per-launch responder as
+# DEMO_SUMMARY, and no launch plants /secret.
 WITNESS = Place(
     id="atlassian-77252-secret",
     family="fix_check",

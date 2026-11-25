@@ -54,6 +54,8 @@ from evals.cve.planting import (
 )
 from evals.cve.planting_base import LABEL, own_network_args
 
+# The host is nominal: the builder writes the witness into its per-launch controller, at an
+# address drawn at each launch, never into the singleton.
 WITNESS = Place(
     id="jenkins-10276-internal",
     family="fix_check",

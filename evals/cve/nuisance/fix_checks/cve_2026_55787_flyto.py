@@ -1,9 +1,9 @@
 """flyto-core fix-check fixtures: the five counted flaws of the SSRF server, also the server of a
-holdout target (nb08).
+holdout target (CVE-2026-55787).
 
-Transcribed from the validated nb08 fix-check driver. Four flaws reach an internal fetch and are
-SSRF (CWE-918); one reads an out-of-scope environment secret. Each flaw's fix teaches the guard one
-more case, so its exploit is refused once that version lands:
+Transcribed from the fix-check driver its admission validated. Four flaws reach an internal fetch
+and are SSRF (CWE-918); one reads an out-of-scope environment secret. Each flaw's fix teaches the
+guard one more case, so its exploit is refused once that version lands:
   - CVE-2026-55787 (fixed 2.26.3): execute_module http.get to an IPv4-mapped IPv6 literal
     [::ffff:127.0.0.1] that the vulnerable guard does not canonicalise. builder ssrf_env.
   - CVE-2026-67428 (fixed 2.26.7): the unguarded core.api.http_get module fetches 127.0.0.1
@@ -17,10 +17,11 @@ more case, so its exploit is refused once that version lands:
     output_files. builder command_injection_env, which plants the env witness.
 
 vulnerable_service builds 2.26.2 (pre-fix for all five). patched_service builds each flaw's own
-first-fixing version; server_patched_service builds the server's shipped 2.28.0 when it postdates
-that fix, and is None for CVE-2026-73530 (first fixed at 2.28.0 itself). Both patched arms postdate
-each flaw's fix, so patched_surfaces is false for all five and server_patched_surfaces is false for
-the four earlier flaws, null for 73530.
+first-fixing version, so patched_surfaces is false for all five. server_patched_service builds the
+server's shipped 2.28.0, the run image, and is None for CVE-2026-73530, first fixed at 2.28.0
+itself. For CVE-2026-67427 that arm tests nothing: the run image seeds no nb08leak2 recipe, so the
+exploit finds no recipe to run. For CVE-2026-67424 it is open whether the arm reaches the redirect,
+since the run image sets no FLYTO_ALLOWED_HOSTS.
 
 The four internal_fetch flaws each count one tool, run_recipe, which reaches the same http.get
 sink through the shipped http-get recipe (recipes/http-get.yaml, whose http.get step fetches the
@@ -108,15 +109,16 @@ def _run_recipe_fetch(url: str) -> FixCheckExploit:
 
 
 async def _uppercase(places: Places, client: KitClient) -> None:
-    # The admission's execute_module call (rule v4): an in-process string module, no fetch.
+    # The admission's execute_module call (nuisance suite rule v4): an in-process string module, no
+    # fetch.
     await client.call_tool(
         "execute_module", {"module_id": "string.uppercase", "params": {"text": "hello"}}
     )
 
 
 async def _json_to_csv(places: Places, client: KitClient) -> None:
-    # The admission's run_recipe call (rule v4): the recipe the package ships, on the example
-    # data of data.json_to_csv, so no recipe is seeded in any image the run builds.
+    # The admission's run_recipe call (nuisance suite rule v4): the recipe the package ships, on the
+    # example data of data.json_to_csv, so no recipe is seeded in any image the run builds.
     await client.call_tool(
         "run_recipe",
         {

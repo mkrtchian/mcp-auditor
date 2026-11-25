@@ -13,7 +13,8 @@ error object.
 
 The server's own CVE-2025-67364 (an unfixed symlink-traversal read, read_outside_scope) is not
 a FixCheckFixture: both admission records found its witness still surfaces on the patched arm, so
-it never counts (nuisance_counting._counts), and it is logged only in the admission's FlawRecord.
+it never counts (evals.cve.nuisance.counting._counts), and it is logged only in the admission's
+FlawRecord.
 """
 
 import re

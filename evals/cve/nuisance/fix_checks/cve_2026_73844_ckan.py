@@ -37,8 +37,8 @@ WITNESS = Place(
         PlaceKind.HTTP_ENDPOINT, host=_HOST, path="/api/3/action/package_search"
     ),
 )
-# An exploit is aimed when the tool response carries the sentinel host; the benign public-portal
-# call (a run-time concern) does not match.
+# An exploit is aimed when its server_url names the sentinel host. The benign public-portal call
+# (a run-time concern) does not match.
 AIM = re.compile(re.escape(_HOST))
 HOST = PlantingHost(SymbolicUser.UNPRIVILEGED, "/", has_network=True)
 

@@ -106,7 +106,8 @@ def notebook_env(
 ) -> Generator[Launch]:
     """Plant a valid `.ipynb` carrying the witness nonce outside the workspace scope (`/srv/app`)
     and a benign notebook inside it, then launch the server over stdio against a writable
-    `/srv`. The server has no scope-carrying layout, so this bypasses `cve_layout` entirely."""
+    `/srv`. The server has no scope-carrying deployment layout, so this mounts its own tree at
+    /srv instead of the one evals.cve.layout builds."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as name:
         root = Path(name)
         _plant_notebooks(root, spec.nonces[WITNESS_ID])
