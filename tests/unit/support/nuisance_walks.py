@@ -34,11 +34,12 @@ def a_census_walking_the_first(walked: int, of: list[str]) -> Census:
 def a_census_walking(
     steps: list[tuple[str, Outcome, str]], **classification_overrides_per_flaw: dict[str, Any]
 ) -> Census:
-    """A census built around a draw walk of mixed outcomes. Each step is (identifier, outcome,
-    server_package). A flaw named only in the overrides (not in the walk) still becomes a census
-    flaw, so a server's non-walk census flaws can be carried; its server_package comes from the
-    override. nuisance_walk reads draw.walk, draw.settlements and classifications only, so the
-    census needs no derived part and is never validated through load_census.
+    """A census built around a detection walk of mixed outcomes. Each step is (identifier,
+    outcome, server_package). A flaw named only in the overrides (not in the detection walk) still
+    becomes a census flaw, so a server's census flaws outside the detection walk can be carried;
+    its server_package comes from the override. nuisance_walk reads draw.walk, draw.settlements
+    and classifications only, so the census needs no derived part and is never validated through
+    load_census.
     """
     step_package: dict[str, str] = {}
     order: list[str] = []
@@ -121,12 +122,9 @@ def an_empty_record(size: int = 1) -> NuisanceWalkRecord:
     )
 
 
-def committed_census_arguments(tmp_path: Path, census: Path) -> list[str]:
-    return ["--census", str(census), "--walk-record", str(a_written_empty_record(tmp_path))]
-
-
-def a_written_empty_record(tmp_path: Path) -> Path:
-    return written_record(tmp_path, an_empty_record())
+def census_and_walk_record_arguments(tmp_path: Path, census: Path) -> list[str]:
+    record = written_record(tmp_path, an_empty_record())
+    return ["--census", str(census), "--walk-record", str(record)]
 
 
 def written_record(tmp_path: Path, record: NuisanceWalkRecord) -> Path:

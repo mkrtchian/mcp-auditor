@@ -22,7 +22,7 @@ def test_walk_prints_the_population_and_exits_zero(
     exit_code = run_nuisance.main(
         [
             "walk",
-            *walks.committed_census_arguments(tmp_path, path),
+            *walks.census_and_walk_record_arguments(tmp_path, path),
             "--admission",
             str(missing),
         ]
@@ -82,7 +82,7 @@ def test_a_malformed_census_exits_three(tmp_path: Path):
     exit_code = run_nuisance.main(
         [
             "walk",
-            *walks.committed_census_arguments(tmp_path, path),
+            *walks.census_and_walk_record_arguments(tmp_path, path),
             "--admission",
             str(missing),
         ]
@@ -125,7 +125,7 @@ def test_run_with_no_admitted_server_exits_zero_and_says_so(
     path = tmp_path / "absent.json" if admitted is None else admissions.written(tmp_path, admitted)
 
     exit_code = run_nuisance.main(
-        ["run", *walks.committed_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["run", *walks.census_and_walk_record_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     assert exit_code == 0
@@ -143,7 +143,7 @@ def test_run_refuses_tracing_before_reading_the_admission(
     exit_code = run_nuisance.main(
         [
             "run",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--admission",
             str(malformed),
         ]
@@ -163,7 +163,7 @@ def test_run_on_a_stale_admission_exits_three_naming_it(
     path = admissions.written(tmp_path, stale)
 
     exit_code = run_nuisance.main(
-        ["run", *walks.committed_census_arguments(tmp_path, census), "--admission", str(path)]
+        ["run", *walks.census_and_walk_record_arguments(tmp_path, census), "--admission", str(path)]
     )
 
     out = capsys.readouterr().out

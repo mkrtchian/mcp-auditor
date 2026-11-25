@@ -29,7 +29,7 @@ def a_walk_with_a_queue_server(
         both = admission.model_copy(update={"servers": [*admission.servers, *queued.servers]})
         admission_path = admissions.written(tmp_path, both)
     return [
-        *walks.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
+        *walks.census_and_walk_record_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

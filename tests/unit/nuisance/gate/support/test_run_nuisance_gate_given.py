@@ -86,7 +86,7 @@ def _arguments_with_a_report(
 
 def gate_arguments(tmp_path: Path, census: Census, admission_path: Path) -> list[str]:
     return [
-        *walks.committed_census_arguments(tmp_path, censuses.written(tmp_path, census)),
+        *walks.census_and_walk_record_arguments(tmp_path, censuses.written(tmp_path, census)),
         "--admission",
         str(admission_path),
     ]

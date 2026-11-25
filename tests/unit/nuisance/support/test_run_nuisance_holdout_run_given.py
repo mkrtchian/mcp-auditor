@@ -20,14 +20,14 @@ from tests.unit.support.holdout_run_conditions import ready_conditions
 
 
 def a_run_command(tmp_path: Path, admission: NuisanceAdmission | None = None) -> list[str]:
-    """The `run` arguments of a census with a draw walk, an empty walk record and `admission`, by
-    default the admission of one fully recorded server."""
+    """The `run` arguments of a census with a detection walk, an empty walk record and
+    `admission`, by default the admission of one fully recorded server."""
     census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
     admitted = admissions.written(tmp_path, admission or admissions.an_admission())
     report = tmp_path / "nuisance_report.json"
     return [
         "run",
-        *walks.committed_census_arguments(tmp_path, census),
+        *walks.census_and_walk_record_arguments(tmp_path, census),
         "--admission",
         str(admitted),
         "--report",

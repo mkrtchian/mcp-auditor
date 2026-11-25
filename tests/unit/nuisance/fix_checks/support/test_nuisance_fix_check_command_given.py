@@ -91,7 +91,7 @@ def a_result_matching(record: FixCheckRecord, **overrides: Any) -> FixCheckResul
 
 
 def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> list[str]:
-    """The `fix-check` arguments of a census with a draw walk, an empty walk record and
+    """The `fix-check` arguments of a census with a detection walk, an empty walk record and
     `admission`, written to a file, or a path to no file when it is None."""
     census = censuses.written(tmp_path, census_draws.a_census_with_draw(census_draws.a_draw()))
     admitted = (
@@ -99,7 +99,7 @@ def a_fix_check_command(tmp_path: Path, admission: NuisanceAdmission | None) -> 
     )
     return [
         "fix-check",
-        *walks.committed_census_arguments(tmp_path, census),
+        *walks.census_and_walk_record_arguments(tmp_path, census),
         "--admission",
         str(admitted),
     ]

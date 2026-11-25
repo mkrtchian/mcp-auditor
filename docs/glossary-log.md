@@ -122,6 +122,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `NuisanceCensus` (the census with the walk record) | `WalkInputs` | rename | 2026-11-11 |
 | nuisance rule (`docs/nuisance-rule.md`), nuisance log (`docs/nuisance-log.md`) | nuisance suite rule (`docs/nuisance-suite-rule.md`), nuisance suite log (`docs/nuisance-suite-log.md`) | rename | 2026-11-11 |
 | nuisance run (ADR 034, nuisance suite rule v1 to v6, logs, plans, code: a run of the nuisance holdout layer) | nuisance holdout run | rename | 2026-11-21 |
+| `nuisance_walks.committed_census_arguments` | `census_and_walk_record_arguments` | rename | 2026-11-25 |
 | oracle (ADR 015, CLAUDE.md: the grader of any instrument, the ground truth on the honeypot suite) | grader: the ground truth, the labels. "Oracle" now names only the detection suite's grader. | moved meaning | 2026-11-11 |
 | oracle version (ADR 016, ADR 020: on the honeypot suite) | ground truth fingerprint | rename | 2026-09-25 |
 | oracle version (plans: on the CVE benchmark) | grammar fingerprint | rename | 2026-09-28 |

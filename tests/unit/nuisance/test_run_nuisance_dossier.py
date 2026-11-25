@@ -18,7 +18,7 @@ def test_nuisance_dossier_writes_and_exits_zero(tmp_path: Path, capsys: pytest.C
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -40,7 +40,7 @@ def test_nuisance_dossier_with_a_backend_writes_and_exits_zero(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -63,7 +63,7 @@ def test_nuisance_dossier_with_an_unknown_backend_exits_three(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--out",
@@ -87,7 +87,7 @@ def test_nuisance_dossier_on_an_unknown_server_exits_three(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--server",
             "npm:ghost",
             "--out",
@@ -148,7 +148,7 @@ def test_a_re_admission_dossier_without_an_admission_exits_three(
     exit_code = run_nuisance.main(
         [
             "nuisance-dossier",
-            *walks.committed_census_arguments(tmp_path, census),
+            *walks.census_and_walk_record_arguments(tmp_path, census),
             "--server",
             "npm:@acme/files",
             "--re-admission",
