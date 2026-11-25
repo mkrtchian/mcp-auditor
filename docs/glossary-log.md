@@ -11,8 +11,6 @@ Some older words are kept on purpose in living code and data, since changing the
 | Older word | Current term | Kind | Date |
 |---|---|---|---|
 | `a_committed_server_with_a_holdout_copy` | `a_committed_server_with_a_holdout_calibration_copy` | rename | 2026-11-23 |
-| `a_counted_target_whose_exploit_misses`, `a_counted_target_whose_tools_list_breaks` (the calibration check givens whose launches are counted) | `a_target_whose_exploit_misses_counting_launches`, `a_target_whose_tools_list_breaks_counting_launches` | rename | 2026-11-25 |
-| `a_holdout_copy_without_its_fingerprint` | `a_holdout_calibration_copy_without_its_fingerprint` | rename | 2026-11-25 |
 | acceptance gate (ADR 006, the end-to-end eval as the gate of the whole system) | no successor: a role ADR 015 took away from the honeypot suite, which is now a regression guard gated by the honeypot gate | retired | 2026-09-21 |
 | acceptance gate (ADR 024, ADR 030, the detection rule, CONTRIBUTING) | detection gate | rename | 2026-11-11 |
 | acceptance gate (nuisance plans: the nuisance suite's gate) | nuisance gate | rename | 2026-11-11 |
