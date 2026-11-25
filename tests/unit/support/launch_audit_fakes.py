@@ -50,18 +50,7 @@ class _FakeGraph:
         return {"audit_report": await self.graphs.invocation(self.server)}
 
 
-def graph_calling(lost_calls: int) -> FakeGraphs:
-    """Each audit sends `lost_calls` calls to the server, then returns a report."""
-
-    async def call(server: AuditedServer) -> AuditReport:
-        for _ in range(lost_calls):
-            await server.attempt(_READ, _A_PAYLOAD)
-        return grammar.a_report()
-
-    return FakeGraphs(call)
-
-
-def graph_reporting_its_relaunches(calls: int) -> FakeGraphs:
+def graph_calling(calls: int) -> FakeGraphs:
     """Each audit sends `calls` calls to the server, then returns a report holding the relaunches
     they led to, as the graph records them."""
 

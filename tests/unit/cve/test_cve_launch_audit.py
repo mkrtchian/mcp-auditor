@@ -96,7 +96,7 @@ async def test_the_graph_reads_the_server_command_without_the_added_name():
 async def test_an_audit_carries_the_exchanges_after_which_the_server_was_relaunched():
     connect = launch_audit_fakes.FakeConnect(launch_audit_fakes.a_noisy_client())
     auditor = launch_audit_fakes.an_auditor(
-        graphs=launch_audit_fakes.graph_calling(lost_calls=1), connect=connect
+        graphs=launch_audit_fakes.graph_calling(1), connect=connect
     )
 
     audit = await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
@@ -116,7 +116,7 @@ async def test_a_relaunch_that_failed_takes_the_server_as_down():
 async def test_a_relaunch_that_failed_after_the_last_call_takes_the_server_as_down():
     connect = launch_audit_fakes.FakeConnect(launch_audit_fakes.a_client_whose_relaunch_fails())
     auditor = launch_audit_fakes.an_auditor(
-        graphs=launch_audit_fakes.graph_reporting_its_relaunches(1), connect=connect
+        graphs=launch_audit_fakes.graph_calling(1), connect=connect
     )
 
     with pytest.raises(ServerTakenAsDown):
@@ -189,12 +189,12 @@ async def test_an_audit_carries_the_exchanges_and_the_health_of_a_noisy_server()
         launch_audit_fakes.a_noisy_client(non_protocol_lines=2)
     )
     auditor = launch_audit_fakes.an_auditor(
-        graphs=launch_audit_fakes.graph_calling(lost_calls=1), connect=connect
+        graphs=launch_audit_fakes.graph_calling(1), connect=connect
     )
 
     audit = await audit_launch(A_LAUNCH, auditor, THE_LAUNCH_OWN)
 
-    assert audit.health == ServerHealth(2, 1)
+    assert audit.health == ServerHealth(2, 1, relaunches=1)
     [(name, _, response)] = audit.exchanges
     assert (name, response.content) == ("read", "Connection closed")
 

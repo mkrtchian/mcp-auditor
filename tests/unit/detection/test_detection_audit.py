@@ -68,7 +68,7 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
     outcome = await attempt_once(a_target_launching(), in_session(auditor), {})
 
     assert isinstance(outcome, GradedAudit)
-    assert outcome.health == ServerHealth(2, 1)
+    assert outcome.health == ServerHealth(2, 1, relaunches=1)
     assert f"{TARGET.flaw_id}: server connection lost on 1 call(s)" in output.getvalue()
 
 
