@@ -23,7 +23,7 @@ peaks at 89 threads under `get pods`, `get namespaces` and `get nodes`, well und
 and holds about 410 MiB. The control plane's state changes with the auditor's calls, so each launch
 stands its own and removes it with its server.
 
-This module imports nothing of `mcp_auditor`: the re-admission dossier copies its import closure.
+This module imports nothing of `mcp_auditor`: both admission dossiers copy its import closure.
 """
 
 import secrets
