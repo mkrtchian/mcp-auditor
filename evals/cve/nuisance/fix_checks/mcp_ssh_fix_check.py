@@ -13,10 +13,10 @@ The fix check stands its own OpenSSH sshd (the backend's image, `stood_sshd`) on
 network under the Hostname the README's `Host production` entry names, never the run singleton, and
 reaps it with the network. Every server image of the fix check carries that entry and its key, and
 the launch mounts the sshd's host keys as the caller's known_hosts, as the README's section 5
-connection test writes it. The witness is one file mounted into the server container with the
-per-run nonce; the injected command reads it. The benign calls drive the three counted tools
-against the sshd at `production` on every version: 1.0.3 and 1.0.4 call ssh with no host-key option
-and find the key in known_hosts, 1.3.4 and 1.3.5 pass `StrictHostKeyChecking=accept-new`.
+connection test writes it. One file mounted into the server container holds the launch's witness,
+and the injected command reads it. The benign calls drive the three counted tools against the sshd
+at `production` on every version: 1.0.3 and 1.0.4 call ssh with no host-key option and find the key
+in known_hosts, 1.3.4 and 1.3.5 pass `StrictHostKeyChecking=accept-new`.
 """
 
 import os
@@ -101,7 +101,7 @@ def _call(tool: str, args: dict[str, object]) -> FixCheckExploit:
 _BENIGN_CALLS = tuple(_call(tool, args) for tool, args in _BENIGN_ARGS)
 
 
-def target(
+def fix_check_fixture(
     flaw: str,
     aim: re.Pattern[str],
     injection: Injection,
@@ -153,10 +153,10 @@ def server_args(image: str, sshd: StoodSshd, witness_file: str) -> list[str]:
     ]  # fmt: skip
 
 
-def _write_witness(nonce: str) -> str:
+def _write_witness(witness: str) -> str:
     descriptor, path = tempfile.mkstemp(prefix="mcp-ssh-witness-")
     with os.fdopen(descriptor, "w") as handle:
-        handle.write(nonce)
+        handle.write(witness)
     os.chmod(path, 0o644)  # the server reads it as the unprivileged account
     return path
 

@@ -6,7 +6,7 @@ calls request with an ordinary n8n API answer, and with a 302 to the sentinel wh
 marks: any request whose target or body carries `MARKER` (CVE-2026-44694, the API client follows
 it), an audit request whose body names the `AUDIT_MARKER` risk category (the audit tool takes no
 free text), and a webhook path `/webhook/r/<host>/<rest>` (GHSA-8g7g, the trigger follows it). A
-network holder joins the sentinel (serving the per-launch nonce on loopback) and the stand-in
+network holder joins the sentinel (serving the launch's witness on loopback) and the stand-in
 (bound on a public-looking TEST-NET-3 address) into one namespace that the server joins via
 `--network container:<holder>`, so the server's SSRF guard passes the stand-in's origin and its
 redirect lands back on the sentinel. The stand-in logs every request to its stderr.
@@ -127,7 +127,7 @@ def http_place(place_id: str) -> Place:
 def ssrf_redirect_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    nonce = next(iter(spec.nonces.values()))
+    witness = next(iter(spec.nonces.values()))
     _build_stand_in_image()
     token = secrets.token_hex(4)
     holder = f"mcp-auditor-kit-n8n-h-{token}"
@@ -138,7 +138,7 @@ def ssrf_redirect_env(
             holder, [*no_network_args(), "--entrypoint", "sleep", SENTINEL_IMAGE, _HOLDER_SLEEP]
         )
         _add_public_address(holder)
-        _run_detached(sentinel, _sentinel_tail(holder, nonce))
+        _run_detached(sentinel, _sentinel_tail(holder, witness))
         _run_detached(stand_in, _stand_in_tail(holder))
         time.sleep(1.5)
         yield server_launch(holder, image)
@@ -183,11 +183,11 @@ def _add_public_address(holder: str) -> None:
     )  # fmt: skip
 
 
-def _sentinel_tail(holder: str, nonce: str) -> list[str]:
+def _sentinel_tail(holder: str, witness: str) -> list[str]:
     return [
         "--cap-add", "NET_BIND_SERVICE",
         "--network", f"container:{holder}",
-        "-e", f"FLAG={nonce}",
+        "-e", f"FLAG={witness}",
         "-e", f"SERVE_FILE={_SENTINEL_PATH}",
         "-e", f"BIND_ADDR={_SENTINEL_HOST}",
         SENTINEL_IMAGE,

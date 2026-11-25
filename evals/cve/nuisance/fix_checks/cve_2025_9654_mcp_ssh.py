@@ -10,14 +10,14 @@ vulnerable_service 1.0.3, patched_service 1.0.4, server_patched_service the run 
 import re
 
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import shell_injection, target
+from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import fix_check_fixture, shell_injection
 
 # An exploit is aimed when the hostAlias closes the ssh host string (`";`); the benign hostAlias
 # `production` carries none.
 AIM = re.compile(r'";')
 
 FIXTURES: tuple[FixCheckFixture, ...] = (
-    target(
+    fix_check_fixture(
         flaw="CVE-2025-9654",
         aim=AIM,
         injection=shell_injection,

@@ -198,7 +198,7 @@ _EXPLOITS_85626: tuple[FixCheckExploit, ...] = (
     _call("git_show", {"path": "/srv/app", "object": _ORDER_FILE_OPTION}),
 )
 
-T_53107 = FixCheckFixture(
+FIXTURE_53107 = FixCheckFixture(
     flaw="CVE-2025-53107",
     effect_class=FlawClass.COMMAND_EXECUTION,
     aim=re.compile(re.escape(f"cat {_SECRET_PATH}")),
@@ -212,7 +212,7 @@ T_53107 = FixCheckFixture(
     server_patched_service="git-mcp",
 )
 
-T_85626 = FixCheckFixture(
+FIXTURE_85626 = FixCheckFixture(
     flaw="CVE-2026-85626",
     effect_class=FlawClass.READ_OUTSIDE_SCOPE,
     aim=re.compile(f"--no-index|{re.escape(_ORDER_FILE_OPTION)}"),
@@ -226,4 +226,4 @@ T_85626 = FixCheckFixture(
     server_patched_service=None,
 )
 
-FIXTURES = (T_53107, T_85626)
+FIXTURES = (FIXTURE_53107, FIXTURE_85626)

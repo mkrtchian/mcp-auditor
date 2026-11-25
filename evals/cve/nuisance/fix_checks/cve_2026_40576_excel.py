@@ -8,11 +8,11 @@ path to the directories `--allow-dir` names, so it is the patched version under 
 `stdio --allow-dir /data`, the option the fix requires. Both flaws share the module and the
 patched image, and differ by their vulnerable release (0.1.7 and 0.1.8).
 
-The witness is the content of a workbook mounted read-only outside the allowed directory, with the
-nonce in A1 of its one sheet. Only the read tool returns cell content, so the other exploits are
-aimed at the same path and do not surface the nonce themselves. 1.0.0 renamed the tools: an
-exploit calls the 1.0.0 tool when the server lists it, else the 0.1.x tool it continues. The
-benign calls run on the seeded workbook and on workbooks they create under /data.
+The witness sits in A1 of the one sheet of a workbook mounted read-only outside the allowed
+directory. Only the read tool returns cell content, so the other exploits are aimed at the same
+path and do not surface the witness themselves. 1.0.0 renamed the tools: an exploit calls the 1.0.0
+tool when the server lists it, else the 0.1.x tool it continues. The benign calls run on the seeded
+workbook and on workbooks they create under /data.
 """
 
 import re
@@ -270,7 +270,7 @@ BENIGN_CALLS = (
 )
 
 
-def _target(flaw: str, vulnerable_service: str) -> FixCheckFixture:
+def _fixture(flaw: str, vulnerable_service: str) -> FixCheckFixture:
     return FixCheckFixture(
         flaw=flaw,
         effect_class=FlawClass.READ_OUTSIDE_SCOPE,
@@ -290,16 +290,16 @@ def _target(flaw: str, vulnerable_service: str) -> FixCheckFixture:
 def excel_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    """Mount a scratch workbook holding the nonce read-only outside the allowed directory and
+    """Mount a scratch workbook holding the witness read-only outside the allowed directory and
     launch the server over stdio, confined to /data when it is the patched image."""
     with tempfile.TemporaryDirectory(prefix="excel-witness-") as scratch:
-        witness = Path(scratch) / "witness.xlsx"
-        witness.write_bytes(workbook_holding(spec.nonces[WITNESS_ID], SHEET))
-        witness.chmod(0o644)
-        yield Launch(command="docker", args=_run_args(image, witness))
+        workbook = Path(scratch) / "witness.xlsx"
+        workbook.write_bytes(workbook_holding(spec.nonces[WITNESS_ID], SHEET))
+        workbook.chmod(0o644)
+        yield Launch(command="docker", args=_run_args(image, workbook))
 
 
-def _run_args(image: str, witness: Path) -> list[str]:
+def _run_args(image: str, workbook: Path) -> list[str]:
     server_args = PATCHED_LAUNCH if image == image_tag(PATCHED_SERVICE) else ["stdio"]
     return [
         "run",
@@ -311,13 +311,13 @@ def _run_args(image: str, witness: Path) -> list[str]:
         "/",
         *no_network_args(),
         "-v",
-        f"{witness}:{WITNESS_PATH}:ro",
+        f"{workbook}:{WITNESS_PATH}:ro",
         image,
         *server_args,
     ]
 
 
 FIXTURES = (
-    _target("CVE-2026-40576", "excel-017"),
-    _target("CVE-2026-85661", "excel-018"),
+    _fixture("CVE-2026-40576", "excel-017"),
+    _fixture("CVE-2026-85661", "excel-018"),
 )

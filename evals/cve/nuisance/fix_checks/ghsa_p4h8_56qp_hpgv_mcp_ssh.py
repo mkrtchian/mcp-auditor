@@ -10,14 +10,14 @@ server_patched_service is None: vulnerable_service 1.3.4, patched_service the ru
 import re
 
 from evals.cve.kit.fix_check import FixCheckFixture
-from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import option_injection, target
+from evals.cve.nuisance.fix_checks.mcp_ssh_fix_check import fix_check_fixture, option_injection
 
 # An exploit is aimed when the hostAlias supplies an ssh option (`-oProxyCommand=`); the benign
 # hostAlias `production` carries none.
 AIM = re.compile(r"-oProxyCommand=")
 
 FIXTURES: tuple[FixCheckFixture, ...] = (
-    target(
+    fix_check_fixture(
         flaw="GHSA-p4h8-56qp-hpgv",
         aim=AIM,
         injection=option_injection,
