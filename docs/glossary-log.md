@@ -78,6 +78,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | `figure`, `outside_figure` (nuisance report keys) | `holdout_nuisance_rate`, `exits` | rename | 2026-11-11 |
 | `FixCheckTarget` | `FixCheckFixture` (the nuisance fixture of a fix check) | rename | 2026-11-11 |
 | fixed (honeypot grid tag) | `improved`. "Fixed" now names a patched version where no exploit surfaces. | moved meaning | 2026-11-11 |
+| `fixture_sources._joined` (the Dockerfile continuation joiner) | `images.joined_instructions`, which the committed hostname checks call too | rename | 2026-11-25 |
 | flaw that sets the version, version-setting flaw | counted flaw | rename | 2026-11-11 |
 | fresh targets (ADR 015, ADR 028, README) | holdout targets | rename | 2026-11-11 |
 | `.github/workflows/cve-calibration.yml` | `.github/workflows/detection-calibration-check.yml` | rename | 2026-11-11 |

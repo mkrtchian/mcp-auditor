@@ -95,6 +95,18 @@ def dockerfile_instructions(path: Path) -> list[str]:
     return [line for line in lines if line and not line.startswith("#")]
 
 
+def joined_instructions(instructions: Sequence[str]) -> list[str]:
+    joined: list[str] = []
+    pending = ""
+    for line in instructions:
+        if line.endswith("\\"):
+            pending += f"{line[:-1]} "
+            continue
+        joined.append(pending + line)
+        pending = ""
+    return joined
+
+
 def unpinned_bases(instructions: Sequence[str]) -> list[str]:
     """A FROM naming an earlier stage of the same Dockerfile, or `scratch`, pulls nothing and
     needs no digest."""

@@ -9,7 +9,7 @@ from collections.abc import Collection, Iterable, Sequence
 from pathlib import Path
 
 from evals.cve.fixture_provenance import StandInRecord
-from evals.cve.images import base_and_stage
+from evals.cve.images import base_and_stage, joined_instructions
 
 _HTTP_CHECKSUM = re.compile(r"--checksum=sha256:[0-9a-f]{64}")
 _GIT_CHECKSUM = re.compile(r"--checksum=[0-9a-f]{40}")
@@ -22,7 +22,7 @@ def unsourced_copies(instructions: Sequence[str]) -> list[str]:
     documented form content nothing pins either."""
     problems: list[str] = []
     stages: set[str] = set()
-    for instruction in _joined(instructions):
+    for instruction in joined_instructions(instructions):
         words = instruction.split()
         keyword = words[0].upper()
         flags = [word for word in words[1:] if word.startswith("--")]
@@ -46,18 +46,6 @@ def _copy_problem(flags: Sequence[str], stages: Collection[str], instruction: st
     if source.lower() in stages or _PINNED_IMAGE.fullmatch(source):
         return ""
     return f"COPY from neither an earlier stage nor an image pinned by digest: {instruction}"
-
-
-def _joined(instructions: Sequence[str]) -> list[str]:
-    joined: list[str] = []
-    pending = ""
-    for line in instructions:
-        if line.endswith("\\"):
-            pending += f"{line[:-1]} "
-            continue
-        joined.append(pending + line)
-        pending = ""
-    return joined
 
 
 def _add_problem(source: str, flags: Sequence[str], instruction: str) -> str:

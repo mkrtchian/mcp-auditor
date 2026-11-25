@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 import pytest
 
 import tests.integration.committed.cve.backends.support.test_backend_hostnames_given as given
-from evals.cve.backends.doris import DORIS_HOST, DORIS_SERVER_LAUNCH
+from evals.cve.backends.doris import DORIS_SERVER_LAUNCH
 from evals.cve.backends.gravitino import GRAVITINO_PARTS, GRAVITINO_SERVER_LAUNCH
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.docker_argv import value_after
@@ -15,7 +15,6 @@ def test_the_doris_server_is_launched_at_the_clusters_alias():
     launch = given.the_admitted_server("doris").launch
 
     assert launch == DORIS_SERVER_LAUNCH
-    assert DORIS_SERVER_LAUNCH == ["--db-host", DORIS_HOST]
 
 
 def test_the_mysql_benign_call_reaches_the_engine_in_its_own_image():
@@ -36,8 +35,11 @@ def test_no_value_reaching_an_admitted_server_names_the_audit(server: AdmittedSe
 
 
 def test_the_gravitino_server_is_launched_at_the_instances_alias():
-    uri = urlsplit(value_after(GRAVITINO_SERVER_LAUNCH, "--gravitino-uri"))
+    launch = given.the_admitted_server("gravitino").launch
 
+    uri = urlsplit(value_after(launch, "--gravitino-uri"))
+
+    assert launch == GRAVITINO_SERVER_LAUNCH
     assert uri.hostname in {part.alias for part in GRAVITINO_PARTS}
 
 

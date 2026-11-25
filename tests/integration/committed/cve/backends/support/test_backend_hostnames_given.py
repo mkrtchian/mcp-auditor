@@ -6,7 +6,7 @@ from typing import Any, cast
 from evals.cve.backends.gravitino import GRAVITINO_PARTS, GravitinoPart
 from evals.cve.backends.gravitino_seed import GRAVITINO_SEED
 from evals.cve.docker_paths import DOCKER_DIRECTORY, image_dockerfile
-from evals.cve.images import dockerfile_instructions
+from evals.cve.images import dockerfile_instructions, joined_instructions
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from tests.unit.support.committed_nuisance_admission import the_committed_admission
 
@@ -64,7 +64,7 @@ def benign_argument_values(server: AdmittedServer) -> list[str]:
 
 def _env_values(dockerfile: Path) -> dict[str, str]:
     values: dict[str, str] = {}
-    for instruction in _joined_continuations(dockerfile_instructions(dockerfile)):
+    for instruction in joined_instructions(dockerfile_instructions(dockerfile)):
         keyword, _, rest = instruction.partition(" ")
         # case-sensitive: a heredoc body line such as `env = ...` is not an instruction
         if keyword != "ENV":
@@ -75,16 +75,6 @@ def _env_values(dockerfile: Path) -> dict[str, str]:
             continue
         values |= dict(word.split("=", 1) for word in words)
     return values
-
-
-def _joined_continuations(instructions: list[str]) -> Iterator[str]:
-    pending = ""
-    for line in instructions:
-        if line.endswith("\\"):
-            pending += line[:-1].strip() + " "
-            continue
-        yield pending + line
-        pending = ""
 
 
 def _strings(value: Any) -> Iterator[str]:
