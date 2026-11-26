@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `python -m evals.run_nuisance vet --gate` vets the nuisance gate's servers, the admitted nuisance acceptance servers, in place of the nuisance holdout run's, with the same rebuild, two passes and container hygiene. With none admitted it prints what `gate` prints and exits 0, and a `--server` outside the gate set exits 2 naming the set.
+
 ### Changed
 
 - The error for an unknown `MCP_AUDITOR_PROVIDER` lists the accepted providers.

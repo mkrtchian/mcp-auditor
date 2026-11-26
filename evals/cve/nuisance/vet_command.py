@@ -1,6 +1,7 @@
 """The `vet` subcommand of run_nuisance: rebuild the run's images and make each audited server's
 benign calls on the run's own launch path, with the run's container hygiene around them (Docker,
-no LLM). It finds a broken image or launch before an audit is paid for, and writes no result."""
+no LLM). The audited servers are a nuisance holdout run's, or under `--gate` the nuisance gate's.
+It finds a broken image or launch before an audit is paid for, and writes no result."""
 
 import argparse
 import asyncio
@@ -18,15 +19,24 @@ from evals.cve.holdout_conditions import HoldoutConditions, committed_conditions
 from evals.cve.images import ComposeImageStore
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.admission.unrecorded import unrecorded_fields
+from evals.cve.nuisance.admission.walk import nuisance_acceptance_servers
 from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.commands import (
     CRASHED_EXIT,
     NUISANCE_CONCURRENCY,
     UNKNOWN_SERVER_EXIT,
     add_committed_input_arguments,
+    committed_admission,
     committed_run_population,
+    committed_walk_inputs,
+    malformed_input_refused,
 )
 from evals.cve.nuisance.containers import rebuilt_run_images
+from evals.cve.nuisance.gate.gate_servers import (
+    gate_servers,
+    print_empty_gate,
+    print_unknown_gate_servers,
+)
 from evals.cve.nuisance.vetting import (
     LaunchedBenignCall,
     ServerLauncher,
@@ -78,6 +88,11 @@ def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> 
     parser.add_argument(
         "--server", action="append", default=[], help="vet only this server, repeatable"
     )
+    parser.add_argument(
+        "--gate",
+        action="store_true",
+        help="vet the nuisance gate's servers in place of the nuisance holdout run's",
+    )
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     parser.add_argument(
         "--tool-call-timeout",
@@ -89,18 +104,48 @@ def add_vet_arguments(parser: argparse.ArgumentParser, deps: VetCommandDeps) -> 
 
 
 def vet(args: argparse.Namespace, deps: VetCommandDeps) -> int:
+    if args.gate:
+        return _vet_gate_servers(args, deps)
+    return _vet_run_servers(args, deps)
+
+
+def _vet_run_servers(args: argparse.Namespace, deps: VetCommandDeps) -> int:
     committed = committed_run_population(args.census, args.walk_record, args.admission)
     if committed is None:
         print("no server is admitted")
         return 0
     _, population = committed
-    audited = population.audited
-    packages = [server.server_package for server in audited]
+    packages = [server.server_package for server in population.audited]
     unknown = [package for package in args.server if package not in packages]
     if unknown:
         print(f"not an audited server: {', '.join(unknown)}", file=sys.stderr)
         return UNKNOWN_SERVER_EXIT
-    servers = [s for s in audited if not args.server or s.server_package in args.server]
+    return _vet_selected(_selected(population.audited, args.server), args, deps)
+
+
+def _vet_gate_servers(args: argparse.Namespace, deps: VetCommandDeps) -> int:
+    with malformed_input_refused():
+        walk_inputs = committed_walk_inputs(args.census, args.walk_record)
+        admission = committed_admission(args.admission, walk_inputs)
+    servers = gate_servers(admission, nuisance_acceptance_servers(walk_inputs))
+    if not servers.audited:
+        print_empty_gate(servers.outside_gate)
+        return 0
+    gate_set = [server.server_package for server in servers.audited]
+    unknown = [package for package in args.server if package not in gate_set]
+    if unknown:
+        print_unknown_gate_servers(unknown, gate_set)
+        return UNKNOWN_SERVER_EXIT
+    return _vet_selected(_selected(servers.audited, args.server), args, deps)
+
+
+def _selected(servers: Sequence[AdmittedServer], packages: list[str]) -> list[AdmittedServer]:
+    return [server for server in servers if not packages or server.server_package in packages]
+
+
+def _vet_selected(
+    servers: list[AdmittedServer], args: argparse.Namespace, deps: VetCommandDeps
+) -> int:
     try:
         vet_deps = deps.vet_deps(_tool_call_timeout(args, deps.conditions), args.concurrency)
         result = asyncio.run(vet_servers(servers, vet_deps))

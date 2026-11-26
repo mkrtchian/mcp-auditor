@@ -200,3 +200,50 @@ def test_vet_without_an_admission_exits_zero_and_says_so(
 
     assert exit_code == 0
     assert "no server is admitted" in capsys.readouterr().out
+
+
+def test_the_gate_option_vets_the_nuisance_acceptance_server_and_no_holdout_one(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    host = docker_hosts.DockerHost()
+    harness = vets.VetHarness(vets.deps_on(host))
+    arguments = given.a_vet_of_one_server_beside_the_acceptance_one(tmp_path)
+
+    exit_code = run_nuisance.main([*arguments, "--gate"], harness.deps)
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert f"{given.ACCEPTANCE}: ok" in out
+    assert vets.SERVER not in out
+    assert "1 of 1 servers answer their benign calls" in out
+    assert host.rebuilt == ["acceptance-nuisance"]
+
+
+def test_the_gate_option_with_a_server_outside_the_gate_set_exits_two_naming_the_set(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    host = docker_hosts.DockerHost()
+    harness = vets.VetHarness(vets.deps_on(host))
+    arguments = given.a_vet_of_one_server_beside_the_acceptance_one(tmp_path)
+
+    exit_code = run_nuisance.main([*arguments, "--gate", "--server", vets.SERVER], harness.deps)
+
+    err = capsys.readouterr().err
+    assert exit_code == UNKNOWN_SERVER_EXIT
+    assert vets.SERVER in err
+    assert given.ACCEPTANCE in err
+    assert host.rebuilt == []
+
+
+def test_the_gate_option_with_no_nuisance_acceptance_server_admitted_exits_zero_and_says_so(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    host = docker_hosts.DockerHost()
+    harness = vets.VetHarness(vets.deps_on(host))
+    arguments = queue_walks.a_walk_with_a_queue_server(tmp_path, admitted=True)
+
+    exit_code = run_nuisance.main(["vet", *arguments, "--gate"], harness.deps)
+
+    assert exit_code == 0
+    assert "no nuisance acceptance server is admitted" in capsys.readouterr().out
+    assert host.rebuilt == []

@@ -5,7 +5,6 @@ import argparse
 import asyncio
 import dataclasses
 import functools
-import sys
 import traceback
 from collections.abc import Sequence
 from pathlib import Path
@@ -41,17 +40,20 @@ from evals.cve.nuisance.gate.gate_console import print_nuisance_gate_summary
 from evals.cve.nuisance.gate.gate_judged_cases_export import export_nuisance_gate_judged_cases
 from evals.cve.nuisance.gate.gate_report import (
     NuisanceGateReport,
-    outside_gate_line,
     render_markdown,
     server_lines,
 )
-from evals.cve.nuisance.gate.gate_servers import GateServers, gate_servers
+from evals.cve.nuisance.gate.gate_servers import (
+    GateServers,
+    gate_servers,
+    print_empty_gate,
+    print_unknown_gate_servers,
+)
 from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
     NuisanceGateSession,
 )
-from evals.cve.nuisance.results import ServerExit
 from evals.cve.run_files import write_report
 from evals.eval_display import console
 from evals.eval_session import Refused
@@ -80,12 +82,12 @@ def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:
         admission = committed_admission(args.admission, walk_inputs)
     servers = gate_servers(admission, nuisance_acceptance_servers(walk_inputs))
     if not servers.audited:
-        _print_empty_gate(servers.outside_gate)
+        print_empty_gate(servers.outside_gate)
         return 0
     gate_set = [server.server_package for server in servers.audited]
     unknown = [package for package in args.server if package not in gate_set]
     if unknown:
-        _print_unknown(unknown, gate_set)
+        print_unknown_gate_servers(unknown, gate_set)
         return UNKNOWN_SERVER_EXIT
     refuse_unrecorded(_selected(servers.audited, args.server), "nuisance gate refused")
     try:
@@ -97,24 +99,8 @@ def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:
         return CRASHED_EXIT
 
 
-def _print_unknown(unknown: list[str], gate_set: list[str]) -> None:
-    print(
-        f"unknown gate server: {', '.join(unknown)} (gate set: {', '.join(gate_set)})",
-        file=sys.stderr,
-    )
-
-
 def _selected(servers: list[AdmittedServer], packages: list[str]) -> list[AdmittedServer]:
     return [server for server in servers if not packages or server.server_package in packages]
-
-
-def _print_empty_gate(outside: list[ServerExit]) -> None:
-    if not outside:
-        print("no nuisance acceptance server is admitted")
-        return
-    print("no admitted nuisance acceptance server can run in the gate")
-    for server in outside:
-        print(f"- {outside_gate_line(server)}")
 
 
 def _run_gate(args: argparse.Namespace, servers: GateServers, deps: GateCommandDeps) -> int:
