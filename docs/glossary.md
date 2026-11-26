@@ -166,7 +166,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
   - An **unchecked credit** is one the replay could not check. It is kept and reported. A gate outcome that would change if it were struck is not comparable.
 - **replay**: sending the recorded calls of a detecting run again, without an LLM, to a fresh container of the patched version, to strike the credits it reproduces. It relaunches the patched version after the same calls as the run. Not: retest. Defined by: ADR 030, ADR 036.
 - **status**: what the oracle reports per target and run: detected, reached but judged pass (a nonce surfaced in a unit the judge ruled PASS), or missed.
-- **tools filter**: the set of tools a target's graded run on the acceptance layer audits, taken from its calibration exploits. A holdout run has none. Not: the user's `--tools`.
+- **tools filter**: the set of tools a graded run on an acceptance layer audits: a target's, taken from its calibration exploits, or, in the nuisance gate, a nuisance acceptance server's counted tools. A holdout run has none. Not: the user's `--tools`.
 - **measurement run**: a `--no-baseline` run that forces on every target the chain settings, tool call timeout or absence of tools filter its flags name, and reports usage and cost. It never gates.
 - **survey**: a no-LLM mode that plants every candidate place a target could reach and prints what each version surfaces, to choose the kept places.
 - **preflight**: the Docker check before any mode: the daemon, closed-network support, and the expected images, rebuilt when stale. Not: pre-run check.
@@ -203,7 +203,7 @@ A holdout number can be trusted because its rule is pre-registered, its flaws co
 - **split flaw**: the one flaw through which a server counts in the split by cutoff side: its first flaw of the draw order that still has a counted tool. The server takes this flaw's side and is flagged for the split only through this flaw's counted tools. A server with no split flaw leaves the split. Code: `split_flaw`, `split_disclosure_date` in a run result and its report. Defined by: nuisance suite rule (Run conditions and statistic).
 - **raw count**: per server and run, every test case and chain judged FAIL, on every tool and in every category. It is **report-only**: a report prints it, and nothing compares it.
 - **exit**: a reason a server is outside the holdout nuisance rate, such as a flaw never fixed or no counted tool left. Code: `exits` in the admission file (`evals/nuisance_admission.json`), `ExitReason`. Not: not run.
-- **nuisance gate**: the gate of the nuisance acceptance layer. A nuisance acceptance server flagged in no run of the confirmed baseline is gated, and an alarm on it is retested.
+- **nuisance gate**: the gate of the nuisance acceptance layer. It audits each server's counted tools, its tools filter. A nuisance acceptance server flagged in no run of the confirmed baseline is gated, and an alarm on it is retested. A run under `--no-tools-filter` audits every tool and is report-only: it reads no baseline and gates nothing.
 
 ## Fixtures and their infrastructure
 
@@ -260,4 +260,4 @@ Each sense is defined above or by its gloss here. Write the qualified form.
 - **run**: an instrument run (one invocation), or a repetition (one of the `--runs` passes inside an instrument run).
 - **scope**: a target's scope (the checkout), the root a tool declares, or the scope of the detection acceptance layer (a flaw out of it is a census flaw the layer reports with its reason and has no target for, since no tool response shows its effect or its target was dropped for keeping no place). Code: `OUT_OF_SCOPE_FLAWS`, `out_of_scope` in a detection report.
 - **step**: chain step, walk step (one stage a reached flaw goes through in a walk), calibration step (one stage of the detection walk's calibration at the draw, an addition, a replacement or a re-walk: the calibration of its candidates, second calibrations included, or the check of their cards), or census step (one stage of building the census, such as the collection, the recall or the classification). A model call is not a step.
-- **tools filter**: the user's `--tools`, or a target's tools filter.
+- **tools filter**: the user's `--tools`, or the tools filter of a target or of a nuisance acceptance server.

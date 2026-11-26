@@ -155,7 +155,7 @@ Some older words are kept on purpose in living code and data, since changing the
 | replay the corpus (ADR 019, the model probe, `evals/probe_method.md`) | send the corpus | rename | 2026-11-11 |
 | replayed walk | re-walk | rename | 2026-11-11 |
 | replays its exploits (the calibration in CI) | runs its exploits | rename | 2026-11-11 |
-| report-only (ADR 033, nuisance rule, nuisance log: said of a server outside the nuisance acceptance layer) | nuisance holdout server. "Report-only" now qualifies only a count that is reported and never compared. | moved meaning | 2026-11-11 |
+| report-only (ADR 033, nuisance rule, nuisance log: said of a server outside the nuisance acceptance layer) | nuisance holdout server. "Report-only" now qualifies only what a report prints and nothing compares: the raw count, or a nuisance gate run under `--no-tools-filter`. | moved meaning | 2026-11-11 |
 | report-only population | nuisance holdout layer | rename | 2026-11-11 |
 | report-only server | nuisance holdout server | rename | 2026-11-11 |
 | `reset_containers`, `backend_reset_containers` (a persistent backend's containers, removed by name when a nuisance command starts) | `containers_removed_by_name`, `backend_containers_removed_by_name` | rename | 2026-11-23 |
