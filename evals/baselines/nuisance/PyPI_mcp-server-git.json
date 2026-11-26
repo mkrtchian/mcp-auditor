@@ -1,0 +1,42 @@
+{
+  "server_package": "PyPI:mcp-server-git",
+  "status": "confirmed",
+  "conditions": {
+    "runs": 3,
+    "budget": 10,
+    "tools_filtered": true,
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5",
+    "judge_model": "claude-haiku-5-5",
+    "reasoning": "low",
+    "judge_reasoning": "low",
+    "chain_budget": 3,
+    "max_chain_steps": 3,
+    "tool_call_timeout": 60,
+    "grammar_fingerprint": "58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1",
+    "counter_fingerprint": "b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161"
+  },
+  "fixture_fingerprint": "8d5d15cb4ae5fb211cdbf8ae11c05bf04257aa7fba95066da9f20d1def94431a",
+  "retest_rule": {
+    "retests": 5,
+    "required": 4
+  },
+  "commit": "2faf3f9f786bbddab3fea75ccaa5e0bd706b524a",
+  "recorded_at": "2026-11-26T15:51:29.324467+00:00",
+  "runs": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "confirms": {
+    "commit": "2faf3f9f786bbddab3fea75ccaa5e0bd706b524a",
+    "recorded_at": "2026-11-26T15:26:21.834911+00:00"
+  },
+  "replaces": null,
+  "image_ids": {
+    "mcp-server-git": "sha256:afe9b471180177e3600603d6aaa3c16ac6ab454855d61c922b2f935c442d2891"
+  }
+}

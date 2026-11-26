@@ -1,0 +1,42 @@
+{
+  "server_package": "npm:@modelcontextprotocol/server-filesystem",
+  "status": "confirmed",
+  "conditions": {
+    "runs": 3,
+    "budget": 10,
+    "tools_filtered": true,
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5",
+    "judge_model": "claude-haiku-5-5",
+    "reasoning": "low",
+    "judge_reasoning": "low",
+    "chain_budget": 3,
+    "max_chain_steps": 3,
+    "tool_call_timeout": 60,
+    "grammar_fingerprint": "58afe8a1926bf5fbffa78146b6e7e35d5d5d27797332aea1c829a503cc3e33d1",
+    "counter_fingerprint": "b6d3dc662faf2fb24b2b91ff0f7c7941d6927a7303cfab952f2cf5b41af54161"
+  },
+  "fixture_fingerprint": "9fbc36253f0055256e56d7e52ae9c88013380ee7c80dc40bfd34d99291f9efb2",
+  "retest_rule": {
+    "retests": 5,
+    "required": 4
+  },
+  "commit": "2faf3f9f786bbddab3fea75ccaa5e0bd706b524a",
+  "recorded_at": "2026-11-26T15:51:29.324467+00:00",
+  "runs": [
+    true,
+    true,
+    false,
+    true,
+    true,
+    true
+  ],
+  "confirms": {
+    "commit": "2faf3f9f786bbddab3fea75ccaa5e0bd706b524a",
+    "recorded_at": "2026-11-26T15:26:21.834911+00:00"
+  },
+  "replaces": null,
+  "image_ids": {
+    "server-filesystem": "sha256:62774d791242abc358b2cd543c2825a0b25047e3338698ff8f301bc5deb7947e"
+  }
+}

@@ -71,7 +71,7 @@ Four instruments measure the auditor, each told apart by the servers it runs and
 | Honeypot suite | 3 servers written for this project, with planted flaws | a regression guard, which gates the build on main | none |
 | Judge eval | judge cases drawn from honeypot and detection suite runs | a regression guard on the judge alone | none |
 | Detection suite | real servers pinned at a vulnerable version, 4 acceptance targets and 37 holdout targets | a regression gate on the acceptance layer, a capability claim on the holdout layer | holdout detection rate |
-| Nuisance suite | real servers at the first release that fixes every counted flaw, 65 nuisance holdout servers and 3 nuisance acceptance servers | a regression gate on the acceptance layer (no baseline is recorded yet), a bound on the alarms raised on the tools of a fixed flaw on the holdout layer | holdout nuisance rate |
+| Nuisance suite | real servers at the first release that fixes every counted flaw, 65 nuisance holdout servers and 3 nuisance acceptance servers | a regression gate on the acceptance layer, a bound on the alarms raised on the tools of a fixed flaw on the holdout layer | holdout nuisance rate |
 
 The honeypot metrics are not published as a measure of quality: a regression guard licenses no quality claim, and the set could not carry one anyway. With 8 expected positives, one false positive moves a run's precision by about 0.11, and the metric has three or four reachable values near any bar set on it.
 
