@@ -1552,3 +1552,12 @@ services:
       labels:
         org.mcp-auditor.dockerfile-fingerprint: "55c169a7db295b355343326b19287d2059580cb0c87acb062ec3535ce9fe1b36"
     image: mcp-auditor-cve-mcp-ssh-sshd:local
+
+  mcp-server-git:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-server-git
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "c87cd28f376e4b2ef7f0119a7f0324fd522e9691ed0802ae2a6d29cb86dff3e9"
+    image: mcp-auditor-nuisance-mcp-server-git:local
+    profiles: ["nuisance"]

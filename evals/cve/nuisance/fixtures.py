@@ -23,6 +23,7 @@ from evals.cve.nuisance.fix_checks import (
     cve_2025_54073_mcp_package_docs,
     cve_2025_59834_adb_mcp,
     cve_2025_67366_sylphxltd_filesystem,
+    cve_2025_68145_mcp_server_git,
     cve_2025_69256_serverless,
     cve_2025_69902_kubectl,
     cve_2026_0758_siri_shortcuts,
@@ -37,6 +38,7 @@ from evals.cve.nuisance.fix_checks import (
     cve_2026_18905_contextforge,
     cve_2026_19328_skill_ninja,
     cve_2026_19956_facebook_ads,
+    cve_2026_27735_mcp_server_git,
     cve_2026_35402_neo4j_cypher,
     cve_2026_40576_excel,
     cve_2026_41041_gravitino,
@@ -129,4 +131,6 @@ FIX_CHECK_FIXTURES: tuple[FixCheckFixture, ...] = (
     *cve_2026_82112_houtini.FIXTURES,
     *cve_2026_54561_memory_keeper.FIXTURES,
     *cve_2025_53109_server_filesystem.FIXTURES,
+    *cve_2025_68145_mcp_server_git.FIXTURES,
+    *cve_2026_27735_mcp_server_git.FIXTURES,
 )

@@ -1,0 +1,39 @@
+# PyPI:mcp-server-git fix-check-only image: the server pinned at 2025.12.18, the vulnerable arm of
+# CVE-2026-27735 (and its MinimOS repackaging MINI-mch8-8h85-3j5v). This image serves the fix check only,
+# never a run. gitpython is bounded to <3.1.58 because that flaw lives at the server's use of
+# GitPython's index.add, which GitPython confines to the work tree from 3.1.58 on (released
+# 2026-08-04): with a floating GitPython the flaw cannot be reproduced on the version the server
+# shipped against. The bound restores the vulnerable behaviour so the positive control passes; every
+# other transitive dependency floats, and mcp is bounded to <2 as the run image explains. Base pinned
+# by digest (python:3.12-slim-bookworm, whose Debian git package is 2.39.5).
+FROM python:3.12-slim-bookworm@sha256:44cf1793efa7c7a476bb0f2cff81443f4a072c90c1cb127e2924933daa3e8c64
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "mcp-server-git==2025.12.18" "mcp<2" "gitpython<3.1.58"
+
+RUN git config --system user.name "Project Maintainer" \
+ && git config --system user.email "maint@example.invalid" \
+ && git config --system init.defaultBranch main \
+ && git config --system safe.directory "*"
+
+# A git repository baked into the image, shadowed by the frozen /srv layout the fix check mounts.
+ENV GIT_AUTHOR_DATE="2026-02-01T00:00:00+0000" \
+    GIT_COMMITTER_DATE="2026-02-01T00:00:00+0000"
+RUN set -eu; \
+  mkdir -p /srv/app; cd /srv/app; \
+  git init -q -b main; \
+  printf 'widget inventory\nitem: alpha\nitem: bravo\n' > inventory.txt; \
+  git add inventory.txt; \
+  git commit -q -m "Add inventory listing"; \
+  git tag v0; \
+  printf 'item: charlie\n' >> inventory.txt; \
+  printf 'release notes line one\n' > notes.txt; \
+  git add notes.txt; \
+  chown -R 65534:65534 /srv
+ENV GIT_AUTHOR_DATE="" GIT_COMMITTER_DATE=""
+
+WORKDIR /
+ENTRYPOINT ["python", "-m", "mcp_server_git"]

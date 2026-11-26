@@ -29153,6 +29153,1211 @@
           "source": "the version build/dependencies.yaml of Kubernetes v1.37.2 names (also kubeadm's DefaultEtcdVersion at that release), read on 2026-11-13; the release tarball from github.com/etcd-io/etcd is checked against its SHA-256 (ADD --checksum)"
         }
       ]
+    },
+    {
+      "server_package": "PyPI:mcp-server-git",
+      "reaching_flaw": "CVE-2025-68143",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-68143",
+          "tools": [
+            {
+              "vulnerable_name": "git_init",
+              "patched_name": null,
+              "status": "removed",
+              "real_software": null,
+              "declared_function_is_effect": null
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "2025.9.25",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-68144",
+          "tools": [
+            {
+              "vulnerable_name": "git_diff",
+              "patched_name": "git_diff",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_checkout",
+              "patched_name": "git_checkout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2025.12.18",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "git_diff",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "target": "HEAD"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_checkout",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "main"
+              },
+              "expect": "Switched to branch",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-1d97298e0f40946ab5a327fc6ad7a746",
+            "exploit_calls": [
+              "git_checkout",
+              "git_diff"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-68145",
+          "tools": [
+            {
+              "vulnerable_name": "git_status",
+              "patched_name": "git_status",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_unstaged",
+              "patched_name": "git_diff_unstaged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_staged",
+              "patched_name": "git_diff_staged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff",
+              "patched_name": "git_diff",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_commit",
+              "patched_name": "git_commit",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_add",
+              "patched_name": "git_add",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_reset",
+              "patched_name": "git_reset",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_log",
+              "patched_name": "git_log",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_create_branch",
+              "patched_name": "git_create_branch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_checkout",
+              "patched_name": "git_checkout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_show",
+              "patched_name": "git_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_branch",
+              "patched_name": "git_branch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2025.12.18",
+          "patched_source": "advisory",
+          "launch_option": {
+            "option": "--repository",
+            "value": "/srv/app",
+            "reason": "the scope check (validate_repo_path) only enforces a boundary when the server is started with --repository; the documented launch sets it, and the counted behaviour is the enforcement of that boundary.",
+            "documentation": "README 'Using uvx': \"args\": [\"mcp-server-git\", \"--repository\", \"path/to/git/repo\"]; CLI: --repository/-r \"Git repository path\"."
+          },
+          "benign_calls": [
+            {
+              "tool": "git_status",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "On branch main",
+              "before": []
+            },
+            {
+              "tool": "git_diff_unstaged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_diff_staged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "release notes line one",
+              "before": []
+            },
+            {
+              "tool": "git_diff",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "target": "HEAD"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_commit",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "message": "Record staged changes"
+              },
+              "expect": "Changes committed successfully with hash",
+              "before": []
+            },
+            {
+              "tool": "git_add",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "files": [
+                  "."
+                ]
+              },
+              "expect": "Files staged successfully",
+              "before": []
+            },
+            {
+              "tool": "git_reset",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "All staged changes reset",
+              "before": []
+            },
+            {
+              "tool": "git_log",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "Add inventory listing",
+              "before": []
+            },
+            {
+              "tool": "git_create_branch",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "feature-work",
+                "base_branch": "main"
+              },
+              "expect": "Created branch",
+              "before": []
+            },
+            {
+              "tool": "git_checkout",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "main"
+              },
+              "expect": "Switched to branch",
+              "before": []
+            },
+            {
+              "tool": "git_show",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "revision": "v0"
+              },
+              "expect": "Add inventory listing",
+              "before": []
+            },
+            {
+              "tool": "git_branch",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_type": "local"
+              },
+              "expect": "main",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-d93ccf3aacc7ab6d577c16cd8206b35d",
+            "exploit_calls": [
+              "git_show",
+              "git_status",
+              "git_diff_unstaged",
+              "git_diff_staged",
+              "git_diff",
+              "git_log",
+              "git_reset",
+              "git_add",
+              "git_commit",
+              "git_create_branch",
+              "git_checkout",
+              "git_branch"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "tools": [
+            {
+              "vulnerable_name": "git_add",
+              "patched_name": "git_add",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_staged",
+              "patched_name": "git_diff_staged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2026.1.14",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "git_add",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "files": [
+                  "."
+                ]
+              },
+              "expect": "Files staged successfully",
+              "before": []
+            },
+            {
+              "tool": "git_diff_staged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "release notes line one",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-2b17781832dce9d76bef53fe1ab560f9",
+            "exploit_calls": [
+              "git_add",
+              "git_diff_staged"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "MINI-hc88-pj3p-hg9h",
+          "tools": [
+            {
+              "vulnerable_name": "git_init",
+              "patched_name": null,
+              "status": "removed",
+              "real_software": null,
+              "declared_function_is_effect": null
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "2025.9.25",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "MINI-pw8c-f933-247p",
+          "tools": [
+            {
+              "vulnerable_name": "git_diff",
+              "patched_name": "git_diff",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_checkout",
+              "patched_name": "git_checkout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2025.12.18",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "git_diff",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "target": "HEAD"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_checkout",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "main"
+              },
+              "expect": "Switched to branch",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-a2a727c2a464fad0f57164ca97f6c238",
+            "exploit_calls": [
+              "git_checkout",
+              "git_diff"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "MINI-42c5-m8rr-5442",
+          "tools": [
+            {
+              "vulnerable_name": "git_status",
+              "patched_name": "git_status",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_unstaged",
+              "patched_name": "git_diff_unstaged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_staged",
+              "patched_name": "git_diff_staged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff",
+              "patched_name": "git_diff",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_commit",
+              "patched_name": "git_commit",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_add",
+              "patched_name": "git_add",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_reset",
+              "patched_name": "git_reset",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_log",
+              "patched_name": "git_log",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_create_branch",
+              "patched_name": "git_create_branch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_checkout",
+              "patched_name": "git_checkout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_show",
+              "patched_name": "git_show",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_branch",
+              "patched_name": "git_branch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2025.12.18",
+          "patched_source": "fix_commit",
+          "launch_option": {
+            "option": "--repository",
+            "value": "/srv/app",
+            "reason": "the scope check (validate_repo_path) only enforces a boundary when the server is started with --repository; the documented launch sets it, and the counted behaviour is the enforcement of that boundary.",
+            "documentation": "README 'Using uvx': \"args\": [\"mcp-server-git\", \"--repository\", \"path/to/git/repo\"]; CLI: --repository/-r \"Git repository path\"."
+          },
+          "benign_calls": [
+            {
+              "tool": "git_status",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "On branch main",
+              "before": []
+            },
+            {
+              "tool": "git_diff_unstaged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_diff_staged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "release notes line one",
+              "before": []
+            },
+            {
+              "tool": "git_diff",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "target": "HEAD"
+              },
+              "expect": "item: charlie",
+              "before": []
+            },
+            {
+              "tool": "git_commit",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "message": "Record staged changes"
+              },
+              "expect": "Changes committed successfully with hash",
+              "before": []
+            },
+            {
+              "tool": "git_add",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "files": [
+                  "."
+                ]
+              },
+              "expect": "Files staged successfully",
+              "before": []
+            },
+            {
+              "tool": "git_reset",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "All staged changes reset",
+              "before": []
+            },
+            {
+              "tool": "git_log",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "Add inventory listing",
+              "before": []
+            },
+            {
+              "tool": "git_create_branch",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "feature-work",
+                "base_branch": "main"
+              },
+              "expect": "Created branch",
+              "before": []
+            },
+            {
+              "tool": "git_checkout",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_name": "main"
+              },
+              "expect": "Switched to branch",
+              "before": []
+            },
+            {
+              "tool": "git_show",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "revision": "v0"
+              },
+              "expect": "Add inventory listing",
+              "before": []
+            },
+            {
+              "tool": "git_branch",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "branch_type": "local"
+              },
+              "expect": "main",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-0bc6ad113cc398707c86ba2c909d8b41",
+            "exploit_calls": [
+              "git_show",
+              "git_status",
+              "git_diff_unstaged",
+              "git_diff_staged",
+              "git_diff",
+              "git_log",
+              "git_reset",
+              "git_add",
+              "git_commit",
+              "git_create_branch",
+              "git_checkout",
+              "git_branch"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "tools": [
+            {
+              "vulnerable_name": "git_add",
+              "patched_name": "git_add",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "git_diff_staged",
+              "patched_name": "git_diff_staged",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "read_outside_scope",
+          "patched_version": "2026.1.14",
+          "patched_source": "fix_commit",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "git_add",
+              "arguments": {
+                "repo_path": "/srv/app",
+                "files": [
+                  "."
+                ]
+              },
+              "expect": "Files staged successfully",
+              "before": []
+            },
+            {
+              "tool": "git_diff_staged",
+              "arguments": {
+                "repo_path": "/srv/app"
+              },
+              "expect": "release notes line one",
+              "before": []
+            }
+          ],
+          "backend_need": "none",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-228eee02a26e839d479494b6c14f1095",
+            "exploit_calls": [
+              "git_add",
+              "git_diff_staged"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/",
+        "has_network": false
+      },
+      "launch": [
+        "--repository",
+        "/srv/app"
+      ],
+      "service": "mcp-server-git",
+      "backend": null,
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-68143",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68143",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68143",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68144",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68144",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68144",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68145",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68145",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68145",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-hc88-pj3p-hg9h",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-hc88-pj3p-hg9h",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-hc88-pj3p-hg9h",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-pw8c-f933-247p",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-pw8c-f933-247p",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-pw8c-f933-247p",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-42c5-m8rr-5442",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-42c5-m8rr-5442",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-42c5-m8rr-5442",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "fix_check",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68144",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-68145",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-27735",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-pw8c-f933-247p",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-42c5-m8rr-5442",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "real_software",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "fixture",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": "CVE-2026-27735",
+          "field": "tools",
+          "value": "git_add and git_diff_staged (git_add from both records, git_diff_staged added)",
+          "reason": "git_diff_staged is listed as the tool that reveals the staged out-of-scope content, as context_get is for CVE-2026-54561; both tools are counted, each running a fixed git operation on the repository the launch declares (declared_function_is_effect false, as under CVE-2025-68145, which counts both already), so the count stays at twelve"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": "CVE-2026-27735",
+          "field": "fix_check",
+          "value": "the redone fix check on the bounded images (vulnerable_surfaces true, patched and server-patched false)",
+          "reason": "both records gave the positive control up under floating transitive dependencies, which resolve a GitPython that already confines index paths; the two images this flaw's fix check uses (Dockerfile.mcp-server-git-vuln and -patched), and only they, bound gitpython<3.1.58 (the one package the flaw needs, confined from 3.1.58 released 2026-08-04), so the vulnerable 2025.12.18 reproduces the traversal and the patched 2026.1.14 shows the server's own fix; the run image floats, a departure done at the vesting and logged"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "tools",
+          "value": "git_add and git_diff_staged (git_add from both records, git_diff_staged added)",
+          "reason": "identical to CVE-2026-27735, its upstream: git_diff_staged is the revealing tool, and both tools are counted already under MINI-42c5-m8rr-5442"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": "MINI-mch8-8h85-3j5v",
+          "field": "fix_check",
+          "value": "the redone fix check on the bounded images, as CVE-2026-27735",
+          "reason": "the same bounded fix check as its upstream CVE-2026-27735, run for this flaw"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": null,
+          "field": "fixture",
+          "value": "record A's fixture, whole (its Dockerfiles, its seeded repository, its twelve benign calls)",
+          "reason": "record A pins the loosest framework bound, mcp<2, the one Dockerfile.git carries, where record B adds a lower bound (mcp>=1.18.0,<2) no run shows needed; record A installs git from the base image's Debian distribution as the repository's git images do, where record B pins the apt package version a Debian security update would break; record A's image configures a git identity so a commit of the audit does not carry the container's name; record A's diff tools return content from the seeded repository"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record A's baked /srv/app git repository",
+          "reason": "both seeds are written, since neither git nor the server publishes a sample repository; record A's is kept with its fixture"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record A's twelve benign calls, on the baked repository",
+          "reason": "record A's fixture is kept; its expected texts come from the seeded repository's content and the server's own success lines, none contained in the call's arguments, so the loader accepts them"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "git 2.39.5, from the base image's Debian bookworm package, pinned by the base digest",
+          "reason": "the server documents no git version; record A installs git from the distribution as the repository's git images do, and the built run image reports git 2.39.5; record B pins the apt package version (1:2.39.5-0+deb12u3), which a Debian security update would break, so record A's floating install is kept"
+        },
+        {
+          "server_package": "PyPI:mcp-server-git",
+          "flaw": null,
+          "field": "patched_version",
+          "value": "2026.1.14",
+          "reason": "both records wrote 2026.1.14 while their own fix checks left CVE-2026-27735 uncounted; with it uncounted the rule gives 2025.12.18 (the first release fixing every counted flaw), but the redone fix check counts CVE-2026-27735 and MINI-mch8-8h85-3j5v, making 2026.1.14 the first release that fixes every counted flaw"
+        }
+      ],
+      "patched_version": "2026.1.14",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/srv/app git repository baked into the run image: a 'main' branch with one commit 'Add inventory listing' adding inventory.txt (widget inventory / item: alpha / item: bravo), an unstaged edit appending 'item: charlie', and a staged new file notes.txt ('release notes line one')",
+          "kind": "written",
+          "citation": "git and mcp-server-git publish no sample repository; values written for the fixture",
+          "pin": null
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "git",
+          "release": "2.39.5",
+          "day": "2026-11-25",
+          "source": "the mcp-server-git documentation names no git version; git is installed from the base image's Debian bookworm distribution (python:3.12-slim-bookworm, pinned by digest), and the built run image reports git 2.39.5 (evals/docker/Dockerfile.mcp-server-git)"
+        }
+      ]
     }
   ],
   "exits": [
