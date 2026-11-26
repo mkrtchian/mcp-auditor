@@ -19,6 +19,7 @@ class FakeControlPlane:
         self.kubeconfig = kubeconfig
         self.stood: list[str] = []
         self.networks: list[str] = []
+        self.connected: list[tuple[str, str]] = []
 
     @contextmanager
     def stand(self, name: str) -> Generator[StoodControlPlane]:
@@ -28,7 +29,7 @@ class FakeControlPlane:
         yield StoodControlPlane(network, self.kubeconfig)
 
     def connect(self, network: str, container: str) -> None:
-        pass
+        self.connected.append((network, container))
 
     def docker(self) -> ControlPlaneDocker:
         return ControlPlaneDocker(self.stand, self.connect)

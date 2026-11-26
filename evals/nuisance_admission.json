@@ -6067,7 +6067,7 @@
               "real_software": {
                 "answers": false,
                 "cause": "software_error",
-                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `监控输入事件失败: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"监控输入事件失败: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
+                "evidence": "Source lines and a run. The tool always runs `timeout <timeout> getevent -lrt` on the device (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a line 702: remoteShellArgs('timeout', String(timeout), 'getevent', '-lrt')). getevent never exits by itself when no event count is given: AOSP system/core toolbox/getevent.c at a3b721a32242006b59cb12bd62c9133632af3a2d line 655 `while(1) {` polls forever, its only return on success being line 683 `if(event_count && --event_count == 0)` (event_count is set only by -c, which the server never passes). So the device's toybox timeout always ends it and exits 124: external/toybox toys/other/timeout.c at 59a869a838cfadbf6bc41cb400471ca9d2cae9b5 line 85 `toys.exitval = (nextsig==9) ? 137 : 124;` (no --preserve-status is passed, line 106). The device advertises shell_v2 (every Android release since 7.0), so adb returns the remote exit status, and the patched server runs adb through execFile, which rejects on a non-zero exit; the tool then answers isError (jiantao88/android-mcp-server src/index.ts at 14e2bf27c88ba137e35cbb0c2a75f72b595bb98a lines 706-709, `\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ...`; src/adb.ts lines 59-70). Arguments tried: timeout 1 (the committed call), and by source every value the schema allows (integer 1..300) plus deviceId/useUsb/useEmulator, which only select the device and change nothing. Run: real adb 37.0.1 against the device transport answering this request as the sources give it (no output, exit 124 after the timeout): `adb shell 'timeout' '1' 'getevent' '-lrt'` exits 124, and the probe on the run image prints `monitor-events [listed] -> error \"\u76d1\u63a7\u8f93\u5165\u4e8b\u4ef6\u5931\u8d25: ADB Command Error: Command failed: /opt/android/platform-tools/adb shell 'timeout' '1' 'getevent' '-lrt'\\n\"`."
               },
               "declared_function_is_effect": false
             },
@@ -6276,7 +6276,7 @@
               "arguments": {
                 "buffer": "main"
               },
-              "expect": "缓冲区的日志",
+              "expect": "\u7f13\u51b2\u533a\u7684\u65e5\u5fd7",
               "before": []
             },
             {
@@ -6285,7 +6285,7 @@
                 "packageName": "com.example.helloworld",
                 "lines": 50
               },
-              "expect": "的明显崩溃信息",
+              "expect": "\u7684\u660e\u663e\u5d29\u6e83\u4fe1\u606f",
               "before": [
                 {
                   "tool": "install-apk",
@@ -6392,7 +6392,7 @@
               "arguments": {
                 "packageName": "com.example.helloworld"
               },
-              "expect": "没有找到相关CPU信息",
+              "expect": "\u6ca1\u6709\u627e\u5230\u76f8\u5173CPU\u4fe1\u606f",
               "before": [
                 {
                   "tool": "install-apk",
@@ -6752,7 +6752,7 @@
           "software": "Android SDK Platform-Tools (adb, Android Debug Bridge)",
           "release": "37.0.1",
           "day": "2026-11-05",
-          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('安装 ADB: 下载 Android SDK Platform Tools ... 使用 `adb version` 验证安装'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
+          "source": "Copied from the holdout calibration card of CVE-2026-19978, whose calibration this flaw's fix check reuses: the server README at the patched commit (lines 106-110) names the software and no version ('\u5b89\u88c5 ADB: \u4e0b\u8f7d Android SDK Platform Tools ... \u4f7f\u7528 `adb version` \u9a8c\u8bc1\u5b89\u88c5'); 37.0.1 was the stable release (channel-0 of dl.google.com/android/repository/repository2-3.xml, 'Platform-Tools 37.0.1 (July 2026)' on developer.android.com/tools/releases/platform-tools) on 2026-11-05. The run image installs https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip (sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1)."
         },
         {
           "software": "Android (device, captured for the stand-in)",
@@ -15206,9 +15206,9 @@
               "replacements": []
             },
             {
-              "request": "Couldn’t find shortcut",
+              "request": "Couldn\u2019t find shortcut",
               "source": "capture",
-              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn’t be completed. Couldn’t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
+              "citation": "any other request (a name or identifier not in the library, another subcommand or argument shape): capture of the real program on macOS 27.0 in rfizzle/hearth docs/research/2026-10-19-shortcuts-spike.md at commit 4f2e3f78e70dc7910fe7a79813913984fb062425, line 16: `shortcuts run <missing>` -> exit 1, stderr 'Error: The operation couldn\u2019t be completed. Couldn\u2019t find shortcut', nothing on stdout. A third-party capture of the real software, not one made here (no Mac is available); no Apple source gives the text. Used as the error for an input the program does not recognize.",
               "form_source": null,
               "replacements": []
             }
@@ -16052,7 +16052,7 @@
         {
           "item": "/work/pilot (bin/, fafm/ and md/, ten records in each of three forms): the pilot directory of the sample corpus the server's README names, seeded whole with its layout in /work, the project the server works in, owned by the run's account",
           "kind": "published_sample",
-          "citation": "grok-faf-mcp 1.5.3 README.md: 'Sample corpus: xai-faf-proof/pilot (https://github.com/Wolfe-Jam/xai-faf-proof/tree/main/pilot) — 10 records ready to score.' Fetched by an ADD --checksum of https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz (sha256 ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4)",
+          "citation": "grok-faf-mcp 1.5.3 README.md: 'Sample corpus: xai-faf-proof/pilot (https://github.com/Wolfe-Jam/xai-faf-proof/tree/main/pilot) \u2014 10 records ready to score.' Fetched by an ADD --checksum of https://github.com/Wolfe-Jam/xai-faf-proof/archive/5f3ecc232f02131166579ee15362a98c247c4b4a.tar.gz (sha256 ef03bd9c6de5e8462bf8592a6b0a87d6eca918975792bcddf17e0c396aa65af4)",
           "pin": "5f3ecc232f02131166579ee15362a98c247c4b4a"
         },
         {
@@ -23970,7 +23970,7 @@
                 "skillName": "docx",
                 "workspacePath": "/workspace"
               },
-              "expect": "インストールしました",
+              "expect": "\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u3057\u307e\u3057\u305f",
               "before": []
             },
             {
@@ -23978,7 +23978,7 @@
               "arguments": {
                 "workspacePath": "/workspace"
               },
-              "expect": "インストール済みスキル",
+              "expect": "\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u6e08\u307f\u30b9\u30ad\u30eb",
               "before": [
                 {
                   "tool": "skillNinja_install",
@@ -24003,7 +24003,7 @@
                 "skillName": "pdf",
                 "workspacePath": "/workspace"
               },
-              "expect": "アンインストールしました",
+              "expect": "\u30a2\u30f3\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u3057\u307e\u3057\u305f",
               "before": [
                 {
                   "tool": "skillNinja_install",
@@ -28256,6 +28256,903 @@
         }
       ],
       "software_releases": []
+    },
+    {
+      "server_package": "npm:mcp-server-kubernetes",
+      "reaching_flaw": "CVE-2025-53355",
+      "flaws": [
+        {
+          "flaw": "CVE-2025-53355",
+          "tools": [
+            {
+              "vulnerable_name": "kubectl_get",
+              "patched_name": "kubectl_get",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_describe",
+              "patched_name": "kubectl_describe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_apply",
+              "patched_name": "kubectl_apply",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_create",
+              "patched_name": "kubectl_create",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_delete",
+              "patched_name": "kubectl_delete",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_generic",
+              "patched_name": "kubectl_generic",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_patch",
+              "patched_name": "kubectl_patch",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_scale",
+              "patched_name": "kubectl_scale",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_rollout",
+              "patched_name": "kubectl_rollout",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "explain_resource",
+              "patched_name": "explain_resource",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "list_api_resources",
+              "patched_name": "list_api_resources",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_logs",
+              "patched_name": "kubectl_logs",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "container_unrepairable",
+                "evidence": "Run on patched 3.9.0 against the per-launch control plane (no kubelet, so no pod can run): kubectl_logs {resourceType:'deployment',name:'web',namespace:'default'} returns is_error with text 'Failed to get logs for deployment web: ...'. Logs require a running pod on a node; the confinement drops every capability and forbids a container runtime, so no kubelet/node can exist and no fixture change repairs it."
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "install_helm_chart",
+              "patched_name": "install_helm_chart",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "upgrade_helm_chart",
+              "patched_name": "upgrade_helm_chart",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "uninstall_helm_chart",
+              "patched_name": "uninstall_helm_chart",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "2.5.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "kubectl_get",
+              "arguments": {
+                "resourceType": "namespaces"
+              },
+              "expect": "kube-system",
+              "before": []
+            },
+            {
+              "tool": "kubectl_describe",
+              "arguments": {
+                "resourceType": "namespace",
+                "name": "default"
+              },
+              "expect": "No resource quota",
+              "before": []
+            },
+            {
+              "tool": "list_api_resources",
+              "arguments": {},
+              "expect": "ConfigMap",
+              "before": []
+            },
+            {
+              "tool": "explain_resource",
+              "arguments": {
+                "resource": "pods"
+              },
+              "expect": "Pod is a collection of containers",
+              "before": []
+            },
+            {
+              "tool": "kubectl_apply",
+              "arguments": {
+                "manifest": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config\n  namespace: default\ndata:\n  color: blue\n"
+              },
+              "expect": "created",
+              "before": []
+            },
+            {
+              "tool": "kubectl_create",
+              "arguments": {
+                "resourceType": "namespace",
+                "name": "web-space"
+              },
+              "expect": "kind: Namespace",
+              "before": []
+            },
+            {
+              "tool": "kubectl_delete",
+              "arguments": {
+                "resourceType": "configmap",
+                "name": "app-config",
+                "namespace": "default"
+              },
+              "expect": "deleted",
+              "before": [
+                {
+                  "tool": "kubectl_apply",
+                  "arguments": {
+                    "manifest": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config\n  namespace: default\ndata:\n  color: blue\n"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kubectl_scale",
+              "arguments": {
+                "name": "frontend",
+                "namespace": "default",
+                "replicas": 2
+              },
+              "expect": "Scaled",
+              "before": [
+                {
+                  "tool": "kubectl_apply",
+                  "arguments": {
+                    "manifest": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: frontend\n  namespace: default\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: frontend\n  template:\n    metadata:\n      labels:\n        app: frontend\n    spec:\n      containers:\n      - name: web\n        image: nginx:stable\n"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kubectl_patch",
+              "arguments": {
+                "resourceType": "configmap",
+                "name": "app-config",
+                "namespace": "default",
+                "patchType": "merge",
+                "patchData": {
+                  "data": {
+                    "color": "green"
+                  }
+                }
+              },
+              "expect": "patched",
+              "before": [
+                {
+                  "tool": "kubectl_apply",
+                  "arguments": {
+                    "manifest": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config\n  namespace: default\ndata:\n  color: blue\n"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kubectl_rollout",
+              "arguments": {
+                "subCommand": "restart",
+                "resourceType": "deployment",
+                "name": "web",
+                "namespace": "default"
+              },
+              "expect": "restarted",
+              "before": [
+                {
+                  "tool": "kubectl_apply",
+                  "arguments": {
+                    "manifest": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\n  namespace: default\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: registry.k8s.io/pause:3.10\n"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "kubectl_generic",
+              "arguments": {
+                "command": "api-versions"
+              },
+              "expect": "apps/v1",
+              "before": []
+            },
+            {
+              "tool": "install_helm_chart",
+              "arguments": {
+                "name": "demo",
+                "chart": "/opt/sample-chart",
+                "namespace": "default"
+              },
+              "expect": "installed successfully",
+              "before": []
+            },
+            {
+              "tool": "upgrade_helm_chart",
+              "arguments": {
+                "name": "demo",
+                "chart": "/opt/sample-chart",
+                "namespace": "default"
+              },
+              "expect": "upgraded successfully",
+              "before": [
+                {
+                  "tool": "install_helm_chart",
+                  "arguments": {
+                    "name": "demo",
+                    "chart": "/opt/sample-chart",
+                    "namespace": "default"
+                  }
+                }
+              ]
+            },
+            {
+              "tool": "uninstall_helm_chart",
+              "arguments": {
+                "name": "demo",
+                "namespace": "default"
+              },
+              "expect": "uninstalled successfully",
+              "before": [
+                {
+                  "tool": "install_helm_chart",
+                  "arguments": {
+                    "name": "demo",
+                    "chart": "/opt/sample-chart",
+                    "namespace": "default"
+                  }
+                }
+              ]
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-fb7aa5664220cc9e599eda0676b76f0b",
+            "exploit_calls": [
+              "kubectl_get",
+              "kubectl_describe",
+              "kubectl_apply",
+              "kubectl_create",
+              "kubectl_delete",
+              "kubectl_generic",
+              "kubectl_patch",
+              "kubectl_scale",
+              "kubectl_rollout",
+              "explain_resource",
+              "list_api_resources",
+              "kubectl_logs",
+              "install_helm_chart",
+              "upgrade_helm_chart",
+              "uninstall_helm_chart"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2025-66404",
+          "tools": [
+            {
+              "vulnerable_name": "exec_in_pod",
+              "patched_name": "exec_in_pod",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "container_unrepairable",
+                "evidence": "Run on 3.9.0 against the control plane: exec_in_pod {name:'web',command:['echo','hi']} returns is_error 'Failed to execute command in pod: Error from server (NotFound): pods \"web\" not found'; a Pod object cannot even be created ('pods \"web\" is forbidden: error looking up service account default/default'). The k8s Exec API proxies to the kubelet of the node hosting the pod; the cluster has no node (a kubelet needs a container runtime and privileges the confinement drops), so no pod runs to exec into. No fixture change repairs this under the confinement."
+              },
+              "declared_function_is_effect": true
+            }
+          ],
+          "effect_class": "command_execution",
+          "patched_version": "2.9.8",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "fixture",
+          "declared_function_is_effect": true,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-39884",
+          "tools": [
+            {
+              "vulnerable_name": "port_forward",
+              "patched_name": "port_forward",
+              "status": "unchanged",
+              "real_software": {
+                "answers": false,
+                "cause": "container_unrepairable",
+                "evidence": "Run on 3.9.0 against the control plane: port_forward {resourceType:'pod',resourceName:'web',localPort:8080,targetPort:80} returns is_error 'Failed to execute port-forward: Port-forward process exited with code 1. Error: Error from server (NotFound): pods \"web\" not found'. port-forward needs a running pod on a node; the nodeless cluster has none and the confinement cannot add a kubelet. Unrepairable."
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "3.5.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-46519",
+          "tools": [
+            {
+              "vulnerable_name": "kubectl_get",
+              "patched_name": "kubectl_get",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": null,
+          "patched_version": "3.6.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "",
+            "exploit_calls": [],
+            "vulnerable_surfaces": false,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-47250",
+          "tools": [
+            {
+              "vulnerable_name": "kubectl_generic",
+              "patched_name": "kubectl_generic",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "3.7.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "kubectl_generic",
+              "arguments": {
+                "command": "api-versions"
+              },
+              "expect": "apps/v1",
+              "before": []
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-cd89831889267fd0330d88612ba6c7a1",
+            "exploit_calls": [
+              "kubectl_generic"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": false,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        },
+        {
+          "flaw": "CVE-2026-61459",
+          "tools": [
+            {
+              "vulnerable_name": "kubectl_get",
+              "patched_name": "kubectl_get",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_describe",
+              "patched_name": "kubectl_describe",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            },
+            {
+              "vulnerable_name": "kubectl_delete",
+              "patched_name": "kubectl_delete",
+              "status": "unchanged",
+              "real_software": {
+                "answers": true,
+                "cause": null,
+                "evidence": null
+              },
+              "declared_function_is_effect": false
+            }
+          ],
+          "effect_class": "internal_fetch",
+          "patched_version": "3.9.0",
+          "patched_source": "advisory",
+          "launch_option": null,
+          "benign_calls": [
+            {
+              "tool": "kubectl_get",
+              "arguments": {
+                "resourceType": "namespaces"
+              },
+              "expect": "kube-system",
+              "before": []
+            },
+            {
+              "tool": "kubectl_describe",
+              "arguments": {
+                "resourceType": "namespace",
+                "name": "default"
+              },
+              "expect": "No resource quota",
+              "before": []
+            },
+            {
+              "tool": "kubectl_delete",
+              "arguments": {
+                "resourceType": "configmap",
+                "name": "app-config",
+                "namespace": "default"
+              },
+              "expect": "deleted",
+              "before": [
+                {
+                  "tool": "kubectl_apply",
+                  "arguments": {
+                    "manifest": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-config\n  namespace: default\ndata:\n  color: blue\n"
+                  }
+                }
+              ]
+            }
+          ],
+          "backend_need": "fixture",
+          "declared_function_is_effect": false,
+          "fix_check": {
+            "source": "fix_check",
+            "witness": "MCPAUDIT-354e10606add6500de4f495f9dc16003",
+            "exploit_calls": [
+              "kubectl_get",
+              "kubectl_describe",
+              "kubectl_delete"
+            ],
+            "vulnerable_surfaces": true,
+            "patched_surfaces": false,
+            "server_patched_surfaces": null,
+            "patched_benign_errored": false,
+            "relies_on_relaying_stand_in": false
+          }
+        }
+      ],
+      "runs_over_stdio": true,
+      "runs_under_docker": true,
+      "host": {
+        "user": "unprivileged",
+        "working_directory": "/tmp",
+        "has_network": true
+      },
+      "launch": [
+        "mcp-server-kubernetes"
+      ],
+      "service": "mcp-server-kubernetes",
+      "backend": {
+        "provisioner": "kubernetes",
+        "images": [
+          "mcp-auditor-cve-kube-control-plane:local"
+        ],
+        "network": "mcp-auditor-cve-kube-net"
+      },
+      "agents": [
+        {
+          "role": "admitter",
+          "scope": "admission record A",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        },
+        {
+          "role": "admitter",
+          "scope": "admission record B",
+          "model": "claude-opus-5-5",
+          "fallback_model": "claude-opus-4-8"
+        }
+      ],
+      "agreement": [
+        {
+          "flaw": "CVE-2025-53355",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-53355",
+          "field": "real_software",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2025-53355",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53355",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-53355",
+          "field": "declared_function_is_effect",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-66404",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2025-66404",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-39884",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-39884",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-46519",
+          "field": "tools",
+          "agreed": false
+        },
+        {
+          "flaw": "CVE-2026-46519",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47250",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47250",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-47250",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61459",
+          "field": "tools",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61459",
+          "field": "effect_class",
+          "agreed": true
+        },
+        {
+          "flaw": "CVE-2026-61459",
+          "field": "patched_version",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "backend",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "stand_ins",
+          "agreed": true
+        },
+        {
+          "flaw": null,
+          "field": "host",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "launch",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "benign_calls",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "seeds",
+          "agreed": false
+        },
+        {
+          "flaw": null,
+          "field": "software_releases",
+          "agreed": false
+        }
+      ],
+      "settlements": [
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": "CVE-2025-53355",
+          "field": "tools",
+          "value": "kubectl_get, kubectl_describe, kubectl_apply, kubectl_create, kubectl_delete, kubectl_generic, kubectl_patch, kubectl_scale, kubectl_rollout, explain_resource, list_api_resources, kubectl_logs, install_helm_chart, upgrade_helm_chart and uninstall_helm_chart (record A), where record B also listed kubectl_context",
+          "reason": "on 2.4.9 each of these tools builds a shell command and runs it with execSync, so a shell metacharacter in a caller-chosen argument runs an arbitrary command; kubectl_context is not a tool of the flaw because its set operation checks the name against the kubeconfig's existing contexts before building the command, so no argument reaches the shell unless it equals an existing context name, the case the reading of 2026-11-08 leaves out; kubectl_logs is listed but not counted (real_software answers false: no pod runs on a nodeless cluster); fourteen tools are counted; the records' exploits reach kubectl_get and kubectl_describe, and an aimed exploit for each other tool was written at assembly on the model of the records', so the exploits reach exactly the flaw's tools and kubectl_get surfaces the witness"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": "CVE-2025-53355",
+          "field": "real_software",
+          "value": "install_helm_chart, upgrade_helm_chart and uninstall_helm_chart answer (record B)",
+          "reason": "the 3.9.0 description of `chart` allows a path to a chart directory, so the Helm tools reach real Helm against the chart `helm create` generates and seeds at /opt/sample-chart; record A read them as not answering only on an unreachable remote chart repository, which the rule discounts since an answer exists with an argument the description allows"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": "CVE-2026-46519",
+          "field": "tools",
+          "value": "kubectl_get (record A)",
+          "reason": "the flaw is an authorization bypass reached through whichever tool a non-default restriction hides, so no fixed list is the whole set; record A's single tool is the one its reproduction calls, and the flaw is uncounted (its class is settled null), so the choice has no effect on the count"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": null,
+          "field": "host",
+          "value": "user unprivileged, working_directory /tmp, has_network true (record B)",
+          "reason": "both records run the server unprivileged; record A's working directory was / with an image ENTRYPOINT, record B's /tmp with the launch passed as an argument; record B's fixture is kept (the only one on which the Helm tools answer), so its host is taken; has_network is true, the server joining the control plane's network to reach the API server"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": null,
+          "field": "launch",
+          "value": "[\"mcp-server-kubernetes\"] (record B)",
+          "reason": "both records launch the binary the documentation names; record A baked it as an ENTRYPOINT with an empty launch, record B passes it as the launch argument, which the kept record B image (no ENTRYPOINT) requires"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": null,
+          "field": "benign_calls",
+          "value": "record B's, except kubectl_create and kubectl_scale (record A)",
+          "reason": "the rule lets either record's benign call stand per tool; record B's kubectl_create and kubectl_scale expectations are contained in their own arguments, which the loader refuses, so record A's are taken for those two tools"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": null,
+          "field": "seeds",
+          "value": "record B's generated chart at /opt/sample-chart, the written chart directory and release name, and the kubeconfig and cluster objects of the kubernetes backend",
+          "reason": "record B's fixture is kept; the chart is what Helm's `helm create` writes, pinned by the Helm archive checksum in the Dockerfile; the kubeconfig and the cluster's own objects are the kubernetes backend's, recorded as the PyPI:kubectl-mcp-server entry records them for the same backend, except its sentence on a baked /tmp/.kube, which these images do not bake"
+        },
+        {
+          "server_package": "npm:mcp-server-kubernetes",
+          "flaw": null,
+          "field": "software_releases",
+          "value": "kubectl v1.37.3 and Helm v3.22.1 (the stable releases current on 2026-11-25), and the control plane as the kubernetes backend records it",
+          "reason": "the README names kubectl and 'Helm v3' with no version, so each is the stable release of the admission day; record B's Helm v3.19.0 was not the current stable v3 line and is corrected to v3.22.1, kept from record A with its published checksum; the control plane components, kubeadm and etcd are the kubernetes backend's, as the PyPI:kubectl-mcp-server entry records them"
+        }
+      ],
+      "patched_version": "3.9.0",
+      "stand_ins": [],
+      "seeds": [
+        {
+          "item": "/opt/sample-chart, a default Helm chart scaffold generated by `helm create` at build time, which the Helm benign calls install, upgrade and uninstall",
+          "kind": "generated",
+          "citation": "Helm v3.22.1 `helm create`, run in the image at build (evals/docker/Dockerfile.mcp-server-kubernetes); the chart is the scaffold Helm itself writes, not a value authored for the fixture",
+          "pin": "896cf63684a42a723d61c980369d6e588330927deb13676ca0d85006dd6da0ea"
+        },
+        {
+          "item": "the chart directory /opt/sample-chart and the Helm release name 'demo' the Helm benign calls name",
+          "kind": "written",
+          "citation": "the path of the generated chart and a release name chosen for the benign calls",
+          "pin": null
+        },
+        {
+          "item": "kubeconfig at /tmp/.kube/config ($HOME/.kube/config): the admin.conf kubeadm generates for each launch ('kubeadm init phase kubeconfig admin'), read out of the control plane into a host file of mode 0644 and mounted read-only. It names the API server by its address on the control plane's network and carries a client certificate of that launch's cluster authority. The run and fix-check images bake no kubeconfig and no /tmp/.kube: Docker creates that directory, owned by root, for the mount, so kubectl's discovery cache is not written there",
+          "kind": "generated",
+          "citation": "kubeadm's documentation, 'kubeadm init phase' (https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/), run by the control plane's entrypoint with the container's own address as the advertise address (evals/docker/Dockerfile.kube-control-plane); kubectl reads $HOME/.kube/config by default. Generated per launch, so nothing dated is baked and the fixture does not break when kubeadm's one-year certificates expire",
+          "pin": "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubeadm"
+        },
+        {
+          "item": "the cluster's own objects at start: the default, kube-system, kube-public and kube-node-lease namespaces, their default ServiceAccounts and kube-root-ca.crt configmaps, the kubernetes Service, and the kubeadm:cluster-admins ClusterRoleBinding; no node, no pod",
+          "kind": "generated",
+          "citation": "created by kube-apiserver and kube-controller-manager at start, and the binding by the entrypoint with super-admin.conf as 'kubeadm init' creates it (https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/); no kubelet runs, since it needs a container runtime and privileges the confinement does not give, so 'get nodes' is empty and a created pod stays Pending",
+          "pin": "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kube-apiserver"
+        }
+      ],
+      "software_releases": [
+        {
+          "software": "kubectl",
+          "release": "v1.37.3",
+          "day": "2026-11-25",
+          "source": "the mcp-server-kubernetes README names kubectl as a prerequisite with no version; v1.37.3 is the stable release per https://dl.k8s.io/release/stable.txt on 2026-11-25, fetched from dl.k8s.io and checked against its published SHA-256 in the run image and the fix-check images (evals/docker/Dockerfile.mcp-server-kubernetes)"
+        },
+        {
+          "software": "Helm",
+          "release": "v3.22.1",
+          "day": "2026-11-25",
+          "source": "the README names 'Helm v3' as an optional prerequisite with no exact version; v3.22.1 is the latest stable Helm v3 release (2026-10-15) current on the admission day, fetched from get.helm.sh and checked against its published SHA-256 (evals/docker/Dockerfile.mcp-server-kubernetes)"
+        },
+        {
+          "software": "Kubernetes (kube-apiserver, kube-controller-manager, kube-scheduler)",
+          "release": "v1.37.2",
+          "day": "2026-11-13",
+          "source": "the server documentation names no Kubernetes distribution or version, so the control plane is upstream Kubernetes at the stable release https://dl.k8s.io/release/stable.txt gave on 2026-11-13, each binary fetched from dl.k8s.io and checked against its published SHA-256 (evals/docker/Dockerfile.kube-control-plane). It runs as a backend stood for each launch by evals/cve/backends/kubernetes.py, as 65534:65534 under the suite's confinement (--cap-drop ALL, --security-opt no-new-privileges, --pids-limit 256) with no capability added, since it binds the unprivileged port 6443 and writes only its tmpfs, and the memory bound --memory 4g --memory-swap 4g; its certificates, kubeconfigs, manifests and etcd data are on tmpfs. Measured on 2026-11-13: ready in about five seconds, a peak of 89 threads under 'get pods', 'get namespaces' and 'get nodes', well under the bound of 256, and about 410 MiB resident."
+        },
+        {
+          "software": "kubeadm",
+          "release": "v1.37.2",
+          "day": "2026-11-13",
+          "source": "the control plane's file phases run kubeadm of the same stable release as the components, checked against its published SHA-256"
+        },
+        {
+          "software": "etcd",
+          "release": "3.7.0",
+          "day": "2026-11-13",
+          "source": "the version build/dependencies.yaml of Kubernetes v1.37.2 names (also kubeadm's DefaultEtcdVersion at that release), read on 2026-11-13; the release tarball from github.com/etcd-io/etcd is checked against its SHA-256 (ADD --checksum)"
+        }
+      ]
     }
   ],
   "exits": [

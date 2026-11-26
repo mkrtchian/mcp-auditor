@@ -983,6 +983,15 @@ services:
     image: mcp-auditor-nuisance-kubectl:local
     profiles: ["nuisance"]
 
+  mcp-server-kubernetes:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-server-kubernetes
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1c5532409a5dbbc2b9b9fb865b6896c9cbc83ad35ff4b370896ee2de743c506c"
+    image: mcp-auditor-nuisance-mcp-server-kubernetes:local
+    profiles: ["nuisance"]
+
   roslyncodelens:
     build:
       context: .
