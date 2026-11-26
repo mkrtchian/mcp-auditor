@@ -130,15 +130,12 @@ def server_args(image: str, launch_host: int) -> list[str]:
 
 
 def _ensure_witness_responder_image() -> None:
-    present = subprocess.run(
-        ["docker", "image", "inspect", WITNESS_RESPONDER_IMAGE], capture_output=True, check=False
-    )
-    if present.returncode != 0:
-        subprocess.run(
-            ["docker", "build", "-t", WITNESS_RESPONDER_IMAGE,
-             "-f", str(WITNESS_RESPONDER_DOCKERFILE), str(DOCKER_DIRECTORY)],
-            check=True, capture_output=True, timeout=600,
-        )  # fmt: skip
+    # Built every time, from the layer cache once built, so a changed Dockerfile is never stale.
+    subprocess.run(
+        ["docker", "build", "-t", WITNESS_RESPONDER_IMAGE,
+         "-f", str(WITNESS_RESPONDER_DOCKERFILE), str(DOCKER_DIRECTORY)],
+        check=True, capture_output=True, timeout=600,
+    )  # fmt: skip
 
 
 def _per_launch_host() -> int:

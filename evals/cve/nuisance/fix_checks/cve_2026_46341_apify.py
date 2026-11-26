@@ -121,15 +121,12 @@ def server_args(image: str, responder_address: str) -> list[str]:
 
 
 def _ensure_responder_image() -> None:
-    present = subprocess.run(
-        ["docker", "image", "inspect", APIFY_RESPONDER_IMAGE], capture_output=True, check=False
-    )
-    if present.returncode != 0:
-        subprocess.run(
-            ["docker", "build", "-t", APIFY_RESPONDER_IMAGE, "-f", str(APIFY_RESPONDER_DOCKERFILE),
-             str(APIFY_RESPONDER_DOCKERFILE.parent)],
-            check=True, capture_output=True, timeout=600.0,
-        )  # fmt: skip
+    # Built every time, from the layer cache once built, so a changed Dockerfile is never stale.
+    subprocess.run(
+        ["docker", "build", "-t", APIFY_RESPONDER_IMAGE, "-f", str(APIFY_RESPONDER_DOCKERFILE),
+         str(APIFY_RESPONDER_DOCKERFILE.parent)],
+        check=True, capture_output=True, timeout=600.0,
+    )  # fmt: skip
 
 
 def _per_launch_address() -> str:

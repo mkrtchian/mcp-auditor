@@ -23,7 +23,6 @@ import subprocess
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from pathlib import Path
 
 from evals.cve.closed_network import ensure_closed_network
 from evals.cve.docker_paths import DOCKER_DIRECTORY
@@ -81,7 +80,6 @@ _SERVER_ENVIRONMENT = [
 def neo4j_env(
     image: str, spec: PlantingSpec, shape: LaunchShape = LaunchShape.NORMAL
 ) -> Generator[Launch]:
-    _ensure_sentinel_image()
     _ensure_neo4j_image()
     ensure_closed_network(BRIDGE)
     sentinel = f"mcp-auditor-kit-neo4j-ssrf-sentinel-{secrets.token_hex(4)}"
@@ -135,21 +133,13 @@ def server_args(image: str) -> list[str]:
     ]  # fmt: skip
 
 
-def _ensure_sentinel_image() -> None:
-    _ensure_image(SENTINEL_IMAGE, DOCKER_DIRECTORY / "Dockerfile.sentinel")
-
-
 def _ensure_neo4j_image() -> None:
-    _ensure_image(NEO4J_IMAGE, NEO4J_BACKEND_DOCKERFILE)
-
-
-def _ensure_image(image: str, dockerfile: Path) -> None:
-    present = _run("docker", "image", "inspect", image, check=False)
-    if present.returncode != 0:
-        _run(
-            "docker", "build", "-t", image, "-f", str(dockerfile), str(DOCKER_DIRECTORY),
-            timeout=600.0,
-        )  # fmt: skip
+    # Built every time, from the layer cache once built, so a changed Dockerfile is never stale.
+    # The sentinel image is fix-check's to refresh, through its compose fingerprint.
+    _run(
+        "docker", "build", "-t", NEO4J_IMAGE, "-f", str(NEO4J_BACKEND_DOCKERFILE),
+        str(DOCKER_DIRECTORY), timeout=600.0,
+    )  # fmt: skip
 
 
 def _wait_until_ready(database: str) -> None:

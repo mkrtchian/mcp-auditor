@@ -18,12 +18,14 @@ from evals.cve.nuisance.fix_check_command import (
     check_fixes,
     fix_check_mismatches,
 )
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve.run_images import DOCKER_REQUIREMENT
 from tests.unit.support.admission_mutations import admitting
 from tests.unit.support.fix_check_fixtures import a_fix_check_fixture
 from tests.unit.support.nuisance_admissions import a_passing_fix_check, an_admission
 
 FIXTURE = a_fix_check_fixture(server_patched_service="server-patched")
+PLANTING_SERVICES = [SENTINEL_SERVICE, STAND_IN_SERVICE]
 FIXTURE_OF_NO_ADMITTED_FLAW = dataclasses.replace(FIXTURE, flaw="CVE-2099-0002")
 RECORD = a_passing_fix_check()
 
@@ -135,7 +137,7 @@ def test_a_fixture_naming_no_backend_services_refreshes_the_run_backends_of_its_
 
     run_nuisance.main(command, deps)
 
-    assert fake.refreshed == list(BACKENDS["ckan"].built_services)
+    assert set(fake.refreshed) == {*PLANTING_SERVICES, *BACKENDS["ckan"].built_services}
 
 
 def test_a_fixture_naming_its_backend_services_refreshes_those_and_not_the_run_backends(
@@ -148,7 +150,7 @@ def test_a_fixture_naming_its_backend_services_refreshes_those_and_not_the_run_b
 
     run_nuisance.main(command, deps)
 
-    assert fake.refreshed == ["its-responder"]
+    assert fake.refreshed == [*PLANTING_SERVICES, "its-responder"]
 
 
 def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its_flaws(
@@ -160,7 +162,22 @@ def test_the_fix_check_leaves_alone_the_backends_of_servers_carrying_none_of_its
 
     run_nuisance.main(command, deps)
 
-    assert fake.refreshed == []
+    assert fake.refreshed == PLANTING_SERVICES
+
+
+def test_the_fix_check_refreshes_the_sentinel_and_stand_in_but_never_removes_their_containers(
+    tmp_path: Path,
+):
+    # Every planted launch's namespace holder runs the sentinel image, and a detection or nuisance
+    # run in progress may hold containers of both images.
+    fake = given.FakeFixCheck(given.a_result_matching(RECORD))
+    deps = given.a_fix_check_ready(FIXTURE, fake)
+
+    run_nuisance.main(given.a_fix_check_command(tmp_path, an_admission()), deps)
+
+    assert fake.refreshed[: len(PLANTING_SERVICES)] == PLANTING_SERVICES
+    planting_tags = {cve_images.image_tag(service) for service in PLANTING_SERVICES}
+    assert planting_tags.isdisjoint(fake.containers.listed_tags[0])
 
 
 def test_a_matching_result_and_record_have_no_mismatch():

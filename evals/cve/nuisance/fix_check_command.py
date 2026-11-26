@@ -1,7 +1,7 @@
 """The `fix-check` subcommand of run_nuisance: rebuild each fix-check fixture's images, bring the
-built backend images its fixtures stand up to their compose fingerprint (the services a fixture
-names, else the run backend's of the servers it checks), and reproduce each flaw against the
-admission's recorded fix_check (Docker, no LLM)."""
+sentinel and stand-in images and the built backend images its fixtures stand up to their compose
+fingerprint (the services a fixture names, else the run backend's of the servers it checks), and
+reproduce each flaw against the admission's recorded fix_check (Docker, no LLM)."""
 
 import argparse
 import asyncio
@@ -29,6 +29,7 @@ from evals.cve.nuisance.commands import (
     malformed_input_refused,
 )
 from evals.cve.nuisance.fixtures import FIX_CHECK_FIXTURES
+from evals.cve.planting_base import SENTINEL_SERVICE, STAND_IN_SERVICE
 from evals.cve.run_images import (
     DOCKER_SWEEP,
     ContainerSweep,
@@ -37,14 +38,17 @@ from evals.cve.run_images import (
 )
 
 UNKNOWN_FLAW_EXIT = 2
+# Refreshed but never swept: every planted launch's namespace holder runs the sentinel image, and a
+# run in progress may hold containers of both.
+PLANTING_SERVICES = (SENTINEL_SERVICE, STAND_IN_SERVICE)
 
 
 @dataclass(frozen=True)
 class FixCheckDeps:
     build_images: Callable[[Sequence[str]], None]
-    # A fixture builds its backend parts only when their tag is absent, which would stand a part
-    # an older Dockerfile built.
-    refresh_backend_images: Callable[[Sequence[str]], None]
+    # A builder builds a compose image only when its tag is absent, which would stand an image an
+    # older Dockerfile built.
+    refresh_compose_images: Callable[[Sequence[str]], None]
     check_fix: Callable[[FixCheckFixture], Awaitable[FixCheckResult]]
     check_networks: Callable[[], None]
     sweep: ContainerSweep
@@ -53,7 +57,7 @@ class FixCheckDeps:
 def default_fix_check_deps(concurrency: int) -> FixCheckDeps:
     return FixCheckDeps(
         build_images=functools.partial(build_images, DOCKER_DIRECTORY),
-        refresh_backend_images=_ensure_compose_images,
+        refresh_compose_images=_ensure_compose_images,
         check_fix=bounded(check_fix, concurrency),
         check_networks=check_closed_network_support,
         sweep=DOCKER_SWEEP,
@@ -93,7 +97,7 @@ def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:
     backend_services = _backend_services(fixtures, admission.servers)
     tags = _swept_tags(fixtures, backend_services, admission.servers)
     try:
-        docker.refresh_backend_images(backend_services)
+        docker.refresh_compose_images(list(dict.fromkeys([*PLANTING_SERVICES, *backend_services])))
         return asyncio.run(check_fixes(fixtures, _recorded_fix_checks(admission), docker))
     finally:
         sweep_containers(tags, docker.sweep)

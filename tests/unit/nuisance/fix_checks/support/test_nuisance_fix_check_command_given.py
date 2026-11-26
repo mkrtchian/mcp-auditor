@@ -17,7 +17,7 @@ from tests.unit.support import census_draws, censuses
 
 
 class FakeFixCheck:
-    """Records the services it is asked to build and the backend services it is asked to bring
+    """Records the services it is asked to build and the compose services it is asked to bring
     up to date, raising `build_error` instead of building when one is given, answers every fix
     check with `result`, and finds the containers of `running` left running, on a daemon that
     creates closed networks."""
@@ -38,7 +38,7 @@ class FakeFixCheck:
     def deps(self) -> FixCheckDeps:
         return FixCheckDeps(
             build_images=self._build,
-            refresh_backend_images=self.refreshed.extend,
+            refresh_compose_images=self.refreshed.extend,
             check_fix=self._check_fix,
             check_networks=_closes_networks,
             sweep=self.containers.sweep,

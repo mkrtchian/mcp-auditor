@@ -153,15 +153,12 @@ def _sentinel_certificate() -> str:
 
 
 def _ensure_sentinel_image() -> None:
-    present = subprocess.run(
-        ["docker", "image", "inspect", SENTINEL_IMAGE], capture_output=True, check=False
-    )
-    if present.returncode != 0:
-        subprocess.run(
-            ["docker", "build", "-t", SENTINEL_IMAGE,
-             "-f", str(SENTINEL_DOCKERFILE), str(DOCKER_DIRECTORY)],
-            check=True, capture_output=True, timeout=600,
-        )  # fmt: skip
+    # Built every time, from the layer cache once built, so a changed Dockerfile is never stale.
+    subprocess.run(
+        ["docker", "build", "-t", SENTINEL_IMAGE,
+         "-f", str(SENTINEL_DOCKERFILE), str(DOCKER_DIRECTORY)],
+        check=True, capture_output=True, timeout=600,
+    )  # fmt: skip
 
 
 def _per_launch_address() -> str:

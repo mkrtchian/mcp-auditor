@@ -261,18 +261,12 @@ def redirect_ssrf_env(
 
 
 def _ensure_redirector_image() -> None:
-    present = (
-        subprocess.run(
-            ["docker", "image", "inspect", _REDIRECTOR_TAG], capture_output=True
-        ).returncode
-        == 0
+    # Built every time, from the layer cache once built, so a changed Dockerfile is never stale.
+    subprocess.run(
+        ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
+        input=_REDIRECTOR_DOCKERFILE.encode(),
+        check=True,
     )
-    if not present:
-        subprocess.run(
-            ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
-            input=_REDIRECTOR_DOCKERFILE.encode(),
-            check=True,
-        )
 
 
 FIXTURES: tuple[FixCheckFixture, ...] = (
