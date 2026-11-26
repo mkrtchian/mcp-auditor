@@ -1073,6 +1073,15 @@ services:
     image: mcp-auditor-nuisance-mcpvault:local
     profiles: ["nuisance"]
 
+  server-filesystem:
+    build:
+      context: .
+      dockerfile: Dockerfile.server-filesystem
+      labels:
+        org.mcp-auditor.dockerfile-fingerprint: "1302eccd74c7030974c0b39882dc87f29659c53c4fafeaef40ae20d9c37752d9"
+    image: mcp-auditor-nuisance-server-filesystem:local
+    profiles: ["nuisance"]
+
   vibe-trading:
     build:
       context: .

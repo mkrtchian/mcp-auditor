@@ -16,6 +16,7 @@ from evals.cve.nuisance.fix_checks import (
     cve_2025_52573_ios_simulator,
     cve_2025_53100_codehooks,
     cve_2025_53107_git_mcp,
+    cve_2025_53109_server_filesystem,
     cve_2025_53372_node_sandbox,
     cve_2025_53818_github_kanban,
     cve_2025_54073_mcp_package_docs,
@@ -121,4 +122,5 @@ FIX_CHECK_FIXTURES: tuple[FixCheckFixture, ...] = (
     *cve_2026_40576_excel.FIXTURES,
     *cve_2026_82112_houtini.FIXTURES,
     *cve_2026_54561_memory_keeper.FIXTURES,
+    *cve_2025_53109_server_filesystem.FIXTURES,
 )

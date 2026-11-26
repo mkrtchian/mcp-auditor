@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `python -m evals.run_nuisance vet --gate` vets the nuisance gate's servers, the admitted nuisance acceptance servers, in place of the nuisance holdout run's, with the same rebuild, two passes and container hygiene. With none admitted it prints what `gate` prints and exits 0, and a `--server` outside the gate set exits 2 naming the set.
+- The nuisance suite admits its first nuisance acceptance server, 65 to 66 servers in `evals/nuisance_admission.json`: `npm:@modelcontextprotocol/server-filesystem`, the server of the detection acceptance target CVE-2025-53109, which the nuisance gate audits and a nuisance holdout run never does. It counts CVE-2025-53109 and CVE-2025-53110 (`read_outside_scope`, patched 2025.7.1) on ten tools, `read_file`, `read_multiple_files`, `write_file`, `edit_file`, `create_directory`, `list_directory`, `directory_tree`, `move_file`, `search_files` and `get_file_info`, on a run image that seeds the server's own `README.md` into the allowed directory `/srv/app`, with a committed fix check for each flaw on the vulnerable 2025.3.28. No gate baseline is recorded yet.
 
 ### Changed
 
