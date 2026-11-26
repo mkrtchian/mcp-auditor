@@ -266,6 +266,7 @@ def _ensure_redirector_image() -> None:
         ["docker", "build", "-t", _REDIRECTOR_TAG, "-"],
         input=_REDIRECTOR_DOCKERFILE.encode(),
         check=True,
+        capture_output=True,
     )
 
 
