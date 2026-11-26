@@ -116,10 +116,7 @@ def _selected(servers: list[AdmittedServer], packages: list[str]) -> list[Admitt
 
 
 def _run_gate(args: argparse.Namespace, servers: GateServers, deps: GateCommandDeps) -> int:
-    conditions = gate_conditions(deps.settings(), deps.conditions(), args.runs)
-    if args.no_tools_filter:
-        conditions = conditions.model_copy(update={"tools_filtered": False})
-    options = _gate_options(args, servers.audited, conditions)
+    options = _gate_options(args, servers.audited, _run_conditions(args, deps))
     harness = deps.harness(options.conditions, args.concurrency)
     tree = harness.read_tree()
     session = _tracked_gate(options, harness, deps.run_gate)
@@ -143,6 +140,13 @@ def _run_gate(args: argparse.Namespace, servers: GateServers, deps: GateCommandD
     print_nuisance_gate_summary(report, args.report)
     _print_baselines(session, _recorded_flags(args))
     return session.exit_code
+
+
+def _run_conditions(args: argparse.Namespace, deps: GateCommandDeps) -> NuisanceGateConditions:
+    conditions = gate_conditions(deps.settings(), deps.conditions(), args.runs)
+    if args.no_tools_filter:
+        return conditions.model_copy(update={"tools_filtered": False})
+    return conditions
 
 
 def _tracked_gate(
