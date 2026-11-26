@@ -3,15 +3,20 @@ from pathlib import Path
 
 import pytest
 
+import tests.unit.nuisance.gate.support.nuisance_gate_baselines as nuisance_gate_baselines
 import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.captured_console as captured_console
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_walks as walks
 from evals.baseline import BaselineStatus
 from evals.cve.census.census import Census
+from evals.cve.launch_audit import SessionAuditor
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.gate.gate import NuisanceGateResult
-from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps
+from evals.cve.nuisance.gate.gate_baseline import NuisanceGateConditions
+from evals.cve.nuisance.gate.gate_command_deps import GateCommandDeps, gate_overrides
 from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateHarness,
     NuisanceGateOptions,
@@ -21,7 +26,8 @@ from evals.cve.nuisance.gate.gate_session_model import (
 from evals.gate_outcome import GateOutcome
 from evals.model_provider_errors import ProviderFatal
 from evals.run_nuisance import NuisanceCommandDeps
-from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_harness, scripted
+from evals.session_usage import SessionThrottles
+from tests.unit.nuisance.gate.support.nuisance_gate_sessions import a_gate_run, a_harness, scripted
 from tests.unit.support import census_draws, censuses
 from tests.unit.support.holdout_run_conditions import SETTINGS, ready_conditions
 
@@ -160,3 +166,53 @@ def a_gate_stopped_by_a_revoked_key(directory: Path) -> NuisanceCommandDeps:
             run_gate=stopped,
         )
     )
+
+
+def graphs_of_one_clean_audit() -> launch_audit_fakes.FakeGraphs:
+    return launch_audit_fakes.graph_reporting([grammar.a_report()])
+
+
+def a_gate_auditor(
+    graphs: launch_audit_fakes.FakeGraphs, *, tools_filtered: bool
+) -> SessionAuditor:
+    """An auditor under the overrides the gate's harness derives from conditions recording
+    `tools_filtered`."""
+    conditions = nuisance_gate_baselines.conditions().model_copy(
+        update={"tools_filtered": tools_filtered}
+    )
+    return SessionAuditor(
+        launch_audit_fakes.an_auditor(graphs=graphs), gate_overrides(conditions), SessionThrottles()
+    )
+
+
+@dataclass
+class AlarmedRun:
+    """A gate run of GATE_SERVER through the session itself, every run raising an alarm, beside a
+    baseline file no load accepts, reaching no Docker and no LLM. It holds the conditions the
+    harness was built with."""
+
+    directory: Path
+    built_with: list[NuisanceGateConditions] = field(default_factory=list[NuisanceGateConditions])
+
+    @property
+    def conditions(self) -> NuisanceGateConditions:
+        [conditions] = self.built_with
+        return conditions
+
+    @property
+    def deps(self) -> NuisanceCommandDeps:
+        return NuisanceCommandDeps(
+            gate=GateCommandDeps(
+                conditions=ready_conditions, settings=lambda: SETTINGS, harness=self._harness
+            )
+        )
+
+    def _harness(
+        self, conditions: NuisanceGateConditions, _concurrency: int
+    ) -> NuisanceGateHarness:
+        self.built_with.append(conditions)
+        baselines = self.directory / "baselines"
+        baselines.mkdir()
+        (baselines / "unreadable.json").write_text("{}")
+        alarms = [a_gate_run(True) for _ in range(conditions.runs)]
+        return a_harness(baselines, scripted({GATE_SERVER: alarms}))

@@ -94,7 +94,7 @@ def test_the_gate_conditions_refuse_an_unset_chain_setting():
     assert any("chain settings" in reason for reason in excinfo.value.reasons)
 
 
-def test_the_gate_conditions_read_the_settings_the_chain_settings_and_the_holdout_budget():
+def test_the_gate_conditions_read_the_settings_the_chain_settings_the_holdout_budget_and_a_filter():
     holdout = ready_conditions()
 
     conditions = gate_conditions(SETTINGS, holdout, 2)
@@ -106,5 +106,5 @@ def test_the_gate_conditions_read_the_settings_the_chain_settings_and_the_holdou
     assert conditions.tool_call_timeout == holdout.tool_call_timeout
     assert conditions.budget == HOLDOUT_TEST_BUDGET
     assert conditions.runs == 2
-    assert not conditions.tools_filtered
+    assert conditions.tools_filtered
     assert conditions.counter_fingerprint == counter_fingerprint()

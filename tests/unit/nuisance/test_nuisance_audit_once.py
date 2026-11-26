@@ -61,6 +61,7 @@ async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
     outcome = await audit_once(
         given.a_server_backed_by(lifecycle),
         given.an_auditor(),
+        tools_filter=None,
         backends=a_backend_registry(lifecycle),
     )
 
@@ -69,7 +70,9 @@ async def test_a_provisioner_failing_on_enter_is_a_launch_failure():
 
 
 async def test_a_server_taken_as_down_is_a_launch_failure():
-    outcome = await audit_once(an_admitted_server(), given.an_auditor_taking_the_server_as_down())
+    outcome = await audit_once(
+        an_admitted_server(), given.an_auditor_taking_the_server_as_down(), tools_filter=None
+    )
 
     assert isinstance(outcome, LaunchFailed)
     assert "failed to relaunch the server" in outcome.reason
@@ -83,7 +86,7 @@ async def test_a_server_taken_as_down_at_every_attempt_drops_as_a_launch_failure
     auditor = given.an_auditor_taking_the_server_as_down(audits=NUISANCE_INFRA_ATTEMPTS)
     server = an_admitted_server()
 
-    outcome = await nuisance_audit(server, lambda: audit_once(server, auditor))
+    outcome = await nuisance_audit(server, lambda: audit_once(server, auditor, tools_filter=None))
 
     assert outcome == DroppedRun(NotRunCause.LAUNCH_FAILURE)
 
@@ -95,6 +98,7 @@ async def test_a_launch_whose_container_name_cannot_be_read_stops_the_run():
         await audit_once(
             given.a_server_backed_by(lifecycle),
             given.an_auditor(),
+            tools_filter=None,
             backends=a_backend_registry(lifecycle),
         )
 
@@ -105,6 +109,7 @@ async def test_a_launch_failure_on_a_nuisance_holdout_run_keeps_the_error_type_n
     outcome = await audit_once(
         given.a_server_backed_by(lifecycle),
         given.an_auditor(TYPES_ONLY),
+        tools_filter=None,
         backends=a_backend_registry(lifecycle),
     )
 
@@ -121,7 +126,7 @@ async def test_a_missed_model_call_on_a_nuisance_holdout_run_prints_its_cause_no
     refused = given.a_report_refused_with_detail("secret-nonce")
     auditor = given.an_auditor(TYPES_ONLY, launch_audit_fakes.graph_reporting([refused]))
 
-    await audit_once(an_admitted_server(), auditor)
+    await audit_once(an_admitted_server(), auditor, tools_filter=None)
 
     assert "Refused by the model provider" in output.getvalue()
     assert "secret-nonce" not in output.getvalue()
@@ -135,11 +140,20 @@ async def test_the_run_overrides_reach_the_graph_and_the_client(
     connect = launch_audit_fakes.FakeConnect()
     auditor = given.an_auditor(graphs=graphs, connect=connect, overrides=RunOverrides(7, 9, 11))
 
-    await audit_once(an_admitted_server(), auditor)
+    await audit_once(an_admitted_server(), auditor, tools_filter=None)
 
     [graph_input] = graphs.graph_inputs
     assert (graph_input["chain_budget"], graph_input["max_chain_steps"]) == (7, 9)
     assert connect.timeouts == [11]
+
+
+async def test_the_tools_filter_its_caller_gives_reaches_the_graph():
+    graphs = launch_audit_fakes.graph_reporting([grammar.a_report()])
+    tools = frozenset({"read_file"})
+
+    await audit_once(an_admitted_server(), given.an_auditor(graphs=graphs), tools_filter=tools)
+
+    assert graphs.tools_filters == [tools]
 
 
 async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttled_requests(
@@ -156,7 +170,7 @@ async def test_a_throttled_attempt_retried_then_a_clean_one_counts_both_throttle
     auditor = given.an_auditor(graphs=launch_audit_fakes.graph_reporting([throttled, clean]))
     server = an_admitted_server()
 
-    outcome = await nuisance_audit(server, lambda: audit_once(server, auditor))
+    outcome = await nuisance_audit(server, lambda: audit_once(server, auditor, tools_filter=None))
 
     assert isinstance(outcome, NuisanceAudit)
     assert outcome.report is clean
@@ -170,7 +184,9 @@ async def test_an_audit_carries_its_server_health_and_warns_of_a_lost_connection
     output = a_captured_console(capsys, monkeypatch)
     server = an_admitted_server()
 
-    outcome = await audit_once(server, given.an_auditor_on_a_noisy_server(lost_calls=1))
+    outcome = await audit_once(
+        server, given.an_auditor_on_a_noisy_server(lost_calls=1), tools_filter=None
+    )
 
     assert isinstance(outcome, NuisanceAudit)
     assert outcome.health == ServerHealth(2, 1, relaunches=1)
@@ -183,7 +199,11 @@ async def test_an_audit_with_no_lost_connection_says_nothing_of_one(
 ):
     output = a_captured_console(capsys, monkeypatch)
 
-    await audit_once(an_admitted_server(), given.an_auditor_on_a_noisy_server(lost_calls=0))
+    await audit_once(
+        an_admitted_server(),
+        given.an_auditor_on_a_noisy_server(lost_calls=0),
+        tools_filter=None,
+    )
 
     assert "connection lost" not in output.getvalue()
 
@@ -197,8 +217,8 @@ async def test_two_concurrent_audits_of_one_backend_server_both_complete():
     )
 
     outcomes = await asyncio.gather(
-        audit_once(server, auditor, backends=registry),
-        audit_once(server, auditor, backends=registry),
+        audit_once(server, auditor, tools_filter=None, backends=registry),
+        audit_once(server, auditor, tools_filter=None, backends=registry),
     )
 
     assert all(isinstance(outcome, NuisanceAudit) for outcome in outcomes)
@@ -211,7 +231,7 @@ _SHAPES = pytest.mark.parametrize("grouped", [True, False], ids=["grouped", "bar
 async def test_a_server_failing_inside_the_graph_is_a_launch_failure(grouped: bool):
     auditor = given.an_auditor_raising(TimeoutError("list_tools timed out"), grouped=grouped)
 
-    outcome = await audit_once(an_admitted_server(), auditor)
+    outcome = await audit_once(an_admitted_server(), auditor, tools_filter=None)
 
     assert isinstance(outcome, LaunchFailed)
 
@@ -222,7 +242,7 @@ async def test_a_fatal_provider_error_stops_the_run(grouped: bool):
     auditor = given.an_auditor_raising(error, grouped=grouped)
 
     with pytest.raises(ProviderFatal) as stopped:
-        await audit_once(an_admitted_server(), auditor)
+        await audit_once(an_admitted_server(), auditor, tools_filter=None)
 
     assert stopped.value.cause is error
 
@@ -231,7 +251,7 @@ async def test_a_fatal_provider_error_stops_the_run(grouped: bool):
 async def test_a_transient_provider_error_is_named_without_its_message(grouped: bool):
     auditor = given.an_auditor_raising(ModelAPIError("secret-nonce"), grouped=grouped)
 
-    outcome = await audit_once(an_admitted_server(), auditor)
+    outcome = await audit_once(an_admitted_server(), auditor, tools_filter=None)
 
     assert isinstance(outcome, ProviderErrorAttempt)
     assert "ModelAPIError" in outcome.description

@@ -66,16 +66,18 @@ async def audit_once(
     server: AdmittedServer,
     auditor: SessionAuditor,
     *,
+    tools_filter: frozenset[str] | None,
     backends: Mapping[str, RegisteredBackend] = BACKENDS,
 ) -> NuisanceAudit | LaunchFailed | ProviderErrorAttempt:
-    """Raises `ProviderFatal` on a provider error no retry cures, and `UndecidableLaunch`, a
-    configuration error that stops the run as a `planting_spec` refusal does. A server taken as
-    down is a launch failure."""
+    """`tools_filter` is the caller's: None audits every tool. Raises `ProviderFatal` on a
+    provider error no retry cures, and `UndecidableLaunch`, a configuration error that stops the
+    run as a `planting_spec` refusal does. A server taken as down is a launch failure."""
     # The provisioner blocks for minutes and `DORIS_LAUNCH_LOCK` is a thread lock, so a plain
     # `with` inside the coroutine would freeze the loop and deadlock the server's gathered runs.
     try:
         async with entered_in_thread(nuisance_environment(server, backends)) as launch:
-            audit = await audit_launch(launch, auditor.auditor, auditor.overrides.shape(None))
+            shape = auditor.overrides.shape(tools_filter)
+            audit = await audit_launch(launch, auditor.auditor, shape)
     except AuditFailed as failure:
         if failure.kind is ProviderErrorKind.FATAL:
             raise ProviderFatal(failure.cause) from failure.cause

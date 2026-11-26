@@ -6,7 +6,7 @@ import tests.unit.support.nuisance_holdout_runs as holdout_runs
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.benign_call import BenignCallCheck
 from evals.cve.nuisance.fingerprint import nuisance_fixture_fingerprint
-from evals.cve.nuisance.gate.gate import ServerComparison, ServerOutcome
+from evals.cve.nuisance.gate.gate import NuisanceGateResult, ServerComparison, ServerOutcome
 from evals.cve.nuisance.gate.gate_audit import GateRun
 from evals.cve.nuisance.gate.gate_baseline import (
     NuisanceGateConditions,
@@ -120,6 +120,7 @@ def options(
         gate_packages=frozenset(packages),
         conditions=nuisance_gate_baselines.conditions(runs),
         record_baseline=record,
+        report_only=False,
     )
 
 
@@ -149,7 +150,14 @@ def a_baseline_file(
 def the_one_server_ends(
     session: NuisanceGateSession, outcome: ServerOutcome, gate_outcome: GateOutcome
 ) -> ServerComparison:
-    [comparison] = session.gate.servers
+    gate = decided(session)
+    [comparison] = gate.servers
     assert comparison.outcome == outcome
-    assert session.gate.outcome == gate_outcome
+    assert gate.outcome == gate_outcome
     return comparison
+
+
+def decided(session: NuisanceGateSession) -> NuisanceGateResult:
+    """The gate of a run that is not report-only."""
+    assert session.gate is not None
+    return session.gate

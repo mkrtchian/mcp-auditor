@@ -27,8 +27,9 @@ def test_the_summary_states_the_commit_and_the_model(
     print_nuisance_gate_summary(given.a_red_report(), REPORT_PATH)
 
     assert "Commit: c0ffee" in output.getvalue()
-    assert "Model: openai gpt-6-luna, judge gpt-6-luna, 3 run(s), concurrency 9" in (
-        output.getvalue()
+    assert (
+        "Model: openai gpt-6-luna, judge gpt-6-luna, 3 run(s), tools filtered, concurrency 9"
+        in (output.getvalue())
     )
 
 
@@ -121,6 +122,7 @@ def test_the_summary_ends_with_the_verdict_panel(
     print_nuisance_gate_summary(report, REPORT_PATH)
     summary = output.getvalue()
     output = a_captured_console(capsys, monkeypatch)
+    assert report.gate is not None
 
     print_outcome(report.gate.outcome, report.gate.reasons)
 

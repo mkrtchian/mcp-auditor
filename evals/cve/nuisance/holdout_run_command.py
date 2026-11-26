@@ -84,7 +84,7 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
     timeout = overrides.tool_call_timeout or TOOL_CALL_TIMEOUT
 
     async def audit(server: AdmittedServer) -> NuisanceAudit | DroppedRun:
-        return await nuisance_audit(server, lambda: audit_once(server, auditor))
+        return await holdout_audit(server, auditor)
 
     return NuisanceDeps(
         bounded(audit, concurrency),
@@ -100,6 +100,13 @@ def default_deps(overrides: RunOverrides, concurrency: int) -> NuisanceDeps:
         DOCKER_SWEEP,
         check_closed_network_support,
     )
+
+
+async def holdout_audit(
+    server: AdmittedServer, auditor: SessionAuditor
+) -> NuisanceAudit | DroppedRun:
+    """Every tool: the rule's run conditions fix no tools filter for a nuisance holdout run."""
+    return await nuisance_audit(server, lambda: audit_once(server, auditor, tools_filter=None))
 
 
 @dataclass(frozen=True)

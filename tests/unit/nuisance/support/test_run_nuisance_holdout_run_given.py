@@ -4,15 +4,19 @@ from typing import Any
 
 from pydantic import BaseModel
 
+import tests.unit.support.grammar_inputs as grammar
+import tests.unit.support.launch_audit_fakes as launch_audit_fakes
 import tests.unit.support.nuisance_admissions as admissions
 import tests.unit.support.nuisance_holdout_runs as holdout_runs
 import tests.unit.support.nuisance_walks as walks
+from evals.cve.launch_audit import RunOverrides, SessionAuditor
 from evals.cve.nuisance.admission.admission import NuisanceAdmission
 from evals.cve.nuisance.holdout_run import NuisanceDeps, NuisanceHoldoutRunInputs
 from evals.cve.nuisance.holdout_run_command import RunCommandDeps
 from evals.cve.nuisance.results import NuisanceHoldoutRunResult
 from evals.cve.run_files import write_report
 from evals.run_nuisance import NuisanceCommandDeps
+from evals.session_usage import SessionThrottles
 from mcp_auditor.config import Settings
 from tests.unit.nuisance.support.nuisance_report_runs import a_run, a_server_result
 from tests.unit.support import census_draws, censuses
@@ -71,6 +75,19 @@ def an_admitted_run_capturing_its_inputs() -> tuple[
 
 def a_run_result() -> NuisanceHoldoutRunResult:
     return a_run([a_server_result()])
+
+
+def graphs_of_one_audit() -> launch_audit_fakes.FakeGraphs:
+    return launch_audit_fakes.graph_reporting([grammar.a_report()])
+
+
+def an_auditor(graphs: launch_audit_fakes.FakeGraphs) -> SessionAuditor:
+    """An auditor under the overrides of the committed holdout run conditions."""
+    return SessionAuditor(
+        launch_audit_fakes.an_auditor(graphs=graphs),
+        RunOverrides.of_holdout(ready_conditions()),
+        SessionThrottles(),
+    )
 
 
 def an_admitted_run_ending_in(

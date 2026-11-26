@@ -42,7 +42,7 @@ def conditions(runs: int = 3) -> NuisanceGateConditions:
     return NuisanceGateConditions(
         runs=runs,
         budget=HOLDOUT_TEST_BUDGET,
-        tools_filtered=False,
+        tools_filtered=True,
         provider="openai",
         model="gpt-6-luna",
         judge_model="gpt-6-luna",

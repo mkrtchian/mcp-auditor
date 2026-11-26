@@ -22,6 +22,7 @@ from tests.unit.nuisance.gate.support.nuisance_gate_sessions import (
     a_gated_file,
     a_harness,
     clean_runs,
+    decided,
     options,
     scripted,
     the_one_server_ends,
@@ -62,7 +63,7 @@ async def test_an_alarm_that_does_not_reproduce_keeps_the_gate_green(tmp_path: P
 
     comparison = the_one_server_ends(session, ServerOutcome.ALARM_NOT_REPRODUCED, GateOutcome.GREEN)
     assert comparison.retests == [False, False]
-    assert any(FILESYSTEM.server_package in reason for reason in session.gate.reasons)
+    assert any(FILESYSTEM.server_package in reason for reason in decided(session).reasons)
     assert session.exit_code == 0
 
 
@@ -75,7 +76,7 @@ async def test_an_alarm_on_a_server_flagged_in_its_baseline_is_inconclusive(tmp_
 
     comparison = the_one_server_ends(session, ServerOutcome.INCONCLUSIVE, GateOutcome.GREEN)
     assert comparison.retests == []
-    assert any(FILESYSTEM.server_package in reason for reason in session.gate.reasons)
+    assert any(FILESYSTEM.server_package in reason for reason in decided(session).reasons)
     assert session.exit_code == 0
 
 
@@ -148,7 +149,7 @@ async def test_head_moving_during_the_runs_refuses_the_recording(tmp_path: Path)
     ]
     assert session.written == []
     assert load_baselines(tmp_path) == {}
-    assert session.gate.outcome == GateOutcome.GREEN
+    assert decided(session).outcome == GateOutcome.GREEN
     assert session.exit_code == 3
 
 
@@ -212,7 +213,7 @@ async def test_a_baseline_file_of_a_server_outside_the_gate_set_is_an_orphan(tmp
     session = await run_gate(options([FILESYSTEM]), a_harness(tmp_path, audit))
 
     assert session.orphans == [orphan]
-    assert [s.server_package for s in session.gate.servers] == [FILESYSTEM.server_package]
+    assert [s.server_package for s in decided(session).servers] == [FILESYSTEM.server_package]
 
 
 async def test_a_one_server_run_leaves_the_other_gate_file_out_of_the_comparison(
@@ -227,9 +228,9 @@ async def test_a_one_server_run_leaves_the_other_gate_file_out_of_the_comparison
         a_harness(tmp_path, audit),
     )
 
-    assert [s.server_package for s in session.gate.servers] == [FILESYSTEM.server_package]
+    assert [s.server_package for s in decided(session).servers] == [FILESYSTEM.server_package]
     assert session.orphans == []
-    assert session.gate.outcome == GateOutcome.NOT_COMPARABLE
+    assert decided(session).outcome == GateOutcome.NOT_COMPARABLE
 
 
 async def test_a_one_server_recording_is_refused_on_the_other_gate_file_mismatch(

@@ -10,7 +10,9 @@ import tests.unit.support.admission_mutations as mutations
 import tests.unit.support.nuisance_admissions as admissions
 from evals import run_nuisance
 from evals.baseline import BaselineStatus
+from evals.cve.nuisance.counting import counted_tools
 from evals.cve.nuisance.exits import EXIT_REASON_TEXTS, ExitReason
+from evals.cve.nuisance.gate.gate_command_deps import gate_audit
 
 
 def test_gate_without_an_admission_exits_zero_and_says_so(
@@ -209,3 +211,55 @@ def test_a_fatal_provider_error_prints_the_crash_panel_without_its_message(
     assert given.REVOKED_KEY not in captured.err
     assert given.REVOKED_KEY not in captured.out
     assert "PermissionError" in captured.out
+
+
+async def test_the_gate_audits_the_counted_tools_of_its_server():
+    server = admissions.an_admitted_server()
+    graphs = given.graphs_of_one_clean_audit()
+
+    await gate_audit(server, given.a_gate_auditor(graphs, tools_filtered=True))
+
+    assert graphs.tools_filters == [frozenset(counted_tools(server))]
+    assert counted_tools(server)
+
+
+async def test_the_gate_without_its_tools_filter_audits_every_tool():
+    graphs = given.graphs_of_one_clean_audit()
+
+    await gate_audit(
+        admissions.an_admitted_server(), given.a_gate_auditor(graphs, tools_filtered=False)
+    )
+
+    assert graphs.tools_filters == [None]
+
+
+def test_gate_without_its_tools_filter_reports_every_tool_and_exits_zero_whatever_the_alarms(
+    tmp_path: Path,
+):
+    every_tool = given.AlarmedRun(tmp_path)
+    arguments = given.arguments_for_one_gate_server(tmp_path)
+
+    exit_code = run_nuisance.main(["gate", "--no-tools-filter", *arguments], every_tool.deps)
+
+    assert exit_code == 0
+    assert not every_tool.conditions.tools_filtered
+    report = (tmp_path / "nuisance_gate_report.md").read_text()
+    assert "all tools" in report
+    assert "tools filtered" not in report
+    assert (tmp_path / "nuisance_gate_judged_cases.jsonl").exists()
+
+
+def test_gate_refuses_to_record_a_baseline_without_its_tools_filter(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    recording = given.GreenRecording(tmp_path, BaselineStatus.UNCONFIRMED)
+    arguments = given.arguments_for_one_gate_server(tmp_path)
+
+    exit_code = run_nuisance.main(
+        ["gate", "--record-baseline", "--no-tools-filter", *arguments], recording.deps
+    )
+
+    assert exit_code == 3
+    assert "--no-tools-filter" in capsys.readouterr().out
+    assert recording.received == []
+    assert not (tmp_path / "nuisance_gate_report.json").exists()

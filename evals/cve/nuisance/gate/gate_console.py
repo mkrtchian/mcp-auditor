@@ -8,6 +8,7 @@ from rich.text import Text
 from evals.cve.nuisance.gate.gate_judged_cases_export import nuisance_gate_export_path
 from evals.cve.nuisance.gate.gate_report import (
     GATE_LEGEND,
+    REPORT_ONLY,
     NuisanceGateReport,
     gate_rows,
     outside_gate_line,
@@ -31,7 +32,10 @@ def print_nuisance_gate_summary(report: NuisanceGateReport, report_path: Path) -
     _print_listed("Outside the gate:", [outside_gate_line(e) for e in report.outside_gate])
     print_throttles(report.throttled_requests, report.concurrency)
     print_report_paths(report_path, nuisance_gate_export_path(report_path))
-    print_outcome(report.gate.outcome, report.gate.reasons)
+    if report.gate is None:
+        console.print(f"[yellow]{REPORT_ONLY}[/yellow]")
+    else:
+        print_outcome(report.gate.outcome, report.gate.reasons)
 
 
 def _print_lines(lines: list[str]) -> None:

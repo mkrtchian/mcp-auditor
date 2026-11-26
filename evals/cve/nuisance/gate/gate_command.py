@@ -1,5 +1,7 @@
-"""The `gate` subcommand of run_nuisance: audit the admitted nuisance acceptance servers and
-compare each to its baseline under `evals/baselines/nuisance/`."""
+"""The `gate` subcommand of run_nuisance: audit the counted tools of each admitted
+nuisance acceptance server and compare it to its baseline under `evals/baselines/nuisance/`.
+`--no-tools-filter` audits every tool in a report-only run, which gates nothing and records no
+baseline."""
 
 import argparse
 import asyncio
@@ -56,17 +58,25 @@ from evals.cve.nuisance.gate.gate_session_model import (
 )
 from evals.cve.run_files import write_report
 from evals.eval_display import console
-from evals.eval_session import Refused
+from evals.eval_session import RECORDING_REFUSED, Refused
 from evals.model_provider_errors import ProviderFatal
 
 DEFAULT_GATE_REPORT_PATH = "output/nuisance_gate_report.json"
 _BASELINES = "evals/baselines/nuisance/"
 _RECORD_COMMAND = "uv run python -m evals.run_nuisance gate --record-baseline"
+RECORD_WITHOUT_TOOLS_FILTER = (
+    "--record-baseline cannot run --no-tools-filter: a baseline records the counted tools it gates"
+)
 
 
 def add_gate_arguments(gate_parser: argparse.ArgumentParser, deps: GateCommandDeps) -> None:
     gate_parser.set_defaults(command=functools.partial(gate, deps=deps))
     gate_parser.add_argument("--record-baseline", action="store_true")
+    gate_parser.add_argument(
+        "--no-tools-filter",
+        action="store_true",
+        help="audit every tool of each server, report only: no baseline read, nothing gated",
+    )
     gate_parser.add_argument("--runs", type=positive_int, default=NUISANCE_GATE_RUNS)
     gate_parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
     gate_parser.add_argument(
@@ -77,6 +87,8 @@ def add_gate_arguments(gate_parser: argparse.ArgumentParser, deps: GateCommandDe
 
 
 def gate(args: argparse.Namespace, deps: GateCommandDeps) -> int:
+    if args.record_baseline and args.no_tools_filter:
+        raise Refused(RECORDING_REFUSED, [RECORD_WITHOUT_TOOLS_FILTER])
     with malformed_input_refused():
         walk_inputs = committed_walk_inputs(args.census, args.walk_record)
         admission = committed_admission(args.admission, walk_inputs)
@@ -105,6 +117,8 @@ def _selected(servers: list[AdmittedServer], packages: list[str]) -> list[Admitt
 
 def _run_gate(args: argparse.Namespace, servers: GateServers, deps: GateCommandDeps) -> int:
     conditions = gate_conditions(deps.settings(), deps.conditions(), args.runs)
+    if args.no_tools_filter:
+        conditions = conditions.model_copy(update={"tools_filtered": False})
     options = _gate_options(args, servers.audited, conditions)
     harness = deps.harness(options.conditions, args.concurrency)
     tree = harness.read_tree()
@@ -152,6 +166,7 @@ def _gate_options(
         gate_packages=frozenset(server.server_package for server in servers),
         conditions=conditions,
         record_baseline=args.record_baseline,
+        report_only=args.no_tools_filter,
     )
 
 

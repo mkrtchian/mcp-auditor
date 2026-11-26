@@ -2,10 +2,13 @@
 `evals/baselines/nuisance/`, one file per nuisance acceptance server, the counterpart of the
 baseline half of `evals.cve.detection.baseline`.
 
-The conditions are the nuisance holdout run's (the holdout test budget, no tools filter, the chain
-settings and tool call timeout of `evals/holdout_conditions.json`), since the gate gates what the
-holdout nuisance rate measures. The counter and grammar fingerprints are conditions, so a change to
-either is a whole reset (nuisance-suite-rule.md, Versioning).
+The conditions are the nuisance holdout run's (the holdout test budget, the chain settings and tool
+call timeout of `evals/holdout_conditions.json`), since the gate gates what the holdout nuisance
+rate measures, but for the tools filter: the gate audits each server's counted tools, as the
+detection gate audits a target's tools filter, where the nuisance holdout run audits every tool.
+An alarm is a FAIL on a counted tool, so the filter keeps every tool the gate decides on. The
+counter and grammar fingerprints are conditions, so a change to either is a whole reset
+(nuisance-suite-rule.md, Versioning).
 """
 
 import re
@@ -32,7 +35,8 @@ WHOLE_RESET = whole_reset(_BASELINE_DIRECTORY)
 class NuisanceGateConditions(BaseModel):
     runs: int
     budget: int
-    # Always False (the rule fixes no tools filter), recorded because ADR 024 lists it.
+    # True: the gate audits the counted tools, the nuisance holdout run every tool. False only on
+    # a `--no-tools-filter` run, which reads and records no baseline.
     tools_filtered: bool
     provider: str
     model: str
@@ -56,7 +60,7 @@ def gate_conditions(
     return NuisanceGateConditions(
         runs=runs,
         budget=HOLDOUT_TEST_BUDGET,
-        tools_filtered=False,
+        tools_filtered=True,
         **ModelConditions.of(settings).model_dump(),
         chain_budget=chain,
         max_chain_steps=steps,

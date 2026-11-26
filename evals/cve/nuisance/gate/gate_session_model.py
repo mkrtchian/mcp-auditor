@@ -47,6 +47,7 @@ class NuisanceGateOptions:
     gate_packages: frozenset[str]  # the whole gate set, before --server
     conditions: NuisanceGateConditions
     record_baseline: bool
+    report_only: bool  # reads no baseline and gates nothing, under --no-tools-filter
 
 
 @dataclass(frozen=True)
@@ -69,7 +70,7 @@ class GateAudit:
 @dataclass(frozen=True)
 class NuisanceGateSession:
     audits: list[GateAudit]
-    gate: NuisanceGateResult
+    gate: NuisanceGateResult | None  # None on a report-only run
     not_run: dict[str, str]  # package to the benign call's failure
     orphans: list[str]  # baseline files of servers outside the gate set
     written: list[WrittenBaseline]

@@ -13,6 +13,7 @@ from evals.cve.images import ComposeImageStore, backend_image_ids, image_ids
 from evals.cve.launch_audit import RunOverrides, SessionAuditor, build_auditor
 from evals.cve.nuisance.admission.admission import AdmittedServer
 from evals.cve.nuisance.audit import audit_once, nuisance_audit
+from evals.cve.nuisance.counting import counted_tools
 from evals.cve.nuisance.gate.gate_audit import GateRun, gate_run
 from evals.cve.nuisance.gate.gate_baseline import (
     NUISANCE_GATE_BASELINE_DIRECTORY,
@@ -37,16 +38,13 @@ type GateSessionRunner = Callable[
 
 
 def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> NuisanceGateHarness:
-    overrides = RunOverrides(
-        conditions.chain_budget, conditions.max_chain_steps, conditions.tool_call_timeout
-    )
     throttles = SessionThrottles()
-    auditor = SessionAuditor(build_auditor(conditions.budget), overrides, throttles)
+    auditor = SessionAuditor(
+        build_auditor(conditions.budget), gate_overrides(conditions), throttles
+    )
 
     async def audit(server: AdmittedServer) -> GateRun | None:
-        return await gate_run(
-            server, lambda: nuisance_audit(server, lambda: audit_once(server, auditor))
-        )
+        return await gate_audit(server, auditor)
 
     return NuisanceGateHarness(
         audit=bounded(audit, concurrency),
@@ -61,6 +59,27 @@ def default_harness(conditions: NuisanceGateConditions, concurrency: int) -> Nui
         baselines=NUISANCE_GATE_BASELINE_DIRECTORY,
         check_networks=check_closed_network_support,
         sweep=DOCKER_SWEEP,
+    )
+
+
+def gate_overrides(conditions: NuisanceGateConditions) -> RunOverrides:
+    return RunOverrides(
+        conditions.chain_budget,
+        conditions.max_chain_steps,
+        conditions.tool_call_timeout,
+        audit_every_tool=not conditions.tools_filtered,
+    )
+
+
+async def gate_audit(server: AdmittedServer, auditor: SessionAuditor) -> GateRun | None:
+    """On the server's counted tools, as the detection gate audits a target's tools filter: an
+    alarm is a FAIL on a counted tool. Under `--no-tools-filter` the overrides audit every tool."""
+    tools_filter = frozenset(counted_tools(server))
+    return await gate_run(
+        server,
+        lambda: nuisance_audit(
+            server, lambda: audit_once(server, auditor, tools_filter=tools_filter)
+        ),
     )
 
 

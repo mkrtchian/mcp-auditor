@@ -36,7 +36,7 @@ class NuisanceGateReport(BaseModel):
     not_admitted: list[str]
     outside_gate: list[ServerExit]
     orphans: list[str]
-    gate: NuisanceGateResult
+    gate: NuisanceGateResult | None  # None on a report-only run
     written: list[str]
     recording_refused: list[str]
 
@@ -71,8 +71,7 @@ def render_markdown(report: NuisanceGateReport) -> str:
             *render_conditions(report),
             *throttled_lines(report.throttled_requests, report.concurrency),
             "",
-            f"Outcome: **{report.gate.outcome.value}**",
-            *[f"- {reason}" for reason in report.gate.reasons],
+            *_outcome_lines(report.gate),
             "",
             *_servers_section(report),
             *_listed("## Not run", [f"{p}: {why}" for p, why in report.not_run.items()]),
@@ -87,13 +86,23 @@ def render_markdown(report: NuisanceGateReport) -> str:
     )
 
 
+REPORT_ONLY = "Report-only run, every tool audited: no baseline read, nothing gated."
+
+
+def _outcome_lines(gate: NuisanceGateResult | None) -> list[str]:
+    if gate is None:
+        return [REPORT_ONLY]
+    return [f"Outcome: **{gate.outcome.value}**", *[f"- {reason}" for reason in gate.reasons]]
+
+
 def render_conditions(report: NuisanceGateReport) -> list[str]:
     dirty = " (dirty tree)" if report.dirty else ""
     conditions = report.conditions
+    tools = "tools filtered" if conditions.tools_filtered else "all tools"
     return [
         f"Commit: {report.commit}{dirty}",
         f"Model: {conditions.provider} {conditions.model}, judge {conditions.judge_model}, "
-        f"{conditions.runs} run(s), concurrency {report.concurrency}",
+        f"{conditions.runs} run(s), {tools}, concurrency {report.concurrency}",
     ]
 
 
@@ -122,6 +131,8 @@ GATE_LEGEND = (
 
 
 def gate_rows(report: NuisanceGateReport) -> list[GateRow]:
+    if report.gate is None:
+        return [_report_only_row(line) for line in report.servers]
     lines = {line.server_package: line for line in report.servers}
     return [
         GateRow(
@@ -134,6 +145,17 @@ def gate_rows(report: NuisanceGateReport) -> list[GateRow]:
         )
         for comparison in report.gate.servers
     ]
+
+
+def _report_only_row(line: GateServerLine) -> GateRow:
+    return GateRow(
+        subject=line.server_package,
+        outcome="-",
+        baseline="-",
+        run=_server_letters(line.flagged_per_run),
+        retests="-",
+        detail="; ".join(_flagged_tools(line)) or "-",
+    )
 
 
 def _markdown_row(row: GateRow) -> str:

@@ -76,4 +76,5 @@ async def test_gate_plays_the_solo_benign_call_audits_and_retests_alone(tmp_path
     calls = 1 + len(given.GATE_AUDITS)
     then.each_played_alone_after_the_others(in_flight, [given.SOLO_SERVER], calls=calls)
     then.played_together(in_flight, [s.server_package for s in others], peak=given.BOUND)
+    assert session.gate is not None
     assert session.gate.outcome == GateOutcome.GREEN

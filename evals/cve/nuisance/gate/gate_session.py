@@ -1,7 +1,8 @@
 """One nuisance gate run on the nuisance acceptance servers (nuisance-suite-rule.md, Run conditions
 and statistic, under ADR 024): the benign call of every gate server, then its runs, the gate and the
 retests of a gated server's alarm, with git, Docker, the clock, the audit and the baseline
-directory injected. A server whose benign call fails on both passes of the vet is not audited,
+directory injected. A report-only run (`gate --no-tools-filter`) reads no baseline, gates nothing
+and exits 0. A server whose benign call fails on both passes of the vet is not audited,
 reads not_run and leaves the gate not comparable. The value objects live in `gate_session_model`,
 the recording in `gate_session_recording`."""
 
@@ -38,6 +39,7 @@ from evals.cve.nuisance.gate.gate_session_model import (
     NuisanceGateSession,
     OpenedGate,
     ServerRuns,
+    WrittenBaseline,
 )
 from evals.cve.nuisance.gate.gate_session_recording import record, recording_tree
 from evals.cve.nuisance.solo import gathered_then_alone, played_alone
@@ -68,8 +70,10 @@ async def run_gate(
 async def _run_opened(opened: OpenedGate) -> NuisanceGateSession:
     not_run = await _vetted(opened)
     runs = await _run_servers(opened, not_run)
-    gate = await _gate(opened, runs, not_run)
-    recorded = record(opened, runs, gate)
+    gate = None if opened.options.report_only else await _gate(opened, runs, not_run)
+    recorded: list[WrittenBaseline] | RecordingRefused = (
+        [] if gate is None else record(opened, runs, gate)
+    )
     refused = recorded.reasons if isinstance(recorded, RecordingRefused) else []
     return NuisanceGateSession(
         audits=[audit for server_runs in runs for audit in server_runs.audits],
@@ -79,12 +83,20 @@ async def _run_opened(opened: OpenedGate) -> NuisanceGateSession:
         written=[] if isinstance(recorded, RecordingRefused) else recorded,
         recording_refused=refused,
         throttled_requests=opened.harness.throttled_requests(),
-        # A green gate whose recording was refused never exits 0.
-        exit_code=NOT_COMPARABLE_EXIT if refused else gate.outcome.exit_code,
+        exit_code=_exit_code(gate, refused),
     )
 
 
+def _exit_code(gate: NuisanceGateResult | None, recording_refused: list[str]) -> int:
+    if gate is None:
+        return 0
+    # A green gate whose recording was refused never exits 0.
+    return NOT_COMPARABLE_EXIT if recording_refused else gate.outcome.exit_code
+
+
 def _open(options: NuisanceGateOptions, harness: NuisanceGateHarness) -> OpenedGate:
+    if options.report_only:
+        return OpenedGate(options, harness, files={}, tree=None)
     files = load_checked(
         harness.baselines, REFUSED_BEFORE_ANY_LLM_CALL, NUISANCE_GATE_BASELINE_STORE
     )

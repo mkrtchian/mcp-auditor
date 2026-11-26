@@ -11,6 +11,7 @@ import tests.unit.nuisance.support.test_run_nuisance_holdout_run_given as given
 import tests.unit.support.nuisance_admissions as admissions
 from evals import run_nuisance
 from evals.cve.nuisance.holdout_run import NUISANCE_RUNS
+from evals.cve.nuisance.holdout_run_command import holdout_audit
 from evals.cve.run_files import RunInterrupted
 from evals.model_provider_errors import ProviderFatal
 from tests.unit.support.admission_mutations import (
@@ -156,3 +157,11 @@ def test_run_help_gives_the_default_number_of_runs(capsys: pytest.CaptureFixture
 
     help_text = " ".join(capsys.readouterr().out.split())
     assert f"default {NUISANCE_RUNS}, lowerable to 1" in help_text
+
+
+async def test_a_nuisance_holdout_run_audits_every_tool():
+    graphs = given.graphs_of_one_audit()
+
+    await holdout_audit(admissions.an_admitted_server(), given.an_auditor(graphs))
+
+    assert graphs.tools_filters == [None]
