@@ -23,10 +23,16 @@ from evals.cve.backends.kubernetes import (
 from evals.cve.detection.calibration_dossier import write_kit
 from evals.cve.detection.targets import acceptance_services
 from evals.cve.docker_paths import image_dockerfile
+from evals.cve.images import FINGERPRINT_LABEL, dockerfile_fingerprint
 from evals.cve.kit.fix_check import FixCheckFixture
 from evals.cve.nuisance.admission.admission_docs import admission_confinement_text
 from evals.cve.nuisance.admission.dossier import NUISANCE_SUITE_RULE, write_dossier
-from evals.cve.planting_base import SENTINEL_IMAGE, STAND_IN_IMAGE
+from evals.cve.planting_base import (
+    SENTINEL_IMAGE,
+    SENTINEL_SERVICE,
+    STAND_IN_IMAGE,
+    STAND_IN_SERVICE,
+)
 from evals.eval_session import Refused
 from evals.repository import REPO_ROOT
 from tests.unit.nuisance.admission.support.holdout_target_reference_checks import (
@@ -215,12 +221,26 @@ def test_both_readmes_build_the_stand_in_image_beside_the_sentinel(tmp_path: Pat
     dossier_readme = (dossier / "README.md").read_text()
     kit_readme = (tmp_path / "kit" / "README.md").read_text()
     for build in (
-        f"docker build -t {SENTINEL_IMAGE} -f docker/Dockerfile.sentinel docker",
-        f"docker build -t {STAND_IN_IMAGE} -f docker/Dockerfile.stand-in docker",
+        f"docker build --label {FINGERPRINT_LABEL}={dockerfile_fingerprint(SENTINEL_SERVICE)}"
+        f" -t {SENTINEL_IMAGE} -f docker/Dockerfile.sentinel docker",
+        f"docker build --label {FINGERPRINT_LABEL}={dockerfile_fingerprint(STAND_IN_SERVICE)}"
+        f" -t {STAND_IN_IMAGE} -f docker/Dockerfile.stand-in docker",
     ):
         assert build in dossier_readme
         assert build in kit_readme
     assert "`evals/stand_ins/`" in kit_readme
+
+
+def test_both_readmes_ask_for_the_patched_responses_to_be_read(tmp_path: Path):
+    dossier = given.a_written_dossier(tmp_path)
+    write_kit(censuses.a_census(), censuses.FLAW_WITH_A_CVE, tmp_path / "kit")
+
+    dossier_readme = (dossier / "README.md").read_text()
+    kit_readme = (tmp_path / "kit" / "README.md").read_text()
+    assert "check_fix(fixture, show_exploit_responses=True)" in dossier_readme
+    assert "check_target(target, places, show_exploit_responses=True)" in kit_readme
+    for readme in (dossier_readme, kit_readme):
+        assert "never reached the code the fix changed" in " ".join(readme.split())
 
 
 def test_an_unknown_server_is_refused(tmp_path: Path):

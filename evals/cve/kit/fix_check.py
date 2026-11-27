@@ -36,7 +36,7 @@ from evals.cve.kit.argument_validation import (
     unreached_reasons,
 )
 from evals.cve.kit.client import KitMCPClient
-from evals.cve.kit.driver import Exchange, logged_exchanges, unit_of
+from evals.cve.kit.driver import Exchange, exploit_transcript, logged_exchanges, unit_of
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitBuilder, KitExploit
 from evals.cve.places import Place, Places
@@ -164,7 +164,7 @@ async def _exercise_shown(
     if exercise.benign:
         print(benign_transcript(fixture.flaw, service, exercise))
     if show_exploit_responses and exercise.exploits:
-        print(exploit_transcript(fixture.flaw, service, exercise))
+        print(exploit_transcript(fixture.flaw, service, exercise.exploits))
     return exercise
 
 
@@ -174,18 +174,6 @@ def benign_transcript(flaw: str, service: str, exercise: Exercised) -> str:
         f"{response.content!r}"
         for tool, _, response in exercise.benign
     )
-
-
-def exploit_transcript(flaw: str, service: str, exercise: Exercised) -> str:
-    return "\n".join(
-        f"{flaw} {service}: exploit {index} {tool}({json.dumps(arguments)}) -> "
-        f"{'error' if response.is_error else 'ok'} {response.content[:_SHOWN_CHARACTERS]!r}"
-        for index, exploit in enumerate(exercise.exploits)
-        for tool, arguments, response in exploit
-    )
-
-
-_SHOWN_CHARACTERS = 500  # as the calibration check's exchange dumps cut a response
 
 
 async def _exercise(fixture: FixCheckFixture, service: str) -> Exercised:

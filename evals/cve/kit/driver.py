@@ -12,6 +12,7 @@ that runs as any account but the unprivileged one or the one named after a nonce
 Docker options the builder yields.
 """
 
+import json
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -58,13 +59,17 @@ class KitExchangeLog:
         return response
 
 
-async def check_target(target: KitTarget, places: Places) -> list[str]:
+async def check_target(
+    target: KitTarget, places: Places, show_exploit_responses: bool = False
+) -> list[str]:
     """The out-of-calibration reasons of a target on both versions, empty when it is live and
     fixed. Resolves the kept records and checks the spec before any launch, exercises the
-    vulnerable version, then the patched one once it is torn down."""
+    vulnerable version, then the patched one once it is torn down. `show_exploit_responses`
+    prints each exploit's exchanges on each version, the vulnerable one first, for reading the
+    patched responses beside the vulnerable ones."""
     records = kept_records(target.kept_places, places)
     target.planting_spec(records)
-    exercise = _Exercise(target, records, places)
+    exercise = _Exercise(target, records, places, show_exploit_responses)
     vulnerable = await exercise.version(TargetVersion.VULNERABLE)
     if vulnerable is None:
         return [_launch_failed(TargetVersion.VULNERABLE)]
@@ -144,6 +149,7 @@ class _Exercise:
     target: KitTarget
     records: tuple[Place, ...]
     places: Places
+    show_exploit_responses: bool
 
     async def version(self, version: TargetVersion) -> _Exercised | None:
         target = self.target
@@ -159,6 +165,8 @@ class _Exercise:
                         benign, exploits = await self._calls(client)
             except Exception:
                 return None
+        if self.show_exploit_responses and exploits:
+            print(exploit_transcript(target.flaw_id, version.value, exploits))
         return _Exercised(spec, options, exploits, benign, required)
 
     async def _calls(self, client: KitClient) -> tuple[list[Exchange], list[list[Exchange]]]:
@@ -173,6 +181,20 @@ async def logged_exchanges(call: KitExploit, places: Places, client: KitClient) 
     log = KitExchangeLog(client)
     await call(places, log)
     return log.exchanges
+
+
+def exploit_transcript(flaw: str, label: str, exploits: Sequence[list[Exchange]]) -> str:
+    """Each exploit's calls on one version, with their arguments and responses cut at
+    SHOWN_CHARACTERS, labelled by the version or service."""
+    return "\n".join(
+        f"{flaw} {label}: exploit {index} {tool}({json.dumps(arguments)}) -> "
+        f"{'error' if response.is_error else 'ok'} {response.content[:SHOWN_CHARACTERS]!r}"
+        for index, exploit in enumerate(exploits)
+        for tool, arguments, response in exploit
+    )
+
+
+SHOWN_CHARACTERS = 500  # as the calibration check's exchange dumps cut a response
 
 
 def options_before_image(args: Sequence[str], image: str) -> list[str]:

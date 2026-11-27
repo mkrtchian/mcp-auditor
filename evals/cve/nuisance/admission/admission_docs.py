@@ -14,6 +14,7 @@ from evals.cve.backends.kubernetes import (
 )
 from evals.cve.census.classification import GRAMMAR_CLASS_DEFINITIONS
 from evals.cve.detection.targets import acceptance_services
+from evals.cve.kit_dossier import shared_image_builds
 from evals.cve.nuisance.admission.admission import AdmittedServer, FlawRecord
 from evals.cve.nuisance.confinement import single_container_run_args
 from evals.cve.planting_base import PlantingHost, SymbolicUser, confinement_args
@@ -32,7 +33,7 @@ def fixture_format(backend: str | None) -> str:
 
 def admission_readme() -> str:
     names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
-    return _README.format(acceptance_services=names)
+    return _README.format(acceptance_services=names, shared_image_builds=shared_image_builds())
 
 
 def admission_confinement_text() -> str:
@@ -261,9 +262,11 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    under its real name, loaded from `evals/stand_ins/`):
 
    ```
-   docker build -t mcp-auditor-cve-sentinel:local -f docker/Dockerfile.sentinel docker
-   docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker
+{shared_image_builds}
    ```
+
+   The label is the fingerprint of each Dockerfile, which the repository checks before it runs
+   an image, so keep it.
 
 2. Read `advisories/<id>.json` (one per census flaw of the server), `fixture_format.md` and
    `grammar_classes.md`.
@@ -288,9 +291,22 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    required argument it lacks (`unreached_patched_exploits` is empty), and the benign call does
    not error on a patched version.
 
+   Then read the responses: `check_fix(fixture, show_exploit_responses=True)` prints each
+   exploit's calls and responses on each version, the vulnerable one first. For each exploit
+   that surfaces the witness on the vulnerable version, read its response on each patched
+   version beside the vulnerable one. A fix that holds answers with a refusal of the input (an
+   address, a path or a token refused) or runs the program the server calls with the payload as
+   a literal argument. A response that shows the exploit never reached the code the fix changed
+   (a target, file, recipe or other preparation missing on a patched version, a request blocked
+   before that code, a directory or resource that does not exist) proves nothing: repair the
+   fixture, for instance by giving the patched version the preparation the vulnerable one has,
+   and run it again.
+
 5. Paste the printed `FixCheckResult` into the flaw's `fix_check` record of the admission, and
    fill the rest of the `FlawRecord` and `AdmittedServer` fields (`fixture_format.md` carries
-   their schemas). Fill the nuisance suite rule v3 and v4 fields too, none left `null`.
+   their schemas). Fill the nuisance suite rule v3 and v4 fields too, none left `null`. With the
+   record, hand back, for each flaw, the patched response that shows the fix refusing each
+   exploit, or the one response that does when they all read alike.
 
 ## What else the dossier carries
 

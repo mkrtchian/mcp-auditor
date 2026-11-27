@@ -1,12 +1,8 @@
 import tests.unit.cve.support.test_kit_fix_check_given as given
 import tests.unit.support.fix_check_fixtures as fix_check_fixtures
 from evals.cve.kit.client import KitResponse
-from evals.cve.kit.fix_check import (
-    benign_transcript,
-    exploit_transcript,
-    fix_check_notes,
-    fix_check_result,
-)
+from evals.cve.kit.driver import exploit_transcript
+from evals.cve.kit.fix_check import benign_transcript, fix_check_notes, fix_check_result
 from evals.cve.nuisance.admission.admission import FixCheckRecord
 
 
@@ -147,7 +143,7 @@ def test_a_patched_call_to_a_tool_the_version_does_not_list_is_a_note_with_no_ve
 def test_the_exploit_transcript_shows_each_call_with_its_arguments_and_cut_response():
     exercise = given.an_exercise([given.exchanges_surfacing("x" * 600)])
 
-    transcript = exploit_transcript("CVE-FAKE", "fake-patched", exercise)
+    transcript = exploit_transcript("CVE-FAKE", "fake-patched", exercise.exploits)
 
     assert transcript.startswith(
         'CVE-FAKE fake-patched: exploit 0 read_file({"path": "cat /tmp/witness"}) -> ok '

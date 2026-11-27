@@ -19,7 +19,13 @@ from evals.cve.census.census import CLASSIFIERS, Census, CensusFlaw
 from evals.cve.census.classification import CENSUS_GRAMMAR_CLASSES, Classification
 from evals.cve.detection.draw_record import CalibrationCard
 from evals.cve.detection.targets import acceptance_services
-from evals.cve.kit_dossier import KIT_ROOTS, Dossier, advisory_dossier, copy_kit_sources
+from evals.cve.kit_dossier import (
+    KIT_ROOTS,
+    Dossier,
+    advisory_dossier,
+    copy_kit_sources,
+    shared_image_builds,
+)
 from evals.eval_session import Refused
 
 
@@ -80,7 +86,7 @@ def _write_docs(out: Path) -> None:
 
 def _readme() -> str:
     names = ", ".join(f"`{name}`" for name in sorted(acceptance_services()))
-    return _README.format(acceptance_services=names)
+    return _README.format(acceptance_services=names, shared_image_builds=shared_image_builds())
 
 
 def _fixture_format() -> str:
@@ -203,11 +209,11 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    capture under its real name):
 
    ```
-   docker build -t mcp-auditor-cve-sentinel:local -f docker/Dockerfile.sentinel docker
-   docker build -t mcp-auditor-cve-stand-in:local -f docker/Dockerfile.stand-in docker
+{shared_image_builds}
    ```
 
-   The first launch also pulls the busybox pinned by digest in
+   The label is the fingerprint of each Dockerfile, which the repository checks before it runs
+   an image, so keep it. The first launch also pulls the busybox pinned by digest in
    `evals/cve/planting_docker.py` (`LAYOUT_HELPER_IMAGE`), which hands the layout over and
    removes it, so it needs network once.
 
@@ -229,14 +235,26 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    the vulnerable version has a call the patched version's SDK does not reject at argument
    validation for a required argument it lacks).
 
+   Then read the responses: `check_target(target, places, show_exploit_responses=True)` prints
+   each exploit's calls and responses on the vulnerable version, then on the patched one. For
+   each exploit that surfaces a nonce on the vulnerable version, read its response on the
+   patched version beside the vulnerable one. A fix that holds answers with a refusal of the
+   input (an address, a path or a token refused) or runs the program the server calls with the
+   payload as a literal argument. A response that shows the exploit never reached the code the
+   fix changed (a target, file, recipe or other preparation missing on the patched version, a
+   request blocked before that code, a directory or resource that does not exist) proves
+   nothing: repair the fixture, for instance by giving the patched version the preparation the
+   vulnerable one has, and run it again.
+
 5. Fill the calibration card (`fixture_format.md` carries its schema): the mechanism, the effect
    class, the siblings, the kept and unkept places, the launch options, the seeded layout files,
    each item seeded outside the layout (`seeded_outside_layout`) and each stand-in with the
    source of its outputs (`stand_ins`), both with the tools that return it or use it by default,
    the release of each real software the fixture runs (`software_releases`), with the day that
    release was the current stable one when the documentation names no version, the exploit and
-   benign calls, the patched result and the number of attempts. `[]` records that there is
-   nothing to declare.
+   benign calls, the patched result and the number of attempts. The patched result quotes the
+   patched response that shows the fix refusing each exploit, or the one response that does
+   when they all read alike. `[]` records that there is nothing to declare.
 
 ## The layout and route checks are NOT in the kit
 
