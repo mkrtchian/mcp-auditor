@@ -29,7 +29,8 @@ def a_tool(name: str, required: list[str] | None = None) -> KitTool:
 
 
 # The SDKs' own argument-validation errors: the pydantic and TypeScript ones as the patched versions
-# answered them on 2026-11-27, the low-level Python server's as mcp 1.30.0 words it.
+# answered them on 2026-11-27, the low-level Python server's as mcp 1.30.0 words it, and the
+# TypeScript SDK's up to 1.20.0, which carries no "Input validation error".
 PYTHON_REJECTION = KitResponse(
     "Error executing tool process_natural_language: 1 validation error for"
     " process_natural_languageArguments\nquery\n  Field required [type=missing]",
@@ -39,6 +40,9 @@ TYPESCRIPT_REJECTION = KitResponse(
     "MCP error -32602: Input validation error: Invalid arguments for tool git_clone: Invalid"
     " input: expected string, received undefined at url",
     is_error=True,
+)
+OLD_TYPESCRIPT_REJECTION = KitResponse(
+    "MCP error -32602: Invalid arguments for tool git_clone: Required at url", is_error=True
 )
 PYTHON_LOWLEVEL_REJECTION = KitResponse(
     "Input validation error: 'url' is a required property", is_error=True

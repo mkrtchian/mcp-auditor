@@ -206,15 +206,12 @@ def _names(rejections: Sequence[frozenset[str]]) -> str:
 # 2026-11-27), its low-level server with jsonschema's ("Input validation error: 'url' is a
 # required property", mcp/server/lowlevel/server.py in mcp 1.30.0), and the TypeScript SDK with
 # its invalid-params error ("MCP error -32602: Input validation error: Invalid arguments for tool
-# git_clone: ... received undefined at url", as a patched version answered on 2026-11-27).
+# git_clone: ... received undefined at url", as a patched version answered on 2026-11-27; up to
+# 1.20.0 the same error has no "Input validation error: " prefix).
 SDK_ARGUMENT_VALIDATION_MARKERS: tuple[tuple[re.Pattern[str], ...], ...] = (
     (re.compile(r"validation errors? for \w+Arguments"), re.compile(r"Field required")),
     (re.compile(r"Input validation error: "), re.compile(r"'[^']+' is a required property")),
-    (
-        re.compile(r"-32602"),
-        re.compile(r"Input validation error"),
-        re.compile(r"Invalid arguments for tool"),
-    ),
+    (re.compile(r"-32602"), re.compile(r"Invalid arguments for tool")),
 )
 
 

@@ -101,8 +101,13 @@ def test_an_exploit_whose_every_patched_call_the_sdk_rejects_never_reaches_the_p
 
 @pytest.mark.parametrize(
     "rejection",
-    [given.PYTHON_REJECTION, given.PYTHON_LOWLEVEL_REJECTION, given.TYPESCRIPT_REJECTION],
-    ids=["pydantic", "lowlevel", "typescript"],
+    [
+        given.PYTHON_REJECTION,
+        given.PYTHON_LOWLEVEL_REJECTION,
+        given.TYPESCRIPT_REJECTION,
+        given.OLD_TYPESCRIPT_REJECTION,
+    ],
+    ids=["pydantic", "lowlevel", "typescript", "typescript-1.20"],
 )
 def test_each_sdk_wording_of_a_missing_argument_counts(rejection: KitResponse):
     patched = given.patched(
