@@ -241,7 +241,7 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
    patched version beside the vulnerable one. A fix that holds answers with a refusal of the
    input (an address, a path or a token refused) or runs the program the server calls with the
    payload as a literal argument. A response that shows the exploit never reached the code the
-   fix changed (a target, file, recipe or other preparation missing on the patched version, a
+   fix changed (a target, file or other preparation missing on the patched version, a
    request blocked before that code, a directory or resource that does not exist) proves
    nothing: repair the fixture, for instance by giving the patched version the preparation the
    vulnerable one has, and run it again.
