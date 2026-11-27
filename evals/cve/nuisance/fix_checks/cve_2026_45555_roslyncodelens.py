@@ -9,8 +9,10 @@ NuGet global folder, the SDK install directory and the solution's own bin/obj.
 
 The witness is a file mounted read-only at a fixed path. The vulnerable image's baked solution
 references a solution-local analyzer DLL outside bin/obj that reads that file and reports its
-content as a diagnostic, so get_diagnostics surfaces it. The patched arm is the run image, whose
-clean solution references no such analyzer, so nothing surfaces; both benign calls return on it.
+content as a diagnostic, so get_diagnostics surfaces it. The patched arm runs the run's 1.17.0
+with the same solution and analyzer (Dockerfile.roslyncodelens-patched), so a witness that does not
+surface shows 1.17.0 refusing the analyzer: the run image's clean solution references none, and
+on it nothing could surface whatever the fix. Both benign calls return on the patched arm.
 """
 
 import re
@@ -92,7 +94,7 @@ FIXTURE = FixCheckFixture(
     exploits=(exploit_diagnostics, exploit_code_fixes),
     benign_calls=(benign_diagnostics, benign_code_fixes),
     vulnerable_service="roslyncodelens-vuln",
-    patched_service="roslyncodelens",
+    patched_service="roslyncodelens-patched",
     server_patched_service=None,
 )
 

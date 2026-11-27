@@ -126,6 +126,12 @@ ALLOWLIST = (
     AllowedLine(
         "evals/cve/nuisance/fix_checks/cve_2025_53107_git_mcp.py",
         "target-product",
+        '"target": "main"',
+        "the `target` argument of the git checkout tool, named by the audited server",
+    ),
+    AllowedLine(
+        "evals/cve/nuisance/fix_checks/cve_2025_53107_git_mcp.py",
+        "target-product",
         '"git_reset", {',
         "the `target` argument of git_reset, named by the audited server",
     ),

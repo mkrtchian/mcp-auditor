@@ -1,0 +1,40 @@
+# flyto-core 2.28.0 (the shipped server, the run's release) with the fix check's preparation, for
+# the server-patched arm of CVE-2026-55787, CVE-2026-67424, CVE-2026-67427 and CVE-2026-67428 and
+# the patched arm of CVE-2026-73530 only, never a run. The run image (Dockerfile.flyto) seeds no
+# nb08leak2 recipe and sets no FLYTO_ALLOWED_HOSTS, so on it the CVE-2026-67427 exploit finds no
+# recipe and the CVE-2026-67424 redirector is refused at its first hop, whatever the fix. Here every
+# arm carries the vulnerable image's recipes and allowlist, so a witness that does not surface shows
+# 2.28.0's guard. Same instructions as the run image, the preparation added last, for the layer
+# cache. Base pinned by digest (python:3.12-slim).
+FROM python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+RUN pip install --no-cache-dir "flyto-core==2.28.0"
+ENV FLYTO_SANDBOX_DIR=/tmp
+
+# The seeded recipe the benign run_recipe call runs: one pure string step, no backend.
+RUN recipes="$(python -c 'import cli.recipe as r; print(r.RECIPES_DIR)')" \
+ && printf '%s\n' \
+  'name: nb08benign' \
+  'description: benign recipe' \
+  'steps:' \
+  '  - id: u' \
+  '    module: string.uppercase' \
+  '    params:' \
+  '      text: "hello"' \
+  > "$recipes/nb08benign.yaml"
+
+# The seeded recipe the CVE-2026-67427 exploit runs: it interpolates ${env.FLYTO_LEAKME} into a
+# file.write path, surfacing the out-of-scope env secret in run_recipe's output_files.
+RUN recipes="$(python -c 'import cli.recipe as r; print(r.RECIPES_DIR)')" \
+ && printf '%s\n' \
+  'name: nb08leak2' \
+  'description: env interpolation probe' \
+  'steps:' \
+  '  - id: w' \
+  '    module: file.write' \
+  '    params:' \
+  '      path: "/tmp/${env.FLYTO_LEAKME}.txt"' \
+  '      content: "probe"' \
+  > "$recipes/nb08leak2.yaml"
+
+ENV FLYTO_ALLOWED_HOSTS=localhost
+ENTRYPOINT ["python", "-m", "core.mcp_server"]

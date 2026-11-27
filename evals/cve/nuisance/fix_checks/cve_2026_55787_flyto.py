@@ -18,10 +18,11 @@ guard one more case, so its exploit is refused once that version lands:
 
 vulnerable_service builds 2.26.2 (pre-fix for all five). patched_service builds each flaw's own
 first-fixing version, so patched_surfaces is false for all five. server_patched_service builds the
-server's shipped 2.28.0, the run image, and is None for CVE-2026-73530, first fixed at 2.28.0
-itself. For CVE-2026-67427 that arm tests nothing: the run image seeds no nb08leak2 recipe, so the
-exploit finds no recipe to run. For CVE-2026-67424 it is open whether the arm reaches the redirect,
-since the run image sets no FLYTO_ALLOWED_HOSTS.
+server's shipped 2.28.0 with the vulnerable image's nb08 recipes and FLYTO_ALLOWED_HOSTS=localhost
+(flyto-patched), and is None for CVE-2026-73530, whose patched_service is that image, 2.28.0 being
+its own first fix. The run image carries neither: on it the CVE-2026-67427 exploit finds no recipe
+to run and the CVE-2026-67424 redirector is refused at its first hop, so no arm on it would show
+the fix.
 
 The four internal_fetch flaws each count one tool, run_recipe, which reaches the same http.get
 sink through the shipped http-get recipe (recipes/http-get.yaml, whose http.get step fetches the
@@ -285,7 +286,7 @@ FIXTURES: tuple[FixCheckFixture, ...] = (
         benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.3",
-        server_patched_service="flyto",
+        server_patched_service="flyto-patched",
     ),
     FixCheckFixture(
         flaw="CVE-2026-67428",
@@ -301,7 +302,7 @@ FIXTURES: tuple[FixCheckFixture, ...] = (
         benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
-        server_patched_service="flyto",
+        server_patched_service="flyto-patched",
     ),
     FixCheckFixture(
         flaw="CVE-2026-67424",
@@ -317,7 +318,7 @@ FIXTURES: tuple[FixCheckFixture, ...] = (
         benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
-        server_patched_service="flyto",
+        server_patched_service="flyto-patched",
     ),
     FixCheckFixture(
         flaw="CVE-2026-73530",
@@ -332,7 +333,7 @@ FIXTURES: tuple[FixCheckFixture, ...] = (
         ),
         benign_calls=(_uppercase, _json_to_csv),
         vulnerable_service="flyto-vuln",
-        patched_service="flyto",
+        patched_service="flyto-patched",
         server_patched_service=None,
     ),
     FixCheckFixture(
@@ -346,6 +347,6 @@ FIXTURES: tuple[FixCheckFixture, ...] = (
         benign_calls=(_json_to_csv,),
         vulnerable_service="flyto-vuln",
         patched_service="flyto-flaw-2.26.7",
-        server_patched_service="flyto",
+        server_patched_service="flyto-patched",
     ),
 )

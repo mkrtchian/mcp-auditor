@@ -25,7 +25,9 @@ is the run image, confirming the exploits stay refused past the server's own shi
 The benign calls run on the trees every image seeds under /tmp, clones of the simplegit sample of
 Pro Git (/srv/app is mounted read-only).
 2.1.x and 2.15.x name some arguments differently and 2.15.x refuses an unknown key, so the calls
-whose arguments differ read the tool's schema and send the form it declares.
+whose arguments differ, exploits and benign calls alike, read the tool's schema and send the form
+it declares: an exploit in the other version's form fails validation before any code runs, and
+would leave the server-patched arm showing nothing of the fix.
 """
 
 import re
@@ -76,36 +78,71 @@ def _path_injection(tool: str, **arguments: Any) -> FixCheckExploit:
 
 def _by_version(tool: str, current: dict[str, Any], legacy: dict[str, Any]) -> FixCheckExploit:
     async def call(places: Places, client: KitClient) -> None:
-        schema = next(t.input_schema for t in await client.list_tools() if t.name == tool)
-        declared = set(schema.get("properties", {}))
-        fits_legacy = set(legacy) <= declared and not set(current) <= declared
-        await client.call_tool(tool, legacy if fits_legacy else current)
+        await _call_in_declared_form(client, tool, current, legacy)
 
     return call
 
 
+async def _call_in_declared_form(
+    client: KitClient, tool: str, current: dict[str, Any], legacy: dict[str, Any]
+) -> None:
+    schema = next(t.input_schema for t in await client.list_tools() if t.name == tool)
+    declared = set(schema.get("properties", {}))
+    fits_legacy = set(legacy) <= declared and not set(current) <= declared
+    await client.call_tool(tool, legacy if fits_legacy else current)
+
+
 async def _exploit_stored_working_directory(places: Places, client: KitClient) -> None:
-    # The escaped `\$` reaches git_clone's shell as a literal `$`, so the directory's name keeps
-    # the substitution, which git_status expands once the session's directory is interpolated.
-    await client.call_tool(
+    # The directory's name must keep the substitution literally, which git_status expands once the
+    # session's directory is interpolated. A shell (up to 2.1.4) keeps `$` literal only escaped:
+    # the first round clones from the escaped name, and git_status there fails on the expanded
+    # path, quoting the witness. With no shell (from 2.1.5) the plain name stays literal, so the
+    # second round makes the directory from it, which 2.1.x's git_clone does with its leading
+    # directories (the substitution's `/` splits the name) and, on 2.15.x, whose git_clone makes
+    # none, git_init does. On 2.1.4 the second round only expands the name again.
+    escaped = _STORED_DIRECTORY.replace("$", "\\$")
+    await _clone_stored_directory(client, escaped)
+    await _status_in_stored_directory(client)
+    await _clone_stored_directory(client, _STORED_DIRECTORY)
+    await client.call_tool("git_init", {"path": _STORED_DIRECTORY})
+    await _status_in_stored_directory(client)
+
+
+async def _clone_stored_directory(client: KitClient, target: str) -> None:
+    await _call_in_declared_form(
+        client,
         "git_clone",
-        {
-            "repositoryUrl": "file:///srv/app.git",
-            "targetPath": _STORED_DIRECTORY.replace("$", "\\$"),
-        },
+        {"url": "file:///srv/app.git", "path": target},
+        {"repositoryUrl": "file:///srv/app.git", "targetPath": target},
     )
+
+
+async def _status_in_stored_directory(client: KitClient) -> None:
     await client.call_tool("git_set_working_dir", {"path": _STORED_DIRECTORY})
     await client.call_tool("git_status", {})
 
 
 _EXPLOITS_53107: tuple[FixCheckExploit, ...] = (
-    _call("git_add", {"path": "/srv/app", "files": f"$(cat {_SECRET_PATH} >&2)"}),
+    _by_version(
+        "git_add",
+        {"path": "/srv/app", "paths": [f"$(cat {_SECRET_PATH} >&2)"]},
+        {"path": "/srv/app", "files": f"$(cat {_SECRET_PATH} >&2)"},
+    ),
     _path_injection("git_branch", mode="list"),
-    _path_injection("git_checkout", branchOrPath="main"),
-    _path_injection("git_cherry_pick", commitRef="main"),
+    _by_version(
+        "git_checkout",
+        {"path": _INJECTED_PATH, "target": "main"},
+        {"path": _INJECTED_PATH, "branchOrPath": "main"},
+    ),
+    _by_version(
+        "git_cherry_pick",
+        {"path": _INJECTED_PATH, "commits": ["main"]},
+        {"path": _INJECTED_PATH, "commitRef": "main"},
+    ),
     _path_injection("git_clean", force=True, dryRun=True),
-    _call(
+    _by_version(
         "git_clone",
+        {"url": f"file:///srv/app/{_READ_WITNESS}", "path": "/tmp/clone-copy"},
         {"repositoryUrl": f"file:///srv/app/{_READ_WITNESS}", "targetPath": "/tmp/clone-copy"},
     ),
     _path_injection("git_commit", message="Snapshot of the tree"),
@@ -119,7 +156,11 @@ _EXPLOITS_53107: tuple[FixCheckExploit, ...] = (
     _path_injection("git_rebase", upstream="main"),
     _path_injection("git_remote", mode="list"),
     _path_injection("git_reset"),
-    _path_injection("git_show", ref="HEAD"),
+    _by_version(
+        "git_show",
+        {"path": _INJECTED_PATH, "object": "HEAD"},
+        {"path": _INJECTED_PATH, "ref": "HEAD"},
+    ),
     _path_injection("git_stash", mode="list"),
     _path_injection("git_status"),
     _path_injection("git_tag", mode="list"),
