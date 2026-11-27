@@ -53,7 +53,9 @@ def deps_reaching_nothing(sweep: FakeContainerSweep | None = None) -> DetectionC
     )
 
 
-def _no_calibration_check(concurrency: int, ci: bool) -> CalibrationCheckDeps:
+def _no_calibration_check(
+    concurrency: int, ci: bool, show_exploit_responses: bool
+) -> CalibrationCheckDeps:
     raise AssertionError("this run runs no calibration check")
 
 

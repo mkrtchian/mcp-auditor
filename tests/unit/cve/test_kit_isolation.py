@@ -53,9 +53,11 @@ def test_kit_target_fields_are_target_fields():
 
 def test_fix_check_result_mirrors_the_admission_record_fields():
     # relies_on_relaying_stand_in is a judgment the admission records and holdout_fingerprint the
-    # provenance of a copied calibration: the kit observes neither.
+    # provenance of a copied calibration: the kit observes neither. unreached_patched_exploits
+    # is a check outcome, empty on any flaw that counts, which the admission does not record.
     recorded = set(FixCheckRecord.model_fields) - {
         "relies_on_relaying_stand_in",
         "holdout_fingerprint",
     }
-    assert {field.name for field in fields(FixCheckResult)} == recorded
+    observed = {field.name for field in fields(FixCheckResult)}
+    assert observed == recorded | {"unreached_patched_exploits"}

@@ -42,6 +42,15 @@ async def test_a_result_departing_from_its_record_fails_the_fix_check():
     assert await check_fixes([FIXTURE], {FIXTURE.flaw: RECORD}, fake.deps) == 1
 
 
+async def test_a_patched_exploit_missing_a_required_argument_fails_the_fix_check():
+    missing = ["patched version: exploit 0 (read_file) lacks file, which the schema requires"]
+    result = given.a_result_matching(RECORD, unreached_patched_exploits=missing)
+
+    code = await check_fixes([FIXTURE], {FIXTURE.flaw: RECORD}, given.FakeFixCheck(result).deps)
+
+    assert code == 1
+
+
 async def test_a_crashed_fix_check_exits_as_a_crash():
     fake = given.FakeFixCheck(RuntimeError("the launch failed"))
 
@@ -66,6 +75,16 @@ def test_a_fix_check_with_no_admitted_server_says_so(
 
     assert code == 0
     assert "no server is admitted" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("flag", [[], ["--show-exploit-responses"]], ids=["default", "flag"])
+def test_the_fix_check_shows_exploit_responses_only_when_asked(tmp_path: Path, flag: list[str]):
+    fake = given.FakeFixCheck(given.a_result_matching(RECORD))
+    deps = given.a_fix_check_ready(FIXTURE, fake)
+
+    run_nuisance.main([*given.a_fix_check_command(tmp_path, an_admission()), *flag], deps)
+
+    assert fake.shows_exploit_responses is bool(flag)
 
 
 def test_a_fix_check_of_a_flaw_no_fixture_matches_exits_naming_it(

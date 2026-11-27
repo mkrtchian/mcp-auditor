@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from evals.concurrency import bounded
-from evals.cve.detection.calibration_check import check_calibrations, passes_calibration_check
+from evals.cve.detection.calibration_check import (
+    CheckOptions,
+    check_calibrations,
+    passes_calibration_check,
+)
 from evals.cve.detection.layout_report import check_layouts_and_routes
 from evals.cve.detection.targets import Target
 from evals.cve.places import Places
@@ -20,7 +24,9 @@ class CalibrationCheckDeps:
 
 
 class CalibrationCheckFactory(Protocol):
-    def __call__(self, concurrency: int, ci: bool, /) -> CalibrationCheckDeps: ...
+    def __call__(
+        self, concurrency: int, ci: bool, show_exploit_responses: bool, /
+    ) -> CalibrationCheckDeps: ...
 
 
 async def run_calibration_check(
@@ -33,14 +39,18 @@ async def run_calibration_check(
     return 0 if all_pass and not layout_and_route_failures else 1
 
 
-def default_calibration_check_deps(concurrency: int, ci: bool) -> CalibrationCheckDeps:
+def default_calibration_check_deps(
+    concurrency: int, ci: bool, show_exploit_responses: bool
+) -> CalibrationCheckDeps:
+    options = CheckOptions(show_exploit_responses=show_exploit_responses)
+
     async def layouts_and_routes(targets: list[Target], places: Places) -> list[str]:
         return await check_layouts_and_routes(targets, places, ci=ci)
 
     async def exploits(targets: list[Target], places: Places) -> bool:
         return await check_calibrations(
             targets,
-            bounded(lambda target: passes_calibration_check(target, places), concurrency),
+            bounded(lambda target: passes_calibration_check(target, places, options), concurrency),
             ci=ci,
         )
 

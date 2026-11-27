@@ -54,11 +54,14 @@ class FixCheckDeps:
     sweep: ContainerSweep
 
 
-def default_fix_check_deps(concurrency: int) -> FixCheckDeps:
+def default_fix_check_deps(concurrency: int, show_exploit_responses: bool) -> FixCheckDeps:
     return FixCheckDeps(
         build_images=functools.partial(build_images, DOCKER_DIRECTORY),
         refresh_compose_images=_ensure_compose_images,
-        check_fix=bounded(check_fix, concurrency),
+        check_fix=bounded(
+            functools.partial(check_fix, show_exploit_responses=show_exploit_responses),
+            concurrency,
+        ),
         check_networks=check_closed_network_support,
         sweep=DOCKER_SWEEP,
     )
@@ -71,13 +74,19 @@ def _ensure_compose_images(services: Sequence[str]) -> None:
 @dataclass(frozen=True)
 class FixCheckCommandDeps:
     fixtures: Sequence[FixCheckFixture] = FIX_CHECK_FIXTURES
-    fix_check_deps: Callable[[int], FixCheckDeps] = default_fix_check_deps
+    # (concurrency, show_exploit_responses)
+    fix_check_deps: Callable[[int, bool], FixCheckDeps] = default_fix_check_deps
 
 
 def add_fix_check_arguments(parser: argparse.ArgumentParser, deps: FixCheckCommandDeps) -> None:
     parser.set_defaults(command=functools.partial(fix_check, deps=deps))
     parser.add_argument("--flaw", help="fix-check only this flaw, default: every admitted flaw")
     parser.add_argument("--concurrency", type=positive_int, default=NUISANCE_CONCURRENCY)
+    parser.add_argument(
+        "--show-exploit-responses",
+        action="store_true",
+        help="print each exploit's responses on every version, the vulnerable one first",
+    )
     add_committed_input_arguments(parser)
 
 
@@ -92,7 +101,7 @@ def fix_check(args: argparse.Namespace, deps: FixCheckCommandDeps) -> int:
     if not fixtures:
         print(f"unknown flaw: {args.flaw} matches no fix-check fixture", file=sys.stderr)
         return UNKNOWN_FLAW_EXIT
-    docker = deps.fix_check_deps(args.concurrency)
+    docker = deps.fix_check_deps(args.concurrency, args.show_exploit_responses)
     refuse_without_closed_networks(docker.check_networks)
     backend_services = _backend_services(fixtures, admission.servers)
     tags = _swept_tags(fixtures, backend_services, admission.servers)
@@ -180,7 +189,7 @@ def _fix_check_problems(result: FixCheckResult, record: FixCheckRecord | None) -
         reported["patched_surfaces"] = "the witness surfaces on the patched version"
     if result.server_patched_surfaces:
         reported["server_patched_surfaces"] = "the witness surfaces on the server's patched version"
-    problems = list(reported.values())
+    problems = [*reported.values(), *result.unreached_patched_exploits]
     if record is None:
         return [*problems, "no admission fix_check records this flaw"]
     mismatches = fix_check_mismatches(result, record)

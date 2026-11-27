@@ -110,7 +110,10 @@ repository, so the vulnerable Dockerfile and the exploits are committed beside t
 `source`, `witness`, `exploit_calls`, `vulnerable_surfaces`, `patched_surfaces`,
 `server_patched_surfaces` and `patched_benign_errored`. The flaw counts when the witness
 surfaces on the vulnerable version and on neither patched one, and no benign call errors on a
-patched version.
+patched version. Its `unreached_patched_exploits`, which the record does not carry, must be
+empty: each entry is an exploit that surfaces the witness on the vulnerable version while a
+patched version's SDK rejects every call of it for a missing required argument, before any code
+runs, so a witness absent after it shows nothing about the fix.
 
 ## AdmittedServer fields the run reads
 
@@ -280,7 +283,10 @@ checkout. Its MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 
 4. Write the `FixCheckFixture` fixture (see `fixture_format.md`) and run it through `check_fix`,
    making as many attempts as you need, until the witness surfaces on the vulnerable version and
-   on neither patched version, and the benign call does not error on a patched version.
+   on neither patched version, every exploit that surfaces the witness on the vulnerable version
+   has, on each patched version, a call that the SDK's argument validation does not reject for a
+   required argument it lacks (`unreached_patched_exploits` is empty), and the benign call does
+   not error on a patched version.
 
 5. Paste the printed `FixCheckResult` into the flaw's `fix_check` record of the admission, and
    fill the rest of the `FlawRecord` and `AdmittedServer` fields (`fixture_format.md` carries

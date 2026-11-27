@@ -104,6 +104,11 @@ def _add_calibration_check(commands: "_SubParsersAction[argparse.ArgumentParser]
     )
     check.set_defaults(command=_calibration_check)
     check.add_argument(
+        "--show-exploit-responses",
+        action="store_true",
+        help="print each exploit's responses on both versions, the vulnerable one first",
+    )
+    check.add_argument(
         "--flaw",
         help=(
             "check only this flaw ID (a CVE ID, or the GHSA ID of a flaw without one), default:"
@@ -197,7 +202,7 @@ def _calibration_check(args: argparse.Namespace, deps: HoldoutCommandDeps) -> in
         return 0
     refuse_without_closed_networks(deps.docker.check_networks)
     _refuse_stale_images(targets, deps.docker.images)
-    checks = deps.calibration_check(args.concurrency, False)
+    checks = deps.calibration_check(args.concurrency, False, args.show_exploit_responses)
     try:
         return asyncio.run(_check_calibrations(targets, checks, deps.docker.sweep))
     except ValueError as error:

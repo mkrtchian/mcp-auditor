@@ -5,7 +5,7 @@ The result is a pure function of the exchanges each version records, so these he
 that errors.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from evals.cve.kit.client import KitResponse
 from evals.cve.kit.fix_check import Exchange, Exercised
@@ -30,6 +30,15 @@ def clean_exchanges(tool: str = "read_file") -> list[Exchange]:
     return [(tool, {"path": "cat /tmp/witness"}, KitResponse("permission denied", is_error=False))]
 
 
+def exchanges_rejected_for_a_missing_file() -> list[Exchange]:
+    response = KitResponse(
+        "Error executing tool read_file: 1 validation error for read_fileArguments\nfile\n"
+        "  Field required [type=missing]",
+        is_error=True,
+    )
+    return [("read_file", {"path": "cat /tmp/witness"}, response)]
+
+
 def errored_exchanges() -> list[Exchange]:
     return [("list_dir", {"path": "/tmp"}, KitResponse("backend unavailable", is_error=True))]
 
@@ -37,11 +46,14 @@ def errored_exchanges() -> list[Exchange]:
 def an_exercise(
     exploits: Sequence[list[Exchange]],
     benign: Sequence[Exchange] = (),
+    required: Mapping[str, frozenset[str]] | None = None,
 ) -> Exercised:
+    """`required` maps each tool the version lists to the arguments its schema requires."""
     return Exercised(
         nonces={WITNESS_ID: WITNESS},
         exploits=[list(exploit) for exploit in exploits],
         benign=list(benign),
+        required=dict(required or {}),
     )
 
 

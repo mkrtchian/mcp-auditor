@@ -1,7 +1,12 @@
 import tests.unit.cve.support.test_kit_fix_check_given as given
 import tests.unit.support.fix_check_fixtures as fix_check_fixtures
 from evals.cve.kit.client import KitResponse
-from evals.cve.kit.fix_check import benign_transcript, fix_check_result
+from evals.cve.kit.fix_check import (
+    benign_transcript,
+    exploit_transcript,
+    fix_check_notes,
+    fix_check_result,
+)
 from evals.cve.nuisance.admission.admission import FixCheckRecord
 
 
@@ -95,6 +100,59 @@ def test_either_of_two_exploits_surfacing_the_witness_counts():
 
     assert result.vulnerable_surfaces is True
     assert result.exploit_calls == ["list_dir", "read_file"]
+
+
+def test_a_patched_exploit_missing_a_required_argument_is_named_with_its_version():
+    fixture = fix_check_fixtures.a_fix_check_fixture(server_patched_service="server-patched")
+    vulnerable = given.an_exercise([given.exchanges_surfacing(given.WITNESS)])
+    patched = given.an_exercise([given.clean_exchanges()])
+    server_patched = given.an_exercise(
+        [given.exchanges_rejected_for_a_missing_file()], required={"read_file": frozenset({"file"})}
+    )
+
+    result = fix_check_result(fixture, vulnerable, patched, server_patched)
+
+    assert result.unreached_patched_exploits == [
+        "server's patched version: exploit 0 (read_file) lacks file, which the schema requires,"
+        " and the SDK rejects every call of it at argument validation, so it never reaches the"
+        " patched code"
+    ]
+
+
+def test_a_patched_call_the_server_runs_despite_a_missing_argument_leaves_nothing_reported():
+    fixture = fix_check_fixtures.a_fix_check_fixture()
+    vulnerable = given.an_exercise([given.exchanges_surfacing(given.WITNESS)])
+    patched = given.an_exercise(
+        [given.clean_exchanges()], required={"read_file": frozenset({"file"})}
+    )
+
+    result = fix_check_result(fixture, vulnerable, patched, None)
+
+    assert result.unreached_patched_exploits == []
+
+
+def test_a_patched_call_to_a_tool_the_version_does_not_list_is_a_note_with_no_verdict():
+    fixture = fix_check_fixtures.a_fix_check_fixture()
+    vulnerable = given.an_exercise([given.exchanges_surfacing(given.WITNESS)])
+    patched = given.an_exercise([given.clean_exchanges()], required={"list_dir": frozenset()})
+
+    result = fix_check_result(fixture, vulnerable, patched, None)
+
+    assert result.unreached_patched_exploits == []
+    assert fix_check_notes(patched, None) == [
+        "patched version: exploit 0 calls read_file, which this version does not list"
+    ]
+
+
+def test_the_exploit_transcript_shows_each_call_with_its_arguments_and_cut_response():
+    exercise = given.an_exercise([given.exchanges_surfacing("x" * 600)])
+
+    transcript = exploit_transcript("CVE-FAKE", "fake-patched", exercise)
+
+    assert transcript.startswith(
+        'CVE-FAKE fake-patched: exploit 0 read_file({"path": "cat /tmp/witness"}) -> ok '
+    )
+    assert len(transcript) < 600
 
 
 def test_to_json_round_trips_to_a_valid_fix_check_record():

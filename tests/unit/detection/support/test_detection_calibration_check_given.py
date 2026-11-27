@@ -9,7 +9,7 @@ from evals.cve.grammar import FlawClass
 from evals.cve.images import image_tag
 from evals.cve.places import Coordinates, Place, PlaceKind, Places
 from evals.cve.planting import PlantingHost, PlantingSpec, SymbolicUser
-from mcp_auditor.domain.models import ToolResponse
+from mcp_auditor.domain.models import ToolDefinition, ToolResponse
 from mcp_auditor.domain.ports import MCPClientPort
 from tests.fakes.mcp_client import FakeMCPClient
 
@@ -56,14 +56,19 @@ def a_target() -> Target:
 class FakeLaunches:
     """Stands in for the server's connection: each version answers the benign call cleanly and the
     exploit with the planted nonce on the vulnerable version when `exploit_surfaces_the_nonce`,
-    and answers the ping with its entry of `ping_answers`."""
+    answers the ping with its entry of `ping_answers`, and lists `patched_tools` on the patched
+    version only, where the exploit then meets the SDK's argument-validation error."""
 
     def __init__(
-        self, ping_answers: Mapping[TargetVersion, bool], exploit_surfaces_the_nonce: bool
+        self,
+        ping_answers: Mapping[TargetVersion, bool],
+        exploit_surfaces_the_nonce: bool,
+        patched_tools: list[ToolDefinition] | None = None,
     ) -> None:
         self.pings = 0
         self._ping_answers = ping_answers
         self._exploit_surfaces_the_nonce = exploit_surfaces_the_nonce
+        self._patched_tools = patched_tools or []
 
     @asynccontextmanager
     async def connect(self, launch: Launch, _stderr: IO[str]) -> AsyncGenerator[MCPClientPort]:
@@ -74,9 +79,14 @@ class FakeLaunches:
             else TargetVersion.VULNERABLE
         )
         surfaces = self._exploit_surfaces_the_nonce and version is TargetVersion.VULNERABLE
-        exploit_answer = " ".join(nonces) if surfaces else "no such file"
-        answers = [ToolResponse(content="inside"), ToolResponse(content=exploit_answer)]
-        client = FakeMCPClient([], {"read": answers}, ping_answers=(self._ping_answers[version],))
+        exploit_answer = ToolResponse(content=" ".join(nonces) if surfaces else "no such file")
+        if version is TargetVersion.PATCHED and self._patched_tools:
+            exploit_answer = _REJECTED_FOR_A_MISSING_FILE
+        answers = [ToolResponse(content="inside"), exploit_answer]
+        tools = self._patched_tools if version is TargetVersion.PATCHED else []
+        client = FakeMCPClient(
+            tools, {"read": answers}, ping_answers=(self._ping_answers[version],)
+        )
         yield client
         self.pings += client.pings
 
@@ -89,6 +99,25 @@ def launches(
     return FakeLaunches(answers, exploit_surfaces_the_nonce)
 
 
+_REJECTED_FOR_A_MISSING_FILE = ToolResponse(
+    content="Error executing tool read: 1 validation error for readArguments\nfile\n"
+    "  Field required [type=missing]",
+    is_error=True,
+)
+
+
+def launches_whose_patched_read_requires(argument: str) -> FakeLaunches:
+    """The patched version's `read` tool declares `argument` required, which the target's exploit
+    and benign call, sending `path`, do not carry, and its SDK rejects the exploit for it."""
+    schema = {
+        "type": "object",
+        "properties": {argument: {"type": "string"}},
+        "required": [argument],
+    }
+    answers = {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: True}
+    return FakeLaunches(answers, True, [ToolDefinition(name="read", input_schema=schema)])
+
+
 @contextmanager
 def _carrying_the_nonces(image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
     yield Launch("docker", [image, *spec.nonces.values()])
@@ -99,3 +128,10 @@ def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
         await client.call_tool("read", {"path": path})
 
     return read
+
+
+def launches_listing_only_on_the_patched_version(tool: str) -> FakeLaunches:
+    """The patched version lists `tool` alone, never the target's `read`."""
+    answers = {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: True}
+    schema: dict[str, object] = {"type": "object", "properties": {}}
+    return FakeLaunches(answers, True, [ToolDefinition(name=tool, input_schema=schema)])

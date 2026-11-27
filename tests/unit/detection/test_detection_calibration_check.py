@@ -65,6 +65,54 @@ async def test_check_target_hands_the_ping_answer_of_each_version_to_its_callbac
     assert answers == [(TargetVersion.VULNERABLE, True), (TargetVersion.PATCHED, False)]
 
 
+async def test_a_patched_exploit_missing_a_required_argument_is_out_of_calibration():
+    launches = given.launches_whose_patched_read_requires("file")
+
+    reasons = await check_target(
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
+    )
+
+    assert reasons == [
+        "patched: exploit 0 (read) lacks file, which the schema requires, and the SDK rejects"
+        " every call of it at argument validation, so it never reaches the patched code"
+    ]
+
+
+async def test_a_patched_exploit_call_to_an_unlisted_tool_is_printed_and_fails_nothing(
+    capsys: pytest.CaptureFixture[str],
+):
+    launches = given.launches_listing_only_on_the_patched_version("write")
+
+    passes = await passes_calibration_check(
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
+    )
+
+    assert passes
+    output = " ".join(capsys.readouterr().out.split())
+    assert f"{given.FLAW_ID} patched: exploit 0 calls read, which this version does not list" in (
+        output
+    )
+
+
+async def test_the_exploit_responses_print_on_both_versions_only_when_asked(
+    capsys: pytest.CaptureFixture[str],
+):
+    launches = given.launches()
+    options = CheckOptions(connect=launches.connect, show_exploit_responses=True)
+
+    await passes_calibration_check(given.a_target(), given.a_places_mapping(), options)
+    await passes_calibration_check(
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
+    )
+
+    output = capsys.readouterr().out
+    shown = [line for line in output.splitlines() if "exploit 0, tool exchanges" in line]
+    assert shown == [
+        f"{given.FLAW_ID} vulnerable version exploit 0, tool exchanges:",
+        f"{given.FLAW_ID} patched version exploit 0, tool exchanges:",
+    ]
+
+
 async def test_check_target_without_a_callback_sends_no_ping():
     launches = given.launches()
 
@@ -82,7 +130,7 @@ async def test_the_calibration_check_prints_whether_each_version_answers_the_pin
     launches = given.launches({TargetVersion.VULNERABLE: False, TargetVersion.PATCHED: True})
 
     passes = await passes_calibration_check(
-        given.a_target(), given.a_places_mapping(), connect=launches.connect
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
     )
 
     output = capsys.readouterr().out
@@ -97,7 +145,7 @@ async def test_a_target_out_of_calibration_that_answers_the_ping_still_fails(
     launches = given.launches(exploit_surfaces_the_nonce=False)
 
     passes = await passes_calibration_check(
-        given.a_target(), given.a_places_mapping(), connect=launches.connect
+        given.a_target(), given.a_places_mapping(), CheckOptions(connect=launches.connect)
     )
 
     output = capsys.readouterr().out

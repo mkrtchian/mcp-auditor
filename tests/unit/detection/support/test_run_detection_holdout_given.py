@@ -26,8 +26,21 @@ def a_drawn_command(
         command_deps.a_command_reaching_nothing(),
         drawn=targets,
         docker=docker,
-        calibration_check=lambda _concurrency, _ci: checks,
+        calibration_check=lambda _concurrency, _ci, _show: checks,
     )
+
+
+class FlagRecordingFactory:
+    """A calibration-check factory answering `checks`, recording whether each call asked to show
+    the exploit responses."""
+
+    def __init__(self, checks: CalibrationCheckDeps) -> None:
+        self.shown: list[bool] = []
+        self._checks = checks
+
+    def __call__(self, _concurrency: int, _ci: bool, show: bool, /) -> CalibrationCheckDeps:
+        self.shown.append(show)
+        return self._checks
 
 
 def current_labels(*flaw_ids: str) -> dict[str, str | None]:

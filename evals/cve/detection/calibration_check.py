@@ -5,17 +5,21 @@ and aim evaluation, every exploit its own unit.
 On the vulnerable version a target is live when it keeps at least one place, the nonce of every
 kept place surfaces in at least one exploit, every exploit reads as aimed, and its benign call, a
 call inside the declared scope, surfaces no nonce and does not read as aimed. On the patched
-version no exploit surfaces a nonce and the benign call returns no error. The benign call runs
-first, so the negative control reads a state the exploits have not touched, and the patched launch
-starts only once the vulnerable one is torn down. The calibration check also prints whether each
-version answers a ping sent right after the handshake, which no verdict reads.
+version no exploit surfaces a nonce, every exploit that surfaced one on the vulnerable version
+reaches the patched code (an exploit every call of which the SDK rejects at argument validation,
+for an argument the version's own tools/list marks required, runs no code, so it shows nothing
+about the fix), and the benign call returns no error. The benign call runs first, so the
+negative control reads a state the exploits have not touched, and the patched launch starts only
+once the vulnerable one is torn down. The calibration check also prints whether each version
+answers a ping sent right after the handshake, and the patched exploit calls that verdict does
+not read, neither of which any verdict reads.
 """
 
 import asyncio
 import json
 import tempfile
 from collections.abc import Awaitable, Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import IO
 
 from rich.markup import escape
@@ -25,7 +29,15 @@ from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import PlantedTarget
-from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons
+from evals.cve.kit.driver import (
+    PatchedExploits,
+    not_fixed_reasons,
+    not_live_reasons,
+    required_arguments,
+    surfacing_exploits,
+    unreached_notes,
+    unreached_reasons,
+)
 from evals.cve.launch_audit import Connect
 from evals.cve.launch_retry import NotLaunched, first_launch
 from evals.cve.places import Place, Places, kept_records
@@ -60,24 +72,36 @@ async def check_calibrations(
     return all_pass
 
 
-async def passes_calibration_check(
-    target: Target, places: Places, connect: Connect = connect
-) -> bool:
-    def print_ping(version: TargetVersion, answered: bool) -> None:
-        answer = "yes" if answered else "no"
-        console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
-
-    return not await check_target(target, places, CheckOptions(on_ping=print_ping, connect=connect))
-
-
 @dataclass(frozen=True)
 class CheckOptions:
     """`report_detail` sets how much server text the log shows. `on_ping`, when given, gets whether
-    each launched version answers a ping sent right after its handshake."""
+    each launched version answers a ping sent right after its handshake, and `on_note` each patched
+    exploit call the verdict does not read (driver.unreached_notes). `show_exploit_responses`
+    prints each exploit's exchanges on both versions, the vulnerable one first."""
 
     report_detail: ReportDetail = FULL_DETAIL
     on_ping: Callable[[TargetVersion, bool], None] | None = None
     connect: Connect = connect
+    on_note: Callable[[str], None] | None = None
+    show_exploit_responses: bool = False
+
+
+async def passes_calibration_check(
+    target: Target, places: Places, options: CheckOptions | None = None
+) -> bool:
+    """The calibration check of one target, printing whether each version answers the ping and
+    the patched exploit calls the verdict does not read."""
+
+    def print_ping(version: TargetVersion, answered: bool) -> None:
+        answer = "yes" if answered else "no"
+        console.print(f"{target.flaw_id} {version.value} version answers the ping: {answer}")
+
+    printing = replace(options or CheckOptions(), on_ping=print_ping, on_note=_print_note)
+    return not await check_target(target, places, printing)
+
+
+def _print_note(note: str) -> None:
+    console.print(note, markup=False, highlight=False)
 
 
 async def check_target(
@@ -103,7 +127,8 @@ async def check_target(
     if patched is None:
         reasons.append(_launch_failed(TargetVersion.PATCHED))
     else:
-        reasons += _not_fixed_reasons(target, patched)
+        reasons += _not_fixed_reasons(target, vulnerable, patched)
+        _note_unreached(target, patched, options)
     if reasons:
         _report_out_of_calibration(target.flaw_id, reasons, vulnerable, options.report_detail)
     return reasons
@@ -118,12 +143,28 @@ class _Exercised:
     nonces: Mapping[str, str]
     exploits: list[list[Exchange]]
     benign: list[Exchange]
+    required: dict[str, frozenset[str]]  # per listed tool, the arguments its schema requires
 
 
-def _not_fixed_reasons(target: Target, patched: _Exercised) -> list[str]:
-    return not_fixed_reasons(
-        _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
-    )
+def _not_fixed_reasons(target: Target, vulnerable: _Exercised, patched: _Exercised) -> list[str]:
+    surfacing = surfacing_exploits(_graded(target, vulnerable), _units(vulnerable.exploits))
+    return [
+        *not_fixed_reasons(
+            _graded(target, patched), _units(patched.exploits), _any_error(patched.benign)
+        ),
+        *unreached_reasons(_patched_exploits(patched), surfacing),
+    ]
+
+
+def _note_unreached(target: Target, patched: _Exercised, options: CheckOptions) -> None:
+    if options.on_note is None:
+        return
+    for note in unreached_notes(_patched_exploits(patched)):
+        options.on_note(f"{target.flaw_id} {note}")
+
+
+def _patched_exploits(patched: _Exercised) -> PatchedExploits:
+    return PatchedExploits("patched", patched.exploits, patched.required)
 
 
 @dataclass(frozen=True)
@@ -148,14 +189,28 @@ class _Exercise:
                     launched = True
                     if self.options.on_ping is not None:
                         self.options.on_ping(version, await client.ping())
+                    required = required_arguments(await client.list_tools())
                     benign, exploits = await self._calls(client)
+                    self._show_exploit_responses(version, exploits)
             except Exception as exc:
                 label = f"{self.target.flaw_id} calibration check error"
                 report_launch_error(label, exc, server_stderr, self.options.report_detail)
                 if not launched:
                     raise NotLaunched from exc
                 return None
-        return _Exercised(planted.nonces, exploits, benign)
+        return _Exercised(planted.nonces, exploits, benign, required)
+
+    def _show_exploit_responses(
+        self, version: TargetVersion, exploits: list[list[Exchange]]
+    ) -> None:
+        if not self.options.show_exploit_responses:
+            return
+        label = f"{self.target.flaw_id} {version.value} version"
+        dumps = [
+            (f"{label} exploit {index}", exchanges) for index, exchanges in enumerate(exploits)
+        ]
+        for dump_label, exchanges in self.options.report_detail.server_lines(dumps):
+            _dump_exchanges(dump_label, exchanges)
 
     async def _calls(self, client: MCPClientPort) -> tuple[list[Exchange], list[list[Exchange]]]:
         benign = await logged_exchanges(self.target.benign, self.places, client)

@@ -29,7 +29,7 @@ def a_calibration_check(
     it checks are appended to checked."""
     return replace(
         deps_reaching_nothing(sweep),
-        calibration_check=lambda concurrency, ci: deps_with(raises=raises, checked=checked),
+        calibration_check=lambda concurrency, ci, show: deps_with(raises=raises, checked=checked),
     )
 
 

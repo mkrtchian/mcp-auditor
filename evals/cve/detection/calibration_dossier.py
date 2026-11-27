@@ -225,7 +225,9 @@ MCP client needs the `mcp` package, `mcp>=1.18.0,<2`.
 4. Write the `KitTarget` fixture (see `fixture_format.md`) and run it through the kit driver,
    making as many attempts as you need, until the candidate reproduces on the vulnerable version
    (the exploits surface the nonce, the benign call is clean) and is clean on the patched version
-   (no nonce surfaces, the benign call does not error).
+   (no nonce surfaces, the benign call does not error, and every exploit that surfaces a nonce on
+   the vulnerable version has a call the patched version's SDK does not reject at argument
+   validation for a required argument it lacks).
 
 5. Fill the calibration card (`fixture_format.md` carries its schema): the mechanism, the effect
    class, the siblings, the kept and unkept places, the launch options, the seeded layout files,

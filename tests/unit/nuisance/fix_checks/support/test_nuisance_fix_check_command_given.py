@@ -17,10 +17,10 @@ from tests.unit.support import census_draws, censuses
 
 
 class FakeFixCheck:
-    """Records the services it is asked to build and the compose services it is asked to bring
-    up to date, raising `build_error` instead of building when one is given, answers every fix
-    check with `result`, and finds the containers of `running` left running, on a daemon that
-    creates closed networks."""
+    """Records the services it is asked to build, the compose services it is asked to bring up to
+    date and whether it was asked to show the exploit responses, raising `build_error` instead of
+    building when one is given, answers every fix check with `result`, and finds the containers of
+    `running` left running, on a daemon that creates closed networks."""
 
     def __init__(
         self,
@@ -30,6 +30,7 @@ class FakeFixCheck:
     ) -> None:
         self.built: list[str] = []
         self.refreshed: list[str] = []
+        self.shows_exploit_responses: bool | None = None
         self.containers = FakeContainerSweep(list(running))
         self._result = result
         self._build_error = build_error
@@ -66,7 +67,8 @@ def a_fix_check_ready(
     """The `fix-check` command on `fixture` alone, its Docker work answered by `fix_check`."""
     deps = dataclasses.replace(fix_check.deps, check_networks=_CHECKS[networks])
 
-    def fix_check_deps(_concurrency: int) -> FixCheckDeps:
+    def fix_check_deps(_concurrency: int, show_exploit_responses: bool) -> FixCheckDeps:
+        fix_check.shows_exploit_responses = show_exploit_responses
         return deps
 
     return NuisanceCommandDeps(

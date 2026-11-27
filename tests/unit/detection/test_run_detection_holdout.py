@@ -40,6 +40,16 @@ def test_the_calibration_check_crashes_to_four_on_a_fixture_config_error(
     )
 
 
+@pytest.mark.parametrize("flag", [[], ["--show-exploit-responses"]], ids=["default", "flag"])
+def test_the_calibration_check_shows_exploit_responses_only_when_asked(flag: list[str]):
+    factory = given.FlagRecordingFactory(deps_with())
+    deps = replace(given.a_drawn_command(FILESYSTEM, checks=deps_with()), calibration_check=factory)
+
+    run_detection_holdout.main(["calibration-check", *flag], deps)
+
+    assert factory.shown == [bool(flag)]
+
+
 def test_the_calibration_check_removes_the_containers_of_its_images_left_running():
     containers = FakeContainerSweep(["leftover_filesystem"])
     deps = given.a_drawn_command(FILESYSTEM, checks=deps_with(), sweep=containers)

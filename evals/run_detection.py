@@ -141,7 +141,7 @@ async def _run(args: argparse.Namespace, flaws: _FlawSelection, deps: DetectionC
             )
             return 0
         if args.calibration_check:
-            checks = deps.calibration_check(args.concurrency, args.ci)
+            checks = deps.calibration_check(args.concurrency, args.ci, args.show_exploit_responses)
             return await run_calibration_check(flaws.graded, places, checks)
         return await _run_graded(args, flaws, _CommandRun(places, deps))
     finally:
@@ -168,6 +168,14 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help=(
             "No-LLM calibration check per target: runs the exploits and the benign call, and "
             "confirms each target is live on the vulnerable version and fixed on the patched one."
+        ),
+    )
+    parser.add_argument(
+        "--show-exploit-responses",
+        action="store_true",
+        help=(
+            "With --calibration-check: print each exploit's responses on both versions, the"
+            " vulnerable one first."
         ),
     )
     parser.add_argument(
@@ -211,6 +219,8 @@ def _refused_flags(args: argparse.Namespace) -> Refused | None:
         reason = "--survey runs no audit: it neither records nor gates"
     elif args.calibration_check and (args.record_baseline or args.no_baseline):
         reason = "--calibration-check runs no audit: it neither records nor gates"
+    elif args.show_exploit_responses and not args.calibration_check:
+        reason = "--show-exploit-responses prints the calibration check's exploit responses"
     elif args.record_baseline and args.no_baseline:
         reason = RECORD_WITHOUT_BASELINE
     else:

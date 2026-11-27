@@ -16,6 +16,8 @@ from tests.unit.detection.support import run_detection_cli as cli
         ["--survey", "--calibration-check"],
         ["--survey", "--record-baseline"],
         ["--survey", "--no-baseline"],
+        ["--show-exploit-responses"],
+        ["--show-exploit-responses", "--no-baseline"],
     ],
 )
 def test_incompatible_flags_are_refused_as_not_comparable(flags: list[str]):
