@@ -2244,6 +2244,18 @@
       "scope": "CVE-2026-85788",
       "model": "claude-opus-5-5",
       "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "calibrator",
+      "scope": "CVE-2025-65719",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
+    },
+    {
+      "role": "card_checker",
+      "scope": "CVE-2025-65719",
+      "model": "claude-opus-5-5",
+      "fallback_model": "claude-opus-4-8"
     }
   ],
   "prefilter": [
