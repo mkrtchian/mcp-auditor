@@ -78,18 +78,12 @@ def _path_injection(tool: str, **arguments: Any) -> FixCheckExploit:
 
 def _by_version(tool: str, current: dict[str, Any], legacy: dict[str, Any]) -> FixCheckExploit:
     async def call(places: Places, client: KitClient) -> None:
-        await _call_in_declared_form(client, tool, current, legacy)
+        schema = next(t.input_schema for t in await client.list_tools() if t.name == tool)
+        declared = set(schema.get("properties", {}))
+        fits_legacy = set(legacy) <= declared and not set(current) <= declared
+        await client.call_tool(tool, legacy if fits_legacy else current)
 
     return call
-
-
-async def _call_in_declared_form(
-    client: KitClient, tool: str, current: dict[str, Any], legacy: dict[str, Any]
-) -> None:
-    schema = next(t.input_schema for t in await client.list_tools() if t.name == tool)
-    declared = set(schema.get("properties", {}))
-    fits_legacy = set(legacy) <= declared and not set(current) <= declared
-    await client.call_tool(tool, legacy if fits_legacy else current)
 
 
 async def _exploit_stored_working_directory(places: Places, client: KitClient) -> None:
@@ -101,16 +95,15 @@ async def _exploit_stored_working_directory(places: Places, client: KitClient) -
     # directories (the substitution's `/` splits the name) and, on 2.15.x, whose git_clone makes
     # none, git_init does. On 2.1.4 the second round only expands the name again.
     escaped = _STORED_DIRECTORY.replace("$", "\\$")
-    await _clone_stored_directory(client, escaped)
+    await _clone_stored_directory(escaped)(places, client)
     await _status_in_stored_directory(client)
-    await _clone_stored_directory(client, _STORED_DIRECTORY)
+    await _clone_stored_directory(_STORED_DIRECTORY)(places, client)
     await client.call_tool("git_init", {"path": _STORED_DIRECTORY})
     await _status_in_stored_directory(client)
 
 
-async def _clone_stored_directory(client: KitClient, target: str) -> None:
-    await _call_in_declared_form(
-        client,
+def _clone_stored_directory(target: str) -> FixCheckExploit:
+    return _by_version(
         "git_clone",
         {"url": "file:///srv/app.git", "path": target},
         {"repositoryUrl": "file:///srv/app.git", "targetPath": target},
