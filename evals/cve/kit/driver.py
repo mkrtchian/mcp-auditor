@@ -185,16 +185,16 @@ async def logged_exchanges(call: KitExploit, places: Places, client: KitClient) 
 
 def exploit_transcript(flaw: str, label: str, exploits: Sequence[list[Exchange]]) -> str:
     """Each exploit's calls on one version, with their arguments and responses cut at
-    SHOWN_CHARACTERS, labelled by the version or service."""
+    _SHOWN_CHARACTERS, labelled by the version or service."""
     return "\n".join(
         f"{flaw} {label}: exploit {index} {tool}({json.dumps(arguments)}) -> "
-        f"{'error' if response.is_error else 'ok'} {response.content[:SHOWN_CHARACTERS]!r}"
+        f"{'error' if response.is_error else 'ok'} {response.content[:_SHOWN_CHARACTERS]!r}"
         for index, exploit in enumerate(exploits)
         for tool, arguments, response in exploit
     )
 
 
-SHOWN_CHARACTERS = 500  # as the calibration check's exchange dumps cut a response
+_SHOWN_CHARACTERS = 500  # as the calibration check's exchange dumps cut a response
 
 
 def options_before_image(args: Sequence[str], image: str) -> list[str]:
