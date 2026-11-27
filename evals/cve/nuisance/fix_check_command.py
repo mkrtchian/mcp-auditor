@@ -9,6 +9,7 @@ import functools
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 from evals.cli_arguments import positive_int
 from evals.concurrency import bounded
@@ -71,11 +72,14 @@ def _ensure_compose_images(services: Sequence[str]) -> None:
     ensure_images(services, ComposeImageStore())
 
 
+class FixCheckDepsFactory(Protocol):
+    def __call__(self, concurrency: int, show_exploit_responses: bool, /) -> FixCheckDeps: ...
+
+
 @dataclass(frozen=True)
 class FixCheckCommandDeps:
     fixtures: Sequence[FixCheckFixture] = FIX_CHECK_FIXTURES
-    # (concurrency, show_exploit_responses)
-    fix_check_deps: Callable[[int, bool], FixCheckDeps] = default_fix_check_deps
+    fix_check_deps: FixCheckDepsFactory = default_fix_check_deps
 
 
 def add_fix_check_arguments(parser: argparse.ArgumentParser, deps: FixCheckCommandDeps) -> None:

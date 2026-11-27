@@ -29,16 +29,14 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Literal
 
 from evals.cve.grammar import FlawClass, PlantedTarget
-from evals.cve.kit.client import KitMCPClient
-from evals.cve.kit.driver import (
-    Exchange,
+from evals.cve.kit.argument_validation import (
     PatchedExploits,
-    logged_exchanges,
     required_arguments,
-    unit_of,
     unreached_notes,
     unreached_reasons,
 )
+from evals.cve.kit.client import KitMCPClient
+from evals.cve.kit.driver import Exchange, logged_exchanges, unit_of
 from evals.cve.kit.launch import LaunchShape, image_tag
 from evals.cve.kit.target import KitBuilder, KitExploit
 from evals.cve.places import Place, Places
@@ -143,7 +141,8 @@ def fix_check_result(
 
 
 def fix_check_notes(patched: Exercised, server_patched: Exercised | None) -> list[str]:
-    """The patched exploit calls the pass condition does not read (see driver.unreached_notes)."""
+    """The patched exploit calls the pass condition does not read (see
+    argument_validation.unreached_notes)."""
     return [note for arm in _patched_arms(patched, server_patched) for note in unreached_notes(arm)]
 
 

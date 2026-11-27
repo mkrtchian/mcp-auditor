@@ -118,6 +118,13 @@ def launches_whose_patched_read_requires(argument: str) -> FakeLaunches:
     return FakeLaunches(answers, True, [ToolDefinition(name="read", input_schema=schema)])
 
 
+def launches_listing_only_on_the_patched_version(tool: str) -> FakeLaunches:
+    """The patched version lists `tool` alone, never the target's `read`."""
+    answers = {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: True}
+    schema: dict[str, object] = {"type": "object", "properties": {}}
+    return FakeLaunches(answers, True, [ToolDefinition(name=tool, input_schema=schema)])
+
+
 @contextmanager
 def _carrying_the_nonces(image: str, spec: PlantingSpec, _shape: LaunchShape) -> Generator[Launch]:
     yield Launch("docker", [image, *spec.nonces.values()])
@@ -128,10 +135,3 @@ def _reading(path: str) -> Callable[[Places, MCPClientPort], Awaitable[None]]:
         await client.call_tool("read", {"path": path})
 
     return read
-
-
-def launches_listing_only_on_the_patched_version(tool: str) -> FakeLaunches:
-    """The patched version lists `tool` alone, never the target's `read`."""
-    answers = {TargetVersion.VULNERABLE: True, TargetVersion.PATCHED: True}
-    schema: dict[str, object] = {"type": "object", "properties": {}}
-    return FakeLaunches(answers, True, [ToolDefinition(name=tool, input_schema=schema)])

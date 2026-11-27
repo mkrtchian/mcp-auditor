@@ -29,15 +29,13 @@ from evals.cve.environments import connect
 from evals.cve.exchange_log import Exchange, ExchangeLog
 from evals.cve.failure_text import FULL_DETAIL, ReportDetail
 from evals.cve.grammar import PlantedTarget
-from evals.cve.kit.driver import (
+from evals.cve.kit.argument_validation import (
     PatchedExploits,
-    not_fixed_reasons,
-    not_live_reasons,
     required_arguments,
-    surfacing_exploits,
     unreached_notes,
     unreached_reasons,
 )
+from evals.cve.kit.driver import not_fixed_reasons, not_live_reasons, surfacing_exploits
 from evals.cve.launch_audit import Connect
 from evals.cve.launch_retry import NotLaunched, first_launch
 from evals.cve.places import Place, Places, kept_records
@@ -76,8 +74,9 @@ async def check_calibrations(
 class CheckOptions:
     """`report_detail` sets how much server text the log shows. `on_ping`, when given, gets whether
     each launched version answers a ping sent right after its handshake, and `on_note` each patched
-    exploit call the verdict does not read (driver.unreached_notes). `show_exploit_responses`
-    prints each exploit's exchanges on both versions, the vulnerable one first."""
+    exploit call the verdict does not read (argument_validation.unreached_notes).
+    `show_exploit_responses` prints each exploit's exchanges on both versions, the vulnerable one
+    first."""
 
     report_detail: ReportDetail = FULL_DETAIL
     on_ping: Callable[[TargetVersion, bool], None] | None = None
