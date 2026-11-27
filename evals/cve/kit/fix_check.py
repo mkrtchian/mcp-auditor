@@ -17,8 +17,8 @@ admission records and the kit does not observe (test_kit_isolation.py names thos
 the rest equal), and beyond them its unreached_patched_exploits, the exploits that surface the
 witness on the vulnerable version while a patched version's SDK rejects every call of them for a
 missing required argument, which leave its witness unsurfaced whatever the fix and are empty on any
-flaw that counts. It is kit-local so that a dossier copying the kit does
-not carry the admission model and its import closure.
+flaw that counts. It is kit-local so that a dossier copying the kit does not carry the admission
+model and its import closure.
 """
 
 import json
@@ -76,8 +76,7 @@ class Exercised:
     nonces: Mapping[str, str]
     exploits: list[list[Exchange]]
     benign: list[Exchange]
-    # per tool the version lists, the arguments its schema requires
-    required: dict[str, frozenset[str]] = field(default_factory=dict)
+    required: dict[str, frozenset[str]]  # per listed tool, the arguments its schema requires
 
 
 @dataclass(frozen=True)
